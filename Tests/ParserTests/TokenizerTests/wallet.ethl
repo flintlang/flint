@@ -1,0 +1,20 @@
+contract Wallet {
+  var owner: Address
+  var contents: Ether
+}
+
+Wallet :: (any) {
+  public mutating func deposit(Ether ether) {
+    state.contents = state.contents + money
+  }
+}
+
+Wallet :: (owner) {
+  public mutating func withdraw(Ether ether) {
+    state.contents = state.contents - money
+  }
+
+  public mutating func getContents() -> Ether {
+    return state.contents
+  }
+}
