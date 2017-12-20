@@ -37,23 +37,23 @@ class TokenizerTests: XCTestCase {
 
       let tokenizer = Tokenizer(inputFile: inputFile)
 
-      let expectedTokens: [Token] = [.contract, .identifier("Wallet"), .marker(.openBrace), .var, .identifier("owner"), .marker(.colon),
-            .identifier("Address"), .var, .identifier("contents"), .marker(.colon), .identifier("Ether"),
-            .marker(.closeBrace), .identifier("Wallet"), .marker(.doubleColon), .marker(.openBracket),
-            .identifier("any"), .marker(.closeBracket), .marker(.openBrace), .public, .mutating, .func,
-            .identifier("deposit"), .marker(.openBracket), .identifier("Ether"), .identifier("ether"),
-            .marker(.closeBracket), .marker(.openBrace), .identifier("state"), .binaryOperator(.dot),
+      let expectedTokens: [Token] = [.contract, .identifier("Wallet"), .punctuation(.openBrace), .var, .identifier("owner"), .punctuation(.colon),
+            .identifier("Address"), .var, .identifier("contents"), .punctuation(.colon), .identifier("Ether"),
+            .punctuation(.closeBrace), .identifier("Wallet"), .punctuation(.doubleColon), .punctuation(.openBracket),
+            .identifier("any"), .punctuation(.closeBracket), .punctuation(.openBrace), .public, .mutating, .func,
+            .identifier("deposit"), .punctuation(.openBracket), .identifier("Ether"), .identifier("ether"),
+            .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
             .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.plus), .identifier("money"), .marker(.closeBrace),
-            .marker(.closeBrace), .identifier("Wallet"), .marker(.doubleColon), .marker(.openBracket),
-            .identifier("owner"), .marker(.closeBracket), .marker(.openBrace), .public, .mutating, .func,
-            .identifier("withdraw"), .marker(.openBracket), .identifier("Ether"), .identifier("ether"),
-            .marker(.closeBracket), .marker(.openBrace), .identifier("state"), .binaryOperator(.dot),
+            .identifier("contents"), .binaryOperator(.plus), .identifier("money"), .punctuation(.closeBrace),
+            .punctuation(.closeBrace), .identifier("Wallet"), .punctuation(.doubleColon), .punctuation(.openBracket),
+            .identifier("owner"), .punctuation(.closeBracket), .punctuation(.openBrace), .public, .mutating, .func,
+            .identifier("withdraw"), .punctuation(.openBracket), .identifier("Ether"), .identifier("ether"),
+            .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
             .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.minus), .identifier("money"), .marker(.closeBrace),
-            .public, .mutating, .func, .identifier("getContents"), .marker(.openBracket), .marker(.closeBracket),
-            .marker(.arrow), .identifier("Ether"), .marker(.openBrace), .return, .identifier("state"),
-            .binaryOperator(.dot), .identifier("contents"), .marker(.closeBrace), .marker(.closeBrace)]
+            .identifier("contents"), .binaryOperator(.minus), .identifier("money"), .punctuation(.closeBrace),
+            .public, .mutating, .func, .identifier("getContents"), .punctuation(.openBracket), .punctuation(.closeBracket),
+            .punctuation(.arrow), .identifier("Ether"), .punctuation(.openBrace), .return, .identifier("state"),
+            .binaryOperator(.dot), .identifier("contents"), .punctuation(.closeBrace), .punctuation(.closeBrace)]
 
       XCTAssertEqual(tokenizer.tokenize(), expectedTokens)
     }

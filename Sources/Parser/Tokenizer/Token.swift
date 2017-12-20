@@ -16,7 +16,7 @@ public enum Token {
       case dot    = "."
    }
 
-   public enum Marker: String {
+   public enum Punctuation: String {
       case openBrace       = "{"
       case closeBrace      = "}"
       case colon           = ":"
@@ -37,8 +37,8 @@ public enum Token {
    // Operators
    case binaryOperator(BinaryOperator)
 
-   // Markers
-   case marker(Marker)
+   // Punctuation
+   case punctuation(Punctuation)
 
    // Identifiers
    case identifier(String)
@@ -54,16 +54,16 @@ public enum Token {
       "-": .binaryOperator(.minus),
       "=": .binaryOperator(.equal),
       ".": .binaryOperator(.dot),
-      "{": .marker(.openBrace),
-      "}": .marker(.closeBrace),
-      ":": .marker(.colon),
-      "::": .marker(.doubleColon),
-      "(": .marker(.openBracket),
-      ")": .marker(.closeBracket),
-      "->": .marker(.arrow)
+      "{": .punctuation(.openBrace),
+      "}": .punctuation(.closeBrace),
+      ":": .punctuation(.colon),
+      "::": .punctuation(.doubleColon),
+      "(": .punctuation(.openBracket),
+      ")": .punctuation(.closeBracket),
+      "->": .punctuation(.arrow)
    ]
 
-   static func splitOnMarkers(string: String) -> [String] {
+   static func splitOnPunctutation(string: String) -> [String] {
       var components = [String]()
       var acc = ""
 
@@ -95,7 +95,7 @@ public enum Token {
    }
 
    static func tokenize(string: String) -> [Token] {
-      let components = splitOnMarkers(string: string)
+      let components = splitOnPunctutation(string: string)
       return components.flatMap { nonIdentifierMap[$0] ?? .identifier($0) }
    }
 
@@ -115,7 +115,7 @@ extension Token: Equatable {
         case (.return, .return): return true
         case (.public, .public): return true
         case (.binaryOperator(let operator1), .binaryOperator(let operator2)): return operator1 == operator2
-        case (.marker(let marker1), .marker(let marker2)): return marker1 == marker2
+        case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
         case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
       default:
          return false
