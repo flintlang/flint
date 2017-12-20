@@ -14,7 +14,8 @@ struct Compiler {
    func compile() -> String {
       let tokens = Tokenizer(inputFile: inputFile).tokenize()
       print(tokens)
-      let ast = Parser(inputFile: inputFile).parse()
+      let ast = try! Parser(tokens: tokens).parse()
+      print(ast)
       return ""
    }
 }
