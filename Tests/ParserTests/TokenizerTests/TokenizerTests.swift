@@ -8,7 +8,7 @@
 import XCTest
 import Parser
 
-class LexerTests: XCTestCase {
+class TokenizerTests: XCTestCase {
 
     func testWallet() {
       let inputFile = URL(fileURLWithPath: NSTemporaryDirectory() + NSUUID().uuidString)

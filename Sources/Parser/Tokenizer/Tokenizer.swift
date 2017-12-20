@@ -22,15 +22,3 @@ public struct Tokenizer {
       return tokens
    }
 }
-
-fileprivate extension Substring {
-   func strippingLeadingWhitespace() -> Substring {
-      return drop(while: { [" ", "\n"].contains($0) })
-   }
-}
-
-fileprivate extension Character {
-   var isWhitespace: Bool {
-      return [" ", "\n"].contains(self)
-   }
-}
