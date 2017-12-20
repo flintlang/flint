@@ -1,0 +1,57 @@
+// Statement
+statement -> declaration
+statement -> expression
+statement -> [return] (expression)
+statements -> statement (statements)
+
+// Declaration
+declaration -> contract-declaration
+declaration -> function-declaration
+declaration -> variable-declaration
+declaration -> contract-behavior-declaration
+
+contract-declaration -> [contract] identifier [{] contract-body [}]
+contract-body -> (variable-declarations)
+
+variable-declaration -> [var] identifier (type-annotation)
+variable-declarations -> variable-declaration (variable-declarations)
+
+function-declaration -> function-head identifier parameter-clause (function-result) function-body
+function-head -> (declaration-modifiers) [func]
+function-result -> [->] type
+function-body -> [{] statements [}]
+function-declarations -> function-declaration (function-declarations)
+
+parameter-clause -> [(] [)] | [(] parameter-list [)]
+parameter-list -> parameter | parameter [,] parameter-list
+parameter -> identifier type-annotation
+
+declaration-modifier -> [public] | [mutating]
+declaration-modifiers -> declaration-modifier (declaration-modifiers)
+
+contract-behavior-declaration -> identifier [::] caller-capability-group contract-behavior-body
+contract-behavior-body -> (function-declarations)
+
+caller-capability-group -> [(] caller-capability-list [)]
+caller-capability-list -> caller-capability-identifier | caller-capability-identifier [,] caller-capability-list
+
+type-annotation -> [:] type
+
+// Expression
+expression -> primary-expression (binary-expression)
+
+primary-expression -> identifier
+primary-expression -> member-expression
+
+member-expression -> primary-expression [.] identifer
+
+binary-expression -> assignment-operator primary-expression
+binary-expression -> binary-operator expression
+
+binary-operator -> [+] | [-]
+
+// Identifiers
+
+identifer -> [a-zA-Z] (identifier)
+type -> [A-Z] (identifier)
+caller-capability-identifier -> [a-z] (caller-capability-identifier)
