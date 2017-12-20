@@ -11,7 +11,30 @@ import Parser
 class LexerTests: XCTestCase {
 
     func testWallet() {
-      let inputFile = Bundle(for: type(of: self)).url(forResource: "wallet", withExtension: ".ethl")!
+      let inputFile = URL(fileURLWithPath: NSTemporaryDirectory() + NSUUID().uuidString)
+      SourceFile(contents: """
+      contract Wallet {
+        var owner: Address
+        var contents: Ether
+      }
+      
+      Wallet :: (any) {
+        public mutating func deposit(Ether ether) {
+          state.contents = state.contents + money
+        }
+      }
+      
+      Wallet :: (owner) {
+        public mutating func withdraw(Ether ether) {
+          state.contents = state.contents - money
+        }
+      
+        public mutating func getContents() -> Ether {
+          return state.contents
+        }
+      }
+      """).write(to: inputFile)
+
       let tokenizer = Tokenizer(inputFile: inputFile)
 
       let expectedTokens: [Token] = [.contract, .identifier("Wallet"), .marker(.openBrace), .var, .identifier("owner"), .marker(.colon),
