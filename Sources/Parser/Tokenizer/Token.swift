@@ -39,6 +39,7 @@ public enum Token {
       case closeBracket    = ")"
       case arrow           = "->"
       case comma           = ","
+      case semicolon       = ";"
    }
 
    // Keywords
@@ -76,7 +77,8 @@ public enum Token {
       "(": .punctuation(.openBracket),
       ")": .punctuation(.closeBracket),
       "->": .punctuation(.arrow),
-      ",": .punctuation(.comma)
+      ",": .punctuation(.comma),
+      ";": .punctuation(.semicolon)
    ]
 
    static func splitOnPunctutation(string: String) -> [String] {

@@ -20,17 +20,17 @@ class TokenizerTests: XCTestCase {
       
       Wallet :: (any) {
         public mutating func deposit(ether: Ether) {
-          state.contents = state.contents + money
+          state.contents = state.contents + money;
         }
       }
       
       Wallet :: (owner) {
         public mutating func withdraw(ether: Ether) {
-          state.contents = state.contents - money
+          state.contents = state.contents - money;
         }
       
         public mutating func getContents() -> Ether {
-          return state.contents
+          return state.contents;
         }
       }
       """).write(to: inputFile)
@@ -44,16 +44,16 @@ class TokenizerTests: XCTestCase {
             .identifier("deposit"), .punctuation(.openBracket), .identifier("ether"), .punctuation(.colon), .identifier("Ether"),
             .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
             .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.plus), .identifier("money"), .punctuation(.closeBrace),
+            .identifier("contents"), .binaryOperator(.plus), .identifier("money"), .punctuation(.semicolon), .punctuation(.closeBrace),
             .punctuation(.closeBrace), .identifier("Wallet"), .punctuation(.doubleColon), .punctuation(.openBracket),
             .identifier("owner"), .punctuation(.closeBracket), .punctuation(.openBrace), .public, .mutating, .func,
             .identifier("withdraw"), .punctuation(.openBracket), .identifier("ether"), .punctuation(.colon), .identifier("Ether"),
             .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
             .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.minus), .identifier("money"), .punctuation(.closeBrace),
+            .identifier("contents"), .binaryOperator(.minus), .identifier("money"), .punctuation(.semicolon), .punctuation(.closeBrace),
             .public, .mutating, .func, .identifier("getContents"), .punctuation(.openBracket), .punctuation(.closeBracket),
             .punctuation(.arrow), .identifier("Ether"), .punctuation(.openBrace), .return, .identifier("state"),
-            .binaryOperator(.dot), .identifier("contents"), .punctuation(.closeBrace), .punctuation(.closeBrace)]
+            .binaryOperator(.dot), .identifier("contents"), .punctuation(.semicolon), .punctuation(.closeBrace), .punctuation(.closeBrace)]
 
       XCTAssertEqual(tokenizer.tokenize(), expectedTokens)
     }

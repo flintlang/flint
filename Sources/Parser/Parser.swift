@@ -197,15 +197,22 @@ extension Parser {
       return statements
    }
 
-   func parseExpression(upTo limitToken: Token = .punctuation(.closeBrace)) throws -> Expression {
+   func parseExpression() throws -> Expression {
+      let expression = try parseExpression(upTo: .punctuation(.semicolon))
+      try consume(.punctuation(.semicolon))
+      return expression
+   }
+
+   private func parseExpression(upTo limitToken: Token) throws -> Expression {
       var expressionTokens = tokens.prefix { $0 != limitToken }
+//      var expressionTokens = tokens.prefix(upTo: tokens.index(of: limitToken)!)
 
       var binaryExpression: BinaryExpression? = nil
       for op in Token.BinaryOperator.allByIncreasingPrecedence where expressionTokens.contains(.binaryOperator(op)) {
          let lhs = try parseExpression(upTo: .binaryOperator(op))
          try consume(.binaryOperator(op))
          expressionTokens = tokens.prefix { $0 != limitToken }
-         let rhs = try parseExpression(upTo: tokens[tokens.index(of: expressionTokens.last!)!.advanced(by: 1)])
+         let rhs = try parseExpression(upTo: tokens[tokens.index(of: expressionTokens.last!)! + 1])
          binaryExpression = BinaryExpression(lhs: lhs, op: op, rhs: rhs)
          break
       }
