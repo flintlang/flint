@@ -17,18 +17,19 @@ class TokenizerTests: XCTestCase {
         var owner: Address
         var contents: Ether
       }
-      
+
       Wallet :: (any) {
         public mutating func deposit(ether: Ether) {
           state.contents = state.contents + money;
         }
       }
-      
+
       Wallet :: (owner) {
         public mutating func withdraw(ether: Ether) {
           state.contents = state.contents - money;
+          state.contents = state.contents;
         }
-      
+
         public mutating func getContents() -> Ether {
           return state.contents;
         }
@@ -37,23 +38,7 @@ class TokenizerTests: XCTestCase {
 
       let tokenizer = Tokenizer(inputFile: inputFile)
 
-      let expectedTokens: [Token] = [.contract, .identifier("Wallet"), .punctuation(.openBrace), .var, .identifier("owner"), .punctuation(.colon),
-            .identifier("Address"), .var, .identifier("contents"), .punctuation(.colon), .identifier("Ether"),
-            .punctuation(.closeBrace), .identifier("Wallet"), .punctuation(.doubleColon), .punctuation(.openBracket),
-            .identifier("any"), .punctuation(.closeBracket), .punctuation(.openBrace), .public, .mutating, .func,
-            .identifier("deposit"), .punctuation(.openBracket), .identifier("ether"), .punctuation(.colon), .identifier("Ether"),
-            .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.plus), .identifier("money"), .punctuation(.semicolon), .punctuation(.closeBrace),
-            .punctuation(.closeBrace), .identifier("Wallet"), .punctuation(.doubleColon), .punctuation(.openBracket),
-            .identifier("owner"), .punctuation(.closeBracket), .punctuation(.openBrace), .public, .mutating, .func,
-            .identifier("withdraw"), .punctuation(.openBracket), .identifier("ether"), .punctuation(.colon), .identifier("Ether"),
-            .punctuation(.closeBracket), .punctuation(.openBrace), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.equal), .identifier("state"), .binaryOperator(.dot),
-            .identifier("contents"), .binaryOperator(.minus), .identifier("money"), .punctuation(.semicolon), .punctuation(.closeBrace),
-            .public, .mutating, .func, .identifier("getContents"), .punctuation(.openBracket), .punctuation(.closeBracket),
-            .punctuation(.arrow), .identifier("Ether"), .punctuation(.openBrace), .return, .identifier("state"),
-            .binaryOperator(.dot), .identifier("contents"), .punctuation(.semicolon), .punctuation(.closeBrace), .punctuation(.closeBrace)]
+      let expectedTokens: [Token] = [Token.contract, Token.identifier("Wallet"), Token.punctuation(Token.Punctuation.openBrace), Token.var, Token.identifier("owner"), Token.punctuation(Token.Punctuation.colon), Token.identifier("Address"), Token.var, Token.identifier("contents"), Token.punctuation(Token.Punctuation.colon), Token.identifier("Ether"), Token.punctuation(Token.Punctuation.closeBrace), Token.identifier("Wallet"), Token.punctuation(Token.Punctuation.doubleColon), Token.punctuation(Token.Punctuation.openBracket), Token.identifier("any"), Token.punctuation(Token.Punctuation.closeBracket), Token.punctuation(Token.Punctuation.openBrace), Token.public, Token.mutating, Token.func, Token.identifier("deposit"), Token.punctuation(Token.Punctuation.openBracket), Token.identifier("ether"), Token.punctuation(Token.Punctuation.colon), Token.identifier("Ether"), Token.punctuation(Token.Punctuation.closeBracket), Token.punctuation(Token.Punctuation.openBrace), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.binaryOperator(Token.BinaryOperator.equal), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.binaryOperator(Token.BinaryOperator.plus), Token.identifier("money"), Token.punctuation(Token.Punctuation.semicolon), Token.punctuation(Token.Punctuation.closeBrace), Token.punctuation(Token.Punctuation.closeBrace), Token.identifier("Wallet"), Token.punctuation(Token.Punctuation.doubleColon), Token.punctuation(Token.Punctuation.openBracket), Token.identifier("owner"), Token.punctuation(Token.Punctuation.closeBracket), Token.punctuation(Token.Punctuation.openBrace), Token.public, Token.mutating, Token.func, Token.identifier("withdraw"), Token.punctuation(Token.Punctuation.openBracket), Token.identifier("ether"), Token.punctuation(Token.Punctuation.colon), Token.identifier("Ether"), Token.punctuation(Token.Punctuation.closeBracket), Token.punctuation(Token.Punctuation.openBrace), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.binaryOperator(Token.BinaryOperator.equal), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.binaryOperator(Token.BinaryOperator.minus), Token.identifier("money"), Token.punctuation(Token.Punctuation.semicolon), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.binaryOperator(Token.BinaryOperator.equal), Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.punctuation(Token.Punctuation.semicolon), Token.punctuation(Token.Punctuation.closeBrace), Token.public, Token.mutating, Token.func, Token.identifier("getContents"), Token.punctuation(Token.Punctuation.openBracket), Token.punctuation(Token.Punctuation.closeBracket), Token.punctuation(Token.Punctuation.arrow), Token.identifier("Ether"), Token.punctuation(Token.Punctuation.openBrace), Token.return, Token.identifier("state"), Token.binaryOperator(Token.BinaryOperator.dot), Token.identifier("contents"), Token.punctuation(Token.Punctuation.semicolon), Token.punctuation(Token.Punctuation.closeBrace), Token.punctuation(Token.Punctuation.closeBrace)]
 
       XCTAssertEqual(tokenizer.tokenize(), expectedTokens)
     }

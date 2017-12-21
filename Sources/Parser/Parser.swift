@@ -74,7 +74,7 @@ extension Parser {
          guard (try? consume(.var)) != nil else { break }
          let name = try parseIdentifier()
          let typeAnnotation = try parseTypeAnnotation()
-         variableDeclarations.append(VariableDeclaration(name: name, type: typeAnnotation.type))
+         variableDeclarations.append(VariableDeclaration(identifier: name, type: typeAnnotation.type))
       }
 
       return variableDeclarations
@@ -186,9 +186,9 @@ extension Parser {
 
       while true {
          if let expression = try? parseExpression() {
-            statements.append(expression)
+            statements.append(.expression(expression))
          } else if let returnStatement = try? parseReturnStatement() {
-            statements.append(returnStatement)
+            statements.append(.returnStatement(returnStatement))
          } else {
             break
          }
@@ -218,10 +218,10 @@ extension Parser {
       }
 
       guard let binExp = binaryExpression else {
-         return try parseIdentifier()
+         return .identifier(try parseIdentifier())
       }
 
-      return binExp
+      return .binaryExpression(binExp)
    }
 
    func parseReturnStatement() throws -> ReturnStatement {
@@ -234,72 +234,4 @@ extension Parser {
 enum ParserError: Error {
    case expectedToken(Token)
    case expectedOneOfTokens([Token])
-}
-
-public struct TopLevelModule {
-   var contractDeclaration: ContractDeclaration
-   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
-}
-
-struct ContractDeclaration {
-   var identifier: Identifier
-   var variableDeclarations: [VariableDeclaration]
-}
-
-struct ContractBehaviorDeclaration {
-   var contractIdentifier: Identifier
-   var callerCapabilities: [CallerCapability]
-   var functionDeclarations: [FunctionDeclaration]
-}
-
-struct VariableDeclaration {
-   var name: Identifier
-   var type: Type
-}
-
-struct FunctionDeclaration {
-   var modifiers: [Token]
-   var identifier: Identifier
-   var parameters: [Parameter]
-   var resultType: Type?
-
-   var body: [Statement]
-}
-
-struct Parameter {
-   var identifier: Identifier
-   var type: Type
-}
-
-struct TypeAnnotation {
-   var type: Type
-}
-
-struct Identifier: Expression {
-   var name: String
-}
-
-struct Type {
-   var name: String
-}
-
-struct CallerCapability {
-   var name: String
-}
-
-protocol Statement {
-
-}
-
-protocol Expression: Statement {
-}
-
-struct BinaryExpression: Expression {
-   var lhs: Expression
-   var op: Token.BinaryOperator
-   var rhs: Expression
-}
-
-struct ReturnStatement: Statement {
-   var expression: Expression
 }
