@@ -35,17 +35,10 @@ caller-capability-list -> caller-capability-identifier | caller-capability-ident
 type-annotation -> [:] type
 
 // Expression
-expression -> primary-expression (binary-expression)
+expression -> identifier | binary-expression
+binary-expression -> expression binary-operator expression
 
-primary-expression -> identifier
-primary-expression -> member-expression
-
-member-expression -> primary-expression [.] identifer
-
-binary-expression -> assignment-operator primary-expression
-binary-expression -> binary-operator expression
-
-binary-operator -> [+] | [-]
+binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
 

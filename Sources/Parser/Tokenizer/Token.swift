@@ -14,6 +14,20 @@ public enum Token {
       case minus  = "-"
       case equal  = "="
       case dot    = "."
+
+      static let all: [BinaryOperator] = [.plus, .minus, .equal, .dot]
+      static let allByIncreasingPrecedence = {
+         return all.sorted { $0.precedence < $1.precedence }
+      }()
+
+      var precedence: Int {
+         switch self {
+         case .plus: return 20
+         case .minus: return 20
+         case .equal: return 10
+         case .dot: return 40
+         }
+      }
    }
 
    public enum Punctuation: String {

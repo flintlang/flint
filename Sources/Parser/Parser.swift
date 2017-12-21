@@ -88,7 +88,9 @@ extension Parser {
       while let contractIdentifier = try? parseIdentifier() {
          try consume(.punctuation(.doubleColon))
          let callerCapabilities = try parseCallerCapabilityGroup()
+         try consume(.punctuation(.openBrace))
          let functionDeclarations = try parseFunctionDeclarations()
+         try consume(.punctuation(.closeBrace))
          let contractBehaviorDeclaration = ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations)
          contractBehaviorDeclarations.append(contractBehaviorDeclaration)
       }
@@ -148,13 +150,18 @@ extension Parser {
       return modifiers
    }
 
-   func parseParameters() throws -> [Identifier] {
+   func parseParameters() throws -> [Parameter] {
       try consume(.punctuation(.openBracket))
-      var parameters = [Identifier]()
+      var parameters = [Parameter]()
+
+      if (try? consume(.punctuation(.closeBracket))) != nil {
+         return []
+      }
 
       repeat {
-         let parameter = try parseIdentifier()
-         parameters.append(parameter)
+         let identifier = try parseIdentifier()
+         let typeAnnotation = try parseTypeAnnotation()
+         parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type))
       } while (try? consume(.punctuation(.comma))) != nil
 
       try consume(.punctuation(.closeBracket))
@@ -190,21 +197,24 @@ extension Parser {
       return statements
    }
 
-   func parseExpression() throws -> Expression {
-      let primaryExpression = try parsePrimaryExpression()
-      return Expression()
-   }
+   func parseExpression(upTo limitToken: Token = .punctuation(.closeBrace)) throws -> Expression {
+      var expressionTokens = tokens.prefix { $0 != limitToken }
 
-   func parsePrimaryExpression() throws -> PrimaryExpression {
-      if let identifier = try? parseIdentifier() {
-         return identifier
+      var binaryExpression: BinaryExpression? = nil
+      for op in Token.BinaryOperator.allByIncreasingPrecedence where expressionTokens.contains(.binaryOperator(op)) {
+         let lhs = try parseExpression(upTo: .binaryOperator(op))
+         try consume(.binaryOperator(op))
+         expressionTokens = tokens.prefix { $0 != limitToken }
+         let rhs = try parseExpression(upTo: tokens[tokens.index(of: expressionTokens.last!)!.advanced(by: 1)])
+         binaryExpression = BinaryExpression(lhs: lhs, op: op, rhs: rhs)
+         break
       }
 
-      return try parseMemberExpression()
-   }
+      guard let binExp = binaryExpression else {
+         return try parseIdentifier()
+      }
 
-   func parseMemberExpression() throws -> MemberExpression {
-      return MemberExpression(members: []) // TODO
+      return binExp
    }
 
    func parseReturnStatement() throws -> ReturnStatement {
@@ -216,6 +226,7 @@ extension Parser {
 
 enum ParserError: Error {
    case expectedToken(Token)
+   case expectedOneOfTokens([Token])
 }
 
 public struct TopLevelModule {
@@ -242,17 +253,22 @@ struct VariableDeclaration {
 struct FunctionDeclaration {
    var modifiers: [Token]
    var identifier: Identifier
-   var parameters: [Identifier]
+   var parameters: [Parameter]
    var resultType: Type?
 
    var body: [Statement]
+}
+
+struct Parameter {
+   var identifier: Identifier
+   var type: Type
 }
 
 struct TypeAnnotation {
    var type: Type
 }
 
-struct Identifier: PrimaryExpression {
+struct Identifier: Expression {
    var name: String
 }
 
@@ -268,16 +284,13 @@ protocol Statement {
 
 }
 
-struct Expression: Statement {
-
+protocol Expression: Statement {
 }
 
-protocol PrimaryExpression {
-
-}
-
-struct MemberExpression: PrimaryExpression {
-   var members: [Identifier]
+struct BinaryExpression: Expression {
+   var lhs: Expression
+   var op: Token.BinaryOperator
+   var rhs: Expression
 }
 
 struct ReturnStatement: Statement {
