@@ -16,13 +16,6 @@ extension ContractDeclaration: Equatable {
 
 extension ContractBehaviorDeclaration: Equatable {
    static func ==(lhs: ContractBehaviorDeclaration, rhs: ContractBehaviorDeclaration) -> Bool {
-
-      print("==")
-      print(lhs.functionDeclarations)
-      print("-")
-      print(rhs.functionDeclarations)
-      print("==")
-
       return
          lhs.contractIdentifier == rhs.contractIdentifier &&
          lhs.callerCapabilities == rhs.callerCapabilities &&
@@ -40,14 +33,12 @@ extension VariableDeclaration: Equatable {
 
 extension FunctionDeclaration: Equatable {
    static func ==(lhs: FunctionDeclaration, rhs: FunctionDeclaration) -> Bool {
-      let a =
+      return
          lhs.modifiers == rhs.modifiers &&
          lhs.identifier == rhs.identifier &&
          lhs.parameters == rhs.parameters &&
-         lhs.resultType == rhs.resultType
-      let b = lhs.body == rhs.body
-      print("")
-      return a && b
+         lhs.resultType == rhs.resultType &&
+         lhs.body == rhs.body
    }
 }
 
