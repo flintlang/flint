@@ -18,12 +18,23 @@ public class Parser {
       return try parseTopLevelModule()
    }
 
+   func consume(_ token: Token) throws {
+      guard let first = tokens.first, first == token else {
+         throw ParserError.expectedToken(token)
+      }
+      tokens.removeFirst()
+   }
+}
+
+extension Parser {
    func parseTopLevelModule() throws -> TopLevelModule {
       let contractDeclaration = try parseContractDeclaration()
       let contractBehaviourDeclarations = try parseContractBehaviorDeclarations()
       return TopLevelModule(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: contractBehaviourDeclarations)
    }
+}
 
+extension Parser {
    func parseIdentifier() throws -> Identifier {
       guard let first = tokens.first, case .identifier(let name) = first else {
          throw ParserError.expectedToken(.identifier(""))
@@ -32,27 +43,19 @@ public class Parser {
       return Identifier(name: name)
    }
 
-   func parseTypeAnnotation() throws -> TypeAnnotation {
-      try consume(.punctuation(.colon))
-      let type = try parseType()
-      return TypeAnnotation(type: type)
-   }
-
    func parseType() throws -> Type {
       guard let first = tokens.first, case .identifier(let name) = first else {
          throw ParserError.expectedToken(.identifier(""))
       }
 
       tokens.removeFirst()
-
       return Type(name: name)
    }
 
-   func consume(_ token: Token) throws {
-      guard let first = tokens.first, first == token else {
-         throw ParserError.expectedToken(token)
-      }
-      tokens.removeFirst()
+   func parseTypeAnnotation() throws -> TypeAnnotation {
+      try consume(.punctuation(.colon))
+      let type = try parseType()
+      return TypeAnnotation(type: type)
    }
 }
 
