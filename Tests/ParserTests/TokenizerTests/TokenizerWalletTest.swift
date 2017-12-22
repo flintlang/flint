@@ -1,6 +1,6 @@
 //
-//  WalletTest.swift
-//  WalletTest
+//  TokenizerWalletTest.swift
+//  TokenizerWalletTest
 //
 //  Created by Franklin Schrans on 12/19/17.
 //
@@ -8,7 +8,7 @@
 import XCTest
 import Parser
 
-class WalletTest: XCTestCase, TokenizerTest {
+class TokenizerWalletTest: XCTestCase, TokenizerTest {
 
    var sourceCode: String = """
       contract Wallet {
