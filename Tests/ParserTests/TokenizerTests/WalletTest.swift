@@ -1,6 +1,6 @@
 //
-//  TokenizerTests.swift
-//  ParserTests
+//  WalletTest.swift
+//  WalletTest
 //
 //  Created by Franklin Schrans on 12/19/17.
 //
@@ -8,7 +8,7 @@
 import XCTest
 import Parser
 
-class TokenizerTests: XCTestCase {
+class WalletTest: XCTestCase {
 
     func testWallet() {
       let inputFile = URL(fileURLWithPath: NSTemporaryDirectory() + NSUUID().uuidString)
