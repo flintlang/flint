@@ -9,12 +9,12 @@ import XCTest
 import Parser
 
 protocol ParserTest {
-    var tokens: [Token] { get }
-    var expectedAST: TopLevelModule { get }
+  var tokens: [Token] { get }
+  var expectedAST: TopLevelModule { get }
 }
 
 extension ParserTest {
-    func test() {
-        XCTAssertEqual(try Parser(tokens: tokens).parse(), expectedAST)
-    }
+  func test() {
+    XCTAssertEqual(try Parser(tokens: tokens).parse(), expectedAST)
+  }
 }

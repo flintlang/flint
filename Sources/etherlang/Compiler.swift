@@ -9,13 +9,13 @@ import Foundation
 import Parser
 
 struct Compiler {
-    var inputFile: URL
-    
-    func compile() -> String {
-        let tokens = Tokenizer(inputFile: inputFile).tokenize()
-        print(tokens)
-        let ast = try! Parser(tokens: tokens).parse()
-        print(ast)
-        return ""
-    }
+  var inputFile: URL
+  
+  func compile() -> String {
+    let tokens = Tokenizer(inputFile: inputFile).tokenize()
+    print(tokens)
+    let ast = try! Parser(tokens: tokens).parse()
+    print(ast)
+    return ""
+  }
 }
