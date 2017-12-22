@@ -1,8 +1,18 @@
 extension TopLevelModule: Equatable {
    public static func ==(lhs: TopLevelModule, rhs: TopLevelModule) -> Bool {
-      return
-         lhs.contractDeclaration == rhs.contractDeclaration &&
-         lhs.contractBehaviorDeclarations == rhs.contractBehaviorDeclarations
+      return lhs.declarations == rhs.declarations
+   }
+}
+
+extension TopLevelDeclaration: Equatable {
+   static func ==(lhs: TopLevelDeclaration, rhs: TopLevelDeclaration) -> Bool {
+      switch (lhs, rhs) {
+      case (.contractDeclaration(let lhsContractDeclaration), .contractDeclaration(let rhsContractDeclaration)):
+         return lhsContractDeclaration == rhsContractDeclaration
+      case (.contractBehaviorDeclaration(let lhsContractBehaviorDeclaration), .contractBehaviorDeclaration(let rhsContractBehaviorDeclaration)):
+         return lhsContractBehaviorDeclaration == rhsContractBehaviorDeclaration
+      default: return false
+      }
    }
 }
 

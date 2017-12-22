@@ -28,9 +28,24 @@ public class Parser {
 
 extension Parser {
    func parseTopLevelModule() throws -> TopLevelModule {
-      let contractDeclaration = try parseContractDeclaration()
-      let contractBehaviourDeclarations = try parseContractBehaviorDeclarations()
-      return TopLevelModule(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: contractBehaviourDeclarations)
+      let topLevelDeclarations = try parseTopLevelDeclarations()
+      return TopLevelModule(declarations: topLevelDeclarations)
+   }
+
+   func parseTopLevelDeclarations() throws -> [TopLevelDeclaration] {
+      var declarations = [TopLevelDeclaration]()
+
+      while true {
+         if let contractDeclaration = try? parseContractDeclaration() {
+            declarations.append(.contractDeclaration(contractDeclaration))
+         } else if let contractBehaviorDeclaration = try? parseContractBehaviorDeclaration() {
+            declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
+         } else {
+            break
+         }
+      }
+
+      return declarations
    }
 }
 
@@ -84,20 +99,15 @@ extension Parser {
 }
 
 extension Parser {
-   func parseContractBehaviorDeclarations() throws -> [ContractBehaviorDeclaration] {
-      var contractBehaviorDeclarations = [ContractBehaviorDeclaration]()
+   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
+      let contractIdentifier = try parseIdentifier()
+      try consume(.punctuation(.doubleColon))
+      let callerCapabilities = try parseCallerCapabilityGroup()
+      try consume(.punctuation(.openBrace))
+      let functionDeclarations = try parseFunctionDeclarations()
+      try consume(.punctuation(.closeBrace))
 
-      while let contractIdentifier = try? parseIdentifier() {
-         try consume(.punctuation(.doubleColon))
-         let callerCapabilities = try parseCallerCapabilityGroup()
-         try consume(.punctuation(.openBrace))
-         let functionDeclarations = try parseFunctionDeclarations()
-         try consume(.punctuation(.closeBrace))
-         let contractBehaviorDeclaration = ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations)
-         contractBehaviorDeclarations.append(contractBehaviorDeclaration)
-      }
-
-      return contractBehaviorDeclarations
+      return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations)
    }
 
    func parseCallerCapabilityGroup() throws -> [CallerCapability] {

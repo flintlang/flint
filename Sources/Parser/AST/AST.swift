@@ -1,6 +1,10 @@
 public struct TopLevelModule {
-   var contractDeclaration: ContractDeclaration
-   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
+   var declarations: [TopLevelDeclaration]
+}
+
+enum TopLevelDeclaration {
+   case contractDeclaration(ContractDeclaration)
+   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
 }
 
 struct ContractDeclaration {
