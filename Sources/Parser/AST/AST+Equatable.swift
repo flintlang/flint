@@ -20,14 +20,14 @@ extension ContractDeclaration: Equatable {
   static func ==(lhs: ContractDeclaration, rhs: ContractDeclaration) -> Bool {
     return
       lhs.identifier == rhs.identifier &&
-        lhs.variableDeclarations == rhs.variableDeclarations
+      lhs.variableDeclarations == rhs.variableDeclarations
   }
 }
 
 extension ContractBehaviorDeclaration: Equatable {
   static func ==(lhs: ContractBehaviorDeclaration, rhs: ContractBehaviorDeclaration) -> Bool {
     return
-      lhs.contractIdentifier == rhs.contractIdentifier &&
+  lhs.contractIdentifier == rhs.contractIdentifier &&
         lhs.callerCapabilities == rhs.callerCapabilities &&
         lhs.functionDeclarations == rhs.functionDeclarations
   }
@@ -37,7 +37,7 @@ extension VariableDeclaration: Equatable {
   static func ==(lhs: VariableDeclaration, rhs: VariableDeclaration) -> Bool {
     return
       lhs.identifier == rhs.identifier &&
-        lhs.type == rhs.type
+      lhs.type == rhs.type
   }
 }
 
@@ -45,10 +45,10 @@ extension FunctionDeclaration: Equatable {
   static func ==(lhs: FunctionDeclaration, rhs: FunctionDeclaration) -> Bool {
     return
       lhs.modifiers == rhs.modifiers &&
-        lhs.identifier == rhs.identifier &&
-        lhs.parameters == rhs.parameters &&
-        lhs.resultType == rhs.resultType &&
-        lhs.body == rhs.body
+      lhs.identifier == rhs.identifier &&
+      lhs.parameters == rhs.parameters &&
+      lhs.resultType == rhs.resultType &&
+      lhs.body == rhs.body
   }
 }
 
@@ -56,7 +56,7 @@ extension Parameter: Equatable {
   static func ==(lhs: Parameter, rhs: Parameter) -> Bool {
     return
       lhs.identifier == rhs.identifier &&
-        lhs.type == rhs.type
+      lhs.type == rhs.type
   }
 }
 
@@ -88,8 +88,16 @@ extension BinaryExpression: Equatable {
   static func ==(lhs: BinaryExpression, rhs: BinaryExpression) -> Bool {
     return
       lhs.lhs == rhs.lhs &&
-        lhs.rhs == rhs.rhs &&
-        lhs.op == rhs.op
+      lhs.rhs == rhs.rhs &&
+      lhs.op == rhs.op
+  }
+}
+
+extension FunctionCall: Equatable {
+  static func ==(lhs: FunctionCall, rhs: FunctionCall) -> Bool {
+    return
+      lhs.identifier == rhs.identifier &&
+      lhs.arguments == rhs.arguments
   }
 }
 
@@ -100,6 +108,8 @@ extension Expression: Equatable {
       return lhsIdentifier == rhsIdentifier
     case (.binaryExpression(let lhsBinaryExpression), .binaryExpression(let rhsBinaryExpression)):
       return lhsBinaryExpression == rhsBinaryExpression
+    case (.functionCall(let lhsFunctionCall), .functionCall(let rhsFunctionCall)):
+      return lhsFunctionCall == rhsFunctionCall
     default:
       return false
     }

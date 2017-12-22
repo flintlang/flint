@@ -56,6 +56,7 @@ struct CallerCapability {
 indirect enum Expression {
   case identifier(Identifier)
   case binaryExpression(BinaryExpression)
+  case functionCall(FunctionCall)
 }
 
 indirect enum Statement {
@@ -69,7 +70,11 @@ struct BinaryExpression {
   var rhs: Expression
 }
 
+struct FunctionCall {
+  var identifier: Identifier
+  var arguments: [Expression]
+}
+
 struct ReturnStatement {
   var expression: Expression
 }
-

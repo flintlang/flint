@@ -1,0 +1,9 @@
+Test :: (any) {
+  func foo(a: Int) {
+    foo(bar(1, 2), 3, 5 + bar(4, 6));
+  }
+
+  func bar(a: Int, b: Int) -> Int {
+    return a + b;
+  }
+}

@@ -35,8 +35,13 @@ caller-capability-list -> caller-capability-identifier | caller-capability-ident
 type-annotation -> [:] type
 
 // Expression
-expression -> identifier | binary-expression
+expression -> identifier | binary-expression | function-call
+
 binary-expression -> expression binary-operator expression
+
+function-call -> identifier function-call-argument-clause
+function-call-argument-clause -> [(] [)] | [(] function-call-argument-list [)]
+function-call-argument-list -> expression | expression [,] function-call-argument-list
 
 binary-operator -> [+] | [-] | [=] | [.]
 

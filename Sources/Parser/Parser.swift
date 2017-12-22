@@ -9,9 +9,15 @@ import Foundation
 
 public class Parser {
   var tokens: [Token]
+
+  var currentIndex: Int
+  var currentToken: Token? {
+    return currentIndex < tokens.count ? tokens[currentIndex] : nil
+  }
   
   public init(tokens: [Token]) {
     self.tokens = tokens
+    self.currentIndex = tokens.startIndex
   }
   
   public func parse() throws -> TopLevelModule {
@@ -19,10 +25,10 @@ public class Parser {
   }
   
   func consume(_ token: Token) throws {
-    guard let first = tokens.first, first == token else {
+    guard let first = currentToken, first == token else {
       throw ParserError.expectedToken(token)
     }
-    tokens.removeFirst()
+    currentIndex += 1
   }
 }
 
@@ -36,12 +42,13 @@ extension Parser {
     var declarations = [TopLevelDeclaration]()
     
     while true {
-      if let contractDeclaration = try? parseContractDeclaration() {
+      guard let first = currentToken else { break }
+      if first == .contract {
+        let contractDeclaration = try parseContractDeclaration()
         declarations.append(.contractDeclaration(contractDeclaration))
-      } else if let contractBehaviorDeclaration = try? parseContractBehaviorDeclaration() {
-        declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       } else {
-        break
+        let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
+        declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       }
     }
     
@@ -51,19 +58,19 @@ extension Parser {
 
 extension Parser {
   func parseIdentifier() throws -> Identifier {
-    guard let first = tokens.first, case .identifier(let name) = first else {
+    guard let currentToken = currentToken, case .identifier(let name) = currentToken else {
       throw ParserError.expectedToken(.identifier(""))
     }
-    tokens.removeFirst()
+    currentIndex += 1
     return Identifier(name: name)
   }
   
   func parseType() throws -> Type {
-    guard let first = tokens.first, case .identifier(let name) = first else {
+    guard let first = currentToken, case .identifier(let name) = first else {
       throw ParserError.expectedToken(.identifier(""))
     }
     
-    tokens.removeFirst()
+    currentIndex += 1
     return Type(name: name)
   }
   
@@ -196,52 +203,96 @@ extension Parser {
     var statements = [Statement]()
     
     while true {
-      if let expression = try? parseExpression() {
+      guard let semicolonIndex = tokens[currentIndex...].index(of: .punctuation(.semicolon)) else {
+        break
+      }
+
+      if let expression = try? parseExpression(upTo: semicolonIndex) {
         statements.append(.expression(expression))
-      } else if let returnStatement = try? parseReturnStatement() {
+      } else if let returnStatement = try? parseReturnStatement(semicolonIndex: semicolonIndex) {
         statements.append(.returnStatement(returnStatement))
       } else {
         break
       }
+      try consume(.punctuation(.semicolon))
     }
     
     return statements
   }
   
-  func parseExpression() throws -> Expression {
-    let expression = try parseExpression(upTo: .punctuation(.semicolon))
-    try consume(.punctuation(.semicolon))
-    return expression
-  }
-  
-  private func parseExpression(upTo limitToken: Token) throws -> Expression {
-    var expressionTokens = tokens.prefix { $0 != limitToken }
-    
+  func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
     var binaryExpression: BinaryExpression? = nil
-    for op in Token.BinaryOperator.allByIncreasingPrecedence where expressionTokens.contains(.binaryOperator(op)) {
-      let lhs = try parseExpression(upTo: .binaryOperator(op))
+    for op in Token.BinaryOperator.allByIncreasingPrecedence {
+      guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], in: (currentIndex..<limitTokenIndex)) else { continue }
+      let lhs = try parseExpression(upTo: index)
       try consume(.binaryOperator(op))
-      expressionTokens = tokens.prefix { $0 != limitToken }
-      let rhs = try parseExpression(upTo: tokens[tokens.index(of: expressionTokens.last!)! + 1])
+      let rhs = try parseExpression(upTo: limitTokenIndex)
       binaryExpression = BinaryExpression(lhs: lhs, op: op, rhs: rhs)
       break
     }
     
     guard let binExp = binaryExpression else {
+      let index = currentIndex
+      if let functionCall = try? parseFunctionCall() {
+        return .functionCall(functionCall)
+      }
+      self.currentIndex = index
       return .identifier(try parseIdentifier())
     }
     
     return .binaryExpression(binExp)
   }
+
+  func parseFunctionCall() throws -> FunctionCall {
+    let identifier = try parseIdentifier()
+    let arguments = try parseFunctionCallArgumentList()
+
+    return FunctionCall(identifier: identifier, arguments: arguments)
+  }
+
+  func parseFunctionCallArgumentList() throws -> [Expression] {
+    var arguments = [Expression]()
+
+    try consume(.punctuation(.openBracket))
+
+    while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
+      if let argument = try? parseExpression(upTo: argumentEnd) {
+        try consume(tokens[argumentEnd])
+        arguments.append(argument)
+      } else {
+        break
+      }
+    }
+
+    return arguments
+  }
   
-  func parseReturnStatement() throws -> ReturnStatement {
+  func parseReturnStatement(semicolonIndex: Int) throws -> ReturnStatement {
     try consume(.return)
-    let expression = try parseExpression()
+    let expression = try parseExpression(upTo: semicolonIndex)
     return ReturnStatement(expression: expression)
+  }
+}
+
+extension Parser {
+  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token], in range: Range<Int>? = nil) -> Int? {
+    var tokens = self.tokens[range ?? (0..<self.tokens.count)]
+    var depth = 0
+    for (token, index) in zip(tokens[currentIndex...], (currentIndex...)) {
+      if limitTokens.contains(token) {
+        if depth == 0 { return index }
+      }
+      if token == .punctuation(.openBracket) {
+        depth += 1
+      } else if token == .punctuation(.closeBracket) {
+        depth -= 1
+      }
+    }
+
+    return nil
   }
 }
 
 enum ParserError: Error {
   case expectedToken(Token)
-  case expectedOneOfTokens([Token])
 }

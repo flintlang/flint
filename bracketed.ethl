@@ -1,0 +1,5 @@
+Test :: (any) {
+  func foo(a: Int) {
+    return 3 * (1 + 2);
+  }
+}
