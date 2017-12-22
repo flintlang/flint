@@ -70,8 +70,7 @@ extension Parser {
    func parseVariableDeclarations() throws -> [VariableDeclaration] {
       var variableDeclarations = [VariableDeclaration]()
 
-      while true {
-         guard (try? consume(.var)) != nil else { break }
+      while (try? consume(.var)) != nil {
          let name = try parseIdentifier()
          let typeAnnotation = try parseTypeAnnotation()
          variableDeclarations.append(VariableDeclaration(identifier: name, type: typeAnnotation.type))
@@ -119,8 +118,7 @@ extension Parser {
    func parseFunctionDeclarations() throws -> [FunctionDeclaration] {
       var functionDeclarations = [FunctionDeclaration]()
 
-      while true {
-         guard let modifiers = try? parseFunctionHead() else { break }
+      while let modifiers = try? parseFunctionHead() {
          let identifier = try parseIdentifier()
          let parameters = try parseParameters()
          let resultType = try? parseResult()
@@ -205,7 +203,6 @@ extension Parser {
 
    private func parseExpression(upTo limitToken: Token) throws -> Expression {
       var expressionTokens = tokens.prefix { $0 != limitToken }
-//      var expressionTokens = tokens.prefix(upTo: tokens.index(of: limitToken)!)
 
       var binaryExpression: BinaryExpression? = nil
       for op in Token.BinaryOperator.allByIncreasingPrecedence where expressionTokens.contains(.binaryOperator(op)) {
