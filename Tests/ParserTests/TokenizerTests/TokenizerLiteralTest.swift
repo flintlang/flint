@@ -20,7 +20,7 @@ class TokenizerLiteralTest: XCTestCase, TokenizerTest {
   }
   """
 
-  var expectedTokens: [Token] = [.identifier("Test"), .punctuation(.doubleColon), .punctuation(.openBracket), .identifier("any"), .punctuation(.closeBracket), .punctuation(.openBrace), .func, .identifier("foo"), .punctuation(.openBracket), .punctuation(.closeBracket), .punctuation(.arrow), .identifier("Bool"), .punctuation(.openBrace), .var, .identifier("a"), .binaryOperator(.equal), .decimalLiteral(.integer(2)), .binaryOperator(.plus), .decimalLiteral(.real(4, 564)), .punctuation(.semicolon), .var, .identifier("b"), .binaryOperator(.equal), .stringLiteral("hello"), .binaryOperator(.plus), .stringLiteral(" world"), .punctuation(.semicolon), .return, .booleanLiteral(.false), .punctuation(.semicolon), .punctuation(.closeBrace), .punctuation(.closeBrace)]
+  var expectedTokens: [Token] = [.identifier("Test"), .punctuation(.doubleColon), .punctuation(.openBracket), .identifier("any"), .punctuation(.closeBracket), .punctuation(.openBrace), .func, .identifier("foo"), .punctuation(.openBracket), .punctuation(.closeBracket), .punctuation(.arrow), .identifier("Bool"), .punctuation(.openBrace), .var, .identifier("a"), .binaryOperator(.equal), .literal(.decimal(.integer(2))), .binaryOperator(.plus), .literal(.decimal(.real(4, 564))), .punctuation(.semicolon), .var, .identifier("b"), .binaryOperator(.equal), .literal(.string("hello")), .binaryOperator(.plus), .literal(.string(" world")), .punctuation(.semicolon), .return, .literal(.boolean(.false)), .punctuation(.semicolon), .punctuation(.closeBrace), .punctuation(.closeBrace)]
 
 
   func testLiteral() {
