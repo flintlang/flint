@@ -57,6 +57,7 @@ indirect enum Expression {
   case identifier(Identifier)
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
+  case literal(Token.Literal)
 }
 
 indirect enum Statement {

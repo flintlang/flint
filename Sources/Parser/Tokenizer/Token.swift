@@ -42,6 +42,21 @@ public enum Token {
     case semicolon       = ";"
   }
 
+  public enum Literal: Equatable {
+    case boolean(BooleanLiteral)
+    case decimal(DecimalLiteral)
+    case string(String)
+
+    public static func ==(lhs: Token.Literal, rhs: Token.Literal) -> Bool {
+      switch (lhs, rhs) {
+      case (.boolean(let lhsLiteral), .boolean(let rhsLiteral)): return lhsLiteral == rhsLiteral
+      case (.decimal(let lhsLiteral), .decimal(let rhsLiteral)): return lhsLiteral == rhsLiteral
+      case (.string(let lhsLiteral), .string(let rhsLiteral)): return lhsLiteral == rhsLiteral
+      default: return false
+      }
+    }
+  }
+
   public enum BooleanLiteral: String {
     case `true`
     case `false`
@@ -79,10 +94,8 @@ public enum Token {
   case identifier(String)
 
   // Literals
-  case stringLiteral(String)
-  case decimalLiteral(DecimalLiteral)
-  case booleanLiteral(BooleanLiteral)
-  
+  case literal(Literal)
+
   static let syntaxMap: [String: Token] = [
     "contract": .contract,
     "var": .var,
@@ -103,8 +116,8 @@ public enum Token {
     "->": .punctuation(.arrow),
     ",": .punctuation(.comma),
     ";": .punctuation(.semicolon),
-    "true": .booleanLiteral(.true),
-    "false": .booleanLiteral(.false)
+    "true": .literal(.boolean(.true)),
+    "false": .literal(.boolean(.false))
   ]
   
   static func splitOnPunctuation(string: String) -> [String] {
@@ -157,14 +170,14 @@ public enum Token {
         tokens.append(token)
       } else if let num = Int(component) {
         let lastTwo = tokens[tokens.count-2..<tokens.count]
-        if case .decimalLiteral(.integer(let base)) = lastTwo.first!, lastTwo.last! == .binaryOperator(.dot) {
-          tokens[tokens.count-2] = .decimalLiteral(.real(base, num))
+        if case .literal(.decimal(.integer(let base))) = lastTwo.first!, lastTwo.last! == .binaryOperator(.dot) {
+          tokens[tokens.count-2] = .literal(.decimal(.real(base, num)))
           tokens.removeLast()
         } else {
-          tokens.append(.decimalLiteral(.integer(num)))
+          tokens.append(.literal(.decimal(.integer(num))))
         }
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
-        tokens.append(.stringLiteral(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))])))
+        tokens.append(.literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))))
       } else {
         tokens.append(.identifier(component))
       }
@@ -198,9 +211,7 @@ extension Token: Equatable {
     case (.binaryOperator(let operator1), .binaryOperator(let operator2)): return operator1 == operator2
     case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
     case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
-    case (.booleanLiteral(let lhsLiteral), .booleanLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
-    case (.decimalLiteral(let lhsLiteral), .decimalLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
-    case (.stringLiteral(let lhsLiteral), .stringLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
+    case (.literal(let lhsLiteral), .literal(let rhsLiteral)): return lhsLiteral == rhsLiteral
     default:
       return false
     }

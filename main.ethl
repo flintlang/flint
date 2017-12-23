@@ -4,18 +4,10 @@ contract Wallet {
 }
 
 Wallet :: (any) {
-  public mutating func deposit(ether: Ether) {
-    state.contents = state.contents + money;
-  }
-}
-
-Wallet :: (owner) {
-  public mutating func withdraw(ether: Ether) {
-    state.contents = state.contents - money;
-    state.contents = state.contents;
-  }
-
-  public mutating func getContents() -> Ether {
-    return state.contents;
+  func factorial(n: Int) -> Int {
+    if (n <= 1) {
+      return 0;
+    }
+    return n * factorial(n - 1);
   }
 }

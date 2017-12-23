@@ -1,7 +1,7 @@
 Test :: (any) {
   func foo() -> Bool {
-    var a = 2 + 4.564;
-    var b = "hello" + " world";
+    a = 2 + 4.564;
+    b = "hello" + " world";
     return false;
   }
 }

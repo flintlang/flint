@@ -64,6 +64,14 @@ extension Parser {
     currentIndex += 1
     return Identifier(name: name)
   }
+
+  func parseLiteral() throws -> Token.Literal {
+    guard let currentToken = currentToken, case .literal(let literalValue) = currentToken else {
+      throw ParserError.expectedToken(.literal(.string("")))
+    }
+    currentIndex += 1
+    return literalValue
+  }
   
   func parseType() throws -> Type {
     guard let first = currentToken, case .identifier(let name) = first else {
@@ -231,16 +239,21 @@ extension Parser {
       break
     }
     
-    guard let binExp = binaryExpression else {
-      let index = currentIndex
-      if let functionCall = try? parseFunctionCall() {
-        return .functionCall(functionCall)
-      }
-      self.currentIndex = index
-      return .identifier(try parseIdentifier())
+    if let binExp = binaryExpression {
+      return .binaryExpression(binExp)
     }
-    
-    return .binaryExpression(binExp)
+
+    let index = currentIndex
+    if let functionCall = try? parseFunctionCall() {
+      return .functionCall(functionCall)
+    }
+    self.currentIndex = index
+
+    if let literal = try? parseLiteral() {
+      return .literal(literal)
+    }
+
+    return .identifier(try parseIdentifier())
   }
 
   func parseFunctionCall() throws -> FunctionCall {
