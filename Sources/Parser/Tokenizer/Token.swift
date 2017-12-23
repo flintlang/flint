@@ -41,6 +41,24 @@ public enum Token {
     case comma           = ","
     case semicolon       = ";"
   }
+
+  public enum BooleanLiteral: String {
+    case `true`
+    case `false`
+  }
+
+  public enum DecimalLiteral: Equatable {
+    case integer(Int)
+    case real(Int, Int)
+
+    public static func ==(lhs: Token.DecimalLiteral, rhs: Token.DecimalLiteral) -> Bool {
+      switch (lhs, rhs) {
+      case (.integer(let lhsNum), .integer(let rhsNum)): return lhsNum == rhsNum
+      case (.real(let lhsNum1, let lhsNum2), .real(let rhsNum1, let rhsNum2)): return lhsNum1 == rhsNum1 && lhsNum2 == rhsNum2
+      default: return false
+      }
+    }
+  }
   
   // Keywords
   case contract
@@ -52,14 +70,20 @@ public enum Token {
   
   // Operators
   case binaryOperator(BinaryOperator)
+  case minus
   
   // Punctuation
   case punctuation(Punctuation)
   
   // Identifiers
   case identifier(String)
+
+  // Literals
+  case stringLiteral(String)
+  case decimalLiteral(DecimalLiteral)
+  case booleanLiteral(BooleanLiteral)
   
-  static let nonIdentifierMap: [String: Token] = [
+  static let syntaxMap: [String: Token] = [
     "contract": .contract,
     "var": .var,
     "func": .func,
@@ -78,15 +102,24 @@ public enum Token {
     ")": .punctuation(.closeBracket),
     "->": .punctuation(.arrow),
     ",": .punctuation(.comma),
-    ";": .punctuation(.semicolon)
+    ";": .punctuation(.semicolon),
+    "true": .booleanLiteral(.true),
+    "false": .booleanLiteral(.false)
   ]
   
-  static func splitOnPunctutation(string: String) -> [String] {
+  static func splitOnPunctuation(string: String) -> [String] {
     var components = [String]()
     var acc = ""
+
+    var inStringLiteral = false
     
     for char in string {
-      if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) {
+      if char == "\"" {
+        inStringLiteral = !inStringLiteral
+        acc += String(char)
+      } else if inStringLiteral {
+        acc += String(char)
+      } else if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) {
         acc += String(char)
       } else {
         if !acc.isEmpty {
@@ -113,13 +146,43 @@ public enum Token {
   }
   
   static func tokenize(string: String) -> [Token] {
-    let components = splitOnPunctutation(string: string)
-    return components.flatMap { nonIdentifierMap[$0] ?? .identifier($0) }
+    let components = splitOnPunctuation(string: string)
+
+    var tokens = [Token]()
+
+    for component in components {
+      if CharacterSet.whitespacesAndNewlines.contains(component.unicodeScalars.first!) {
+        continue
+      } else if let token = syntaxMap[component] {
+        tokens.append(token)
+      } else if let num = Int(component) {
+        let lastTwo = tokens[tokens.count-2..<tokens.count]
+        if case .decimalLiteral(.integer(let base)) = lastTwo.first!, lastTwo.last! == .binaryOperator(.dot) {
+          tokens[tokens.count-2] = .decimalLiteral(.real(base, num))
+          tokens.removeLast()
+        } else {
+          tokens.append(.decimalLiteral(.integer(num)))
+        }
+      } else if let first = component.first, let last = component.last, first == "\"", first == last {
+        tokens.append(.stringLiteral(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))])))
+      } else {
+        tokens.append(.identifier(component))
+      }
+    }
+
+    return tokens
   }
-  
-  init?(nonIdentifier: String) {
-    guard let token = Token.nonIdentifierMap[nonIdentifier] else { return nil }
-    self = token
+
+  static func decimalToken(for string: String) -> DecimalLiteral? {
+    let components = string.split(separator: ".")
+    if components.count == 2, let base = Int(components[0]), let fractional = Int(components[1]) {
+      return .real(base, fractional)
+    }
+
+    guard let num = Int(string) else {
+      return nil
+    }
+    return .integer(num)
   }
 }
 
@@ -135,6 +198,9 @@ extension Token: Equatable {
     case (.binaryOperator(let operator1), .binaryOperator(let operator2)): return operator1 == operator2
     case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
     case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
+    case (.booleanLiteral(let lhsLiteral), .booleanLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
+    case (.decimalLiteral(let lhsLiteral), .decimalLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
+    case (.stringLiteral(let lhsLiteral), .stringLiteral(let rhsLiteral)): return lhsLiteral == rhsLiteral
     default:
       return false
     }

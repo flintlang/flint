@@ -35,7 +35,7 @@ caller-capability-list -> caller-capability-identifier | caller-capability-ident
 type-annotation -> [:] type
 
 // Expression
-expression -> identifier | binary-expression | function-call
+expression -> identifier | binary-expression | function-call | literal
 
 binary-expression -> expression binary-operator expression
 
@@ -46,7 +46,15 @@ function-call-argument-list -> expression | expression [,] function-call-argumen
 binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
-
-identifier -> [a-zA-Z] (identifier)
+identifier -> [a-zA-Z] [a-zA-Z0-9]*
 type -> identifier
 caller-capability-identifier -> identifier
+
+// Literals
+literal -> numeric-literal | string-literal | boolean-literal
+
+numeric-literal -> decimal-literal
+decimal-literal -> [0-9]+ | [0-9]+ [.] [0-9]+
+
+string-literal -> ["] [a-zA-Z0-9]* ["]
+boolean-literal -> [true] | [false]
