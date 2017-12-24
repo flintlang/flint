@@ -29,11 +29,17 @@ public class Parser {
     return try parseTopLevelModule()
   }
   
-  func consume(_ token: Token) throws {
+  func consume(_ token: Token, consumingTrailingNewlines: Bool = true) throws {
     guard let first = currentToken(), first == token else {
       throw ParserError.expectedToken(token)
     }
     currentIndex += 1
+
+    if consumingTrailingNewlines {
+      while consumingTrailingNewlines, currentIndex < tokens.count, tokens[currentIndex] == .newline {
+        currentIndex += 1
+      }
+    }
   }
 
   func attempt<ReturnType>(_ task: () throws -> ReturnType) -> ReturnType? {
@@ -232,20 +238,21 @@ extension Parser {
     
     while true {
 
-      guard let semicolonIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon)], maxIndex: tokens.count) else {
+      guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline], maxIndex: tokens.count) else {
         break
       }
 
-      if let expression = attempt({ try parseExpression(upTo: semicolonIndex) }) {
+      if let expression = attempt({ try parseExpression(upTo: statementEndIndex) }) {
         statements.append(.expression(expression))
-      } else if let returnStatement = attempt ({ try parseReturnStatement(semicolonIndex: semicolonIndex) }) {
+      } else if let returnStatement = attempt ({ try parseReturnStatement(statementEndIndex: statementEndIndex) }) {
         statements.append(.returnStatement(returnStatement))
       } else if let ifStatement = attempt(parseIfStatement) {
         statements.append(.ifStatement(ifStatement))
       } else {
         break
       }
-      try consume(.punctuation(.semicolon))
+      try? consume(.punctuation(.semicolon))
+      while (try? consume(.newline)) != nil {}
     }
     
     return statements
@@ -305,9 +312,9 @@ extension Parser {
     return arguments
   }
   
-  func parseReturnStatement(semicolonIndex: Int) throws -> ReturnStatement {
+  func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     try consume(.return)
-    let expression = try parseExpression(upTo: semicolonIndex)
+    let expression = try parseExpression(upTo: statementEndIndex)
     return ReturnStatement(expression: expression)
   }
 
@@ -332,17 +339,25 @@ extension Parser {
 extension Parser {
   func indexOfFirstAtCurrentDepth(_ limitTokens: [Token], maxIndex: Int? = nil) -> Int? {
     let upperBound = maxIndex ?? tokens.count
-    var depth = 0
 
-    for index in (currentIndex..<upperBound) {
+    var bracketDepth = 0
+    var braceDepth = 0
+
+    let range = (currentIndex..<upperBound)
+    for index in range where braceDepth >= 0 {
       let token = tokens[index]
+
       if limitTokens.contains(token) {
-        if depth == 0 { return index }
+        if bracketDepth == 0 { return index }
       }
       if token == .punctuation(.openBracket) {
-        depth += 1
+        bracketDepth += 1
       } else if token == .punctuation(.closeBracket) {
-        depth -= 1
+        bracketDepth -= 1
+      } else if token == .punctuation(.openBrace) {
+        braceDepth += 1
+      } else if token == .punctuation(.closeBrace) {
+        braceDepth -= 1
       }
     }
 
