@@ -79,7 +79,7 @@ struct FunctionCall {
 }
 
 struct ReturnStatement {
-  var expression: Expression
+  var expression: Expression?
 }
 
 struct IfStatement {

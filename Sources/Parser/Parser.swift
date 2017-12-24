@@ -32,9 +32,13 @@ public class Parser {
     currentIndex += 1
 
     if consumingTrailingNewlines {
-      while consumingTrailingNewlines, currentIndex < tokens.count, tokens[currentIndex] == .newline {
-        currentIndex += 1
-      }
+      consumeNewLines()
+    }
+  }
+
+  func consumeNewLines() {
+    while currentIndex < tokens.count, tokens[currentIndex] == .newline {
+      currentIndex += 1
     }
   }
 
@@ -79,6 +83,7 @@ extension Parser {
       throw ParserError.expectedToken(.identifier(""))
     }
     currentIndex += 1
+    consumeNewLines()
     return Identifier(name: name)
   }
 
@@ -87,6 +92,7 @@ extension Parser {
       throw ParserError.expectedToken(.literal(.string("")))
     }
     currentIndex += 1
+    consumeNewLines()
     return literalValue
   }
   
@@ -96,6 +102,7 @@ extension Parser {
     }
     
     currentIndex += 1
+    consumeNewLines()
     return Type(name: name)
   }
   
@@ -234,7 +241,7 @@ extension Parser {
     
     while true {
 
-      guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline], maxIndex: tokens.count) else {
+      guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline, .punctuation(.closeBrace)], maxIndex: tokens.count) else {
         break
       }
 
@@ -310,7 +317,7 @@ extension Parser {
   
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     try consume(.return)
-    let expression = try parseExpression(upTo: statementEndIndex)
+    let expression = try? parseExpression(upTo: statementEndIndex)
     return ReturnStatement(expression: expression)
   }
 
