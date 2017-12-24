@@ -232,7 +232,7 @@ extension Parser {
     
     while true {
 
-      guard let semicolonIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon)], in: (nextIndex..<tokens.count)) else {
+      guard let semicolonIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon)], maxIndex: tokens.count) else {
         break
       }
 
@@ -254,7 +254,7 @@ extension Parser {
   func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
     var binaryExpression: BinaryExpression? = nil
     for op in Token.BinaryOperator.allByIncreasingPrecedence {
-      guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], in: (nextIndex..<limitTokenIndex)) else { continue }
+      guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
       let lhs = try parseExpression(upTo: index)
       try consume(.binaryOperator(op))
       let rhs = try parseExpression(upTo: limitTokenIndex)
@@ -330,10 +330,12 @@ extension Parser {
 }
 
 extension Parser {
-  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token], in range: Range<Int>? = nil) -> Int? {
-    var tokens = self.tokens[range ?? (0..<self.tokens.count)]
+  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token], maxIndex: Int? = nil) -> Int? {
+    let upperBound = maxIndex ?? tokens.count
     var depth = 0
-    for (token, index) in zip(tokens[nextIndex...], (nextIndex...)) {
+
+    for index in (nextIndex..<upperBound) {
+      let token = tokens[index]
       if limitTokens.contains(token) {
         if depth == 0 { return index }
       }
