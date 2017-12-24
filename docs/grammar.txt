@@ -1,7 +1,7 @@
 // Statement
 statement -> expression
 statement -> [return] (expression)
-statement -> if-statement
+statement -> branch-statement
 statements -> (statement) (statements)
 
 // Declaration
@@ -62,5 +62,5 @@ string-literal -> ["] [a-zA-Z0-9]* ["]
 boolean-literal -> [true] | [false]
 
 // Branching
-if-statement -> [if] expression code-block else-clause
-else-clause -> [else] code-block | [else] if-statement
+if-statement -> [if] expression code-block (else-clause)
+else-clause -> [else] code-block

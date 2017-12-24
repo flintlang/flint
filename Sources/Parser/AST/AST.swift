@@ -64,6 +64,7 @@ indirect enum Expression {
 indirect enum Statement {
   case expression(Expression)
   case returnStatement(ReturnStatement)
+  case ifStatement(IfStatement)
 }
 
 struct BinaryExpression {
@@ -79,4 +80,10 @@ struct FunctionCall {
 
 struct ReturnStatement {
   var expression: Expression
+}
+
+struct IfStatement {
+  var condition: Expression
+  var statements: [Statement]
+  var elseClauseStatements: [Statement]
 }

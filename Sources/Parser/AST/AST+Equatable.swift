@@ -127,6 +127,8 @@ extension Statement: Equatable {
       return lhsExpression == rhsExpression
     case (.returnStatement(let lhsReturnStatement), .returnStatement(let rhsReturnStatement)):
       return lhsReturnStatement == rhsReturnStatement
+    case (.ifStatement(let lhsIfStatement), .ifStatement(let rhsIfStatement)):
+      return lhsIfStatement == rhsIfStatement
     default:
       return false
     }
@@ -136,6 +138,15 @@ extension Statement: Equatable {
 extension ReturnStatement: Equatable {
   static func ==(lhs: ReturnStatement, rhs: ReturnStatement) -> Bool {
     return lhs.expression == rhs.expression
+  }
+}
+
+extension IfStatement: Equatable {
+  static func ==(lhs: IfStatement, rhs: IfStatement) -> Bool {
+    return
+      lhs.condition == rhs.condition &&
+      lhs.statements == rhs.statements &&
+      lhs.elseClauseStatements == rhs.elseClauseStatements
   }
 }
 
