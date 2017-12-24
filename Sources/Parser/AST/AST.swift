@@ -58,6 +58,7 @@ indirect enum Expression {
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
   case literal(Token.Literal)
+  case variableDeclaration(VariableDeclaration)
 }
 
 indirect enum Statement {

@@ -110,6 +110,10 @@ extension Expression: Equatable {
       return lhsBinaryExpression == rhsBinaryExpression
     case (.functionCall(let lhsFunctionCall), .functionCall(let rhsFunctionCall)):
       return lhsFunctionCall == rhsFunctionCall
+    case (.literal(let lhsLiteral), .literal(let rhsLiteral)):
+      return lhsLiteral == rhsLiteral
+    case (.variableDeclaration(let lhsVariableDeclaration), .variableDeclaration(let rhsVariableDeclaration)):
+      return lhsVariableDeclaration == rhsVariableDeclaration
     default:
       return false
     }

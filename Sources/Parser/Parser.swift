@@ -103,13 +103,18 @@ extension Parser {
   func parseVariableDeclarations() throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
     
-    while (try? consume(.var)) != nil {
-      let name = try parseIdentifier()
-      let typeAnnotation = try parseTypeAnnotation()
-      variableDeclarations.append(VariableDeclaration(identifier: name, type: typeAnnotation.type))
+    while let variableDeclaration = try? parseVariableDeclaration() {
+      variableDeclarations.append(variableDeclaration)
     }
     
     return variableDeclarations
+  }
+
+  func parseVariableDeclaration() throws -> VariableDeclaration {
+    try consume(.var)
+    let name = try parseIdentifier()
+    let typeAnnotation = try parseTypeAnnotation()
+    return VariableDeclaration(identifier: name, type: typeAnnotation.type)
   }
 }
 
@@ -247,10 +252,15 @@ extension Parser {
     if let functionCall = try? parseFunctionCall() {
       return .functionCall(functionCall)
     }
-    self.currentIndex = index
 
+    self.currentIndex = index
     if let literal = try? parseLiteral() {
       return .literal(literal)
+    }
+
+    self.currentIndex = index
+    if let variableDeclaration = try? parseVariableDeclaration() {
+      return .variableDeclaration(variableDeclaration)
     }
 
     return .identifier(try parseIdentifier())
