@@ -12,11 +12,7 @@ public class Parser {
 
   var currentIndex: Int
 
-  func currentToken(skippingNewlines: Bool = true) -> Token? {
-    while skippingNewlines, currentIndex < tokens.count, tokens[currentIndex] == .newline {
-      currentIndex += 1
-    }
-
+  var currentToken: Token? {
     return currentIndex < tokens.count ? tokens[currentIndex] : nil
   }
   
@@ -30,7 +26,7 @@ public class Parser {
   }
   
   func consume(_ token: Token, consumingTrailingNewlines: Bool = true) throws {
-    guard let first = currentToken(), first == token else {
+    guard let first = currentToken, first == token else {
       throw ParserError.expectedToken(token)
     }
     currentIndex += 1
@@ -63,7 +59,7 @@ extension Parser {
     var declarations = [TopLevelDeclaration]()
     
     while true {
-      guard let first = currentToken() else { break }
+      guard let first = currentToken else { break }
       if first == .contract {
         let contractDeclaration = try parseContractDeclaration()
         declarations.append(.contractDeclaration(contractDeclaration))
@@ -79,7 +75,7 @@ extension Parser {
 
 extension Parser {
   func parseIdentifier() throws -> Identifier {
-    guard let currentToken = currentToken(), case .identifier(let name) = currentToken else {
+    guard let currentToken = currentToken, case .identifier(let name) = currentToken else {
       throw ParserError.expectedToken(.identifier(""))
     }
     currentIndex += 1
@@ -87,7 +83,7 @@ extension Parser {
   }
 
   func parseLiteral() throws -> Token.Literal {
-    guard let currentToken = currentToken(), case .literal(let literalValue) = currentToken else {
+    guard let currentToken = currentToken, case .literal(let literalValue) = currentToken else {
       throw ParserError.expectedToken(.literal(.string("")))
     }
     currentIndex += 1
@@ -95,7 +91,7 @@ extension Parser {
   }
   
   func parseType() throws -> Type {
-    guard let first = currentToken(), case .identifier(let name) = first else {
+    guard let first = currentToken, case .identifier(let name) = first else {
       throw ParserError.expectedToken(.identifier(""))
     }
     
