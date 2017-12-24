@@ -10,19 +10,19 @@ import Foundation
 public class Parser {
   var tokens: [Token]
 
-  var nextIndex: Int
+  var currentIndex: Int
 
-  func nextToken(skippingNewlines: Bool = true) -> Token? {
-    while skippingNewlines, nextIndex < tokens.count, tokens[nextIndex] == .newline {
-      nextIndex += 1
+  func currentToken(skippingNewlines: Bool = true) -> Token? {
+    while skippingNewlines, currentIndex < tokens.count, tokens[currentIndex] == .newline {
+      currentIndex += 1
     }
 
-    return nextIndex < tokens.count ? tokens[nextIndex] : nil
+    return currentIndex < tokens.count ? tokens[currentIndex] : nil
   }
   
   public init(tokens: [Token]) {
     self.tokens = tokens
-    self.nextIndex = tokens.startIndex
+    self.currentIndex = tokens.startIndex
   }
   
   public func parse() throws -> TopLevelModule {
@@ -30,18 +30,18 @@ public class Parser {
   }
   
   func consume(_ token: Token) throws {
-    guard let first = nextToken(), first == token else {
+    guard let first = currentToken(), first == token else {
       throw ParserError.expectedToken(token)
     }
-    nextIndex += 1
+    currentIndex += 1
   }
 
   func attempt<ReturnType>(_ task: () throws -> ReturnType) -> ReturnType? {
-    let nextIndex = self.nextIndex
+    let nextIndex = self.currentIndex
     do {
       return try task()
     } catch {
-      self.nextIndex = nextIndex
+      self.currentIndex = nextIndex
       return nil
     }
   }
@@ -57,7 +57,7 @@ extension Parser {
     var declarations = [TopLevelDeclaration]()
     
     while true {
-      guard let first = nextToken() else { break }
+      guard let first = currentToken() else { break }
       if first == .contract {
         let contractDeclaration = try parseContractDeclaration()
         declarations.append(.contractDeclaration(contractDeclaration))
@@ -73,27 +73,27 @@ extension Parser {
 
 extension Parser {
   func parseIdentifier() throws -> Identifier {
-    guard let currentToken = nextToken(), case .identifier(let name) = currentToken else {
+    guard let currentToken = currentToken(), case .identifier(let name) = currentToken else {
       throw ParserError.expectedToken(.identifier(""))
     }
-    nextIndex += 1
+    currentIndex += 1
     return Identifier(name: name)
   }
 
   func parseLiteral() throws -> Token.Literal {
-    guard let currentToken = nextToken(), case .literal(let literalValue) = currentToken else {
+    guard let currentToken = currentToken(), case .literal(let literalValue) = currentToken else {
       throw ParserError.expectedToken(.literal(.string("")))
     }
-    nextIndex += 1
+    currentIndex += 1
     return literalValue
   }
   
   func parseType() throws -> Type {
-    guard let first = nextToken(), case .identifier(let name) = first else {
+    guard let first = currentToken(), case .identifier(let name) = first else {
       throw ParserError.expectedToken(.identifier(""))
     }
     
-    nextIndex += 1
+    currentIndex += 1
     return Type(name: name)
   }
   
@@ -334,7 +334,7 @@ extension Parser {
     let upperBound = maxIndex ?? tokens.count
     var depth = 0
 
-    for index in (nextIndex..<upperBound) {
+    for index in (currentIndex..<upperBound) {
       let token = tokens[index]
       if limitTokens.contains(token) {
         if depth == 0 { return index }
