@@ -155,7 +155,7 @@ extension Parser {
       let identifier = try parseIdentifier()
       let parameters = try parseParameters()
       let resultType = try? parseResult()
-      let body = try parseFunctionBody()
+      let body = try parseCodeBlock()
       
       let functionDeclaration = FunctionDeclaration(modifiers: modifiers, identifier: identifier, parameters: parameters, resultType: resultType, body: body)
       functionDeclarations.append(functionDeclaration)
@@ -205,7 +205,7 @@ extension Parser {
     return Type(name: identifier.name)
   }
   
-  func parseFunctionBody() throws -> [Statement] {
+  func parseCodeBlock() throws -> [Statement] {
     try consume(.punctuation(.openBrace))
     let statements = try parseStatements()
     try consume(.punctuation(.closeBrace))
