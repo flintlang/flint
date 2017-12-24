@@ -169,8 +169,8 @@ public enum Token {
       } else if let token = syntaxMap[component] {
         tokens.append(token)
       } else if let num = Int(component) {
-        let lastTwo = tokens[tokens.count-2..<tokens.count]
-        if case .literal(.decimal(.integer(let base))) = lastTwo.first!, lastTwo.last! == .binaryOperator(.dot) {
+        let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
+        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!, lastTwoTokens.last! == .binaryOperator(.dot) {
           tokens[tokens.count-2] = .literal(.decimal(.real(base, num)))
           tokens.removeLast()
         } else {
@@ -184,18 +184,6 @@ public enum Token {
     }
 
     return tokens
-  }
-
-  static func decimalToken(for string: String) -> DecimalLiteral? {
-    let components = string.split(separator: ".")
-    if components.count == 2, let base = Int(components[0]), let fractional = Int(components[1]) {
-      return .real(base, fractional)
-    }
-
-    guard let num = Int(string) else {
-      return nil
-    }
-    return .integer(num)
   }
 }
 
