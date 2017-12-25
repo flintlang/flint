@@ -59,6 +59,7 @@ indirect enum Expression {
   case functionCall(FunctionCall)
   case literal(Token.Literal)
   case variableDeclaration(VariableDeclaration)
+  case bracketedExpression(Expression)
 }
 
 indirect enum Statement {

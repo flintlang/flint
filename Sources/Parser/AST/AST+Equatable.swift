@@ -114,6 +114,8 @@ extension Expression: Equatable {
       return lhsLiteral == rhsLiteral
     case (.variableDeclaration(let lhsVariableDeclaration), .variableDeclaration(let rhsVariableDeclaration)):
       return lhsVariableDeclaration == rhsVariableDeclaration
+    case (.bracketedExpression(let lhsExpression), .bracketedExpression(let rhsExpression)):
+      return lhsExpression == rhsExpression
     default:
       return false
     }

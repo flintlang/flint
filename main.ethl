@@ -5,7 +5,7 @@ contract Wallet {
 
 Wallet :: (any) {
   func factorial(n: Int) -> Int {
-    if n < 2 { return 0 } 
+    if (n < 2) { return 0 } 
 
     return n * factorial(n - 1)
   }

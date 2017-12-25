@@ -284,11 +284,26 @@ extension Parser {
       return .literal(literal)
     }
 
-    if let variableDeclaration = try? parseVariableDeclaration() {
+    if let variableDeclaration = attempt(parseVariableDeclaration) {
       return .variableDeclaration(variableDeclaration)
     }
 
+    if let bracketedExpression = attempt(parseBracketedExpression) {
+      return .bracketedExpression(bracketedExpression)
+    }
+
     return .identifier(try parseIdentifier())
+  }
+
+  func parseBracketedExpression() throws -> Expression {
+    try consume(.punctuation(.openBracket))
+    guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw ParserError.expectedToken(.punctuation(.closeBracket))
+    }
+    let expression = try parseExpression(upTo: closeBracketIndex)
+    try consume(.punctuation(.closeBracket))
+
+    return expression
   }
 
   func parseFunctionCall() throws -> FunctionCall {
