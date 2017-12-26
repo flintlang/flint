@@ -57,6 +57,10 @@ public struct FunctionDeclaration {
     self.resultType = resultType
     self.body = body
   }
+
+  public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
+    return MangledFunction(contractIdentifier: contract, callerCapabilities: callerCapabilities, functionDeclaration: self)
+  }
 }
 
 public struct Parameter {
@@ -98,6 +102,10 @@ public struct CallerCapability {
 
   public init(name: String) {
     self.name = name
+  }
+
+  public func isSubcapability(callerCapability: CallerCapability) -> Bool {
+    return name == callerCapability.name || callerCapability.name == "any"
   }
 }
 

@@ -16,14 +16,16 @@ public class Parser {
   var currentToken: Token? {
     return currentIndex < tokens.count ? tokens[currentIndex] : nil
   }
+
+  var context = Context()
   
   public init(tokens: [Token]) {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
   }
   
-  public func parse() throws -> TopLevelModule {
-    return try parseTopLevelModule()
+  public func parse() throws -> (TopLevelModule, Context) {
+    return (try parseTopLevelModule(), context)
   }
   
   func consume(_ token: Token, consumingTrailingNewlines: Bool = true) throws {
@@ -151,6 +153,10 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let functionDeclarations = try parseFunctionDeclarations()
     try consume(.punctuation(.closeBrace))
+
+    for functionDeclaration in functionDeclarations {
+      context.functions.append(functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities))
+    }
     
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations)
   }
@@ -326,6 +332,10 @@ extension Parser {
       } else {
         break
       }
+    }
+
+    if arguments.isEmpty {
+      try consume(.punctuation(.closeBracket))
     }
 
     return arguments

@@ -17,6 +17,6 @@ protocol ParserTest {
 
 extension ParserTest {
   func test() {
-    XCTAssertEqual(try Parser(tokens: tokens).parse(), expectedAST)
+    XCTAssertEqual(try Parser(tokens: tokens).parse().0, expectedAST)
   }
 }
