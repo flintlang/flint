@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import Parser
+import AST
 
 // Test :: (any) {
 //   func foo(a: Int) -> Int {

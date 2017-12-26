@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AST
 
 public struct Tokenizer {
   var inputFile: URL

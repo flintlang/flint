@@ -8,6 +8,8 @@
 import XCTest
 import Parser
 
+import AST
+
 protocol ParserTest {
   var tokens: [Token] { get }
   var expectedAST: TopLevelModule { get }

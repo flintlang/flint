@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import Parser
+import AST
 
 class BranchingTest: XCTestCase, ParserTest {
   var tokens: [Token] =

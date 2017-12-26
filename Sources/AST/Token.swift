@@ -8,7 +8,6 @@
 import Foundation
 
 public enum Token {
-  
   public enum BinaryOperator: String {
     case plus   = "+"
     case minus  = "-"
@@ -23,7 +22,7 @@ public enum Token {
     case greaterThanOrEqual = ">="
     
     static let all: [BinaryOperator] = [.plus, .minus, .times, .divide, .equal, .dot, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual]
-    static let allByIncreasingPrecedence = {
+    public static let allByIncreasingPrecedence = {
       return all.sorted { $0.precedence < $1.precedence }
     }()
     

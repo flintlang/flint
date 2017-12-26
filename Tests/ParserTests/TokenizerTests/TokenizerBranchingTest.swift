@@ -7,6 +7,7 @@
 
 import XCTest
 import Parser
+import AST
 
 class TokenizerBranchingTest: XCTestCase, TokenizerTest {
   var sourceCode: String =

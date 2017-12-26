@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import Parser
+import AST
 
 class TokenizerLiteralTest: XCTestCase, TokenizerTest {
   var sourceCode: String =

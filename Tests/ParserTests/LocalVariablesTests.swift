@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import Parser
+import AST
 
 class LiteralTest: XCTestCase, ParserTest {
   var tokens: [Token] = [.identifier("Test"), .punctuation(.doubleColon), .punctuation(.openBracket), .identifier("any"), .punctuation(.closeBracket), .punctuation(.openBrace), .newline, .func, .identifier("foo"), .punctuation(.openBracket), .punctuation(.closeBracket), .punctuation(.arrow), .identifier("Bool"), .punctuation(.openBrace), .newline, .var, .identifier("a"), .punctuation(.colon), .identifier("Int"), .binaryOperator(.equal), .literal(.decimal(.integer(2))), .binaryOperator(.plus), .literal(.decimal(.real(4, 564))), .punctuation(.semicolon), .newline, .var, .identifier("b"), .punctuation(.colon), .identifier("String"), .binaryOperator(.equal), .literal(.string("hello")), .binaryOperator(.plus), .literal(.string(" world")), .punctuation(.semicolon), .newline, .return, .literal(.boolean(.false)), .punctuation(.semicolon), .newline, .punctuation(.closeBrace), .newline, .punctuation(.closeBrace)]

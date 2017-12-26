@@ -10,8 +10,11 @@ let package = Package(
       name: "etherlang",
       dependencies: ["Parser"]),
     .target(
-      name: "Parser",
+      name: "AST",
       dependencies: []),
+    .target(
+      name: "Parser",
+      dependencies: ["AST"]),
     .testTarget(
       name: "ParserTests",
       dependencies: ["Parser"]),

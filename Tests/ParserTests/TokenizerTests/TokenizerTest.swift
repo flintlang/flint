@@ -7,6 +7,7 @@
 
 import XCTest
 import Parser
+import AST
 
 protocol TokenizerTest {
   var sourceCode: String { get }

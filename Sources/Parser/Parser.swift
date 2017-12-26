@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AST
 
 public class Parser {
   var tokens: [Token]
