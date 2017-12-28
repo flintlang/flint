@@ -12,20 +12,21 @@ struct IULIAFunction {
 
   var functionDeclaration: FunctionDeclaration
   var callerCapabilities: [CallerCapability]
+  var propertyMap: [String: Int]
 
-  func rendered() -> String {
+  func rendered(indentation: Int) -> String {
     let name = functionDeclaration.identifier.name
     let parameters = functionDeclaration.parameters.map({ $0.identifier.name })
     let doesReturn = functionDeclaration.resultType != nil
     let parametersString = parameters.joined(separator: ",")
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
-    let body = functionDeclaration.body.map({ IULIAFunction.render($0) }).joined(separator: "\n")
+    let body = functionDeclaration.body.map({ String(repeating: " ", count: indentation + 2) + render($0) }).joined(separator: "\n")
 
     return """
-    \(signature) {
-      \(body)
-    }
+    \(String(repeating: " ", count: indentation))\(signature) {
+    \(body)
+    \(String(repeating: " ", count: indentation))}
     """
   }
 
@@ -43,7 +44,7 @@ struct IULIAFunction {
 }
 
 extension IULIAFunction {
-  static func render(_ statement: AST.Statement) -> String {
+  func render(_ statement: AST.Statement) -> String {
     switch statement {
     case .expression(let expression): return render(expression)
     case .ifStatement(let ifStatement): return render(ifStatement)
@@ -51,7 +52,7 @@ extension IULIAFunction {
     }
   }
 
-  static func render(_ expression: Expression) -> String {
+  func render(_ expression: Expression) -> String {
     switch expression {
     case .binaryExpression(let binaryExpression): return render(binaryExpression)
     case .bracketedExpression(let expression): return render(expression)
@@ -62,26 +63,35 @@ extension IULIAFunction {
     }
   }
 
-  static func render(_ binaryExpression: BinaryExpression) -> String {
+  func render(_ binaryExpression: BinaryExpression) -> String {
+    let lhs = render(binaryExpression.lhs)
+    let rhs = render(binaryExpression.rhs)
     switch binaryExpression.op {
-    case .equal:
-      return "\(render(binaryExpression.lhs)) := \(render(binaryExpression.rhs))"
+    case .plus: return "add(\(lhs), \(rhs))"
+    case .minus: return "sub(\(lhs), \(rhs))"
+    case .times: return "mul(\(lhs), \(rhs))"
+    case .divide: return "div(\(lhs), \(rhs))"
+    case .equal: return "\(lhs) := \(rhs)"
+    case .lessThan: return "lt(\(lhs), \(rhs))"
+    case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
+    case .greaterThan: return "gt(\(lhs), \(rhs))"
+    case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
+
     default:
-      return ""
-//      fatalError("Operator \(binaryExpression.op) not yet implemented.")
+      fatalError("Operator \(binaryExpression.op) not yet implemented.")
     }
   }
 
-  static func render(_ functionCall: FunctionCall) -> String {
+  func render(_ functionCall: FunctionCall) -> String {
     let args: String = functionCall.arguments.map({ render($0) }).joined(separator: ",")
     return "\(functionCall.identifier)(\(args))"
   }
 
-  static func render(_ identifier: Identifier) -> String {
-    return identifier.name
+  func render(_ identifier: Identifier) -> String {
+    return "sload(\(propertyMap[identifier.name]!))"
   }
 
-  static func render(_ literal: Token.Literal) -> String {
+  func render(_ literal: Token.Literal) -> String {
     switch literal {
     case .boolean(let boolean): return boolean.rawValue
     case .decimal(.real(let num1, let num2)): return "\(num1).\(num2)"
@@ -90,7 +100,7 @@ extension IULIAFunction {
     }
   }
 
-  static func render(_ ifStatement: IfStatement) -> String {
+  func render(_ ifStatement: IfStatement) -> String {
     let condition = render(ifStatement.condition)
     let body = ifStatement.statements.map({ render($0) }).joined(separator: "\n")
     let elseBody = ifStatement.elseClauseStatements.map({ render($0) }).joined(separator: "\n")
@@ -115,11 +125,11 @@ extension IULIAFunction {
     return ifCode + (elseCode ?? "")
   }
 
-  static func render(_ returnStatement: ReturnStatement) -> String {
+  func render(_ returnStatement: ReturnStatement) -> String {
     guard let expression = returnStatement.expression else {
       return ""
     }
 
-    return "\(returnVariableName) := \(render(expression))"
+    return "\(IULIAFunction.returnVariableName) := \(render(expression))"
   }
 }

@@ -27,7 +27,7 @@ struct IULIAContract {
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities).rendered()
+        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, propertyMap: propertyMap).rendered(indentation: 6)
       }
     }
 
@@ -41,7 +41,7 @@ struct IULIAContract {
 
       function () public payable {
         assembly {
-          \(functionsCode)
+    \(functionsCode)
         }
       }
     }
