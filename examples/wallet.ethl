@@ -4,10 +4,6 @@ contract Wallet {
 }
 
 Wallet :: (any) {
-  public init(caller: Address) {
-    state.owner = caller
-  }
-
   public mutating func deposit(ether: Ether) {
     state.contents = state.contents + money;
   }

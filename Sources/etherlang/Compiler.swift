@@ -8,6 +8,7 @@
 import Foundation
 import Parser
 import SemanticAnalyzer
+import IULIABackend
 
 struct Compiler {
   var inputFile: URL
@@ -16,6 +17,6 @@ struct Compiler {
     let tokens = Tokenizer(inputFile: inputFile).tokenize()
     let (ast, context) = try! Parser(tokens: tokens).parse()
     try! SemanticAnalyzer(ast: ast, context: context).analyze()
-    return ""
+    return IULIABackend(topLevelModule: ast).generateCode()
   }
 }
