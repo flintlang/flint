@@ -24,11 +24,11 @@ struct IULIAFunction {
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return functionDeclaration.parameters.map({ canonicalize($0.type) })
+    return functionDeclaration.parameters.map({ CanonicalType(from: $0.type)! })
   }
 
   var resultCanonicalType: CanonicalType? {
-    return functionDeclaration.resultType.flatMap({ canonicalize($0) })
+    return functionDeclaration.resultType.flatMap({ CanonicalType(from: $0)! })
   }
 
   func rendered() -> String {
@@ -54,23 +54,6 @@ struct IULIAFunction {
 
   func mangleParameterName(_ name: String) -> String {
     return "_\(name)"
-  }
-
-  func canonicalize(_ type: Type) -> CanonicalType {
-    return CanonicalType(type: type)!
-  }
-
-  enum CanonicalType: String {
-    case uint256
-    case address
-
-    init?(type: Type) {
-      switch type.name {
-      case "Ether": self = .uint256
-      case "Address": self = .address
-      default: return nil
-      }
-    }
   }
 }
 
@@ -98,7 +81,7 @@ extension IULIAFunction {
     let lhs = render(binaryExpression.lhs)
     let rhs = render(binaryExpression.rhs)
     switch binaryExpression.op {
-    case .equal: return "sstore(\(lhs), \(rhs))"
+    case .equal: return "sstore(\(render(binaryExpression.lhs, asLValue: true)), \(rhs))"
     case .plus: return "add(\(lhs), \(rhs))"
     case .minus: return "sub(\(lhs), \(rhs))"
     case .times: return "mul(\(lhs), \(rhs))"

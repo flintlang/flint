@@ -14,7 +14,7 @@ Wallet :: (owner) {
     contents = contents - money;
   }
 
-  public mutating func getContents() -> Ether {
+  public func getContents() -> Ether {
     return contents;
   }
 }

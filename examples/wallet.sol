@@ -71,9 +71,8 @@ contract Wallet {
 }
 
 interface WalletInterface {
-  function init(address _address) public;
   function deposit(uint256 _ether) public;
   function withdraw(uint256 _ether) public;
-  function getContents() public constant returns (uint _contents);
+  function getContents() public constant returns (uint256 ret);
 }
 

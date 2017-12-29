@@ -16,6 +16,7 @@ public struct IULIABackend {
 
   public func generateCode() -> String {
     var contracts = [IULIAContract]()
+    var interfaces = [IULIAInterface]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.flatMap { declaration in
@@ -29,10 +30,15 @@ public struct IULIABackend {
 
         return contractBehaviorDeclaration
       }
-      contracts.append(IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations))
+      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations)
+      contracts.append(contract)
+      interfaces.append(IULIAInterface(contract: contract))
     }
 
-    return contracts.map { $0.rendered() }.joined(separator: "\n")
+    let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")
+    let renderedInterfaces = interfaces.map({ $0.rendered() }).joined(separator: "\n")
+
+    return renderedContracts + "\n" + renderedInterfaces
   }
 }
 
