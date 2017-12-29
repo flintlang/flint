@@ -4,7 +4,9 @@ import PackageDescription
 
 let package = Package(
   name: "etherlang",
-  dependencies: [],
+  dependencies: [
+    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2")
+  ],
   targets: [
     .target(
       name: "etherlang",
@@ -23,6 +25,6 @@ let package = Package(
       dependencies: ["AST"]),
     .target(
       name: "IULIABackend",
-      dependencies: ["AST"]),
+      dependencies: ["AST", "CryptoSwift"]),
     ]
 )

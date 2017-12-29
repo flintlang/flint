@@ -27,21 +27,34 @@ struct IULIAContract {
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, propertyMap: propertyMap).rendered(indentation: 6)
+        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, propertyMap: propertyMap)
       }
     }
 
-    let functionsCode = functions.joined(separator: "\n")
+    let functionsCode = functions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
+
+    let functionSelector = IULIAFunctionSelector(functions: functions)
+    let selectorCode = functionSelector.rendered().indented(by: 6)
+
+    let utilFunctionsDeclarations = IULIAUtilFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     return """
     contract \(contractDeclaration.identifier.name) {
 
-      function \(contractDeclaration.identifier.name) public {
+      function \(contractDeclaration.identifier.name)() public {
       }
 
       function () public payable {
         assembly {
-    \(functionsCode)
+          \(selectorCode)
+
+          // User-defined functions
+
+          \(functionsCode)
+
+          // Util functions
+
+          \(utilFunctionsDeclarations)
         }
       }
     }

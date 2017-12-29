@@ -12,34 +12,65 @@ struct IULIAFunction {
 
   var functionDeclaration: FunctionDeclaration
   var callerCapabilities: [CallerCapability]
+
   var propertyMap: [String: Int]
 
-  func rendered(indentation: Int) -> String {
-    let name = functionDeclaration.identifier.name
-    let parameters = functionDeclaration.parameters.map({ $0.identifier.name })
+  var name: String {
+    return functionDeclaration.identifier.name
+  }
+
+  var parameterNames: [String] {
+    return functionDeclaration.parameters.map({ mangleParameterName($0.identifier.name) })
+  }
+
+  var parameterCanonicalTypes: [CanonicalType] {
+    return functionDeclaration.parameters.map({ canonicalize($0.type) })
+  }
+
+  var resultCanonicalType: CanonicalType? {
+    return functionDeclaration.resultType.flatMap({ canonicalize($0) })
+  }
+
+  func rendered() -> String {
     let doesReturn = functionDeclaration.resultType != nil
-    let parametersString = parameters.joined(separator: ",")
+    let parametersString = parameterNames.joined(separator: ",")
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
-    let body = functionDeclaration.body.map({ String(repeating: " ", count: indentation + 2) + render($0) }).joined(separator: "\n")
+    let body = functionDeclaration.body.map({ render($0) }).joined(separator: "\n")
 
     return """
-    \(String(repeating: " ", count: indentation))\(signature) {
-    \(body)
-    \(String(repeating: " ", count: indentation))}
+    function \(signature) {
+      \(body)
+    }
     """
   }
 
   func mangledSignature() -> String {
     let name = functionDeclaration.identifier.name
-    let parameters = functionDeclaration.parameters.map({ canonicalize($0.type) })
-    let parametersString = parameters.joined(separator: ",")
+    let parametersString = parameterCanonicalTypes.map({ $0.rawValue }).joined(separator: ",")
 
     return "\(name)(\(parametersString))"
   }
 
-  func canonicalize(_ type: Type) -> String {
-    return type.name
+  func mangleParameterName(_ name: String) -> String {
+    return "_\(name)"
+  }
+
+  func canonicalize(_ type: Type) -> CanonicalType {
+    return CanonicalType(type: type)!
+  }
+
+  enum CanonicalType: String {
+    case uint256
+    case address
+
+    init?(type: Type) {
+      switch type.name {
+      case "Ether": self = .uint256
+      case "Address": self = .address
+      default: return nil
+      }
+    }
   }
 }
 
@@ -52,12 +83,12 @@ extension IULIAFunction {
     }
   }
 
-  func render(_ expression: Expression) -> String {
+  func render(_ expression: Expression, asLValue: Bool = false) -> String {
     switch expression {
     case .binaryExpression(let binaryExpression): return render(binaryExpression)
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)
-    case .identifier(let identifier): return render(identifier)
+    case .identifier(let identifier): return render(identifier, asLValue: asLValue)
     case .variableDeclaration(_): fatalError("Local vars not yet implemented")
     case .literal(let literal): return render(literal)
     }
@@ -67,11 +98,11 @@ extension IULIAFunction {
     let lhs = render(binaryExpression.lhs)
     let rhs = render(binaryExpression.rhs)
     switch binaryExpression.op {
+    case .equal: return "sstore(\(lhs), \(rhs))"
     case .plus: return "add(\(lhs), \(rhs))"
     case .minus: return "sub(\(lhs), \(rhs))"
     case .times: return "mul(\(lhs), \(rhs))"
     case .divide: return "div(\(lhs), \(rhs))"
-    case .equal: return "\(lhs) := \(rhs)"
     case .lessThan: return "lt(\(lhs), \(rhs))"
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .greaterThan: return "gt(\(lhs), \(rhs))"
@@ -87,7 +118,16 @@ extension IULIAFunction {
     return "\(functionCall.identifier)(\(args))"
   }
 
-  func render(_ identifier: Identifier) -> String {
+  func render(_ identifier: Identifier, asLValue: Bool) -> String {
+    guard !asLValue else {
+      return "\(propertyMap[identifier.name]!)"
+    }
+
+    let mangledName = mangleParameterName(identifier.name)
+    if parameterNames.contains(mangledName) {
+      return mangledName
+    }
+
     return "sload(\(propertyMap[identifier.name]!))"
   }
 
