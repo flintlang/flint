@@ -116,7 +116,7 @@ public struct SemanticAnalyzer {
 
   func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) throws {
 
-    guard let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractIdentifier, callerCapabilities: functionDeclarationContext.callerCapabilities) else {
+    guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractIdentifier, callerCapabilities: functionDeclarationContext.callerCapabilities) else {
       throw SemanticError.invalidFunctionCall(functionCall)
     }
   }

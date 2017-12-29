@@ -33,14 +33,14 @@ struct IULIAFunction {
 
   func rendered() -> String {
     let doesReturn = functionDeclaration.resultType != nil
-    let parametersString = parameterNames.joined(separator: ",")
+    let parametersString = parameterNames.joined(separator: ", ")
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
     let body = functionDeclaration.body.map({ render($0) }).joined(separator: "\n")
 
     return """
     function \(signature) {
-      \(body)
+      \(body.indented(by: 2))
     }
     """
   }
@@ -97,8 +97,8 @@ extension IULIAFunction {
   }
 
   func render(_ functionCall: FunctionCall) -> String {
-    let args: String = functionCall.arguments.map({ render($0) }).joined(separator: ",")
-    return "\(functionCall.identifier)(\(args))"
+    let args: String = functionCall.arguments.map({ render($0) }).joined(separator: ", ")
+    return "\(functionCall.identifier.name)(\(args))"
   }
 
   func render(_ identifier: Identifier, asLValue: Bool) -> String {

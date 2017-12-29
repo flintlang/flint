@@ -12,7 +12,7 @@ struct IULIAInterface {
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
+      return contractBehaviorDeclaration.functionDeclarations.flatMap { functionDeclaration in
         return render(functionDeclaration)
       }
     }.joined(separator: "\n")
@@ -24,15 +24,12 @@ struct IULIAInterface {
     """
   }
 
-  func render(_ functionDeclaration: FunctionDeclaration) -> String {
-    let parameters = functionDeclaration.parameters.map { render($0) }.joined(separator: ",")
+  func render(_ functionDeclaration: FunctionDeclaration) -> String? {
+    guard functionDeclaration.modifiers.contains(.public) else { return nil }
 
-    var attributes = functionDeclaration.modifiers.flatMap { modifier in
-      switch modifier {
-      case .public: return "public"
-      default: return nil
-      }
-    }
+    let parameters = functionDeclaration.parameters.map { render($0) }.joined(separator: ", ")
+
+    var attributes = [String]()
 
     if !functionDeclaration.modifiers.contains(.mutating) {
       attributes.append("constant")
@@ -47,7 +44,7 @@ struct IULIAInterface {
       returnCode = ""
     }
 
-    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attributesCode)\(returnCode ?? "");"
+    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attributesCode) public\(returnCode ?? "");"
   }
 
   func render(_ functionParameter: Parameter) -> String {

@@ -45,7 +45,7 @@ struct IULIAFunctionSelector {
       }
     }
 
-    let call = "\(function.name)(\(arguments.joined(separator: ",")))"
+    let call = "\(function.name)(\(arguments.joined(separator: ", ")))"
 
     if let resultType = function.resultCanonicalType {
       switch resultType {

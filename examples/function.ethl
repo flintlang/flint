@@ -1,11 +1,17 @@
-Test :: (any) {
-  func foo(a: Int) -> Int {
-    foo(bar(1, 2), 3, 5 + bar(4, 6));
+contract Test {
+  var data: Int
+}
 
-    return 2
+Test :: (any) {
+  public mutating func foo(a: Int, b: Int) {
+    data = bar(a, b);
   }
 
   func bar(a: Int, b: Int) -> Int {
     return a + b
+  }
+
+  public func getData() -> Int {
+    return data
   }
 }

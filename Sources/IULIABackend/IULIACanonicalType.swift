@@ -14,6 +14,7 @@ enum CanonicalType: String {
   init?(from type: Type) {
     switch type.name {
     case "Ether": self = .uint256
+    case "Int": self = .uint256
     case "Address": self = .address
     default: return nil
     }
