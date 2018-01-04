@@ -119,6 +119,10 @@ extension SemanticAnalyzer {
       addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities))
       return
     }
+
+    for argument in functionCall.arguments {
+      visit(argument, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    }
   }
 
   func visit(_ returnStatement: ReturnStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
