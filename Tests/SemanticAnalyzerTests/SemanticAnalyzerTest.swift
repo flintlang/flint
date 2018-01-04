@@ -8,6 +8,7 @@
 import XCTest
 import Parser
 @testable import SemanticAnalyzer
+import Diagnostic
 
 protocol SemanticAnalyzerTest {
   var sourceCode: String { get }
@@ -17,7 +18,7 @@ extension SemanticAnalyzerTest {
   func analyze() throws {
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (ast, context, _) = Parser(tokens: tokens).parse()
-    try SemanticAnalyzer(ast: ast!, context: context).analyze()
+    try SemanticAnalyzer(ast: ast!, context: context).visit(ast!)
   }
 }
 
