@@ -152,43 +152,43 @@ extension Token.Kind: Equatable {
   }
 }
 
-//extension Token.Kind: CustomStringConvertible {
-//  public var description: String {
-//    switch self {
-//    case .newline: return "\\\n"
-//    case .contract: return "contract"
-//    case .var: return "var"
-//    case .func: return "func"
-//    case .mutating: return "mutating"
-//    case .return: return "return"
-//    case .public: return "public"
-//    case .if: return "if"
-//    case .else: return "else"
-//    case .binaryOperator(let op): return op.rawValue
-//    case .punctuation(let punctuation): return punctuation.rawValue
-//    case .identifier(let identifier): return "identifier \"\(identifier)\""
-//    case .literal(let literal): return literal.description
-//    case .minus: return "-"
-//    }
-//  }
-//}
+extension Token.Kind: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .newline: return "\\\n"
+    case .contract: return "contract"
+    case .var: return "var"
+    case .func: return "func"
+    case .mutating: return "mutating"
+    case .return: return "return"
+    case .public: return "public"
+    case .if: return "if"
+    case .else: return "else"
+    case .binaryOperator(let op): return op.rawValue
+    case .punctuation(let punctuation): return punctuation.rawValue
+    case .identifier(let identifier): return "identifier \"\(identifier)\""
+    case .literal(let literal): return literal.description
+    case .minus: return "-"
+    }
+  }
+}
 
-//extension Token.Kind.Literal: CustomStringConvertible {
-//  public var description: String {
-//    switch self {
-//    case .boolean(let boolean): return boolean.rawValue
-//    case .decimal(let decimal): return decimal.description
-//    case .string(let string): return "literal \"\(string)\""
-//    }
-//  }
-//}
-//
-//extension Token.Kind.DecimalLiteral: CustomStringConvertible {
-//  public var description: String {
-//    switch self {
-//    case .integer(let integer): return "literal \(integer)"
-//    case .real(let base, let fractional): return "literal \(base).\(fractional)"
-//    }
-//  }
-//}
+extension Token.Kind.Literal: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .boolean(let boolean): return boolean.rawValue
+    case .decimal(let decimal): return decimal.description
+    case .string(let string): return "literal \"\(string)\""
+    }
+  }
+}
+
+extension Token.Kind.DecimalLiteral: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .integer(let integer): return "literal \(integer)"
+    case .real(let base, let fractional): return "literal \(base).\(fractional)"
+    }
+  }
+}
 
