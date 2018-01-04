@@ -12,17 +12,17 @@ public struct Diagnostic {
   }
 
   public var severity: Severity
-  public var sourceRange: SourceRange
+  public var sourceLocation: SourceLocation
   public var message: String
 
-  public init(severity: Severity, sourceRange: SourceRange, message: String) {
+  public init(severity: Severity, sourceLocation: SourceLocation, message: String) {
     self.severity = severity
-    self.sourceRange = sourceRange
+    self.sourceLocation = sourceLocation
     self.message = message
   }
 }
 
-public struct SourceRange {
+public struct SourceLocation {
   public var line: Int
   public var column: Int
   public var length: Int

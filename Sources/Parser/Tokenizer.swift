@@ -82,8 +82,8 @@ public struct Tokenizer {
     "false": .literal(.boolean(.false))
   ]
 
-  func splitOnPunctuation(string: String) -> [(String, SourceRange)] {
-    var components = [(String, SourceRange)]()
+  func splitOnPunctuation(string: String) -> [(String, SourceLocation)] {
+    var components = [(String, SourceLocation)]()
     var acc = ""
 
     var inStringLiteral = false
@@ -101,7 +101,7 @@ public struct Tokenizer {
         acc += String(char)
       } else {
         if !acc.isEmpty {
-          components.append((acc, SourceRange(line: line, column: column - acc.count, length: acc.count)))
+          components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
           acc = ""
         }
 
@@ -115,7 +115,7 @@ public struct Tokenizer {
           }
         }
 
-        components.append((String(char), SourceRange(line: line, column: column, length: 1)))
+        components.append((String(char), SourceLocation(line: line, column: column, length: 1)))
       }
 
       column += 1
@@ -126,7 +126,7 @@ public struct Tokenizer {
       }
     }
 
-    components.append((acc, SourceRange(line: line, column: column - acc.count, length: acc.count)))
+    components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
     return components.filter { !$0.0.isEmpty }
   }
 
