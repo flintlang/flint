@@ -107,9 +107,11 @@ public struct Tokenizer {
         if let (last, sourceLocation) = components.last {
           if last == ":", char == ":" {
             components[components.endIndex.advanced(by: -1)] = ("::", sourceLocation)
+            column += 1
             continue
           } else if last == "-", char == ">" {
             components[components.endIndex.advanced(by: -1)] = ("->", sourceLocation)
+            column += 1
             continue
           }
         }

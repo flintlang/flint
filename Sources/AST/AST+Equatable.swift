@@ -74,7 +74,7 @@ extension Identifier: Equatable {
 
 extension Type: Equatable {
   public static func ==(lhs: Type, rhs: Type) -> Bool {
-    return lhs.name == rhs.name
+    return lhs.kind == rhs.kind
   }
 }
 

@@ -10,4 +10,5 @@ import AST
 enum SemanticError: Error {
   case noMatchingFunctionForFunctionCall(FunctionCall, contextCapabilities: [CallerCapability])
   case contractBehaviorDeclarationNoMatchingContract(ContractBehaviorDeclaration)
+  case undeclaredCallerCapability(CallerCapability, contractIdentifier: Identifier)
 }

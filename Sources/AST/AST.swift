@@ -99,7 +99,7 @@ public struct TypeAnnotation {
   }
 }
 
-public struct Identifier {
+public struct Identifier: Hashable {
   public var name: String
   public var sourceLocation: SourceLocation
 
@@ -107,14 +107,45 @@ public struct Identifier {
     self.name = name
     self.sourceLocation = sourceLocation
   }
+
+  public var hashValue: Int {
+    return "\(name)_\(sourceLocation)".hashValue
+  }
 }
 
 public struct Type {
-  public var name: String
+  public enum Kind: Equatable {
+    case builtInType(BuiltInType)
+    case userDefinedType(String)
+
+    public static func ==(lhs: Type.Kind, rhs: Type.Kind) -> Bool {
+      switch (lhs, rhs) {
+      case (.builtInType(let lhsType), .builtInType(let rhsType)): return lhsType == rhsType
+      case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)): return lhsType == rhsType
+      default: return false
+      }
+    }
+  }
+
+  public enum BuiltInType: String {
+    case address = "Address"
+
+    var canBeUsedAsCallerCapability: Bool {
+      switch self {
+      case .address: return true
+      }
+    }
+  }
+
+  public var kind: Kind
   public var sourceLocation: SourceLocation
 
   public init(name: String, sourceLocation: SourceLocation) {
-    self.name = name
+    if let builtInType = BuiltInType(rawValue: name) {
+      kind = .builtInType(builtInType)
+    } else {
+      kind = .userDefinedType(name)
+    }
     self.sourceLocation = sourceLocation
   }
 }
