@@ -2,13 +2,13 @@ contract Test {
   var owner: Address
 }
 
-Test :: (owner) {
+Test :: (any) {
   public func foo() {
     bar()
   }
 }
 
-Test :: (any) {
+Test :: (owner) {
   func bar() {
   }
 }

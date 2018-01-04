@@ -33,7 +33,7 @@ extension SemanticAnalyzer {
     try visit(contractBehaviorDeclaration.contractIdentifier)
 
     guard context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) else {
-      throw SemanticError.invalidContractBehaviorDeclaration(contractBehaviorDeclaration)
+      throw SemanticError.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration)
     }
 
     for callerCapability in contractBehaviorDeclaration.callerCapabilities {
@@ -110,7 +110,7 @@ extension SemanticAnalyzer {
   func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) throws {
 
     guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractIdentifier, callerCapabilities: functionDeclarationContext.callerCapabilities) else {
-      throw SemanticError.invalidFunctionCall(functionCall)
+      throw SemanticError.noMatchingFunctionForFunctionCall(functionCall, contextCapabilities: functionDeclarationContext.callerCapabilities)
     }
   }
 

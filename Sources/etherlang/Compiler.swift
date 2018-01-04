@@ -18,15 +18,17 @@ struct Compiler {
     let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
     
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
-    let (parserAST, context, diagnostics) = Parser(tokens: tokens).parse()
+    let (parserAST, context, parserDiagnostics) = Parser(tokens: tokens).parse()
 
-    print(DiagnosticsFormatter(diagnostics: diagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
-
-    guard let ast = parserAST else {
+    guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
+      print(DiagnosticsFormatter(diagnostics: parserDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
       exit(1)
     }
 
-    try! SemanticAnalyzer(ast: ast, context: context).analyze()
+    let semanticAnalyzerDiagnostics = SemanticAnalyzer(ast: ast, context: context).analyze()
+    print(DiagnosticsFormatter(diagnostics: parserDiagnostics + semanticAnalyzerDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
+
+    guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else { exit(1)}
     return IULIABackend(topLevelModule: ast).generateCode()
   }
 }

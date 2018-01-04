@@ -15,6 +15,10 @@ public struct Diagnostic {
   public var sourceLocation: SourceLocation?
   public var message: String
 
+  public var isError: Bool {
+    return severity == .error
+  }
+
   public init(severity: Severity, sourceLocation: SourceLocation?, message: String) {
     self.severity = severity
     self.sourceLocation = sourceLocation
