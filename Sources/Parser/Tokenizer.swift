@@ -7,17 +7,17 @@
 
 import Foundation
 import AST
+import Diagnostic
 
 public struct Tokenizer {
-  var inputFile: URL
+  var sourceCode: String
   
-  public init(inputFile: URL) {
-    self.inputFile = inputFile
+  public init(sourceCode: String) {
+    self.sourceCode = sourceCode
   }
   
   public func tokenize() -> [Token] {
-    let code = try! String(contentsOf: inputFile, encoding: .utf8)
-    return tokenize(string: code)
+    return tokenize(string: sourceCode)
   }
 
   func tokenize(string: String) -> [Token] {
@@ -25,30 +25,30 @@ public struct Tokenizer {
 
     var tokens = [Token]()
 
-    for component in components {
+    for (component, sourceLocation) in components {
       if component == " " {
         continue
       } else if let token = syntaxMap[component] {
-        tokens.append(token)
+        tokens.append(Token(kind: token, sourceLocation: sourceLocation))
       } else if let num = Int(component) {
         let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
-        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!, lastTwoTokens.last! == .binaryOperator(.dot) {
-          tokens[tokens.count-2] = .literal(.decimal(.real(base, num)))
+        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind, lastTwoTokens.last!.kind == .binaryOperator(.dot) {
+          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
-          tokens.append(.literal(.decimal(.integer(num))))
+          tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
         }
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
-        tokens.append(.literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))))
+        tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
       } else {
-        tokens.append(.identifier(component))
+        tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
       }
     }
 
     return tokens
   }
 
-  let syntaxMap: [String: Token] = [
+  let syntaxMap: [String: Token.Kind] = [
     "\n": .newline,
     "contract": .contract,
     "var": .var,
@@ -81,11 +81,14 @@ public struct Tokenizer {
     "false": .literal(.boolean(.false))
   ]
 
-  func splitOnPunctuation(string: String) -> [String] {
-    var components = [String]()
+  func splitOnPunctuation(string: String) -> [(String, SourceLocation)] {
+    var components = [(String, SourceLocation)]()
     var acc = ""
 
     var inStringLiteral = false
+
+    var line = 1
+    var column = 1
 
     for char in string {
       if char == "\"" {
@@ -97,26 +100,33 @@ public struct Tokenizer {
         acc += String(char)
       } else {
         if !acc.isEmpty {
-          components.append(acc)
+          components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
           acc = ""
         }
 
-        if let last = components.last {
+        if let (last, sourceLocation) = components.last {
           if last == ":", char == ":" {
-            components[components.endIndex.advanced(by: -1)] = "::"
+            components[components.endIndex.advanced(by: -1)] = ("::", sourceLocation)
             continue
           } else if last == "-", char == ">" {
-            components[components.endIndex.advanced(by: -1)] = "->"
+            components[components.endIndex.advanced(by: -1)] = ("->", sourceLocation)
             continue
           }
         }
 
-        components.append(String(char))
+        components.append((String(char), SourceLocation(line: line, column: column, length: 1)))
+      }
+
+      column += 1
+
+      if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
+        line += 1
+        column = 1
       }
     }
 
-    components.append(acc)
-    return components.filter { !$0.isEmpty }
+    components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
+    return components.filter { !$0.0.isEmpty }
   }
 
 }

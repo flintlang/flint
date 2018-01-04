@@ -17,7 +17,7 @@ class InvalidContractBehaviorDeclarationTest: XCTestCase, SemanticAnalyzerTest {
   func test() {
     do {
       try analyze()
-    } catch SemanticError.invalidContractBehaviorDeclaration(_) {
+    } catch SemanticError.contractBehaviorDeclarationNoMatchingContract(_) {
       return
     } catch {
       XCTFail("Unexpected error: \(error)")

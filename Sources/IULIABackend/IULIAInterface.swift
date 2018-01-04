@@ -25,13 +25,13 @@ struct IULIAInterface {
   }
 
   func render(_ functionDeclaration: FunctionDeclaration) -> String? {
-    guard functionDeclaration.modifiers.contains(.public) else { return nil }
+    guard functionDeclaration.hasModifier(kind: .public) else { return nil }
 
     let parameters = functionDeclaration.parameters.map { render($0) }.joined(separator: ", ")
 
     var attributes = [String]()
 
-    if !functionDeclaration.modifiers.contains(.mutating) {
+    if !functionDeclaration.hasModifier(kind: .mutating) {
       attributes.append("constant")
     }
 

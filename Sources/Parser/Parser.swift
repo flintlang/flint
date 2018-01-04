@@ -7,6 +7,7 @@
 
 import Foundation
 import AST
+import Diagnostic
 
 public class Parser {
   var tokens: [Token]
@@ -18,29 +19,39 @@ public class Parser {
   }
 
   var context = Context()
+  var diagnostics = [Diagnostic]()
   
   public init(tokens: [Token]) {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
   }
   
-  public func parse() throws -> (TopLevelModule, Context) {
-    return (try parseTopLevelModule(), context)
+  public func parse() -> (TopLevelModule?, Context, [Diagnostic]) {
+    do {
+      return (try parseTopLevelModule(), context, [])
+    } catch ParserError.expectedToken(let tokenKind, sourceLocation: let sourceLocation) {
+      return (nil, context, diagnostics + [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
+    } catch {
+      fatalError()
+    }
   }
-  
-  func consume(_ token: Token, consumingTrailingNewlines: Bool = true) throws {
-    guard let first = currentToken, first == token else {
-      throw ParserError.expectedToken(token)
+
+  @discardableResult
+  func consume(_ token: Token.Kind, consumingTrailingNewlines: Bool = true) throws -> Token {
+    guard let first = currentToken, first.kind == token else {
+      throw ParserError.expectedToken(token, sourceLocation: currentToken?.sourceLocation)
     }
     currentIndex += 1
 
     if consumingTrailingNewlines {
       consumeNewLines()
     }
+
+    return first
   }
 
   func consumeNewLines() {
-    while currentIndex < tokens.count, tokens[currentIndex] == .newline {
+    while currentIndex < tokens.count, tokens[currentIndex].kind == .newline {
       currentIndex += 1
     }
   }
@@ -67,7 +78,7 @@ extension Parser {
     
     while true {
       guard let first = currentToken else { break }
-      if first == .contract {
+      if first.kind == .contract {
         let contractDeclaration = try parseContractDeclaration()
         context.declaredContractsIdentifiers.append(contractDeclaration.identifier)
         declarations.append(.contractDeclaration(contractDeclaration))
@@ -83,49 +94,49 @@ extension Parser {
 
 extension Parser {
   func parseIdentifier() throws -> Identifier {
-    guard let currentToken = currentToken, case .identifier(let name) = currentToken else {
-      throw ParserError.expectedToken(.identifier(""))
+    guard let token = currentToken, case .identifier(let name) = token.kind else {
+      throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
     currentIndex += 1
     consumeNewLines()
-    return Identifier(name: name)
+    return Identifier(name: name, sourceLocation: token.sourceLocation)
   }
 
-  func parseLiteral() throws -> Token.Literal {
-    guard let currentToken = currentToken, case .literal(let literalValue) = currentToken else {
-      throw ParserError.expectedToken(.literal(.string("")))
+  func parseLiteral() throws -> Token {
+    guard let token = currentToken, case .literal(_) = token.kind else {
+      throw ParserError.expectedToken(.literal(.string("")), sourceLocation: currentToken?.sourceLocation)
     }
     currentIndex += 1
     consumeNewLines()
-    return literalValue
+    return token
   }
   
   func parseType() throws -> Type {
-    guard let first = currentToken, case .identifier(let name) = first else {
-      throw ParserError.expectedToken(.identifier(""))
+    guard let first = currentToken, case .identifier(let name) = first.kind else {
+      throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
     
     currentIndex += 1
     consumeNewLines()
-    return Type(name: name)
+    return Type(name: name, sourceLocation: first.sourceLocation)
   }
   
   func parseTypeAnnotation() throws -> TypeAnnotation {
     try consume(.punctuation(.colon))
     let type = try parseType()
-    return TypeAnnotation(type: type)
+    return TypeAnnotation(type: type, sourceLocation: type.sourceLocation)
   }
 }
 
 extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
-    try consume(.contract)
+    let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace))
     let variableDeclarations = try parseVariableDeclarations()
     try consume(.punctuation(.closeBrace))
     
-    return ContractDeclaration(identifier: identifier, variableDeclarations: variableDeclarations)
+    return ContractDeclaration(identifier: identifier, variableDeclarations: variableDeclarations, sourceLocation: contractToken.sourceLocation)
   }
   
   func parseVariableDeclarations() throws -> [VariableDeclaration] {
@@ -139,10 +150,10 @@ extension Parser {
   }
 
   func parseVariableDeclaration() throws -> VariableDeclaration {
-    try consume(.var)
+    let varToken = try consume(.var)
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
-    return VariableDeclaration(identifier: name, type: typeAnnotation.type)
+    return VariableDeclaration(identifier: name, type: typeAnnotation.type, sourceLocation: varToken.sourceLocation)
   }
 }
 
@@ -159,7 +170,7 @@ extension Parser {
       context.functions.append(functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities))
     }
     
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations, sourceLocation: contractIdentifier.sourceLocation)
   }
   
   func parseCallerCapabilityGroup() throws -> [CallerCapability] {
@@ -174,7 +185,7 @@ extension Parser {
     var callerCapabilities = [CallerCapability]()
     repeat {
       let identifier = try parseIdentifier()
-      callerCapabilities.append(CallerCapability(name: identifier.name))
+      callerCapabilities.append(CallerCapability(name: identifier.name, sourceLocation: identifier.sourceLocation))
     } while (attempt { try consume(.punctuation(.comma)) }) != nil
     
     return callerCapabilities
@@ -183,34 +194,34 @@ extension Parser {
   func parseFunctionDeclarations() throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
-    while let modifiers = attempt(parseFunctionHead) {
+    while let (modifiers, funcToken) = attempt(parseFunctionHead) {
       let identifier = try parseIdentifier()
       let parameters = try parseParameters()
       let resultType = attempt(parseResult)
       let body = try parseCodeBlock()
       
-      let functionDeclaration = FunctionDeclaration(modifiers: modifiers, identifier: identifier, parameters: parameters, resultType: resultType, body: body)
+      let functionDeclaration = FunctionDeclaration(modifiers: modifiers, identifier: identifier, parameters: parameters, resultType: resultType, body: body, sourceLocation: modifiers.first?.sourceLocation ?? funcToken.sourceLocation)
       functionDeclarations.append(functionDeclaration)
     }
     
     return functionDeclarations
   }
   
-  func parseFunctionHead() throws -> [Token] {
+  func parseFunctionHead() throws -> ([Token], funcToken: Token) {
     var modifiers = [Token]()
     
     while true {
-      if (attempt { try consume(.public) }) != nil {
-        modifiers.append(.public)
-      } else if (attempt { try consume(.mutating) }) != nil {
-        modifiers.append(.mutating)
+      if let token = attempt({ try consume(.public) }) {
+        modifiers.append(token)
+      } else if let token = attempt({ try consume(.mutating) }) {
+        modifiers.append(token)
       } else {
         break
       }
     }
     
-    try consume(.func)
-    return modifiers
+    let funcToken = try consume(.func)
+    return (modifiers, funcToken)
   }
   
   func parseParameters() throws -> [Parameter] {
@@ -224,7 +235,7 @@ extension Parser {
     repeat {
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type))
+      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, sourceLocation: identifier.sourceLocation))
     } while (attempt { try consume(.punctuation(.comma)) }) != nil
     
     try consume(.punctuation(.closeBracket))
@@ -234,7 +245,7 @@ extension Parser {
   func parseResult() throws -> Type {
     try consume(.punctuation(.arrow))
     let identifier = try parseIdentifier()
-    return Type(name: identifier.name)
+    return Type(name: identifier.name, sourceLocation: identifier.sourceLocation)
   }
   
   func parseCodeBlock() throws -> [Statement] {
@@ -262,7 +273,7 @@ extension Parser {
       } else {
         break
       }
-      try? consume(.punctuation(.semicolon))
+      _ = try? consume(.punctuation(.semicolon))
       while (try? consume(.newline)) != nil {}
     }
     
@@ -271,12 +282,12 @@ extension Parser {
   
   func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
     var binaryExpression: BinaryExpression? = nil
-    for op in Token.BinaryOperator.allByIncreasingPrecedence {
+    for op in Token.Kind.BinaryOperator.allByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
       let lhs = try parseExpression(upTo: index)
-      try consume(.binaryOperator(op))
+      let operatorToken = try consume(.binaryOperator(op))
       let rhs = try parseExpression(upTo: limitTokenIndex)
-      binaryExpression = BinaryExpression(lhs: lhs, op: op, rhs: rhs)
+      binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs, sourceLocation: lhs.sourceLocation)
       break
     }
     
@@ -306,7 +317,7 @@ extension Parser {
   func parseBracketedExpression() throws -> Expression {
     try consume(.punctuation(.openBracket))
     guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      throw ParserError.expectedToken(.punctuation(.closeBracket))
+      throw ParserError.expectedToken(.punctuation(.closeBracket), sourceLocation: currentToken?.sourceLocation)
     }
     let expression = try parseExpression(upTo: closeBracketIndex)
     try consume(.punctuation(.closeBracket))
@@ -318,7 +329,7 @@ extension Parser {
     let identifier = try parseIdentifier()
     let arguments = try parseFunctionCallArgumentList()
 
-    return FunctionCall(identifier: identifier, arguments: arguments)
+    return FunctionCall(identifier: identifier, arguments: arguments, sourceLocation: identifier.sourceLocation)
   }
 
   func parseFunctionCallArgumentList() throws -> [Expression] {
@@ -328,7 +339,7 @@ extension Parser {
 
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
       if let argument = try? parseExpression(upTo: argumentEnd) {
-        try consume(tokens[argumentEnd])
+        try consume(tokens[argumentEnd].kind)
         arguments.append(argument)
       } else {
         break
@@ -343,21 +354,21 @@ extension Parser {
   }
   
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
-    try consume(.return)
+    let returnToken = try consume(.return)
     let expression = try? parseExpression(upTo: statementEndIndex)
-    return ReturnStatement(expression: expression)
+    return ReturnStatement(expression: expression, sourceLocation: returnToken.sourceLocation)
   }
 
   func parseIfStatement() throws -> IfStatement {
-    try consume(.if)
+    let ifToken = try consume(.if)
     guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
-      throw ParserError.expectedToken(.punctuation(.openBrace))
+      throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
     }
     let condition = try parseExpression(upTo: nextOpenBraceIndex)
     let statements = try parseCodeBlock()
     let elseClauseStatements = (try? parseElseClause()) ?? []
 
-    return IfStatement(condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
+    return IfStatement(condition: condition, statements: statements, elseClauseStatements: elseClauseStatements, sourceLocation: ifToken.sourceLocation)
   }
 
   func parseElseClause() throws -> [Statement] {
@@ -367,7 +378,7 @@ extension Parser {
 }
 
 extension Parser {
-  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token], maxIndex: Int? = nil) -> Int? {
+  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token.Kind], maxIndex: Int? = nil) -> Int? {
     let upperBound = maxIndex ?? tokens.count
 
     var bracketDepth = 0
@@ -375,7 +386,7 @@ extension Parser {
 
     let range = (currentIndex..<upperBound)
     for index in range where braceDepth >= 0 {
-      let token = tokens[index]
+      let token = tokens[index].kind
 
       if limitTokens.contains(token) {
         if bracketDepth == 0 { return index }
@@ -396,5 +407,5 @@ extension Parser {
 }
 
 enum ParserError: Error {
-  case expectedToken(Token)
+  case expectedToken(Token.Kind, sourceLocation: SourceLocation?)
 }

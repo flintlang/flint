@@ -8,22 +8,17 @@
 import XCTest
 import Parser
 @testable import SemanticAnalyzer
+import Diagnostic
 
 protocol SemanticAnalyzerTest {
   var sourceCode: String { get }
 }
 
 extension SemanticAnalyzerTest {
-  private var sourceFile: URL {
-    let file = URL(fileURLWithPath: NSTemporaryDirectory() + UUID().uuidString)
-    SourceFile(contents: sourceCode).write(to: file)
-    return file
-  }
-
   func analyze() throws {
-    let tokens = Tokenizer(inputFile: sourceFile).tokenize()
-    let (ast, context) = try! Parser(tokens: tokens).parse()
-    try SemanticAnalyzer(ast: ast, context: context).analyze()
+    let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
+    let (ast, context, _) = Parser(tokens: tokens).parse()
+    try SemanticAnalyzer(ast: ast!, context: context).visit(ast!)
   }
 }
 

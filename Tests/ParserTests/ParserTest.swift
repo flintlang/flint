@@ -7,6 +7,7 @@
 
 import XCTest
 import Parser
+import Diagnostic
 
 import AST
 
@@ -17,6 +18,6 @@ protocol ParserTest {
 
 extension ParserTest {
   func test() {
-    XCTAssertEqual(try Parser(tokens: tokens).parse().0, expectedAST)
+    XCTAssertEqual(Parser(tokens: tokens).parse().0!, expectedAST)
   }
 }

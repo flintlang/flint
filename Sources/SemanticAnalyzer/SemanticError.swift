@@ -8,6 +8,6 @@
 import AST
 
 enum SemanticError: Error {
-  case invalidFunctionCall(FunctionCall)
-  case invalidContractBehaviorDeclaration(ContractBehaviorDeclaration)
+  case noMatchingFunctionForFunctionCall(FunctionCall, contextCapabilities: [CallerCapability])
+  case contractBehaviorDeclarationNoMatchingContract(ContractBehaviorDeclaration)
 }
