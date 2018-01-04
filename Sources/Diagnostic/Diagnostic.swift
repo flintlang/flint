@@ -12,17 +12,17 @@ public struct Diagnostic {
   }
 
   public var severity: Severity
-  public var sourceLocation: SourceLocation
+  public var sourceLocation: SourceLocation?
   public var message: String
 
-  public init(severity: Severity, sourceLocation: SourceLocation, message: String) {
+  public init(severity: Severity, sourceLocation: SourceLocation?, message: String) {
     self.severity = severity
     self.sourceLocation = sourceLocation
     self.message = message
   }
 }
 
-public struct SourceLocation {
+public struct SourceLocation: Equatable {
   public var line: Int
   public var column: Int
   public var length: Int
@@ -31,5 +31,9 @@ public struct SourceLocation {
     self.line = line
     self.column = column
     self.length = length
+  }
+
+  public static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
+    return lhs.line == rhs.line && lhs.column == rhs.column && lhs.length == rhs.length
   }
 }

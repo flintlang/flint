@@ -10,10 +10,10 @@ let package = Package(
   targets: [
     .target(
       name: "etherlang",
-      dependencies: ["Parser", "SemanticAnalyzer", "IULIABackend"]),
+      dependencies: ["Parser", "SemanticAnalyzer", "IULIABackend", "Diagnostic"]),
     .target(
       name: "AST",
-      dependencies: []),
+      dependencies: ["Diagnostic"]),
     .target(
       name: "Diagnostic",
       dependencies: []),

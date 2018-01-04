@@ -80,7 +80,8 @@ extension IULIAFunction {
   func render(_ binaryExpression: BinaryExpression) -> String {
     let lhs = render(binaryExpression.lhs)
     let rhs = render(binaryExpression.rhs)
-    switch binaryExpression.op {
+    
+    switch binaryExpression.opToken {
     case .equal: return "sstore(\(render(binaryExpression.lhs, asLValue: true)), \(rhs))"
     case .plus: return "add(\(lhs), \(rhs))"
     case .minus: return "sub(\(lhs), \(rhs))"
@@ -114,7 +115,11 @@ extension IULIAFunction {
     return "sload(\(propertyMap[identifier.name]!))"
   }
 
-  func render(_ literal: Token.Literal) -> String {
+  func render(_ literalToken: Token) -> String {
+    guard case .literal(let literal) = literalToken.kind else {
+      fatalError("Unexpected token \(literalToken.kind).")
+    }
+
     switch literal {
     case .boolean(let boolean): return boolean.rawValue
     case .decimal(.real(let num1, let num2)): return "\(num1).\(num2)"

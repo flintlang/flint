@@ -10,15 +10,14 @@ import AST
 import Diagnostic
 
 public struct Tokenizer {
-  var inputFile: URL
+  var sourceCode: String
   
-  public init(inputFile: URL) {
-    self.inputFile = inputFile
+  public init(sourceCode: String) {
+    self.sourceCode = sourceCode
   }
   
   public func tokenize() -> [Token] {
-    let code = try! String(contentsOf: inputFile, encoding: .utf8)
-    return tokenize(string: code)
+    return tokenize(string: sourceCode)
   }
 
   func tokenize(string: String) -> [Token] {
@@ -30,26 +29,26 @@ public struct Tokenizer {
       if component == " " {
         continue
       } else if let token = syntaxMap[component] {
-        tokens.append(token)
+        tokens.append(Token(kind: token, sourceLocation: sourceLocation))
       } else if let num = Int(component) {
         let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
-        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!, lastTwoTokens.last! == .binaryOperator(.dot) {
-          tokens[tokens.count-2] = .literal(.decimal(.real(base, num)))
+        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind, lastTwoTokens.last!.kind == .binaryOperator(.dot) {
+          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
-          tokens.append(.literal(.decimal(.integer(num))))
+          tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
         }
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
-        tokens.append(.literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))))
+        tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
       } else {
-        tokens.append(.identifier(component))
+        tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
       }
     }
 
     return tokens
   }
 
-  let syntaxMap: [String: Token] = [
+  let syntaxMap: [String: Token.Kind] = [
     "\n": .newline,
     "contract": .contract,
     "var": .var,
