@@ -23,19 +23,7 @@ public final class SemanticAnalyzer {
     return diagnostics
   }
 
-  func addDiagnostic(fromError error: Error) {
-    diagnostics.append(diagnostic(from: error))
-  }
-
-  private func diagnostic(from error: Error) -> Diagnostic {
-    switch error {
-    case SemanticError.noMatchingFunctionForFunctionCall(let functionCall, let contextCallerCapabilities):
-      return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(contextCallerCapabilities.map { $0.name })")
-    case SemanticError.contractBehaviorDeclarationNoMatchingContract(let contractBehaviorDeclaration):
-      return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.contractIdentifier.sourceLocation, message: "Contract behavior declaration for \(contractBehaviorDeclaration.contractIdentifier.name) has no associated contract declaration")
-    case SemanticError.undeclaredCallerCapability(let callerCapability, let contractIdentifier):
-      return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability \(callerCapability.name) is undefined in \(contractIdentifier.name) or has incompatible type")
-    default: fatalError()
-    }
+  func addDiagnostic(_ diagnostic: Diagnostic) {
+    diagnostics.append(diagnostic)
   }
 }

@@ -15,10 +15,12 @@ protocol SemanticAnalyzerTest {
 }
 
 extension SemanticAnalyzerTest {
-  func analyze() throws {
+  func analyze() -> [Diagnostic] {
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (ast, context, _) = Parser(tokens: tokens).parse()
-    try SemanticAnalyzer(ast: ast!, context: context).visit(ast!)
+    let analyzer = SemanticAnalyzer(ast: ast!, context: context)
+    analyzer.visit(ast!)
+    return analyzer.diagnostics
   }
 }
 

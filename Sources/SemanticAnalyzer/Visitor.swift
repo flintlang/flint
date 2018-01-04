@@ -38,7 +38,7 @@ extension SemanticAnalyzer {
     visit(contractBehaviorDeclaration.contractIdentifier)
 
     guard context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) else {
-      addDiagnostic(fromError: SemanticError.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
+      addDiagnostic(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
       return
     }
 
@@ -84,7 +84,7 @@ extension SemanticAnalyzer {
 
   func visit(_ callerCapability: CallerCapability, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
     guard callerCapability.name == "any" || context.declaredCallerCapabilities(inContractWithIdentifier: contractBehaviorDeclarationContext.contractIdentifier).contains(where: { $0.identifier.name == callerCapability.name }) else {
-      addDiagnostic(fromError: SemanticError.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
+      addDiagnostic(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
       return
     }
   }
@@ -116,7 +116,7 @@ extension SemanticAnalyzer {
   func visit(_ functionCall: FunctionCall, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
 
     guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) else {
-      addDiagnostic(fromError: SemanticError.noMatchingFunctionForFunctionCall(functionCall, contextCapabilities: contractBehaviorDeclarationContext.callerCapabilities))
+      addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities))
       return
     }
   }
