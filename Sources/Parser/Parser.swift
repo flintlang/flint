@@ -135,6 +135,8 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let variableDeclarations = try parseVariableDeclarations()
     try consume(.punctuation(.closeBrace))
+
+    context.contractVariablesMap[identifier, default: []].append(contentsOf: variableDeclarations)
     
     return ContractDeclaration(identifier: identifier, variableDeclarations: variableDeclarations, sourceLocation: contractToken.sourceLocation)
   }

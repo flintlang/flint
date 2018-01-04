@@ -7,6 +7,7 @@
 
 import XCTest
 @testable import SemanticAnalyzer
+import Diagnostic
 
 class InvalidContractBehaviorDeclarationTest: XCTestCase, SemanticAnalyzerTest {
   var sourceCode: String =
@@ -15,14 +16,8 @@ class InvalidContractBehaviorDeclarationTest: XCTestCase, SemanticAnalyzerTest {
   """
 
   func test() {
-    do {
-      try analyze()
-    } catch SemanticError.contractBehaviorDeclarationNoMatchingContract(_) {
-      return
-    } catch {
-      XCTFail("Unexpected error: \(error)")
-    }
-    XCTFail()
+    let diagnostics = analyze()
+    XCTAssertEqual(diagnostics.count, 1)
   }
 
 }

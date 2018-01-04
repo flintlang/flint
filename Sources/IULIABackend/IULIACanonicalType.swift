@@ -12,11 +12,17 @@ enum CanonicalType: String {
   case address
 
   init?(from type: Type) {
-    switch type.name {
-    case "Ether": self = .uint256
-    case "Int": self = .uint256
-    case "Address": self = .address
-    default: return nil
+    switch type.kind {
+    case .builtInType(let builtInType):
+      switch builtInType {
+      case .address: self = .address
+      }
+    case .userDefinedType(let userDefinedType):
+      switch userDefinedType {
+      case "Ether": self = .uint256
+      case "Int": self = .uint256
+      default: return nil
+      }
     }
   }
 }

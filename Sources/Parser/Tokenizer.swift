@@ -106,10 +106,12 @@ public struct Tokenizer {
 
         if let (last, sourceLocation) = components.last {
           if last == ":", char == ":" {
-            components[components.endIndex.advanced(by: -1)] = ("::", sourceLocation)
+            components[components.endIndex.advanced(by: -1)] = ("::", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
+            column += 1
             continue
           } else if last == "-", char == ">" {
-            components[components.endIndex.advanced(by: -1)] = ("->", sourceLocation)
+            components[components.endIndex.advanced(by: -1)] = ("->", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
+            column += 1
             continue
           }
         }

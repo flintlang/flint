@@ -1,0 +1,14 @@
+contract Test {
+  var owner: Address
+}
+
+Test :: (any) {
+  public func foo() {
+    bar()
+  }
+}
+
+Test :: (alice) {
+  func bar() {
+  }
+}

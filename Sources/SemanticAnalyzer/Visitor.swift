@@ -8,113 +8,120 @@
 import AST
 
 extension SemanticAnalyzer {
-  func visit(_ topLevelModule: TopLevelModule) throws {
+  func visit(_ topLevelModule: TopLevelModule) {
     for declaration in topLevelModule.declarations {
-      try visit(declaration)
+      visit(declaration)
     }
   }
 
-  func visit(_ topLevelDeclaration: TopLevelDeclaration) throws {
+  func visit(_ topLevelDeclaration: TopLevelDeclaration) {
     switch topLevelDeclaration {
     case .contractDeclaration(let contractDeclaration):
-      try visit(contractDeclaration)
+      visit(contractDeclaration)
     case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
-      try visit(contractBehaviorDeclaration)
+      visit(contractBehaviorDeclaration)
     }
   }
 
-  func visit(_ contractDeclaration: ContractDeclaration) throws {
+  func visit(_ contractDeclaration: ContractDeclaration) {
     for variableDeclaration in contractDeclaration.variableDeclarations {
-      try visit(variableDeclaration)
+      visit(variableDeclaration)
     }
   }
 
-  func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) throws {
-    try visit(contractBehaviorDeclaration.contractIdentifier)
-
-    guard context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) else {
-      throw SemanticError.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration)
-    }
-
-    for callerCapability in contractBehaviorDeclaration.callerCapabilities {
-      try visit(callerCapability)
-    }
-
-
-    let declarationContext = FunctionDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
-
-    for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
-      try visit(functionDeclaration, functionDeclarationContext: declarationContext)
-    }
-  }
-
-  func visit(_ variableDeclaration: VariableDeclaration) throws {
-    try visit(variableDeclaration.identifier)
-    try visit(variableDeclaration.type)
-  }
-
-  struct FunctionDeclarationContext {
+  struct ContractBehaviorDeclarationContext {
     var contractIdentifier: Identifier
     var callerCapabilities: [CallerCapability]
   }
 
-  func visit(_ functionDeclaration: FunctionDeclaration, functionDeclarationContext: FunctionDeclarationContext) throws {
-    try visit(functionDeclaration.identifier)
+  func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
+    visit(contractBehaviorDeclaration.contractIdentifier)
+
+    guard context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) else {
+      addDiagnostic(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
+      return
+    }
+
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+
+    for callerCapability in contractBehaviorDeclaration.callerCapabilities {
+      visit(callerCapability, contractBehaviorDeclarationContext: declarationContext)
+    }
+
+
+    for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
+      visit(functionDeclaration, contractBehaviorDeclarationContext: declarationContext)
+    }
+  }
+
+  func visit(_ variableDeclaration: VariableDeclaration) {
+    visit(variableDeclaration.identifier)
+    visit(variableDeclaration.type)
+  }
+
+  func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+    visit(functionDeclaration.identifier)
     for parameter in functionDeclaration.parameters {
-      try visit(parameter)
+      visit(parameter)
     }
 
     if let resultType = functionDeclaration.resultType {
-      try visit(resultType)
+      visit(resultType)
     }
 
     for statement in functionDeclaration.body {
-      try visit(statement, functionDeclarationContext: functionDeclarationContext)
+      visit(statement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
     }
   }
 
-  func visit(_ parameter: Parameter) throws {}
+  func visit(_ parameter: Parameter) {}
 
-  func visit(_ typeAnnotation: TypeAnnotation) throws {}
+  func visit(_ typeAnnotation: TypeAnnotation) {}
 
-  func visit(_ identifier: Identifier) throws {}
+  func visit(_ identifier: Identifier) {}
 
-  func visit(_ type: Type) throws {}
+  func visit(_ type: Type) {}
 
-  func visit(_ callerCapability: CallerCapability) throws {}
+  func visit(_ callerCapability: CallerCapability, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+    guard callerCapability.name == "any" || context.declaredCallerCapabilities(inContractWithIdentifier: contractBehaviorDeclarationContext.contractIdentifier).contains(where: { $0.identifier.name == callerCapability.name }) else {
+      addDiagnostic(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
+      return
+    }
+  }
 
-  func visit(_ expression: Expression, functionDeclarationContext: FunctionDeclarationContext) throws {
+  func visit(_ expression: Expression, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
     switch expression {
-    case .binaryExpression(let binaryExpression): try visit(binaryExpression, functionDeclarationContext: functionDeclarationContext)
-    case .bracketedExpression(let expression): try visit(expression, functionDeclarationContext: functionDeclarationContext)
-    case .functionCall(let functionCall): try visit(functionCall, functionDeclarationContext: functionDeclarationContext)
-    case .identifier(let identifier): try visit(identifier)
+    case .binaryExpression(let binaryExpression): visit(binaryExpression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .bracketedExpression(let expression): visit(expression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .functionCall(let functionCall): visit(functionCall, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .identifier(let identifier): visit(identifier)
     case .literal(_): break
-    case .variableDeclaration(let variableDeclaration): try visit(variableDeclaration)
+    case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
     }
   }
 
-  func visit(_ statement: Statement, functionDeclarationContext: FunctionDeclarationContext) throws {
+  func visit(_ statement: Statement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
     switch statement {
-    case .expression(let expression): try visit(expression, functionDeclarationContext: functionDeclarationContext)
-    case .ifStatement(let ifStatement): try visit(ifStatement, functionDeclarationContext: functionDeclarationContext)
-    case .returnStatement(let returnStatement): try visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
+    case .expression(let expression): visit(expression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .ifStatement(let ifStatement): visit(ifStatement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .returnStatement(let returnStatement): visit(returnStatement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
     }
   }
 
-  func visit(_ binaryExpression: BinaryExpression, functionDeclarationContext: FunctionDeclarationContext) throws {
-    try visit(binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
-    try visit(binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+  func visit(_ binaryExpression: BinaryExpression, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+    visit(binaryExpression.lhs, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    visit(binaryExpression.rhs, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
   }
 
-  func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) throws {
+  func visit(_ functionCall: FunctionCall, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
 
-    guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractIdentifier, callerCapabilities: functionDeclarationContext.callerCapabilities) else {
-      throw SemanticError.noMatchingFunctionForFunctionCall(functionCall, contextCapabilities: functionDeclarationContext.callerCapabilities)
+    guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) else {
+      addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities))
+      return
     }
   }
 
-  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) throws {}
+  func visit(_ returnStatement: ReturnStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
 
-  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) throws {}
+  func visit(_ ifStatement: IfStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
 }
