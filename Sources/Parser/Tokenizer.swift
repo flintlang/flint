@@ -7,6 +7,7 @@
 
 import Foundation
 import AST
+import Diagnostic
 
 public struct Tokenizer {
   var inputFile: URL
@@ -25,7 +26,7 @@ public struct Tokenizer {
 
     var tokens = [Token]()
 
-    for component in components {
+    for (component, sourceLocation) in components {
       if component == " " {
         continue
       } else if let token = syntaxMap[component] {
@@ -81,11 +82,14 @@ public struct Tokenizer {
     "false": .literal(.boolean(.false))
   ]
 
-  func splitOnPunctuation(string: String) -> [String] {
-    var components = [String]()
+  func splitOnPunctuation(string: String) -> [(String, SourceRange)] {
+    var components = [(String, SourceRange)]()
     var acc = ""
 
     var inStringLiteral = false
+
+    var line = 1
+    var column = 1
 
     for char in string {
       if char == "\"" {
@@ -97,26 +101,33 @@ public struct Tokenizer {
         acc += String(char)
       } else {
         if !acc.isEmpty {
-          components.append(acc)
+          components.append((acc, SourceRange(line: line, column: column - acc.count, length: acc.count)))
           acc = ""
         }
 
-        if let last = components.last {
+        if let (last, sourceLocation) = components.last {
           if last == ":", char == ":" {
-            components[components.endIndex.advanced(by: -1)] = "::"
+            components[components.endIndex.advanced(by: -1)] = ("::", sourceLocation)
             continue
           } else if last == "-", char == ">" {
-            components[components.endIndex.advanced(by: -1)] = "->"
+            components[components.endIndex.advanced(by: -1)] = ("->", sourceLocation)
             continue
           }
         }
 
-        components.append(String(char))
+        components.append((String(char), SourceRange(line: line, column: column, length: 1)))
+      }
+
+      column += 1
+
+      if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
+        line += 1
+        column = 1
       }
     }
 
-    components.append(acc)
-    return components.filter { !$0.isEmpty }
+    components.append((acc, SourceRange(line: line, column: column - acc.count, length: acc.count)))
+    return components.filter { !$0.0.isEmpty }
   }
 
 }

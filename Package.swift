@@ -15,14 +15,17 @@ let package = Package(
       name: "AST",
       dependencies: []),
     .target(
+      name: "Diagnostic",
+      dependencies: []),
+    .target(
       name: "Parser",
-      dependencies: ["AST"]),
+      dependencies: ["AST", "Diagnostic"]),
     .testTarget(
       name: "ParserTests",
       dependencies: ["Parser"]),
     .target(
       name: "SemanticAnalyzer",
-      dependencies: ["AST"]),
+      dependencies: ["AST", "Diagnostic"]),
     .testTarget(
       name: "SemanticAnalyzerTests",
       dependencies: ["SemanticAnalyzer", "Parser"]),
