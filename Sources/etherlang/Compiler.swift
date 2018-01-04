@@ -20,14 +20,11 @@ struct Compiler {
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (parserAST, context, diagnostics) = Parser(tokens: tokens).parse()
 
-    print(tokens)
-    print("\n\n")
     print(DiagnosticsFormatter(diagnostics: diagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
 
     guard let ast = parserAST else {
       exit(1)
     }
-    print(ast)
 
     try! SemanticAnalyzer(ast: ast, context: context).analyze()
     return IULIABackend(topLevelModule: ast).generateCode()
