@@ -9,6 +9,15 @@
           "revision": "d0084e4a6fe9490b3baab3d3c2aad58d3a852daf",
           "version": "0.8.0"
         }
+      },
+      {
+        "package": "Rainbow",
+        "repositoryURL": "https://github.com/onevcat/Rainbow",
+        "state": {
+          "branch": null,
+          "revision": "f407235c7e473c3cb2d2907bb6822616d22a0b78",
+          "version": "3.0.3"
+        }
       }
     ]
   },

@@ -22,13 +22,20 @@ struct Compiler {
 
     guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
       print(DiagnosticsFormatter(diagnostics: parserDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
-      exit(1)
+      exitWithFailure()
     }
 
     let semanticAnalyzerDiagnostics = SemanticAnalyzer(ast: ast, context: context).analyze()
     print(DiagnosticsFormatter(diagnostics: parserDiagnostics + semanticAnalyzerDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
 
-    guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else { exit(1)}
+    guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
+      exitWithFailure()
+    }
     return IULIABackend(topLevelModule: ast).generateCode()
+  }
+
+  func exitWithFailure() -> Never {
+    print("Failed to compile \(inputFile.lastPathComponent).")
+    exit(1)
   }
 }

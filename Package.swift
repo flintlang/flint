@@ -5,7 +5,8 @@ import PackageDescription
 let package = Package(
   name: "etherlang",
   dependencies: [
-    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2")
+    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
+    .package(url: "https://github.com/onevcat/Rainbow", from: "3.0.0")
   ],
   targets: [
     .target(
@@ -16,7 +17,7 @@ let package = Package(
       dependencies: ["Diagnostic"]),
     .target(
       name: "Diagnostic",
-      dependencies: []),
+      dependencies: ["Rainbow"]),
     .target(
       name: "Parser",
       dependencies: ["AST", "Diagnostic"]),
