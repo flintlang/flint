@@ -26,7 +26,7 @@ struct Compiler {
     }
 
     let semanticAnalyzerDiagnostics = SemanticAnalyzer(ast: ast, context: context).analyze()
-    print(DiagnosticsFormatter(diagnostics: parserDiagnostics + semanticAnalyzerDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
+    print(DiagnosticsFormatter(diagnostics: parserDiagnostics + semanticAnalyzerDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered(), terminator: "")
 
     guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
       exitWithFailure()
