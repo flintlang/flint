@@ -11,7 +11,8 @@ public struct Context {
   public var contractVariablesMap = [Identifier: [VariableDeclaration]]()
 
   public func declaredCallerCapabilities(inContractWithIdentifier contractIdentifier: Identifier) -> [VariableDeclaration] {
-    guard let variables = contractVariablesMap[contractIdentifier] else { return [] }
+    let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
+    guard let variables = contractVariablesMap[contractDefinitionIdentifier] else { return [] }
     return variables.filter { variable in
       guard case .builtInType(let builtInType) = variable.type.kind else {
         return false
