@@ -23,6 +23,9 @@ let package = Package(
     .target(
       name: "SemanticAnalyzer",
       dependencies: ["AST"]),
+    .testTarget(
+      name: "SemanticAnalyzerTests",
+      dependencies: ["SemanticAnalyzer, Tokenizer, Parser"]),
     .target(
       name: "IULIABackend",
       dependencies: ["AST", "CryptoSwift"]),

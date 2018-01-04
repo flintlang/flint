@@ -69,6 +69,7 @@ extension Parser {
       guard let first = currentToken else { break }
       if first == .contract {
         let contractDeclaration = try parseContractDeclaration()
+        context.declaredContractsIdentifiers.append(contractDeclaration.identifier)
         declarations.append(.contractDeclaration(contractDeclaration))
       } else {
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()

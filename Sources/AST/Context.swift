@@ -5,9 +5,8 @@
 //  Created by Franklin Schrans on 12/26/17.
 //
 
-import Foundation
-
 public struct Context {
+  public var declaredContractsIdentifiers = [Identifier]()
   public var functions = [MangledFunction]()
 
   public init() {}
