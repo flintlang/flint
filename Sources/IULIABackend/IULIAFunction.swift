@@ -146,7 +146,7 @@ extension IULIAFunction {
     }
 
     switch literal {
-    case .boolean(let boolean): return boolean.rawValue
+    case .boolean(let boolean): return boolean == .false ? "0" : "1"
     case .decimal(.real(let num1, let num2)): return "\(num1).\(num2)"
     case .decimal(.integer(let num)): return "\(num)"
     case .string(let string): return "\"\(string)\""
