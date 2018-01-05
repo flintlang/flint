@@ -71,6 +71,8 @@ public struct Tokenizer {
     ">=": .binaryOperator(.greaterThanOrEqual),
     "{": .punctuation(.openBrace),
     "}": .punctuation(.closeBrace),
+    "[": .punctuation(.openSquareBracket),
+    "]": .punctuation(.closeSquareBracket),
     ":": .punctuation(.colon),
     "::": .punctuation(.doubleColon),
     "(": .punctuation(.openBracket),

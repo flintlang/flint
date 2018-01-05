@@ -37,9 +37,10 @@ caller-capability-list -> caller-capability-identifier | caller-capability-ident
 type-annotation -> [:] type
 
 // Expression
-expression -> identifier | binary-expression | function-call | literal | bracketed-expression
+expression -> identifier | binary-expression | function-call | literal | bracketed-expression | array-access
 binary-expression -> expression binary-operator expression
 bracketed-expression -> [(] expression [)]
+array-access -> identifier [[] expression []]
 
 // Function Calls
 
@@ -51,7 +52,7 @@ binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
 identifier -> [a-zA-Z] [a-zA-Z0-9]*
-type -> identifier
+type -> identifier | [[] type []]
 caller-capability-identifier -> identifier
 
 // Literals

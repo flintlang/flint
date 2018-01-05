@@ -39,7 +39,7 @@ struct IULIAInterface {
 
     let returnCode: String?
     if let resultType = functionDeclaration.resultType {
-      returnCode = " returns (\(CanonicalType(from: resultType)!) ret)"
+      returnCode = " returns (\(CanonicalType(from: resultType.rawType)!) ret)"
     } else {
       returnCode = ""
     }
@@ -48,6 +48,6 @@ struct IULIAInterface {
   }
 
   func render(_ functionParameter: Parameter) -> String {
-    return "\(CanonicalType(from: functionParameter.type)!.rawValue) \(functionParameter.identifier.name)"
+    return "\(CanonicalType(from: functionParameter.type.rawType)!.rawValue) \(functionParameter.identifier.name)"
   }
 }

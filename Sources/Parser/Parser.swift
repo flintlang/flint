@@ -119,8 +119,26 @@ extension Parser {
     consumeNewLines()
     return token
   }
+
+  func parseArrayAccess(scopeContext: ScopeContext) throws -> ArrayAccess {
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.openSquareBracket))
+    guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
+      throw ParserError.expectedToken(.punctuation(.closeSquareBracket), sourceLocation: identifier.sourceLocation)
+    }
+    let (indexExpression, _) = try parseExpression(upTo: index, scopeContext: scopeContext)
+    try consume(.punctuation(.closeSquareBracket))
+
+    return ArrayAccess(arrayIdentifier: identifier, indexExpression: indexExpression, sourceLocation: identifier.sourceLocation)
+  }
   
   func parseType() throws -> Type {
+    if let openBracketToken = attempt({ try consume(.punctuation(.openSquareBracket)) }) {
+      let type = try parseType()
+      try consume(.punctuation(.closeSquareBracket))
+      return Type(arrayWithElementType: type.rawType, sourceLocation: openBracketToken.sourceLocation)
+    }
+
     guard let first = currentToken, case .identifier(let name) = first.kind else {
       throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
@@ -334,6 +352,13 @@ extension Parser {
       return (.self(Token(kind: .self, sourceLocation: self.sourceLocation)), scopeContext)
     }
 
+    if var arrayAccess = attempt({ try parseArrayAccess(scopeContext: scopeContext) }) {
+      if !scopeContext.contains(localVariable: arrayAccess.arrayIdentifier.name) {
+        arrayAccess.arrayIdentifier.isImplicitPropertyAccess = true
+      }
+      return (.arrayAccess(arrayAccess), scopeContext)
+    }
+
     var identifier = try parseIdentifier()
     if !scopeContext.contains(localVariable: identifier.name) {
       identifier.isImplicitPropertyAccess = true
@@ -410,22 +435,25 @@ extension Parser {
 
     var bracketDepth = 0
     var braceDepth = 0
+    var squareBracketDepth = 0
 
     let range = (currentIndex..<upperBound)
     for index in range where braceDepth >= 0 {
       let token = tokens[index].kind
 
       if limitTokens.contains(token) {
-        if bracketDepth == 0 { return index }
+        if bracketDepth == 0 && squareBracketDepth == 0 { return index }
       }
-      if token == .punctuation(.openBracket) {
-        bracketDepth += 1
-      } else if token == .punctuation(.closeBracket) {
-        bracketDepth -= 1
-      } else if token == .punctuation(.openBrace) {
-        braceDepth += 1
-      } else if token == .punctuation(.closeBrace) {
-        braceDepth -= 1
+      if case .punctuation(let punctuation) = token {
+        switch punctuation {
+        case .openBracket: bracketDepth += 1
+        case .closeBracket: bracketDepth -= 1
+        case .openBrace: braceDepth += 1
+        case .closeBrace: braceDepth -= 1
+        case .openSquareBracket: squareBracketDepth += 1
+        case .closeSquareBracket: squareBracketDepth -= 1
+        default: continue
+        }
       }
     }
 
