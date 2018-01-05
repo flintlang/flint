@@ -98,6 +98,7 @@ extension SemanticAnalyzer {
     case .literal(_): break
     case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
+    case .arrayAccess(let arrayAccess): visit(arrayAccess)
     }
   }
 
@@ -125,6 +126,8 @@ extension SemanticAnalyzer {
       visit(argument, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
     }
   }
+
+  func visit(_ arrayAccess: ArrayAccess) {}
 
   func visit(_ returnStatement: ReturnStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
 

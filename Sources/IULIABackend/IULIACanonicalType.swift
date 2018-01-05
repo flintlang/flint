@@ -11,8 +11,8 @@ enum CanonicalType: String {
   case uint256
   case address
 
-  init?(from type: Type) {
-    switch type.kind {
+  init?(from rawType: Type.RawType) {
+    switch rawType {
     case .builtInType(let builtInType):
       switch builtInType {
       case .address: self = .address
@@ -23,6 +23,7 @@ enum CanonicalType: String {
       case "Int": self = .uint256
       default: return nil
       }
+    case .arrayType(_): return nil
     }
   }
 }

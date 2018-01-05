@@ -14,7 +14,7 @@ public struct Context {
     let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
     guard let variables = contractVariablesMap[contractDefinitionIdentifier] else { return [] }
     return variables.filter { variable in
-      guard case .builtInType(let builtInType) = variable.type.kind else {
+      guard case .builtInType(let builtInType) = variable.type.rawType else {
         return false
       }
 

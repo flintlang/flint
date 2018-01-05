@@ -11,23 +11,25 @@ struct IULIAContract {
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
 
-  var propertyMap = [String: Int]()
+  var storage = ContractStorage()
 
   init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration]) {
     self.contractDeclaration = contractDeclaration
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
 
-    var index = 0
     for variableDeclaration in contractDeclaration.variableDeclarations {
-      propertyMap[variableDeclaration.identifier.name] = index
-      index += 1
+      if case .arrayType(_) = variableDeclaration.type.rawType {
+        storage.addArrayProperty(variableDeclaration.identifier.name, size: variableDeclaration.type.rawType.size)
+      } else {
+        storage.addProperty(variableDeclaration.identifier.name)
+      }
     }
   }
 
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, propertyMap: propertyMap)
+        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage)
       }
     }
 

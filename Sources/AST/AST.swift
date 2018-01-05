@@ -115,15 +115,24 @@ public struct Identifier: Hashable {
 }
 
 public struct Type {
-  public enum Kind: Equatable {
+  public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
+    case arrayType(RawType)
     case userDefinedType(String)
 
-    public static func ==(lhs: Type.Kind, rhs: Type.Kind) -> Bool {
+    public static func ==(lhs: RawType, rhs: RawType) -> Bool {
       switch (lhs, rhs) {
       case (.builtInType(let lhsType), .builtInType(let rhsType)): return lhsType == rhsType
       case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)): return lhsType == rhsType
       default: return false
+      }
+    }
+
+    public var size: Int {
+      switch self {
+      case .builtInType(_): return 1
+      case .arrayType(let rawType): return rawType.size * 64
+      case .userDefinedType(_): return 1
       }
     }
   }
@@ -138,15 +147,20 @@ public struct Type {
     }
   }
 
-  public var kind: Kind
+  public var rawType: RawType
   public var sourceLocation: SourceLocation
 
   public init(name: String, sourceLocation: SourceLocation) {
     if let builtInType = BuiltInType(rawValue: name) {
-      kind = .builtInType(builtInType)
+      rawType = .builtInType(builtInType)
     } else {
-      kind = .userDefinedType(name)
+      rawType = .userDefinedType(name)
     }
+    self.sourceLocation = sourceLocation
+  }
+
+  public init(arrayWithElementType: Type.RawType, sourceLocation: SourceLocation) {
+    rawType = .arrayType(arrayWithElementType)
     self.sourceLocation = sourceLocation
   }
 }
@@ -173,6 +187,7 @@ public indirect enum Expression {
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
+  case arrayAccess(ArrayAccess)
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -183,6 +198,7 @@ public indirect enum Expression {
     case .self(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
+    case .arrayAccess(let arrayAccess): return arrayAccess.sourceLocation
     }
   }
 }
@@ -225,6 +241,18 @@ public struct FunctionCall {
   public init(identifier: Identifier, arguments: [Expression], sourceLocation: SourceLocation) {
     self.identifier = identifier
     self.arguments = arguments
+    self.sourceLocation = sourceLocation
+  }
+}
+
+public struct ArrayAccess {
+  public var arrayIdentifier: Identifier
+  public var indexExpression: Expression
+  public var sourceLocation: SourceLocation
+
+  public init(arrayIdentifier: Identifier, indexExpression: Expression, sourceLocation: SourceLocation) {
+    self.arrayIdentifier = arrayIdentifier
+    self.indexExpression = indexExpression
     self.sourceLocation = sourceLocation
   }
 }

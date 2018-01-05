@@ -58,15 +58,17 @@ extension Token {
     }
 
     public enum Punctuation: String {
-      case openBrace       = "{"
-      case closeBrace      = "}"
-      case colon           = ":"
-      case doubleColon     = "::"
-      case openBracket     = "("
-      case closeBracket    = ")"
-      case arrow           = "->"
-      case comma           = ","
-      case semicolon       = ";"
+      case openBrace          = "{"
+      case closeBrace         = "}"
+      case openSquareBracket  = "["
+      case closeSquareBracket = "]"
+      case colon              = ":"
+      case doubleColon        = "::"
+      case openBracket        = "("
+      case closeBracket       = ")"
+      case arrow              = "->"
+      case comma              = ","
+      case semicolon          = ";"
     }
 
     public enum Literal: Equatable {

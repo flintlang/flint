@@ -13,7 +13,7 @@ struct IULIAFunction {
   var functionDeclaration: FunctionDeclaration
   var callerCapabilities: [CallerCapability]
 
-  var propertyMap: [String: Int]
+  var contractStorage: ContractStorage
 
   var name: String {
     return functionDeclaration.identifier.name
@@ -24,11 +24,11 @@ struct IULIAFunction {
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return functionDeclaration.parameters.map({ CanonicalType(from: $0.type)! })
+    return functionDeclaration.parameters.map({ CanonicalType(from: $0.type.rawType)! })
   }
 
   var resultCanonicalType: CanonicalType? {
-    return functionDeclaration.resultType.flatMap({ CanonicalType(from: $0)! })
+    return functionDeclaration.resultType.flatMap({ CanonicalType(from: $0.rawType)! })
   }
 
   func rendered() -> String {
@@ -68,19 +68,20 @@ extension IULIAFunction {
 
   func render(_ expression: Expression, asLValue: Bool = false) -> String {
     switch expression {
-    case .binaryExpression(let binaryExpression): return render(binaryExpression)
+    case .binaryExpression(let binaryExpression): return render(binaryExpression, asLValue: asLValue)
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)
     case .identifier(let identifier): return render(identifier, asLValue: asLValue)
     case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
     case .literal(let literal): return render(literalToken: literal)
     case .self(let `self`): return render(selfToken: self)
+    case .arrayAccess(let arrayAccess): return render(arrayAccess, asLValue: asLValue)
     }
   }
 
-  func render(_ binaryExpression: BinaryExpression) -> String {
-    let lhs = render(binaryExpression.lhs)
-    let rhs = render(binaryExpression.rhs)
+  func render(_ binaryExpression: BinaryExpression, asLValue: Bool) -> String {
+    let lhs = render(binaryExpression.lhs, asLValue: asLValue)
+    let rhs = render(binaryExpression.rhs, asLValue: asLValue)
     
     switch binaryExpression.opToken {
     case .equal: return renderAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
@@ -92,7 +93,7 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .greaterThan: return "gt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
-    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
+    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     }
   }
 
@@ -110,14 +111,14 @@ extension IULIAFunction {
     }
   }
 
-  func renderPropertyAccess(lhs: Expression, rhs: Expression) -> String {
-    let rhsCode = render(rhs)
+  func renderPropertyAccess(lhs: Expression, rhs: Expression, asLValue: Bool) -> String {
+    let rhsCode = render(rhs, asLValue: asLValue)
 
     if case .self(_) = lhs {
       return rhsCode
     }
     
-    let lhsCode = render(lhs)
+    let lhsCode = render(lhs, asLValue: asLValue)
     return "\(lhsCode).\(rhsCode)"
   }
 
@@ -128,10 +129,11 @@ extension IULIAFunction {
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
     if identifier.isImplicitPropertyAccess {
+      let offset = contractStorage.offset(for: identifier.name)
       if asLValue {
-        return "\(propertyMap[identifier.name]!)"
+        return "\(offset)"
       }
-      return "sload(\(propertyMap[identifier.name]!))"
+      return "sload(\(offset))"
     }
     return mangleIdentifierName(identifier.name)
   }
@@ -158,6 +160,24 @@ extension IULIAFunction {
       fatalError("Unexpected token \(selfToken.kind)")
     }
     return ""
+  }
+
+  func render(_ arrayAccess: ArrayAccess, asLValue: Bool = false) -> String {
+    let arrayIdentifier = arrayAccess.arrayIdentifier
+
+    let offset = contractStorage.offset(for: arrayIdentifier.name)
+    let indexExpressionCode = render(arrayAccess.indexExpression)
+    let accessCode = "add(\(offset), \(indexExpressionCode))"
+
+    if arrayIdentifier.isImplicitPropertyAccess {
+      if asLValue {
+        return accessCode
+      } else {
+        return "sload(\(accessCode))"
+      }
+    }
+
+    fatalError()
   }
 
   func render(_ ifStatement: IfStatement) -> String {
