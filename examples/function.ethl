@@ -4,7 +4,9 @@ contract Test {
 
 Test :: (any) {
   public mutating func foo(a: Int, b: Int) {
-    data = bar(a, b);
+    var tmp: Int = bar(a, b)
+    tmp = tmp + 1
+    data = tmp + self.data
   }
 
   func bar(a: Int, b: Int) -> Int {

@@ -20,7 +20,7 @@ struct IULIAFunction {
   }
 
   var parameterNames: [String] {
-    return functionDeclaration.parameters.map({ mangleParameterName($0.identifier.name) })
+    return functionDeclaration.parameters.map({ render($0.identifier) })
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
@@ -52,7 +52,7 @@ struct IULIAFunction {
     return "\(name)(\(parametersString))"
   }
 
-  func mangleParameterName(_ name: String) -> String {
+  func mangleIdentifierName(_ name: String) -> String {
     return "_\(name)"
   }
 }
@@ -72,8 +72,9 @@ extension IULIAFunction {
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)
     case .identifier(let identifier): return render(identifier, asLValue: asLValue)
-    case .variableDeclaration(_): fatalError("Local vars not yet implemented")
-    case .literal(let literal): return render(literal)
+    case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
+    case .literal(let literal): return render(literalToken: literal)
+    case .self(let `self`): return render(selfToken: self)
     }
   }
 
@@ -82,7 +83,7 @@ extension IULIAFunction {
     let rhs = render(binaryExpression.rhs)
     
     switch binaryExpression.opToken {
-    case .equal: return "sstore(\(render(binaryExpression.lhs, asLValue: true)), \(rhs))"
+    case .equal: return renderAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
     case .plus: return "add(\(lhs), \(rhs))"
     case .minus: return "sub(\(lhs), \(rhs))"
     case .times: return "mul(\(lhs), \(rhs))"
@@ -91,10 +92,33 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .greaterThan: return "gt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
-
-    default:
-      fatalError("Operator \(binaryExpression.op) not yet implemented.")
+    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
     }
+  }
+
+  func renderAssignment(lhs: Expression, rhs: Expression) -> String {
+    let rhsCode = render(rhs)
+
+    switch lhs {
+    case .variableDeclaration(let variableDeclaration):
+      return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
+    case .identifier(let identifier) where !identifier.isImplicitPropertyAccess:
+      return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
+    default:
+      let lhsCode = render(lhs, asLValue: true)
+      return "sstore(\(lhsCode), \(rhsCode))"
+    }
+  }
+
+  func renderPropertyAccess(lhs: Expression, rhs: Expression) -> String {
+    let rhsCode = render(rhs)
+
+    if case .self(_) = lhs {
+      return rhsCode
+    }
+    
+    let lhsCode = render(lhs)
+    return "\(lhsCode).\(rhsCode)"
   }
 
   func render(_ functionCall: FunctionCall) -> String {
@@ -102,20 +126,21 @@ extension IULIAFunction {
     return "\(functionCall.identifier.name)(\(args))"
   }
 
-  func render(_ identifier: Identifier, asLValue: Bool) -> String {
-    guard !asLValue else {
-      return "\(propertyMap[identifier.name]!)"
+  func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
+    if identifier.isImplicitPropertyAccess {
+      if asLValue {
+        return "\(propertyMap[identifier.name]!)"
+      }
+      return "sload(\(propertyMap[identifier.name]!))"
     }
-
-    let mangledName = mangleParameterName(identifier.name)
-    if parameterNames.contains(mangledName) {
-      return mangledName
-    }
-
-    return "sload(\(propertyMap[identifier.name]!))"
+    return mangleIdentifierName(identifier.name)
   }
 
-  func render(_ literalToken: Token) -> String {
+  func render(_ variableDeclaration: VariableDeclaration) -> String {
+    return "var \(variableDeclaration.identifier)"
+  }
+
+  func render(literalToken: Token) -> String {
     guard case .literal(let literal) = literalToken.kind else {
       fatalError("Unexpected token \(literalToken.kind).")
     }
@@ -126,6 +151,13 @@ extension IULIAFunction {
     case .decimal(.integer(let num)): return "\(num)"
     case .string(let string): return "\"\(string)\""
     }
+  }
+
+  func render(selfToken: Token) -> String {
+    guard case .self = selfToken.kind else {
+      fatalError("Unexpected token \(selfToken.kind)")
+    }
+    return ""
   }
 
   func render(_ ifStatement: IfStatement) -> String {

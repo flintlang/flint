@@ -110,6 +110,15 @@ extension Parser {
     consumeNewLines()
     return token
   }
+
+  func parseSelf() throws -> Token {
+    guard let token = currentToken, case .self = token.kind else {
+      throw ParserError.expectedToken(.self, sourceLocation: currentToken?.sourceLocation)
+    }
+    currentIndex += 1
+    consumeNewLines()
+    return token
+  }
   
   func parseType() throws -> Type {
     guard let first = currentToken, case .identifier(let name) = first.kind else {
@@ -200,7 +209,9 @@ extension Parser {
       let identifier = try parseIdentifier()
       let parameters = try parseParameters()
       let resultType = attempt(parseResult)
-      let body = try parseCodeBlock()
+
+      let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
+      let body = try parseCodeBlock(scopeContext: scopeContext)
       
       let functionDeclaration = FunctionDeclaration(modifiers: modifiers, identifier: identifier, parameters: parameters, resultType: resultType, body: body, sourceLocation: modifiers.first?.sourceLocation ?? funcToken.sourceLocation)
       functionDeclarations.append(functionDeclaration)
@@ -250,27 +261,29 @@ extension Parser {
     return Type(name: identifier.name, sourceLocation: identifier.sourceLocation)
   }
   
-  func parseCodeBlock() throws -> [Statement] {
+  func parseCodeBlock(scopeContext: ScopeContext) throws -> [Statement] {
     try consume(.punctuation(.openBrace))
-    let statements = try parseStatements()
+    let statements = try parseStatements(scopeContext: scopeContext)
     try consume(.punctuation(.closeBrace))
     return statements
   }
   
-  func parseStatements() throws -> [Statement] {
+  func parseStatements(scopeContext: ScopeContext) throws -> [Statement] {
     var statements = [Statement]()
+
+    var scopeContext = scopeContext
     
     while true {
-
       guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline, .punctuation(.closeBrace)], maxIndex: tokens.count) else {
         break
       }
 
-      if let expression = attempt({ try parseExpression(upTo: statementEndIndex) }) {
+      if let (expression, expressionScopeContext) = attempt({ try parseExpression(upTo: statementEndIndex, scopeContext: scopeContext) }) {
+        scopeContext.merge(with: expressionScopeContext)
         statements.append(.expression(expression))
-      } else if let returnStatement = attempt ({ try parseReturnStatement(statementEndIndex: statementEndIndex) }) {
+      } else if let returnStatement = attempt ({ try parseReturnStatement(statementEndIndex: statementEndIndex, scopeContext: scopeContext) }) {
         statements.append(.returnStatement(returnStatement))
-      } else if let ifStatement = attempt(parseIfStatement) {
+      } else if let ifStatement = attempt({ try parseIfStatement(scopeContext: scopeContext) }) {
         statements.append(.ifStatement(ifStatement))
       } else {
         break
@@ -282,65 +295,77 @@ extension Parser {
     return statements
   }
   
-  func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
+  func parseExpression(upTo limitTokenIndex: Int, scopeContext: ScopeContext) throws -> (Expression, ScopeContext) {
     var binaryExpression: BinaryExpression? = nil
+    var scopeContext = scopeContext
+
     for op in Token.Kind.BinaryOperator.allByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
-      let lhs = try parseExpression(upTo: index)
+      let (lhs, lhsScopeContext) = try parseExpression(upTo: index, scopeContext: scopeContext)
       let operatorToken = try consume(.binaryOperator(op))
-      let rhs = try parseExpression(upTo: limitTokenIndex)
+      let (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
+      scopeContext.merge(with: lhsScopeContext)
       binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs, sourceLocation: lhs.sourceLocation)
       break
     }
     
     if let binExp = binaryExpression {
-      return .binaryExpression(binExp)
+      return (.binaryExpression(binExp), scopeContext)
     }
 
-    if let functionCall = attempt(parseFunctionCall) {
-      return .functionCall(functionCall)
+    if let functionCall = attempt( { try parseFunctionCall(scopeContext: scopeContext) }) {
+      return (.functionCall(functionCall), scopeContext)
     }
 
     if let literal = attempt(parseLiteral) {
-      return .literal(literal)
+      return (.literal(literal), scopeContext)
     }
 
     if let variableDeclaration = attempt(parseVariableDeclaration) {
-      return .variableDeclaration(variableDeclaration)
+      scopeContext.addLocalVariable(variableDeclaration.identifier)
+      return (.variableDeclaration(variableDeclaration), scopeContext)
     }
 
-    if let bracketedExpression = attempt(parseBracketedExpression) {
-      return .bracketedExpression(bracketedExpression)
+    if let bracketedExpression = attempt({ try parseBracketedExpression(scopeContext: scopeContext) }) {
+      return (.bracketedExpression(bracketedExpression), scopeContext)
     }
 
-    return .identifier(try parseIdentifier())
+    if let `self` = attempt(parseSelf) {
+      return (.self(Token(kind: .self, sourceLocation: self.sourceLocation)), scopeContext)
+    }
+
+    var identifier = try parseIdentifier()
+    if !scopeContext.contains(localVariable: identifier.name) {
+      identifier.isImplicitPropertyAccess = true
+    }
+    return (.identifier(identifier), scopeContext)
   }
 
-  func parseBracketedExpression() throws -> Expression {
+  func parseBracketedExpression(scopeContext: ScopeContext) throws -> Expression {
     try consume(.punctuation(.openBracket))
     guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
       throw ParserError.expectedToken(.punctuation(.closeBracket), sourceLocation: currentToken?.sourceLocation)
     }
-    let expression = try parseExpression(upTo: closeBracketIndex)
+    let (expression, _) = try parseExpression(upTo: closeBracketIndex, scopeContext: scopeContext)
     try consume(.punctuation(.closeBracket))
 
     return expression
   }
 
-  func parseFunctionCall() throws -> FunctionCall {
+  func parseFunctionCall(scopeContext: ScopeContext) throws -> FunctionCall {
     let identifier = try parseIdentifier()
-    let arguments = try parseFunctionCallArgumentList()
+    let arguments = try parseFunctionCallArgumentList(scopeContext: scopeContext)
 
     return FunctionCall(identifier: identifier, arguments: arguments, sourceLocation: identifier.sourceLocation)
   }
 
-  func parseFunctionCallArgumentList() throws -> [Expression] {
+  func parseFunctionCallArgumentList(scopeContext: ScopeContext) throws -> [Expression] {
     var arguments = [Expression]()
 
     try consume(.punctuation(.openBracket))
 
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
-      if let argument = try? parseExpression(upTo: argumentEnd) {
+      if let (argument, _) = try? parseExpression(upTo: argumentEnd, scopeContext: scopeContext) {
         try consume(tokens[argumentEnd].kind)
         arguments.append(argument)
       } else {
@@ -355,27 +380,27 @@ extension Parser {
     return arguments
   }
   
-  func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
+  func parseReturnStatement(statementEndIndex: Int, scopeContext: ScopeContext) throws -> ReturnStatement {
     let returnToken = try consume(.return)
-    let expression = try? parseExpression(upTo: statementEndIndex)
+    let expression = attempt { try parseExpression(upTo: statementEndIndex, scopeContext: scopeContext) }?.0
     return ReturnStatement(expression: expression, sourceLocation: returnToken.sourceLocation)
   }
 
-  func parseIfStatement() throws -> IfStatement {
+  func parseIfStatement(scopeContext: ScopeContext) throws -> IfStatement {
     let ifToken = try consume(.if)
     guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
       throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
     }
-    let condition = try parseExpression(upTo: nextOpenBraceIndex)
-    let statements = try parseCodeBlock()
-    let elseClauseStatements = (try? parseElseClause()) ?? []
+    let (condition, _) = try parseExpression(upTo: nextOpenBraceIndex, scopeContext: scopeContext)
+    let statements = try parseCodeBlock(scopeContext: scopeContext)
+    let elseClauseStatements = (try? parseElseClause(scopeContext: scopeContext)) ?? []
 
     return IfStatement(condition: condition, statements: statements, elseClauseStatements: elseClauseStatements, sourceLocation: ifToken.sourceLocation)
   }
 
-  func parseElseClause() throws -> [Statement] {
+  func parseElseClause(scopeContext: ScopeContext) throws -> [Statement] {
     try consume(.else)
-    return try parseCodeBlock()
+    return try parseCodeBlock(scopeContext: scopeContext)
   }
 }
 

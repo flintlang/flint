@@ -40,4 +40,8 @@ public struct SourceLocation: Equatable {
   public static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
     return lhs.line == rhs.line && lhs.column == rhs.column && lhs.length == rhs.length
   }
+
+  public static var dummy: SourceLocation {
+    return SourceLocation(line: 0, column: 0, length: 0)
+  }
 }
