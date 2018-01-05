@@ -66,13 +66,13 @@ extension IULIAFunction {
     }
   }
 
-  func render(_ expression: Expression, asLValue: Bool = false) -> String {
+  func render(_ expression: Expression) -> String {
     switch expression {
     case .binaryExpression(let binaryExpression): return render(binaryExpression)
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)
-    case .identifier(let identifier): return render(identifier, asLValue: asLValue)
-    case .variableDeclaration(_): fatalError("Local vars not yet implemented")
+    case .identifier(let identifier): return render(identifier)
+    case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
     case .literal(let literal): return render(literal)
     }
   }
@@ -82,7 +82,7 @@ extension IULIAFunction {
     let rhs = render(binaryExpression.rhs)
     
     switch binaryExpression.opToken {
-    case .equal: return "sstore(\(render(binaryExpression.lhs, asLValue: true)), \(rhs))"
+    case .equal: return renderAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
     case .plus: return "add(\(lhs), \(rhs))"
     case .minus: return "sub(\(lhs), \(rhs))"
     case .times: return "mul(\(lhs), \(rhs))"
@@ -91,10 +91,36 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .greaterThan: return "gt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
-
-    default:
-      fatalError("Operator \(binaryExpression.op) not yet implemented.")
+    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
     }
+  }
+
+  func renderAssignment(lhs: Expression, rhs: Expression) -> String {
+    let rhsCode = render(rhs)
+
+    switch lhs {
+    case .variableDeclaration(let variableDeclaration):
+      return "let \(variableDeclaration.identifier.name) := \(rhsCode)"
+    case .identifier(let identifier):
+      return "\(identifier.name) := \(rhsCode)"
+    default:
+      let lhsCode = render(lhs)
+      return "sstore(\(lhsCode), \(rhsCode))"
+    }
+  }
+
+  func renderPropertyAccess(lhs: Expression, rhs: Expression) -> String {
+    return "invalid"
+//        guard !asLValue else {
+//          return "\(propertyMap[identifier.name]!)"
+//        }
+//
+//        let mangledName = mangleParameterName(identifier.name)
+//        if parameterNames.contains(mangledName) {
+//          return mangledName
+//        }
+//
+//        return "sload(\(propertyMap[identifier.name]!))"
   }
 
   func render(_ functionCall: FunctionCall) -> String {
@@ -102,17 +128,12 @@ extension IULIAFunction {
     return "\(functionCall.identifier.name)(\(args))"
   }
 
-  func render(_ identifier: Identifier, asLValue: Bool) -> String {
-    guard !asLValue else {
-      return "\(propertyMap[identifier.name]!)"
-    }
+  func render(_ identifier: Identifier) -> String {
+    return "\(identifier.name)"
+  }
 
-    let mangledName = mangleParameterName(identifier.name)
-    if parameterNames.contains(mangledName) {
-      return mangledName
-    }
-
-    return "sload(\(propertyMap[identifier.name]!))"
+  func render(_ variableDeclaration: VariableDeclaration) -> String {
+    return "var \(variableDeclaration.identifier)"
   }
 
   func render(_ literalToken: Token) -> String {
