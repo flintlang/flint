@@ -114,6 +114,7 @@ extension Token {
     case `public`
     case `if`
     case `else`
+    case `self`
 
     // Operators
     case binaryOperator(BinaryOperator)
@@ -137,6 +138,7 @@ extension Token.Kind: Equatable {
     case (.contract, .contract): return true
     case (.var, .var): return true
     case (.func, .func): return true
+    case (.self, .self): return true
     case (.mutating, .mutating): return true
     case (.return, .return): return true
     case (.public, .public): return true
@@ -159,6 +161,7 @@ extension Token.Kind: CustomStringConvertible {
     case .contract: return "contract"
     case .var: return "var"
     case .func: return "func"
+    case .self: return "self"
     case .mutating: return "mutating"
     case .return: return "return"
     case .public: return "public"

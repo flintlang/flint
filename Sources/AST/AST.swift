@@ -102,6 +102,7 @@ public struct TypeAnnotation {
 public struct Identifier: Hashable {
   public var name: String
   public var sourceLocation: SourceLocation
+  public var isImplicitPropertyAccess = false
 
   public init(name: String, sourceLocation: SourceLocation) {
     self.name = name
@@ -169,6 +170,7 @@ public indirect enum Expression {
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
   case literal(Token)
+  case `self`(Token)
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
 
@@ -178,6 +180,7 @@ public indirect enum Expression {
     case .binaryExpression(let binaryExpression): return binaryExpression.sourceLocation
     case .functionCall(let functionCall): return functionCall.sourceLocation
     case .literal(let literal): return literal.sourceLocation
+    case .self(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     }

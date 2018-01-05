@@ -20,7 +20,7 @@ struct IULIAFunction {
   }
 
   var parameterNames: [String] {
-    return functionDeclaration.parameters.map({ mangleParameterName($0.identifier.name) })
+    return functionDeclaration.parameters.map({ render($0.identifier) })
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
@@ -52,7 +52,7 @@ struct IULIAFunction {
     return "\(name)(\(parametersString))"
   }
 
-  func mangleParameterName(_ name: String) -> String {
+  func mangleIdentifierName(_ name: String) -> String {
     return "_\(name)"
   }
 }
@@ -66,14 +66,15 @@ extension IULIAFunction {
     }
   }
 
-  func render(_ expression: Expression) -> String {
+  func render(_ expression: Expression, asLValue: Bool = false) -> String {
     switch expression {
     case .binaryExpression(let binaryExpression): return render(binaryExpression)
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)
-    case .identifier(let identifier): return render(identifier)
+    case .identifier(let identifier): return render(identifier, asLValue: asLValue)
     case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
-    case .literal(let literal): return render(literal)
+    case .literal(let literal): return render(literalToken: literal)
+    case .self(let `self`): return render(selfToken: self)
     }
   }
 
@@ -100,27 +101,24 @@ extension IULIAFunction {
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
-      return "let \(variableDeclaration.identifier.name) := \(rhsCode)"
-    case .identifier(let identifier):
-      return "\(identifier.name) := \(rhsCode)"
+      return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
+    case .identifier(let identifier) where !identifier.isImplicitPropertyAccess:
+      return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
     default:
-      let lhsCode = render(lhs)
+      let lhsCode = render(lhs, asLValue: true)
       return "sstore(\(lhsCode), \(rhsCode))"
     }
   }
 
   func renderPropertyAccess(lhs: Expression, rhs: Expression) -> String {
-    return "invalid"
-//        guard !asLValue else {
-//          return "\(propertyMap[identifier.name]!)"
-//        }
-//
-//        let mangledName = mangleParameterName(identifier.name)
-//        if parameterNames.contains(mangledName) {
-//          return mangledName
-//        }
-//
-//        return "sload(\(propertyMap[identifier.name]!))"
+    let rhsCode = render(rhs)
+
+    if case .self(_) = lhs {
+      return rhsCode
+    }
+    
+    let lhsCode = render(lhs)
+    return "\(lhsCode).\(rhsCode)"
   }
 
   func render(_ functionCall: FunctionCall) -> String {
@@ -128,15 +126,21 @@ extension IULIAFunction {
     return "\(functionCall.identifier.name)(\(args))"
   }
 
-  func render(_ identifier: Identifier) -> String {
-    return "\(identifier.name)"
+  func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
+    if identifier.isImplicitPropertyAccess {
+      if asLValue {
+        return "\(propertyMap[identifier.name]!)"
+      }
+      return "sload(\(propertyMap[identifier.name]!))"
+    }
+    return mangleIdentifierName(identifier.name)
   }
 
   func render(_ variableDeclaration: VariableDeclaration) -> String {
     return "var \(variableDeclaration.identifier)"
   }
 
-  func render(_ literalToken: Token) -> String {
+  func render(literalToken: Token) -> String {
     guard case .literal(let literal) = literalToken.kind else {
       fatalError("Unexpected token \(literalToken.kind).")
     }
@@ -147,6 +151,13 @@ extension IULIAFunction {
     case .decimal(.integer(let num)): return "\(num)"
     case .string(let string): return "\"\(string)\""
     }
+  }
+
+  func render(selfToken: Token) -> String {
+    guard case .self = selfToken.kind else {
+      fatalError("Unexpected token \(selfToken.kind)")
+    }
+    return ""
   }
 
   func render(_ ifStatement: IfStatement) -> String {

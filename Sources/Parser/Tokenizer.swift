@@ -58,6 +58,7 @@ public struct Tokenizer {
     "public": .public,
     "if": .if,
     "else": .else,
+    "self": .self,
     "+": .binaryOperator(.plus),
     "-": .binaryOperator(.minus),
     "*": .binaryOperator(.times),

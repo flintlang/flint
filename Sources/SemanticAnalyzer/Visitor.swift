@@ -96,6 +96,7 @@ extension SemanticAnalyzer {
     case .functionCall(let functionCall): visit(functionCall, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
     case .identifier(let identifier): visit(identifier)
     case .literal(_): break
+    case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
     }
   }

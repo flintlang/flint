@@ -26,15 +26,17 @@ contract Test {
       // User-defined functions
 
       function foo(_a, _b)  {
-        data := bar(a, b)
+        let _tmp := bar(_a, _b)
+        _tmp := add(_tmp, 1)
+        sstore(0, add(_tmp, sload(0)))
       }
       
       function bar(_a, _b) -> ret {
-        ret := add(a, b)
+        ret := add(_a, _b)
       }
       
       function getData() -> ret {
-        ret := data
+        ret := sload(0)
       }
 
       // Util functions
