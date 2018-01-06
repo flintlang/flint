@@ -133,19 +133,24 @@ extension Parser {
   }
   
   func parseType() throws -> Type {
-    if let openBracketToken = attempt({ try consume(.punctuation(.openSquareBracket)) }) {
-      let type = try parseType()
-      try consume(.punctuation(.closeSquareBracket))
-      return Type(arrayWithElementType: type.rawType, sourceLocation: openBracketToken.sourceLocation)
-    }
-
     guard let first = currentToken, case .identifier(let name) = first.kind else {
       throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
-    
+
+    let type = Type(name: name, sourceLocation: first.sourceLocation)
     currentIndex += 1
-    consumeNewLines()
-    return Type(name: name, sourceLocation: first.sourceLocation)
+
+    defer { consumeNewLines() }
+
+    if let openSquareBracketToken = attempt({ try consume(.punctuation(.openSquareBracket)) }) {
+      let literal = try parseLiteral()
+      if case .literal(.decimal(.integer(let size))) = literal.kind {
+        try consume(.punctuation(.closeSquareBracket))
+        return Type(arrayWithElementType: type.rawType, size: size, sourceLocation: openSquareBracketToken.sourceLocation)
+      }
+    }
+
+    return type
   }
   
   func parseTypeAnnotation() throws -> TypeAnnotation {
