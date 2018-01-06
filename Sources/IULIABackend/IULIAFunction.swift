@@ -38,11 +38,12 @@ struct IULIAFunction {
     let parametersString = parameterNames.joined(separator: ", ")
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
+    let callerCapabilityChecks = renderCallerCapabilityChecks(callerCapabilities: callerCapabilities)
     let body = functionDeclaration.body.map({ render($0) }).joined(separator: "\n")
 
     return """
     function \(signature) {
-      \(body.indented(by: 2))
+      \(callerCapabilityChecks.indented(by: 2))\(body.indented(by: 2))
     }
     """
   }
@@ -56,6 +57,22 @@ struct IULIAFunction {
 
   func mangleIdentifierName(_ name: String) -> String {
     return "_\(name)"
+  }
+
+  func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
+    let code = callerCapabilities.flatMap { callerCapability in
+      guard !callerCapability.isAny else { return nil }
+      let offset = contractStorage.offset(for: callerCapability.name)
+      return """
+      \(IULIAUtilFunction.checkCallerCapability.rawValue)(sload(\(offset)))
+      """
+    }
+
+    if !code.isEmpty {
+      return code.joined(separator: "\n") + "\n"
+    }
+
+    return ""
   }
 }
 
