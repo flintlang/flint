@@ -59,6 +59,14 @@ public struct FunctionDeclaration {
   public var body: [Statement]
   public var sourceLocation: SourceLocation
 
+  public var isMutating: Bool {
+    return hasModifier(kind: .mutating)
+  }
+
+  public var isPublic: Bool {
+    return hasModifier(kind: .public)
+  }
+
   public init(modifiers: [Token], identifier: Identifier, parameters: [Parameter], resultType: Type?, body: [Statement], sourceLocation: SourceLocation) {
     self.modifiers = modifiers
     self.identifier = identifier
@@ -72,7 +80,7 @@ public struct FunctionDeclaration {
     return MangledFunction(contractIdentifier: contract, callerCapabilities: callerCapabilities, functionDeclaration: self)
   }
 
-  public func hasModifier(kind: Token.Kind) -> Bool {
+  private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind } 
   }
 }
