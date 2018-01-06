@@ -9,9 +9,11 @@ import AST
 
 public struct IULIABackend {
   var topLevelModule: TopLevelModule
+  var context: Context
 
-  public init(topLevelModule: TopLevelModule) {
+  public init(topLevelModule: TopLevelModule, context: Context) {
     self.topLevelModule = topLevelModule
+    self.context = context
   }
 
   public func generateCode() -> String {
@@ -30,7 +32,7 @@ public struct IULIABackend {
 
         return contractBehaviorDeclaration
       }
-      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations)
+      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, context: context)
       contracts.append(contract)
       interfaces.append(IULIAInterface(contract: contract))
     }

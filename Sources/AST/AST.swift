@@ -125,7 +125,7 @@ public struct Identifier: Hashable {
 public struct Type {
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
-    case arrayType(RawType)
+    case arrayType(RawType, size: Int)
     case userDefinedType(String)
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -139,7 +139,7 @@ public struct Type {
     public var size: Int {
       switch self {
       case .builtInType(_): return 1
-      case .arrayType(let rawType): return rawType.size * 64
+      case .arrayType(let rawType, let size): return rawType.size * size
       case .userDefinedType(_): return 1
       }
     }
@@ -167,8 +167,8 @@ public struct Type {
     self.sourceLocation = sourceLocation
   }
 
-  public init(arrayWithElementType: Type.RawType, sourceLocation: SourceLocation) {
-    rawType = .arrayType(arrayWithElementType)
+  public init(arrayWithElementType: Type.RawType, size: Int, sourceLocation: SourceLocation) {
+    rawType = .arrayType(arrayWithElementType, size: size)
     self.sourceLocation = sourceLocation
   }
 }

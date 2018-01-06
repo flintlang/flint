@@ -13,6 +13,9 @@ enum IULIAUtilFunction: String {
   case decodeAsUInt
   case calledBy
   case returnUInt
+  case isInvalidArrayAccess
+  case storageArrayElementAtIndex
+  case storageArrayOffset
 
   var declaration: String {
     switch self {
@@ -21,10 +24,13 @@ enum IULIAUtilFunction: String {
     case .decodeAsUInt: return IULIAUtilFunctionDeclaration.decodeAsUInt
     case .calledBy: return IULIAUtilFunctionDeclaration.calledBy
     case .returnUInt: return IULIAUtilFunctionDeclaration.returnUInt
+    case .isInvalidArrayAccess: return IULIAUtilFunctionDeclaration.isInvalidArrayAccess
+    case .storageArrayElementAtIndex: return IULIAUtilFunctionDeclaration.storageArrayElementAtIndex
+    case .storageArrayOffset: return IULIAUtilFunctionDeclaration.storageArrayOffset
     }
   }
 
-  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .calledBy, .returnUInt]
+  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .calledBy, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
 }
 
 fileprivate struct IULIAUtilFunctionDeclaration {
@@ -61,6 +67,29 @@ fileprivate struct IULIAUtilFunctionDeclaration {
   function returnUInt(v) {
     mstore(0, v)
     return(0, 0x20)
+  }
+  """
+
+  static let isInvalidArrayAccess =
+  """
+  function isInvalidArrayAccess(index, arraySize) -> ret {
+    ret := or(lt(index, 0), gt(index, sub(arraySize, 1)))
+  }
+  """
+
+  static let storageArrayElementAtIndex =
+  """
+  function storageArrayElementAtIndex(arrayOffset, index, arraySize) -> ret {
+    if isInvalidArrayAccess(index, arraySize) { revert(0, 0) }
+    ret := sload(add(arrayOffset, index))
+  }
+  """
+
+  static let storageArrayOffset =
+  """
+  function storageArrayOffset(arrayOffset, index, arraySize) -> ret {
+    if isInvalidArrayAccess(index, arraySize) { revert(0, 0) }
+    ret := add(arrayOffset, index)
   }
   """
 }
