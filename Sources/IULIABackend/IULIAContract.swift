@@ -10,12 +10,14 @@ import AST
 struct IULIAContract {
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
+  var context: Context
 
   var storage = ContractStorage()
 
-  init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration]) {
+  init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration], context: Context) {
     self.contractDeclaration = contractDeclaration
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
+    self.context = context
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       if case .arrayType(_) = variableDeclaration.type.rawType {
@@ -29,7 +31,7 @@ struct IULIAContract {
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage)
+        return IULIAFunction(functionDeclaration: functionDeclaration, contractIdentifier: contractDeclaration.identifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, context: context)
       }
     }
 

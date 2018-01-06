@@ -11,9 +11,11 @@ struct IULIAFunction {
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
+  var contractIdentifier: Identifier
   var callerCapabilities: [CallerCapability]
 
   var contractStorage: ContractStorage
+  var context: Context
 
   var name: String {
     return functionDeclaration.identifier.name
@@ -167,13 +169,15 @@ extension IULIAFunction {
 
     let offset = contractStorage.offset(for: arrayIdentifier.name)
     let indexExpressionCode = render(arrayAccess.indexExpression)
-    let accessCode = "add(\(offset), \(indexExpressionCode))"
+
+    let type = context.type(of: arrayAccess.arrayIdentifier, contractIdentifier: contractIdentifier).rawType
+    guard case .arrayType(_, _) = type else { fatalError() }
 
     if arrayIdentifier.isImplicitPropertyAccess {
       if asLValue {
-        return accessCode
+        return "\(IULIAUtilFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
       } else {
-        return "sload(\(accessCode))"
+        return "\(IULIAUtilFunction.storageArrayElementAtIndex.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
       }
     }
 

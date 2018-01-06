@@ -8,11 +8,13 @@
 public struct Context {
   public var declaredContractsIdentifiers = [Identifier]()
   public var functions = [MangledFunction]()
-  public var contractVariablesMap = [Identifier: [VariableDeclaration]]()
+  var contractPropertyMap = [Identifier: [VariableDeclaration]]()
+
+  public init() {}
 
   public func declaredCallerCapabilities(inContractWithIdentifier contractIdentifier: Identifier) -> [VariableDeclaration] {
     let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
-    guard let variables = contractVariablesMap[contractDefinitionIdentifier] else { return [] }
+    guard let variables = contractPropertyMap[contractDefinitionIdentifier] else { return [] }
     return variables.filter { variable in
       guard case .builtInType(let builtInType) = variable.type.rawType else {
         return false
@@ -22,7 +24,13 @@ public struct Context {
     }
   }
 
-  public init() {}
+  public func type(of identifier: Identifier, contractIdentifier: Identifier) -> Type {
+    return contractPropertyMap[contractIdentifier]!.first(where: { $0.identifier == identifier })!.type
+  }
+
+  public mutating func addVariableDeclarations(_ variableDeclarations: [VariableDeclaration], for contractIdentifier: Identifier) {
+    contractPropertyMap[contractIdentifier, default: []].append(contentsOf: variableDeclarations)
+  }
 
   public func matchFunctionCall(_ functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> MangledFunction? {
     for function in functions {

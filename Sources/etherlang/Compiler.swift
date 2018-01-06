@@ -31,7 +31,7 @@ struct Compiler {
     guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
       exitWithFailure()
     }
-    return IULIABackend(topLevelModule: ast).generateCode()
+    return IULIABackend(topLevelModule: ast, context: context).generateCode()
   }
 
   func exitWithFailure() -> Never {
