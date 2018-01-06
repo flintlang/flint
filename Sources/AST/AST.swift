@@ -177,13 +177,17 @@ public struct CallerCapability {
   public var name: String
   public var sourceLocation: SourceLocation
 
+  public var isAny: Bool {
+    return name == "any"
+  }
+
   public init(name: String, sourceLocation: SourceLocation) {
     self.name = name
     self.sourceLocation = sourceLocation
   }
 
   public func isSubcapability(callerCapability: CallerCapability) -> Bool {
-    return name == callerCapability.name || callerCapability.name == "any"
+    return name == callerCapability.name || callerCapability.isAny
   }
 }
 

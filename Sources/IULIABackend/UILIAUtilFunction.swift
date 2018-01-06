@@ -11,7 +11,7 @@ enum IULIAUtilFunction: String {
   case selector
   case decodeAsAddress
   case decodeAsUInt
-  case calledBy
+  case checkCallerCapability
   case returnUInt
   case isInvalidArrayAccess
   case storageArrayElementAtIndex
@@ -22,7 +22,7 @@ enum IULIAUtilFunction: String {
     case .selector: return IULIAUtilFunctionDeclaration.selector
     case .decodeAsAddress: return IULIAUtilFunctionDeclaration.decodeAsAddress
     case .decodeAsUInt: return IULIAUtilFunctionDeclaration.decodeAsUInt
-    case .calledBy: return IULIAUtilFunctionDeclaration.calledBy
+    case .checkCallerCapability: return IULIAUtilFunctionDeclaration.checkCallerCapability
     case .returnUInt: return IULIAUtilFunctionDeclaration.returnUInt
     case .isInvalidArrayAccess: return IULIAUtilFunctionDeclaration.isInvalidArrayAccess
     case .storageArrayElementAtIndex: return IULIAUtilFunctionDeclaration.storageArrayElementAtIndex
@@ -30,7 +30,7 @@ enum IULIAUtilFunction: String {
     }
   }
 
-  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .calledBy, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
+  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .checkCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
 }
 
 fileprivate struct IULIAUtilFunctionDeclaration {
@@ -55,10 +55,12 @@ fileprivate struct IULIAUtilFunctionDeclaration {
   }
   """
 
-  static let calledBy =
+  static let checkCallerCapability =
   """
-  function calledBy(_address) -> ret {
-    ret := eq(_address, caller())
+  function checkCallerCapability(_address) {
+    if iszero(eq(_address, caller())) {
+      revert(0, 0)
+    }
   }
   """
 
