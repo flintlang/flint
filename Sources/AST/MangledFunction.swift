@@ -29,8 +29,8 @@ public struct MangledFunction {
         return false
     }
 
-    for callerCapability in callerCapabilities {
-      if !callCallerCapabilities.contains(where: { return $0.isSubcapability(callerCapability: callerCapability) }) {
+    for callCallerCapability in callCallerCapabilities {
+      if !callerCapabilities.contains(where: { return callCallerCapability.isSubcapability(callerCapability: $0) }) {
         return false
       }
     }
