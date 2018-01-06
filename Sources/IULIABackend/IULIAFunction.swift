@@ -60,16 +60,20 @@ struct IULIAFunction {
   }
 
   func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
-    let code = callerCapabilities.flatMap { callerCapability in
+    let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
       let offset = contractStorage.offset(for: callerCapability.name)
       return """
-      \(IULIAUtilFunction.checkCallerCapability.rawValue)(sload(\(offset)))
+      _tmp := add(_tmp, \(IULIAUtilFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
       """
     }
 
-    if !code.isEmpty {
-      return code.joined(separator: "\n") + "\n"
+    if !checks.isEmpty {
+      return """
+      let _tmp := 0
+      \(checks.joined(separator: "\n"))
+      if eq(_tmp, 0) { revert(0, 0) }
+      """ + "\n"
     }
 
     return ""
