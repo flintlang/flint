@@ -59,6 +59,15 @@ extension SemanticAnalyzer {
     visit(variableDeclaration.type)
   }
 
+  struct FunctionDeclarationContext {
+    var declaration: FunctionDeclaration
+    var contractContext: ContractBehaviorDeclarationContext
+
+    var isMutating: Bool {
+      return declaration.isMutating
+    }
+  }
+
   func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
     visit(functionDeclaration.identifier)
     for parameter in functionDeclaration.parameters {
@@ -69,8 +78,9 @@ extension SemanticAnalyzer {
       visit(resultType)
     }
 
+    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
     for statement in functionDeclaration.body {
-      visit(statement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+      visit(statement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -78,7 +88,13 @@ extension SemanticAnalyzer {
 
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
-  func visit(_ identifier: Identifier) {}
+  func visit(_ identifier: Identifier, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext? = nil) {
+    if let functionDeclarationContext = functionDeclarationContext,
+      asLValue, identifier.isImplicitPropertyAccess,
+      !functionDeclarationContext.isMutating {
+      addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+    }
+  }
 
   func visit(_ type: Type) {}
 
@@ -89,47 +105,63 @@ extension SemanticAnalyzer {
     }
   }
 
-  func visit(_ expression: Expression, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+  func visit(_ expression: Expression, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext) {
     switch expression {
-    case .binaryExpression(let binaryExpression): visit(binaryExpression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    case .bracketedExpression(let expression): visit(expression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    case .functionCall(let functionCall): visit(functionCall, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    case .identifier(let identifier): visit(identifier)
+    case .binaryExpression(let binaryExpression): visit(binaryExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    case .bracketedExpression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
+    case .functionCall(let functionCall): visit(functionCall, functionDeclarationContext: functionDeclarationContext)
+    case .identifier(let identifier): visit(identifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     case .literal(_): break
     case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
-    case .arrayAccess(let arrayAccess): visit(arrayAccess)
+    case .arrayAccess(let arrayAccess): visit(arrayAccess, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ statement: Statement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+  func visit(_ statement: Statement, functionDeclarationContext: FunctionDeclarationContext) {
     switch statement {
-    case .expression(let expression): visit(expression, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    case .ifStatement(let ifStatement): visit(ifStatement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    case .returnStatement(let returnStatement): visit(returnStatement, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+    case .expression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
+    case .ifStatement(let ifStatement): visit(ifStatement, functionDeclarationContext: functionDeclarationContext)
+    case .returnStatement(let returnStatement): visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ binaryExpression: BinaryExpression, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
-    visit(binaryExpression.lhs, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-    visit(binaryExpression.rhs, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
-  }
+  func visit(_ binaryExpression: BinaryExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
+    if case .binaryOperator(.equal) = binaryExpression.op.kind {
+      visit(binaryExpression.lhs, asLValue: true, functionDeclarationContext: functionDeclarationContext)
+    }
 
-  func visit(_ functionCall: FunctionCall, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
-
-    guard let _ = context.matchFunctionCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) else {
-      addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities))
+    if case .self(_) = binaryExpression.lhs, asLValue, !functionDeclarationContext.isMutating {
+      addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.binaryExpression(binaryExpression), functionDeclaration: functionDeclarationContext.declaration))
       return
     }
 
+    visit(binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
+    visit(binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+  }
+
+  func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) {
+
+    guard let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) else {
+      addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities))
+      return
+    }
+
+    if matchingFunction.isMutating, !functionDeclarationContext.isMutating {
+      addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+    }
+
     for argument in functionCall.arguments {
-      visit(argument, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext)
+      visit(argument, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ arrayAccess: ArrayAccess) {}
+  func visit(_ arrayAccess: ArrayAccess, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
+    visit(arrayAccess.arrayIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    visit(arrayAccess.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+  }
 
-  func visit(_ returnStatement: ReturnStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
+  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}
 
-  func visit(_ ifStatement: IfStatement, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {}
+  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) {}
 }

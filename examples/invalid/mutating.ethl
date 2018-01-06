@@ -1,0 +1,9 @@
+contract Test {
+  var a: [Int]
+}
+
+Test :: (any) {
+  func foo() -> Int {
+    return a[0]
+  }
+}
