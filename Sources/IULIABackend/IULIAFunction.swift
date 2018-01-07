@@ -231,7 +231,6 @@ extension IULIAFunction {
     let body = ifStatement.body.map { statement in
       render(statement)
     }.joined(separator: "\n")
-    let elseBody = ifStatement.elseBody.map({ render($0) }).joined(separator: "\n")
     let ifCode: String
 
     if ifStatement.endsWithReturnStatement {
@@ -248,8 +247,8 @@ extension IULIAFunction {
       }
       """
     }
-    
-    return ifCode + (elseCode ?? "")
+
+    return ifCode
   }
 
   func render(_ returnStatement: ReturnStatement) -> String {
