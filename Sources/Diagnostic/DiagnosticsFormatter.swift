@@ -21,7 +21,7 @@ public struct DiagnosticsFormatter {
 
   public func rendered() -> String {
     return diagnostics.map { diagnostic in
-      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning".yellow.bold) in \(fileName.bold):"
+      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning") in \(fileName.bold):"
       return """
       \(infoLine)
         \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):

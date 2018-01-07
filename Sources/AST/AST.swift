@@ -219,6 +219,14 @@ public indirect enum Statement {
   case expression(Expression)
   case returnStatement(ReturnStatement)
   case ifStatement(IfStatement)
+
+  public var sourceLocation: SourceLocation {
+    switch self {
+    case .expression(let expression): return expression.sourceLocation
+    case .returnStatement(let returnStatement): return returnStatement.sourceLocation
+    case .ifStatement(let ifStatement): return ifStatement.sourceLocation
+    }
+  }
 }
 
 public struct BinaryExpression {

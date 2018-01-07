@@ -1,0 +1,9 @@
+contract CodeAfterReturn {}
+
+CodeAfterReturn :: (any) {
+  func foo() -> Int {
+    bar()
+    return 3
+    var a: Int = 2
+  }
+}

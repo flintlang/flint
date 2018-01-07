@@ -48,7 +48,6 @@ extension SemanticAnalyzer {
       visit(callerCapability, contractBehaviorDeclarationContext: declarationContext)
     }
 
-
     for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
       visit(functionDeclaration, contractBehaviorDeclarationContext: declarationContext)
     }
@@ -79,9 +78,7 @@ extension SemanticAnalyzer {
     }
 
     let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
-    for statement in functionDeclaration.body {
-      visit(statement, functionDeclarationContext: functionDeclarationContext)
-    }
+    visitBody(functionDeclaration.body, functionDeclarationContext: functionDeclarationContext)
   }
 
   func visit(_ parameter: Parameter) {}
@@ -115,6 +112,22 @@ extension SemanticAnalyzer {
     case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
     case .arrayAccess(let arrayAccess): visit(arrayAccess, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    }
+  }
+
+  func visitBody(_ statements: [Statement], functionDeclarationContext: FunctionDeclarationContext) {
+    let returnStatementIndex = statements.index(where: { statement in
+      if case .returnStatement(_) = statement { return true }
+      return false
+    })
+
+    if let returnStatementIndex = returnStatementIndex, statements[returnStatementIndex] != statements.last! {
+      let nextStatement = statements[returnStatementIndex + 1]
+      addDiagnostic(.codeAfterReturn(nextStatement))
+    }
+
+    for statement in statements {
+      visit(statement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -163,5 +176,7 @@ extension SemanticAnalyzer {
 
   func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}
 
-  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) {}
+  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) {
+    visitBody(ifStatement.body, functionDeclarationContext: functionDeclarationContext)
+  }
 }
