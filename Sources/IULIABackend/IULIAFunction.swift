@@ -248,18 +248,7 @@ extension IULIAFunction {
       }
       """
     }
-
-    let elseCode: String?
-    if !elseBody.isEmpty {
-      elseCode = """
-      else {
-        \(elseBody.indented(by: 2))
-      }
-      """
-    } else {
-      elseCode = nil
-    }
-
+    
     return ifCode + (elseCode ?? "")
   }
 
