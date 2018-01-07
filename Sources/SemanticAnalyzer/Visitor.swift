@@ -121,7 +121,7 @@ extension SemanticAnalyzer {
       return false
     })
 
-    if let returnStatementIndex = returnStatementIndex, statements[returnStatementIndex] != statements.last! {
+    if let returnStatementIndex = returnStatementIndex, returnStatementIndex != statements.count - 1 {
       let nextStatement = statements[returnStatementIndex + 1]
       addDiagnostic(.codeAfterReturn(nextStatement))
     }
