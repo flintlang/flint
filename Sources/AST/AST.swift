@@ -1,4 +1,6 @@
-import Diagnostic
+public protocol SourceEntity {
+  var sourceLocation: SourceLocation { get }
+}
 
 public struct TopLevelModule {
   public var declarations: [TopLevelDeclaration]
@@ -13,51 +15,71 @@ public enum TopLevelDeclaration {
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
 }
 
-public struct ContractDeclaration {
+public struct ContractDeclaration: SourceEntity {
+  public var contractToken: Token
   public var identifier: Identifier
   public var variableDeclarations: [VariableDeclaration]
-  public var sourceLocation: SourceLocation
 
-  public init(identifier: Identifier, variableDeclarations: [VariableDeclaration], sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(contractToken, to: identifier)
+  }
+
+  public init(contractToken: Token, identifier: Identifier, variableDeclarations: [VariableDeclaration]) {
     self.identifier = identifier
     self.variableDeclarations = variableDeclarations
-    self.sourceLocation = sourceLocation
+    self.contractToken = contractToken
   }
 }
 
-public struct ContractBehaviorDeclaration {
+public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var callerCapabilities: [CallerCapability]
   public var functionDeclarations: [FunctionDeclaration]
-  public var sourceLocation: SourceLocation
+  public var closeBracketToken: Token
 
-  public init(contractIdentifier: Identifier, callerCapabilities: [CallerCapability], functionDeclarations: [FunctionDeclaration], sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(contractIdentifier, to: closeBracketToken)
+  }
+
+  public init(contractIdentifier: Identifier, callerCapabilities: [CallerCapability], closeBracketToken: Token, functionDeclarations: [FunctionDeclaration]) {
     self.contractIdentifier = contractIdentifier
     self.callerCapabilities = callerCapabilities
     self.functionDeclarations = functionDeclarations
-    self.sourceLocation = sourceLocation
+    self.closeBracketToken = closeBracketToken
   }
 }
 
 public struct VariableDeclaration {
+  public var varToken: Token
   public var identifier: Identifier
   public var type: Type
-  public var sourceLocation: SourceLocation
 
-  public init(identifier: Identifier, type: Type, sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(varToken, to: type)
+  }
+
+  public init(varToken: Token, identifier: Identifier, type: Type) {
+    self.varToken = varToken
     self.identifier = identifier
     self.type = type
-    self.sourceLocation = sourceLocation
   }
 }
 
-public struct FunctionDeclaration {
+public struct FunctionDeclaration: SourceEntity {
+  public var funcToken: Token
   public var modifiers: [Token]
   public var identifier: Identifier
   public var parameters: [Parameter]
+  public var closeBracketToken: Token
   public var resultType: Type?
   public var body: [Statement]
-  public var sourceLocation: SourceLocation
+
+  public var sourceLocation: SourceLocation {
+    if let resultType = resultType {
+      return .spanning(funcToken, to: resultType)
+    }
+    return .spanning(funcToken, to: closeBracketToken)
+  }
 
   public var isMutating: Bool {
     return hasModifier(kind: .mutating)
@@ -67,13 +89,14 @@ public struct FunctionDeclaration {
     return hasModifier(kind: .public)
   }
 
-  public init(modifiers: [Token], identifier: Identifier, parameters: [Parameter], resultType: Type?, body: [Statement], sourceLocation: SourceLocation) {
+  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], sourceLocation: SourceLocation) {
+    self.funcToken = funcToken
     self.modifiers = modifiers
     self.identifier = identifier
     self.parameters = parameters
+    self.closeBracketToken = closeBracketToken
     self.resultType = resultType
     self.body = body
-    self.sourceLocation = sourceLocation
   }
 
   public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
@@ -85,7 +108,7 @@ public struct FunctionDeclaration {
   }
 }
 
-public struct Parameter {
+public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
   public var sourceLocation: SourceLocation
@@ -97,24 +120,35 @@ public struct Parameter {
   }
 }
 
-public struct TypeAnnotation {
+public struct TypeAnnotation: SourceEntity {
+  public var colonToken: Token
   public var type: Type
-  public var sourceLocation: SourceLocation
 
-  public init(type: Type, sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(colonToken, to: type)
+  }
+
+  public init(colonToken: Token, type: Type) {
+    self.colonToken = colonToken
     self.type = type
-    self.sourceLocation = sourceLocation
   }
 }
 
-public struct Identifier: Hashable {
-  public var name: String
-  public var sourceLocation: SourceLocation
+public struct Identifier: Hashable, SourceEntity {
+  public var identifierToken: Token
   public var isImplicitPropertyAccess = false
 
-  public init(name: String, sourceLocation: SourceLocation) {
-    self.name = name
-    self.sourceLocation = sourceLocation
+  public var name: String {
+    guard case .identifier(let name) = identifierToken.kind else { fatalError() }
+    return name
+  }
+
+  public var sourceLocation: SourceLocation {
+    return identifierToken.sourceLocation
+  }
+
+  public init(identifierToken: Token) {
+    self.identifierToken = identifierToken
   }
 
   public var hashValue: Int {
@@ -122,7 +156,7 @@ public struct Identifier: Hashable {
   }
 }
 
-public struct Type {
+public struct Type: SourceEntity {
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
     case arrayType(RawType, size: Int)
@@ -173,17 +207,23 @@ public struct Type {
   }
 }
 
-public struct CallerCapability {
-  public var name: String
-  public var sourceLocation: SourceLocation
+public struct CallerCapability: SourceEntity {
+  public var identifier: Identifier
+
+  public var sourceLocation: SourceLocation {
+    return identifier.sourceLocation
+  }
+
+  public var name: String {
+    return identifier.name
+  }
 
   public var isAny: Bool {
     return name == "any"
   }
 
-  public init(name: String, sourceLocation: SourceLocation) {
-    self.name = name
-    self.sourceLocation = sourceLocation
+  public init(identifier: Identifier) {
+    self.identifier = identifier
   }
 
   public func isSubcapability(callerCapability: CallerCapability) -> Bool {
@@ -191,7 +231,7 @@ public struct CallerCapability {
   }
 }
 
-public indirect enum Expression {
+public indirect enum Expression: SourceEntity {
   case identifier(Identifier)
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
@@ -215,7 +255,7 @@ public indirect enum Expression {
   }
 }
 
-public indirect enum Statement {
+public indirect enum Statement: SourceEntity {
   case expression(Expression)
   case returnStatement(ReturnStatement)
   case ifStatement(IfStatement)
@@ -229,7 +269,7 @@ public indirect enum Statement {
   }
 }
 
-public struct BinaryExpression {
+public struct BinaryExpression: SourceEntity {
   public var lhs: Expression
 
   public var op: Token
@@ -237,9 +277,11 @@ public struct BinaryExpression {
 
   public var rhs: Expression
 
-  public var sourceLocation: SourceLocation
+  public var sourceLocation: SourceLocation {
+    return .spanning(lhs, to: rhs)
+  }
 
-  public init(lhs: Expression, op: Token, rhs: Expression, sourceLocation: SourceLocation) {
+  public init(lhs: Expression, op: Token, rhs: Expression) {
     self.lhs = lhs
 
     guard case .binaryOperator(let opToken) = op.kind else {
@@ -249,49 +291,68 @@ public struct BinaryExpression {
     self.op = op
     self.opToken = opToken
     self.rhs = rhs
-    self.sourceLocation = sourceLocation
   }
 }
 
-public struct FunctionCall {
+public struct FunctionCall: SourceEntity {
   public var identifier: Identifier
   public var arguments: [Expression]
-  public var sourceLocation: SourceLocation
+  public var closeBracketToken: Token
 
-  public init(identifier: Identifier, arguments: [Expression], sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(identifier, to: closeBracketToken)
+  }
+
+  public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token) {
     self.identifier = identifier
     self.arguments = arguments
-    self.sourceLocation = sourceLocation
+    self.closeBracketToken = closeBracketToken
   }
 }
 
-public struct ArrayAccess {
+public struct ArrayAccess: SourceEntity {
   public var arrayIdentifier: Identifier
   public var indexExpression: Expression
-  public var sourceLocation: SourceLocation
+  public var closeSquareBracketToken: Token
 
-  public init(arrayIdentifier: Identifier, indexExpression: Expression, sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(arrayIdentifier, to: closeSquareBracketToken)
+  }
+
+  public init(arrayIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
     self.arrayIdentifier = arrayIdentifier
     self.indexExpression = indexExpression
-    self.sourceLocation = sourceLocation
+    self.closeSquareBracketToken = closeSquareBracketToken
   }
 }
 
-public struct ReturnStatement {
+public struct ReturnStatement: SourceEntity {
+  public var returnToken: Token
   public var expression: Expression?
-  public var sourceLocation: SourceLocation
 
-  public init(expression: Expression?, sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    if let expression = expression {
+      return .spanning(returnToken, to: expression)
+    }
+
+    return returnToken.sourceLocation
+  }
+
+  public init(returnToken: Token, expression: Expression?) {
+    self.returnToken = returnToken
     self.expression = expression
-    self.sourceLocation = sourceLocation
   }
 }
 
-public struct IfStatement {
+public struct IfStatement: SourceEntity {
+  public var ifToken: Token
   public var condition: Expression
   public var body: [Statement]
   public var elseBody: [Statement]
-  public var sourceLocation: SourceLocation
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(ifToken, to: condition)
+  }
 
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in
@@ -300,10 +361,10 @@ public struct IfStatement {
     }
   }
 
-  public init(condition: Expression, statements: [Statement], elseClauseStatements: [Statement], sourceLocation: SourceLocation) {
+  public init(ifToken: Token, condition: Expression, statements: [Statement], elseClauseStatements: [Statement]) {
+    self.ifToken = ifToken
     self.condition = condition
     self.body = statements
     self.elseBody = elseClauseStatements
-    self.sourceLocation = sourceLocation
   }
 }

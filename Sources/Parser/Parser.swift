@@ -94,12 +94,12 @@ extension Parser {
 
 extension Parser {
   func parseIdentifier() throws -> Identifier {
-    guard let token = currentToken, case .identifier(let name) = token.kind else {
+    guard let token = currentToken, case .identifier(_) = token.kind else {
       throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
     currentIndex += 1
     consumeNewLines()
-    return Identifier(name: name, sourceLocation: token.sourceLocation)
+    return Identifier(identifierToken: token)
   }
 
   func parseLiteral() throws -> Token {
@@ -127,9 +127,9 @@ extension Parser {
       throw ParserError.expectedToken(.punctuation(.closeSquareBracket), sourceLocation: identifier.sourceLocation)
     }
     let (indexExpression, _) = try parseExpression(upTo: index, scopeContext: scopeContext)
-    try consume(.punctuation(.closeSquareBracket))
+    let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
 
-    return ArrayAccess(arrayIdentifier: identifier, indexExpression: indexExpression, sourceLocation: identifier.sourceLocation)
+    return ArrayAccess(arrayIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
   }
   
   func parseType() throws -> Type {
@@ -154,9 +154,9 @@ extension Parser {
   }
   
   func parseTypeAnnotation() throws -> TypeAnnotation {
-    try consume(.punctuation(.colon))
+    let colonToken = try consume(.punctuation(.colon))
     let type = try parseType()
-    return TypeAnnotation(type: type, sourceLocation: type.sourceLocation)
+    return TypeAnnotation(colonToken: colonToken, type: type)
   }
 }
 
@@ -169,7 +169,7 @@ extension Parser {
     try consume(.punctuation(.closeBrace))
 
     context.addVariableDeclarations(variableDeclarations, for: identifier)    
-    return ContractDeclaration(identifier: identifier, variableDeclarations: variableDeclarations, sourceLocation: contractToken.sourceLocation)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
   }
   
   func parseVariableDeclarations() throws -> [VariableDeclaration] {
@@ -186,7 +186,7 @@ extension Parser {
     let varToken = try consume(.var)
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
-    return VariableDeclaration(identifier: name, type: typeAnnotation.type, sourceLocation: varToken.sourceLocation)
+    return VariableDeclaration(varToken: varToken, identifier: name, type: typeAnnotation.type)
   }
 }
 
@@ -194,7 +194,7 @@ extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
     try consume(.punctuation(.doubleColon))
-    let callerCapabilities = try parseCallerCapabilityGroup()
+    let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
     let functionDeclarations = try parseFunctionDeclarations()
     try consume(.punctuation(.closeBrace))
@@ -203,22 +203,22 @@ extension Parser {
       context.functions.append(functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities))
     }
     
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, functionDeclarations: functionDeclarations, sourceLocation: contractIdentifier.sourceLocation)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
   }
   
-  func parseCallerCapabilityGroup() throws -> [CallerCapability] {
+  func parseCallerCapabilityGroup() throws -> ([CallerCapability], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket))
     let callerCapabilities = try parseCallerCapabilityList()
-    try consume(.punctuation(.closeBracket))
+    let closeBracketToken = try consume(.punctuation(.closeBracket))
     
-    return callerCapabilities
+    return (callerCapabilities, closeBracketToken)
   }
   
   func parseCallerCapabilityList() throws -> [CallerCapability] {
     var callerCapabilities = [CallerCapability]()
     repeat {
       let identifier = try parseIdentifier()
-      callerCapabilities.append(CallerCapability(name: identifier.name, sourceLocation: identifier.sourceLocation))
+      callerCapabilities.append(CallerCapability(identifier: identifier))
     } while (attempt { try consume(.punctuation(.comma)) }) != nil
     
     return callerCapabilities
@@ -229,13 +229,13 @@ extension Parser {
     
     while let (modifiers, funcToken) = attempt(parseFunctionHead) {
       let identifier = try parseIdentifier()
-      let parameters = try parseParameters()
+      let (parameters, closeBracketToken) = try parseParameters()
       let resultType = attempt(parseResult)
 
       let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
       let body = try parseCodeBlock(scopeContext: scopeContext)
       
-      let functionDeclaration = FunctionDeclaration(modifiers: modifiers, identifier: identifier, parameters: parameters, resultType: resultType, body: body, sourceLocation: modifiers.first?.sourceLocation ?? funcToken.sourceLocation)
+      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, sourceLocation: modifiers.first?.sourceLocation ?? funcToken.sourceLocation)
       functionDeclarations.append(functionDeclaration)
     }
     
@@ -259,12 +259,12 @@ extension Parser {
     return (modifiers, funcToken)
   }
   
-  func parseParameters() throws -> [Parameter] {
+  func parseParameters() throws -> ([Parameter], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket))
     var parameters = [Parameter]()
     
-    if (attempt { try consume(.punctuation(.closeBracket)) }) != nil {
-      return []
+    if let closeBracketToken = (attempt { try consume(.punctuation(.closeBracket)) }) {
+      return ([], closeBracketToken)
     }
     
     repeat {
@@ -273,8 +273,8 @@ extension Parser {
       parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, sourceLocation: identifier.sourceLocation))
     } while (attempt { try consume(.punctuation(.comma)) }) != nil
     
-    try consume(.punctuation(.closeBracket))
-    return parameters
+    let closeBracketToken = try consume(.punctuation(.closeBracket))
+    return (parameters, closeBracketToken)
   }
   
   func parseResult() throws -> Type {
@@ -332,7 +332,7 @@ extension Parser {
       let operatorToken = try consume(.binaryOperator(op))
       let (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
       scopeContext.merge(with: lhsScopeContext)
-      binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs, sourceLocation: lhs.sourceLocation)
+      binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
       break
     }
     
@@ -388,19 +388,22 @@ extension Parser {
 
   func parseFunctionCall(scopeContext: ScopeContext) throws -> FunctionCall {
     let identifier = try parseIdentifier()
-    let arguments = try parseFunctionCallArgumentList(scopeContext: scopeContext)
+    let (arguments, closeBracketToken) = try parseFunctionCallArgumentList(scopeContext: scopeContext)
 
-    return FunctionCall(identifier: identifier, arguments: arguments, sourceLocation: identifier.sourceLocation)
+    return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken)
   }
 
-  func parseFunctionCallArgumentList(scopeContext: ScopeContext) throws -> [Expression] {
+  func parseFunctionCallArgumentList(scopeContext: ScopeContext) throws -> ([Expression], closeBracketToken: Token) {
     var arguments = [Expression]()
 
     try consume(.punctuation(.openBracket))
 
+    var closeBracketToken: Token!
+
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
       if let (argument, _) = try? parseExpression(upTo: argumentEnd, scopeContext: scopeContext) {
-        try consume(tokens[argumentEnd].kind)
+        let token = try consume(tokens[argumentEnd].kind)
+        if token.kind == .punctuation(.closeBracket) { closeBracketToken = token}
         arguments.append(argument)
       } else {
         break
@@ -408,16 +411,16 @@ extension Parser {
     }
 
     if arguments.isEmpty {
-      try consume(.punctuation(.closeBracket))
+      closeBracketToken = try consume(.punctuation(.closeBracket))
     }
 
-    return arguments
+    return (arguments, closeBracketToken)
   }
   
   func parseReturnStatement(statementEndIndex: Int, scopeContext: ScopeContext) throws -> ReturnStatement {
     let returnToken = try consume(.return)
     let expression = attempt { try parseExpression(upTo: statementEndIndex, scopeContext: scopeContext) }?.0
-    return ReturnStatement(expression: expression, sourceLocation: returnToken.sourceLocation)
+    return ReturnStatement(returnToken: returnToken, expression: expression)
   }
 
   func parseIfStatement(scopeContext: ScopeContext) throws -> IfStatement {
@@ -429,7 +432,7 @@ extension Parser {
     let statements = try parseCodeBlock(scopeContext: scopeContext)
     let elseClauseStatements = (try? parseElseClause(scopeContext: scopeContext)) ?? []
 
-    return IfStatement(condition: condition, statements: statements, elseClauseStatements: elseClauseStatements, sourceLocation: ifToken.sourceLocation)
+    return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
   }
 
   func parseElseClause(scopeContext: ScopeContext) throws -> [Statement] {

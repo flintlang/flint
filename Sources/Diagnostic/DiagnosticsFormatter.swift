@@ -7,6 +7,7 @@
 
 import Foundation
 import Rainbow
+import AST
 
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]

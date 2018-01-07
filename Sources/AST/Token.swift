@@ -5,9 +5,7 @@
 //  Created by Franklin Schrans on 12/19/17.
 //
 
-import Diagnostic
-
-public struct Token: Equatable {
+public struct Token: Equatable, SourceEntity {
   public var kind: Kind
   public var sourceLocation: SourceLocation
 

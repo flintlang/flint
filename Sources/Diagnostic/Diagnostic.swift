@@ -5,6 +5,8 @@
 //  Created by Franklin Schrans on 1/4/18.
 //
 
+import AST
+
 public struct Diagnostic {
   public enum Severity {
     case warning
@@ -23,25 +25,5 @@ public struct Diagnostic {
     self.severity = severity
     self.sourceLocation = sourceLocation
     self.message = message
-  }
-}
-
-public struct SourceLocation: Equatable {
-  public var line: Int
-  public var column: Int
-  public var length: Int
-
-  public init(line: Int, column: Int, length: Int) {
-    self.line = line
-    self.column = column
-    self.length = length
-  }
-
-  public static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
-    return lhs.line == rhs.line && lhs.column == rhs.column && lhs.length == rhs.length
-  }
-
-  public static var dummy: SourceLocation {
-    return SourceLocation(line: 0, column: 0, length: 0)
   }
 }

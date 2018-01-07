@@ -15,10 +15,10 @@ let package = Package(
       dependencies: ["Parser", "SemanticAnalyzer", "IULIABackend", "Diagnostic", "Commander"]),
     .target(
       name: "AST",
-      dependencies: ["Diagnostic"]),
+      dependencies: []),
     .target(
       name: "Diagnostic",
-      dependencies: ["Rainbow"]),
+      dependencies: ["Rainbow", "AST"]),
     .target(
       name: "Parser",
       dependencies: ["AST", "Diagnostic"]),
