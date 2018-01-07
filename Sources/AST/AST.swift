@@ -89,7 +89,7 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], sourceLocation: SourceLocation) {
+  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement]) {
     self.funcToken = funcToken
     self.modifiers = modifiers
     self.identifier = identifier
@@ -111,12 +111,14 @@ public struct FunctionDeclaration: SourceEntity {
 public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
-  public var sourceLocation: SourceLocation
 
-  public init(identifier: Identifier, type: Type, sourceLocation: SourceLocation) {
+  public var sourceLocation: SourceLocation {
+    return .spanning(identifier, to: type)
+  }
+
+  public init(identifier: Identifier, type: Type) {
     self.identifier = identifier
     self.type = type
-    self.sourceLocation = sourceLocation
   }
 }
 
@@ -192,18 +194,19 @@ public struct Type: SourceEntity {
   public var rawType: RawType
   public var sourceLocation: SourceLocation
 
-  public init(name: String, sourceLocation: SourceLocation) {
+  public init(identifier: Identifier) {
+    let name = identifier.name
     if let builtInType = BuiltInType(rawValue: name) {
       rawType = .builtInType(builtInType)
     } else {
       rawType = .userDefinedType(name)
     }
-    self.sourceLocation = sourceLocation
+    self.sourceLocation = identifier.sourceLocation
   }
 
-  public init(arrayWithElementType: Type.RawType, size: Int, sourceLocation: SourceLocation) {
-    rawType = .arrayType(arrayWithElementType, size: size)
-    self.sourceLocation = sourceLocation
+  public init(arrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
+    rawType = .arrayType(type.rawType, size: size)
+    sourceLocation = .spanning(type, to: closeSquareBracketToken)
   }
 }
 

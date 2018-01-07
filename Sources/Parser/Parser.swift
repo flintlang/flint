@@ -133,20 +133,14 @@ extension Parser {
   }
   
   func parseType() throws -> Type {
-    guard let first = currentToken, case .identifier(let name) = first.kind else {
-      throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
-    }
+    let identifier = try parseIdentifier()
+    let type = Type(identifier: identifier)
 
-    let type = Type(name: name, sourceLocation: first.sourceLocation)
-    currentIndex += 1
-
-    defer { consumeNewLines() }
-
-    if let openSquareBracketToken = attempt({ try consume(.punctuation(.openSquareBracket)) }) {
+    if attempt({ try consume(.punctuation(.openSquareBracket)) }) != nil {
       let literal = try parseLiteral()
       if case .literal(.decimal(.integer(let size))) = literal.kind {
-        try consume(.punctuation(.closeSquareBracket))
-        return Type(arrayWithElementType: type.rawType, size: size, sourceLocation: openSquareBracketToken.sourceLocation)
+        let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
+        return Type(arrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
       }
     }
 
@@ -235,7 +229,7 @@ extension Parser {
       let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
       let body = try parseCodeBlock(scopeContext: scopeContext)
       
-      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, sourceLocation: modifiers.first?.sourceLocation ?? funcToken.sourceLocation)
+      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body)
       functionDeclarations.append(functionDeclaration)
     }
     
@@ -270,7 +264,7 @@ extension Parser {
     repeat {
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, sourceLocation: identifier.sourceLocation))
+      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type))
     } while (attempt { try consume(.punctuation(.comma)) }) != nil
     
     let closeBracketToken = try consume(.punctuation(.closeBracket))
@@ -280,7 +274,7 @@ extension Parser {
   func parseResult() throws -> Type {
     try consume(.punctuation(.arrow))
     let identifier = try parseIdentifier()
-    return Type(name: identifier.name, sourceLocation: identifier.sourceLocation)
+    return Type(identifier: identifier)
   }
   
   func parseCodeBlock(scopeContext: ScopeContext) throws -> [Statement] {
