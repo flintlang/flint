@@ -321,6 +321,11 @@ extension Parser {
     var binaryExpression: BinaryExpression? = nil
     var scopeContext = scopeContext
 
+    guard limitTokenIndex >= currentIndex else {
+      // Expect any expression.
+      throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: currentToken?.sourceLocation)
+    }
+
     for op in Token.Kind.BinaryOperator.allByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
       let (lhs, lhsScopeContext) = try parseExpression(upTo: index, scopeContext: scopeContext)
