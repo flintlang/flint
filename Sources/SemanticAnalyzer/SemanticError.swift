@@ -24,4 +24,8 @@ extension Diagnostic {
   static func useOfMutatingExpressionInNonMutatingFunction(_ expression: Expression, functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Use of mutating statement in a nonmutating function")
   }
+
+  static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
+  }
 }

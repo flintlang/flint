@@ -441,6 +441,7 @@ extension Parser {
     var braceDepth = 0
     var squareBracketDepth = 0
 
+    guard currentIndex <= upperBound else { return nil }
     let range = (currentIndex..<upperBound)
     for index in range where braceDepth >= 0 {
       let token = tokens[index].kind
