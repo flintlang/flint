@@ -4,6 +4,7 @@ ERRORS=0
 
 swift test &> /dev/null
 if [ $? -ne 0 ]; then
+  echo "Swift tests failed"
   ERRORS=$(($ERRORS + 1))
 fi
 
