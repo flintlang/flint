@@ -6,6 +6,7 @@
 //
 
 import AST
+import Foundation
 
 struct IULIAFunction {
   static let returnVariableName = "ret"
@@ -39,13 +40,33 @@ struct IULIAFunction {
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
     let callerCapabilityChecks = renderCallerCapabilityChecks(callerCapabilities: callerCapabilities)
-    let body = functionDeclaration.body.map({ render($0) }).joined(separator: "\n")
+    let body = renderBody(functionDeclaration.body)
 
     return """
     function \(signature) {
       \(callerCapabilityChecks.indented(by: 2))\(body.indented(by: 2))
     }
     """
+  }
+
+  func renderBody<S : RandomAccessCollection & RangeReplaceableCollection>(_ statements: S) -> String where S.Element == AST.Statement, S.Index == Int, S.SubSequence: RandomAccessCollection {
+    guard !statements.isEmpty else { return "" }
+    var statements = statements
+    let first = statements.removeFirst()
+    let firstCode = render(first)
+    let restCode = renderBody(statements)
+
+    if case .ifStatement(let ifStatement) = first, ifStatement.endsWithReturnStatement {
+      let defaultCode = """
+
+      default {
+        \(restCode.indented(by: 2))
+      }
+      """
+      return firstCode + (restCode.isEmpty ? "" : defaultCode)
+    } else {
+      return firstCode + (restCode.isEmpty ? "" : "\n" + restCode)
+    }
   }
 
   func mangledSignature() -> String {
@@ -207,20 +228,32 @@ extension IULIAFunction {
 
   func render(_ ifStatement: IfStatement) -> String {
     let condition = render(ifStatement.condition)
-    let body = ifStatement.statements.map({ render($0) }).joined(separator: "\n")
-    let elseBody = ifStatement.elseClauseStatements.map({ render($0) }).joined(separator: "\n")
+    let body = ifStatement.body.map { statement in
+      render(statement)
+    }.joined(separator: "\n")
+    let elseBody = ifStatement.elseBody.map({ render($0) }).joined(separator: "\n")
+    let ifCode: String
 
-    let ifCode = """
-    if \(condition) {
-      \(body)
+    if ifStatement.endsWithReturnStatement {
+      ifCode = """
+      switch \(condition)
+      case 1 {
+        \(body.indented(by: 2))
+      }
+      """
+    } else {
+      ifCode = """
+      if \(condition) {
+        \(body.indented(by: 2))
+      }
+      """
     }
-    """
 
     let elseCode: String?
     if !elseBody.isEmpty {
       elseCode = """
-        else {
-        \(elseBody)
+      else {
+        \(elseBody.indented(by: 2))
       }
       """
     } else {

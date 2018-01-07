@@ -147,8 +147,8 @@ extension IfStatement: Equatable {
   public static func ==(lhs: IfStatement, rhs: IfStatement) -> Bool {
     return
       lhs.condition == rhs.condition &&
-      lhs.statements == rhs.statements &&
-      lhs.elseClauseStatements == rhs.elseClauseStatements
+      lhs.body == rhs.body &&
+      lhs.elseBody == rhs.elseBody
   }
 }
 
