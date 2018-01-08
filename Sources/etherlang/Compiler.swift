@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AST
 import Parser
 import SemanticAnalyzer
 import IRGen
@@ -22,6 +23,7 @@ struct Compiler {
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (parserAST, context, parserDiagnostics) = Parser(tokens: tokens).parse()
 
+
     guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
       print(DiagnosticsFormatter(diagnostics: parserDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
       exitWithFailure()
@@ -37,7 +39,7 @@ struct Compiler {
     let irCode = IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
-    return CompilationOutcome(irCode: irCode)
+    return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
   }
 
   func exitWithFailure() -> Never {
@@ -48,4 +50,5 @@ struct Compiler {
 
 struct CompilationOutcome {
   var irCode: String
+  var astDump: String
 }
