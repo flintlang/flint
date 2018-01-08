@@ -67,6 +67,7 @@ extension Token {
       case arrow              = "->"
       case comma              = ","
       case semicolon          = ";"
+      case doubleSlash        = "//"
     }
 
     public enum Literal: Equatable {
