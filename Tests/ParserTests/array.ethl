@@ -1,0 +1,38 @@
+contract Test {
+  var owner: Address
+  var arr: Int[4]
+  var arr2: Int[10]
+  var numWrites: Int
+}
+
+Test :: (any) {
+  mutating func increaseNumWrites() {
+    self.numWrites = numWrites + 1
+  }
+
+  public mutating func write(index: Int, val: Int) {
+    arr[index] = val
+    increaseNumWrites()
+  }
+
+  public func value(index: Int) -> Int {
+    return arr[index]
+  }
+
+  public func value2(index: Int) -> Int {
+    return arr2[index]
+  }
+
+  public mutating func write2(index: Int, val: Int) {
+    arr2[index] = val
+    increaseNumWrites()
+  }
+
+  public func valueBoth(index: Int) -> Int {
+    return arr[index] + arr2[index]
+  }
+
+  public func numWrites() -> Int {
+    return numWrites
+  }
+}

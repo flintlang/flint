@@ -6,8 +6,11 @@ let package = Package(
   name: "etherlang",
   dependencies: [
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
-    .package(url: "https://github.com/onevcat/Rainbow", from: "3.0.0"),
-    .package(url: "https://github.com/kylef/Commander", from: "0.8.0")
+    .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
+    .package(url: "https://github.com/kylef/Commander", from: "0.8.0"),
+    .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
+    .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
+    .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1")
   ],
   targets: [
     .target(
@@ -22,9 +25,6 @@ let package = Package(
     .target(
       name: "Parser",
       dependencies: ["AST", "Diagnostic"]),
-    .testTarget(
-      name: "ParserTests",
-      dependencies: ["Parser"]),
     .target(
       name: "SemanticAnalyzer",
       dependencies: ["AST", "Diagnostic"]),
@@ -32,7 +32,14 @@ let package = Package(
       name: "SemanticAnalyzerTests",
       dependencies: ["SemanticAnalyzer", "Parser"]),
     .target(
-      name: "IRGen",
-      dependencies: ["AST", "CryptoSwift"]),
+        name: "IRGen",
+        dependencies: ["AST", "CryptoSwift"]),
+    .target(
+        name: "lite",
+        dependencies: ["LiteSupport", "Rainbow", "Symbolic"]),
+    .target(
+        name: "file-check",
+        dependencies: ["FileCheck", "Commander"])
+
     ]
 )

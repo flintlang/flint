@@ -1,0 +1,19 @@
+contract Test {
+  var data: Int
+}
+
+Test :: (any) {
+  public mutating func foo(a: Int, b: Int) {
+    var tmp: Int = bar(a, b)
+    tmp = tmp + 1
+    data = tmp + self.data
+  }
+
+  func bar(a: Int, b: Int) -> Int {
+    return a + b
+  }
+
+  public func getData() -> Int {
+    return data
+  }
+}

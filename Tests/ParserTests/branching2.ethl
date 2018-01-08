@@ -1,0 +1,21 @@
+contract Branching {}
+
+Branching :: (any) {
+  public func foo(a: Int) -> Int {
+    if a > 6 {
+      return 0
+    }
+    
+    if a > 5 {
+      return 1
+    }
+    
+    if a > 4 {
+      if a > 3 {
+        return 2
+      }
+    }
+
+    return 3
+  }
+}

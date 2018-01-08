@@ -45,7 +45,6 @@ public struct Tokenizer {
       }
     }
 
-    tokens = removingComments(tokens)
     return tokens
   }
 
@@ -95,7 +94,19 @@ public struct Tokenizer {
     var line = 1
     var column = 1
 
+    var inComment = false
+
     for char in string {
+
+      if inComment {
+        if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
+          inComment = false
+          line += 1
+          column = 1
+        }
+        continue
+      }
+
       if char == "\"" {
         inStringLiteral = !inStringLiteral
         acc += String(char)
@@ -112,6 +123,12 @@ public struct Tokenizer {
         if let (last, sourceLocation) = components.last, canBeMerged(last, String(char)) {
           components[components.endIndex.advanced(by: -1)] = ("\(last)\(char)", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
           column += 1
+
+          if components.last!.0 == "//" {
+            components.removeLast()
+            inComment = true
+          }
+
           continue
         }
 
@@ -135,20 +152,20 @@ public struct Tokenizer {
     return mergeable.contains { $0 == (component1, component2) }
   }
 
-  func removingComments(_ tokens: [Token]) -> [Token] {
-    var newTokens = [Token]()
-
-    var inComment = false
-    for token in tokens {
-      if inComment, case .newline = token.kind {
-        inComment = false
-      } else if case .punctuation(.doubleSlash) = token.kind {
-        inComment = true
-      } else if !inComment {
-        newTokens.append(token)
-      }
-    }
-
-    return newTokens
-  }
+//  func removingComments(_ tokens: [Token]) -> [Token] {
+//    var newTokens = [Token]()
+//
+//    var inComment = false
+//    for token in tokens {
+//      if inComment, case .newline = token.kind {
+//        inComment = false
+//      } else if case .punctuation(.doubleSlash) = token.kind {
+//        inComment = true
+//      } else if !inComment {
+//        newTokens.append(token)
+//      }
+//    }
+//
+//    return newTokens
+//  }
 }

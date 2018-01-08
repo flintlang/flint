@@ -22,8 +22,7 @@ struct Compiler {
     
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (parserAST, context, parserDiagnostics) = Parser(tokens: tokens).parse()
-
-
+    
     guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
       print(DiagnosticsFormatter(diagnostics: parserDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
       exitWithFailure()
