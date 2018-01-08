@@ -8,7 +8,7 @@
 import Foundation
 import Parser
 import SemanticAnalyzer
-import IULIABackend
+import IRGen
 import Diagnostic
 
 struct Compiler {
@@ -31,7 +31,7 @@ struct Compiler {
     guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
       exitWithFailure()
     }
-    return IULIABackend(topLevelModule: ast, context: context).generateCode()
+    return IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
   }
 
   func exitWithFailure() -> Never {

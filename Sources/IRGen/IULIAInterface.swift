@@ -1,14 +1,14 @@
 //
-//  IULIAInterface.swift
-//  IULIABackend
+//  IRInterface.swift
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/29/17.
 //
 
 import AST
 
-struct IULIAInterface {
-  var contract: IULIAContract
+struct IRInterface {
+  var contract: IRContract
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in

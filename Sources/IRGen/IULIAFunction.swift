@@ -1,6 +1,6 @@
 //
-//  IULIAFunction.swift
-//  IULIABackend
+//  IRFunction.swift
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/28/17.
 //
@@ -8,7 +8,7 @@
 import AST
 import Foundation
 
-struct IULIAFunction {
+struct IRFunction {
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
@@ -37,7 +37,7 @@ struct IULIAFunction {
   func rendered() -> String {
     let doesReturn = functionDeclaration.resultType != nil
     let parametersString = parameterNames.joined(separator: ", ")
-    let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
+    let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IRFunction.returnVariableName)" : "")"
 
     let callerCapabilityChecks = renderCallerCapabilityChecks(callerCapabilities: callerCapabilities)
     let body = renderBody(functionDeclaration.body)
@@ -85,7 +85,7 @@ struct IULIAFunction {
       guard !callerCapability.isAny else { return nil }
       let offset = contractStorage.offset(for: callerCapability.name)
       return """
-      _tmp := add(_tmp, \(IULIAUtilFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
+      _tmp := add(_tmp, \(IRUtilFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
       """
     }
 
@@ -101,7 +101,7 @@ struct IULIAFunction {
   }
 }
 
-extension IULIAFunction {
+extension IRFunction {
   func render(_ statement: AST.Statement) -> String {
     switch statement {
     case .expression(let expression): return render(expression)
@@ -217,9 +217,9 @@ extension IULIAFunction {
 
     if arrayIdentifier.isImplicitPropertyAccess {
       if asLValue {
-        return "\(IULIAUtilFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+        return "\(IRUtilFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
       } else {
-        return "\(IULIAUtilFunction.storageArrayElementAtIndex.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+        return "\(IRUtilFunction.storageArrayElementAtIndex.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
       }
     }
 
@@ -256,6 +256,6 @@ extension IULIAFunction {
       return ""
     }
 
-    return "\(IULIAFunction.returnVariableName) := \(render(expression))"
+    return "\(IRFunction.returnVariableName) := \(render(expression))"
   }
 }

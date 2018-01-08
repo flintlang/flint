@@ -12,7 +12,7 @@ let package = Package(
   targets: [
     .target(
       name: "etherlang",
-      dependencies: ["Parser", "SemanticAnalyzer", "IULIABackend", "Diagnostic", "Commander"]),
+      dependencies: ["Parser", "SemanticAnalyzer", "IRGen", "Diagnostic", "Commander"]),
     .target(
       name: "AST",
       dependencies: []),
@@ -32,7 +32,7 @@ let package = Package(
       name: "SemanticAnalyzerTests",
       dependencies: ["SemanticAnalyzer", "Parser"]),
     .target(
-      name: "IULIABackend",
+      name: "IRGen",
       dependencies: ["AST", "CryptoSwift"]),
     ]
 )

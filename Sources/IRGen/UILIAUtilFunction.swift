@@ -1,13 +1,13 @@
 //
 //  UILIAUtilFunction.swift
-//  IULIABackend
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/29/17.
 //
 
 import Foundation
 
-enum IULIAUtilFunction: String {
+enum IRUtilFunction: String {
   case selector
   case decodeAsAddress
   case decodeAsUInt
@@ -19,21 +19,21 @@ enum IULIAUtilFunction: String {
 
   var declaration: String {
     switch self {
-    case .selector: return IULIAUtilFunctionDeclaration.selector
-    case .decodeAsAddress: return IULIAUtilFunctionDeclaration.decodeAsAddress
-    case .decodeAsUInt: return IULIAUtilFunctionDeclaration.decodeAsUInt
-    case .isValidCallerCapability: return IULIAUtilFunctionDeclaration.isValidCallerCapability
-    case .returnUInt: return IULIAUtilFunctionDeclaration.returnUInt
-    case .isInvalidArrayAccess: return IULIAUtilFunctionDeclaration.isInvalidArrayAccess
-    case .storageArrayElementAtIndex: return IULIAUtilFunctionDeclaration.storageArrayElementAtIndex
-    case .storageArrayOffset: return IULIAUtilFunctionDeclaration.storageArrayOffset
+    case .selector: return IRUtilFunctionDeclaration.selector
+    case .decodeAsAddress: return IRUtilFunctionDeclaration.decodeAsAddress
+    case .decodeAsUInt: return IRUtilFunctionDeclaration.decodeAsUInt
+    case .isValidCallerCapability: return IRUtilFunctionDeclaration.isValidCallerCapability
+    case .returnUInt: return IRUtilFunctionDeclaration.returnUInt
+    case .isInvalidArrayAccess: return IRUtilFunctionDeclaration.isInvalidArrayAccess
+    case .storageArrayElementAtIndex: return IRUtilFunctionDeclaration.storageArrayElementAtIndex
+    case .storageArrayOffset: return IRUtilFunctionDeclaration.storageArrayOffset
     }
   }
 
-  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
+  static let all: [IRUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
 }
 
-fileprivate struct IULIAUtilFunctionDeclaration {
+fileprivate struct IRUtilFunctionDeclaration {
   static let selector =
   """
   function selector() -> ret {
