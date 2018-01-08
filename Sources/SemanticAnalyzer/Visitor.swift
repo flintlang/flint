@@ -31,7 +31,12 @@ extension SemanticAnalyzer {
 
   struct ContractBehaviorDeclarationContext {
     var contractIdentifier: Identifier
+    var contractProperties: [VariableDeclaration]
     var callerCapabilities: [CallerCapability]
+
+    func isPropertyDeclared(_ name: String) -> Bool {
+      return contractProperties.contains { $0.identifier.name == name }
+    }
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
@@ -42,7 +47,8 @@ extension SemanticAnalyzer {
       return
     }
 
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let properties = context.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     for callerCapability in contractBehaviorDeclaration.callerCapabilities {
       visit(callerCapability, contractBehaviorDeclarationContext: declarationContext)
@@ -86,12 +92,15 @@ extension SemanticAnalyzer {
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
   func visit(_ identifier: Identifier, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext? = nil) {
-    if let functionDeclarationContext = functionDeclarationContext,
-      asLValue, identifier.isImplicitPropertyAccess,
-      !functionDeclarationContext.isMutating {
-      addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+    if let functionDeclarationContext = functionDeclarationContext, identifier.isImplicitPropertyAccess {
+      if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
+        addDiagnostic(.useOfUndeclaredIdentifier(identifier))
+      }
+      if asLValue, !functionDeclarationContext.isMutating {
+        addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+      }
     }
-  }
+}
 
   func visit(_ type: Type) {}
 

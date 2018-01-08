@@ -80,7 +80,7 @@ extension Parser {
       guard let first = currentToken else { break }
       if first.kind == .contract {
         let contractDeclaration = try parseContractDeclaration()
-        context.declaredContractsIdentifiers.append(contractDeclaration.identifier)
+        context.contractDeclarations.append(contractDeclaration)
         declarations.append(.contractDeclaration(contractDeclaration))
       } else {
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()

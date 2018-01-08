@@ -6,11 +6,21 @@
 //
 
 public struct Context {
-  public var declaredContractsIdentifiers = [Identifier]()
+  public var contractDeclarations = [ContractDeclaration]()
   public var functions = [MangledFunction]()
   var contractPropertyMap = [Identifier: [VariableDeclaration]]()
 
+  public var declaredContractsIdentifiers: [Identifier] {
+    return contractDeclarations.map { $0.identifier }
+  }
+
+
   public init() {}
+
+  public func properties(declaredIn contract: Identifier) -> [VariableDeclaration] {
+    let contractDeclaration = contractDeclarations.first { $0.identifier == contract }!
+    return contractDeclaration.variableDeclarations
+  }
 
   public func declaredCallerCapabilities(inContractWithIdentifier contractIdentifier: Identifier) -> [VariableDeclaration] {
     let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
