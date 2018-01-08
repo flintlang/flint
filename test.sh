@@ -18,27 +18,15 @@ do
       echo "Compilation failed: $f"
     fi
 
-    solFile=${f%.*}.sol
+    fileName=${f%.*}
+    solFile=$fileName.sol
     solc $solFile &> /dev/null
     if [ $? -ne 0 ]; then
       echo "Solc failed: $solFile"
     fi
-  done
 
-  for f in examples/warnings/*.ethl 
-  do
-    .build/x86_64-apple-macosx10.10/debug/etherlang $f --emit-ir &> /dev/null
-    if [ $? -ne 0 ]; then
-      ERRORS=$(($ERRORS + 1))
-      echo "Compilation failed: $f"
-    fi
-
-    solFile=${f%.*}.sol
-    solc $solFile &> /dev/null
-    if [ $? -ne 0 ]; then
-      ERRORS=$(($ERRORS + 1))
-      echo "Solc failed: $solFile"
-    fi
+    rm $solFile
+    rm -r $fileName
   done
 done
 

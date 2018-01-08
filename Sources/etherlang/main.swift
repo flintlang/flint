@@ -7,11 +7,12 @@ func main() {
     Flag("emit-ir", flag: "i", description: "Emit the IULIA internal representation of the code.")
   ) { inputFile, emitIulia in
     let inputFileURL = URL(fileURLWithPath: inputFile)
-    let output = Compiler(inputFile: inputFileURL).compile()
+    let outputDirectory = inputFileURL.deletingPathExtension()
+    let compilationOutcome = Compiler(inputFile: inputFileURL, outputDirectory: outputDirectory).compile()
 
     if emitIulia {
       let iuliaFileURL = inputFileURL.deletingPathExtension().appendingPathExtension("sol")
-      try! output.write(to: iuliaFileURL, atomically: true, encoding: .utf8)
+      try! compilationOutcome.irCode.write(to: iuliaFileURL, atomically: true, encoding: .utf8)
     }
   }.run()
 }

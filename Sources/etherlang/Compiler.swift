@@ -13,8 +13,9 @@ import Diagnostic
 
 struct Compiler {
   var inputFile: URL
+  var outputDirectory: URL
   
-  func compile() -> String {
+  func compile() -> CompilationOutcome {
     let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
     
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
@@ -31,11 +32,19 @@ struct Compiler {
     guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
       exitWithFailure()
     }
-    return IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
+
+    let irCode = IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
+    SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory).compile()
+
+    return CompilationOutcome(irCode: irCode)
   }
 
   func exitWithFailure() -> Never {
     print("Failed to compile \(inputFile.lastPathComponent).")
     exit(1)
   }
+}
+
+struct CompilationOutcome {
+  var irCode: String
 }
