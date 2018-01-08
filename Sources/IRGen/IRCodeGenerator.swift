@@ -1,13 +1,13 @@
 //
-//  IULIABackend.swift
-//  IULIABackend
+//  IRCodeGenerator.swift
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/28/17.
 //
 
 import AST
 
-public struct IULIABackend {
+public struct IRCodeGenerator {
   var topLevelModule: TopLevelModule
   var context: Context
 
@@ -17,8 +17,8 @@ public struct IULIABackend {
   }
 
   public func generateCode() -> String {
-    var contracts = [IULIAContract]()
-    var interfaces = [IULIAInterface]()
+    var contracts = [IRContract]()
+    var interfaces = [IRInterface]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.flatMap { declaration in
@@ -32,9 +32,9 @@ public struct IULIABackend {
 
         return contractBehaviorDeclaration
       }
-      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, context: context)
+      let contract = IRContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, context: context)
       contracts.append(contract)
-      interfaces.append(IULIAInterface(contract: contract))
+      interfaces.append(IRInterface(contract: contract))
     }
 
     let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")

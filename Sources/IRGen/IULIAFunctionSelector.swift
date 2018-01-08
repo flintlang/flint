@@ -1,14 +1,14 @@
 //
-//  IULIAFunctionSelector.swift
-//  IULIABackend
+//  IRFunctionSelector.swift
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/28/17.
 //
 
 import CryptoSwift
 
-struct IULIAFunctionSelector {
-  var functions: [IULIAFunction]
+struct IRFunctionSelector {
+  var functions: [IRFunction]
 
   func rendered() -> String {
     let cases = renderCases()
@@ -36,12 +36,12 @@ struct IULIAFunctionSelector {
     }.joined()
   }
 
-  func renderCaseBody(function: IULIAFunction) -> String {
+  func renderCaseBody(function: IRFunction) -> String {
     let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
       let (index, type) = arg
       switch type {
-      case .address: return "\(IULIAUtilFunction.decodeAsAddress.rawValue)(\(index))"
-      case .uint256: return "\(IULIAUtilFunction.decodeAsUInt.rawValue)(\(index))"
+      case .address: return "\(IRUtilFunction.decodeAsAddress.rawValue)(\(index))"
+      case .uint256: return "\(IRUtilFunction.decodeAsUInt.rawValue)(\(index))"
       }
     }
 
@@ -50,7 +50,7 @@ struct IULIAFunctionSelector {
     if let resultType = function.resultCanonicalType {
       switch resultType {
       case .address: fatalError()
-      case .uint256: return "\(IULIAUtilFunction.returnUInt.rawValue)(\(call))"
+      case .uint256: return "\(IRUtilFunction.returnUInt.rawValue)(\(call))"
       }
     }
 

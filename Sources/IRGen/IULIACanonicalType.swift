@@ -1,6 +1,6 @@
 //
-//  IULIACanonicalType.swift
-//  IULIABackend
+//  IRCanonicalType.swift
+//  IRGen
 //
 //  Created by Franklin Schrans on 12/29/17.
 //
