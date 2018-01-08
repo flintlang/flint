@@ -10,6 +10,7 @@ import Foundation
 struct SolcCompiler {
   var inputSource: String
   var outputDirectory: URL
+  var emitBytecode: Bool
 
   func compile() {
     let temporaryFile = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(UUID().uuidString)
@@ -18,7 +19,7 @@ struct SolcCompiler {
     let process = Process()
     process.launchPath = "/usr/local/bin/solc"
     process.standardError = nil
-    process.arguments = [temporaryFile.path, "--bin", "-o", outputDirectory.path]
+    process.arguments = [temporaryFile.path, "--bin", emitBytecode ? "--opcodes" : "", "-o", outputDirectory.path]
 
     process.launch()
     process.waitUntilExit()

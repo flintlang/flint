@@ -14,6 +14,7 @@ import Diagnostic
 struct Compiler {
   var inputFile: URL
   var outputDirectory: URL
+  var emitBytecode: Bool
   
   func compile() -> CompilationOutcome {
     let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
@@ -34,7 +35,7 @@ struct Compiler {
     }
 
     let irCode = IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
-    SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory).compile()
+    SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     return CompilationOutcome(irCode: irCode)
   }

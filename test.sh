@@ -18,15 +18,15 @@ do
       echo "Compilation failed: $f"
     fi
 
-    fileName=${f%.*}
-    solFile=$fileName.sol
+    filePath=${f%.*}
+    fileName=`basename $filePath`
+    solFile="$filePath/$fileName.sol"
     solc $solFile &> /dev/null
     if [ $? -ne 0 ]; then
-      echo "Solc failed: $solFile"
+      echo "Solc failed: $solPath"
     fi
 
-    rm $solFile
-    rm -r $fileName
+    rm -r $filePath
   done
 done
 
