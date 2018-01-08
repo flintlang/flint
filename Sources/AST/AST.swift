@@ -49,7 +49,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   }
 }
 
-public struct VariableDeclaration {
+public struct VariableDeclaration: SourceEntity {
   public var varToken: Token
   public var identifier: Identifier
   public var type: Type
