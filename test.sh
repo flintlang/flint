@@ -20,13 +20,13 @@ do
 
     filePath=${f%.*}
     fileName=`basename $filePath`
-    solFile="$filePath/$fileName.sol"
+    solFile="examples/$dir/bin/$fileName/$fileName.sol"
     solc $solFile &> /dev/null
     if [ $? -ne 0 ]; then
       echo "Solc failed: $solPath"
     fi
 
-    rm -r $filePath
+    rm -r "examples/$dir/bin"
   done
 done
 

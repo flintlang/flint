@@ -8,7 +8,8 @@ func main() {
     Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code.")
   ) { inputFile, emitIulia, emitBytecode in
     let inputFileURL = URL(fileURLWithPath: inputFile)
-    let outputDirectory = inputFileURL.deletingPathExtension()
+    let fileName = inputFileURL.deletingPathExtension().lastPathComponent
+    let outputDirectory = inputFileURL.deletingLastPathComponent().appendingPathComponent("bin/\(fileName)")
     let compilationOutcome = Compiler(inputFile: inputFileURL, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     if emitIulia {
