@@ -45,6 +45,7 @@ public struct Tokenizer {
       }
     }
 
+    tokens = removingComments(tokens)
     return tokens
   }
 
@@ -80,6 +81,7 @@ public struct Tokenizer {
     "->": .punctuation(.arrow),
     ",": .punctuation(.comma),
     ";": .punctuation(.semicolon),
+    "//": .punctuation(.doubleSlash),
     "true": .literal(.boolean(.true)),
     "false": .literal(.boolean(.false))
   ]
@@ -107,16 +109,10 @@ public struct Tokenizer {
           acc = ""
         }
 
-        if let (last, sourceLocation) = components.last {
-          if last == ":", char == ":" {
-            components[components.endIndex.advanced(by: -1)] = ("::", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
-            column += 1
-            continue
-          } else if last == "-", char == ">" {
-            components[components.endIndex.advanced(by: -1)] = ("->", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
-            column += 1
-            continue
-          }
+        if let (last, sourceLocation) = components.last, canBeMerged(last, String(char)) {
+          components[components.endIndex.advanced(by: -1)] = ("\(last)\(char)", SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1))
+          column += 1
+          continue
         }
 
         components.append((String(char), SourceLocation(line: line, column: column, length: 1)))
@@ -134,4 +130,25 @@ public struct Tokenizer {
     return components.filter { !$0.0.isEmpty }
   }
 
+  func canBeMerged(_ component1: String, _ component2: String) -> Bool {
+    let mergeable = [(":", ":"), ("-", ">"), ("/", "/")]
+    return mergeable.contains { $0 == (component1, component2) }
+  }
+
+  func removingComments(_ tokens: [Token]) -> [Token] {
+    var newTokens = [Token]()
+
+    var inComment = false
+    for token in tokens {
+      if inComment, case .newline = token.kind {
+        inComment = false
+      } else if case .punctuation(.doubleSlash) = token.kind {
+        inComment = true
+      } else if !inComment {
+        newTokens.append(token)
+      }
+    }
+
+    return newTokens
+  }
 }
