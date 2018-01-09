@@ -35,7 +35,7 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let irCode = IRCodeGenerator(topLevelModule: ast, context: context).generateCode()
+    let irCode = IULIACodeGenerator(topLevelModule: ast, context: context).generateCode()
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())

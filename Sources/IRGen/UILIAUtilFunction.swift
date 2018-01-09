@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum IRUtilFunction: String {
+enum IULIAUtilFunction: String {
   case selector
   case decodeAsAddress
   case decodeAsUInt
@@ -30,7 +30,7 @@ enum IRUtilFunction: String {
     }
   }
 
-  static let all: [IRUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
+  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
 }
 
 fileprivate struct IRUtilFunctionDeclaration {

@@ -7,8 +7,8 @@
 
 import AST
 
-struct IRInterface {
-  var contract: IRContract
+struct IULIAInterface {
+  var contract: IULIAContract
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
