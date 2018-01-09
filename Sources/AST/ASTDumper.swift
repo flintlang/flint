@@ -1,6 +1,6 @@
 //
 //  ASTDumper.swift
-//  etherlang
+//  flintc
 //
 //  Created by Franklin Schrans on 1/8/18.
 //

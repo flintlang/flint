@@ -25,8 +25,8 @@ func findAdjacentBinary(_ name: String) -> URL? {
   return siltURL
 }
 
-var etherlangExecutableLocation: URL {
-  return findAdjacentBinary("etherlang")!
+var flintcExecutableLocation: URL {
+  return findAdjacentBinary("flintc")!
 }
 
 var fileCheckExecutableLocation: URL {
@@ -34,8 +34,8 @@ var fileCheckExecutableLocation: URL {
 }
 
 func run() -> Int32 {
-  let allPassed = try! runLite(substitutions: [("ethlc", "\(etherlangExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
-                              pathExtensions: ["ethl"],
+  let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
+                              pathExtensions: ["flint"],
                               testDirPath: nil,
                               testLinePrefix: "//",
                               parallelismLevel: .automatic)

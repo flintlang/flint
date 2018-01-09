@@ -1,6 +1,6 @@
 # Caller Capabilities
 
-Ethl introduces the concept of **caller capabilities**. While traditional computer programs have an entry point (the *main* function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services: any Ethereum user/contract call is a public function of a given contract. The function then gets executed until completion, an error is thrown, or the gas limit has been reached.
+Flint introduces the concept of **caller capabilities**. While traditional computer programs have an entry point (the *main* function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services: any Ethereum user/contract call is a public function of a given contract. The function then gets executed until completion, an error is thrown, or the gas limit has been reached.
 
 Contracts can maintain a state, which persists on the EVM blockchain. Developers use state to record data through function calls. Part of what can be recorded are Ethereum addresses, which can be used to impose limits on which functions can be called by a given address. The EVM bytecode specification doesn't include special instructions to perform these kinds of checks. Usually, developers prefix their function body by a caller check, as follows:
 
@@ -15,9 +15,9 @@ function giftAccount(address: Address, amount: Int) {
 
 Adding these checks is cumbersome and error-prone. 
 
-Contract functions in Ethl are declared within `ContractBehaviorDeclaration`s, which are used to restrict which users/contracts are allowed to call the functions.
+Contract functions in Flint are declared within `ContractBehaviorDeclaration`s, which are used to restrict which users/contracts are allowed to call the functions.
 
-The above example is declared as follows in Ethl:
+The above example is declared as follows in Flint:
 
 ```
 Bank :: (manager) {
@@ -33,11 +33,11 @@ Caller capabilities can be any property declared in the contract's declaration, 
 
 Note: The special caller capability `any` allows any caller to execute the function in the group.
 
-Calls to Ethl functions are validated both at compile-time and runtime.
+Calls to Flint functions are validated both at compile-time and runtime.
 
 ## Static checking
 
-In an Ethl function, if a function call to another Ethl function is performed, the compiler checks that the caller has sufficient caller capabilities.
+In an Flint function, if a function call to another Flint function is performed, the compiler checks that the caller has sufficient caller capabilities.
 
 Consider the following example.
 
@@ -68,11 +68,11 @@ For these cases, two additional language constructs exist:
 - `try? bar()`: The function `bar`'s body is executed if at runtime, the caller's capability matches `bar`'s. The expression `try? bar()` returns a boolean.
 - `try! bar()`: If at runtime, the caller's capability doesn't match `manager`, an exception is thrown and the body doesn't get executed. Otherwise, it does.
 
-### Calls from Ethereum users or non-Ethl smart contracts
+### Calls from Ethereum users or non-Flint smart contracts
 
-Functions to contracts on the Blockchain can also be called by users directly, through an Ethereum client, or another non-Ethl smart contract.
+Functions to contracts on the Blockchain can also be called by users directly, through an Ethereum client, or another non-Flint smart contract.
 
-For those cases, Ethl checks at runtime whether the caller has the appropriate capabilities to perform the call, and throws an exception if not.
+For those cases, Flint checks at runtime whether the caller has the appropriate capabilities to perform the call, and throws an exception if not.
 
 ## Multiple capabilities
 

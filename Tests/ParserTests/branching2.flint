@@ -1,4 +1,4 @@
-// RUN: %ethlc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
 contract Branching {}
 
