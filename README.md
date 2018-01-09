@@ -10,8 +10,8 @@ Consider the following example.
 
 ```
 contract Bank {
-	var manager: Address
-	var accounts: [Address: Int]
+  var manager: Address
+  var accounts: [Address: Int]
 }
 ```
 
@@ -25,9 +25,9 @@ Consider the following example.
 
 ```
 Bank :: (any) {
-	public mutating func deposit(address: Address, amount: Int) {
-		accounts[address] += amount
-	}
+  public mutating func deposit(address: Address, amount: Int) {
+    accounts[address] += amount
+  }
 }
 ```
 

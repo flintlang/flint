@@ -6,10 +6,10 @@ Contracts can maintain a state, which persists on the EVM blockchain. Developers
 
 ```
 function giftAccount(address: Address, amount: Int) {
-	if (caller != manager) {
-		throw
-	}
-	// body
+  if (caller != manager) {
+    throw
+  }
+  // body
 }
 ```
 
@@ -21,9 +21,9 @@ The above example is declared as follows in Flint:
 
 ```
 Bank :: (manager) {
-	func giftAccount(address: Address, amount: Int) {
-		// body
-	}
+  func giftAccount(address: Address, amount: Int) {
+    // body
+  }
 }
 ```
 
@@ -43,15 +43,15 @@ Consider the following example.
 
 ```
 Bank :: (any) {
-	func foo() {
-		// Error: Capability "any" cannot be used to perform a call to a 
-		// function for "manager"
-		bar()
-	}
+  func foo() {
+    // Error: Capability "any" cannot be used to perform a call to a 
+    // function for "manager"
+    bar()
+  }
 }
 
 Bank :: (manager) {
-	func bar() {}
+  func bar() {}
 }
 ```
 
@@ -82,7 +82,7 @@ Consider the following contract behavior declaration:
 
 ```
 Bank :: (manager, accounts.keys) {
-	func forManagerOrCustomers() {}
+  func forManagerOrCustomers() {}
 }
 ```
 
@@ -96,14 +96,14 @@ Consider the following examples:
 
 ```
 Bank :: (manager, accounts.keys) {
-	func forManagerOrCustomers() {
-		// Error: "accounts.keys" is not compatible with "manager"
-		forManager()
-	}
+  func forManagerOrCustomers() {
+    // Error: "accounts.keys" is not compatible with "manager"
+    forManager()
+  }
 }
 
 Bank :: (manager) {
-	func forManager() {}
+  func forManager() {}
 }
 
 ```
@@ -112,15 +112,15 @@ Bank :: (manager) {
 
 ```
 Bank :: (manager, accounts.keys) {
-	func forManagerOrCustomers() {
-		// Valid: "manager" is compatible with "manager", and "accounts.keys" is
-		// compatible with "accounts.keys" 
-		forManagerOrCustomers2()
-	}
+  func forManagerOrCustomers() {
+    // Valid: "manager" is compatible with "manager", and "accounts.keys" is
+    // compatible with "accounts.keys" 
+    forManagerOrCustomers2()
+  }
 }
 
 Bank :: (accounts.keys, manager) {
-	func forManagerOrCustomers2() {}
+  func forManagerOrCustomers2() {}
 }
 
 ```
@@ -129,16 +129,16 @@ Bank :: (accounts.keys, manager) {
 
 ```
 Bank :: (manager, accounts.keys) {
-	func forManagerOrCustomers() {
-		// Valid: "manager" is compatible with "manager" (and "any", too), and "accounts.keys"
-		// is compatible with "any"
-		forManagerOrCustomers2()
-	}
+  func forManagerOrCustomers() {
+    // Valid: "manager" is compatible with "manager" (and "any", too), and "accounts.keys"
+    // is compatible with "any"
+    forManagerOrCustomers2()
+  }
 }
 
 // The caller capability "manager" has no effect: "any" is compatible with any capability
 Bank :: (manager, any) {
-	func forManagerOrCustomers2() {}
+  func forManagerOrCustomers2() {}
 }
 
 ```
@@ -155,11 +155,11 @@ Consider the following example.
 
 ```
 Bank :: (a <- anyOf(accounts.keys)) {
-	mutating func withdraw(amount: Int, destination: Address) {
-		let value = accounts[a]
-		accounts[a] -= amount
-		send(value, destination)
-	}
+  mutating func withdraw(amount: Int, destination: Address) {
+    let value = accounts[a]
+      accounts[a] -= amount
+      send(value, destination)
+  }
 }
 
 ```
