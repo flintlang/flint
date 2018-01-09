@@ -151,21 +151,4 @@ public struct Tokenizer {
     let mergeable = [(":", ":"), ("-", ">"), ("/", "/")]
     return mergeable.contains { $0 == (component1, component2) }
   }
-
-//  func removingComments(_ tokens: [Token]) -> [Token] {
-//    var newTokens = [Token]()
-//
-//    var inComment = false
-//    for token in tokens {
-//      if inComment, case .newline = token.kind {
-//        inComment = false
-//      } else if case .punctuation(.doubleSlash) = token.kind {
-//        inComment = true
-//      } else if !inComment {
-//        newTokens.append(token)
-//      }
-//    }
-//
-//    return newTokens
-//  }
 }
