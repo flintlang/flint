@@ -28,9 +28,6 @@ let package = Package(
     .target(
       name: "SemanticAnalyzer",
       dependencies: ["AST", "Diagnostic"]),
-    .testTarget(
-      name: "SemanticAnalyzerTests",
-      dependencies: ["SemanticAnalyzer", "Parser"]),
     .target(
         name: "IRGen",
         dependencies: ["AST", "CryptoSwift"]),
