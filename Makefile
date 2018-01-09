@@ -2,4 +2,6 @@ all:
 	swift build	
 
 test:
-	./test.sh
+	swift test
+	swift run lite
+	./test_compiles.sh
