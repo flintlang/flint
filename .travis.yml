@@ -1,3 +1,6 @@
 language: swift
 osx_image: xcode9.2
-script: make
+script: 
+  - make
+  - swift test
+  - swift run lite
