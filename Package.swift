@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "etherlang",
+  name: "flintc",
   dependencies: [
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
     .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
@@ -14,7 +14,7 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "etherlang",
+      name: "flintc",
       dependencies: ["Parser", "SemanticAnalyzer", "IRGen", "Diagnostic", "Commander"]),
     .target(
       name: "AST",

@@ -1,6 +1,6 @@
 //
 //  Compiler.swift
-//  etherlangPackageDescription
+//  flintcPackageDescription
 //
 //  Created by Franklin Schrans on 12/19/17.
 //

@@ -1,6 +1,6 @@
 //
 //  Visitor.swift
-//  etherlang
+//  flintc
 //
 //  Created by Franklin Schrans on 1/4/18.
 //
