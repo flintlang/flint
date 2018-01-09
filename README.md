@@ -1,10 +1,10 @@
-# Ethl
+# The Flint Programming Language
 
-Ethl is a new programming language designed for writing robust decentralized applications, or *smart contracts*. Currently, the Ethl compiler, `ethlc`, targets the Ethereum Virtual Machine.
+Flint is a new programming language designed for writing robust decentralized applications, or *smart contracts*. Currently, the Flint compiler, `flintc`, targets the Ethereum Virtual Machine.
 
 ## Declaring a contract
 
-An `.ethl` source file contains contract declarations. A contract is declared by specifying its identifier, and property declarations. Properties constitute the state of a smart contract.
+An `.flint` source file contains contract declarations. A contract is declared by specifying its identifier, and property declarations. Properties constitute the state of a smart contract.
 
 Consider the following example.
 
