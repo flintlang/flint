@@ -1,0 +1,16 @@
+contract Bank {
+  var manager: Address
+  var accounts: Int[10]
+}
+
+Bank :: (any) {
+  public mutating func deposit(accountIndex: Int, amount: Int) {
+    accounts[accountIndex] = accounts[accountIndex] + amount
+  }
+}
+
+Bank :: (manager) {
+  public mutating func clear(accountIndex: Int) {
+    accounts[accountIndex] = 0
+  }
+}
