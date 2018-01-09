@@ -6,7 +6,7 @@ contract Bank {
 Bank :: (any) {
   public mutating func deposit(address: Address, amount: Int) {
     accounts[address] += amount
-    // clear(address) errors: "Cannot call clear(Address) with capability (any)"
+    try? clear(address)
   }
 }
 
