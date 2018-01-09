@@ -1,7 +1,18 @@
+// RUN: %ethlc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST ContractDeclaration
+// CHECK-AST  identifier "Foo"
 contract Foo {}
 
 Foo :: (any) {
   func foo() -> Int {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:  VariableDeclaration
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    user-defined type: Int
+// CHECK-AST:  =
+// CHECK-AST:    literal 2
     var a: Int = 2
     a = 2 + 3
     return a

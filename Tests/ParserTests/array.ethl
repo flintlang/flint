@@ -1,38 +1,97 @@
+// RUN: %ethlc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: ContractDeclaration
+// CHECK-AST:   identifier "Test"
 contract Test {
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "owner"
+// CHECK-AST:   built-in type: Address
   var owner: Address
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "arr"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     user-defined type: Int
   var arr: Int[4]
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "arr2"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     user-defined type: Int
   var arr2: Int[10]
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "numWrites"
+// CHECK-AST:   user-defined type: Int
   var numWrites: Int
 }
 
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: ContractBehaviorDeclaration
+// CHECK-AST:   identifier "Test"
+// CHECK-AST:   CallerCapability
+// CHECK-AST:     identifier "any"
 Test :: (any) {
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   mutating
+// CHECK-AST:   identifier "increaseNumWrites"
   mutating func increaseNumWrites() {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     self
+// CHECK-AST:     .
+// CHECK-AST:     identifier "numWrites"
+// CHECK-AST:   =
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     identifier "numWrites"
+// CHECK-AST:     +
+// CHECK-AST:     literal 1
     self.numWrites = numWrites + 1
   }
 
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   public
+// CHECK-AST:   mutating
+// CHECK-AST:   identifier "write"
+// CHECK-AST:   Parameter
+// CHECK-AST:    identifier "index"
+// CHECK-AST:    user-defined type: Int
+// CHECK-AST:   Parameter
+// CHECK-AST:    identifier "val"
+// CHECK-AST:    user-defined type: Int
   public mutating func write(index: Int, val: Int) {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:   ArrayAccess
+// CHECK-AST:     identifier "arr"
+// CHECK-AST:     identifier "index"
+// CHECK-AST:   =
+// CHECK-AST:   identifier "val"
     arr[index] = val
+
+// CHECK-AST: FunctionCall
+// CHECK-AST:   identifier "increaseNumWrites"
     increaseNumWrites()
   }
 
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   public
+// CHECK-AST:   identifier "value"
+// CHECK-AST:   Parameter
+// CHECK-AST:     identifier "index"
+// CHECK-AST:     user-defined type: Int
+// CHECK-AST:   ResultType
+// CHECK-AST:     user-defined type: Int
   public func value(index: Int) -> Int {
+
+// CHECK-AST: ReturnStatement
+// CHECK-AST:   identifier "arr"
+// CHECK-AST:   identifier "index"
     return arr[index]
-  }
-
-  public func value2(index: Int) -> Int {
-    return arr2[index]
-  }
-
-  public mutating func write2(index: Int, val: Int) {
-    arr2[index] = val
-    increaseNumWrites()
-  }
-
-  public func valueBoth(index: Int) -> Int {
-    return arr[index] + arr2[index]
-  }
-
-  public func numWrites() -> Int {
-    return numWrites
   }
 }

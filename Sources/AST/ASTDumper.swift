@@ -72,6 +72,9 @@ public class ASTDumper {
       for callerCapability in contractBehaviorDeclaration.callerCapabilities {
         self.dump(callerCapability)
       }
+      for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
+        self.dump(functionDeclaration)
+      }
       self.dump(contractBehaviorDeclaration.closeBracketToken)
     }
   }
@@ -101,7 +104,9 @@ public class ASTDumper {
       self.dump(functionDeclaration.closeBracketToken)
 
       if let resultType = functionDeclaration.resultType {
-        self.dump(resultType)
+        self.writeNode("ResultType") {
+          self.dump(resultType)
+        }
       }
 
       for statement in functionDeclaration.body {
@@ -154,7 +159,7 @@ public class ASTDumper {
 
   func dump(_ builtInType: Type.BuiltInType) {
     switch builtInType {
-    case .address: writeLine("built-in-type: Address")
+    case .address: writeLine("built-in type: Address")
     }
   }
 

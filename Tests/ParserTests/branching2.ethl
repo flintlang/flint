@@ -1,3 +1,5 @@
+// RUN: %ethlc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
 contract Branching {}
 
 Branching :: (any) {
@@ -9,7 +11,19 @@ Branching :: (any) {
     if a > 5 {
       return 1
     }
-    
+
+// CHECK-AST: IfStatement
+// CHECK-AST:  BinaryExpression
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    >
+// CHECK-AST:    literal 4
+// CHECK-AST:  IfStatement
+// CHECK-AST:    BinaryExpression
+// CHECK-AST:      identifier "a"
+// CHECK-AST:      >
+// CHECK-AST:      literal 3
+// CHECK-AST:    ReturnStatement
+// CHECK-AST:      literal 2
     if a > 4 {
       if a > 3 {
         return 2
