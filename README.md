@@ -1,4 +1,4 @@
-# The Flint Programming Language
+# The Flint Programming Language [![Build Status](https://travis-ci.com/franklinsch/flint.svg?token=QwcCuJTEqyvvqgtqAD5V&branch=master)](https://travis-ci.com/franklinsch/flint)
 
 Flint is a new programming language designed for writing robust decentralized applications, or *smart contracts*. Currently, the Flint compiler, `flintc`, targets the Ethereum Virtual Machine.
 
