@@ -3,4 +3,3 @@ all:
 
 test:
 	swift run lite
-	./test_compiles.sh
