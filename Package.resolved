@@ -20,12 +20,39 @@
         }
       },
       {
+        "package": "FileCheck",
+        "repositoryURL": "https://github.com/llvm-swift/FileCheck.git",
+        "state": {
+          "branch": null,
+          "revision": "1c966580c83cf2e41be802992d46fe2edfc5c95f",
+          "version": "0.0.5"
+        }
+      },
+      {
+        "package": "LiteSupport",
+        "repositoryURL": "https://github.com/llvm-swift/Lite.git",
+        "state": {
+          "branch": null,
+          "revision": "fdd55cdce408fef9a1e5ecf94187e597c4f8575f",
+          "version": "0.0.8"
+        }
+      },
+      {
         "package": "Rainbow",
-        "repositoryURL": "https://github.com/onevcat/Rainbow",
+        "repositoryURL": "https://github.com/onevcat/Rainbow.git",
         "state": {
           "branch": null,
           "revision": "f407235c7e473c3cb2d2907bb6822616d22a0b78",
           "version": "3.0.3"
+        }
+      },
+      {
+        "package": "ShellOut",
+        "repositoryURL": "https://github.com/JohnSundell/ShellOut.git",
+        "state": {
+          "branch": null,
+          "revision": "f1c253a34a40df4bfd268b09fdb101b059f6d52d",
+          "version": "2.1.0"
         }
       },
       {
@@ -35,6 +62,15 @@
           "branch": null,
           "revision": "e34d5687e1e9d865e3527dd58bc2f7464ef6d936",
           "version": "0.8.0"
+        }
+      },
+      {
+        "package": "Symbolic",
+        "repositoryURL": "https://github.com/llvm-swift/Symbolic.git",
+        "state": {
+          "branch": null,
+          "revision": "c5f4d0fcc699c4a72fdb2478ea17ff4722bf229b",
+          "version": "0.0.2"
         }
       }
     ]

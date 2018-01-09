@@ -69,6 +69,7 @@ public class Parser {
 
 extension Parser {
   func parseTopLevelModule() throws -> TopLevelModule {
+    consumeNewLines()
     let topLevelDeclarations = try parseTopLevelDeclarations()
     return TopLevelModule(declarations: topLevelDeclarations)
   }
