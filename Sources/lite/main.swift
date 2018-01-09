@@ -34,8 +34,8 @@ var fileCheckExecutableLocation: URL {
 }
 
 func run() -> Int32 {
-  let allPassed = try! runLite(substitutions: [("ethlc", "\(flintcExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
-                              pathExtensions: ["ethl"],
+  let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
+                              pathExtensions: ["flint"],
                               testDirPath: nil,
                               testLinePrefix: "//",
                               parallelismLevel: .automatic)
