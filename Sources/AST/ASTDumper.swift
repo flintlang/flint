@@ -184,7 +184,7 @@ public class ASTDumper {
       case .literal(let token): self.dump(token)
       case .self(let token): self.dump(token)
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
-      case .arrayAccess(let arrayAccess): self.dump(arrayAccess)
+      case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
       }
     }
   }
@@ -219,11 +219,11 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ arrayAccess: ArrayAccess) {
-    writeNode("ArrayAccess") {
-      self.dump(arrayAccess.arrayIdentifier)
-      self.dump(arrayAccess.indexExpression)
-      self.dump(arrayAccess.closeSquareBracketToken)
+  func dump(_ subscriptExpression: SubscriptExpression) {
+    writeNode("SubscriptExpression") {
+      self.dump(subscriptExpression.arrayIdentifier)
+      self.dump(subscriptExpression.indexExpression)
+      self.dump(subscriptExpression.closeSquareBracketToken)
     }
   }
 

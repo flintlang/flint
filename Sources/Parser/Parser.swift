@@ -131,7 +131,7 @@ extension Parser {
     return token
   }
 
-  func parseArrayAccess(scopeContext: ScopeContext) throws -> ArrayAccess {
+  func parseSubscriptExpression(scopeContext: ScopeContext) throws -> SubscriptExpression {
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openSquareBracket))
     guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
@@ -140,7 +140,7 @@ extension Parser {
     let (indexExpression, _) = try parseExpression(upTo: index, scopeContext: scopeContext)
     let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
 
-    return ArrayAccess(arrayIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+    return SubscriptExpression(arrayIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
   }
   
   func parseType() throws -> Type {
@@ -374,11 +374,11 @@ extension Parser {
       return (.self(Token(kind: .self, sourceLocation: self.sourceLocation)), scopeContext)
     }
 
-    if var arrayAccess = attempt(try parseArrayAccess(scopeContext: scopeContext)) {
-      if !scopeContext.contains(localVariable: arrayAccess.arrayIdentifier.name) {
-        arrayAccess.arrayIdentifier.isImplicitPropertyAccess = true
+    if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
+      if !scopeContext.contains(localVariable: subscriptExpression.arrayIdentifier.name) {
+        subscriptExpression.arrayIdentifier.isImplicitPropertyAccess = true
       }
-      return (.arrayAccess(arrayAccess), scopeContext)
+      return (.subscriptExpression(subscriptExpression), scopeContext)
     }
 
     var identifier = try parseIdentifier()

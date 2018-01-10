@@ -13,7 +13,7 @@ enum IULIAUtilFunction: String {
   case decodeAsUInt
   case isValidCallerCapability
   case returnUInt
-  case isInvalidArrayAccess
+  case isInvalidSubscriptExpression
   case storageArrayElementAtIndex
   case storageArrayOffset
 
@@ -24,13 +24,13 @@ enum IULIAUtilFunction: String {
     case .decodeAsUInt: return IRUtilFunctionDeclaration.decodeAsUInt
     case .isValidCallerCapability: return IRUtilFunctionDeclaration.isValidCallerCapability
     case .returnUInt: return IRUtilFunctionDeclaration.returnUInt
-    case .isInvalidArrayAccess: return IRUtilFunctionDeclaration.isInvalidArrayAccess
+    case .isInvalidSubscriptExpression: return IRUtilFunctionDeclaration.isInvalidSubscriptExpression
     case .storageArrayElementAtIndex: return IRUtilFunctionDeclaration.storageArrayElementAtIndex
     case .storageArrayOffset: return IRUtilFunctionDeclaration.storageArrayOffset
     }
   }
 
-  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidArrayAccess, .storageArrayElementAtIndex, .storageArrayOffset]
+  static let all: [IULIAUtilFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidSubscriptExpression, .storageArrayElementAtIndex, .storageArrayOffset]
 }
 
 fileprivate struct IRUtilFunctionDeclaration {
@@ -70,9 +70,9 @@ fileprivate struct IRUtilFunctionDeclaration {
   }
   """
 
-  static let isInvalidArrayAccess =
+  static let isInvalidSubscriptExpression =
   """
-  function isInvalidArrayAccess(index, arraySize) -> ret {
+  function isInvalidSubscriptExpression(index, arraySize) -> ret {
     ret := or(lt(index, 0), gt(index, sub(arraySize, 1)))
   }
   """
@@ -80,7 +80,7 @@ fileprivate struct IRUtilFunctionDeclaration {
   static let storageArrayElementAtIndex =
   """
   function storageArrayElementAtIndex(arrayOffset, index, arraySize) -> ret {
-    if isInvalidArrayAccess(index, arraySize) { revert(0, 0) }
+    if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     ret := sload(add(arrayOffset, index))
   }
   """
@@ -88,7 +88,7 @@ fileprivate struct IRUtilFunctionDeclaration {
   static let storageArrayOffset =
   """
   function storageArrayOffset(arrayOffset, index, arraySize) -> ret {
-    if isInvalidArrayAccess(index, arraySize) { revert(0, 0) }
+    if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     ret := add(arrayOffset, index)
   }
   """

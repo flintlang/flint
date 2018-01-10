@@ -1,5 +1,5 @@
 all:
 	swift build	
 
-test:
+test: all
 	swift run lite

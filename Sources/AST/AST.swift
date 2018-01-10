@@ -249,7 +249,7 @@ public indirect enum Expression: SourceEntity {
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
-  case arrayAccess(ArrayAccess)
+  case subscriptExpression(SubscriptExpression)
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -260,7 +260,7 @@ public indirect enum Expression: SourceEntity {
     case .self(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
-    case .arrayAccess(let arrayAccess): return arrayAccess.sourceLocation
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
     }
   }
 }
@@ -320,7 +320,7 @@ public struct FunctionCall: SourceEntity {
   }
 }
 
-public struct ArrayAccess: SourceEntity {
+public struct SubscriptExpression: SourceEntity {
   public var arrayIdentifier: Identifier
   public var indexExpression: Expression
   public var closeSquareBracketToken: Token

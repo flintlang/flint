@@ -120,7 +120,7 @@ extension SemanticAnalyzer {
     case .literal(_): break
     case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
-    case .arrayAccess(let arrayAccess): visit(arrayAccess, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    case .subscriptExpression(let subscriptExpression): visit(subscriptExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -178,9 +178,9 @@ extension SemanticAnalyzer {
     }
   }
 
-  func visit(_ arrayAccess: ArrayAccess, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
-    visit(arrayAccess.arrayIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
-    visit(arrayAccess.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+  func visit(_ subscriptExpression: SubscriptExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
+    visit(subscriptExpression.arrayIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
   }
 
   func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}

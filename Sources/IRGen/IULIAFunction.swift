@@ -119,7 +119,7 @@ extension IULIAFunction {
     case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
     case .literal(let literal): return render(literalToken: literal)
     case .self(let `self`): return render(selfToken: self)
-    case .arrayAccess(let arrayAccess): return render(arrayAccess, asLValue: asLValue)
+    case .subscriptExpression(let subscriptExpression): return render(subscriptExpression, asLValue: asLValue)
     }
   }
 
@@ -206,13 +206,13 @@ extension IULIAFunction {
     return ""
   }
 
-  func render(_ arrayAccess: ArrayAccess, asLValue: Bool = false) -> String {
-    let arrayIdentifier = arrayAccess.arrayIdentifier
+  func render(_ subscriptExpression: SubscriptExpression, asLValue: Bool = false) -> String {
+    let arrayIdentifier = subscriptExpression.arrayIdentifier
 
     let offset = contractStorage.offset(for: arrayIdentifier.name)
-    let indexExpressionCode = render(arrayAccess.indexExpression)
+    let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = context.type(of: arrayAccess.arrayIdentifier, contractIdentifier: contractIdentifier).rawType
+    let type = context.type(of: subscriptExpression.arrayIdentifier, contractIdentifier: contractIdentifier).rawType
     guard case .arrayType(_, _) = type else { fatalError() }
 
     if arrayIdentifier.isImplicitPropertyAccess {
