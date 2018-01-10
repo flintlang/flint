@@ -56,7 +56,17 @@ public class Parser {
     }
   }
 
-  func attempt<ReturnType>(_ task: () throws -> ReturnType) -> ReturnType? {
+  func attempt<ReturnType>(task: () throws -> ReturnType) -> ReturnType? {
+    let nextIndex = self.currentIndex
+    do {
+      return try task()
+    } catch {
+      self.currentIndex = nextIndex
+      return nil
+    }
+  }
+
+  func attempt<ReturnType>(_ task: @autoclosure () throws -> ReturnType) -> ReturnType? {
     let nextIndex = self.currentIndex
     do {
       return try task()
@@ -134,10 +144,18 @@ extension Parser {
   }
   
   func parseType() throws -> Type {
+    if let openSquareBracketToken = attempt(try consume(.punctuation(.openSquareBracket))) {
+      let keyType = try parseType()
+      try consume(.punctuation(.colon))
+      let valueType = try parseType()
+      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
+      return Type(openSquareBracketToken: openSquareBracketToken, dictionaryWithKeyType: keyType, valueType: valueType, closeSquareBracketToken: closeSquareBracketToken)
+    }
+
     let identifier = try parseIdentifier()
     let type = Type(identifier: identifier)
 
-    if attempt({ try consume(.punctuation(.openSquareBracket)) }) != nil {
+    if attempt(try consume(.punctuation(.openSquareBracket))) != nil {
       let literal = try parseLiteral()
       if case .literal(.decimal(.integer(let size))) = literal.kind {
         let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
@@ -170,7 +188,7 @@ extension Parser {
   func parseVariableDeclarations() throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
     
-    while let variableDeclaration = attempt(parseVariableDeclaration) {
+    while let variableDeclaration = attempt(task: parseVariableDeclaration) {
       variableDeclarations.append(variableDeclaration)
     }
     
@@ -214,7 +232,7 @@ extension Parser {
     repeat {
       let identifier = try parseIdentifier()
       callerCapabilities.append(CallerCapability(identifier: identifier))
-    } while (attempt { try consume(.punctuation(.comma)) }) != nil
+    } while attempt(try consume(.punctuation(.comma))) != nil
     
     return callerCapabilities
   }
@@ -222,10 +240,10 @@ extension Parser {
   func parseFunctionDeclarations() throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
-    while let (modifiers, funcToken) = attempt(parseFunctionHead) {
+    while let (modifiers, funcToken) = attempt(task: parseFunctionHead) {
       let identifier = try parseIdentifier()
       let (parameters, closeBracketToken) = try parseParameters()
-      let resultType = attempt(parseResult)
+      let resultType = attempt(task: parseResult)
 
       let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
       let body = try parseCodeBlock(scopeContext: scopeContext)
@@ -241,9 +259,9 @@ extension Parser {
     var modifiers = [Token]()
     
     while true {
-      if let token = attempt({ try consume(.public) }) {
+      if let token = attempt(try consume(.public)) {
         modifiers.append(token)
-      } else if let token = attempt({ try consume(.mutating) }) {
+      } else if let token = attempt(try consume(.mutating)) {
         modifiers.append(token)
       } else {
         break
@@ -258,7 +276,7 @@ extension Parser {
     try consume(.punctuation(.openBracket))
     var parameters = [Parameter]()
     
-    if let closeBracketToken = (attempt { try consume(.punctuation(.closeBracket)) }) {
+    if let closeBracketToken = attempt(try consume(.punctuation(.closeBracket))) {
       return ([], closeBracketToken)
     }
     
@@ -266,7 +284,7 @@ extension Parser {
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
       parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type))
-    } while (attempt { try consume(.punctuation(.comma)) }) != nil
+    } while attempt(try consume(.punctuation(.comma))) != nil
     
     let closeBracketToken = try consume(.punctuation(.closeBracket))
     return (parameters, closeBracketToken)
@@ -295,12 +313,12 @@ extension Parser {
         break
       }
 
-      if let (expression, expressionScopeContext) = attempt({ try parseExpression(upTo: statementEndIndex, scopeContext: scopeContext) }) {
+      if let (expression, expressionScopeContext) = attempt(try parseExpression(upTo: statementEndIndex, scopeContext: scopeContext)) {
         scopeContext.merge(with: expressionScopeContext)
         statements.append(.expression(expression))
-      } else if let returnStatement = attempt ({ try parseReturnStatement(statementEndIndex: statementEndIndex, scopeContext: scopeContext) }) {
+      } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex, scopeContext: scopeContext)) {
         statements.append(.returnStatement(returnStatement))
-      } else if let ifStatement = attempt({ try parseIfStatement(scopeContext: scopeContext) }) {
+      } else if let ifStatement = attempt(try parseIfStatement(scopeContext: scopeContext)) {
         statements.append(.ifStatement(ifStatement))
       } else {
         break
@@ -335,28 +353,28 @@ extension Parser {
       return (.binaryExpression(binExp), scopeContext)
     }
 
-    if let functionCall = attempt( { try parseFunctionCall(scopeContext: scopeContext) }) {
+    if let functionCall = attempt(try parseFunctionCall(scopeContext: scopeContext)) {
       return (.functionCall(functionCall), scopeContext)
     }
 
-    if let literal = attempt(parseLiteral) {
+    if let literal = attempt(task: parseLiteral) {
       return (.literal(literal), scopeContext)
     }
 
-    if let variableDeclaration = attempt(parseVariableDeclaration) {
+    if let variableDeclaration = attempt(task:parseVariableDeclaration) {
       scopeContext.addLocalVariable(variableDeclaration.identifier)
       return (.variableDeclaration(variableDeclaration), scopeContext)
     }
 
-    if let bracketedExpression = attempt({ try parseBracketedExpression(scopeContext: scopeContext) }) {
+    if let bracketedExpression = attempt(try parseBracketedExpression(scopeContext: scopeContext)) {
       return (.bracketedExpression(bracketedExpression), scopeContext)
     }
 
-    if let `self` = attempt(parseSelf) {
+    if let `self` = attempt(task: parseSelf) {
       return (.self(Token(kind: .self, sourceLocation: self.sourceLocation)), scopeContext)
     }
 
-    if var arrayAccess = attempt({ try parseArrayAccess(scopeContext: scopeContext) }) {
+    if var arrayAccess = attempt(try parseArrayAccess(scopeContext: scopeContext)) {
       if !scopeContext.contains(localVariable: arrayAccess.arrayIdentifier.name) {
         arrayAccess.arrayIdentifier.isImplicitPropertyAccess = true
       }

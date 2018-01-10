@@ -23,7 +23,7 @@ enum CanonicalType: String {
       case "Int": self = .uint256
       default: return nil
       }
-    case .arrayType(_): return nil
+    default: return nil
     }
   }
 }

@@ -148,6 +148,11 @@ public class ASTDumper {
         self.dump(rawType)
         self.writeLine("size: \(size)")
       }
+    case .dictionaryType(key: let keyType, value: let valueType):
+      self.writeNode("DictionaryType") {
+        self.dump(keyType)
+        self.dump(valueType)
+      }
     case .builtInType(let builtInType):
       self.writeNode("BuiltInType") {
         self.dump(builtInType)

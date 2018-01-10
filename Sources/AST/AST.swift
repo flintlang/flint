@@ -162,6 +162,7 @@ public struct Type: SourceEntity {
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
     case arrayType(RawType, size: Int)
+    case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(String)
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -176,6 +177,7 @@ public struct Type: SourceEntity {
       switch self {
       case .builtInType(_): return 1
       case .arrayType(let rawType, let size): return rawType.size * size
+      case .dictionaryType(key: let keyType, value: _): return keyType.size
       case .userDefinedType(_): return 1
       }
     }
@@ -207,6 +209,11 @@ public struct Type: SourceEntity {
   public init(arrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
     rawType = .arrayType(type.rawType, size: size)
     sourceLocation = .spanning(type, to: closeSquareBracketToken)
+  }
+
+  public init(openSquareBracketToken: Token, dictionaryWithKeyType keyType: Type, valueType: Type, closeSquareBracketToken: Token) {
+    rawType = .dictionaryType(key: keyType.rawType, value: valueType.rawType)
+    sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }
 }
 

@@ -52,7 +52,7 @@ binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
 identifier -> [a-zA-Z] [a-zA-Z0-9]*
-type -> identifier | type [[] numeric-literal []]
+type -> identifier | type [[] numeric-literal []] | [[] type [:] type []]
 caller-capability-identifier -> identifier
 
 // Literals
