@@ -1,0 +1,13 @@
+contract Dictionary {
+  var storage: [Address: Int]
+}
+
+Dictionary :: (any) {
+  public mutating func write(addr: Address, value: Int) {
+    storage[addr] = value
+  }
+
+  public func get(addr: Address) -> Int {
+    return storage[addr]
+  }
+}

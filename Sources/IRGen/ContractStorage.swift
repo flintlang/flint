@@ -27,4 +27,13 @@ struct ContractStorage {
   func offset(for property: String) -> Int {
     return storage[property]!
   }
+
+  // Dictionaries
+  private var dictionaryNumKeys = [String: Int]()
+
+  mutating func freshKeyOffset(forDictionary dictionary: String) -> Int {
+    let offset = dictionaryNumKeys[dictionary, default: 0]
+    dictionaryNumKeys[dictionary, default: 0] += 1
+    return offset
+  }
 }
