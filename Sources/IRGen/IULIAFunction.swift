@@ -147,7 +147,7 @@ extension IULIAFunction {
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
       return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
-    case .identifier(let identifier) where !identifier.isImplicitPropertyAccess:
+    case .identifier(let identifier) where !identifier.isPropertyAccess:
       return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
     default:
       let lhsCode = render(lhs, asLValue: true)
@@ -159,6 +159,11 @@ extension IULIAFunction {
     let rhsCode = render(rhs, asLValue: asLValue)
 
     if case .self(_) = lhs {
+      if case .identifier(var identifier) = rhs {
+        identifier.isPropertyAccess = true
+        return render(identifier, asLValue: asLValue)
+      }
+
       return rhsCode
     }
     
@@ -172,7 +177,7 @@ extension IULIAFunction {
   }
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
-    if identifier.isImplicitPropertyAccess {
+    if identifier.isPropertyAccess {
       let offset = contractStorage.offset(for: identifier.name)
       if asLValue {
         return "\(offset)"
@@ -214,7 +219,7 @@ extension IULIAFunction {
 
     let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier).rawType
 
-    guard baseIdentifier.isImplicitPropertyAccess else {
+    guard baseIdentifier.isPropertyAccess else {
       fatalError("Subscriptable types are only supported for contract properties right now.")
     }
 

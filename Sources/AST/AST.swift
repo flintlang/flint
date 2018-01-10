@@ -140,7 +140,7 @@ public struct TypeAnnotation: SourceEntity {
 
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
-  public var isImplicitPropertyAccess = false
+  public var isPropertyAccess = false
 
   public var name: String {
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }

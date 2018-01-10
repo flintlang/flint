@@ -376,14 +376,14 @@ extension Parser {
 
     if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
       if !scopeContext.contains(localVariable: subscriptExpression.baseIdentifier.name) {
-        subscriptExpression.baseIdentifier.isImplicitPropertyAccess = true
+        subscriptExpression.baseIdentifier.isPropertyAccess = true
       }
       return (.subscriptExpression(subscriptExpression), scopeContext)
     }
 
     var identifier = try parseIdentifier()
     if !scopeContext.contains(localVariable: identifier.name) {
-      identifier.isImplicitPropertyAccess = true
+      identifier.isPropertyAccess = true
     }
     return (.identifier(identifier), scopeContext)
   }
