@@ -18,7 +18,7 @@ Functions in Flint are by default **non-mutating**: they are not allowed to modi
 
 The following code declares the `Bank` contract and its functions.
 
-```
+```swift
 // Contract declarations contain only their state properties
 contract Bank {
   var manager: Address
@@ -64,7 +64,7 @@ An `.flint` source file contains contract declarations. A contract is declared b
 
 Consider the following example.
 
-```
+```swift
 contract Bank {
   var manager: Address
   var accounts: [Address: Int]
@@ -79,7 +79,7 @@ The behavior of a contract is specified through contract behavior declarations.
 
 Consider the following example.
 
-```
+```swift
 Bank :: (any) {
   public mutating func deposit(address: Address, amount: Int) {
     accounts[address] += amount
