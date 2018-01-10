@@ -8,6 +8,8 @@
 import AST
 import Diagnostic
 
+// MARK: Errors
+
 extension Diagnostic {
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability]) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(contextCallerCapabilities.map { $0.name })")
@@ -29,6 +31,18 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier \(identifier.name)")
   }
 
+  static func unexpectedReturnInVoidFunction(_ statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Unexpected return in void function")
+  }
+
+  static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return \(resultType.name)")
+  }
+}
+
+// MARK: Warnings
+
+extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
   }

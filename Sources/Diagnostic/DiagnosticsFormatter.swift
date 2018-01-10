@@ -27,9 +27,9 @@ public struct DiagnosticsFormatter {
       \(infoLine)
         \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
         \(renderSourcePreview(at: diagnostic.sourceLocation).indented(by: 2))
-      
+
       """
-    }.joined(separator: "\n")
+    }.joined()
   }
 
   func render(_ sourceLocation: SourceLocation?) -> String {

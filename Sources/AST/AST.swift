@@ -73,6 +73,7 @@ public struct FunctionDeclaration: SourceEntity {
   public var closeBracketToken: Token
   public var resultType: Type?
   public var body: [Statement]
+  public var closeBraceToken: Token
 
   public var sourceLocation: SourceLocation {
     if let resultType = resultType {
@@ -89,7 +90,7 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement]) {
+  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
     self.funcToken = funcToken
     self.modifiers = modifiers
     self.identifier = identifier
@@ -97,6 +98,7 @@ public struct FunctionDeclaration: SourceEntity {
     self.closeBracketToken = closeBracketToken
     self.resultType = resultType
     self.body = body
+    self.closeBraceToken = closeBraceToken
   }
 
   public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
@@ -181,6 +183,15 @@ public struct Type: SourceEntity {
       case .userDefinedType(_): return 1
       }
     }
+
+    public var name: String {
+      switch self {
+      case .arrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
+      case .builtInType(let builtInType): return "\(builtInType.rawValue)"
+      case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
+      case .userDefinedType(let name): return name
+      }
+    }
   }
 
   public enum BuiltInType: String {
@@ -195,6 +206,10 @@ public struct Type: SourceEntity {
 
   public var rawType: RawType
   public var sourceLocation: SourceLocation
+
+  public var name: String {
+    return rawType.name
+  }
 
   public init(identifier: Identifier) {
     let name = identifier.name
@@ -378,3 +393,4 @@ public struct IfStatement: SourceEntity {
     self.elseBody = elseClauseStatements
   }
 }
+
