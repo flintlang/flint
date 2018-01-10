@@ -1,0 +1,9 @@
+contract UnexpectedReturn {}
+
+UnexpectedReturn :: (any) {
+  func foo() -> Int {} 
+
+  func bar() {
+    return 2
+  } 
+}

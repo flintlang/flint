@@ -246,9 +246,9 @@ extension Parser {
       let resultType = attempt(task: parseResult)
 
       let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
-      let body = try parseCodeBlock(scopeContext: scopeContext)
+      let (body, closeBraceToken) = try parseCodeBlock(scopeContext: scopeContext)
       
-      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body)
+      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
       functionDeclarations.append(functionDeclaration)
     }
     
@@ -296,11 +296,11 @@ extension Parser {
     return Type(identifier: identifier)
   }
   
-  func parseCodeBlock(scopeContext: ScopeContext) throws -> [Statement] {
+  func parseCodeBlock(scopeContext: ScopeContext) throws -> ([Statement], closeBraceToken: Token) {
     try consume(.punctuation(.openBrace))
     let statements = try parseStatements(scopeContext: scopeContext)
-    try consume(.punctuation(.closeBrace))
-    return statements
+    let closeBraceToken = try consume(.punctuation(.closeBrace))
+    return (statements, closeBraceToken)
   }
   
   func parseStatements(scopeContext: ScopeContext) throws -> [Statement] {
@@ -442,7 +442,7 @@ extension Parser {
       throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
     }
     let (condition, _) = try parseExpression(upTo: nextOpenBraceIndex, scopeContext: scopeContext)
-    let statements = try parseCodeBlock(scopeContext: scopeContext)
+    let (statements, _) = try parseCodeBlock(scopeContext: scopeContext)
     let elseClauseStatements = (try? parseElseClause(scopeContext: scopeContext)) ?? []
 
     return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
@@ -450,7 +450,7 @@ extension Parser {
 
   func parseElseClause(scopeContext: ScopeContext) throws -> [Statement] {
     try consume(.else)
-    return try parseCodeBlock(scopeContext: scopeContext)
+    return try parseCodeBlock(scopeContext: scopeContext).0
   }
 }
 

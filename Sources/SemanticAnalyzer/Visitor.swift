@@ -84,7 +84,7 @@ extension SemanticAnalyzer {
     }
 
     let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
-    visitBody(functionDeclaration.body, functionDeclarationContext: functionDeclarationContext)
+    visitBody(functionDeclaration.body, depth: 0, functionDeclarationContext: functionDeclarationContext)
   }
 
   func visit(_ parameter: Parameter) {}
@@ -124,27 +124,38 @@ extension SemanticAnalyzer {
     }
   }
 
-  func visitBody(_ statements: [Statement], functionDeclarationContext: FunctionDeclarationContext) {
+  func visitBody(_ statements: [Statement], depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
     let returnStatementIndex = statements.index(where: { statement in
       if case .returnStatement(_) = statement { return true }
       return false
     })
 
-    if let returnStatementIndex = returnStatementIndex, returnStatementIndex != statements.count - 1 {
-      let nextStatement = statements[returnStatementIndex + 1]
-      addDiagnostic(.codeAfterReturn(nextStatement))
+    if let returnStatementIndex = returnStatementIndex {
+      if returnStatementIndex != statements.count - 1 {
+        let nextStatement = statements[returnStatementIndex + 1]
+        addDiagnostic(.codeAfterReturn(nextStatement))
+      }
+
+      if functionDeclarationContext.declaration.resultType == nil {
+        addDiagnostic(.unexpectedReturnInVoidFunction(statements[returnStatementIndex]))
+      }
+    } else {
+      if let resultType = functionDeclarationContext.declaration.resultType, depth == 0 {
+        addDiagnostic(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclarationContext.declaration.closeBraceToken, resultType: resultType))
+      }
     }
 
     for statement in statements {
-      visit(statement, functionDeclarationContext: functionDeclarationContext)
+      visit(statement, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ statement: Statement, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ statement: Statement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
     switch statement {
     case .expression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
-    case .ifStatement(let ifStatement): visit(ifStatement, functionDeclarationContext: functionDeclarationContext)
-    case .returnStatement(let returnStatement): visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
+    case .ifStatement(let ifStatement): visit(ifStatement, depth: depth, functionDeclarationContext: functionDeclarationContext)
+    case .returnStatement(let returnStatement):
+      visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -185,7 +196,7 @@ extension SemanticAnalyzer {
 
   func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}
 
-  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) {
-    visitBody(ifStatement.body, functionDeclarationContext: functionDeclarationContext)
+  func visit(_ ifStatement: IfStatement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
+    visitBody(ifStatement.body, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
   }
 }
