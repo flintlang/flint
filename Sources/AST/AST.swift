@@ -177,7 +177,7 @@ public struct Type: SourceEntity {
       switch self {
       case .builtInType(_): return 1
       case .arrayType(let rawType, let size): return rawType.size * size
-      case .dictionaryType(key: let keyType, value: let valueType): return 1 + (keyType.size + valueType.size) * 4
+      case .dictionaryType(key: let keyType, value: let valueType): return 1 + (keyType.size + valueType.size) * 1024
       case .userDefinedType(_): return 1
       }
     }
