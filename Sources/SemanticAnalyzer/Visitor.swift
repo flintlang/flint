@@ -92,7 +92,7 @@ extension SemanticAnalyzer {
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
   func visit(_ identifier: Identifier, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext? = nil) {
-    if let functionDeclarationContext = functionDeclarationContext, identifier.isImplicitPropertyAccess {
+    if let functionDeclarationContext = functionDeclarationContext, identifier.isPropertyAccess {
       if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
         addDiagnostic(.useOfUndeclaredIdentifier(identifier))
       }

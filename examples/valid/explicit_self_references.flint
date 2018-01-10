@@ -1,0 +1,9 @@
+contract ExplicitSelfReference {
+  var property: Int
+}
+
+ExplicitSelfReference :: (any) {
+  mutating func foo(property: Int) {
+    self.property = property
+  }
+}

@@ -12,8 +12,8 @@ Bank :: (any) {
     return accounts[account]
   }
 
-  public mutating func setManager(addr: Address) {
-    manager = addr
+  public mutating func setManager(manager: Address) {
+    self.manager = manager
   }
 }
 
