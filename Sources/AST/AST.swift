@@ -321,16 +321,16 @@ public struct FunctionCall: SourceEntity {
 }
 
 public struct SubscriptExpression: SourceEntity {
-  public var arrayIdentifier: Identifier
+  public var baseIdentifier: Identifier
   public var indexExpression: Expression
   public var closeSquareBracketToken: Token
 
   public var sourceLocation: SourceLocation {
-    return .spanning(arrayIdentifier, to: closeSquareBracketToken)
+    return .spanning(baseIdentifier, to: closeSquareBracketToken)
   }
 
-  public init(arrayIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
-    self.arrayIdentifier = arrayIdentifier
+  public init(baseIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
+    self.baseIdentifier = baseIdentifier
     self.indexExpression = indexExpression
     self.closeSquareBracketToken = closeSquareBracketToken
   }

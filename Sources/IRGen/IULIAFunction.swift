@@ -207,12 +207,12 @@ extension IULIAFunction {
   }
 
   func render(_ subscriptExpression: SubscriptExpression, asLValue: Bool = false) -> String {
-    let arrayIdentifier = subscriptExpression.arrayIdentifier
+    let arrayIdentifier = subscriptExpression.baseIdentifier
 
     let offset = contractStorage.offset(for: arrayIdentifier.name)
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = context.type(of: subscriptExpression.arrayIdentifier, contractIdentifier: contractIdentifier).rawType
+    let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier).rawType
     guard case .arrayType(_, _) = type else { fatalError() }
 
     if arrayIdentifier.isImplicitPropertyAccess {

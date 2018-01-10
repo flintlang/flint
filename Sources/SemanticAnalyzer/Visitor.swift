@@ -179,7 +179,7 @@ extension SemanticAnalyzer {
   }
 
   func visit(_ subscriptExpression: SubscriptExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
-    visit(subscriptExpression.arrayIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    visit(subscriptExpression.baseIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
   }
 

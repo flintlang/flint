@@ -140,7 +140,7 @@ extension Parser {
     let (indexExpression, _) = try parseExpression(upTo: index, scopeContext: scopeContext)
     let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
 
-    return SubscriptExpression(arrayIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+    return SubscriptExpression(baseIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
   }
   
   func parseType() throws -> Type {
@@ -375,8 +375,8 @@ extension Parser {
     }
 
     if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
-      if !scopeContext.contains(localVariable: subscriptExpression.arrayIdentifier.name) {
-        subscriptExpression.arrayIdentifier.isImplicitPropertyAccess = true
+      if !scopeContext.contains(localVariable: subscriptExpression.baseIdentifier.name) {
+        subscriptExpression.baseIdentifier.isImplicitPropertyAccess = true
       }
       return (.subscriptExpression(subscriptExpression), scopeContext)
     }
