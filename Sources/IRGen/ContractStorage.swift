@@ -19,9 +19,9 @@ struct ContractStorage {
     storage[property] = nextIndex()
   }
 
-  mutating func addArrayProperty(_ arrayProperty: String, size: Int) {
-    addProperty(arrayProperty)
-    for _ in (1..<size) { nextIndex() }
+  mutating func allocate(_ numEntries: Int, for property: String) {
+    addProperty(property)
+    for _ in (1..<numEntries) { nextIndex() }
   }
 
   func offset(for property: String) -> Int {

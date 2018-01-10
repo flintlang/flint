@@ -20,9 +20,10 @@ struct IULIAContract {
     self.context = context
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
-      if case .arrayType(_) = variableDeclaration.type.rawType {
-        storage.addArrayProperty(variableDeclaration.identifier.name, size: variableDeclaration.type.rawType.size)
-      } else {
+      switch variableDeclaration.type.rawType {
+      case .arrayType(_), .dictionaryType(_, _):
+        storage.allocate(variableDeclaration.type.rawType.size, for: variableDeclaration.identifier.name)
+      default:
         storage.addProperty(variableDeclaration.identifier.name)
       }
     }

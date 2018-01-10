@@ -87,18 +87,25 @@ fileprivate struct IRRuntimeFunctionDeclaration {
 
   static let storageDictionaryOffsetForKey =
   """
-  function storageDictionaryOffsetForKey(dictionaryOffset, key, valueSize, createNewEntry) -> ret {
+  function storageDictionaryOffsetForKey(dictionaryOffset, key, valueSize, storageSize, createNewEntry) -> ret {
     let numKeys := sload(dictionaryOffset)
-    let limit := add(1, mul(numKeys, add(valueSize, 1)))
+    let limit := add(dictionaryOffset, add(1, mul(numKeys, add(valueSize, 1))))
     let found := 0
     let startOffset := add(dictionaryOffset, 1)
     let step := add(valueSize, 1)
-    for {let offset := startOffset} and(lt(offset, limit), eq(found, 0)) { offset := add(offset, step) } {
+    let offset := startOffset
+    for {} and(lt(offset, limit), iszero(found)) { offset := add(offset, step) } {
       if eq(key, sload(offset)) {
         ret := add(offset, 1)
         found := 1
       }
     }
+
+    let lastValidOffset := sub(add(dictionaryOffset, storageSize), 1)
+    if and(and(gt(offset, lastValidOffset), iszero(found)), createNewEntry) {
+      revert(0, 0)
+    }
+
     if and(iszero(found), createNewEntry) {
       let keyOffset := add(startOffset, mul(numKeys, add(valueSize, 1)))
       ret := add(keyOffset, 1)

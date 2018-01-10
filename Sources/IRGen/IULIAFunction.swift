@@ -235,7 +235,7 @@ extension IULIAFunction {
       fatalError("Dictionary keys of size > 1 are not supported yet.")
     }
 
-    let storageDictionaryOffsetForKeyPrefix = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode), \(valueType.size)"
+    let storageDictionaryOffsetForKeyPrefix = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode), \(valueType.size), \(type.size)"
 
     if asLValue {
       return "\(storageDictionaryOffsetForKeyPrefix), 1)"
