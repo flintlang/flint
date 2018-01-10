@@ -1,7 +1,7 @@
 // RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
-// CHECK-AST ContractDeclaration
-// CHECK-AST  identifier "Foo"
+// CHECK-AST: ContractDeclaration
+// CHECK-AST:  identifier "Foo"
 contract Foo {}
 
 Foo :: (any) {

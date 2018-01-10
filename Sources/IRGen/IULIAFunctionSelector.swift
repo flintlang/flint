@@ -40,8 +40,8 @@ struct IULIAFunctionSelector {
     let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
       let (index, type) = arg
       switch type {
-      case .address: return "\(IULIAUtilFunction.decodeAsAddress.rawValue)(\(index))"
-      case .uint256: return "\(IULIAUtilFunction.decodeAsUInt.rawValue)(\(index))"
+      case .address: return "\(IULIARuntimeFunction.decodeAsAddress.rawValue)(\(index))"
+      case .uint256: return "\(IULIARuntimeFunction.decodeAsUInt.rawValue)(\(index))"
       }
     }
 
@@ -50,7 +50,7 @@ struct IULIAFunctionSelector {
     if let resultType = function.resultCanonicalType {
       switch resultType {
       case .address: fatalError()
-      case .uint256: return "\(IULIAUtilFunction.returnUInt.rawValue)(\(call))"
+      case .uint256: return "\(IULIARuntimeFunction.returnUInt.rawValue)(\(call))"
       }
     }
 

@@ -20,9 +20,10 @@ struct IULIAContract {
     self.context = context
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
-      if case .arrayType(_) = variableDeclaration.type.rawType {
-        storage.addArrayProperty(variableDeclaration.identifier.name, size: variableDeclaration.type.rawType.size)
-      } else {
+      switch variableDeclaration.type.rawType {
+      case .arrayType(_), .dictionaryType(_, _):
+        storage.allocate(variableDeclaration.type.rawType.size, for: variableDeclaration.identifier.name)
+      default:
         storage.addProperty(variableDeclaration.identifier.name)
       }
     }
@@ -40,7 +41,7 @@ struct IULIAContract {
     let functionSelector = IULIAFunctionSelector(functions: functions)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
-    let utilFunctionsDeclarations = IULIAUtilFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
+    let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     return """
     contract \(contractDeclaration.identifier.name) {
@@ -58,7 +59,7 @@ struct IULIAContract {
 
           // Util functions
 
-          \(utilFunctionsDeclarations)
+          \(runtimeFunctionsDeclarations)
         }
       }
     }

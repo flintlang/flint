@@ -19,12 +19,21 @@ struct ContractStorage {
     storage[property] = nextIndex()
   }
 
-  mutating func addArrayProperty(_ arrayProperty: String, size: Int) {
-    addProperty(arrayProperty)
-    for _ in (1..<size) { nextIndex() }
+  mutating func allocate(_ numEntries: Int, for property: String) {
+    addProperty(property)
+    for _ in (1..<numEntries) { nextIndex() }
   }
 
   func offset(for property: String) -> Int {
     return storage[property]!
+  }
+
+  // Dictionaries
+  private var dictionaryNumKeys = [String: Int]()
+
+  mutating func freshKeyOffset(forDictionary dictionary: String) -> Int {
+    let offset = dictionaryNumKeys[dictionary, default: 0]
+    dictionaryNumKeys[dictionary, default: 0] += 1
+    return offset
   }
 }

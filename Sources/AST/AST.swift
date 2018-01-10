@@ -162,6 +162,7 @@ public struct Type: SourceEntity {
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
     case arrayType(RawType, size: Int)
+    case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(String)
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -176,6 +177,7 @@ public struct Type: SourceEntity {
       switch self {
       case .builtInType(_): return 1
       case .arrayType(let rawType, let size): return rawType.size * size
+      case .dictionaryType(key: let keyType, value: let valueType): return 1 + (keyType.size + valueType.size) * 4
       case .userDefinedType(_): return 1
       }
     }
@@ -207,6 +209,11 @@ public struct Type: SourceEntity {
   public init(arrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
     rawType = .arrayType(type.rawType, size: size)
     sourceLocation = .spanning(type, to: closeSquareBracketToken)
+  }
+
+  public init(openSquareBracketToken: Token, dictionaryWithKeyType keyType: Type, valueType: Type, closeSquareBracketToken: Token) {
+    rawType = .dictionaryType(key: keyType.rawType, value: valueType.rawType)
+    sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }
 }
 
@@ -242,7 +249,7 @@ public indirect enum Expression: SourceEntity {
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
-  case arrayAccess(ArrayAccess)
+  case subscriptExpression(SubscriptExpression)
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -253,7 +260,7 @@ public indirect enum Expression: SourceEntity {
     case .self(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
-    case .arrayAccess(let arrayAccess): return arrayAccess.sourceLocation
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
     }
   }
 }
@@ -313,17 +320,17 @@ public struct FunctionCall: SourceEntity {
   }
 }
 
-public struct ArrayAccess: SourceEntity {
-  public var arrayIdentifier: Identifier
+public struct SubscriptExpression: SourceEntity {
+  public var baseIdentifier: Identifier
   public var indexExpression: Expression
   public var closeSquareBracketToken: Token
 
   public var sourceLocation: SourceLocation {
-    return .spanning(arrayIdentifier, to: closeSquareBracketToken)
+    return .spanning(baseIdentifier, to: closeSquareBracketToken)
   }
 
-  public init(arrayIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
-    self.arrayIdentifier = arrayIdentifier
+  public init(baseIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
+    self.baseIdentifier = baseIdentifier
     self.indexExpression = indexExpression
     self.closeSquareBracketToken = closeSquareBracketToken
   }

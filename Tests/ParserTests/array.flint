@@ -67,7 +67,7 @@ Test :: (any) {
   public mutating func write(index: Int, val: Int) {
 
 // CHECK-AST: BinaryExpression
-// CHECK-AST:   ArrayAccess
+// CHECK-AST:   SubscriptExpression
 // CHECK-AST:     identifier "arr"
 // CHECK-AST:     identifier "index"
 // CHECK-AST:   =

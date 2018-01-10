@@ -9,5 +9,4 @@ before_install:
 install:
   - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
 script:
-  - make
   - make test

@@ -1,0 +1,23 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: ContractDeclaration
+// CHECK-AST:  identifier "Foo"
+contract Foo {
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:  user-defined type: Int
+// CHECK-AST:  size: 16
+  var array: Int[16]
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:  identifier "dictionary"
+// CHECK-AST:    DictionaryType
+// CHECK-AST:      built-in type: Address
+// CHECK-AST:      user-defined type: Int
+  var dictionary: [Address: Int]
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "value"
+// CHECK-AST:   user-defined type: Int
+  var value: Int
+}
