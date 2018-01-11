@@ -11,6 +11,7 @@ public struct Context {
 
   var contractPropertyMap = [Identifier: [VariableDeclaration]]()
   var typeMap = [AnyHashable: Type.RawType]()
+  var contractUndefinedVariables = [Identifier: [Identifier]]()
 
   public var declaredContractsIdentifiers: [Identifier] {
     return contractDeclarations.map { $0.identifier }
@@ -30,6 +31,10 @@ public struct Context {
     for variableDeclaration in variableDeclarations {
       typeMap[variableDeclaration.identifier.mangled(in: contractIdentifier)] = variableDeclaration.type.rawType
     }
+  }
+
+  public mutating func addUsedUndefinedVariable(_ variable: Identifier, contractIdentifier: Identifier) {
+    contractUndefinedVariables[contractIdentifier, default: []].append(variable)
   }
 
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
@@ -54,6 +59,9 @@ public struct Context {
   }
 
   public func type(of identifier: Identifier, contractIdentifier: Identifier) -> Type.RawType? {
+    if contractUndefinedVariables[contractIdentifier, default: []].contains(identifier) {
+      return .errorType
+    }
     let mangledIdentifier = identifier.mangled(in: contractIdentifier)
     return typeMap[mangledIdentifier]
   }

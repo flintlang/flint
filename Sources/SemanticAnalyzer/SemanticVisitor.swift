@@ -84,6 +84,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     if let functionDeclarationContext = functionDeclarationContext, identifier.isPropertyAccess {
       if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
         addDiagnostic(.useOfUndeclaredIdentifier(identifier))
+        context.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
       }
       if asLValue, !functionDeclarationContext.isMutating {
         addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))

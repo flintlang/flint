@@ -13,6 +13,6 @@ InvalidTypes :: (any) {
 
   func baz() {
     var a: Bool = true
-    a = 2
+    a = b
   }
 }

@@ -188,6 +188,7 @@ public struct Type: SourceEntity {
     case arrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(String)
+    case errorType
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
       switch (lhs, rhs) {
@@ -203,6 +204,7 @@ public struct Type: SourceEntity {
       case .arrayType(let rawType, let size): return rawType.size * size
       case .dictionaryType(key: let keyType, value: let valueType): return 1 + (keyType.size + valueType.size) * 1024
       case .userDefinedType(_): return 1
+      case .errorType: return 0
       }
     }
 
@@ -212,6 +214,7 @@ public struct Type: SourceEntity {
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let name): return name
+      case .errorType: return "Flint$ErrorType"
       }
     }
   }

@@ -161,6 +161,8 @@ public class ASTDumper {
       }
     case .userDefinedType(let userDefinedType):
       writeLine("user-defined type \(userDefinedType)")
+    case .errorType:
+      writeLine("Flint error type \(rawType.name)")
     }
   }
 
