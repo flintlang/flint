@@ -91,7 +91,7 @@ extension Parser {
       guard let first = currentToken else { break }
       if first.kind == .contract {
         let contractDeclaration = try parseContractDeclaration()
-        context.contractDeclarations.append(contractDeclaration)
+        context.addContract(contractDeclaration)
         declarations.append(.contractDeclaration(contractDeclaration))
       } else {
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
@@ -213,7 +213,7 @@ extension Parser {
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
-      context.functions.append(functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities))
+      context.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
     }
     
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)

@@ -77,12 +77,12 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
   func visit(_ identifier: Identifier) {
+    
   }
 
   func visit(_ type: Type) {}
 
-  func visit(_ callerCapability: CallerCapability) {
-  }
+  func visit(_ callerCapability: CallerCapability) {}
 
   func visit(_ expression: Expression) {
     switch expression {

@@ -6,8 +6,8 @@
 //
 
 public struct Context {
-  public var contractDeclarations = [ContractDeclaration]()
-  public var functions = [MangledFunction]()
+  var contractDeclarations = [ContractDeclaration]()
+  var functions = [MangledFunction]()
 
   var contractPropertyMap = [Identifier: [VariableDeclaration]]()
   var typeMap = [AnyHashable: Type.RawType]()
@@ -17,6 +17,24 @@ public struct Context {
   }
 
   public init() {}
+
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
+    let mangledFunction = functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities)
+    functions.append(mangledFunction)
+    typeMap[mangledFunction] = mangledFunction.resultType?.rawType ?? .builtInType(.void)
+  }
+
+  public mutating func addVariableDeclarations(_ variableDeclarations: [VariableDeclaration], for contractIdentifier: Identifier) {
+    contractPropertyMap[contractIdentifier, default: []].append(contentsOf: variableDeclarations)
+
+    for variableDeclaration in variableDeclarations {
+      typeMap[variableDeclaration.identifier.mangled(in: contractIdentifier)] = variableDeclaration.type.rawType
+    }
+  }
+
+  public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
+    contractDeclarations.append(contractDeclaration)
+  }
 
   public func properties(declaredIn contract: Identifier) -> [VariableDeclaration] {
     let contractDeclaration = contractDeclarations.first { $0.identifier == contract }!
@@ -53,14 +71,6 @@ public struct Context {
   public mutating func setType(of function: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability], type: Type) {
     let mangledFunction = function.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities)
     typeMap[mangledFunction] = type.rawType
-  }
-
-  public mutating func addVariableDeclarations(_ variableDeclarations: [VariableDeclaration], for contractIdentifier: Identifier) {
-    contractPropertyMap[contractIdentifier, default: []].append(contentsOf: variableDeclarations)
-
-    for variableDeclaration in variableDeclarations {
-      typeMap[variableDeclaration.identifier.mangled(in: contractIdentifier)] = variableDeclaration.type.rawType
-    }
   }
 
   public func matchFunctionCall(_ functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> MangledFunction? {
