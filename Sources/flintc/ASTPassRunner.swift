@@ -12,25 +12,22 @@ import Diagnostic
 struct ASTPassRunner {
   var ast: TopLevelModule
 
-  func run(passes: [ASTPass.Type], in context: Context, compilationContext: CompilationContext) throws {
-    var errorPasses = [ASTPass.Type]()
+  func run(passes: [ASTPass.Type], in context: Context, compilationContext: CompilationContext) -> ASTPassRunnerOutcome {
     var context = context
+    var diagnostics = [Diagnostic]()
 
     for pass in passes {
       let result = pass.init().run(for: ast, in: context)
       context = result.context
 
       guard !result.diagnostics.isEmpty else { continue }
-      print(DiagnosticsFormatter(diagnostics: result.diagnostics, compilationContext: compilationContext).rendered())
-      errorPasses.append(pass)
+      diagnostics.append(contentsOf: result.diagnostics)
     }
 
-    guard errorPasses.isEmpty else {
-      throw Error.passes(errorPasses)
-    }
+    return ASTPassRunnerOutcome(diagnostics: diagnostics)
   }
+}
 
-  enum Error: Swift.Error {
-    case passes([ASTPass.Type])
-  }
+struct ASTPassRunnerOutcome {
+  var diagnostics: [Diagnostic]
 }

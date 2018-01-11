@@ -1,0 +1,7 @@
+// RUN: %flintc %s --verify
+
+contract MissingReturn {}
+
+MissingReturn :: (any) {
+  func foo() -> Int {}  // expected-error {{Missing return in function expected to return Int}}
+}

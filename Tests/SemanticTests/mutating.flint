@@ -1,0 +1,11 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var a: Int[10]
+}
+
+Test :: (any) {
+  func foo() {
+    a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+}

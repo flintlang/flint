@@ -42,7 +42,7 @@ public struct Context {
   }
 
   public func properties(declaredIn contract: Identifier) -> [VariableDeclaration] {
-    let contractDeclaration = contractDeclarations.first { $0.identifier == contract }!
+    guard let contractDeclaration = contractDeclarations.first(where: { $0.identifier == contract }) else { return [] }
     return contractDeclaration.variableDeclarations
   }
 
