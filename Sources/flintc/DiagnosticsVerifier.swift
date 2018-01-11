@@ -12,7 +12,8 @@ import Diagnostic
 import AST
 
 struct DiagnosticsVerifier {
-  private let diagnosticRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-?\\d+)\\s+\\{\\{(.*)\\}\\}")
+  private let diagnosticRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
+  private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-?\\d+)\\s+\\{\\{(.*)\\}\\}")
 
   func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
     let expectations = parseExpectations(sourceCode: compilationContext.sourceCode)
@@ -45,20 +46,35 @@ struct DiagnosticsVerifier {
   }
 
   func parseExpectations(sourceCode: String) -> [Expectation] {
-    let matches = diagnosticRegex.matches(in: sourceCode, range: NSRange(sourceCode.startIndex..., in: sourceCode))
+    let lines = sourceCode.components(separatedBy: "\n")
+    return lines.enumerated().flatMap { index, line in
+      return parseExpectation(sourceLine: line, line: index + 1)
+    }
+  }
 
-    return matches.map { match -> Expectation in
-      let severityRange = Range(match.range(at: 1), in: sourceCode)!
-      let severity = String(sourceCode[severityRange])
+  func parseExpectation(sourceLine: String, line: Int) -> Expectation? {
+    if let match = diagnosticRegex.matches(in: sourceLine, range: NSRange(sourceLine.startIndex..., in: sourceLine)).first {
+      let severityRange = Range(match.range(at: 1), in: sourceLine)!
+      let severity = String(sourceLine[severityRange])
 
-      let lineRange = Range(match.range(at: 2), in: sourceCode)!
-      let line = Int(sourceCode[lineRange])!
-
-      let messageRange = Range(match.range(at: 3), in: sourceCode)!
-      let message = String(sourceCode[messageRange])
+      let messageRange = Range(match.range(at: 2), in: sourceLine)!
+      let message = String(sourceLine[messageRange])
 
       return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
     }
+
+    guard let match = diagnosticLineRegex.matches(in: sourceLine, range: NSRange(sourceLine.startIndex..., in: sourceLine)).first else { return nil }
+
+    let severityRange = Range(match.range(at: 1), in: sourceLine)!
+    let severity = String(sourceLine[severityRange])
+
+    let lineRange = Range(match.range(at: 2), in: sourceLine)!
+    let line = Int(sourceLine[lineRange])!
+
+    let messageRange = Range(match.range(at: 3), in: sourceLine)!
+    let message = String(sourceLine[messageRange])
+
+    return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
   }
 }
 

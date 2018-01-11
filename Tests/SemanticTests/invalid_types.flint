@@ -6,15 +6,15 @@ contract InvalidTypes {
 
 InvalidTypes :: (any) {
   func foo() -> Bool {
-    return int // expected-error@9 {{Cannot convert expression of type Int to expected return type Bool}}
+    return int // expected-error {{Cannot convert expression of type Int to expected return type Bool}}
   }
 
   func bar() {
-    return 2 // expected-error@13 {{Cannot convert expression of type Int to expected return type Void}}
+    return 2 // expected-error {{Cannot convert expression of type Int to expected return type Void}}
   }
 
   func baz() {
     var a: Bool = true
-    a = b // expected-error@18 {{Use of undeclared identifier b}}
+    a = b // expected-error {{Use of undeclared identifier b}}
   }
 }

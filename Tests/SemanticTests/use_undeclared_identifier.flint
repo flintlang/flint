@@ -4,7 +4,7 @@ contract Test {}
 
 Test :: (any) {
   func foo() -> Int {
-    var a: Int = b // expected-error@7 {{Use of undeclared identifier b}}
+    var a: Int = b // expected-error {{Use of undeclared identifier b}}
     return 2
   }
 }

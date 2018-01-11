@@ -6,6 +6,6 @@ contract Test {
 
 Test :: (any) {
   func foo() -> Int {
-    return a[0] // expected-error@9 {{Use of mutating statement in a nonmutating function}}
+    return a[0] // expected-error {{Use of mutating statement in a nonmutating function}}
   }
 }
