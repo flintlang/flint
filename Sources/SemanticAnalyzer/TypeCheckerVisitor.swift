@@ -29,7 +29,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
       return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities)!
 
     case .identifier(let identifier):
-      if let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
+      if !identifier.isPropertyAccess, let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
         return localVariable.type.rawType
       }
       return context.type(of: identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
