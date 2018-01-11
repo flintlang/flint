@@ -159,14 +159,9 @@ extension IULIAFunction {
     let rhsCode = render(rhs, asLValue: asLValue)
 
     if case .self(_) = lhs {
-      if case .identifier(var identifier) = rhs {
-        identifier.isPropertyAccess = true
-        return render(identifier, asLValue: asLValue)
-      }
-
       return rhsCode
     }
-    
+
     let lhsCode = render(lhs, asLValue: asLValue)
     return "\(lhsCode).\(rhsCode)"
   }
@@ -217,7 +212,7 @@ extension IULIAFunction {
     let offset = contractStorage.offset(for: baseIdentifier.name)
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier).rawType
+    let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier)!
 
     guard baseIdentifier.isPropertyAccess else {
       fatalError("Subscriptable types are only supported for contract properties right now.")

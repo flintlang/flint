@@ -8,12 +8,13 @@
 public struct Context {
   public var contractDeclarations = [ContractDeclaration]()
   public var functions = [MangledFunction]()
+
   var contractPropertyMap = [Identifier: [VariableDeclaration]]()
+  var typeMap = [AnyHashable: Type.RawType]()
 
   public var declaredContractsIdentifiers: [Identifier] {
     return contractDeclarations.map { $0.identifier }
   }
-
 
   public init() {}
 
@@ -34,12 +35,32 @@ public struct Context {
     }
   }
 
-  public func type(of identifier: Identifier, contractIdentifier: Identifier) -> Type {
-    return contractPropertyMap[contractIdentifier]!.first(where: { $0.identifier == identifier })!.type
+  public func type(of identifier: Identifier, contractIdentifier: Identifier) -> Type.RawType? {
+    let mangledIdentifier = identifier.mangled(in: contractIdentifier)
+    return typeMap[mangledIdentifier]
+  }
+
+  public func type(of functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> Type.RawType? {
+    let matchingFunction = matchFunctionCall(functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)!
+    return typeMap[matchingFunction]
+  }
+
+  public mutating func setType(of identifier: Identifier, contractIdentifier: Identifier, type: Type) {
+    let mangledIdentifier = identifier.mangled(in: contractIdentifier)
+    typeMap[mangledIdentifier] = type.rawType
+  }
+
+  public mutating func setType(of function: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability], type: Type) {
+    let mangledFunction = function.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities)
+    typeMap[mangledFunction] = type.rawType
   }
 
   public mutating func addVariableDeclarations(_ variableDeclarations: [VariableDeclaration], for contractIdentifier: Identifier) {
     contractPropertyMap[contractIdentifier, default: []].append(contentsOf: variableDeclarations)
+
+    for variableDeclaration in variableDeclarations {
+      typeMap[variableDeclaration.identifier.mangled(in: contractIdentifier)] = variableDeclaration.type.rawType
+    }
   }
 
   public func matchFunctionCall(_ functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> MangledFunction? {

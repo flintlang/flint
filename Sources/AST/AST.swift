@@ -102,7 +102,7 @@ public struct FunctionDeclaration: SourceEntity {
   }
 
   public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
-    return MangledFunction(contractIdentifier: contract, callerCapabilities: callerCapabilities, functionDeclaration: self)
+    return MangledFunction(functionDeclaration: self, contractIdentifier: contract, callerCapabilities: callerCapabilities)
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
@@ -140,7 +140,11 @@ public struct TypeAnnotation: SourceEntity {
 
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
-  public var isPropertyAccess = false
+  public var enclosingContractName: String?
+
+  public var isPropertyAccess: Bool {
+    return enclosingContractName != nil
+  }
 
   public var name: String {
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
@@ -153,6 +157,10 @@ public struct Identifier: Hashable, SourceEntity {
 
   public init(identifierToken: Token) {
     self.identifierToken = identifierToken
+  }
+
+  public func mangled(in contractIdentifier: Identifier) -> MangledProperty {
+    return MangledProperty(inContract: self, contractIdentifier: contractIdentifier)
   }
 
   public var hashValue: Int {

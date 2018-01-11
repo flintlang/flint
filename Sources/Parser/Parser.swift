@@ -209,7 +209,7 @@ extension Parser {
     try consume(.punctuation(.doubleColon))
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
-    let functionDeclarations = try parseFunctionDeclarations()
+    let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier)
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
@@ -237,7 +237,7 @@ extension Parser {
     return callerCapabilities
   }
   
-  func parseFunctionDeclarations() throws -> [FunctionDeclaration] {
+  func parseFunctionDeclarations(contractIdentifier: Identifier) throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
     while let (modifiers, funcToken) = attempt(task: parseFunctionHead) {
@@ -245,7 +245,7 @@ extension Parser {
       let (parameters, closeBracketToken) = try parseParameters()
       let resultType = attempt(task: parseResult)
 
-      let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
+      let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier }, contractIdentifier: contractIdentifier)
       let (body, closeBraceToken) = try parseCodeBlock(scopeContext: scopeContext)
       
       let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
@@ -343,8 +343,14 @@ extension Parser {
       guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
       let (lhs, lhsScopeContext) = try parseExpression(upTo: index, scopeContext: scopeContext)
       let operatorToken = try consume(.binaryOperator(op))
-      let (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
+      var (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
       scopeContext.merge(with: lhsScopeContext)
+
+      if operatorToken.kind == .binaryOperator(.dot), case .self(_) = lhs, case .identifier(var identifier) = rhs {
+        identifier.enclosingContractName = scopeContext.contractIdentifier.name
+        rhs = .identifier(identifier)
+      }
+
       binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
       break
     }
@@ -376,14 +382,14 @@ extension Parser {
 
     if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
       if !scopeContext.contains(localVariable: subscriptExpression.baseIdentifier.name) {
-        subscriptExpression.baseIdentifier.isPropertyAccess = true
+        subscriptExpression.baseIdentifier.enclosingContractName = scopeContext.contractIdentifier.name
       }
       return (.subscriptExpression(subscriptExpression), scopeContext)
     }
 
     var identifier = try parseIdentifier()
     if !scopeContext.contains(localVariable: identifier.name) {
-      identifier.isPropertyAccess = true
+      identifier.enclosingContractName = scopeContext.contractIdentifier.name
     }
     return (.identifier(identifier), scopeContext)
   }
