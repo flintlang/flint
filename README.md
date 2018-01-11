@@ -99,5 +99,5 @@ Futures plans for Flint are numerous, and include:
 
 1. **Cross-contract caller capabilities**: support static-checking of caller capabilities when calling a function of another Flint contract.
 2. **Gas estimation**: provide estimates about the gas execution cost of a function. Gas upper bounds are emitted as part of the contract's interface, making it possible to obtain the estimation of a call to an external Flint function.
-3. **Formalization**: specify well-defined semantics for the language
+3. **Formalization**: specify well-defined semantics for the language.
 4. **Tooling**: build novel tools around smart contract development, such as new ways of simulating and visualizing different transaction orderings.
