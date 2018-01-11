@@ -49,7 +49,7 @@ struct IULIAFunctionSelector {
 
     if let resultType = function.resultCanonicalType {
       switch resultType {
-      case .address: fatalError()
+      case .address: fatalError("Canonical type for Address hasn't been implemented yet.")
       case .uint256: return "\(IULIARuntimeFunction.returnUInt.rawValue)(\(call))"
       }
     }
