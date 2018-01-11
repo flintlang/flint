@@ -8,22 +8,11 @@
 import AST
 import Diagnostic
 
-public final class SemanticAnalyzer {
-  var ast: TopLevelModule
-  var context: Context
-  var diagnostics = [Diagnostic]()
-
-  public init(ast: TopLevelModule, context: Context) {
-    self.ast = ast
-    self.context = context
-  }
-
-  public func analyze() -> [Diagnostic] {
-    visit(ast)
-    return diagnostics
-  }
-
-  func addDiagnostic(_ diagnostic: Diagnostic) {
-    diagnostics.append(diagnostic)
+public struct SemanticAnalyzer {
+  public init() {}
+  public func run(for ast: TopLevelModule, in context: Context) -> [Diagnostic] {
+    let visitor = SemanticAnalyzerVisitor(context: context)
+    visitor.visit(ast)
+    return visitor.diagnostics
   }
 }

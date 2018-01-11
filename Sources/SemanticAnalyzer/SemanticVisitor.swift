@@ -1,13 +1,25 @@
 //
-//  Visitor.swift
+//  SemanticVisitor.swift
 //  flintc
 //
 //  Created by Franklin Schrans on 1/4/18.
 //
 
 import AST
+import Diagnostic
 
-extension SemanticAnalyzer {
+final class SemanticAnalyzerVisitor {
+  var context: Context
+  var diagnostics = [Diagnostic]()
+
+  init(context: Context) {
+    self.context = context
+  }
+
+  func addDiagnostic(_ diagnostic: Diagnostic) {
+    diagnostics.append(diagnostic)
+  }
+
   func visit(_ topLevelModule: TopLevelModule) {
     for declaration in topLevelModule.declarations {
       visit(declaration)
