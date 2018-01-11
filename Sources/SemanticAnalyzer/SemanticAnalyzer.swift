@@ -8,11 +8,11 @@
 import AST
 import Diagnostic
 
-public struct SemanticAnalyzer {
+public struct SemanticAnalyzer: ASTPass {
   public init() {}
-  public func run(for ast: TopLevelModule, in context: Context) -> [Diagnostic] {
+  public func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult {
     let visitor = SemanticAnalyzerVisitor(context: context)
     visitor.visit(ast)
-    return visitor.diagnostics
+    return .init(diagnostics: visitor.diagnostics)
   }
 }
