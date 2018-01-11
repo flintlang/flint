@@ -126,16 +126,16 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
 
   func visit(_ callerCapability: CallerCapability) {}
 
-  func visit(_ expression: Expression) {
+  func visit(_ expression: Expression, functionDeclarationContext: FunctionDeclarationContext) {
     switch expression {
-    case .binaryExpression(let binaryExpression): visit(binaryExpression)
-    case .bracketedExpression(let expression): visit(expression)
-    case .functionCall(let functionCall): visit(functionCall)
+    case .binaryExpression(let binaryExpression): visit(binaryExpression, functionDeclarationContext: functionDeclarationContext)
+    case .bracketedExpression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
+    case .functionCall(let functionCall): visit(functionCall, functionDeclarationContext: functionDeclarationContext)
     case .identifier(let identifier): visit(identifier)
     case .literal(_): break
     case .self(_): break
     case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
-    case .subscriptExpression(let subscriptExpression): visit(subscriptExpression)
+    case .subscriptExpression(let subscriptExpression): visit(subscriptExpression, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -159,31 +159,36 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
 
   func visit(_ statement: Statement, functionDeclarationContext: FunctionDeclarationContext) {
     switch statement {
-    case .expression(let expression): visit(expression)
+    case .expression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
     case .ifStatement(let ifStatement): visit(ifStatement, functionDeclarationContext: functionDeclarationContext)
     case .returnStatement(let returnStatement):
       visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ binaryExpression: BinaryExpression) {
+  func visit(_ binaryExpression: BinaryExpression, functionDeclarationContext: FunctionDeclarationContext) {
     if case .binaryOperator(.equal) = binaryExpression.op.kind {
-      visit(binaryExpression.lhs)
+      let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
+      let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+
+      if lhsType != rhsType {
+        addDiagnostic(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
+      }
     }
 
-    visit(binaryExpression.lhs)
-    visit(binaryExpression.rhs)
+    visit(binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
+    visit(binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
   }
 
-  func visit(_ functionCall: FunctionCall) {
+  func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) {
     for argument in functionCall.arguments {
-      visit(argument)
+      visit(argument, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ subscriptExpression: SubscriptExpression) {
+  func visit(_ subscriptExpression: SubscriptExpression, functionDeclarationContext: FunctionDeclarationContext) {
     visit(subscriptExpression.baseIdentifier)
-    visit(subscriptExpression.indexExpression)
+    visit(subscriptExpression.indexExpression, functionDeclarationContext: functionDeclarationContext)
   }
 
   func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {

@@ -10,10 +10,10 @@ import Diagnostic
 
 extension Diagnostic {
   static func incompatibleReturnType(actualType: Type.RawType, expectedType: Type.RawType, expression: Expression) -> Diagnostic {
-    return .incompatibleType(actualType: actualType, expectedType: expectedType, sourceLocation: expression.sourceLocation, useContext: "return")
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type \(actualType.name) to expected return type \(expectedType.name)")
   }
 
-  private static func incompatibleType(actualType: Type.RawType, expectedType: Type.RawType, sourceLocation: SourceLocation, useContext: String) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Cannot convert expression of type \(actualType.name) to expected \(useContext) type \(expectedType.name)")
+  static func incompatibleAssignment(lhsType: Type.RawType, rhsType: Type.RawType, expression: Expression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Incompatible assignment between values of type \(lhsType.name) and \(rhsType.name)")
   }
 }

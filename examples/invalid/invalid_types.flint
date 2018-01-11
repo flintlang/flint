@@ -10,4 +10,9 @@ InvalidTypes :: (any) {
   func bar() {
     return 2
   }
+
+  func baz() {
+    var a: Bool = true
+    a = 2
+  }
 }
