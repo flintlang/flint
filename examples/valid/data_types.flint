@@ -1,0 +1,33 @@
+contract Test {
+  var test: Int
+  var dict: [Address: Int]
+  var arr: Address[10]
+  var p1: Address
+  var p2: Address
+}
+
+Test :: (any) {
+  public mutating func setP1(p1: Address) {
+    self.p1 = p1
+  }
+
+  public mutating func setP2(p2: Address) {
+    self.p2 = p2
+  }
+}
+
+Test :: (p1, p2) {
+  public mutating func setPosition(addr: Address, position: Int) { 
+    arr[position] = addr
+  }
+
+  public mutating func write(pos: Int, value: Int) {
+    var key: Address = arr[pos]
+    dict[key] = value
+  }
+
+  public func getValue(pos: Int) -> Int {
+    var key: Address = arr[pos]
+    return dict[key]
+  }
+}
