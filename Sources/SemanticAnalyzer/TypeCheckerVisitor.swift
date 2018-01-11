@@ -76,9 +76,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
 
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
-  func visit(_ identifier: Identifier) {
-    
-  }
+  func visit(_ identifier: Identifier) {}
 
   func visit(_ type: Type) {}
 
@@ -144,7 +142,9 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     visit(subscriptExpression.indexExpression)
   }
 
-  func visit(_ returnStatement: ReturnStatement) {}
+  func visit(_ returnStatement: ReturnStatement) {
+    
+  }
 
   func visit(_ ifStatement: IfStatement, depth: Int) {
     visitBody(ifStatement.body, depth: depth + 1)

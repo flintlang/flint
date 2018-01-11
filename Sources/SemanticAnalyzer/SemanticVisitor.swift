@@ -108,7 +108,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
         addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
       }
     }
-}
+  }
 
   func visit(_ type: Type) {}
 
