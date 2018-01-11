@@ -81,7 +81,9 @@ public class ASTDumper {
 
   func dump(_ variableDeclaration: VariableDeclaration) {
     writeNode("VariableDeclaration") {
-      self.dump(variableDeclaration.varToken)
+      if let varToken = variableDeclaration.varToken {
+        self.dump(varToken)
+      }
       self.dump(variableDeclaration.identifier)
       self.dump(variableDeclaration.type)
     }
@@ -144,7 +146,7 @@ public class ASTDumper {
   func dump(_ rawType: Type.RawType) {
     switch rawType {
     case .arrayType(let rawType, size: let size):
-      self.writeNode("ArrayType") {
+      writeNode("ArrayType") {
         self.dump(rawType)
         self.writeLine("size: \(size)")
       }
@@ -154,18 +156,18 @@ public class ASTDumper {
         self.dump(valueType)
       }
     case .builtInType(let builtInType):
-      self.writeNode("BuiltInType") {
+      writeNode("BuiltInType") {
         self.dump(builtInType)
       }
     case .userDefinedType(let userDefinedType):
-      self.writeLine("user-defined type: \(userDefinedType)")
+      writeLine("user-defined type \(userDefinedType)")
+    case .errorType:
+      writeLine("Flint error type \(rawType.name)")
     }
   }
 
   func dump(_ builtInType: Type.BuiltInType) {
-    switch builtInType {
-    case .address: writeLine("built-in type: Address")
-    }
+    writeLine("built-in type \(builtInType.rawValue)")
   }
 
   func dump(_ callerCapability: CallerCapability) {

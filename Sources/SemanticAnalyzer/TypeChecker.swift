@@ -1,16 +1,17 @@
 //
-//  SemanticAnalyzer.swift
-//  SemanticAnalyzer
+//  TypeChecker.swift
+//  flintc
 //
-//  Created by Franklin Schrans on 12/26/17.
+//  Created by Franklin Schrans on 1/11/18.
 //
 
 import AST
 
-public struct SemanticAnalyzer: ASTPass {
+public struct TypeChecker: ASTPass {
   public init() {}
+  
   public func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult {
-    let visitor = SemanticAnalyzerVisitor(context: context)
+    let visitor = TypeCheckerVisitor(context: context)
     visitor.visit(ast)
     return .init(diagnostics: visitor.diagnostics, context: visitor.context)
   }

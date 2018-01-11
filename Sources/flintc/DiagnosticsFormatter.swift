@@ -8,28 +8,21 @@
 import Foundation
 import Rainbow
 import AST
+import Diagnostic
 
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
-  var sourceLines: [String]
-  var fileName: String
-
-  public init(diagnostics: [Diagnostic], sourceCode: String, fileName: String) {
-    self.diagnostics = diagnostics
-    self.sourceLines = sourceCode.components(separatedBy: .newlines)
-    self.fileName = fileName
-  }
+  var compilationContext: CompilationContext
 
   public func rendered() -> String {
     return diagnostics.map { diagnostic in
-      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning") in \(fileName.bold):"
+      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning") in \(compilationContext.fileName.bold):"
       return """
       \(infoLine)
         \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
         \(renderSourcePreview(at: diagnostic.sourceLocation).indented(by: 2))
-
       """
-    }.joined()
+    }.joined(separator: "\n")
   }
 
   func render(_ sourceLocation: SourceLocation?) -> String {
@@ -38,6 +31,7 @@ public struct DiagnosticsFormatter {
   }
 
   func renderSourcePreview(at sourceLocation: SourceLocation?) -> String {
+    let sourceLines = compilationContext.sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
     return """
     \(renderSourceLine(sourceLines[sourceLocation.line - 1], rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length)))

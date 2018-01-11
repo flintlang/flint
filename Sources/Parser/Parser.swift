@@ -91,7 +91,7 @@ extension Parser {
       guard let first = currentToken else { break }
       if first.kind == .contract {
         let contractDeclaration = try parseContractDeclaration()
-        context.contractDeclarations.append(contractDeclaration)
+        context.addContract(contractDeclaration)
         declarations.append(.contractDeclaration(contractDeclaration))
       } else {
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
@@ -209,11 +209,11 @@ extension Parser {
     try consume(.punctuation(.doubleColon))
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
-    let functionDeclarations = try parseFunctionDeclarations()
+    let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier)
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
-      context.functions.append(functionDeclaration.mangled(inContract: contractIdentifier, withCallerCapabilities: callerCapabilities))
+      context.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
     }
     
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
@@ -237,7 +237,7 @@ extension Parser {
     return callerCapabilities
   }
   
-  func parseFunctionDeclarations() throws -> [FunctionDeclaration] {
+  func parseFunctionDeclarations(contractIdentifier: Identifier) throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
     while let (modifiers, funcToken) = attempt(task: parseFunctionHead) {
@@ -245,10 +245,12 @@ extension Parser {
       let (parameters, closeBracketToken) = try parseParameters()
       let resultType = attempt(task: parseResult)
 
-      let scopeContext = ScopeContext(localVariables: parameters.map { $0.identifier })
-      let (body, closeBraceToken) = try parseCodeBlock(scopeContext: scopeContext)
+      let scopeContext = ScopeContext(localVariables: parameters.map { parameter in
+        return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
+      }, contractIdentifier: contractIdentifier)
+      let (body, closeBraceToken, newScopeContext) = try parseCodeBlock(scopeContext: scopeContext)
       
-      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
+      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)
       functionDeclarations.append(functionDeclaration)
     }
     
@@ -296,14 +298,14 @@ extension Parser {
     return Type(identifier: identifier)
   }
   
-  func parseCodeBlock(scopeContext: ScopeContext) throws -> ([Statement], closeBraceToken: Token) {
+  func parseCodeBlock(scopeContext: ScopeContext) throws -> ([Statement], closeBraceToken: Token, scopeContext: ScopeContext) {
     try consume(.punctuation(.openBrace))
-    let statements = try parseStatements(scopeContext: scopeContext)
+    let (statements, scopeContext) = try parseStatements(scopeContext: scopeContext)
     let closeBraceToken = try consume(.punctuation(.closeBrace))
-    return (statements, closeBraceToken)
+    return (statements, closeBraceToken, scopeContext)
   }
-  
-  func parseStatements(scopeContext: ScopeContext) throws -> [Statement] {
+
+  func parseStatements(scopeContext: ScopeContext) throws -> ([Statement], ScopeContext) {
     var statements = [Statement]()
 
     var scopeContext = scopeContext
@@ -327,7 +329,7 @@ extension Parser {
       while (try? consume(.newline)) != nil {}
     }
     
-    return statements
+    return (statements, scopeContext)
   }
   
   func parseExpression(upTo limitTokenIndex: Int, scopeContext: ScopeContext) throws -> (Expression, ScopeContext) {
@@ -343,8 +345,14 @@ extension Parser {
       guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
       let (lhs, lhsScopeContext) = try parseExpression(upTo: index, scopeContext: scopeContext)
       let operatorToken = try consume(.binaryOperator(op))
-      let (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
+      var (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
       scopeContext.merge(with: lhsScopeContext)
+
+      if operatorToken.kind == .binaryOperator(.dot), case .self(_) = lhs, case .identifier(var identifier) = rhs {
+        identifier.enclosingContractName = scopeContext.contractIdentifier.name
+        rhs = .identifier(identifier)
+      }
+
       binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
       break
     }
@@ -361,8 +369,8 @@ extension Parser {
       return (.literal(literal), scopeContext)
     }
 
-    if let variableDeclaration = attempt(task:parseVariableDeclaration) {
-      scopeContext.addLocalVariable(variableDeclaration.identifier)
+    if let variableDeclaration = attempt(task: parseVariableDeclaration) {
+      scopeContext.addLocalVariable(variableDeclaration)
       return (.variableDeclaration(variableDeclaration), scopeContext)
     }
 
@@ -376,14 +384,14 @@ extension Parser {
 
     if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
       if !scopeContext.contains(localVariable: subscriptExpression.baseIdentifier.name) {
-        subscriptExpression.baseIdentifier.isPropertyAccess = true
+        subscriptExpression.baseIdentifier.enclosingContractName = scopeContext.contractIdentifier.name
       }
       return (.subscriptExpression(subscriptExpression), scopeContext)
     }
 
     var identifier = try parseIdentifier()
     if !scopeContext.contains(localVariable: identifier.name) {
-      identifier.isPropertyAccess = true
+      identifier.enclosingContractName = scopeContext.contractIdentifier.name
     }
     return (.identifier(identifier), scopeContext)
   }
@@ -442,7 +450,7 @@ extension Parser {
       throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
     }
     let (condition, _) = try parseExpression(upTo: nextOpenBraceIndex, scopeContext: scopeContext)
-    let (statements, _) = try parseCodeBlock(scopeContext: scopeContext)
+    let (statements, _, _) = try parseCodeBlock(scopeContext: scopeContext)
     let elseClauseStatements = (try? parseElseClause(scopeContext: scopeContext)) ?? []
 
     return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)

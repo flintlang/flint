@@ -1,13 +1,21 @@
 //
-//  Visitor.swift
+//  SemanticVisitor.swift
 //  flintc
 //
 //  Created by Franklin Schrans on 1/4/18.
 //
 
 import AST
+import Diagnostic
 
-extension SemanticAnalyzer {
+final class SemanticAnalyzerVisitor: DiagnosticsTracking {
+  var context: Context
+  var diagnostics = [Diagnostic]()
+
+  init(context: Context) {
+    self.context = context
+  }
+
   func visit(_ topLevelModule: TopLevelModule) {
     for declaration in topLevelModule.declarations {
       visit(declaration)
@@ -26,16 +34,6 @@ extension SemanticAnalyzer {
   func visit(_ contractDeclaration: ContractDeclaration) {
     for variableDeclaration in contractDeclaration.variableDeclarations {
       visit(variableDeclaration)
-    }
-  }
-
-  struct ContractBehaviorDeclarationContext {
-    var contractIdentifier: Identifier
-    var contractProperties: [VariableDeclaration]
-    var callerCapabilities: [CallerCapability]
-
-    func isPropertyDeclared(_ name: String) -> Bool {
-      return contractProperties.contains { $0.identifier.name == name }
     }
   }
 
@@ -64,15 +62,6 @@ extension SemanticAnalyzer {
     visit(variableDeclaration.type)
   }
 
-  struct FunctionDeclarationContext {
-    var declaration: FunctionDeclaration
-    var contractContext: ContractBehaviorDeclarationContext
-
-    var isMutating: Bool {
-      return declaration.isMutating
-    }
-  }
-
   func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
     visit(functionDeclaration.identifier)
     for parameter in functionDeclaration.parameters {
@@ -95,12 +84,13 @@ extension SemanticAnalyzer {
     if let functionDeclarationContext = functionDeclarationContext, identifier.isPropertyAccess {
       if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
         addDiagnostic(.useOfUndeclaredIdentifier(identifier))
+        context.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
       }
       if asLValue, !functionDeclarationContext.isMutating {
         addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
       }
     }
-}
+  }
 
   func visit(_ type: Type) {}
 
@@ -134,10 +124,6 @@ extension SemanticAnalyzer {
       if returnStatementIndex != statements.count - 1 {
         let nextStatement = statements[returnStatementIndex + 1]
         addDiagnostic(.codeAfterReturn(nextStatement))
-      }
-
-      if functionDeclarationContext.declaration.resultType == nil {
-        addDiagnostic(.unexpectedReturnInVoidFunction(statements[returnStatementIndex]))
       }
     } else {
       if let resultType = functionDeclarationContext.declaration.resultType, depth == 0 {
@@ -194,7 +180,11 @@ extension SemanticAnalyzer {
     visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
   }
 
-  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}
+  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {
+    if let expression = returnStatement.expression {
+      visit(expression, functionDeclarationContext: functionDeclarationContext)
+    }
+  }
 
   func visit(_ ifStatement: IfStatement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
     visitBody(ifStatement.body, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)

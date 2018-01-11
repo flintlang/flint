@@ -23,15 +23,21 @@ struct Compiler {
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
     let (parserAST, context, parserDiagnostics) = Parser(tokens: tokens).parse()
     
+    let compilationContext = CompilationContext(sourceCode: sourceCode, fileName: inputFile.lastPathComponent)
+
     guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
-      print(DiagnosticsFormatter(diagnostics: parserDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered())
+      print(DiagnosticsFormatter(diagnostics: parserDiagnostics, compilationContext: compilationContext).rendered())
       exitWithFailure()
     }
 
-    let semanticAnalyzerDiagnostics = SemanticAnalyzer(ast: ast, context: context).analyze()
-    print(DiagnosticsFormatter(diagnostics: parserDiagnostics + semanticAnalyzerDiagnostics, sourceCode: sourceCode, fileName: inputFile.lastPathComponent).rendered(), terminator: "")
+    let astPasses: [ASTPass.Type] = [
+      SemanticAnalyzer.self,
+      TypeChecker.self
+    ]
 
-    guard !semanticAnalyzerDiagnostics.contains(where: { $0.isError }) else {
+    do {
+      try ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
+    } catch {
       exitWithFailure()
     }
 
@@ -45,6 +51,11 @@ struct Compiler {
     print("Failed to compile \(inputFile.lastPathComponent).")
     exit(1)
   }
+}
+
+struct CompilationContext {
+  var sourceCode: String
+  var fileName: String
 }
 
 struct CompilationOutcome {
