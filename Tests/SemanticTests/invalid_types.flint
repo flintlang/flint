@@ -13,8 +13,10 @@ InvalidTypes :: (any) {
     return 2 // expected-error {{Cannot convert expression of type Int to expected return type Void}}
   }
 
-  func baz() {
+  mutating func baz() {
     var a: Bool = true
     a = b // expected-error {{Use of undeclared identifier b}}
+
+    int = true // expected-error {{Incompatible assignment between values of type Int and Bool}}
   }
 }
