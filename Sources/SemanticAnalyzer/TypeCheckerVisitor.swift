@@ -79,11 +79,6 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     visit(contractBehaviorDeclaration.contractIdentifier)
 
-    guard context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) else {
-      addDiagnostic(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
-      return
-    }
-
     for callerCapability in contractBehaviorDeclaration.callerCapabilities {
       visit(callerCapability)
     }
@@ -140,18 +135,6 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   }
 
   func visitBody(_ statements: [Statement], functionDeclarationContext: FunctionDeclarationContext) {
-    let returnStatementIndex = statements.index(where: { statement in
-      if case .returnStatement(_) = statement { return true }
-      return false
-    })
-
-    if let returnStatementIndex = returnStatementIndex {
-      if returnStatementIndex != statements.count - 1 {
-        let nextStatement = statements[returnStatementIndex + 1]
-        addDiagnostic(.codeAfterReturn(nextStatement))
-      }
-    }
-
     for statement in statements {
       visit(statement, functionDeclarationContext: functionDeclarationContext)
     }

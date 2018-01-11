@@ -1,0 +1,10 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var owner: Address
+}
+
+Test :: (alice) { // expected-error@7 {{Caller capability alice is undefined in Test or has incompatible type}}
+  func bar() {
+  }
+}

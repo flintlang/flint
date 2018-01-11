@@ -33,15 +33,20 @@ public struct DiagnosticsFormatter {
   func renderSourcePreview(at sourceLocation: SourceLocation?) -> String {
     let sourceLines = compilationContext.sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
+
+    let spaceOffset = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
     return """
     \(renderSourceLine(sourceLines[sourceLocation.line - 1], rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length)))
-    \(String(repeating: " ", count: sourceLocation.column - 1) + String(repeating: "^", count: sourceLocation.length).lightRed.bold)
+    \(String(repeating: " ", count: spaceOffset) + String(repeating: "^", count: sourceLocation.length).lightRed.bold)
     """
   }
 
   func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>) -> String {
-    let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: rangeOfInterest.lowerBound - 1)
-    let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: rangeOfInterest.upperBound - 1)
+    let lowerBound = rangeOfInterest.lowerBound != 0 ? rangeOfInterest.lowerBound - 1 : 0
+    let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : sourceLine.count - 1
+
+    let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: lowerBound)
+    let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: upperBound)
 
     return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) + String(sourceLine[lowerBoundIndex..<upperBoundIndex]).red.bold + String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
   }

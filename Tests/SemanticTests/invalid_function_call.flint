@@ -1,0 +1,18 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var owner: Address
+}
+
+Test :: (any) {
+  public func foo() {
+
+// expected-error@11 {{Function bar is not in scope or cannot be called using the caller capabilities ["any"]}}
+    bar()
+  }
+}
+
+Test :: (owner) {
+  func bar() {
+  }
+}

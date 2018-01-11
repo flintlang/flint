@@ -16,6 +16,7 @@ struct Compiler {
   var inputFile: URL
   var outputDirectory: URL
   var emitBytecode: Bool
+  var shouldVerify: Bool
   
   func compile() -> CompilationOutcome {
     let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
@@ -35,9 +36,21 @@ struct Compiler {
       TypeChecker.self
     ]
 
-    do {
-      try ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
-    } catch {
+    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
+
+    if !passRunnerOutcome.diagnostics.isEmpty, !shouldVerify {
+      print(DiagnosticsFormatter(diagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext).rendered())
+    }
+
+    if shouldVerify {
+      if DiagnosticsVerifier().verify(producedDiagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext) {
+        exit(0)
+      } else {
+        exitWithFailure()
+      }
+    }
+
+    guard !passRunnerOutcome.diagnostics.contains(where: { $0.isError }) else {
       exitWithFailure()
     }
 

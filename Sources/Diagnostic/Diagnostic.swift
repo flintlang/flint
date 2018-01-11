@@ -8,7 +8,7 @@
 import AST
 
 public struct Diagnostic {
-  public enum Severity {
+  public enum Severity: String {
     case warning
     case error
   }
