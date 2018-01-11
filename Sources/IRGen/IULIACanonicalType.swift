@@ -17,6 +17,7 @@ enum CanonicalType: String {
       switch builtInType {
       case .address: self = .address
       case .int: self = .uint256
+      case .bool: self = .uint256
       default: return nil
       }
     default: return nil

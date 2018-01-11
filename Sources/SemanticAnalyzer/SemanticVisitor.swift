@@ -37,16 +37,6 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     }
   }
 
-  struct ContractBehaviorDeclarationContext {
-    var contractIdentifier: Identifier
-    var contractProperties: [VariableDeclaration]
-    var callerCapabilities: [CallerCapability]
-
-    func isPropertyDeclared(_ name: String) -> Bool {
-      return contractProperties.contains { $0.identifier.name == name }
-    }
-  }
-
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     visit(contractBehaviorDeclaration.contractIdentifier)
 
@@ -70,15 +60,6 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
   func visit(_ variableDeclaration: VariableDeclaration) {
     visit(variableDeclaration.identifier)
     visit(variableDeclaration.type)
-  }
-
-  struct FunctionDeclarationContext {
-    var declaration: FunctionDeclaration
-    var contractContext: ContractBehaviorDeclarationContext
-
-    var isMutating: Bool {
-      return declaration.isMutating
-    }
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
@@ -202,7 +183,11 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
   }
 
-  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {}
+  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {
+    if let expression = returnStatement.expression {
+      visit(expression, functionDeclarationContext: functionDeclarationContext)
+    }
+  }
 
   func visit(_ ifStatement: IfStatement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
     visitBody(ifStatement.body, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)

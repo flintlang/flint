@@ -81,7 +81,9 @@ public class ASTDumper {
 
   func dump(_ variableDeclaration: VariableDeclaration) {
     writeNode("VariableDeclaration") {
-      self.dump(variableDeclaration.varToken)
+      if let varToken = variableDeclaration.varToken {
+        self.dump(varToken)
+      }
       self.dump(variableDeclaration.identifier)
       self.dump(variableDeclaration.type)
     }

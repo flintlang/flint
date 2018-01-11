@@ -1,0 +1,13 @@
+contract InvalidTypes {
+  var int: Int
+}
+
+InvalidTypes :: (any) {
+  func foo() -> Bool {
+    return int
+  }
+
+  func bar() {
+    return 2
+  }
+}

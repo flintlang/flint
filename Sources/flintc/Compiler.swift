@@ -30,8 +30,9 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let astPasses = [
-      SemanticAnalyzer.self
+    let astPasses: [ASTPass.Type] = [
+      SemanticAnalyzer.self,
+      TypeChecker.self
     ]
 
     do {

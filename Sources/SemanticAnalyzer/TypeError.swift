@@ -9,15 +9,15 @@ import AST
 import Diagnostic
 
 extension Diagnostic {
-  static func incompatibleReturnType(_ type: Type, expectedType: Type) -> Diagnostic {
-    return .incompatibleType(type, expectedType: expectedType, useContext: "return")
+  static func incompatibleReturnType(actualType: Type.RawType, expectedType: Type, expression: Expression) -> Diagnostic {
+    return .incompatibleType(actualType: actualType, expectedType: expectedType, sourceLocation: expression.sourceLocation, useContext: "return")
   }
 
-  static func incompatibleArgumentType(_ type: Type, expectedType: Type) -> Diagnostic {
-    return .incompatibleType(type, expectedType: expectedType, useContext: "argument")
+  static func incompatibleArgumentType(actualType: Type.RawType, expectedType: Type, argument: Expression) -> Diagnostic {
+    return .incompatibleType(actualType: actualType, expectedType: expectedType, sourceLocation: argument.sourceLocation, useContext: "argument")
   }
 
-  private static func incompatibleType(_ type: Type, expectedType: Type, useContext: String) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: type.sourceLocation, message: "Cannot convert expression of type \(type.name) to expected \(useContext) type \(expectedType.name)")
+  private static func incompatibleType(actualType: Type.RawType, expectedType: Type, sourceLocation: SourceLocation, useContext: String) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Cannot convert expression of type \(actualType.name) to expected \(useContext) type \(expectedType.name)")
   }
 }

@@ -16,6 +16,45 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     self.context = context
   }
 
+  func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext) -> Type.RawType {
+    switch expression {
+    case .binaryExpression(let binaryExpression):
+      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+
+    case .bracketedExpression(let expression):
+      return type(of: expression, functionDeclarationContext: functionDeclarationContext)
+
+    case .functionCall(let functionCall):
+      let contractContext = functionDeclarationContext.contractContext
+      return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities)!
+
+    case .identifier(let identifier):
+      if let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
+        return localVariable.type.rawType
+      }
+      return context.type(of: identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+
+    case .literal(let token):
+      guard case .literal(let literal) = token.kind else { fatalError() }
+      switch literal {
+      case .boolean(_): return .builtInType(.bool)
+      case .decimal(.integer(_)): return .builtInType(.int)
+      default: fatalError()
+      }
+    case .self(_): return .userDefinedType(functionDeclarationContext.contractContext.contractIdentifier.name)
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type.rawType
+    case .subscriptExpression(let subscriptExpression):
+      let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+
+      switch type {
+      case .arrayType(let elementType, _): return elementType
+      case .dictionaryType(_, let valueType): return valueType
+      default: fatalError()
+      }
+    }
+  }
+
   func visit(_ topLevelModule: TopLevelModule) {
     for declaration in topLevelModule.declarations {
       visit(declaration)
@@ -49,8 +88,11 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
       visit(callerCapability)
     }
 
+    let properties = context.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
+    let contractBehaviorDeclarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+
     for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
-      visit(functionDeclaration)
+      visit(functionDeclaration, contractContext: contractBehaviorDeclarationContext)
     }
   }
 
@@ -59,7 +101,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     visit(variableDeclaration.type)
   }
 
-  func visit(_ functionDeclaration: FunctionDeclaration) {
+  func visit(_ functionDeclaration: FunctionDeclaration, contractContext: ContractBehaviorDeclarationContext) {
     visit(functionDeclaration.identifier)
     for parameter in functionDeclaration.parameters {
       visit(parameter)
@@ -69,7 +111,9 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
       visit(resultType)
     }
 
-    visitBody(functionDeclaration.body, depth: 0)
+    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractContext)
+
+    visitBody(functionDeclaration.body, functionDeclarationContext: functionDeclarationContext)
   }
 
   func visit(_ parameter: Parameter) {}
@@ -95,7 +139,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     }
   }
 
-  func visitBody(_ statements: [Statement], depth: Int) {
+  func visitBody(_ statements: [Statement], functionDeclarationContext: FunctionDeclarationContext) {
     let returnStatementIndex = statements.index(where: { statement in
       if case .returnStatement(_) = statement { return true }
       return false
@@ -109,16 +153,16 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     }
 
     for statement in statements {
-      visit(statement, depth: depth + 1)
+      visit(statement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ statement: Statement, depth: Int) {
+  func visit(_ statement: Statement, functionDeclarationContext: FunctionDeclarationContext) {
     switch statement {
     case .expression(let expression): visit(expression)
-    case .ifStatement(let ifStatement): visit(ifStatement, depth: depth)
+    case .ifStatement(let ifStatement): visit(ifStatement, functionDeclarationContext: functionDeclarationContext)
     case .returnStatement(let returnStatement):
-      visit(returnStatement)
+      visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
@@ -142,11 +186,17 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
     visit(subscriptExpression.indexExpression)
   }
 
-  func visit(_ returnStatement: ReturnStatement) {
-    
+  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {
+    guard let expression = returnStatement.expression else { return }
+    let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext)
+    let expectedType = functionDeclarationContext.declaration.resultType!
+
+    if actualType != expectedType.rawType {
+      addDiagnostic(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
+    }
   }
 
-  func visit(_ ifStatement: IfStatement, depth: Int) {
-    visitBody(ifStatement.body, depth: depth + 1)
+  func visit(_ ifStatement: IfStatement, functionDeclarationContext: FunctionDeclarationContext) {
+    visitBody(ifStatement.body, functionDeclarationContext: functionDeclarationContext)
   }
 }

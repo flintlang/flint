@@ -50,15 +50,18 @@ public struct ContractBehaviorDeclaration: SourceEntity {
 }
 
 public struct VariableDeclaration: SourceEntity {
-  public var varToken: Token
+  public var varToken: Token?
   public var identifier: Identifier
   public var type: Type
 
   public var sourceLocation: SourceLocation {
-    return .spanning(varToken, to: type)
+    if let varToken = varToken {
+      return .spanning(varToken, to: type)
+    }
+    return .spanning(identifier, to: type)
   }
 
-  public init(varToken: Token, identifier: Identifier, type: Type) {
+  public init(varToken: Token?, identifier: Identifier, type: Type) {
     self.varToken = varToken
     self.identifier = identifier
     self.type = type
@@ -75,6 +78,8 @@ public struct FunctionDeclaration: SourceEntity {
   public var body: [Statement]
   public var closeBraceToken: Token
 
+  public var localVariables: [VariableDeclaration]
+
   public var sourceLocation: SourceLocation {
     if let resultType = resultType {
       return .spanning(funcToken, to: resultType)
@@ -90,7 +95,7 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
+  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, localVariables: [VariableDeclaration]) {
     self.funcToken = funcToken
     self.modifiers = modifiers
     self.identifier = identifier
@@ -99,6 +104,7 @@ public struct FunctionDeclaration: SourceEntity {
     self.resultType = resultType
     self.body = body
     self.closeBraceToken = closeBraceToken
+    self.localVariables = localVariables
   }
 
   public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
@@ -107,6 +113,10 @@ public struct FunctionDeclaration: SourceEntity {
 
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind } 
+  }
+
+  public func matchingLocalVariable(_ identifier: Identifier) -> VariableDeclaration? {
+    return localVariables.first { $0.identifier.name ==  identifier.name }
   }
 }
 
@@ -206,6 +216,7 @@ public struct Type: SourceEntity {
     case address = "Address"
     case int = "Int"
     case void = "Void"
+    case bool = "Bool"
 
     var canBeUsedAsCallerCapability: Bool {
       switch self {
