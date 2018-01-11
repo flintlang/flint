@@ -5,7 +5,7 @@ contract Test {
 }
 
 Test :: (any) {
-  func foo() -> Int {
-    return a[0] // expected-error {{Use of mutating statement in a nonmutating function}}
+  func foo() {
+    a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
   }
 }
