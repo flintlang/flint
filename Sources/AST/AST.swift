@@ -196,10 +196,12 @@ public struct Type: SourceEntity {
 
   public enum BuiltInType: String {
     case address = "Address"
+    case int = "Int"
 
     var canBeUsedAsCallerCapability: Bool {
       switch self {
       case .address: return true
+      default: return false
       }
     }
   }

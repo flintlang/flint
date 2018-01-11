@@ -16,12 +16,7 @@ enum CanonicalType: String {
     case .builtInType(let builtInType):
       switch builtInType {
       case .address: self = .address
-      }
-    case .userDefinedType(let userDefinedType):
-      switch userDefinedType {
-      case "Ether": self = .uint256
-      case "Int": self = .uint256
-      default: return nil
+        case .int: self = .uint256
       }
     default: return nil
     }

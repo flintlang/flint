@@ -8,24 +8,24 @@ contract Test {
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "owner"
-// CHECK-AST:   built-in type: Address
+// CHECK-AST:   built-in type Address
   var owner: Address
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "arr"
 // CHECK-AST:   ArrayType
-// CHECK-AST:     user-defined type: Int
+// CHECK-AST:     built-in type Int
   var arr: Int[4]
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "arr2"
 // CHECK-AST:   ArrayType
-// CHECK-AST:     user-defined type: Int
+// CHECK-AST:     built-in type Int
   var arr2: Int[10]
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "numWrites"
-// CHECK-AST:   user-defined type: Int
+// CHECK-AST:   built-in type Int
   var numWrites: Int
 }
 
@@ -60,10 +60,10 @@ Test :: (any) {
 // CHECK-AST:   identifier "write"
 // CHECK-AST:   Parameter
 // CHECK-AST:    identifier "index"
-// CHECK-AST:    user-defined type: Int
+// CHECK-AST:    built-in type Int
 // CHECK-AST:   Parameter
 // CHECK-AST:    identifier "val"
-// CHECK-AST:    user-defined type: Int
+// CHECK-AST:    built-in type Int
   public mutating func write(index: Int, val: Int) {
 
 // CHECK-AST: BinaryExpression
@@ -84,9 +84,9 @@ Test :: (any) {
 // CHECK-AST:   identifier "value"
 // CHECK-AST:   Parameter
 // CHECK-AST:     identifier "index"
-// CHECK-AST:     user-defined type: Int
+// CHECK-AST:     built-in type Int
 // CHECK-AST:   ResultType
-// CHECK-AST:     user-defined type: Int
+// CHECK-AST:     built-in type Int
   public func value(index: Int) -> Int {
 
 // CHECK-AST: ReturnStatement
