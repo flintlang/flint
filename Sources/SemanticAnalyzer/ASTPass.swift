@@ -9,15 +9,17 @@ import AST
 import Diagnostic
 
 public protocol ASTPass {
-  func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult
   init()
+  func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult
 }
 
 public struct ASTPassResult {
   public var diagnostics: [Diagnostic]
+  public var context: Context
 
-  init(diagnostics: [Diagnostic]) {
+  init(diagnostics: [Diagnostic], context: Context) {
     self.diagnostics = diagnostics
+    self.context = context
   }
 }
 

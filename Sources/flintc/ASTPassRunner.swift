@@ -14,9 +14,11 @@ struct ASTPassRunner {
 
   func run(passes: [ASTPass.Type], in context: Context, compilationContext: CompilationContext) throws {
     var errorPasses = [ASTPass.Type]()
+    var context = context
 
     for pass in passes {
       let result = pass.init().run(for: ast, in: context)
+      context = result.context
 
       guard !result.diagnostics.isEmpty else { continue }
       print(DiagnosticsFormatter(diagnostics: result.diagnostics, compilationContext: compilationContext).rendered())

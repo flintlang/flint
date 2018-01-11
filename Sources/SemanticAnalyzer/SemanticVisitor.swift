@@ -8,16 +8,12 @@
 import AST
 import Diagnostic
 
-final class SemanticAnalyzerVisitor {
+final class SemanticAnalyzerVisitor: DiagnosticsTracking {
   var context: Context
   var diagnostics = [Diagnostic]()
 
   init(context: Context) {
     self.context = context
-  }
-
-  func addDiagnostic(_ diagnostic: Diagnostic) {
-    diagnostics.append(diagnostic)
   }
 
   func visit(_ topLevelModule: TopLevelModule) {
