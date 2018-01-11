@@ -171,7 +171,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
       let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
       let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
 
-      if lhsType != rhsType {
+      if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
         addDiagnostic(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
       }
     }

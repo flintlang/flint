@@ -192,9 +192,18 @@ public struct Type: SourceEntity {
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
       switch (lhs, rhs) {
-      case (.builtInType(let lhsType), .builtInType(let rhsType)): return lhsType == rhsType
-      case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)): return lhsType == rhsType
-      default: return false
+      case (.builtInType(let lhsType), .builtInType(let rhsType)):
+        return lhsType == rhsType
+      case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)):
+        return lhsType == rhsType
+      case (.arrayType(let lhsType, let lhsSize), .arrayType(let rhsType, let rhsSize)):
+        return lhsType == rhsType && lhsSize == rhsSize
+      case (.dictionaryType(let lhsKeyType, let lhsValueType), .dictionaryType(let rhsKeyType, let rhsValueType)):
+        return lhsKeyType == rhsKeyType && lhsValueType == rhsValueType
+      case (.errorType, .errorType):
+        return true
+      default:
+        return false
       }
     }
 
