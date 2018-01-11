@@ -12,7 +12,9 @@ public struct MangledFunction: CustomStringConvertible {
   public var identifier: Identifier
   public var numParameters: Int
   public var isMutating: Bool
+
   public var resultType: Type?
+  public var rawType: Type.RawType
 
   init(functionDeclaration: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
     self.identifier = functionDeclaration.identifier
@@ -21,6 +23,7 @@ public struct MangledFunction: CustomStringConvertible {
     self.numParameters = functionDeclaration.parameters.count
     self.isMutating = functionDeclaration.isMutating
     self.resultType = functionDeclaration.resultType
+    self.rawType = functionDeclaration.rawType
   }
 
   func canBeCalledBy(functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities callCallerCapabilities: [CallerCapability]) -> Bool {

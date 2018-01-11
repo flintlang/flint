@@ -31,10 +31,6 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier \(identifier.name)")
   }
 
-  static func unexpectedReturnInVoidFunction(_ statement: Statement) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Unexpected return in void function")
-  }
-
   static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return \(resultType.name)")
   }

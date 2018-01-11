@@ -189,9 +189,9 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {
     guard let expression = returnStatement.expression else { return }
     let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext)
-    let expectedType = functionDeclarationContext.declaration.resultType!
+    let expectedType = functionDeclarationContext.declaration.rawType
 
-    if actualType != expectedType.rawType {
+    if actualType != expectedType {
       addDiagnostic(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
     }
   }

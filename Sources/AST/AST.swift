@@ -78,6 +78,10 @@ public struct FunctionDeclaration: SourceEntity {
   public var body: [Statement]
   public var closeBraceToken: Token
 
+  public var rawType: Type.RawType {
+    return resultType?.rawType ?? .builtInType(.void)
+  }
+
   public var localVariables: [VariableDeclaration]
 
   public var sourceLocation: SourceLocation {

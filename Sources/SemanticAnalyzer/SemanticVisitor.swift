@@ -124,10 +124,6 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
         let nextStatement = statements[returnStatementIndex + 1]
         addDiagnostic(.codeAfterReturn(nextStatement))
       }
-
-      if functionDeclarationContext.declaration.resultType == nil {
-        addDiagnostic(.unexpectedReturnInVoidFunction(statements[returnStatementIndex]))
-      }
     } else {
       if let resultType = functionDeclarationContext.declaration.resultType, depth == 0 {
         addDiagnostic(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclarationContext.declaration.closeBraceToken, resultType: resultType))
