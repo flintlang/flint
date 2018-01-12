@@ -9,6 +9,10 @@ struct ContractStorage {
   private var storage = [String: Int]()
   private var indexPool = 0
 
+  var numAllocated: Int {
+    return indexPool
+  }
+
   @discardableResult
   mutating func nextIndex() -> Int {
     defer { indexPool += 1 }

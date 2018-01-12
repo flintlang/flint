@@ -41,12 +41,25 @@ struct IULIAContract {
     let functionSelector = IULIAFunctionSelector(functions: functions)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
+    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.isBasicType }
+    let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
+    let initializerBody = initializerParameters.map { parameter in
+      return "_flintStorage\(storage.offset(for: parameter.identifier.name)) = \(parameter.identifier.name);"
+    }.joined(separator: "\n")
+
+    let fieldDeclarations = (0..<storage.numAllocated).map { index in
+      return "uint256 _flintStorage\(index);"
+    }.joined(separator: "\n")
+
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     return """
     contract \(contractDeclaration.identifier.name) {
 
-      function \(contractDeclaration.identifier.name)() public {
+      \(fieldDeclarations.indented(by: 2))
+
+      function \(contractDeclaration.identifier.name)(\(initializerParameterList)) public {
+        \(initializerBody.indented(by: 4))
       }
 
       function () public payable {
