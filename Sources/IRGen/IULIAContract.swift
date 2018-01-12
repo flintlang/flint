@@ -47,16 +47,26 @@ struct IULIAContract {
       return "_flintStorage\(storage.offset(for: parameter.identifier.name)) = \(parameter.identifier.name);"
     }.joined(separator: "\n")
 
-    let fieldDeclarations = (0..<storage.numAllocated).map { index in
-      return "uint256 _flintStorage\(index);"
-    }.joined(separator: "\n")
+    var index = 0
+    var propertyDeclarations = [String]()
+
+    for property in contractDeclaration.variableDeclarations {
+      let rawType = property.type.rawType
+      let size = rawType.size
+      for _ in (0..<size) {
+        propertyDeclarations.append("\(rawType.canonicalElementType!) _flintStorage\(index);")
+        index += 1
+      }
+    }
+
+    let propertyDeclarationsCode = propertyDeclarations.joined(separator: "\n")
 
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     return """
     contract \(contractDeclaration.identifier.name) {
 
-      \(fieldDeclarations.indented(by: 2))
+      \(propertyDeclarationsCode.indented(by: 2))
 
       function \(contractDeclaration.identifier.name)(\(initializerParameterList)) public {
         \(initializerBody.indented(by: 4))
@@ -77,5 +87,19 @@ struct IULIAContract {
       }
     }
     """
+  }
+}
+
+fileprivate extension Type.RawType {
+
+  /// The canonical type of self, or its element's canonical type in the case of arrays and dictionaries.
+  var canonicalElementType: CanonicalType? {
+    switch self {
+    case .builtInType(_): return CanonicalType(from: self)
+    case .errorType: return CanonicalType(from: self)
+    case .dictionaryType(_, let value): return CanonicalType(from: value)
+    case .arrayType(let elementType, _): return CanonicalType(from: elementType)
+    case .userDefinedType(let userDefinedType): return CanonicalType(rawValue: userDefinedType)
+    }
   }
 }
