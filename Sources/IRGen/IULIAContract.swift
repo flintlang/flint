@@ -21,7 +21,7 @@ struct IULIAContract {
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       switch variableDeclaration.type.rawType {
-      case .arrayType(_), .dictionaryType(_, _):
+      case .arrayType(_):
         storage.allocate(variableDeclaration.type.rawType.size, for: variableDeclaration.identifier.name)
       default:
         storage.addProperty(variableDeclaration.identifier.name)
@@ -57,7 +57,7 @@ struct IULIAContract {
 
           \(functionsCode)
 
-          // Util functions
+          // Flint runtime
 
           \(runtimeFunctionsDeclarations)
         }

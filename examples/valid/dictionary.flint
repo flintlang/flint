@@ -26,7 +26,7 @@ Dictionary :: (any) {
     return foo
   }
 
-  public mutating func setFoo(val: Int) -> Int {
+  public mutating func setFoo(val: Int) {
     foo = val
   }
 
@@ -34,7 +34,7 @@ Dictionary :: (any) {
     return bar
   }
 
-  public mutating func setBar(val: Int) -> Int {
+  public mutating func setBar(val: Int) {
     bar = val
   }
 }
