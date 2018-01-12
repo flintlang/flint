@@ -4,10 +4,6 @@ contract Bank {
 }
 
 Bank :: (any) {
-  public init(manager: Address) {
-    self.manager = manager
-  }
-
   public mutating func deposit(account: Address, amount: Int) {
     accounts[account] = accounts[account] + amount
   }
