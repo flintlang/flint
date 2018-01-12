@@ -2,7 +2,7 @@
 
 contract Wallet {
   var owner: Address
-  var contents: Ether
+  var contents: Int
 }
 
 Wallet :: (any) {
