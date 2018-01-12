@@ -249,6 +249,13 @@ public struct Type: SourceEntity {
     return rawType.name
   }
 
+  public var isBasicType: Bool {
+    if case Type.RawType.builtInType(_) = rawType {
+      return true
+    }
+    return false
+  }
+
   public init(identifier: Identifier) {
     let name = identifier.name
     if let builtInType = BuiltInType(rawValue: name) {
