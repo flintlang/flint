@@ -48,7 +48,8 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
       let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
 
       switch type {
-      case .arrayType(let elementType, _): return elementType
+      case .arrayType(let elementType): return elementType
+      case .fixedSizeArrayType(let elementType, _): return elementType
       case .dictionaryType(_, let valueType): return valueType
       default: fatalError()
       }

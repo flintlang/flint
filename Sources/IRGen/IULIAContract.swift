@@ -98,7 +98,8 @@ fileprivate extension Type.RawType {
     case .builtInType(_): return CanonicalType(from: self)
     case .errorType: return CanonicalType(from: self)
     case .dictionaryType(_, _): return .uint256 // Nothing is stored in that property.
-    case .arrayType(let elementType, _): return CanonicalType(from: elementType)
+    case .arrayType(_): return .uint256 // The number of elements is stored.
+    case .fixedSizeArrayType(let elementType, _): return CanonicalType(from: elementType)
     case .userDefinedType(let userDefinedType): return CanonicalType(rawValue: userDefinedType)
     }
   }

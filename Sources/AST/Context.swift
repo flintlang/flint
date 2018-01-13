@@ -52,7 +52,8 @@ public struct Context {
     return variables.filter { variable in
       switch variable.type.rawType {
       case .builtInType(.address): return true
-      case .arrayType(.builtInType(.address), _): return true
+      case .fixedSizeArrayType(.builtInType(.address), _): return true
+      case .arrayType(let rawType): return rawType == .builtInType(.address)
       default: return false
       }
     }

@@ -95,15 +95,16 @@ struct IULIAFunction {
       let type = context.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
       let offset = contractStorage.offset(for: callerCapability.name)
 
-      if case .arrayType(_, let size) = type {
+      switch type {
+      case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
           "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(add(\(offset), \(index)))))"
-        }.joined(separator: "\n")
+          }.joined(separator: "\n")
+      case .arrayType(_):
+        return "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isCallerCapabilityInArray.rawValue)(\(offset)))"
+      default:
+        return "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))"
       }
-
-      return """
-      _flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
-      """
     }
 
     if !checks.isEmpty {
@@ -235,8 +236,9 @@ extension IULIAFunction {
       fatalError("Subscriptable types are only supported for contract properties right now.")
     }
 
-    if case .arrayType(let elementType, _) = type {
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+    switch type {
+    case .arrayType(let elementType):
+      let storageArrayOffset = "\(IULIARuntimeFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode))"
       if asLValue {
         return storageArrayOffset
       } else {
@@ -245,22 +247,32 @@ extension IULIAFunction {
         }
         return "sload(\(storageArrayOffset))"
       }
-    }
-
-    guard case .dictionaryType(key: let keyType, value: let valueType) = type else { fatalError() }
-    guard keyType.size == 1 else {
-      fatalError("Dictionary keys of size > 1 are not supported yet.")
-    }
-
-    let storageDictionaryOffsetForKey = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode))"
-
-    if asLValue {
-      return "\(storageDictionaryOffsetForKey)"
-    } else {
-      guard valueType.size == 1 else {
-        fatalError("Loading dictionary values of size > 1 is not supported yet.")
+    case .fixedSizeArrayType(let elementType, _):
+      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+      if asLValue {
+        return storageArrayOffset
+      } else {
+        guard elementType.size == 1 else {
+          fatalError("Loading array elements of size > 1 is not supported yet.")
+        }
+        return "sload(\(storageArrayOffset))"
       }
-      return "sload(\(storageDictionaryOffsetForKey))"
+    case .dictionaryType(key: let keyType, value: let valueType):
+      guard keyType.size == 1 else {
+        fatalError("Dictionary keys of size > 1 are not supported yet.")
+      }
+
+      let storageDictionaryOffsetForKey = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode))"
+
+      if asLValue {
+        return "\(storageDictionaryOffsetForKey)"
+      } else {
+        guard valueType.size == 1 else {
+          fatalError("Loading dictionary values of size > 1 is not supported yet.")
+        }
+        return "sload(\(storageDictionaryOffsetForKey))"
+      }
+    default: fatalError()
     }
   }
 
