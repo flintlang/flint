@@ -187,7 +187,8 @@ public struct Identifier: Hashable, SourceEntity {
 public struct Type: SourceEntity {
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
-    case arrayType(RawType, size: Int)
+    case arrayType(RawType)
+    case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(String)
     case errorType
@@ -198,7 +199,9 @@ public struct Type: SourceEntity {
         return lhsType == rhsType
       case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)):
         return lhsType == rhsType
-      case (.arrayType(let lhsType, let lhsSize), .arrayType(let rhsType, let rhsSize)):
+      case (.arrayType(let lhsType), .arrayType(let rhsType)):
+        return lhsType == rhsType
+      case (.fixedSizeArrayType(let lhsType, let lhsSize), .fixedSizeArrayType(let rhsType, let rhsSize)):
         return lhsType == rhsType && lhsSize == rhsSize
       case (.dictionaryType(let lhsKeyType, let lhsValueType), .dictionaryType(let rhsKeyType, let rhsValueType)):
         return lhsKeyType == rhsKeyType && lhsValueType == rhsValueType
@@ -212,7 +215,8 @@ public struct Type: SourceEntity {
     public var size: Int {
       switch self {
       case .builtInType(_): return 1
-      case .arrayType(let rawType, let size): return rawType.size * size
+      case .fixedSizeArrayType(let rawType, let size): return rawType.size * size
+      case .arrayType(_): return 1
       case .dictionaryType(_, _): return 1
       case .userDefinedType(_): return 1
       case .errorType: return 0
@@ -221,7 +225,8 @@ public struct Type: SourceEntity {
 
     public var name: String {
       switch self {
-      case .arrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
+      case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
+      case .arrayType(let rawType): return "[\(rawType.name)]"
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let name): return name
@@ -268,8 +273,13 @@ public struct Type: SourceEntity {
     self.sourceLocation = identifier.sourceLocation
   }
 
-  public init(arrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
-    rawType = .arrayType(type.rawType, size: size)
+  public init(openSquareBracketToken: Token, arrayWithElementType type: Type, closeSquareBracketToken: Token) {
+    rawType = .arrayType(type.rawType)
+    sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+  }
+
+  public init(fixedSizeArrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
+    rawType = .fixedSizeArrayType(type.rawType, size: size)
     sourceLocation = .spanning(type, to: closeSquareBracketToken)
   }
 

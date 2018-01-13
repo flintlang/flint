@@ -5,7 +5,7 @@ Flint introduces the concept of **caller capabilities**. While traditional compu
 Contracts can maintain a state, which persists on the EVM blockchain. Developers use state to record data through function calls. Part of what can be recorded are Ethereum addresses, which can be used to impose limits on which functions can be called by a given address. The EVM bytecode specification doesn't include special instructions to perform these kinds of checks. Usually, developers prefix their function body by a caller check, as follows:
 
 ```swift
-function giftAccount(address: Address, amount: Int) {
+function freeDeposit(address: Address, amount: Int) {
   if (caller != manager) {
     throw
   }
@@ -21,7 +21,7 @@ The above example is declared as follows in Flint:
 
 ```swift
 Bank :: (manager) {
-  func giftAccount(address: Address, amount: Int) {
+  func freeDeposit(address: Address, amount: Int) {
     // body
   }
 }
@@ -81,7 +81,7 @@ A contract behavior declaration can be restricted by multiple caller capabilitie
 Consider the following contract behavior declaration:
 
 ```swift
-Bank :: (manager, accounts.keys) {
+Bank :: (manager, accountKeys) {
   func forManagerOrCustomers() {}
 }
 ```
@@ -95,9 +95,9 @@ Consider the following examples:
 #### Insufficient capabilities
 
 ```swift
-Bank :: (manager, accounts.keys) {
+Bank :: (manager, accountKeys) {
   func forManagerOrCustomers() {
-    // Error: "accounts.keys" is not compatible with "manager"
+    // Error: "accountKeys" is not compatible with "manager"
     forManager()
   }
 }
@@ -111,15 +111,15 @@ Bank :: (manager) {
 #### Sufficient capabilities
 
 ```swift
-Bank :: (manager, accounts.keys) {
+Bank :: (manager, accountKeys) {
   func forManagerOrCustomers() {
-    // Valid: "manager" is compatible with "manager", and "accounts.keys" is
-    // compatible with "accounts.keys" 
+    // Valid: "manager" is compatible with "manager", and "accountKeys" is
+    // compatible with "accountKeys" 
     forManagerOrCustomers2()
   }
 }
 
-Bank :: (accounts.keys, manager) {
+Bank :: (accountKeys, manager) {
   func forManagerOrCustomers2() {}
 }
 
@@ -128,9 +128,9 @@ Bank :: (accounts.keys, manager) {
 #### `any` is compatible with any capability
 
 ```swift
-Bank :: (manager, accounts.keys) {
+Bank :: (manager, accountKeys) {
   func forManagerOrCustomers() {
-    // Valid: "manager" is compatible with "manager" (and "any", too), and "accounts.keys"
+    // Valid: "manager" is compatible with "manager" (and "any", too), and "accountKeys"
     // is compatible with "any"
     forManagerOrCustomers2()
   }
@@ -154,14 +154,14 @@ Capabilities can be bound to temporary variables.
 Consider the following example.
 
 ```swift
-Bank :: account <- (accounts.keys) {
+Bank :: account <- (accountKeys) {
   mutating func withdraw(amount: Int, destination: Address) {
     let value = accounts[account]
-      accounts[account] -= amount
-      send(value, destination)
+    accounts[account] -= amount
+    send(value, destination)
   }
 }
 
 ```
 
-`withdraw` can be called by any caller which has an account in the bank. The `anyOf` function succeeds if the caller's capabilities is compatible with a capability in `accounts.keys`. If there exists such a capability, it is bound to the variable `a` as an `Address`, which can then be used in the body of the functions.
+`withdraw` can be called by any caller which has an account in the bank. The caller's address is bound to the variable `account`, which can then be used in the body of the functions.

@@ -148,10 +148,14 @@ public class ASTDumper {
 
   func dump(_ rawType: Type.RawType) {
     switch rawType {
-    case .arrayType(let rawType, size: let size):
+    case .fixedSizeArrayType(let rawType, size: let size):
+      writeNode("FixedSizeArrayType") {
+        self.dump(rawType)
+        self.writeLine("size \(size)")
+      }
+    case .arrayType(let rawType):
       writeNode("ArrayType") {
         self.dump(rawType)
-        self.writeLine("size: \(size)")
       }
     case .dictionaryType(key: let keyType, value: let valueType):
       self.writeNode("DictionaryType") {

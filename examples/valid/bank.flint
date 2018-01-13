@@ -1,7 +1,7 @@
 contract Bank {
   var manager: Address
   var accounts: [Address: Int]
-  var keys: Address[30] // 30 accounts supported
+  var keys: [Address]
   var lastIndex: Int
 }
 

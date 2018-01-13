@@ -12,9 +12,11 @@ enum IULIARuntimeFunction: String {
   case decodeAsAddress
   case decodeAsUInt
   case isValidCallerCapability
+  case isCallerCapabilityInArray
   case returnUInt
   case isInvalidSubscriptExpression
   case storageArrayOffset
+  case storageFixedSizeArrayOffset
   case storageDictionaryOffsetForKey
 
   var declaration: String {
@@ -26,11 +28,13 @@ enum IULIARuntimeFunction: String {
     case .returnUInt: return IRRuntimeFunctionDeclaration.returnUInt
     case .isInvalidSubscriptExpression: return IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression
     case .storageArrayOffset: return IRRuntimeFunctionDeclaration.storageArrayOffset
+    case .isCallerCapabilityInArray: return IRRuntimeFunctionDeclaration.isCallerCapabilityInArray
+    case .storageFixedSizeArrayOffset: return IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset
     case .storageDictionaryOffsetForKey: return IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey
     }
   }
 
-  static let all: [IULIARuntimeFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .returnUInt, .isInvalidSubscriptExpression, .storageArrayOffset, .storageDictionaryOffsetForKey]
+  static let all: [IULIARuntimeFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .isCallerCapabilityInArray, .returnUInt, .isInvalidSubscriptExpression, .storageArrayOffset, .storageFixedSizeArrayOffset, .storageDictionaryOffsetForKey]
 }
 
 fileprivate struct IRRuntimeFunctionDeclaration {
@@ -62,6 +66,22 @@ fileprivate struct IRRuntimeFunctionDeclaration {
   }
   """
 
+  static let isCallerCapabilityInArray =
+  """
+  function isCallerCapabilityInArray(arrayOffset) -> ret {
+    let size := sload(arrayOffset)
+    let found := 0
+    let _caller := caller()
+    let arrayStart := add(arrayOffset, 1)
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
+      if eq(sload(storageArrayOffset(arrayOffset, i)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  """
+
   static let returnUInt =
   """
   function returnUInt(v) {
@@ -77,11 +97,28 @@ fileprivate struct IRRuntimeFunctionDeclaration {
   }
   """
 
-  static let storageArrayOffset =
+  static let storageFixedSizeArrayOffset =
   """
-  function storageArrayOffset(arrayOffset, index, arraySize) -> ret {
+  function storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
     if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     ret := add(arrayOffset, index)
+  }
+  """
+
+  static let storageArrayOffset =
+  """
+  function storageArrayOffset(arrayOffset, index) -> ret {
+    let arraySize := sload(arrayOffset)
+
+    switch eq(arraySize, index)
+    case 0 {
+      if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    }
+    default {
+      sstore(arrayOffset, add(arraySize, 1))
+    }
+
+    ret := storageDictionaryOffsetForKey(arrayOffset, index)
   }
   """
 

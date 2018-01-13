@@ -146,10 +146,14 @@ extension Parser {
   func parseType() throws -> Type {
     if let openSquareBracketToken = attempt(try consume(.punctuation(.openSquareBracket))) {
       let keyType = try parseType()
-      try consume(.punctuation(.colon))
-      let valueType = try parseType()
+      if attempt(try consume(.punctuation(.colon))) != nil {
+        let valueType = try parseType()
+        let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
+        return Type(openSquareBracketToken: openSquareBracketToken, dictionaryWithKeyType: keyType, valueType: valueType, closeSquareBracketToken: closeSquareBracketToken)
+      }
+
       let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
-      return Type(openSquareBracketToken: openSquareBracketToken, dictionaryWithKeyType: keyType, valueType: valueType, closeSquareBracketToken: closeSquareBracketToken)
+      return Type(openSquareBracketToken: openSquareBracketToken, arrayWithElementType: keyType, closeSquareBracketToken: closeSquareBracketToken)
     }
 
     let identifier = try parseIdentifier()
@@ -159,7 +163,7 @@ extension Parser {
       let literal = try parseLiteral()
       if case .literal(.decimal(.integer(let size))) = literal.kind {
         let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
-        return Type(arrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
+        return Type(fixedSizeArrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
       }
     }
 

@@ -5,8 +5,9 @@
 contract Foo {
 
 // CHECK-AST: VariableDeclaration
-// CHECK-AST:  built-in type Int
-// CHECK-AST:  size: 16
+// CHECK-AST:  FixedSizeArrayType
+// CHECK-AST:   built-in type Int
+// CHECK-AST:   size 16
   var array: Int[16]
 
 // CHECK-AST: VariableDeclaration
