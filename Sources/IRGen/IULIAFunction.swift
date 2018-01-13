@@ -91,7 +91,16 @@ struct IULIAFunction {
   func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
     let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
+
+      let type = context.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
       let offset = contractStorage.offset(for: callerCapability.name)
+
+      if case .arrayType(_, let size) = type {
+        return (0..<size).map { index in
+          "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(add(\(offset), \(index)))))"
+        }.joined(separator: "\n")
+      }
+
       return """
       _flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
       """
