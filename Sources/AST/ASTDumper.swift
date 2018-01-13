@@ -151,7 +151,7 @@ public class ASTDumper {
     case .fixedSizeArrayType(let rawType, size: let size):
       writeNode("FixedSizeArrayType") {
         self.dump(rawType)
-        self.writeLine("size: \(size)")
+        self.writeLine("size \(size)")
       }
     case .arrayType(let rawType):
       writeNode("ArrayType") {
