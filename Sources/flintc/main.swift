@@ -1,5 +1,6 @@
 import Foundation
 import Commander
+import Diagnostic
 
 func main() {
   command(
@@ -10,6 +11,12 @@ func main() {
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced.")
   ) { inputFile, emitIulia, emitBytecode, dumpAST, shouldVerify in
     let inputFileURL = URL(fileURLWithPath: inputFile)
+
+    guard FileManager.default.fileExists(atPath: inputFile) else {
+      printFileNotFoundDiagnostic(file: inputFileURL)
+      exit(1)
+    }
+
     let fileName = inputFileURL.deletingPathExtension().lastPathComponent
     let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin/\(fileName)")
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
@@ -25,6 +32,11 @@ func main() {
       print(compilationOutcome.astDump)
     }
   }.run()
+}
+
+func printFileNotFoundDiagnostic(file: URL) {
+  let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "No such file: '\(file.path)'.")
+  print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
 }
 
 main()

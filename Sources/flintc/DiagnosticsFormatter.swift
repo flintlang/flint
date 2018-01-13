@@ -12,15 +12,32 @@ import Diagnostic
 
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
-  var compilationContext: CompilationContext
+  var compilationContext: CompilationContext?
 
   public func rendered() -> String {
+    let sourceFileText: String
+    if let compilationContext = compilationContext {
+      sourceFileText = " in \(compilationContext.fileName.bold)"
+    } else {
+      sourceFileText = ""
+    }
+
     return diagnostics.map { diagnostic in
-      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning") in \(compilationContext.fileName.bold):"
+      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning")\(sourceFileText):"
+      let body: String
+
+      if let compilationContext = compilationContext {
+        body = """
+          \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
+          \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: compilationContext.sourceCode).indented(by: 2))
+        """
+      } else {
+        body = "  \(diagnostic.message.indented(by: 2).bold)"
+      }
+
       return """
       \(infoLine)
-        \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
-        \(renderSourcePreview(at: diagnostic.sourceLocation).indented(by: 2))
+      \(body)
       """
     }.joined(separator: "\n")
   }
@@ -30,8 +47,8 @@ public struct DiagnosticsFormatter {
     return " at line \(sourceLocation.line), column \(sourceLocation.column)"
   }
 
-  func renderSourcePreview(at sourceLocation: SourceLocation?) -> String {
-    let sourceLines = compilationContext.sourceCode.components(separatedBy: "\n")
+  func renderSourcePreview(at sourceLocation: SourceLocation?, sourceCode: String) -> String {
+    let sourceLines = sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
 
     let spaceOffset = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
