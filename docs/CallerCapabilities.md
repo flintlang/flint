@@ -154,10 +154,10 @@ Capabilities can be bound to temporary variables.
 Consider the following example.
 
 ```swift
-Bank :: (a <- anyOf(accounts.keys)) {
+Bank :: account <- (accounts.keys) {
   mutating func withdraw(amount: Int, destination: Address) {
-    let value = accounts[a]
-      accounts[a] -= amount
+    let value = accounts[account]
+      accounts[acounnt] -= amount
       send(value, destination)
   }
 }

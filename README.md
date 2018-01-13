@@ -42,11 +42,11 @@ Bank :: (manager) {
 } 
 
 // Any user registered in accounts' keys can call these functions
-// The matching user's address is bound to the variable a
-Bank :: (a <- anyOf(accounts.keys)) {
+// The matching user's address is bound to the variable account
+Bank :: account <- (accounts.keys) {
   public mutating func withdraw(amount: Int, recipient: Address) {
-    let value = accounts[a]
-    accounts[a] -= amount
+    let value = accounts[accounts]
+    accounts[accounts] -= amount
     send(value, recipient)
   }
   
