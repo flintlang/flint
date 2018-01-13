@@ -23,36 +23,42 @@ The following code declares the `Bank` contract and its functions.
 contract Bank {
   var manager: Address
   var accounts: [Address: Int]
+  var keys: [Address]
+  var lastIndex: Int
 }
 
 // The functions in this block can be called by any user
 Bank :: (any) {
   // Functions can only mutate the state of the contract if 
   // declared "mutating"
-  public mutating func deposit(address: Address, amount: Int) {
-    accounts[address] += amount
+  public mutating func register() {
+    keys[lastIndex] = account
+    lastIndex += 1
   }
 }
 
-// Only the manager can call clear
+// Only the manager can call these functions
 Bank :: (manager) {
-  public mutating func clear(address: Address) {
-    accounts[accountIndex] = 0
+  public mutating func freeDeposit(account: Address, amount: Int) {
+    accounts[account] = accounts[account] + amount
+  }
+
+  public mutating func clear(account: Int) {
+    accounts[account] = 0
   }
 } 
 
-// Any user registered in accounts' keys can call these functions
+// Any user in keys can call these functions
 // The matching user's address is bound to the variable account
-Bank :: account <- (accounts.keys) {
-  public mutating func withdraw(amount: Int, recipient: Address) {
-    let value = accounts[account]
-    accounts[account] -= amount
-    send(value, recipient)
-  }
-  
+Bank :: account <- (keys) {
   // This function is non-mutating
   public func getBalance() -> Int {
     return accounts[account]
+  }
+
+  public mutating func transfer(amount: Int, destination: Address) {
+    accounts[account] -= amount
+    accounts[destination] += amount
   }
 }
 
