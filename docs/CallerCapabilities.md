@@ -157,7 +157,7 @@ Consider the following example.
 Bank :: account <- (accounts.keys) {
   mutating func withdraw(amount: Int, destination: Address) {
     let value = accounts[account]
-      accounts[acounnt] -= amount
+      accounts[account] -= amount
       send(value, destination)
   }
 }
