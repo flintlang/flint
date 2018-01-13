@@ -69,6 +69,9 @@ public class ASTDumper {
   func dump(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     writeNode("ContractBehaviorDeclaration") {
       self.dump(contractBehaviorDeclaration.contractIdentifier)
+      if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
+        self.writeLine("capability binding \"\(capabilityBinding.name)\"")
+      }
       for callerCapability in contractBehaviorDeclaration.callerCapabilities {
         self.dump(callerCapability)
       }

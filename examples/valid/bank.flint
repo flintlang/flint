@@ -1,6 +1,7 @@
 contract Bank {
   var manager: Address
   var accounts: [Address: Int]
+  var someAccount: Address
 }
 
 Bank :: (any) {
@@ -8,17 +9,23 @@ Bank :: (any) {
     accounts[account] = accounts[account] + amount
   }
 
-  public func getBalance(account: Address) -> Int {
-    return accounts[account]
-  }
-
   public mutating func setManager(manager: Address) {
     self.manager = manager
+  }
+
+  public mutating func setSomeAccount(someAccount: Address) {
+    self.someAccount = someAccount
   }
 }
 
 Bank :: (manager) {
   public mutating func clear(account: Int) {
     accounts[account] = 0
+  }
+}
+
+Bank :: account <- (someAccount) {
+  public func getBalance() -> Int {
+    return accounts[account]
   }
 }

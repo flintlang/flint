@@ -13,6 +13,7 @@ struct IULIAFunction {
 
   var functionDeclaration: FunctionDeclaration
   var contractIdentifier: Identifier
+  var capabilityBinding: Identifier?
   var callerCapabilities: [CallerCapability]
 
   var contractStorage: ContractStorage
@@ -42,9 +43,16 @@ struct IULIAFunction {
     let callerCapabilityChecks = renderCallerCapabilityChecks(callerCapabilities: callerCapabilities)
     let body = renderBody(functionDeclaration.body)
 
+    let capabilityBindingDeclaration: String
+    if let capabilityBinding = capabilityBinding {
+      capabilityBindingDeclaration = "let \(mangleIdentifierName(capabilityBinding.name)) := caller()\n"
+    } else {
+      capabilityBindingDeclaration = ""
+    }
+
     return """
     function \(signature) {
-      \(callerCapabilityChecks.indented(by: 2))\(body.indented(by: 2))
+      \(callerCapabilityChecks.indented(by: 2))\(capabilityBindingDeclaration.indented(by: 2))\(body.indented(by: 2))
     }
     """
   }
@@ -85,15 +93,15 @@ struct IULIAFunction {
       guard !callerCapability.isAny else { return nil }
       let offset = contractStorage.offset(for: callerCapability.name)
       return """
-      _tmp := add(_tmp, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
+      _flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))
       """
     }
 
     if !checks.isEmpty {
       return """
-      let _tmp := 0
+      let _flintCallerCheck := 0
       \(checks.joined(separator: "\n"))
-      if eq(_tmp, 0) { revert(0, 0) }
+      if eq(_flintCallerCheck, 0) { revert(0, 0) }
       """ + "\n"
     }
 
