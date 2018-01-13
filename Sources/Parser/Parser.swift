@@ -207,6 +207,9 @@ extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
     try consume(.punctuation(.doubleColon))
+
+    let capabilityBinding = attempt(task: parseCapabilityBinding)
+
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
     let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier)
@@ -216,7 +219,13 @@ extension Parser {
       context.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
     }
     
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
+  }
+
+  func parseCapabilityBinding() throws -> Identifier {
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.leftArrow))
+    return identifier
   }
   
   func parseCallerCapabilityGroup() throws -> ([CallerCapability], closeBracketToken: Token) {

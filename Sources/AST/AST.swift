@@ -33,6 +33,7 @@ public struct ContractDeclaration: SourceEntity {
 
 public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
+  public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
   public var functionDeclarations: [FunctionDeclaration]
   public var closeBracketToken: Token
@@ -41,8 +42,9 @@ public struct ContractBehaviorDeclaration: SourceEntity {
     return .spanning(contractIdentifier, to: closeBracketToken)
   }
 
-  public init(contractIdentifier: Identifier, callerCapabilities: [CallerCapability], closeBracketToken: Token, functionDeclarations: [FunctionDeclaration]) {
+  public init(contractIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, functionDeclarations: [FunctionDeclaration]) {
     self.contractIdentifier = contractIdentifier
+    self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
     self.functionDeclarations = functionDeclarations
     self.closeBracketToken = closeBracketToken

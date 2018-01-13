@@ -29,10 +29,11 @@ parameter -> identifier type-annotation
 declaration-modifier -> [public] | [mutating]
 declaration-modifiers -> declaration-modifier (declaration-modifiers)
 
-contract-behavior-declaration -> identifier [::] caller-capability-group (function-declarations)
+contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (function-declarations)
 
 caller-capability-group -> [(] caller-capability-list [)]
 caller-capability-list -> caller-capability-identifier | caller-capability-identifier [,] caller-capability-list
+caller-capability-binding -> identifier [<-]
 
 type-annotation -> [:] type
 

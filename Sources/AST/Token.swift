@@ -65,6 +65,7 @@ extension Token {
       case openBracket        = "("
       case closeBracket       = ")"
       case arrow              = "->"
+      case leftArrow          = "<-"
       case comma              = ","
       case semicolon          = ";"
       case doubleSlash        = "//"

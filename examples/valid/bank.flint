@@ -17,7 +17,7 @@ Bank :: (any) {
   }
 }
 
-Bank :: (manager) {
+Bank :: a <- (manager) {
   public mutating func clear(account: Int) {
     accounts[account] = 0
   }

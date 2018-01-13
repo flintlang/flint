@@ -1,0 +1,9 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+contract CapabilityBinding {}
+
+// CHECK-AST: ContractBehaviorDeclaration
+// CHECK-AST:   identifier "CapabilityBinding"
+// CHECK-AST:   capability binding "caller"
+// CHECK-AST:   identifier "any"
+CapabilityBinding :: caller <- (any) {}

@@ -78,6 +78,7 @@ public struct Tokenizer {
     "(": .punctuation(.openBracket),
     ")": .punctuation(.closeBracket),
     "->": .punctuation(.arrow),
+    "<-": .punctuation(.leftArrow),
     ",": .punctuation(.comma),
     ";": .punctuation(.semicolon),
     "//": .punctuation(.doubleSlash),
@@ -148,7 +149,7 @@ public struct Tokenizer {
   }
 
   func canBeMerged(_ component1: String, _ component2: String) -> Bool {
-    let mergeable = [(":", ":"), ("-", ">"), ("/", "/")]
+    let mergeable = [(":", ":"), ("-", ">"), ("/", "/"), ("<", "-")]
     return mergeable.contains { $0 == (component1, component2) }
   }
 }
