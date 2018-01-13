@@ -11,7 +11,7 @@ func main() {
   ) { inputFile, emitIulia, emitBytecode, dumpAST, shouldVerify in
     let inputFileURL = URL(fileURLWithPath: inputFile)
     let fileName = inputFileURL.deletingPathExtension().lastPathComponent
-    let outputDirectory = inputFileURL.deletingLastPathComponent().appendingPathComponent("bin/\(fileName)")
+    let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin/\(fileName)")
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
     let compilationOutcome = Compiler(inputFile: inputFileURL, outputDirectory: outputDirectory, emitBytecode: emitBytecode, shouldVerify: shouldVerify).compile()
 
