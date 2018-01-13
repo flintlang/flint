@@ -46,16 +46,20 @@ public struct Context {
     return contractDeclaration.variableDeclarations
   }
 
-  public func declaredCallerCapabilities(inContractWithIdentifier contractIdentifier: Identifier) -> [VariableDeclaration] {
+  func declaredCallerCapabilities(contractIdentifier: Identifier) -> [VariableDeclaration] {
     let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
     guard let variables = contractPropertyMap[contractDefinitionIdentifier] else { return [] }
     return variables.filter { variable in
-      guard case .builtInType(let builtInType) = variable.type.rawType else {
-        return false
+      switch variable.type.rawType {
+      case .builtInType(.address): return true
+      case .arrayType(.builtInType(.address), _): return true
+      default: return false
       }
-
-      return builtInType == .address
     }
+  }
+
+  public func containsCallerCapability(_ callerCapability: CallerCapability, in contractIdentifier: Identifier) -> Bool {
+    return declaredCallerCapabilities(contractIdentifier: contractIdentifier).contains(where: { $0.identifier.name == callerCapability.identifier.name })
   }
 
   public func type(of identifier: Identifier, contractIdentifier: Identifier) -> Type.RawType? {

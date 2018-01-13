@@ -1,31 +1,34 @@
 contract Bank {
   var manager: Address
   var accounts: [Address: Int]
-  var someAccount: Address
+  var keys: Address[30] // 30 accounts supported
+  var lastIndex: Int
 }
 
-Bank :: (any) {
-  public mutating func deposit(account: Address, amount: Int) {
-    accounts[account] = accounts[account] + amount
-  }
-
-  public mutating func setManager(manager: Address) {
-    self.manager = manager
-  }
-
-  public mutating func setSomeAccount(someAccount: Address) {
-    self.someAccount = someAccount
+Bank :: account <- (any) {
+  public mutating func register() {
+    keys[lastIndex] = account
+    lastIndex = lastIndex + 1
   }
 }
 
 Bank :: (manager) {
+  public mutating func freeDeposit(account: Address, amount: Int) {
+    accounts[account] = accounts[account] + amount
+  }
+
   public mutating func clear(account: Int) {
     accounts[account] = 0
   }
 }
 
-Bank :: account <- (someAccount) {
+Bank :: account <- (keys) {
   public func getBalance() -> Int {
     return accounts[account]
+  }
+
+  public mutating func transfer(amount: Int, destination: Address) {
+    accounts[account] = accounts[account] - amount
+    accounts[destination] = accounts[destination] + amount
   }
 }
