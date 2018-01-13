@@ -95,7 +95,7 @@ The function `deposit` is declared as `public`, which means that anyone on the b
 
 ## Future plans
 
-Futures plans for Flint are numerous, and include:
+Future plans for Flint are numerous, and include:
 
 1. **Cross-contract caller capabilities**: support static-checking of caller capabilities when calling a function of another Flint contract.
 2. **Gas estimation**: provide estimates about the gas execution cost of a function. Gas upper bounds are emitted as part of the contract's interface, making it possible to obtain the estimation of a call to an external Flint function.
