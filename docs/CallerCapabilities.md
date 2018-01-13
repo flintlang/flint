@@ -81,7 +81,7 @@ A contract behavior declaration can be restricted by multiple caller capabilitie
 Consider the following contract behavior declaration:
 
 ```swift
-Bank :: (manager, accountKeys) {
+Bank :: (manager, accounts) {
   func forManagerOrCustomers() {}
 }
 ```
@@ -95,9 +95,9 @@ Consider the following examples:
 #### Insufficient capabilities
 
 ```swift
-Bank :: (manager, accountKeys) {
+Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
-    // Error: "accountKeys" is not compatible with "manager"
+    // Error: "accounts" is not compatible with "manager"
     forManager()
   }
 }
@@ -111,15 +111,15 @@ Bank :: (manager) {
 #### Sufficient capabilities
 
 ```swift
-Bank :: (manager, accountKeys) {
+Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
-    // Valid: "manager" is compatible with "manager", and "accountKeys" is
-    // compatible with "accountKeys" 
+    // Valid: "manager" is compatible with "manager", and "accounts" is
+    // compatible with "accounts" 
     forManagerOrCustomers2()
   }
 }
 
-Bank :: (accountKeys, manager) {
+Bank :: (accounts, manager) {
   func forManagerOrCustomers2() {}
 }
 
@@ -128,9 +128,9 @@ Bank :: (accountKeys, manager) {
 #### `any` is compatible with any capability
 
 ```swift
-Bank :: (manager, accountKeys) {
+Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
-    // Valid: "manager" is compatible with "manager" (and "any", too), and "accountKeys"
+    // Valid: "manager" is compatible with "manager" (and "any", too), and "accounts"
     // is compatible with "any"
     forManagerOrCustomers2()
   }
@@ -154,11 +154,15 @@ Capabilities can be bound to temporary variables.
 Consider the following example.
 
 ```swift
-Bank :: account <- (accountKeys) {
-  mutating func withdraw(amount: Int, destination: Address) {
-    let value = accounts[account]
-    accounts[account] -= amount
-    send(value, destination)
+Bank :: account <- (accounts) {
+  // This function is non-mutating
+  public func getBalance() -> Int {
+    return balances[account]
+  }
+
+  public mutating func transfer(amount: Int, destination: Address) {
+    balances[account] -= amount
+    balances[destination] += amount
   }
 }
 

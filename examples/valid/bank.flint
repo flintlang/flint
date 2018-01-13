@@ -1,34 +1,34 @@
 contract Bank {
   var manager: Address
-  var accounts: [Address: Int]
-  var keys: [Address]
+  var balances: [Address: Int]
+  var accounts: [Address]
   var lastIndex: Int
 }
 
 Bank :: account <- (any) {
   public mutating func register() {
-    keys[lastIndex] = account
+    accounts[lastIndex] = account
     lastIndex = lastIndex + 1
   }
 }
 
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
-    accounts[account] = accounts[account] + amount
+    balances[account] = balances[account] + amount
   }
 
   public mutating func clear(account: Int) {
-    accounts[account] = 0
+    balances[account] = 0
   }
 }
 
-Bank :: account <- (keys) {
+Bank :: account <- (accounts) {
   public func getBalance() -> Int {
-    return accounts[account]
+    return balances[account]
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    accounts[account] = accounts[account] - amount
-    accounts[destination] = accounts[destination] + amount
+    balances[account] = balances[account] - amount
+    balances[destination] = balances[destination] + amount
   }
 }

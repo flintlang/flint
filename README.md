@@ -22,8 +22,8 @@ The following code declares the `Bank` contract and its functions.
 // Contract declarations contain only their state properties
 contract Bank {
   var manager: Address
-  var accounts: [Address: Int]
-  var keys: [Address]
+  var balances: [Address: Int]
+  var accounts: [Address]
   var lastIndex: Int
 }
 
@@ -32,7 +32,7 @@ Bank :: (any) {
   // Functions can only mutate the state of the contract if 
   // declared "mutating"
   public mutating func register() {
-    keys[lastIndex] = account
+    accounts[lastIndex] = account
     lastIndex += 1
   }
 }
@@ -40,25 +40,25 @@ Bank :: (any) {
 // Only the manager can call these functions
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
-    accounts[account] = accounts[account] + amount
+    balances[account] += amount
   }
 
   public mutating func clear(account: Int) {
-    accounts[account] = 0
+    balances[account] = 0
   }
 } 
 
-// Any user in keys can call these functions
+// Any user in accounts can call these functions
 // The matching user's address is bound to the variable account
-Bank :: account <- (keys) {
+Bank :: account <- (accounts) {
   // This function is non-mutating
   public func getBalance() -> Int {
-    return accounts[account]
+    return balances[account]
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    accounts[account] -= amount
-    accounts[destination] += amount
+    balances[account] -= amount
+    balances[destination] += amount
   }
 }
 
@@ -73,11 +73,11 @@ Consider the following example.
 ```swift
 contract Bank {
   var manager: Address
-  var accounts: [Address: Int]
+  var balances: [Address: Int]
 }
 ```
 
-This is the declaration of the `Bank` contract, which contains two properties. The `manager` property has type `Address`, and `accounts` is a dictionary, or mapping, from `Address` to `Int`.
+This is the declaration of the `Bank` contract, which contains two properties. The `manager` property has type `Address`, and `balances` is a dictionary, or mapping, from `Address` to `Int`.
 
 ## Specifying the behavior of a contract
 
@@ -88,7 +88,7 @@ Consider the following example.
 ```swift
 Bank :: (any) {
   public mutating func deposit(address: Address, amount: Int) {
-    accounts[address] += amount
+    balances[address] += amount
   }
 }
 ```
