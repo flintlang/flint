@@ -277,6 +277,11 @@ public struct Type: SourceEntity {
     rawType = .dictionaryType(key: keyType.rawType, value: valueType.rawType)
     sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }
+
+  public init(inferredType: Type.RawType, identifier: Identifier) {
+    rawType = inferredType
+    sourceLocation = identifier.sourceLocation
+  }
 }
 
 public struct CallerCapability: SourceEntity {

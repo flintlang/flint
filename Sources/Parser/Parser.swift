@@ -212,7 +212,7 @@ extension Parser {
 
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
-    let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier)
+    let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding)
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
@@ -246,7 +246,7 @@ extension Parser {
     return callerCapabilities
   }
   
-  func parseFunctionDeclarations(contractIdentifier: Identifier) throws -> [FunctionDeclaration] {
+  func parseFunctionDeclarations(contractIdentifier: Identifier, capabilityBinding: Identifier?) throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
     while let (modifiers, funcToken) = attempt(task: parseFunctionHead) {
@@ -254,9 +254,15 @@ extension Parser {
       let (parameters, closeBracketToken) = try parseParameters()
       let resultType = attempt(task: parseResult)
 
-      let scopeContext = ScopeContext(localVariables: parameters.map { parameter in
+      var localVariables = parameters.map { parameter in
         return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
-      }, contractIdentifier: contractIdentifier)
+      }
+
+      if let capabilityBinding = capabilityBinding {
+        localVariables.append(VariableDeclaration(varToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
+      }
+
+      let scopeContext = ScopeContext(localVariables: localVariables, contractIdentifier: contractIdentifier)
       let (body, closeBraceToken, newScopeContext) = try parseCodeBlock(scopeContext: scopeContext)
       
       let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)

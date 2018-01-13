@@ -32,7 +32,7 @@ struct IULIAContract {
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, contractIdentifier: contractDeclaration.identifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, context: context)
+        return IULIAFunction(functionDeclaration: functionDeclaration, contractIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, context: context)
       }
     }
 
