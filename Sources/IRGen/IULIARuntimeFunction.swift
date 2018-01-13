@@ -93,7 +93,7 @@ fileprivate struct IRRuntimeFunctionDeclaration {
   static let isInvalidSubscriptExpression =
   """
   function isInvalidSubscriptExpression(index, arraySize) -> ret {
-    ret := or(lt(index, 0), gt(index, sub(arraySize, 1)))
+    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, sub(arraySize, 1))))
   }
   """
 
