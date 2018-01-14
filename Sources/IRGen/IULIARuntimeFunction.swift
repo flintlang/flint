@@ -13,7 +13,7 @@ enum IULIARuntimeFunction: String {
   case decodeAsUInt
   case isValidCallerCapability
   case isCallerCapabilityInArray
-  case returnUInt
+  case return32Bytes
   case isInvalidSubscriptExpression
   case storageArrayOffset
   case storageFixedSizeArrayOffset
@@ -25,7 +25,7 @@ enum IULIARuntimeFunction: String {
     case .decodeAsAddress: return IRRuntimeFunctionDeclaration.decodeAsAddress
     case .decodeAsUInt: return IRRuntimeFunctionDeclaration.decodeAsUInt
     case .isValidCallerCapability: return IRRuntimeFunctionDeclaration.isValidCallerCapability
-    case .returnUInt: return IRRuntimeFunctionDeclaration.returnUInt
+    case .return32Bytes: return IRRuntimeFunctionDeclaration.return32Bytes
     case .isInvalidSubscriptExpression: return IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression
     case .storageArrayOffset: return IRRuntimeFunctionDeclaration.storageArrayOffset
     case .isCallerCapabilityInArray: return IRRuntimeFunctionDeclaration.isCallerCapabilityInArray
@@ -34,7 +34,7 @@ enum IULIARuntimeFunction: String {
     }
   }
 
-  static let all: [IULIARuntimeFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .isCallerCapabilityInArray, .returnUInt, .isInvalidSubscriptExpression, .storageArrayOffset, .storageFixedSizeArrayOffset, .storageDictionaryOffsetForKey]
+  static let all: [IULIARuntimeFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .isCallerCapabilityInArray, .return32Bytes, .isInvalidSubscriptExpression, .storageArrayOffset, .storageFixedSizeArrayOffset, .storageDictionaryOffsetForKey]
 }
 
 fileprivate struct IRRuntimeFunctionDeclaration {
@@ -82,9 +82,9 @@ fileprivate struct IRRuntimeFunctionDeclaration {
   }
   """
 
-  static let returnUInt =
+  static let return32Bytes =
   """
-  function returnUInt(v) {
+  function return32Bytes(v) {
     mstore(0, v)
     return(0, 0x20)
   }
