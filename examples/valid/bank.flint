@@ -10,6 +10,10 @@ Bank :: account <- (any) {
     accounts[lastIndex] = account
     lastIndex = lastIndex + 1
   }
+
+  public func getManager() -> Address {
+    return account
+  }
 }
 
 Bank :: (manager) {
