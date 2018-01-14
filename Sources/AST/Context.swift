@@ -72,7 +72,7 @@ public struct Context {
   }
 
   public func type(of functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> Type.RawType? {
-    let matchingFunction = matchFunctionCall(functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)!
+    guard let matchingFunction = matchFunctionCall(functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities) else { return .errorType }
     return typeMap[matchingFunction]
   }
 

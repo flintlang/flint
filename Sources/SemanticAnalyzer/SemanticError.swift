@@ -27,6 +27,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Use of mutating statement in a nonmutating function")
   }
 
+  static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
+  }
+
   static func useOfUndeclaredIdentifier(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier \(identifier.name)")
   }

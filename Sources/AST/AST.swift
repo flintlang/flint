@@ -97,6 +97,10 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .mutating)
   }
 
+  public var mutatingToken: Token {
+    return modifiers.first { $0.kind == .mutating }!
+  }
+
   public var isPublic: Bool {
     return hasModifier(kind: .public)
   }

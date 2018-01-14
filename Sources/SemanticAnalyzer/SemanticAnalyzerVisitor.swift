@@ -57,9 +57,11 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     }
   }
 
-  func visit(_ variableDeclaration: VariableDeclaration) {
+  @discardableResult
+  func visit(_ variableDeclaration: VariableDeclaration) -> BodyVisitResult {
     visit(variableDeclaration.identifier)
     visit(variableDeclaration.type)
+    return BodyVisitResult(mutatingExpressions: [])
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
@@ -73,23 +75,33 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     }
 
     let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
-    visitBody(functionDeclaration.body, depth: 0, functionDeclarationContext: functionDeclarationContext)
+    let bodyVisitResult = visitBody(functionDeclaration.body, depth: 0, functionDeclarationContext: functionDeclarationContext)
+
+    if functionDeclarationContext.isMutating, bodyVisitResult.mutatingExpressions.isEmpty {
+      addDiagnostic(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
+    }
   }
 
   func visit(_ parameter: Parameter) {}
 
   func visit(_ typeAnnotation: TypeAnnotation) {}
 
-  func visit(_ identifier: Identifier, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext? = nil) {
+  @discardableResult
+  func visit(_ identifier: Identifier, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext? = nil) -> BodyVisitResult {
     if let functionDeclarationContext = functionDeclarationContext, identifier.isPropertyAccess {
       if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
         addDiagnostic(.useOfUndeclaredIdentifier(identifier))
         context.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
       }
-      if asLValue, !functionDeclarationContext.isMutating {
-        addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+      if asLValue {
+        if !functionDeclarationContext.isMutating {
+          addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+        }
+        return BodyVisitResult(mutatingExpressions: [.identifier(identifier)])
       }
     }
+
+    return BodyVisitResult(mutatingExpressions: [])
   }
 
   func visit(_ type: Type) {}
@@ -101,20 +113,26 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
     }
   }
 
-  func visit(_ expression: Expression, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ expression: Expression, asLValue: Bool = false, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     switch expression {
-    case .binaryExpression(let binaryExpression): visit(binaryExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
-    case .bracketedExpression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
-    case .functionCall(let functionCall): visit(functionCall, functionDeclarationContext: functionDeclarationContext)
-    case .identifier(let identifier): visit(identifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    case .binaryExpression(let binaryExpression): return visit(binaryExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    case .bracketedExpression(let expression): return visit(expression, functionDeclarationContext: functionDeclarationContext)
+    case .functionCall(let functionCall): return visit(functionCall, functionDeclarationContext: functionDeclarationContext)
+    case .identifier(let identifier): return visit(identifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     case .literal(_): break
     case .self(_): break
-    case .variableDeclaration(let variableDeclaration): visit(variableDeclaration)
-    case .subscriptExpression(let subscriptExpression): visit(subscriptExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    case .variableDeclaration(let variableDeclaration): return visit(variableDeclaration)
+    case .subscriptExpression(let subscriptExpression): return visit(subscriptExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
     }
+
+    return BodyVisitResult(mutatingExpressions: [])
   }
 
-  func visitBody(_ statements: [Statement], depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
+  struct BodyVisitResult {
+    var mutatingExpressions = [Expression]()
+  }
+
+  func visitBody(_ statements: [Statement], depth: Int, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     let returnStatementIndex = statements.index(where: { statement in
       if case .returnStatement(_) = statement { return true }
       return false
@@ -131,62 +149,84 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
       }
     }
 
+    var mutatingExpressions = [Expression]()
+
     for statement in statements {
-      visit(statement, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
+      let statementVisitResult = visit(statement, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
+      mutatingExpressions.append(contentsOf: statementVisitResult.mutatingExpressions)
     }
+
+    return BodyVisitResult(mutatingExpressions: mutatingExpressions)
   }
 
-  func visit(_ statement: Statement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ statement: Statement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     switch statement {
-    case .expression(let expression): visit(expression, functionDeclarationContext: functionDeclarationContext)
-    case .ifStatement(let ifStatement): visit(ifStatement, depth: depth, functionDeclarationContext: functionDeclarationContext)
+    case .expression(let expression):
+      return visit(expression, functionDeclarationContext: functionDeclarationContext)
+    case .ifStatement(let ifStatement):
+      return visit(ifStatement, depth: depth, functionDeclarationContext: functionDeclarationContext)
     case .returnStatement(let returnStatement):
-      visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
+      return visit(returnStatement, functionDeclarationContext: functionDeclarationContext)
     }
   }
 
-  func visit(_ binaryExpression: BinaryExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ binaryExpression: BinaryExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
+    var mutatingExpressions = [Expression]()
     if case .binaryOperator(.equal) = binaryExpression.op.kind {
-      visit(binaryExpression.lhs, asLValue: true, functionDeclarationContext: functionDeclarationContext)
+      let result = visit(binaryExpression.lhs, asLValue: true, functionDeclarationContext: functionDeclarationContext)
+      mutatingExpressions.append(contentsOf: result.mutatingExpressions)
     }
 
     if case .self(_) = binaryExpression.lhs, asLValue, !functionDeclarationContext.isMutating {
       addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.binaryExpression(binaryExpression), functionDeclaration: functionDeclarationContext.declaration))
-      return
+      mutatingExpressions.append(.binaryExpression(binaryExpression))
     }
 
-    visit(binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
-    visit(binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+    let lhsResult = visit(binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
+    let rhsResult = visit(binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
+    mutatingExpressions.append(contentsOf: lhsResult.mutatingExpressions)
+    mutatingExpressions.append(contentsOf: rhsResult.mutatingExpressions)
+
+    return BodyVisitResult(mutatingExpressions: mutatingExpressions)
   }
 
-  func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
+    var mutatingExpressions = [Expression]()
 
-    guard let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) else {
+    if let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
+      if matchingFunction.isMutating {
+        mutatingExpressions.append(.functionCall(functionCall))
+
+        if !functionDeclarationContext.isMutating {
+          addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+        }
+      }
+    } else {
       addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities))
-      return
-    }
-
-    if matchingFunction.isMutating, !functionDeclarationContext.isMutating {
-      addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
     }
 
     for argument in functionCall.arguments {
-      visit(argument, functionDeclarationContext: functionDeclarationContext)
+      let result = visit(argument, functionDeclarationContext: functionDeclarationContext)
+      mutatingExpressions.append(contentsOf: result.mutatingExpressions)
     }
+
+    return BodyVisitResult(mutatingExpressions: mutatingExpressions)
   }
 
-  func visit(_ subscriptExpression: SubscriptExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) {
-    visit(subscriptExpression.baseIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
-    visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+  func visit(_ subscriptExpression: SubscriptExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
+    let identifierResult = visit(subscriptExpression.baseIdentifier, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    let indexExpressionResult = visit(subscriptExpression.indexExpression, asLValue: asLValue, functionDeclarationContext: functionDeclarationContext)
+    return BodyVisitResult(mutatingExpressions: identifierResult.mutatingExpressions + indexExpressionResult.mutatingExpressions)
   }
 
-  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) {
+  func visit(_ returnStatement: ReturnStatement, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     if let expression = returnStatement.expression {
-      visit(expression, functionDeclarationContext: functionDeclarationContext)
+      return visit(expression, functionDeclarationContext: functionDeclarationContext)
     }
+    return BodyVisitResult(mutatingExpressions: [])
   }
 
-  func visit(_ ifStatement: IfStatement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) {
-    visitBody(ifStatement.body, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
+  func visit(_ ifStatement: IfStatement, depth: Int, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
+    return visitBody(ifStatement.body, depth: depth + 1, functionDeclarationContext: functionDeclarationContext)
   }
 }
