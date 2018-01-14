@@ -21,40 +21,6 @@ public struct Token: Equatable, SourceEntity {
 
 extension Token {
   public enum Kind {
-    public enum BinaryOperator: String {
-      case plus   = "+"
-      case minus  = "-"
-      case times = "*"
-      case divide = "/"
-      case equal  = "="
-      case dot    = "."
-
-      case lessThan = "<"
-      case lessThanOrEqual = "<="
-      case greaterThan = ">"
-      case greaterThanOrEqual = ">="
-
-      static let all: [BinaryOperator] = [.plus, .minus, .times, .divide, .equal, .dot, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual]
-      public static let allByIncreasingPrecedence = {
-        return all.sorted { $0.precedence < $1.precedence }
-      }()
-
-      var precedence: Int {
-        switch self {
-        case .equal: return 10
-        case .lessThan: return 15
-        case .lessThanOrEqual: return 15
-        case .greaterThan: return 15
-        case .greaterThanOrEqual: return 15
-        case .plus: return 20
-        case .minus: return 20
-        case .times: return 30
-        case .divide: return 30
-        case .dot: return 40
-        }
-      }
-    }
-
     public enum Punctuation: String {
       case openBrace          = "{"
       case closeBrace         = "}"
@@ -69,6 +35,39 @@ extension Token {
       case comma              = ","
       case semicolon          = ";"
       case doubleSlash        = "//"
+      case openAngledBracket  = "<"
+      case closeAngledBracket = ">"
+
+      case plus   = "+"
+      case minus  = "-"
+      case times = "*"
+      case divide = "/"
+      case equal  = "="
+      case dot    = "."
+
+      case lessThanOrEqual = "<="
+      case greaterThanOrEqual = ">="
+
+      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual] }
+      public static var allBinaryOperatorsByIncreasingPrecedence: [Punctuation] {
+        return allBinaryOperators.sorted { $0.precedence < $1.precedence }
+      }
+
+      var precedence: Int {
+        switch self {
+        case .equal: return 10
+        case .closeAngledBracket: return 15
+        case .lessThanOrEqual: return 15
+        case .openAngledBracket: return 15
+        case .greaterThanOrEqual: return 15
+        case .plus: return 20
+        case .minus: return 20
+        case .times: return 30
+        case .divide: return 30
+        case .dot: return 40
+        default: return 0
+        }
+      }
     }
 
     public enum Literal: Equatable {
@@ -119,10 +118,6 @@ extension Token {
     case `self`
     case implicit
 
-    // Operators
-    case binaryOperator(BinaryOperator)
-    case minus
-
     // Punctuation
     case punctuation(Punctuation)
 
@@ -151,7 +146,6 @@ extension Token.Kind: Equatable {
     case (.public, .public): return true
     case (.if, .if): return true
     case (.else, .else): return true
-    case (.binaryOperator(let operator1), .binaryOperator(let operator2)): return operator1 == operator2
     case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
     case (.attribute(let lhsAttribute), .attribute(let rhsAttribute)): return lhsAttribute == rhsAttribute
     case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
@@ -176,12 +170,10 @@ extension Token.Kind: CustomStringConvertible {
     case .public: return "public"
     case .if: return "if"
     case .else: return "else"
-    case .binaryOperator(let op): return op.rawValue
     case .punctuation(let punctuation): return punctuation.rawValue
     case .attribute(let attribute): return "@\(attribute)"
     case .identifier(let identifier): return "identifier \"\(identifier)\""
     case .literal(let literal): return literal.description
-    case .minus: return "-"
     }
   }
 }

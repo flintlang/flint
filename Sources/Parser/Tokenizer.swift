@@ -32,7 +32,7 @@ public struct Tokenizer {
         tokens.append(Token(kind: token, sourceLocation: sourceLocation))
       } else if let num = Int(component) {
         let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
-        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind, lastTwoTokens.last!.kind == .binaryOperator(.dot) {
+        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind, lastTwoTokens.last!.kind == .punctuation(.dot) {
           tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
@@ -62,16 +62,16 @@ public struct Tokenizer {
     "else": .else,
     "self": .self,
     "implicit": .implicit,
-    "+": .binaryOperator(.plus),
-    "-": .binaryOperator(.minus),
-    "*": .binaryOperator(.times),
-    "/": .binaryOperator(.divide),
-    "=": .binaryOperator(.equal),
-    ".": .binaryOperator(.dot),
-    "<": .binaryOperator(.lessThan),
-    "<=": .binaryOperator(.lessThanOrEqual),
-    ">": .binaryOperator(.greaterThan),
-    ">=": .binaryOperator(.greaterThanOrEqual),
+    "+": .punctuation(.plus),
+    "-": .punctuation(.minus),
+    "*": .punctuation(.times),
+    "/": .punctuation(.divide),
+    "=": .punctuation(.equal),
+    ".": .punctuation(.dot),
+    "<": .punctuation(.openAngledBracket),
+    "<=": .punctuation(.lessThanOrEqual),
+    ">": .punctuation(.closeAngledBracket),
+    ">=": .punctuation(.greaterThanOrEqual),
     "{": .punctuation(.openBrace),
     "}": .punctuation(.closeBrace),
     "[": .punctuation(.openSquareBracket),

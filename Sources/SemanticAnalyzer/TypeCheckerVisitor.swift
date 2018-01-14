@@ -151,7 +151,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   }
 
   func visit(_ binaryExpression: BinaryExpression, functionDeclarationContext: FunctionDeclarationContext) {
-    if case .binaryOperator(.equal) = binaryExpression.op.kind {
+    if case .punctuation(.equal) = binaryExpression.op.kind {
       let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
       let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
 
