@@ -31,6 +31,14 @@ extension Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
   }
 
+  static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "\(functionDeclaration.identifier.name) is declared @payable but doesn't have an implicit currency of a currency type")
+  }
+
+  static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type")
+  }
+
   static func useOfUndeclaredIdentifier(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier \(identifier.name)")
   }

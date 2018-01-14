@@ -1,0 +1,22 @@
+// RUN: %flintc %s --verify
+
+contract Payable {}
+
+Payable :: (any) {
+
+  @payable
+  func foo() { // expected-error {{foo is declared @payable but doesn't have an implicit currency of a currency type}}
+  }
+
+  @payable
+  func foo(implicit parameter: Int) { // expected-error {{foo is declared @payable but doesn't have an implicit currency of a currency type}}
+  }
+
+  @payable
+  func foo(implicit parameter: Wei, implicit parameter2: Wei) { // expected-error {{Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type}}
+  }
+
+  @payable
+  func foo(implicit parameter: Wei, implicit parameter2: Int) {
+  }
+}

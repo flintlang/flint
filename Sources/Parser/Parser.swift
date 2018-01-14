@@ -113,6 +113,15 @@ extension Parser {
     return Identifier(identifierToken: token)
   }
 
+  func parseAttribute() throws -> Attribute {
+    guard let token = currentToken, let attribute = Attribute(token: token) else {
+      throw ParserError.expectedToken(.attribute(""), sourceLocation: currentToken?.sourceLocation)
+    }
+    currentIndex += 1
+    consumeNewLines()
+    return attribute
+  }
+
   func parseLiteral() throws -> Token {
     guard let token = currentToken, case .literal(_) = token.kind else {
       throw ParserError.expectedToken(.literal(.string("")), sourceLocation: currentToken?.sourceLocation)
@@ -253,7 +262,7 @@ extension Parser {
   func parseFunctionDeclarations(contractIdentifier: Identifier, capabilityBinding: Identifier?) throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
-    while let (modifiers, funcToken) = attempt(task: parseFunctionHead) {
+    while let (attributes, modifiers, funcToken) = attempt(task: parseFunctionHead) {
       let identifier = try parseIdentifier()
       let (parameters, closeBracketToken) = try parseParameters()
       let resultType = attempt(task: parseResult)
@@ -269,15 +278,20 @@ extension Parser {
       let scopeContext = ScopeContext(localVariables: localVariables, contractIdentifier: contractIdentifier)
       let (body, closeBraceToken, newScopeContext) = try parseCodeBlock(scopeContext: scopeContext)
       
-      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)
+      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)
       functionDeclarations.append(functionDeclaration)
     }
     
     return functionDeclarations
   }
   
-  func parseFunctionHead() throws -> ([Token], funcToken: Token) {
+  func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
+    var attributes = [Attribute]()
     var modifiers = [Token]()
+
+    while let attribute = attempt(task: parseAttribute) {
+      attributes.append(attribute)
+    }
     
     while true {
       if let token = attempt(try consume(.public)) {
@@ -290,7 +304,7 @@ extension Parser {
     }
     
     let funcToken = try consume(.func)
-    return (modifiers, funcToken)
+    return (attributes, modifiers, funcToken)
   }
   
   func parseParameters() throws -> ([Parameter], closeBracketToken: Token) {
@@ -302,9 +316,10 @@ extension Parser {
     }
     
     repeat {
+      let implicitToken = attempt(try consume(.implicit))
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type))
+      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken))
     } while attempt(try consume(.punctuation(.comma))) != nil
     
     let closeBracketToken = try consume(.punctuation(.closeBracket))

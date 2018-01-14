@@ -65,16 +65,27 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext) {
+    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
+
     visit(functionDeclaration.identifier)
+
     for parameter in functionDeclaration.parameters {
       visit(parameter)
+    }
+
+    if functionDeclaration.isPayable {
+      let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
+      if payableValueParameters.count > 1 {
+        addDiagnostic(.ambiguousPayableValueParameter(functionDeclaration))
+      } else if payableValueParameters.count == 0 {
+        addDiagnostic(.payableFunctionDoesNotHavePayableValueParameter(functionDeclaration))
+      }
     }
 
     if let resultType = functionDeclaration.resultType {
       visit(resultType)
     }
 
-    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext: contractBehaviorDeclarationContext)
     let bodyVisitResult = visitBody(functionDeclaration.body, depth: 0, functionDeclarationContext: functionDeclarationContext)
 
     if functionDeclarationContext.isMutating, bodyVisitResult.mutatingExpressions.isEmpty {

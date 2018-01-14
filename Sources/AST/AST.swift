@@ -72,6 +72,7 @@ public struct VariableDeclaration: SourceEntity {
 
 public struct FunctionDeclaration: SourceEntity {
   public var funcToken: Token
+  public var attributes: [Attribute]
   public var modifiers: [Token]
   public var identifier: Identifier
   public var parameters: [Parameter]
@@ -97,6 +98,18 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .mutating)
   }
 
+  public var isPayable: Bool {
+    return attributes.contains { $0.kind == .payable }
+  }
+
+  public var firstPayableValueParameter: Parameter? {
+    return parameters.first { $0.isPayableValueParameter }
+  }
+
+  public var explicitParameters: [Parameter] {
+    return parameters.filter { !$0.isImplicit }
+  }
+
   public var mutatingToken: Token {
     return modifiers.first { $0.kind == .mutating }!
   }
@@ -105,8 +118,9 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, localVariables: [VariableDeclaration]) {
+  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, localVariables: [VariableDeclaration]) {
     self.funcToken = funcToken
+    self.attributes = attributes
     self.modifiers = modifiers
     self.identifier = identifier
     self.parameters = parameters
@@ -130,17 +144,45 @@ public struct FunctionDeclaration: SourceEntity {
   }
 }
 
+public struct Attribute {
+  var kind: Kind
+  var token: Token
+
+  public init?(token: Token) {
+    guard case .attribute(let attribute) = token.kind, let kind = Kind(rawValue: attribute) else { return nil }
+    self.kind = kind
+    self.token = token
+  }
+
+  enum Kind: String {
+    case payable
+  }
+}
+
 public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
+  public var implicitToken: Token?
+
+  public var isImplicit: Bool {
+    return implicitToken != nil
+  }
+
+  public var isPayableValueParameter: Bool {
+    if isImplicit, case .builtInType(let type) = type.rawType, type.isCurrencyType {
+      return true
+    }
+    return false
+  }
 
   public var sourceLocation: SourceLocation {
     return .spanning(identifier, to: type)
   }
 
-  public init(identifier: Identifier, type: Type) {
+  public init(identifier: Identifier, type: Type, implicitToken: Token?) {
     self.identifier = identifier
     self.type = type
+    self.implicitToken = implicitToken
   }
 }
 
@@ -244,10 +286,18 @@ public struct Type: SourceEntity {
     case int = "Int"
     case void = "Void"
     case bool = "Bool"
+    case wei = "Wei"
 
-    var canBeUsedAsCallerCapability: Bool {
+    var isCallerCapabilityType: Bool {
       switch self {
       case .address: return true
+      default: return false
+      }
+    }
+
+    var isCurrencyType: Bool {
+      switch self {
+      case .wei: return true
       default: return false
       }
     }
