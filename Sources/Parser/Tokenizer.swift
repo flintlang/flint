@@ -40,6 +40,8 @@ public struct Tokenizer {
         }
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
         tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
+      } else if component.first == "@" {
+        tokens.append(Token(kind: .attribute(String(component.dropFirst())), sourceLocation: sourceLocation))
       } else {
         tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
       }
@@ -59,6 +61,7 @@ public struct Tokenizer {
     "if": .if,
     "else": .else,
     "self": .self,
+    "implicit": .implicit,
     "+": .binaryOperator(.plus),
     "-": .binaryOperator(.minus),
     "*": .binaryOperator(.times),
@@ -113,7 +116,7 @@ public struct Tokenizer {
         acc += String(char)
       } else if inStringLiteral {
         acc += String(char)
-      } else if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) {
+      } else if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) || char == "@" {
         acc += String(char)
       } else {
         if !acc.isEmpty {

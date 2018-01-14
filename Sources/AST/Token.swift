@@ -117,6 +117,7 @@ extension Token {
     case `if`
     case `else`
     case `self`
+    case implicit
 
     // Operators
     case binaryOperator(BinaryOperator)
@@ -124,6 +125,9 @@ extension Token {
 
     // Punctuation
     case punctuation(Punctuation)
+
+    // Declaration attribute
+    case attribute(String)
 
     // Identifiers
     case identifier(String)
@@ -141,6 +145,7 @@ extension Token.Kind: Equatable {
     case (.var, .var): return true
     case (.func, .func): return true
     case (.self, .self): return true
+    case (.implicit, .implicit): return true
     case (.mutating, .mutating): return true
     case (.return, .return): return true
     case (.public, .public): return true
@@ -148,6 +153,7 @@ extension Token.Kind: Equatable {
     case (.else, .else): return true
     case (.binaryOperator(let operator1), .binaryOperator(let operator2)): return operator1 == operator2
     case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
+    case (.attribute(let lhsAttribute), .attribute(let rhsAttribute)): return lhsAttribute == rhsAttribute
     case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
     case (.literal(let lhsLiteral), .literal(let rhsLiteral)): return lhsLiteral == rhsLiteral
     default:
@@ -164,6 +170,7 @@ extension Token.Kind: CustomStringConvertible {
     case .var: return "var"
     case .func: return "func"
     case .self: return "self"
+    case .implicit: return "implicit"
     case .mutating: return "mutating"
     case .return: return "return"
     case .public: return "public"
@@ -171,6 +178,7 @@ extension Token.Kind: CustomStringConvertible {
     case .else: return "else"
     case .binaryOperator(let op): return op.rawValue
     case .punctuation(let punctuation): return punctuation.rawValue
+    case .attribute(let attribute): return "@\(attribute)"
     case .identifier(let identifier): return "identifier \"\(identifier)\""
     case .literal(let literal): return literal.description
     case .minus: return "-"

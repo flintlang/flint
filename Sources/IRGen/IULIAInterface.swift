@@ -27,24 +27,26 @@ struct IULIAInterface {
   func render(_ functionDeclaration: FunctionDeclaration) -> String? {
     guard functionDeclaration.isPublic else { return nil }
 
-    let parameters = functionDeclaration.parameters.map { render($0) }.joined(separator: ", ")
+    let parameters = functionDeclaration.explicitParameters.map { render($0) }.joined(separator: ", ")
 
-    var attributes = [String]()
+    var attribute = ""
 
     if !functionDeclaration.isMutating {
-      attributes.append("constant")
+      attribute = "view "
     }
 
-    let attributesCode = attributes.joined(separator: " ")
+    if functionDeclaration.isPayable {
+      attribute = "payable "
+    }
 
-    let returnCode: String?
+    let returnCode: String
     if let resultType = functionDeclaration.resultType {
       returnCode = " returns (\(CanonicalType(from: resultType.rawType)!) ret)"
     } else {
       returnCode = ""
     }
 
-    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attributesCode) public\(returnCode ?? "");"
+    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attribute)public\(returnCode);"
   }
 
   func render(_ functionParameter: Parameter) -> String {

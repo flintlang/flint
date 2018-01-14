@@ -16,7 +16,7 @@ variable-declaration -> [var] identifier type-annotation
 variable-declarations -> variable-declaration (variable-declarations)
 
 function-declaration -> function-head identifier parameter-clause (function-result) code-block
-function-head -> (declaration-modifiers) [func]
+function-head -> (declaration-attributes) (declaration-modifiers) [func]
 function-result -> [->] type
 function-declarations -> function-declaration (function-declarations)
 
@@ -25,6 +25,9 @@ code-block -> [{] statements [}]
 parameter-clause -> [(] [)] | [(] parameter-list [)]
 parameter-list -> parameter | parameter [,] parameter-list
 parameter -> identifier type-annotation
+
+declaration-attribute -> [@] . [a-zA-Z]*
+declaration-attributes -> declaration-attribute (declaration-attributes)
 
 declaration-modifier -> [public] | [mutating]
 declaration-modifiers -> declaration-modifier (declaration-modifiers)
@@ -52,7 +55,7 @@ function-call-argument-list -> expression | expression [,] function-call-argumen
 binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
-identifier -> [a-zA-Z] [a-zA-Z0-9]*
+identifier -> [a-zA-Z] . [a-zA-Z0-9]*
 type -> identifier | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
 caller-capability-identifier -> identifier
 

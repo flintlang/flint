@@ -94,11 +94,15 @@ public class ASTDumper {
 
   func dump(_ functionDeclaration: FunctionDeclaration) {
     writeNode("FunctionDeclaration") {
-      self.dump(functionDeclaration.funcToken)
+      for attribute in functionDeclaration.attributes {
+        self.dump(attribute)
+      }
 
       for modifier in functionDeclaration.modifiers {
         self.dump(modifier)
       }
+
+      self.dump(functionDeclaration.funcToken)
 
       self.dump(functionDeclaration.identifier)
 
@@ -122,8 +126,17 @@ public class ASTDumper {
 
   func dump(_ parameter: Parameter) {
     writeNode("Parameter") {
+      if parameter.isImplicit {
+        self.writeLine("implicit")
+      }
       self.dump(parameter.identifier)
       self.dump(parameter.type)
+    }
+  }
+
+  func dump(_ attribute: Attribute) {
+    writeNode("Attribute") {
+      self.writeLine("attribute \(attribute.kind.rawValue)")
     }
   }
 

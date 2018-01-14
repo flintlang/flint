@@ -10,6 +10,7 @@ Flint supports the following types.
 | `Int`| 256-bit integer |
 | `Bool`| Boolean value |
 | `Void`| Void value |
+| `Wei`| An Ethereum Wei (the smallest denomination of Ether) |
 
 ## Arrays and Dictionaries
 

@@ -26,6 +26,7 @@ syn keyword flintKeyword
       \ try
       \ where
       \ while
+      \ implicit
 
 syn keyword flintImport skipwhite nextgroup=flintImportModule
       \ import

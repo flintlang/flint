@@ -24,11 +24,11 @@ struct IULIAFunction {
   }
 
   var parameterNames: [String] {
-    return functionDeclaration.parameters.map({ render($0.identifier) })
+    return functionDeclaration.explicitParameters.map({ render($0.identifier) })
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return functionDeclaration.parameters.map({ CanonicalType(from: $0.type.rawType)! })
+    return functionDeclaration.explicitParameters.map({ CanonicalType(from: $0.type.rawType)! })
   }
 
   var resultCanonicalType: CanonicalType? {
@@ -50,9 +50,16 @@ struct IULIAFunction {
       capabilityBindingDeclaration = ""
     }
 
+    let payableValueDeclaration: String
+    if let payableValueParameter = functionDeclaration.firstPayableValueParameter {
+      payableValueDeclaration = "let \(mangleIdentifierName(payableValueParameter.identifier.name)) := callvalue()\n"
+    } else {
+      payableValueDeclaration = ""
+    }
+
     return """
     function \(signature) {
-      \(callerCapabilityChecks.indented(by: 2))\(capabilityBindingDeclaration.indented(by: 2))\(body.indented(by: 2))
+      \(callerCapabilityChecks.indented(by: 2))\(payableValueDeclaration.indented(by: 2))\(capabilityBindingDeclaration.indented(by: 2))\(body.indented(by: 2))
     }
     """
   }
