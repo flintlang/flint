@@ -56,7 +56,9 @@ binary-operator -> [+] | [-] | [=] | [.]
 
 // Identifiers
 identifier -> [a-zA-Z] . [a-zA-Z0-9]*
-type -> identifier | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
+type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
+generic-argument-clause -> [<] generic-parameter-list [>]
+generic-parameter-list -> type | type [,] generic-argument-list
 caller-capability-identifier -> identifier
 
 // Literals
