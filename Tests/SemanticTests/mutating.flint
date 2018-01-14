@@ -5,7 +5,24 @@ contract Test {
 }
 
 Test :: (any) {
-  func foo() {
+  func foo() -> Int {
     a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+    return a[0]
+  }
+
+  mutating func bar() { // expected-warning {{Function does not have to be declared mutating: none of its statements are mutating}}
+    var a: Int = foo()
+    a = 2 + foo()
+  }
+
+  func a() {
+    b(c()) // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+
+  func b(a: Int) {
+  }
+
+  mutating func c() -> Int { // expected-warning {{Function does not have to be declared mutating: none of its statements are mutating}}
+    return 0
   }
 }

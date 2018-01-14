@@ -26,7 +26,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
 
     case .functionCall(let functionCall):
       let contractContext = functionDeclarationContext.contractContext
-      return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities)!
+      return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities) ?? .errorType
 
     case .identifier(let identifier):
       if !identifier.isPropertyAccess, let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
