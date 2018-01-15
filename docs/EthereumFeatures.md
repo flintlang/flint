@@ -16,3 +16,25 @@ public func receiveMoney(implicit value: Wei) {
 ```
 
 Payable functions may have an arbitrary amount of parameters, but exactly one needs to be implicit and of a currency type.
+
+## Events
+
+JavaScript applications can listen to events emitted by an Ethereum smart contract.
+
+In Flint, events are declared in contract declarations. The `Event` type takes generic arguments, corresponding to the types of values attached to the event.
+
+```swift
+contract Bank {
+  var balances: [Address: Int]
+  var didCompleteTransfer: Event<Address, Address, Int> // (origin, destination, amount)
+}
+
+Bank :: caller <- (any) {
+  mutating func transfer(destination: Address, amount: Int) {
+    balances[caller] = balances[caller] - amount
+    balances[destination] = balances[destination] + amount
+
+    didCompleteTransfer(caller, destination, amount)
+  }
+}
+```
