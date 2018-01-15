@@ -15,7 +15,7 @@ Bank :: account <- (any) {
   }
 
   public func getManager() -> Address {
-    return account
+    return manager
   }
 
   @payable
