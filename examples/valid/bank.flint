@@ -3,6 +3,7 @@ contract Bank {
   var balances: [Address: Int]
   var accounts: [Address]
   var lastIndex: Int
+  var didCompleteTransfer: Event<Address, Address, Int>
 }
 
 Bank :: account <- (any) {
@@ -34,5 +35,6 @@ Bank :: account <- (accounts) {
   public mutating func transfer(amount: Int, destination: Address) {
     balances[account] = balances[account] - amount
     balances[destination] = balances[destination] + amount
+    didCompleteTransfer(account, destination, amount)
   }
 }

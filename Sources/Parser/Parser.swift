@@ -176,6 +176,19 @@ extension Parser {
       }
     }
 
+    if attempt(try consume(.punctuation(.openAngledBracket))) != nil {
+      var genericArguments = [Type]()
+      while true {
+        let genericArgument = try parseType()
+        genericArguments.append(genericArgument)
+        if attempt(try consume(.punctuation(.comma))) == nil {
+          break
+        }
+      }
+      try consume(.punctuation(.closeAngledBracket))
+      return Type(identifier: identifier, genericArguments: genericArguments)
+    }
+
     return type
   }
   

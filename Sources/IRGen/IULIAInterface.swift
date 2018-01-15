@@ -9,6 +9,7 @@ import AST
 
 struct IULIAInterface {
   var contract: IULIAContract
+  var context: Context
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
@@ -17,9 +18,19 @@ struct IULIAInterface {
       }
     }.joined(separator: "\n")
 
+    let events = contract.contractDeclaration.variableDeclarations.filter { $0.type.isEventType }
+    let eventDeclarations = events.map { event -> String in
+      let parameters = event.type.genericArguments.map { type in
+        return CanonicalType(from: type.rawType)!.rawValue
+      }.joined(separator: ",")
+
+      return "event \(event.identifier.name)(\(parameters));"
+    }.joined(separator: "\n")
+
     return """
     interface _Interface\(contract.contractDeclaration.identifier.name) {
       \(functionSignatures.indented(by: 2))
+      \(eventDeclarations.indented(by: 2))
     }
     """
   }
@@ -31,7 +42,7 @@ struct IULIAInterface {
 
     var attribute = ""
 
-    if !functionDeclaration.isMutating {
+    if !functionDeclaration.isMutating, !functionDeclaration.containsEventCall(context: context, contractIdentifier: contract.contractDeclaration.identifier) {
       attribute = "view "
     }
 
@@ -51,5 +62,20 @@ struct IULIAInterface {
 
   func render(_ functionParameter: Parameter) -> String {
     return "\(CanonicalType(from: functionParameter.type.rawType)!.rawValue) \(functionParameter.identifier.name)"
+  }
+}
+
+fileprivate extension FunctionDeclaration {
+  func containsEventCall(context: Context, contractIdentifier: Identifier) -> Bool {
+    for statement in body {
+      guard case .expression(.functionCall(let functionCall)) = statement else {
+        continue
+      }
+      if context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) != nil {
+        return true
+      }
+    }
+
+    return false
   }
 }

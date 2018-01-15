@@ -95,4 +95,10 @@ public struct Context {
 
     return nil
   }
+
+  public func matchEventCall(_ functionCall: FunctionCall, contractIdentifier: Identifier) -> VariableDeclaration? {
+    return properties(declaredIn: contractIdentifier).filter({ $0.type.isEventType }).first { event in
+      return functionCall.identifier == event.identifier && event.type.genericArguments.count == functionCall.arguments.count
+    }
+  }
 }

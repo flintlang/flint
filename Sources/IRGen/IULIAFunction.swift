@@ -7,6 +7,7 @@
 
 import AST
 import Foundation
+import CryptoSwift
 
 struct IULIAFunction {
   static let returnVariableName = "ret"
@@ -193,6 +194,30 @@ extension IULIAFunction {
   }
 
   func render(_ functionCall: FunctionCall) -> String {
+    if let eventCall = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+      let types = eventCall.type.genericArguments
+
+      var stores = [String]()
+      var memoryOffset = 0
+      for (i, argument) in functionCall.arguments.enumerated() {
+        stores.append("mstore(\(memoryOffset), \(render(argument)))")
+        memoryOffset += types[i].rawType.size * 32
+      }
+
+      let totalSize = types.reduce(0) { return $0 + $1.rawType.size } * 32
+      let typeList = eventCall.type.genericArguments.map { type in
+        return "\(CanonicalType(from: type.rawType)!.rawValue)"
+      }.joined(separator: ",")
+
+      let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
+      let log = "log1(0, \(totalSize), 0x\(eventHash))"
+
+      return """
+      \(stores.joined(separator: "\n"))
+      \(log)
+      """
+    }
+
     let args: String = functionCall.arguments.map({ render($0) }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
