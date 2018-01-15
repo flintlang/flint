@@ -3,6 +3,8 @@ contract Bank {
   var balances: [Address: Int]
   var accounts: [Address]
   var lastIndex: Int
+
+  var totalDonations: Wei
   var didCompleteTransfer: Event<Address, Address, Int>
 }
 
@@ -15,6 +17,11 @@ Bank :: account <- (any) {
   public func getManager() -> Address {
     return account
   }
+
+  @payable
+  public mutating func donate(implicit value: Wei) {
+    totalDonations = totalDonations + value
+  }
 }
 
 Bank :: (manager) {
@@ -24,6 +31,10 @@ Bank :: (manager) {
 
   public mutating func clear(account: Int) {
     balances[account] = 0
+  }
+
+  public func getDonations() -> Wei {
+    return totalDonations
   }
 }
 
