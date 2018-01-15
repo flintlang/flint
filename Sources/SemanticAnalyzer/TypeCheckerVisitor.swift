@@ -151,7 +151,7 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   }
 
   func visit(_ binaryExpression: BinaryExpression, functionDeclarationContext: FunctionDeclarationContext) {
-    if case .binaryOperator(.equal) = binaryExpression.op.kind {
+    if case .punctuation(.equal) = binaryExpression.op.kind {
       let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext)
       let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext)
 
@@ -165,6 +165,20 @@ final class TypeCheckerVisitor: DiagnosticsTracking {
   }
 
   func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) {
+    let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
+
+    if let eventCall = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+      let expectedTypes = eventCall.type.genericArguments.map { $0.rawType }
+
+      for (i, argument) in functionCall.arguments.enumerated() {
+        let argumentType = type(of: argument, functionDeclarationContext: functionDeclarationContext)
+        let expectedType = expectedTypes[i]
+        if argumentType != expectedType {
+          addDiagnostic(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
+        }
+      }
+    }
+
     for argument in functionCall.arguments {
       visit(argument, functionDeclarationContext: functionDeclarationContext)
     }

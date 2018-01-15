@@ -21,4 +21,13 @@ contract Foo {
 // CHECK-AST:   identifier "value"
 // CHECK-AST:   built-in type Int
   var value: Int
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "didCompleteSomething"
+// CHECK-AST:   built-in type Event
+// CHECK-AST:     Generic Arguments
+// CHECK-AST:       built-in type Int
+// CHECK-AST:       built-in type Bool
+// CHECK-AST:       built-in type Address
+  var didCompleteSomething: Event<Int, Bool, Address>
 }

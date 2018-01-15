@@ -176,6 +176,19 @@ extension Parser {
       }
     }
 
+    if attempt(try consume(.punctuation(.openAngledBracket))) != nil {
+      var genericArguments = [Type]()
+      while true {
+        let genericArgument = try parseType()
+        genericArguments.append(genericArgument)
+        if attempt(try consume(.punctuation(.comma))) == nil {
+          break
+        }
+      }
+      try consume(.punctuation(.closeAngledBracket))
+      return Type(identifier: identifier, genericArguments: genericArguments)
+    }
+
     return type
   }
   
@@ -375,14 +388,14 @@ extension Parser {
       throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: currentToken?.sourceLocation)
     }
 
-    for op in Token.Kind.BinaryOperator.allByIncreasingPrecedence {
-      guard let index = indexOfFirstAtCurrentDepth([.binaryOperator(op)], maxIndex: limitTokenIndex) else { continue }
+    for op in Token.Kind.Punctuation.allBinaryOperatorsByIncreasingPrecedence {
+      guard let index = indexOfFirstAtCurrentDepth([.punctuation(op)], maxIndex: limitTokenIndex) else { continue }
       let (lhs, lhsScopeContext) = try parseExpression(upTo: index, scopeContext: scopeContext)
-      let operatorToken = try consume(.binaryOperator(op))
+      let operatorToken = try consume(.punctuation(op))
       var (rhs, _) = try parseExpression(upTo: limitTokenIndex, scopeContext: scopeContext)
       scopeContext.merge(with: lhsScopeContext)
 
-      if operatorToken.kind == .binaryOperator(.dot), case .self(_) = lhs, case .identifier(var identifier) = rhs {
+      if operatorToken.kind == .punctuation(.dot), case .self(_) = lhs, case .identifier(var identifier) = rhs {
         identifier.enclosingContractName = scopeContext.contractIdentifier.name
         rhs = .identifier(identifier)
       }

@@ -183,7 +183,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
 
   func visit(_ binaryExpression: BinaryExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     var mutatingExpressions = [Expression]()
-    if case .binaryOperator(.equal) = binaryExpression.op.kind {
+    if case .punctuation(.equal) = binaryExpression.op.kind {
       let result = visit(binaryExpression.lhs, asLValue: true, functionDeclarationContext: functionDeclarationContext)
       mutatingExpressions.append(contentsOf: result.mutatingExpressions)
     }
@@ -203,6 +203,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
 
   func visit(_ functionCall: FunctionCall, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     var mutatingExpressions = [Expression]()
+    let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
 
     if let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
       if matchingFunction.isMutating {
@@ -212,6 +213,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
           addDiagnostic(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
         }
       }
+    } else if let _ = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
     } else {
       addDiagnostic(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities))
     }

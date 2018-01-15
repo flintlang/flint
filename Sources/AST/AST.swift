@@ -287,6 +287,7 @@ public struct Type: SourceEntity {
     case void = "Void"
     case bool = "Bool"
     case wei = "Wei"
+    case event = "Event"
 
     var isCallerCapabilityType: Bool {
       switch self {
@@ -304,6 +305,7 @@ public struct Type: SourceEntity {
   }
 
   public var rawType: RawType
+  public var genericArguments = [Type]()
   public var sourceLocation: SourceLocation
 
   public var name: String {
@@ -317,13 +319,21 @@ public struct Type: SourceEntity {
     return false
   }
 
-  public init(identifier: Identifier) {
+  public var isEventType: Bool {
+    if case Type.RawType.builtInType(.event) = rawType {
+      return true
+    }
+    return false
+  }
+
+  public init(identifier: Identifier, genericArguments: [Type] = []) {
     let name = identifier.name
     if let builtInType = BuiltInType(rawValue: name) {
       rawType = .builtInType(builtInType)
     } else {
       rawType = .userDefinedType(name)
     }
+    self.genericArguments = genericArguments
     self.sourceLocation = identifier.sourceLocation
   }
 
@@ -414,7 +424,7 @@ public struct BinaryExpression: SourceEntity {
   public var lhs: Expression
 
   public var op: Token
-  public var opToken: Token.Kind.BinaryOperator
+  public var opToken: Token.Kind.Punctuation
 
   public var rhs: Expression
 
@@ -425,7 +435,7 @@ public struct BinaryExpression: SourceEntity {
   public init(lhs: Expression, op: Token, rhs: Expression) {
     self.lhs = lhs
 
-    guard case .binaryOperator(let opToken) = op.kind else {
+    guard case .punctuation(let opToken) = op.kind else {
       fatalError("Unexpected token kind \(op.kind) when trying to form a binary expression.")
     }
 

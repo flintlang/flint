@@ -34,7 +34,7 @@ public struct IULIACodeGenerator {
       }
       let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, context: context)
       contracts.append(contract)
-      interfaces.append(IULIAInterface(contract: contract))
+      interfaces.append(IULIAInterface(contract: contract, context: context))
     }
 
     let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")

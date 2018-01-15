@@ -156,6 +156,11 @@ public class ASTDumper {
   func dump(_ type: Type) {
     writeNode("Type") {
       self.dump(type.rawType)
+      self.writeNode("Generic Arguments") {
+        for type in type.genericArguments {
+          self.dump(type)
+        }
+      }
     }
   }
 
