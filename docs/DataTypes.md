@@ -20,4 +20,11 @@ Flint supports the following types.
 | Fixed-size Array| Fixed-size memory block containing elements of the same type. <br> `Int[10]` is an array of 10 `Int`s. |
 | Dictionary | Dynamic-size mappings from one key type to a value type <br> `[Address: Bool]` is a mapping from `Address` to `Bool` |
 
-Note: A `[Int: T]` dictionary can be used as a dynamically-size array of element type `T`.
+## Ethereum-specific types
+
+Uses cases for the following types is described into more detail in `docs/EthereumFeatures.md`.
+
+| Type | Description |
+| ---- | ----------- |
+| `Wei`| A Wei value (the smallest denomination of Ether) |
+| `Event<T...>` | An Ethereum event. Takes an arbitrary number of type arguments |
