@@ -34,6 +34,7 @@ Bank :: caller <- (any) {
     balances[caller] = balances[caller] - amount
     balances[destination] = balances[destination] + amount
 
+    // A JavaScript client could listen for this event
     didCompleteTransfer(caller, destination, amount)
   }
 }
