@@ -6,7 +6,6 @@
 //
 
 import AST
-import Diagnostic
 
 // MARK: Errors
 

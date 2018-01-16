@@ -7,7 +7,6 @@
 
 import Foundation
 import AST
-import Diagnostic
 
 public struct Optimizer: ASTPass {
   public init() {}

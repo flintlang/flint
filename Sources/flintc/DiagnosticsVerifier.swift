@@ -8,7 +8,6 @@
 // This is inspired by https://github.com/silt-lang/silt/blob/master/Sources/Drill/DiagnosticVerifier.swift
 
 import Foundation
-import Diagnostic
 import AST
 
 struct DiagnosticsVerifier {

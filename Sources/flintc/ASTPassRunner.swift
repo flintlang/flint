@@ -7,7 +7,6 @@
 
 import AST
 import SemanticAnalyzer
-import Diagnostic
 
 struct ASTPassRunner {
   var ast: TopLevelModule

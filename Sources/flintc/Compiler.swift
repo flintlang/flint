@@ -11,7 +11,6 @@ import Parser
 import SemanticAnalyzer
 import Optimizer
 import IRGen
-import Diagnostic
 
 struct Compiler {
   var inputFile: URL

@@ -6,7 +6,6 @@
 //
 
 import AST
-import Diagnostic
 
 final class TypeCheckerVisitor: DiagnosticsTracking {
   var context: Context

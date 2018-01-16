@@ -5,8 +5,6 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
-import Diagnostic
-
 public protocol ASTPass {
   init()
   func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult

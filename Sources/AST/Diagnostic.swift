@@ -5,8 +5,6 @@
 //  Created by Franklin Schrans on 1/4/18.
 //
 
-import AST
-
 public struct Diagnostic {
   public enum Severity: String {
     case warning
