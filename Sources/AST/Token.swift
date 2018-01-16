@@ -72,6 +72,16 @@ extension Token {
         default: return 0
         }
       }
+
+      public var operatorAssignmentOperator: Punctuation? {
+        switch self {
+        case .plusEqual: return .plus
+        case .minusEqual: return .minus
+        case .timesEqual: return .times
+        case .divideEqual: return .divide
+        default: return nil
+        }
+      }
     }
 
     public enum Literal: Equatable {

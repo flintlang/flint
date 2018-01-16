@@ -424,7 +424,11 @@ public struct BinaryExpression: SourceEntity {
   public var lhs: Expression
 
   public var op: Token
-  public var opToken: Token.Kind.Punctuation
+
+  public var opToken: Token.Kind.Punctuation {
+    guard case .punctuation(let token) = op.kind else { fatalError() }
+    return token
+  }
 
   public var rhs: Expression
 
@@ -435,12 +439,11 @@ public struct BinaryExpression: SourceEntity {
   public init(lhs: Expression, op: Token, rhs: Expression) {
     self.lhs = lhs
 
-    guard case .punctuation(let opToken) = op.kind else {
+    guard case .punctuation(_) = op.kind else {
       fatalError("Unexpected token kind \(op.kind) when trying to form a binary expression.")
     }
 
     self.op = op
-    self.opToken = opToken
     self.rhs = rhs
   }
 }

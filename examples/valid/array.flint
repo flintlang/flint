@@ -7,7 +7,7 @@ contract Test {
 
 Test :: (any) {
   mutating func increaseNumWrites() {
-    self.numWrites = numWrites + 1
+    self.numWrites += 1 
   }
 
   public mutating func write(index: Int, val: Int) {

@@ -5,7 +5,6 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
-import AST
 import Diagnostic
 
 public protocol ASTPass {
@@ -15,10 +14,12 @@ public protocol ASTPass {
 
 public struct ASTPassResult {
   public var diagnostics: [Diagnostic]
+  public var ast: TopLevelModule
   public var context: Context
 
-  init(diagnostics: [Diagnostic], context: Context) {
+  public init(diagnostics: [Diagnostic], ast: TopLevelModule, context: Context) {
     self.diagnostics = diagnostics
+    self.ast = ast
     self.context = context
   }
 }

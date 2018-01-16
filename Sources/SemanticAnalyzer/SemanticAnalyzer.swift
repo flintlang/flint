@@ -12,6 +12,6 @@ public struct SemanticAnalyzer: ASTPass {
   public func run(for ast: TopLevelModule, in context: Context) -> ASTPassResult {
     let visitor = SemanticAnalyzerVisitor(context: context)
     visitor.visit(ast)
-    return .init(diagnostics: visitor.diagnostics, context: visitor.context)
+    return ASTPassResult(diagnostics: visitor.diagnostics, ast: ast, context: visitor.context)
   }
 }

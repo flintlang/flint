@@ -12,7 +12,7 @@ Test :: (any) {
 
   mutating func bar() { // expected-warning {{Function does not have to be declared mutating: none of its statements are mutating}}
     var a: Int = foo()
-    a = 2 + foo()
+    a += foo()
   }
 
   func a() {

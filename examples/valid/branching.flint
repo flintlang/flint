@@ -5,7 +5,7 @@ contract Test {
 Test :: (any) {
   public mutating func foo(a: Int, b: Int) {
     var tmp: Int = bar(a, b)
-    tmp = tmp + 1
+    tmp += 1
     data = tmp + self.data
   }
 

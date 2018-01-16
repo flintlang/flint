@@ -11,7 +11,7 @@ contract Bank {
 Bank :: account <- (any) {
   public mutating func register() {
     accounts[lastIndex] = account
-    lastIndex = lastIndex + 1
+    lastIndex += 1
   }
 
   public func getManager() -> Address {
@@ -26,7 +26,7 @@ Bank :: account <- (any) {
 
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
-    balances[account] = balances[account] + amount
+    balances[account] += amount
   }
 
   public mutating func clear(account: Int) {
@@ -44,8 +44,8 @@ Bank :: account <- (accounts) {
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    balances[account] = balances[account] - amount
-    balances[destination] = balances[destination] + amount
+    balances[account] -= amount
+    balances[destination] += amount
     didCompleteTransfer(account, destination, amount)
   }
 }
