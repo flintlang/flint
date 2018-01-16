@@ -9,8 +9,8 @@ import Foundation
 import AST
 import Parser
 import SemanticAnalyzer
+import Optimizer
 import IRGen
-import Diagnostic
 
 struct Compiler {
   var inputFile: URL
@@ -33,7 +33,8 @@ struct Compiler {
 
     let astPasses: [ASTPass.Type] = [
       SemanticAnalyzer.self,
-      TypeChecker.self
+      TypeChecker.self,
+      Optimizer.self
     ]
 
     let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
@@ -54,7 +55,7 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let irCode = IULIACodeGenerator(topLevelModule: ast, context: context).generateCode()
+    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.ast, context: context).generateCode()
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())

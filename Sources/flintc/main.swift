@@ -1,6 +1,6 @@
 import Foundation
 import Commander
-import Diagnostic
+import AST
 
 func main() {
   command(

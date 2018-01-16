@@ -42,30 +42,44 @@ extension Token {
       case minus  = "-"
       case times = "*"
       case divide = "/"
-      case equal  = "="
       case dot    = "."
+
+      // Assignments
+
+      case equal  = "="
+      case plusEqual = "+="
+      case minusEqual = "-="
+      case timesEqual = "*="
+      case divideEqual = "/="
 
       case lessThanOrEqual = "<="
       case greaterThanOrEqual = ">="
 
-      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual] }
+      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual] }
       public static var allBinaryOperatorsByIncreasingPrecedence: [Punctuation] {
         return allBinaryOperators.sorted { $0.precedence < $1.precedence }
       }
 
       var precedence: Int {
         switch self {
-        case .equal: return 10
-        case .closeAngledBracket: return 15
-        case .lessThanOrEqual: return 15
-        case .openAngledBracket: return 15
-        case .greaterThanOrEqual: return 15
+        case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10
+        case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual: return 15
         case .plus: return 20
         case .minus: return 20
         case .times: return 30
         case .divide: return 30
         case .dot: return 40
         default: return 0
+        }
+      }
+
+      public var operatorAssignmentOperator: Punctuation? {
+        switch self {
+        case .plusEqual: return .plus
+        case .minusEqual: return .minus
+        case .timesEqual: return .times
+        case .divideEqual: return .divide
+        default: return nil
         }
       }
     }

@@ -15,19 +15,19 @@ let package = Package(
   targets: [
     .target(
       name: "flintc",
-      dependencies: ["Parser", "SemanticAnalyzer", "IRGen", "Diagnostic", "Commander"]),
+      dependencies: ["Parser", "SemanticAnalyzer", "Optimizer", "IRGen", "Commander", "Rainbow"]),
     .target(
       name: "AST",
       dependencies: []),
     .target(
-      name: "Diagnostic",
-      dependencies: ["Rainbow", "AST"]),
-    .target(
       name: "Parser",
-      dependencies: ["AST", "Diagnostic"]),
+      dependencies: ["AST"]),
     .target(
       name: "SemanticAnalyzer",
-      dependencies: ["AST", "Diagnostic"]),
+      dependencies: ["AST"]),
+    .target(
+      name: "Optimizer",
+      dependencies: ["AST"]),
     .target(
         name: "IRGen",
         dependencies: ["AST", "CryptoSwift"]),

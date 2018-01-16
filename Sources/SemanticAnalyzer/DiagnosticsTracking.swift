@@ -5,7 +5,7 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
-import Diagnostic
+import AST
 
 protocol DiagnosticsTracking: class {
   var diagnostics: [Diagnostic] { get set }

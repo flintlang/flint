@@ -6,7 +6,6 @@
 //
 
 import AST
-import Diagnostic
 
 extension Diagnostic {
   static func incompatibleReturnType(actualType: Type.RawType, expectedType: Type.RawType, expression: Expression) -> Diagnostic {

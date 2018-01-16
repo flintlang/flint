@@ -6,7 +6,6 @@
 //
 
 import AST
-import Diagnostic
 
 final class SemanticAnalyzerVisitor: DiagnosticsTracking {
   var context: Context

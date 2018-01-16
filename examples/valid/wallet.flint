@@ -5,13 +5,13 @@ contract Wallet {
 
 Wallet :: (any) {
   public mutating func deposit(money: Ether) {
-    contents = contents + money;
+    contents += money;
   }
 }
 
 Wallet :: (owner) {
   public mutating func withdraw(money: Ether) {
-    contents = contents - money;
+    contents -= money;
   }
 
   public func getContents(a: Int) -> Ether {

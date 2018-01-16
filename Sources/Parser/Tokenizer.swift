@@ -7,7 +7,6 @@
 
 import Foundation
 import AST
-import Diagnostic
 
 public struct Tokenizer {
   var sourceCode: String
@@ -67,6 +66,10 @@ public struct Tokenizer {
     "*": .punctuation(.times),
     "/": .punctuation(.divide),
     "=": .punctuation(.equal),
+    "+=": .punctuation(.plusEqual),
+    "-=": .punctuation(.minusEqual),
+    "*=": .punctuation(.timesEqual),
+    "/=": .punctuation(.divideEqual),
     ".": .punctuation(.dot),
     "<": .punctuation(.openAngledBracket),
     "<=": .punctuation(.lessThanOrEqual),
@@ -152,7 +155,7 @@ public struct Tokenizer {
   }
 
   func canBeMerged(_ component1: String, _ component2: String) -> Bool {
-    let mergeable = [(":", ":"), ("-", ">"), ("/", "/"), ("<", "-")]
-    return mergeable.contains { $0 == (component1, component2) }
+    let mergeable = syntaxMap.keys.filter { $0.count == 2 }
+    return mergeable.contains { $0 == component1 + component2 }
   }
 }
