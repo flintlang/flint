@@ -18,7 +18,7 @@ let package = Package(
       dependencies: ["Parser", "SemanticAnalyzer", "Optimizer", "IRGen", "Diagnostic", "Commander"]),
     .target(
       name: "AST",
-      dependencies: []),
+      dependencies: ["Diagnostic"]),
     .target(
       name: "Diagnostic",
       dependencies: ["Rainbow", "AST"]),
