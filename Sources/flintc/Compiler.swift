@@ -31,10 +31,10 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let astPasses: [ASTPass.Type] = [
-      SemanticAnalyzer.self,
-      TypeChecker.self,
-      Optimizer.self
+    let astPasses: [AnyASTPass] = [
+      AnyASTPass(SemanticAnalyzer()),
+      AnyASTPass(TypeChecker()),
+      AnyASTPass(Optimizer())
     ]
 
     let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
@@ -55,7 +55,7 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.ast, context: context).generateCode()
+    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, context: context).generateCode()
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
