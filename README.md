@@ -37,6 +37,8 @@ Bank :: (any) {
 
 // Only the manager can call these functions.
 Bank :: (manager) {
+  // This function needs to be declared mutating as its body mutates
+  // the contract's state.
   public mutating func freeDeposit(account: Address, amount: Int) {
     balances[account] += amount
   }
