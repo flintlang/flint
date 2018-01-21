@@ -37,7 +37,7 @@ Bank :: (any) {
 
 // Only the manager can call these functions.
 Bank :: (manager) {
-  // This function needs to be declared mutating as its body mutates
+  // This function needs to be declared "mutating" as its body mutates
   // the contract's state.
   public mutating func freeDeposit(account: Address, amount: Int) {
     balances[account] += amount
@@ -51,8 +51,6 @@ Bank :: (manager) {
 // The caller's address is bound to the `caller` local variable,
 // and can be used in the function bodies.
 Bank :: caller <- (any) {
-  // Functions can only mutate the state of the contract if
-  // declared "mutating".
   public mutating func register() {
     accounts[lastIndex] = caller
     lastIndex += 1
