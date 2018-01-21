@@ -19,7 +19,7 @@ Functions in Flint are by default **non-mutating**: they are not allowed to modi
 The following code declares the `Bank` contract and its functions.
 
 ```swift
-// Contract declarations contain only their state properties
+// Contract declarations contain only their state properties.
 contract Bank {
   var manager: Address
   var balances: [Address: Int]
@@ -27,17 +27,15 @@ contract Bank {
   var lastIndex: Int
 }
 
-// The functions in this block can be called by any user
+// The functions in this block can be called by any user.
 Bank :: (any) {
-  // Functions can only mutate the state of the contract if 
-  // declared "mutating"
-  public mutating func register() {
-    accounts[lastIndex] = account
-    lastIndex += 1
+  // Returns the manager's address.
+  public func getManager() -> Address {
+    return manager
   }
 }
 
-// Only the manager can call these functions
+// Only the manager can call these functions.
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
     balances[account] += amount
@@ -46,10 +44,21 @@ Bank :: (manager) {
   public mutating func clear(account: Int) {
     balances[account] = 0
   }
-} 
+}
 
-// Any user in accounts can call these functions
-// The matching user's address is bound to the variable account
+// The caller's address is bound to the `caller` local variable,
+// and can be used in the function bodies.
+Bank :: caller <- (any) {
+  // Functions can only mutate the state of the contract if
+  // declared "mutating".
+  public mutating func register() {
+    accounts[lastIndex] = caller
+    lastIndex += 1
+  }
+}
+
+// Any user in accounts can call these functions.
+// The matching user's address is bound to the variable account.
 Bank :: account <- (accounts) {
   // This function is non-mutating
   public func getBalance() -> Int {
@@ -61,7 +70,6 @@ Bank :: account <- (accounts) {
     balances[destination] += amount
   }
 }
-
 ```
 
 ## Declaring a contract
