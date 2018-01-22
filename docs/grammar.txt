@@ -1,4 +1,4 @@
-// Top-level declaration
+// Top-level declarations
 
 top-level-declarations -> top-level-declaration (top-level-declarations)
 top-level-declaration -> contract-declaration | contract-behavior-declaration
@@ -26,14 +26,14 @@ generic-parameter-list -> type | type [,] generic-argument-list
 
 contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (function-declarations)
 
-// Caller capability groups
+// Caller capability group
 
 caller-capability-group -> [(] caller-capability-list [)]
 caller-capability-list -> caller-capability-identifier | caller-capability-identifier [,] caller-capability-list
 caller-capability-identifier -> identifier
 caller-capability-binding -> identifier [<-]
 
-// Identifiers
+// Identifier
 
 identifier -> [a-zA-Z] . [a-zA-Z0-9]*
 
@@ -66,14 +66,14 @@ statement -> expression
 statement -> [return] (expression)
 statement -> branch-statement
 
-// Expressions
+// Expression
 
 expression -> identifier | binary-expression | function-call | literal | bracketed-expression | subscript-expression
 binary-expression -> expression binary-operator expression
 bracketed-expression -> [(] expression [)]
 subscript-expression -> identifier [[] expression []]
 
-// Function Calls
+// Function Call
 
 function-call -> identifier function-call-argument-clause
 function-call-argument-clause -> [(] [)] | [(] function-call-argument-list [)]
@@ -88,7 +88,8 @@ binary-operator -> [+] | [-] | [=] | [.]
 if-statement -> [if] expression code-block (else-clause)
 else-clause -> [else] code-block
 
-// Literals
+// Literal
+
 literal -> numeric-literal | string-literal | boolean-literal
 
 numeric-literal -> decimal-literal
