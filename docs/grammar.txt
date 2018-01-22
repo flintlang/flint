@@ -1,26 +1,52 @@
-// Statement
-statement -> expression
-statement -> [return] (expression)
-statement -> branch-statement
-statements -> (statement) (statements)
+// Top-level declaration
 
-// Declaration
-declaration -> contract-declaration
-declaration -> function-declaration
-declaration -> variable-declaration
-declaration -> contract-behavior-declaration
+top-level-declarations -> top-level-declaration (top-level-declarations)
+top-level-declaration -> contract-declaration | contract-behavior-declaration
 
+// Contract declaration
 contract-declaration -> [contract] identifier [{] (variable-declarations) [}]
 
-variable-declaration -> [var] identifier type-annotation
+// Variable declarations
+
 variable-declarations -> variable-declaration (variable-declarations)
+variable-declaration -> [var] identifier type-annotation
 
-function-declaration -> function-head identifier parameter-clause (function-result) code-block
-function-head -> (declaration-attributes) (declaration-modifiers) [func]
-function-result -> [->] type
+// Type annotations
+
+type-annotation -> [:] type
+
+// Types
+
+type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
+
+generic-argument-clause -> [<] generic-parameter-list [>]
+generic-parameter-list -> type | type [,] generic-argument-list
+
+// Contract behavior declaration
+
+contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (function-declarations)
+
+// Caller capability groups
+
+caller-capability-group -> [(] caller-capability-list [)]
+caller-capability-list -> caller-capability-identifier | caller-capability-identifier [,] caller-capability-list
+caller-capability-identifier -> identifier
+caller-capability-binding -> identifier [<-]
+
+// Identifiers
+
+identifier -> [a-zA-Z] . [a-zA-Z0-9]*
+
+// Function declarations
+
 function-declarations -> function-declaration (function-declarations)
+function-declaration -> function-head identifier parameter-clause (function-result) code-block
 
-code-block -> [{] statements [}]
+function-head -> (declaration-attributes) (declaration-modifiers) [func]
+declaration-modifier -> [public] | [mutating]
+declaration-modifiers -> declaration-modifier (declaration-modifiers)
+
+function-result -> [->] type
 
 parameter-clause -> [(] [)] | [(] parameter-list [)]
 parameter-list -> parameter | parameter [,] parameter-list
@@ -29,18 +55,19 @@ parameter -> identifier type-annotation
 declaration-attribute -> [@] . [a-zA-Z]*
 declaration-attributes -> declaration-attribute (declaration-attributes)
 
-declaration-modifier -> [public] | [mutating]
-declaration-modifiers -> declaration-modifier (declaration-modifiers)
+// Code block
 
-contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (function-declarations)
+code-block -> [{] statements [}]
 
-caller-capability-group -> [(] caller-capability-list [)]
-caller-capability-list -> caller-capability-identifier | caller-capability-identifier [,] caller-capability-list
-caller-capability-binding -> identifier [<-]
+// Statements
 
-type-annotation -> [:] type
+statements -> statement (statements)
+statement -> expression
+statement -> [return] (expression)
+statement -> branch-statement
 
-// Expression
+// Expressions
+
 expression -> identifier | binary-expression | function-call | literal | bracketed-expression | subscript-expression
 binary-expression -> expression binary-operator expression
 bracketed-expression -> [(] expression [)]
@@ -52,14 +79,14 @@ function-call -> identifier function-call-argument-clause
 function-call-argument-clause -> [(] [)] | [(] function-call-argument-list [)]
 function-call-argument-list -> expression | expression [,] function-call-argument-list
 
+// Binary Operators
+
 binary-operator -> [+] | [-] | [=] | [.]
 
-// Identifiers
-identifier -> [a-zA-Z] . [a-zA-Z0-9]*
-type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
-generic-argument-clause -> [<] generic-parameter-list [>]
-generic-parameter-list -> type | type [,] generic-argument-list
-caller-capability-identifier -> identifier
+// Branching
+
+if-statement -> [if] expression code-block (else-clause)
+else-clause -> [else] code-block
 
 // Literals
 literal -> numeric-literal | string-literal | boolean-literal
@@ -69,7 +96,3 @@ decimal-literal -> [0-9]+ | [0-9]+ [.] [0-9]+
 
 string-literal -> ["] [a-zA-Z0-9]* ["]
 boolean-literal -> [true] | [false]
-
-// Branching
-if-statement -> [if] expression code-block (else-clause)
-else-clause -> [else] code-block
