@@ -16,8 +16,15 @@ public struct ASTPassResult<T> {
     self.passContext = passContext
   }
   
-  mutating func mergingDiagnostics<S>(_ otherContext: ASTPassResult<S>) -> S {
+  mutating func combining<S>(_ otherContext: ASTPassResult<S>, mergingContexts: Bool = false) -> S {
     diagnostics.append(contentsOf: otherContext.diagnostics)
+    passContext.storage.merge(otherContext.passContext.storage, uniquingKeysWith: { lhs, rhs in
+//      if mergingContexts, let lhs = lhs as? Context, let rhs = rhs as? Context {
+//        return lhs.merging(rhs)
+//      }
+      return rhs
+    })
+
     return otherContext.element
   }
 }

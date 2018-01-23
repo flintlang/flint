@@ -13,267 +13,251 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   public func visit(_ topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
-    var result = pass.process(element: topLevelModule, passContext: passContext)
+    var preProcessResult = pass.preProcess(topLevelModule: topLevelModule, passContext: passContext)
 
-    result.element.declarations = result.element.declarations.map { declaration in
-      result.mergingDiagnostics(visit(declaration, passContext: result.passContext))
+    preProcessResult.element.declarations = preProcessResult.element.declarations.map { declaration in
+      preProcessResult.combining(visit(declaration, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(topLevelModule: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration> {
-    var result = pass.process(element: topLevelDeclaration, passContext: passContext)
+    var preProcessResult = pass.preProcess(topLevelDeclaration: topLevelDeclaration, passContext: passContext)
     
-    switch result.element {
+    switch preProcessResult.element {
     case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
-      _ = result.mergingDiagnostics(visit(contractBehaviorDeclaration, passContext: result.passContext))
+      preProcessResult.element = .contractBehaviorDeclaration(preProcessResult.combining(visit(contractBehaviorDeclaration, passContext: preProcessResult.passContext)))
     case .contractDeclaration(let contractDeclaration):
-      _ = result.mergingDiagnostics(visit(contractDeclaration, passContext: result.passContext))
+      preProcessResult.element = .contractDeclaration(preProcessResult.combining(visit(contractDeclaration, passContext: preProcessResult.passContext)))
     }
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+
+    let postProcessResult = pass.postProcess(topLevelDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
-    var result = pass.process(element: contractDeclaration, passContext: passContext)
+    var preProcessResult = pass.preProcess(contractDeclaration: contractDeclaration, passContext: passContext)
 
-    result.element.identifier = result.mergingDiagnostics(visit(result.element.identifier, passContext: result.passContext))
-    result.element.variableDeclarations = result.element.variableDeclarations.map { variableDeclaration in
-      return result.mergingDiagnostics(visit(variableDeclaration, passContext: result.passContext))
+    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+
+    preProcessResult.element.variableDeclarations = preProcessResult.element.variableDeclarations.map { variableDeclaration in
+      return preProcessResult.combining(visit(variableDeclaration, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(contractDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    var result = pass.process(element: contractBehaviorDeclaration, passContext: passContext)
+    var preProcessResult = pass.preProcess(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
 
-    result.element.contractIdentifier = result.mergingDiagnostics(visit(result.element.contractIdentifier, passContext: result.passContext))
+    preProcessResult.element.contractIdentifier = preProcessResult.combining(visit(preProcessResult.element.contractIdentifier, passContext: preProcessResult.passContext))
 
-    if let capabilityBinding = result.element.capabilityBinding {
-      result.element.capabilityBinding = result.mergingDiagnostics(visit(capabilityBinding, passContext: result.passContext))
+    if let capabilityBinding = preProcessResult.element.capabilityBinding {
+      preProcessResult.element.capabilityBinding = preProcessResult.combining(visit(capabilityBinding, passContext: preProcessResult.passContext))
     }
 
-    result.element.callerCapabilities = result.element.callerCapabilities.map { callerCapability in
-      return result.mergingDiagnostics(visit(callerCapability, passContext: result.passContext))
+    preProcessResult.element.callerCapabilities = preProcessResult.element.callerCapabilities.map { callerCapability in
+      return preProcessResult.combining(visit(callerCapability, passContext: preProcessResult.passContext))
     }
 
-    result.element.functionDeclarations = result.element.functionDeclarations.map { functionDeclaration in
-      return result.mergingDiagnostics(visit(functionDeclaration, passContext: result.passContext))
+    preProcessResult.element.functionDeclarations = preProcessResult.element.functionDeclarations.map { functionDeclaration in
+      return preProcessResult.combining(visit(functionDeclaration, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(contractBehaviorDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
-    var result = pass.process(element: variableDeclaration, passContext: passContext)
+    var preProcessResult = pass.preProcess(variableDeclaration: variableDeclaration, passContext: passContext)
 
-    result.element.identifier = result.mergingDiagnostics(visit(result.element.identifier, passContext: result.passContext))
-    result.element.type = result.mergingDiagnostics(visit(result.element.type, passContext: result.passContext))
+    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(variableDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
-    var result = pass.process(element: functionDeclaration, passContext: passContext)
+    var preProcessResult = pass.preProcess(functionDeclaration: functionDeclaration, passContext: passContext)
 
-    result.element.attributes = result.element.attributes.map { attribute in
-      return result.mergingDiagnostics(visit(attribute, passContext: result.passContext))
+    preProcessResult.element.attributes = preProcessResult.element.attributes.map { attribute in
+      return preProcessResult.combining(visit(attribute, passContext: preProcessResult.passContext))
     }
 
-    result.element.identifier = result.mergingDiagnostics(visit(result.element.identifier, passContext: result.passContext))
-    result.element.parameters = result.element.parameters.map { parameter in
-      return result.mergingDiagnostics(visit(parameter, passContext: result.passContext))
+    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+
+    preProcessResult.element.parameters = preProcessResult.element.parameters.map { parameter in
+      return preProcessResult.combining(visit(parameter, passContext: preProcessResult.passContext))
     }
 
-    if let resultType = result.element.resultType {
-      result.element.resultType = result.mergingDiagnostics(visit(resultType, passContext: result.passContext))
+    if let resultType = preProcessResult.element.resultType {
+      preProcessResult.element.resultType = preProcessResult.combining(visit(resultType, passContext: preProcessResult.passContext))
     }
 
-    result.element.body = result.element.body.map { statement in
-      return result.mergingDiagnostics(visit(statement, passContext: result.passContext))
+    preProcessResult.element.body = preProcessResult.element.body.map { statement in
+      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(functionDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
-    let result = pass.process(element: attribute, passContext: passContext)
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let preProcessResult = pass.preProcess(attribute: attribute, passContext: passContext)
+
+    let postProcessResult = pass.postProcess(attribute: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
-    var result = pass.process(element: parameter, passContext: passContext)
-    result.element.type = result.mergingDiagnostics(visit(result.element.type, passContext: result.passContext))
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    var preProcessResult = pass.preProcess(parameter: parameter, passContext: passContext)
+    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
+
+    let postProcessResult = pass.postProcess(parameter: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation> {
-    var result = pass.process(element: typeAnnotation, passContext: passContext)
-    result.element.type = result.mergingDiagnostics(visit(result.element.type, passContext: result.passContext))
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    var preProcessResult = pass.preProcess(typeAnnotation: typeAnnotation, passContext: passContext)
+    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
+
+    let postProcessResult = pass.postProcess(typeAnnotation: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
-    let result = pass.process(element: identifier, passContext: passContext)
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let preProcessResult = pass.preProcess(identifier: identifier, passContext: passContext)
+    let postProcessResult = pass.postProcess(identifier: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
-    var result = pass.process(element: type, passContext: passContext)
+    var preProcessResult = pass.preProcess(type: type, passContext: passContext)
 
-    result.element.genericArguments = result.element.genericArguments.map { genericArgument in
-      return result.mergingDiagnostics(visit(genericArgument, passContext: result.passContext))
+    preProcessResult.element.genericArguments = preProcessResult.element.genericArguments.map { genericArgument in
+      return preProcessResult.combining(visit(genericArgument, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(type: preProcessResult.element, passContext: passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
-    var result = pass.process(element: callerCapability, passContext: passContext)
+    var preProcessResult = pass.preProcess(callerCapability: callerCapability, passContext: passContext)
 
-    result.element.identifier = result.mergingDiagnostics(visit(result.element.identifier, passContext: result.passContext))
+    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(callerCapability: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
-    var result = pass.process(element: expression, passContext: passContext)
+    var preProcessResult = pass.preProcess(expression: expression, passContext: passContext)
 
-    switch result.element {
+    switch preProcessResult.element {
     case .binaryExpression(let binaryExpression):
-      _ = result.mergingDiagnostics(visit(binaryExpression, passContext: result.passContext))
+      preProcessResult.element = .binaryExpression(preProcessResult.combining(visit(binaryExpression, passContext: preProcessResult.passContext)))
     case .bracketedExpression(let expression):
-      _ = result.mergingDiagnostics(visit(expression, passContext: result.passContext))
+      preProcessResult.element = .bracketedExpression(preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext)))
     case .functionCall(let functionCall):
-      _ = result.mergingDiagnostics(visit(functionCall, passContext: result.passContext))
+      preProcessResult.element = .functionCall(preProcessResult.combining(visit(functionCall, passContext: preProcessResult.passContext)))
     case .identifier(let identifier):
-      _ = result.mergingDiagnostics(visit(identifier, passContext: result.passContext))
+      preProcessResult.element = .identifier(preProcessResult.combining(visit(identifier, passContext: preProcessResult.passContext)))
     case .literal(_), .self(_): break
     case .variableDeclaration(let variableDeclaration):
-      _ = result.mergingDiagnostics(visit(variableDeclaration, passContext: result.passContext))
+      preProcessResult.element = .variableDeclaration(preProcessResult.combining(visit(variableDeclaration, passContext: preProcessResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
-      _ = result.mergingDiagnostics(visit(subscriptExpression, passContext: result.passContext))
+      preProcessResult.element = .subscriptExpression(preProcessResult.combining(visit(subscriptExpression, passContext: preProcessResult.passContext)))
     }
 
-    return result
+    let postProcessResult = pass.postProcess(expression: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
-    var result = pass.process(element: statement, passContext: passContext)
+    var preProcessResult = pass.preProcess(statement: statement, passContext: passContext)
 
-    switch result.element {
+    switch preProcessResult.element {
     case .expression(let expression):
-      _ = result.mergingDiagnostics(visit(expression, passContext: result.passContext))
+      preProcessResult.element = .expression(preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext)))
     case .returnStatement(let returnStatement):
-      _ = result.mergingDiagnostics(visit(returnStatement, passContext: result.passContext))
+      preProcessResult.element = .returnStatement(preProcessResult.combining(visit(returnStatement, passContext: preProcessResult.passContext)))
     case .ifStatement(let ifStatement):
-      _ = result.mergingDiagnostics(visit(ifStatement, passContext: result.passContext))
+      preProcessResult.element = .ifStatement(preProcessResult.combining(visit(ifStatement, passContext: preProcessResult.passContext)))
     }
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+
+    let postProcessResult = pass.postProcess(statement: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var result = pass.process(element: binaryExpression, passContext: passContext)
+    var preProcessResult = pass.preProcess(binaryExpression: binaryExpression, passContext: passContext)
 
-    result.element.lhs = result.mergingDiagnostics(visit(result.element.lhs, passContext: result.passContext))
-    result.element.rhs = result.mergingDiagnostics(visit(result.element.rhs, passContext: result.passContext))
+    if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment  {
+      preProcessResult.passContext.asLValue = true
+    }
+    preProcessResult.element.lhs = preProcessResult.combining(visit(preProcessResult.element.lhs, passContext: preProcessResult.passContext))
+    preProcessResult.passContext.asLValue = false
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    preProcessResult.element.rhs = preProcessResult.combining(visit(preProcessResult.element.rhs, passContext: preProcessResult.passContext))
+
+    let postProcessResult = pass.postProcess(binaryExpression: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    var result = pass.process(element: functionCall, passContext: passContext)
+    var preProcessResult = pass.preProcess(functionCall: functionCall, passContext: passContext)
 
-    result.element.identifier = result.mergingDiagnostics(visit(result.element.identifier, passContext: result.passContext))
-    result.element.arguments = result.element.arguments.map { argument in
-      return result.mergingDiagnostics(visit(argument, passContext: result.passContext))
+    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+
+    preProcessResult.element.arguments = preProcessResult.element.arguments.map { argument in
+      return preProcessResult.combining(visit(argument, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(functionCall: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
-    var result = pass.process(element: subscriptExpression, passContext: passContext)
+    var preProcessResult = pass.preProcess(subscriptExpression: subscriptExpression, passContext: passContext)
 
-    result.element.baseIdentifier = result.mergingDiagnostics(visit(result.element.baseIdentifier, passContext: result.passContext))
+    preProcessResult.element.baseIdentifier = preProcessResult.combining(visit(preProcessResult.element.baseIdentifier, passContext: preProcessResult.passContext))
 
-    result.element.indexExpression = result.mergingDiagnostics(visit(result.element.indexExpression, passContext: result.passContext))
+    preProcessResult.element.indexExpression = preProcessResult.combining(visit(preProcessResult.element.indexExpression, passContext: preProcessResult.passContext))
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(subscriptExpression: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
-    var result = pass.process(element: returnStatement, passContext: passContext)
+    var preProcessResult = pass.preProcess(returnStatement: returnStatement, passContext: passContext)
 
-    if let expression = result.element.expression {
-      result.element.expression = result.mergingDiagnostics(visit(expression, passContext: result.passContext))
+    if let expression = preProcessResult.element.expression {
+      preProcessResult.element.expression = preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(returnStatement: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
-  func visit(_ ifStatament: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
-    var result = pass.process(element: ifStatament, passContext: passContext)
+  func visit(_ ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
+    var preProcessResult = pass.preProcess(ifStatement: ifStatement, passContext: passContext)
 
-    result.element.condition = result.mergingDiagnostics(visit(result.element.condition, passContext: result.passContext))
+    preProcessResult.element.condition = preProcessResult.combining(visit(preProcessResult.element.condition, passContext: preProcessResult.passContext))
 
-    result.element.body = result.element.body.map { statement in
-      return result.mergingDiagnostics(visit(statement, passContext: result.passContext))
+    preProcessResult.element.body = preProcessResult.element.body.map { statement in
+      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
     }
 
-    result.element.elseBody = result.element.body.map { statement in
-      return result.mergingDiagnostics(visit(statement, passContext: result.passContext))
+    preProcessResult.element.elseBody = preProcessResult.element.body.map { statement in
+      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
     }
 
-    return ASTPassResult(element: result.element, diagnostics: result.diagnostics, passContext: result.passContext)
+    let postProcessResult = pass.postProcess(ifStatement: preProcessResult.element, passContext: preProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 }
-
-//private enum TokenUnion {
-//  case topLevelModule(TopLevelModule)
-//  case topLevelDeclaration(TopLevelDeclaration)
-//  case contractDeclaration(ContractDeclaration)
-//  case contractBehaviorDeclaration(ContractBehaviorDeclaration)
-//  case variableDeclaration(VariableDeclaration)
-//  case functionDeclaration(FunctionDeclaration)
-//  case attribute(Attribute)
-//  case parameter(Parameter)
-//  case typeAnnotation(TypeAnnotation)
-//  case identifier(Identifier)
-//  case type(Type)
-//  case callerCapability(CallerCapability)
-//  case expression(Expression)
-//  case statement(Statement)
-//  case binaryExpression(BinaryExpression)
-//  case functionCall(FunctionCall)
-//  case subscriptExpression(SubscriptExpression)
-//  case returnStatement(ReturnStatement)
-//  case ifStatement(IfStatement)
-//
-//  init?(node: Any) {
-//    switch node {
-//    case let topLevelModule as TopLevelModule: self = .topLevelModule(topLevelModule)
-//    case let topLevelDeclaration as TopLevelDeclaration: self = .topLevelDeclaration(topLevelDeclaration)
-//    case let contractDeclaration as ContractDeclaration: self = .contractDeclaration(contractDeclaration)
-//    case let contractBehaviorDeclaration as ContractBehaviorDeclaration: self = .contractBehaviorDeclaration(contractBehaviorDeclaration)
-//    case let variableDeclaration as VariableDeclaration: self = .variableDeclaration(variableDeclaration)
-//    case let functionDeclaration as FunctionDeclaration: self = .functionDeclaration(functionDeclaration)
-//    case let attribute as Attribute: self = .attribute(attribute)
-//    case let parameter as Parameter: self = .parameter(parameter)
-//    case let typeAnnotation as TypeAnnotation: self = .typeAnnotation(typeAnnotation)
-//    case let identifier as Identifier: self = .identifier(identifier)
-//    case let type as Type: self = .type(type)
-//    case let callerCapability as CallerCapability: self = .callerCapability(callerCapability)
-//    case let expression as Expression: self = .expression(expression)
-//    case let statement as Statement: self = .statement(statement)
-//    case let binaryExpression as BinaryExpression: self = .binaryExpression(binaryExpression)
-//    case let functionCall as FunctionCall: self = .functionCall(functionCall)
-//    case let subscriptExpression as SubscriptExpression: self = .subscriptExpression(subscriptExpression)
-//    case let returnStatement as ReturnStatement: self = .returnStatement(returnStatement)
-//    case let ifStatement as IfStatement: self = .ifStatement(ifStatement)
-//    default: fatalError()
-//    }
-//  }
-//}
-

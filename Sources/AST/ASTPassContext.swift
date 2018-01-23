@@ -6,7 +6,7 @@
 //
 
 public struct ASTPassContext {
-  private var storage = [AnyHashable: Any]()
+  var storage = [AnyHashable: Any]()
 
   public init() {}
 
@@ -24,12 +24,14 @@ public struct ASTPassContext {
 
 extension ASTPassContext {
   public var context: Context? {
-    get {
-      return self[ContextPassContextEntry.self]
-    }
-    set {
-      self[ContextPassContextEntry.self] = newValue
-    }
+    get { return self[ContextPassContextEntry.self] }
+    set { self[ContextPassContextEntry.self] = newValue }
+  }
+
+
+  public var asLValue: Bool? {
+    get { return self[AsLValueContextEntry.self] }
+    set { self[AsLValueContextEntry.self] = newValue }
   }
 }
 
@@ -45,4 +47,8 @@ extension PassContextEntry {
 
 private struct ContextPassContextEntry: PassContextEntry {
   typealias Value = Context
+}
+
+private struct AsLValueContextEntry: PassContextEntry {
+  typealias Value = Bool
 }
