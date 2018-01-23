@@ -50,7 +50,6 @@ extension Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
   }
 
-
   static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
   }
