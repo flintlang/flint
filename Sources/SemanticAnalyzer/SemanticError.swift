@@ -26,10 +26,6 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Use of mutating statement in a nonmutating function")
   }
 
-  static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
-    return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
-  }
-
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "\(functionDeclaration.identifier.name) is declared @payable but doesn't have an implicit currency of a currency type")
   }
@@ -52,5 +48,10 @@ extension Diagnostic {
 extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
+  }
+
+
+  static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
   }
 }
