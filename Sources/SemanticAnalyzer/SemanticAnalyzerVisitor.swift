@@ -182,7 +182,7 @@ final class SemanticAnalyzerVisitor: DiagnosticsTracking {
 
   func visit(_ binaryExpression: BinaryExpression, asLValue: Bool, functionDeclarationContext: FunctionDeclarationContext) -> BodyVisitResult {
     var mutatingExpressions = [Expression]()
-    if case .punctuation(.equal) = binaryExpression.op.kind {
+    if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment  {
       let result = visit(binaryExpression.lhs, asLValue: true, functionDeclarationContext: functionDeclarationContext)
       mutatingExpressions.append(contentsOf: result.mutatingExpressions)
     }

@@ -60,6 +60,10 @@ extension Token {
         return allBinaryOperators.sorted { $0.precedence < $1.precedence }
       }
 
+      public var isAssignment: Bool {
+        return [.equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual].contains(self)
+      }
+
       var precedence: Int {
         switch self {
         case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10

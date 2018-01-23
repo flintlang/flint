@@ -25,4 +25,8 @@ Test :: (any) {
   mutating func c() -> Int { // expected-warning {{Function does not have to be declared mutating: none of its statements are mutating}}
     return 0
   }
+
+  mutating func d() {
+    a[0] += 2
+  }
 }
