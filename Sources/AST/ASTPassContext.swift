@@ -23,9 +23,9 @@ public struct ASTPassContext {
 }
 
 extension ASTPassContext {
-  public var context: Context? {
-    get { return self[ContextPassContextEntry.self] }
-    set { self[ContextPassContextEntry.self] = newValue }
+  public var environment: Environment? {
+    get { return self[EnvironmentContextEntry.self] }
+    set { self[EnvironmentContextEntry.self] = newValue }
   }
 
   public var asLValue: Bool? {
@@ -55,8 +55,8 @@ extension PassContextEntry {
   }
 }
 
-private struct ContextPassContextEntry: PassContextEntry {
-  typealias Value = Context
+private struct EnvironmentContextEntry: PassContextEntry {
+  typealias Value = Environment
 }
 
 private struct AsLValueContextEntry: PassContextEntry {

@@ -17,7 +17,7 @@ public class Parser {
     return currentIndex < tokens.count ? tokens[currentIndex] : nil
   }
 
-  var context = Context()
+  var environment = Environment()
   var diagnostics = [Diagnostic]()
   
   public init(tokens: [Token]) {
@@ -25,11 +25,11 @@ public class Parser {
     self.currentIndex = tokens.startIndex
   }
   
-  public func parse() -> (TopLevelModule?, Context, [Diagnostic]) {
+  public func parse() -> (TopLevelModule?, Environment, [Diagnostic]) {
     do {
-      return (try parseTopLevelModule(), context, [])
+      return (try parseTopLevelModule(), environment, [])
     } catch ParserError.expectedToken(let tokenKind, sourceLocation: let sourceLocation) {
-      return (nil, context, diagnostics + [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
+      return (nil, environment, diagnostics + [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
     } catch {
       fatalError()
     }
@@ -90,7 +90,7 @@ extension Parser {
       guard let first = currentToken else { break }
       if first.kind == .contract {
         let contractDeclaration = try parseContractDeclaration()
-        context.addContract(contractDeclaration)
+        environment.addContract(contractDeclaration)
         declarations.append(.contractDeclaration(contractDeclaration))
       } else {
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
@@ -206,7 +206,7 @@ extension Parser {
     let variableDeclarations = try parseVariableDeclarations()
     try consume(.punctuation(.closeBrace))
 
-    context.addVariableDeclarations(variableDeclarations, for: identifier)    
+    environment.addVariableDeclarations(variableDeclarations, for: identifier)
     return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
   }
   
@@ -241,7 +241,7 @@ extension Parser {
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
-      context.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
+      environment.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
     }
     
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)

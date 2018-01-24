@@ -5,7 +5,7 @@
 //  Created by Franklin Schrans on 12/26/17.
 //
 
-public struct Context {
+public struct Environment {
   var contractDeclarations = [ContractDeclaration]()
   var functions = [MangledFunction]()
 

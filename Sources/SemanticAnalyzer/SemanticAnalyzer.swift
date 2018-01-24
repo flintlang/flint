@@ -25,13 +25,13 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     var diagnostics = [Diagnostic]()
 
-    let context = passContext.context!
+    let environment = passContext.environment!
 
-    if !context.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) {
+    if !environment.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) {
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     }
 
-    let properties = context.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
+    let properties = environment.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
     let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
@@ -96,7 +96,7 @@ public struct SemanticAnalyzer: ASTPass {
     if let functionDeclarationContext = passContext.functionDeclarationContext, identifier.isPropertyAccess {
       if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
         diagnostics.append(.useOfUndeclaredIdentifier(identifier))
-        passContext.context!.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
+        passContext.environment!.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
       }
       if let asLValue = passContext.asLValue, asLValue {
         if !functionDeclarationContext.isMutating {
@@ -115,10 +115,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
     let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
-    let context = passContext.context!
+    let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if !callerCapability.isAny && !context.containsCallerCapability(callerCapability, in: contractBehaviorDeclarationContext.contractIdentifier) {
+    if !callerCapability.isAny && !environment.containsCallerCapability(callerCapability, in: contractBehaviorDeclarationContext.contractIdentifier) {
       diagnostics.append(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
     }
 
@@ -150,11 +150,11 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var passContext = passContext
     let functionDeclarationContext = passContext.functionDeclarationContext!
-    let context = passContext.context!
+    let environment = passContext.environment!
     let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
     var diagnostics = [Diagnostic]()
 
-    if let matchingFunction = context.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
+    if let matchingFunction = environment.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
@@ -162,7 +162,7 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
         }
       }
-    } else if let _ = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+    } else if let _ = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
     } else {
       diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities))
     }

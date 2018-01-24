@@ -22,7 +22,7 @@ struct Compiler {
     let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
     
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
-    let (parserAST, context, parserDiagnostics) = Parser(tokens: tokens).parse()
+    let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
     
     let compilationContext = CompilationContext(sourceCode: sourceCode, fileName: inputFile.lastPathComponent)
 
@@ -37,7 +37,7 @@ struct Compiler {
       AnyASTPass(Optimizer())
     ]
 
-    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: context, compilationContext: compilationContext)
+    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, compilationContext: compilationContext)
 
     if !passRunnerOutcome.diagnostics.isEmpty, !shouldVerify {
       print(DiagnosticsFormatter(diagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext).rendered())
@@ -55,7 +55,7 @@ struct Compiler {
       exitWithFailure()
     }
 
-    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, context: context).generateCode()
+    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, environment: environment).generateCode()
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())

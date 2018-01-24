@@ -10,23 +10,23 @@ import AST
 public struct TypeChecker: ASTPass {
   public init() {}
 
-  func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext, context: Context) -> Type.RawType {
+  func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext, environment: Environment) -> Type.RawType {
     switch expression {
     case .binaryExpression(let binaryExpression):
-      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, context: context)
+      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, environment: environment)
 
     case .bracketedExpression(let expression):
-      return type(of: expression, functionDeclarationContext: functionDeclarationContext, context: context)
+      return type(of: expression, functionDeclarationContext: functionDeclarationContext, environment: environment)
 
     case .functionCall(let functionCall):
       let contractContext = functionDeclarationContext.contractContext
-      return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities) ?? .errorType
+      return environment.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities) ?? .errorType
 
     case .identifier(let identifier):
       if !identifier.isPropertyAccess, let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
         return localVariable.type.rawType
       }
-      return context.type(of: identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+      return environment.type(of: identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
 
     case .literal(let token):
       guard case .literal(let literal) = token.kind else { fatalError() }
@@ -39,7 +39,7 @@ public struct TypeChecker: ASTPass {
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
-      let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+      let type = environment.type(of: subscriptExpression.baseIdentifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
 
       switch type {
       case .arrayType(let elementType): return elementType
@@ -109,12 +109,12 @@ public struct TypeChecker: ASTPass {
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var diagnostics = [Diagnostic]()
 
-    let context = passContext.context!
+    let environment = passContext.environment!
     let functionDeclarationContext = passContext.functionDeclarationContext!
 
     if case .punctuation(.equal) = binaryExpression.op.kind {
-      let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, context: context)
-      let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, context: context)
+      let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, environment: environment)
+      let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, environment: environment)
 
       if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
@@ -126,15 +126,15 @@ public struct TypeChecker: ASTPass {
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var diagnostics = [Diagnostic]()
-    let context = passContext.context!
+    let environment = passContext.environment!
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
 
-    if let eventCall = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
       let expectedTypes = eventCall.type.genericArguments.map { $0.rawType }
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = type(of: argument, functionDeclarationContext: functionDeclarationContext, context: context)
+        let argumentType = type(of: argument, functionDeclarationContext: functionDeclarationContext, environment: environment)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
           diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
@@ -152,10 +152,10 @@ public struct TypeChecker: ASTPass {
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     var diagnostics = [Diagnostic]()
     let functionDeclarationContext = passContext.functionDeclarationContext!
-    let context = passContext.context!
+    let environment = passContext.environment!
 
     if let expression = returnStatement.expression {
-      let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext, context: context)
+      let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext, environment: environment)
       let expectedType = functionDeclarationContext.declaration.rawType
 
       if actualType != expectedType {
