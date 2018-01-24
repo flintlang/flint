@@ -13,41 +13,41 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   public func visit(_ topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
-    var preProcessResult = pass.preProcess(topLevelModule: topLevelModule, passContext: passContext)
+    var processResult = pass.process(topLevelModule: topLevelModule, passContext: passContext)
 
-    preProcessResult.element.declarations = preProcessResult.element.declarations.map { declaration in
-      preProcessResult.combining(visit(declaration, passContext: preProcessResult.passContext))
+    processResult.element.declarations = processResult.element.declarations.map { declaration in
+      processResult.combining(visit(declaration, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(topLevelModule: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(topLevelModule: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration> {
-    var preProcessResult = pass.preProcess(topLevelDeclaration: topLevelDeclaration, passContext: passContext)
+    var processResult = pass.process(topLevelDeclaration: topLevelDeclaration, passContext: passContext)
     
-    switch preProcessResult.element {
+    switch processResult.element {
     case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
-      preProcessResult.element = .contractBehaviorDeclaration(preProcessResult.combining(visit(contractBehaviorDeclaration, passContext: preProcessResult.passContext)))
+      processResult.element = .contractBehaviorDeclaration(processResult.combining(visit(contractBehaviorDeclaration, passContext: processResult.passContext)))
     case .contractDeclaration(let contractDeclaration):
-      preProcessResult.element = .contractDeclaration(preProcessResult.combining(visit(contractDeclaration, passContext: preProcessResult.passContext)))
+      processResult.element = .contractDeclaration(processResult.combining(visit(contractDeclaration, passContext: processResult.passContext)))
     }
 
-    let postProcessResult = pass.postProcess(topLevelDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(topLevelDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
-    var preProcessResult = pass.preProcess(contractDeclaration: contractDeclaration, passContext: passContext)
+    var processResult = pass.process(contractDeclaration: contractDeclaration, passContext: passContext)
 
-    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
-    preProcessResult.element.variableDeclarations = preProcessResult.element.variableDeclarations.map { variableDeclaration in
-      return preProcessResult.combining(visit(variableDeclaration, passContext: preProcessResult.passContext))
+    processResult.element.variableDeclarations = processResult.element.variableDeclarations.map { variableDeclaration in
+      return processResult.combining(visit(variableDeclaration, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(contractDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(contractDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
@@ -55,216 +55,216 @@ public struct ASTVisitor<Pass: ASTPass> {
     let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
-    var preProcessResult = pass.preProcess(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
+    var processResult = pass.process(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
 
-    preProcessResult.element.contractIdentifier = preProcessResult.combining(visit(preProcessResult.element.contractIdentifier, passContext: preProcessResult.passContext))
+    processResult.element.contractIdentifier = processResult.combining(visit(processResult.element.contractIdentifier, passContext: processResult.passContext))
 
-    if let capabilityBinding = preProcessResult.element.capabilityBinding {
-      preProcessResult.element.capabilityBinding = preProcessResult.combining(visit(capabilityBinding, passContext: preProcessResult.passContext))
+    if let capabilityBinding = processResult.element.capabilityBinding {
+      processResult.element.capabilityBinding = processResult.combining(visit(capabilityBinding, passContext: processResult.passContext))
     }
 
-    preProcessResult.element.callerCapabilities = preProcessResult.element.callerCapabilities.map { callerCapability in
-      return preProcessResult.combining(visit(callerCapability, passContext: preProcessResult.passContext))
+    processResult.element.callerCapabilities = processResult.element.callerCapabilities.map { callerCapability in
+      return processResult.combining(visit(callerCapability, passContext: processResult.passContext))
     }
 
-    preProcessResult.element.functionDeclarations = preProcessResult.element.functionDeclarations.map { functionDeclaration in
-      return preProcessResult.combining(visit(functionDeclaration, passContext: preProcessResult.passContext))
+    processResult.element.functionDeclarations = processResult.element.functionDeclarations.map { functionDeclaration in
+      return processResult.combining(visit(functionDeclaration, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(contractBehaviorDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(contractBehaviorDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
-    var preProcessResult = pass.preProcess(variableDeclaration: variableDeclaration, passContext: passContext)
+    var processResult = pass.process(variableDeclaration: variableDeclaration, passContext: passContext)
 
-    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
-    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
+    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(variableDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(variableDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext:  passContext.contractBehaviorDeclarationContext!)
     let passContext = passContext.withUpdates { $0.functionDeclarationContext = functionDeclarationContext }
 
-    var preProcessResult = pass.preProcess(functionDeclaration: functionDeclaration, passContext: passContext)
+    var processResult = pass.process(functionDeclaration: functionDeclaration, passContext: passContext)
 
-    preProcessResult.element.attributes = preProcessResult.element.attributes.map { attribute in
-      return preProcessResult.combining(visit(attribute, passContext: preProcessResult.passContext))
+    processResult.element.attributes = processResult.element.attributes.map { attribute in
+      return processResult.combining(visit(attribute, passContext: processResult.passContext))
     }
 
-    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
-    preProcessResult.element.parameters = preProcessResult.element.parameters.map { parameter in
-      return preProcessResult.combining(visit(parameter, passContext: preProcessResult.passContext))
+    processResult.element.parameters = processResult.element.parameters.map { parameter in
+      return processResult.combining(visit(parameter, passContext: processResult.passContext))
     }
 
-    if let resultType = preProcessResult.element.resultType {
-      preProcessResult.element.resultType = preProcessResult.combining(visit(resultType, passContext: preProcessResult.passContext))
+    if let resultType = processResult.element.resultType {
+      processResult.element.resultType = processResult.combining(visit(resultType, passContext: processResult.passContext))
     }
 
-    preProcessResult.element.body = preProcessResult.element.body.map { statement in
-      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
+    processResult.element.body = processResult.element.body.map { statement in
+      return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(functionDeclaration: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(functionDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
-    let preProcessResult = pass.preProcess(attribute: attribute, passContext: passContext)
+    let processResult = pass.process(attribute: attribute, passContext: passContext)
 
-    let postProcessResult = pass.postProcess(attribute: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(attribute: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
-    var preProcessResult = pass.preProcess(parameter: parameter, passContext: passContext)
-    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
+    var processResult = pass.process(parameter: parameter, passContext: passContext)
+    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(parameter: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(parameter: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation> {
-    var preProcessResult = pass.preProcess(typeAnnotation: typeAnnotation, passContext: passContext)
-    preProcessResult.element.type = preProcessResult.combining(visit(preProcessResult.element.type, passContext: preProcessResult.passContext))
+    var processResult = pass.process(typeAnnotation: typeAnnotation, passContext: passContext)
+    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(typeAnnotation: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(typeAnnotation: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
-    let preProcessResult = pass.preProcess(identifier: identifier, passContext: passContext)
-    let postProcessResult = pass.postProcess(identifier: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let processResult = pass.process(identifier: identifier, passContext: passContext)
+    let postProcessResult = pass.postProcess(identifier: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
-    var preProcessResult = pass.preProcess(type: type, passContext: passContext)
+    var processResult = pass.process(type: type, passContext: passContext)
 
-    preProcessResult.element.genericArguments = preProcessResult.element.genericArguments.map { genericArgument in
-      return preProcessResult.combining(visit(genericArgument, passContext: preProcessResult.passContext))
+    processResult.element.genericArguments = processResult.element.genericArguments.map { genericArgument in
+      return processResult.combining(visit(genericArgument, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(type: preProcessResult.element, passContext: passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(type: processResult.element, passContext: passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
-    var preProcessResult = pass.preProcess(callerCapability: callerCapability, passContext: passContext)
+    var processResult = pass.process(callerCapability: callerCapability, passContext: passContext)
 
-    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(callerCapability: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(callerCapability: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
-    var preProcessResult = pass.preProcess(expression: expression, passContext: passContext)
+    var processResult = pass.process(expression: expression, passContext: passContext)
 
-    switch preProcessResult.element {
+    switch processResult.element {
     case .binaryExpression(let binaryExpression):
-      preProcessResult.element = .binaryExpression(preProcessResult.combining(visit(binaryExpression, passContext: preProcessResult.passContext)))
+      processResult.element = .binaryExpression(processResult.combining(visit(binaryExpression, passContext: processResult.passContext)))
     case .bracketedExpression(let expression):
-      preProcessResult.element = .bracketedExpression(preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext)))
+      processResult.element = .bracketedExpression(processResult.combining(visit(expression, passContext: processResult.passContext)))
     case .functionCall(let functionCall):
-      preProcessResult.element = .functionCall(preProcessResult.combining(visit(functionCall, passContext: preProcessResult.passContext)))
+      processResult.element = .functionCall(processResult.combining(visit(functionCall, passContext: processResult.passContext)))
     case .identifier(let identifier):
-      preProcessResult.element = .identifier(preProcessResult.combining(visit(identifier, passContext: preProcessResult.passContext)))
+      processResult.element = .identifier(processResult.combining(visit(identifier, passContext: processResult.passContext)))
     case .literal(_), .self(_): break
     case .variableDeclaration(let variableDeclaration):
-      preProcessResult.element = .variableDeclaration(preProcessResult.combining(visit(variableDeclaration, passContext: preProcessResult.passContext)))
+      processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
-      preProcessResult.element = .subscriptExpression(preProcessResult.combining(visit(subscriptExpression, passContext: preProcessResult.passContext)))
+      processResult.element = .subscriptExpression(processResult.combining(visit(subscriptExpression, passContext: processResult.passContext)))
     }
 
-    let postProcessResult = pass.postProcess(expression: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
-    var preProcessResult = pass.preProcess(statement: statement, passContext: passContext)
+    var processResult = pass.process(statement: statement, passContext: passContext)
 
-    switch preProcessResult.element {
+    switch processResult.element {
     case .expression(let expression):
-      preProcessResult.element = .expression(preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext)))
+      processResult.element = .expression(processResult.combining(visit(expression, passContext: processResult.passContext)))
     case .returnStatement(let returnStatement):
-      preProcessResult.element = .returnStatement(preProcessResult.combining(visit(returnStatement, passContext: preProcessResult.passContext)))
+      processResult.element = .returnStatement(processResult.combining(visit(returnStatement, passContext: processResult.passContext)))
     case .ifStatement(let ifStatement):
-      preProcessResult.element = .ifStatement(preProcessResult.combining(visit(ifStatement, passContext: preProcessResult.passContext)))
+      processResult.element = .ifStatement(processResult.combining(visit(ifStatement, passContext: processResult.passContext)))
     }
 
-    let postProcessResult = pass.postProcess(statement: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(statement: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var preProcessResult = pass.preProcess(binaryExpression: binaryExpression, passContext: passContext)
+    var processResult = pass.process(binaryExpression: binaryExpression, passContext: passContext)
 
     if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment  {
-      preProcessResult.passContext.asLValue = true
+      processResult.passContext.asLValue = true
     }
-    preProcessResult.element.lhs = preProcessResult.combining(visit(preProcessResult.element.lhs, passContext: preProcessResult.passContext))
-    preProcessResult.passContext.asLValue = false
+    processResult.element.lhs = processResult.combining(visit(processResult.element.lhs, passContext: processResult.passContext))
+    processResult.passContext.asLValue = false
 
-    preProcessResult.element.rhs = preProcessResult.combining(visit(preProcessResult.element.rhs, passContext: preProcessResult.passContext))
+    processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(binaryExpression: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(binaryExpression: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    var preProcessResult = pass.preProcess(functionCall: functionCall, passContext: passContext)
+    var processResult = pass.process(functionCall: functionCall, passContext: passContext)
 
-    preProcessResult.element.identifier = preProcessResult.combining(visit(preProcessResult.element.identifier, passContext: preProcessResult.passContext))
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
-    preProcessResult.element.arguments = preProcessResult.element.arguments.map { argument in
-      return preProcessResult.combining(visit(argument, passContext: preProcessResult.passContext))
+    processResult.element.arguments = processResult.element.arguments.map { argument in
+      return processResult.combining(visit(argument, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(functionCall: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(functionCall: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
-    var preProcessResult = pass.preProcess(subscriptExpression: subscriptExpression, passContext: passContext)
+    var processResult = pass.process(subscriptExpression: subscriptExpression, passContext: passContext)
 
-    preProcessResult.element.baseIdentifier = preProcessResult.combining(visit(preProcessResult.element.baseIdentifier, passContext: preProcessResult.passContext))
+    processResult.element.baseIdentifier = processResult.combining(visit(processResult.element.baseIdentifier, passContext: processResult.passContext))
 
-    preProcessResult.element.indexExpression = preProcessResult.combining(visit(preProcessResult.element.indexExpression, passContext: preProcessResult.passContext))
+    processResult.element.indexExpression = processResult.combining(visit(processResult.element.indexExpression, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(subscriptExpression: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(subscriptExpression: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
-    var preProcessResult = pass.preProcess(returnStatement: returnStatement, passContext: passContext)
+    var processResult = pass.process(returnStatement: returnStatement, passContext: passContext)
 
-    if let expression = preProcessResult.element.expression {
-      preProcessResult.element.expression = preProcessResult.combining(visit(expression, passContext: preProcessResult.passContext))
+    if let expression = processResult.element.expression {
+      processResult.element.expression = processResult.combining(visit(expression, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(returnStatement: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(returnStatement: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
-    var preProcessResult = pass.preProcess(ifStatement: ifStatement, passContext: passContext)
+    var processResult = pass.process(ifStatement: ifStatement, passContext: passContext)
 
-    preProcessResult.element.condition = preProcessResult.combining(visit(preProcessResult.element.condition, passContext: preProcessResult.passContext))
+    processResult.element.condition = processResult.combining(visit(processResult.element.condition, passContext: processResult.passContext))
 
-    preProcessResult.element.body = preProcessResult.element.body.map { statement in
-      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
+    processResult.element.body = processResult.element.body.map { statement in
+      return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
-    preProcessResult.element.elseBody = preProcessResult.element.body.map { statement in
-      return preProcessResult.combining(visit(statement, passContext: preProcessResult.passContext))
+    processResult.element.elseBody = processResult.element.body.map { statement in
+      return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
-    let postProcessResult = pass.postProcess(ifStatement: preProcessResult.element, passContext: preProcessResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: preProcessResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 }
