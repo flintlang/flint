@@ -11,20 +11,26 @@ import SemanticAnalyzer
 struct ASTPassRunner {
   var ast: TopLevelModule
 
-  func run(passes: [ASTPass.Type], in context: Context, compilationContext: CompilationContext) -> ASTPassResult {
-    var context = context
+  func run(passes: [AnyASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
+    var environment = environment
     var ast = self.ast
     var diagnostics = [Diagnostic]()
 
     for pass in passes {
-      let result = pass.init().run(for: ast, in: context)
-      context = result.context
-      ast = result.ast
+      let passContext = ASTPassContext().withUpdates { $0.environment = environment }
+      let result = ASTVisitor(pass: pass).visit(ast, passContext: passContext)
+      environment = result.passContext.environment!
+      ast = result.element
 
       guard !result.diagnostics.isEmpty else { continue }
       diagnostics.append(contentsOf: result.diagnostics)
     }
 
-    return ASTPassResult(diagnostics: diagnostics, ast: ast, context: context)
+    return ASTPassRunResult(element: ast, diagnostics: diagnostics)
   }
+}
+
+struct ASTPassRunResult {
+  var element: TopLevelModule
+  var diagnostics: [Diagnostic]
 }

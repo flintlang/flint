@@ -18,7 +18,7 @@ struct IULIAFunction {
   var callerCapabilities: [CallerCapability]
 
   var contractStorage: ContractStorage
-  var context: Context
+  var environment: Environment
 
   var name: String {
     return functionDeclaration.identifier.name
@@ -100,7 +100,7 @@ struct IULIAFunction {
     let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
 
-      let type = context.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
+      let type = environment.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
       let offset = contractStorage.offset(for: callerCapability.name)
 
       switch type {
@@ -194,7 +194,7 @@ extension IULIAFunction {
   }
 
   func render(_ functionCall: FunctionCall) -> String {
-    if let eventCall = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
       let types = eventCall.type.genericArguments
 
       var stores = [String]()
@@ -263,7 +263,7 @@ extension IULIAFunction {
     let offset = contractStorage.offset(for: baseIdentifier.name)
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier)!
+    let type = environment.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier)!
 
     guard baseIdentifier.isPropertyAccess else {
       fatalError("Subscriptable types are only supported for contract properties right now.")

@@ -9,11 +9,11 @@ import AST
 
 public struct IULIACodeGenerator {
   var topLevelModule: TopLevelModule
-  var context: Context
+  var environment: Environment
 
-  public init(topLevelModule: TopLevelModule, context: Context) {
+  public init(topLevelModule: TopLevelModule, environment: Environment) {
     self.topLevelModule = topLevelModule
-    self.context = context
+    self.environment = environment
   }
 
   public func generateCode() -> String {
@@ -32,9 +32,9 @@ public struct IULIACodeGenerator {
 
         return contractBehaviorDeclaration
       }
-      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, context: context)
+      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, environment: environment)
       contracts.append(contract)
-      interfaces.append(IULIAInterface(contract: contract, context: context))
+      interfaces.append(IULIAInterface(contract: contract, environment: environment))
     }
 
     let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")

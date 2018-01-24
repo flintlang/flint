@@ -9,7 +9,7 @@ import AST
 
 struct IULIAInterface {
   var contract: IULIAContract
-  var context: Context
+  var environment: Environment
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
@@ -42,7 +42,7 @@ struct IULIAInterface {
 
     var attribute = ""
 
-    if !functionDeclaration.isMutating, !functionDeclaration.containsEventCall(context: context, contractIdentifier: contract.contractDeclaration.identifier) {
+    if !functionDeclaration.isMutating, !functionDeclaration.containsEventCall(environment: environment, contractIdentifier: contract.contractDeclaration.identifier) {
       attribute = "view "
     }
 
@@ -66,12 +66,12 @@ struct IULIAInterface {
 }
 
 fileprivate extension FunctionDeclaration {
-  func containsEventCall(context: Context, contractIdentifier: Identifier) -> Bool {
+  func containsEventCall(environment: Environment, contractIdentifier: Identifier) -> Bool {
     for statement in body {
       guard case .expression(.functionCall(let functionCall)) = statement else {
         continue
       }
-      if context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) != nil {
+      if environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) != nil {
         return true
       }
     }
