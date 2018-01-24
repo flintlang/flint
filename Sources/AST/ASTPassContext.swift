@@ -28,11 +28,21 @@ extension ASTPassContext {
     set { self[ContextPassContextEntry.self] = newValue }
   }
 
-
   public var asLValue: Bool? {
     get { return self[AsLValueContextEntry.self] }
     set { self[AsLValueContextEntry.self] = newValue }
   }
+
+  public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
+    get { return self[ContractBehaviorDeclarationContextEntry.self] }
+    set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }
+  }
+
+  public var functionDeclarationContext: FunctionDeclarationContext? {
+    get { return self[FunctionDeclarationContextEntry.self] }
+    set { self[FunctionDeclarationContextEntry.self] = newValue }
+  }
+
 }
 
 public protocol PassContextEntry {
@@ -51,4 +61,12 @@ private struct ContextPassContextEntry: PassContextEntry {
 
 private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
+}
+
+private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
+  typealias Value = ContractBehaviorDeclarationContext
+}
+
+private struct FunctionDeclarationContextEntry: PassContextEntry {
+  typealias Value = FunctionDeclarationContext
 }

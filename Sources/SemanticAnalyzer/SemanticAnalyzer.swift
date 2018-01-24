@@ -44,9 +44,8 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func preProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
-    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext:  passContext.contractBehaviorDeclarationContext!)
-    let passContext = passContext.withUpdates { $0.functionDeclarationContext = functionDeclarationContext }
-
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+    
     var diagnostics = [Diagnostic]()
 
     if functionDeclaration.isPayable {
@@ -274,28 +273,10 @@ public struct SemanticAnalyzer: ASTPass {
 }
 
 extension ASTPassContext {
-  var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
-    get { return self[ContractBehaviorDeclarationContextEntry.self] }
-    set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }
-  }
-
-  var functionDeclarationContext: FunctionDeclarationContext? {
-    get { return self[FunctionDeclarationContextEntry.self] }
-    set { self[FunctionDeclarationContextEntry.self] = newValue }
-  }
-
   var mutatingExpressions: [Expression]? {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
   }
-}
-
-struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
-  typealias Value = ContractBehaviorDeclarationContext
-}
-
-struct FunctionDeclarationContextEntry: PassContextEntry {
-  typealias Value = FunctionDeclarationContext
 }
 
 struct MutatingExpressionContextEntry: PassContextEntry {

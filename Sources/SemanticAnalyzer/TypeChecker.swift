@@ -9,11 +9,49 @@ import AST
 
 public struct TypeChecker: ASTPass {
   public init() {}
+
+  func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext, context: Context) -> Type.RawType {
+    switch expression {
+    case .binaryExpression(let binaryExpression):
+      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, context: context)
+
+    case .bracketedExpression(let expression):
+      return type(of: expression, functionDeclarationContext: functionDeclarationContext, context: context)
+
+    case .functionCall(let functionCall):
+      let contractContext = functionDeclarationContext.contractContext
+      return context.type(of: functionCall, contractIdentifier: contractContext.contractIdentifier, callerCapabilities: contractContext.callerCapabilities) ?? .errorType
+
+    case .identifier(let identifier):
+      if !identifier.isPropertyAccess, let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
+        return localVariable.type.rawType
+      }
+      return context.type(of: identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+
+    case .literal(let token):
+      guard case .literal(let literal) = token.kind else { fatalError() }
+      switch literal {
+      case .boolean(_): return .builtInType(.bool)
+      case .decimal(.integer(_)): return .builtInType(.int)
+      default: fatalError()
+      }
+    case .self(_): return .userDefinedType(functionDeclarationContext.contractContext.contractIdentifier.name)
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type.rawType
+    case .subscriptExpression(let subscriptExpression):
+      let type = context.type(of: subscriptExpression.baseIdentifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)!
+
+      switch type {
+      case .arrayType(let elementType): return elementType
+      case .fixedSizeArrayType(let elementType, _): return elementType
+      case .dictionaryType(_, let valueType): return valueType
+      default: fatalError()
+      }
+    }
+  }
   
   public func preProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
-    let visitor = TypeCheckerVisitor(context: passContext.context!)
-    visitor.visit(topLevelModule)
-    return ASTPassResult(element: topLevelModule, diagnostics: visitor.diagnostics, passContext: passContext)
+    return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
 
   public func preProcess(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration> {
@@ -69,11 +107,42 @@ public struct TypeChecker: ASTPass {
   }
 
   public func preProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+
+    let context = passContext.context!
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+
+    if case .punctuation(.equal) = binaryExpression.op.kind {
+      let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, context: context)
+      let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, context: context)
+
+      if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
+        diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
+      }
+    }
+
+    return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func preProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let context = passContext.context!
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+    let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
+
+    if let eventCall = context.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+      let expectedTypes = eventCall.type.genericArguments.map { $0.rawType }
+
+      for (i, argument) in functionCall.arguments.enumerated() {
+        let argumentType = type(of: argument, functionDeclarationContext: functionDeclarationContext, context: context)
+        let expectedType = expectedTypes[i]
+        if argumentType != expectedType {
+          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
+        }
+      }
+    }
+
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func preProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
@@ -81,7 +150,20 @@ public struct TypeChecker: ASTPass {
   }
 
   public func preProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
-    return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+    let context = passContext.context!
+
+    if let expression = returnStatement.expression {
+      let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext, context: context)
+      let expectedType = functionDeclarationContext.declaration.rawType
+
+      if actualType != expectedType {
+        diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
+      }
+    }
+
+    return ASTPassResult(element: returnStatement, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func preProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

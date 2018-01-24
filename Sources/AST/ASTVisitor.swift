@@ -51,6 +51,10 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+    let properties = passContext.context!.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
+
     var preProcessResult = pass.preProcess(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
 
     preProcessResult.element.contractIdentifier = preProcessResult.combining(visit(preProcessResult.element.contractIdentifier, passContext: preProcessResult.passContext))
@@ -82,6 +86,9 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   func visit(_ functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext:  passContext.contractBehaviorDeclarationContext!)
+    let passContext = passContext.withUpdates { $0.functionDeclarationContext = functionDeclarationContext }
+
     var preProcessResult = pass.preProcess(functionDeclaration: functionDeclaration, passContext: passContext)
 
     preProcessResult.element.attributes = preProcessResult.element.attributes.map { attribute in
