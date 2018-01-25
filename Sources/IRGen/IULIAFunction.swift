@@ -331,7 +331,23 @@ extension IULIAFunction {
       """
     }
 
-    return ifCode
+    var elseCode = ""
+
+    if !ifStatement.elseBody.isEmpty {
+      let body = ifStatement.elseBody.map { statement in
+        if case .returnStatement(_) = statement {
+          fatalError("Return statements in else blocks are not supported yet")
+        }
+        return render(statement)
+      }.joined(separator: "\n")
+      elseCode = """
+      if not(\(condition)) {
+        \(body.indented(by: 2))
+      }
+      """
+    }
+
+    return ifCode + "\n" + elseCode
   }
 
   func render(_ returnStatement: ReturnStatement) -> String {

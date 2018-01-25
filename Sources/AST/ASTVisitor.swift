@@ -264,7 +264,7 @@ public struct ASTVisitor<Pass: ASTPass> {
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
-    processResult.element.elseBody = processResult.element.body.map { statement in
+    processResult.element.elseBody = processResult.element.elseBody.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
