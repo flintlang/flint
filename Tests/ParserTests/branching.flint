@@ -29,4 +29,17 @@ Wallet :: (any) {
 // CHECK-AST:            1
     return n * factorial(n - 1)
   }
+
+// CHECK-AST: IfStatement
+// CHECK-AST:   true
+// CHECK-AST:    VariableDeclaration
+// CHECK-AST:   ElseBlock
+// CHECK-AST:    VariableDeclaration
+  func foo() {
+    if true {
+      var a: Int = 2
+    } else {
+      var b: Int = 3
+    }
+  }
 }

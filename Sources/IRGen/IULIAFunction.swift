@@ -316,22 +316,30 @@ extension IULIAFunction {
     }.joined(separator: "\n")
     let ifCode: String
 
-    if ifStatement.endsWithReturnStatement {
-      ifCode = """
-      switch \(condition)
-      case 1 {
-        \(body.indented(by: 2))
-      }
-      """
-    } else {
-      ifCode = """
-      if \(condition) {
+    ifCode = """
+    switch \(condition)
+    case 1 {
+      \(body.indented(by: 2))
+    }
+    """
+
+    var elseCode = ""
+
+    if !ifStatement.elseBody.isEmpty {
+      let body = ifStatement.elseBody.map { statement in
+        if case .returnStatement(_) = statement {
+          fatalError("Return statements in else blocks are not supported yet")
+        }
+        return render(statement)
+      }.joined(separator: "\n")
+      elseCode = """
+      default {
         \(body.indented(by: 2))
       }
       """
     }
 
-    return ifCode
+    return ifCode + "\n" + elseCode
   }
 
   func render(_ returnStatement: ReturnStatement) -> String {
