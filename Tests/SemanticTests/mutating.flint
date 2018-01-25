@@ -2,6 +2,7 @@
 
 contract Test {
   var a: Int[10]
+  var b: Int
 }
 
 Test :: (any) {
@@ -28,5 +29,13 @@ Test :: (any) {
 
   mutating func d() {
     a[0] += 2
+  }
+
+  mutating func e() {
+    b = 2
+  }
+
+  mutating func f() {
+    self.a[2] = 2
   }
 }
