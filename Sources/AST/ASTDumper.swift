@@ -273,8 +273,10 @@ public class ASTDumper {
         self.dump(statement)
       }
 
-      for statement in ifStatement.elseBody {
-        self.dump(statement)
+      self.writeNode("ElseBlock") {
+        for statement in ifStatement.elseBody {
+          self.dump(statement)
+        }
       }
     }
   }

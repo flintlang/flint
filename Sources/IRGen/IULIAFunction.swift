@@ -316,20 +316,12 @@ extension IULIAFunction {
     }.joined(separator: "\n")
     let ifCode: String
 
-    if ifStatement.endsWithReturnStatement {
-      ifCode = """
-      switch \(condition)
-      case 1 {
-        \(body.indented(by: 2))
-      }
-      """
-    } else {
-      ifCode = """
-      if \(condition) {
-        \(body.indented(by: 2))
-      }
-      """
+    ifCode = """
+    switch \(condition)
+    case 1 {
+      \(body.indented(by: 2))
     }
+    """
 
     var elseCode = ""
 
@@ -341,7 +333,7 @@ extension IULIAFunction {
         return render(statement)
       }.joined(separator: "\n")
       elseCode = """
-      if not(\(condition)) {
+      default {
         \(body.indented(by: 2))
       }
       """
