@@ -14,31 +14,41 @@ public struct DiagnosticsFormatter {
   var compilationContext: CompilationContext?
 
   public func rendered() -> String {
-    let sourceFileText: String
+    return diagnostics.map({ renderDiagnostic($0) }).joined(separator: "\n")
+  }
+
+  func renderDiagnostic(_ diagnostic: Diagnostic, highlightColor: Color = .lightRed, style: Style = .bold) -> String {
+    var sourceFileText = ""
     if let compilationContext = compilationContext {
       sourceFileText = " in \(compilationContext.fileName.bold)"
-    } else {
-      sourceFileText = ""
     }
 
-    return diagnostics.map { diagnostic in
-      let infoLine = "\(diagnostic.severity == .error ? "Error".lightRed.bold : "Warning")\(sourceFileText):"
-      let body: String
+    let infoTopic: String
 
-      if let compilationContext = compilationContext {
-        body = """
-          \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
-          \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: compilationContext.sourceCode).indented(by: 2))
-        """
-      } else {
-        body = "  \(diagnostic.message.indented(by: 2).bold)"
-      }
+    switch diagnostic.severity {
+    case .error: infoTopic = "Error".lightRed.bold
+    case .warning: infoTopic = "Warning".bold
+    case .note: infoTopic = "Note".lightBlack.bold
+    }
 
-      return """
-      \(infoLine)
-      \(body)
+    let infoLine = "\(infoTopic)\(sourceFileText):"
+    let body: String
+
+    if let compilationContext = compilationContext {
+      body = """
+      \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
+      \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: compilationContext.sourceCode, highlightColor: highlightColor, style: style))
       """
-    }.joined(separator: "\n")
+    } else {
+      body = "  \(diagnostic.message.indented(by: 2).bold)"
+    }
+
+    let notes = diagnostic.notes.map({ renderDiagnostic($0, highlightColor: .white, style: .default) }).joined(separator: "\n")
+
+    return """
+    \(infoLine)
+    \(body)\(notes.isEmpty ? "" : "\n  \(notes.indented(by: 2))")
+    """
   }
 
   func render(_ sourceLocation: SourceLocation?) -> String {
@@ -46,25 +56,29 @@ public struct DiagnosticsFormatter {
     return " at line \(sourceLocation.line), column \(sourceLocation.column)"
   }
 
-  func renderSourcePreview(at sourceLocation: SourceLocation?, sourceCode: String) -> String {
+  func renderSourcePreview(at sourceLocation: SourceLocation?, sourceCode: String, highlightColor: Color, style: Style) -> String {
     let sourceLines = sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
 
     let spaceOffset = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
+
+    let sourceLine = renderSourceLine(sourceLines[sourceLocation.line - 1], rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length), highlightColor: highlightColor, style: style)
+    let indicator = String(repeating: " ", count: spaceOffset) + String(repeating: "^", count: sourceLocation.length).applyingCodes(highlightColor, style)
+
     return """
-    \(renderSourceLine(sourceLines[sourceLocation.line - 1], rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length)))
-    \(String(repeating: " ", count: spaceOffset) + String(repeating: "^", count: sourceLocation.length).lightRed.bold)
+    \(sourceLine)
+    \(indicator)
     """
   }
 
-  func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>) -> String {
+  func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>, highlightColor: Color, style: Style) -> String {
     let lowerBound = rangeOfInterest.lowerBound != 0 ? rangeOfInterest.lowerBound - 1 : 0
     let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : sourceLine.count - 1
 
     let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: lowerBound)
     let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: upperBound)
 
-    return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) + String(sourceLine[lowerBoundIndex..<upperBoundIndex]).red.bold + String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
+    return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) + String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) + String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
   }
 }
 

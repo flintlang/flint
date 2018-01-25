@@ -10,8 +10,13 @@ import AST
 // MARK: Errors
 
 extension Diagnostic {
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability]) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(contextCallerCapabilities.map { $0.name })")
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [MangledFunction]) -> Diagnostic {
+
+    let candidateNotes = candidates.map { candidate in
+      return Diagnostic(severity: .note, sourceLocation: candidate.functionDeclaration.sourceLocation, message: "Perhaps you meant this function, which requires one of the caller capabilities in \(renderCapabilityGroup(candidate.callerCapabilities))")
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(renderCapabilityGroup(contextCallerCapabilities))", notes: candidateNotes)
   }
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
@@ -40,6 +45,10 @@ extension Diagnostic {
 
   static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return \(resultType.name)")
+  }
+
+  static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
+    return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
   }
 }
 
