@@ -72,7 +72,7 @@ public struct Environment {
   }
 
   public func type(of functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> Type.RawType? {
-    guard let matchingFunction = matchFunctionCall(functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities) else { return .errorType }
+    guard case .success(let matchingFunction) = matchFunctionCall(functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities) else { return .errorType }
     return typeMap[matchingFunction]
   }
 
@@ -86,14 +86,25 @@ public struct Environment {
     typeMap[mangledFunction] = type.rawType
   }
 
-  public func matchFunctionCall(_ functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> MangledFunction? {
+  public enum FunctionCallMatchResult {
+    case success(MangledFunction)
+    case failure(candidates: [MangledFunction])
+  }
+
+  public func matchFunctionCall(_ functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
+    var candidates = [MangledFunction]()
+
     for function in functions {
       if function.canBeCalledBy(functionCall: functionCall, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities) {
-        return function
+        return .success(function)
+      }
+
+      if function.hasSameSignatureAs(functionCall) {
+        candidates.append(function)
       }
     }
 
-    return nil
+    return .failure(candidates: candidates)
   }
 
   public func matchEventCall(_ functionCall: FunctionCall, contractIdentifier: Identifier) -> VariableDeclaration? {

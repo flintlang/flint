@@ -9,21 +9,32 @@ public struct MangledFunction: CustomStringConvertible {
   public var contractIdentifier: Identifier
   public var callerCapabilities: [CallerCapability]
 
-  public var identifier: Identifier
-  public var numParameters: Int
-  public var isMutating: Bool
+  public var functionDeclaration: FunctionDeclaration
 
-  public var resultType: Type?
-  public var rawType: Type.RawType
+  public var identifier: Identifier {
+    return functionDeclaration.identifier
+  }
+
+  public var numParameters: Int {
+    return functionDeclaration.parameters.count
+  }
+
+  public var isMutating: Bool {
+    return functionDeclaration.isMutating
+  }
+
+  public var resultType: Type? {
+    return functionDeclaration.resultType
+  }
+
+  public var rawType: Type.RawType {
+    return functionDeclaration.rawType
+  }
 
   init(functionDeclaration: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
-    self.identifier = functionDeclaration.identifier
+    self.functionDeclaration = functionDeclaration
     self.contractIdentifier = contractIdentifier
     self.callerCapabilities = callerCapabilities
-    self.numParameters = functionDeclaration.parameters.count
-    self.isMutating = functionDeclaration.isMutating
-    self.resultType = functionDeclaration.resultType
-    self.rawType = functionDeclaration.rawType
   }
 
   func canBeCalledBy(functionCall: FunctionCall, contractIdentifier: Identifier, callerCapabilities callCallerCapabilities: [CallerCapability]) -> Bool {
@@ -40,6 +51,10 @@ public struct MangledFunction: CustomStringConvertible {
       }
     }
     return true
+  }
+
+  func hasSameSignatureAs(_ functionCall: FunctionCall) -> Bool {
+    return identifier == functionCall.identifier && numParameters == functionCall.arguments.count
   }
 
   public var description: String {

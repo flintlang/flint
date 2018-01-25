@@ -7,7 +7,7 @@ contract Test {
 Test :: (any) {
   public func foo() {
 
-// expected-error@11 {{Function bar is not in scope or cannot be called using the caller capabilities ["any"]}}
+// expected-error@11 {{Function bar is not in scope or cannot be called using the caller capabilities (any)}}
     bar()
   }
 }

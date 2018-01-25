@@ -154,7 +154,8 @@ public struct SemanticAnalyzer: ASTPass {
     let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
     var diagnostics = [Diagnostic]()
 
-    if let matchingFunction = environment.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
+    switch environment.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
+    case .success(let matchingFunction):
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
@@ -162,9 +163,10 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
         }
       }
-    } else if let _ = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
-    } else {
-      diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities))
+    case .failure(candidates: let candidates):
+      if environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities, candidates: candidates))
+      }
     }
 
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
