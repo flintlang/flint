@@ -432,6 +432,13 @@ public struct BinaryExpression: SourceEntity {
 
   public var rhs: Expression
 
+  public var isExplicitPropertyAccess: Bool {
+    if case .dot = opToken, case .self(_) = lhs {
+      return true
+    }
+    return false
+  }
+
   public var sourceLocation: SourceLocation {
     return .spanning(lhs, to: rhs)
   }

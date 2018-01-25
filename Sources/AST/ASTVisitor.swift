@@ -204,11 +204,15 @@ public struct ASTVisitor<Pass: ASTPass> {
   func visit(_ binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var processResult = pass.process(binaryExpression: binaryExpression, passContext: passContext)
 
-    if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment  {
+    if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
       processResult.passContext.asLValue = true
     }
+
     processResult.element.lhs = processResult.combining(visit(processResult.element.lhs, passContext: processResult.passContext))
-    processResult.passContext.asLValue = false
+
+    if !binaryExpression.isExplicitPropertyAccess {
+      processResult.passContext.asLValue = false
+    }
 
     processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
 
