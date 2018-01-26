@@ -6,3 +6,5 @@
 *.sol
 
 bin/
+contracts/
+build/

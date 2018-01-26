@@ -1,0 +1,54 @@
+contract Bank {
+  var manager: Address
+  var balances: [Address: Int]
+  var accounts: [Address]
+  var lastIndex: Int
+
+  var totalDonations: Wei
+}
+
+Bank :: account <- (any) {
+  public mutating func register() {
+    accounts[lastIndex] = account
+    lastIndex += 1
+  }
+
+  public func getManager() -> Address {
+    return manager
+  }
+
+  @payable
+  public mutating func donate(implicit value: Wei) {
+    totalDonations = totalDonations + value
+  }
+}
+
+Bank :: (manager) {
+  public mutating func freeDeposit(account: Address, amount: Int) {
+    balances[account] += amount
+  }
+
+  public mutating func clear(account: Int) {
+    balances[account] = 0
+  }
+
+  public func getDonations() -> Wei {
+    return totalDonations
+  }
+}
+
+Bank :: account <- (accounts) {
+  public func getBalance() -> Int {
+    return balances[account]
+  }
+
+  @payable
+  public mutating func deposit(implicit value: Wei) {
+    balances[account] += value
+  }
+
+  public mutating func transfer(amount: Int, destination: Address) {
+    balances[account] -= amount
+    balances[destination] += amount
+  }
+}
