@@ -1,6 +1,7 @@
 # The Flint Programming Language [![Build Status](https://travis-ci.com/franklinsch/flint.svg?token=QwcCuJTEqyvvqgtqAD5V&branch=master)](https://travis-ci.com/franklinsch/flint)
 
 ![Flint](docs/flint_small.png)
+<a href="url"><img src="docs/flint_small.png" align="left" height="70" ></a>
 
 Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts.
 
