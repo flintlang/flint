@@ -66,6 +66,14 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -186,8 +194,16 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {

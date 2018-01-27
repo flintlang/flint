@@ -126,6 +126,7 @@ extension Token {
 
     // Keywords
     case contract
+    case `struct`
     case `var`
     case `func`
     case `mutating`
@@ -155,6 +156,7 @@ extension Token.Kind: Equatable {
     switch (lhs, rhs) {
     case (.newline, .newline): return true
     case (.contract, .contract): return true
+    case (.struct, .struct): return true
     case (.var, .var): return true
     case (.func, .func): return true
     case (.self, .self): return true
@@ -179,6 +181,7 @@ extension Token.Kind: CustomStringConvertible {
     switch self {
     case .newline: return "\\\n"
     case .contract: return "contract"
+    case .struct: return "struct"
     case .var: return "var"
     case .func: return "func"
     case .self: return "self"

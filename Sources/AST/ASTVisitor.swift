@@ -31,6 +31,8 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .contractBehaviorDeclaration(processResult.combining(visit(contractBehaviorDeclaration, passContext: processResult.passContext)))
     case .contractDeclaration(let contractDeclaration):
       processResult.element = .contractDeclaration(processResult.combining(visit(contractDeclaration, passContext: processResult.passContext)))
+    case .structDeclaration(let structDeclaration):
+      processResult.element = .structDeclaration(processResult.combining(visit(structDeclaration, passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(topLevelDeclaration: processResult.element, passContext: processResult.passContext)
@@ -72,6 +74,33 @@ public struct ASTVisitor<Pass: ASTPass> {
     }
 
     let postProcessResult = pass.postProcess(contractBehaviorDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    var processResult = pass.process(structDeclaration: structDeclaration, passContext: passContext)
+
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
+
+    processResult.element.members = processResult.element.members.map { structMember in
+      return processResult.combining(visit(structMember, passContext: processResult.passContext))
+    }
+
+    let postProcessResult = pass.postProcess(structDeclaration: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    var processResult = pass.process(structMember: structMember, passContext: passContext)
+
+    switch processResult.element {
+    case .functionDeclaration(let functionDeclaration):
+      processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
+    case .variableDeclaration(let variableDeclaration):
+      processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
+    }
+
+    let postProcessResult = pass.postProcess(structMember: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

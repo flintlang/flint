@@ -13,6 +13,7 @@ public struct TopLevelModule {
 public enum TopLevelDeclaration {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
+  case structDeclaration(StructDeclaration)
 }
 
 public struct ContractDeclaration: SourceEntity {
@@ -48,6 +49,23 @@ public struct ContractBehaviorDeclaration: SourceEntity {
     self.callerCapabilities = callerCapabilities
     self.functionDeclarations = functionDeclarations
     self.closeBracketToken = closeBracketToken
+  }
+}
+
+public enum StructMember {
+  case variableDeclaration(VariableDeclaration)
+  case functionDeclaration(FunctionDeclaration)
+}
+
+public struct StructDeclaration {
+  public var structToken: Token
+  public var identifier: Identifier
+  public var members: [StructMember]
+
+  public init(structToken: Token, identifier: Identifier, members: [StructMember]) {
+    self.structToken = structToken
+    self.identifier = identifier
+    self.members = members
   }
 }
 

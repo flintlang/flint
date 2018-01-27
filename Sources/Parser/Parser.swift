@@ -88,11 +88,15 @@ extension Parser {
     
     while true {
       guard let first = currentToken else { break }
-      if first.kind == .contract {
+      switch first.kind {
+      case .contract:
         let contractDeclaration = try parseContractDeclaration()
         environment.addContract(contractDeclaration)
         declarations.append(.contractDeclaration(contractDeclaration))
-      } else {
+      case .struct:
+        let structDeclaration = try parseStructDeclaration()
+        declarations.append(.structDeclaration(structDeclaration))
+      default:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       }
@@ -225,6 +229,16 @@ extension Parser {
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
     return VariableDeclaration(varToken: varToken, identifier: name, type: typeAnnotation.type)
+  }
+}
+
+extension Parser {
+  func parseStructDeclaration() throws -> StructDeclaration {
+    let structToken = try consume(.struct)
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.openBrace))
+    try consume(.punctuation(.closeBrace))
+    return StructDeclaration(structToken: structToken, identifier: identifier, members: [])
   }
 }
 

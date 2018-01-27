@@ -51,6 +51,8 @@ public class ASTDumper {
         self.dump(contractDeclaration)
       case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
         self.dump(contractBehaviorDeclaration)
+      case .structDeclaration(let structDeclaration):
+        self.dump(structDeclaration)
       }
     }
   }
@@ -81,6 +83,25 @@ public class ASTDumper {
       self.dump(contractBehaviorDeclaration.closeBracketToken)
     }
   }
+
+  func dump(_ structDeclaration: StructDeclaration) {
+    writeNode("StructDeclaration") {
+      self.dump(structDeclaration.identifier)
+
+      for member in structDeclaration.members {
+        self.dump(member)
+      }
+    }
+  }
+
+    func dump(_ structMember: StructMember) {
+      switch structMember {
+      case .functionDeclaration(let functionDeclaration):
+        self.dump(functionDeclaration)
+      case .variableDeclaration(let variableDeclaration):
+        self.dump(variableDeclaration)
+      }
+    }
 
   func dump(_ variableDeclaration: VariableDeclaration) {
     writeNode("VariableDeclaration") {
