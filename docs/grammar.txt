@@ -1,9 +1,10 @@
 // Top-level declarations
 
 top-level-declarations -> top-level-declaration (top-level-declarations)
-top-level-declaration -> contract-declaration | contract-behavior-declaration
+top-level-declaration -> contract-declaration | contract-behavior-declaration | struct-declaration
 
 // Contract declaration
+
 contract-declaration -> [contract] identifier [{] (variable-declarations) [}]
 
 // Variable declarations
@@ -21,6 +22,12 @@ type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-l
 
 generic-argument-clause -> [<] generic-parameter-list [>]
 generic-parameter-list -> type | type [,] generic-argument-list
+
+// Struct declaration
+
+struct-declaration -> [struct] identifier [{] (struct-members) [}]
+struct-members -> struct-member (struct-members)
+struct-member -> variable-declaration | function-declaration
 
 // Contract behavior declaration
 
