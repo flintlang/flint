@@ -43,6 +43,15 @@ extension ASTPassContext {
     set { self[FunctionDeclarationContextEntry.self] = newValue }
   }
 
+  public var scopeContext: ScopeContext? {
+    get { return self[ScopeContextContextEntry.self] }
+    set { self[ScopeContextContextEntry.self] = newValue }
+  }
+
+  public var isFunctionCall: Bool? {
+    get { return self[IsFunctionCallContextEntry.self] }
+    set { self[IsFunctionCallContextEntry.self] = newValue }
+  }
 }
 
 public protocol PassContextEntry {
@@ -69,4 +78,12 @@ private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
 
 private struct FunctionDeclarationContextEntry: PassContextEntry {
   typealias Value = FunctionDeclarationContext
+}
+
+private struct ScopeContextContextEntry: PassContextEntry {
+  typealias Value = ScopeContext
+}
+
+private struct IsFunctionCallContextEntry: PassContextEntry {
+  typealias Value = Bool
 }

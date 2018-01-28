@@ -103,7 +103,7 @@ public struct FunctionDeclaration: SourceEntity {
     return resultType?.rawType ?? .builtInType(.void)
   }
 
-  public var localVariables: [VariableDeclaration]
+  public var localVariables = [VariableDeclaration]()
 
   public var sourceLocation: SourceLocation {
     if let resultType = resultType {
@@ -136,7 +136,7 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, localVariables: [VariableDeclaration]) {
+  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -146,7 +146,6 @@ public struct FunctionDeclaration: SourceEntity {
     self.resultType = resultType
     self.body = body
     self.closeBraceToken = closeBraceToken
-    self.localVariables = localVariables
   }
 
   public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
@@ -220,11 +219,7 @@ public struct TypeAnnotation: SourceEntity {
 
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
-  public var enclosingContractName: String?
-
-  public var isPropertyAccess: Bool {
-    return enclosingContractName != nil
-  }
+  public var isPropertyAccess = false
 
   public var name: String {
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }

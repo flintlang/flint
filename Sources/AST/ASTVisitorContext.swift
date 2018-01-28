@@ -35,3 +35,15 @@ public struct FunctionDeclarationContext {
     return declaration.isMutating
   }
 }
+
+public struct ScopeContext {
+  public var localVariables = [VariableDeclaration]()
+
+  public init(localVariables: [VariableDeclaration] = []) {
+    self.localVariables = localVariables
+  }
+
+  public func containsVariableDefinition(for name: String) -> Bool {
+    return localVariables.contains { $0.identifier.name == name }
+  }
+}
