@@ -38,4 +38,14 @@ Test :: (any) {
   mutating func f() {
     self.a[2] = 2
   }
+
+  mutating func g() { // expected-warning {{Function does not have to be declared mutating: none of its statements are mutating}}
+    var x: Int = 2
+    x = 2
+  }
+
+  func h() {
+    var b: Int = 2
+    self.b = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
 }

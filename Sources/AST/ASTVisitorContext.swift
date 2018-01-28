@@ -21,7 +21,6 @@ public struct ContractBehaviorDeclarationContext {
   }
 }
 
-
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
   public var contractContext: ContractBehaviorDeclarationContext

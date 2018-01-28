@@ -1,10 +1,20 @@
 // RUN: %flintc %s --verify
 
-contract Test {}
+contract Test {
+  var x: Int
+}
 
 Test :: (any) {
   func foo() -> Int {
     var a: Int = b // expected-error {{Use of undeclared identifier b}}
     return 2
+  }
+
+  func bar() {
+    if true {
+      var a: Int = x
+    } else {
+      a += 2 // expected-error {{Use of undeclared identifier a}}
+    }
   }
 }

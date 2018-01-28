@@ -116,8 +116,7 @@ public struct SemanticAnalyzer: ASTPass {
         if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
-        }
-        if let asLValue = passContext.asLValue, asLValue {
+        } else if let asLValue = passContext.asLValue, asLValue {
           if !functionDeclarationContext.isMutating {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
           }
@@ -155,24 +154,13 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
-    var passContext = passContext
-    var diagnostics = [Diagnostic]()
 
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-
-    if case .self(_) = binaryExpression.lhs {
-      if passContext.asLValue!, !functionDeclarationContext.isMutating {
-        diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.binaryExpression(binaryExpression), functionDeclaration: functionDeclarationContext.declaration))
-        addMutatingExpression(.binaryExpression(binaryExpression), passContext: &passContext)
-      }
-
-      if case .identifier(var identifier) = binaryExpression.rhs {
+    if case .self(_) = binaryExpression.lhs, case .identifier(var identifier) = binaryExpression.rhs {
         identifier.isPropertyAccess = true
         binaryExpression.rhs = .identifier(identifier)
-      }
     }
 
-    return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {

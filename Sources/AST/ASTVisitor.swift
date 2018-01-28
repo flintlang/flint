@@ -316,12 +316,12 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
-    passContext.scopeContext = scopeContext
+    processResult.passContext.scopeContext = scopeContext
 
     processResult.element.elseBody = processResult.element.elseBody.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
-    passContext.scopeContext = scopeContext
+    processResult.passContext.scopeContext = scopeContext
 
     let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
