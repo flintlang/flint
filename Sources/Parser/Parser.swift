@@ -233,25 +233,21 @@ extension Parser {
 }
 
 extension Parser {
-  func parseStructDeclaration() throws -> StructDeclaration {
-    let structToken = try consume(.struct)
-    let identifier = try parseIdentifier()
-    try consume(.punctuation(.openBrace))
-    try consume(.punctuation(.closeBrace))
-    return StructDeclaration(structToken: structToken, identifier: identifier, members: [])
-  }
-}
-
-extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
     try consume(.punctuation(.doubleColon))
 
+    var localVariables = [VariableDeclaration]()
     let capabilityBinding = attempt(task: parseCapabilityBinding)
+
+    if let capabilityBinding = capabilityBinding {
+      localVariables.append(VariableDeclaration(varToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
+    }
 
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
-    let functionDeclarations = try parseFunctionDeclarations(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding)
+
+    let functionDeclarations = try parseContractFunctionDeclarations(contractIdentifier: contractIdentifier, localVariables: localVariables)
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
@@ -285,30 +281,32 @@ extension Parser {
     return callerCapabilities
   }
   
-  func parseFunctionDeclarations(contractIdentifier: Identifier, capabilityBinding: Identifier?) throws -> [FunctionDeclaration] {
+  func parseContractFunctionDeclarations(contractIdentifier: Identifier, localVariables: [VariableDeclaration] = []) throws -> [FunctionDeclaration] {
     var functionDeclarations = [FunctionDeclaration]()
     
-    while let (attributes, modifiers, funcToken) = attempt(task: parseFunctionHead) {
-      let identifier = try parseIdentifier()
-      let (parameters, closeBracketToken) = try parseParameters()
-      let resultType = attempt(task: parseResult)
-
-      var localVariables = parameters.map { parameter in
-        return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
-      }
-
-      if let capabilityBinding = capabilityBinding {
-        localVariables.append(VariableDeclaration(varToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
-      }
-
-      let scopeContext = ScopeContext(localVariables: localVariables, contractIdentifier: contractIdentifier)
-      let (body, closeBraceToken, newScopeContext) = try parseCodeBlock(scopeContext: scopeContext)
-      
-      let functionDeclaration = FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)
+    while let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: contractIdentifier, localVariables: localVariables)) {
       functionDeclarations.append(functionDeclaration)
     }
     
     return functionDeclarations
+  }
+
+  func parseFunctionDeclaration(typeIdentifier: Identifier, localVariables: [VariableDeclaration] = []) throws -> FunctionDeclaration {
+    let (attributes, modifiers, funcToken) = try parseFunctionHead()
+    let identifier = try parseIdentifier()
+    let (parameters, closeBracketToken) = try parseParameters()
+    let resultType = attempt(task: parseResult)
+
+    var localVariables = localVariables
+
+    localVariables.append(contentsOf: parameters.map { parameter in
+      return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
+    })
+
+    let scopeContext = ScopeContext(localVariables: localVariables, typeIdentifier: typeIdentifier)
+    let (body, closeBraceToken, newScopeContext) = try parseCodeBlock(scopeContext: scopeContext)
+
+    return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken, localVariables: newScopeContext.localVariables)
   }
   
   func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
@@ -409,7 +407,7 @@ extension Parser {
       scopeContext.merge(with: lhsScopeContext)
 
       if operatorToken.kind == .punctuation(.dot), case .self(_) = lhs, case .identifier(var identifier) = rhs {
-        identifier.enclosingContractName = scopeContext.contractIdentifier.name
+        identifier.enclosingContractName = scopeContext.typeIdentifier.name
         rhs = .identifier(identifier)
       }
 
@@ -444,14 +442,14 @@ extension Parser {
 
     if var subscriptExpression = attempt(try parseSubscriptExpression(scopeContext: scopeContext)) {
       if !scopeContext.contains(localVariable: subscriptExpression.baseIdentifier.name) {
-        subscriptExpression.baseIdentifier.enclosingContractName = scopeContext.contractIdentifier.name
+        subscriptExpression.baseIdentifier.enclosingContractName = scopeContext.typeIdentifier.name
       }
       return (.subscriptExpression(subscriptExpression), scopeContext)
     }
 
     var identifier = try parseIdentifier()
     if !scopeContext.contains(localVariable: identifier.name) {
-      identifier.enclosingContractName = scopeContext.contractIdentifier.name
+      identifier.enclosingContractName = scopeContext.typeIdentifier.name
     }
     return (.identifier(identifier), scopeContext)
   }
@@ -520,6 +518,32 @@ extension Parser {
     try consume(.else)
     return try parseCodeBlock(scopeContext: scopeContext).0
   }
+}
+
+
+extension Parser {
+  func parseStructDeclaration() throws -> StructDeclaration {
+    let structToken = try consume(.struct)
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.openBrace))
+    try consume(.punctuation(.closeBrace))
+    return StructDeclaration(structToken: structToken, identifier: identifier, members: [])
+  }
+
+  func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
+    var members = [StructMember]()
+    while true {
+      if let variableDeclaration = attempt(task: parseVariableDeclaration) {
+        members.append(.variableDeclaration(variableDeclaration))
+      } else if let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: structIdentifier)) {
+        members.append(.functionDeclaration(functionDeclaration))
+      } else {
+        break
+      }
+    }
+    return members
+  }
+
 }
 
 extension Parser {

@@ -9,11 +9,11 @@ import AST
 
 struct ScopeContext {
   var localVariables = [VariableDeclaration]()
-  var contractIdentifier: Identifier
+  var typeIdentifier: Identifier
 
-  init(localVariables: [VariableDeclaration] = [], contractIdentifier: Identifier) {
+  init(localVariables: [VariableDeclaration] = [], typeIdentifier: Identifier) {
     self.localVariables = localVariables
-    self.contractIdentifier = contractIdentifier
+    self.typeIdentifier = typeIdentifier
   }
 
   mutating func merge(with otherScopeContext: ScopeContext) {
