@@ -21,3 +21,7 @@ struct MyStruct {
 // CHECK-AST:   identifier "foo"
   func foo() {}
 }
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: StructDeclaration
+struct MyOtherStruct {}
