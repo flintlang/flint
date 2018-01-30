@@ -113,9 +113,10 @@ public struct SemanticAnalyzer: ASTPass {
       }
 
       if identifier.isPropertyAccess {
-        if !functionDeclarationContext.contractContext.isPropertyDeclared(identifier.name) {
+        let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
+        if !contractBehaviorDeclarationContext.isPropertyDeclared(identifier.name) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
-          passContext.environment!.addUsedUndefinedVariable(identifier, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier)
+          passContext.environment!.addUsedUndefinedVariable(identifier, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier)
         } else if let asLValue = passContext.asLValue, asLValue {
           if !functionDeclarationContext.isMutating {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
@@ -167,10 +168,10 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
-    let contractIdentifier = functionDeclarationContext.contractContext.contractIdentifier
+    let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
     var diagnostics = [Diagnostic]()
 
-    switch environment.matchFunctionCall(functionCall, contractIdentifier: functionDeclarationContext.contractContext.contractIdentifier, callerCapabilities: functionDeclarationContext.contractContext.callerCapabilities) {
+    switch environment.matchFunctionCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) {
     case .success(let matchingFunction):
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
@@ -180,8 +181,8 @@ public struct SemanticAnalyzer: ASTPass {
         }
       }
     case .failure(candidates: let candidates):
-      if environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: functionDeclarationContext.contractContext.callerCapabilities, candidates: candidates))
+      if environment.matchEventCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities, candidates: candidates))
       }
     }
 

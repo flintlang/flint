@@ -23,11 +23,9 @@ public struct ContractBehaviorDeclarationContext {
 
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
-  public var contractContext: ContractBehaviorDeclarationContext
 
-  public init(declaration: FunctionDeclaration, contractContext: ContractBehaviorDeclarationContext) {
+  public init(declaration: FunctionDeclaration) {
     self.declaration = declaration
-    self.contractContext = contractContext
   }
 
   public var isMutating: Bool {

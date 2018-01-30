@@ -108,6 +108,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     switch processResult.element {
     case .functionDeclaration(let functionDeclaration):
+      processResult.passContext.scopeContext = ScopeContext()
       processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
     case .variableDeclaration(let variableDeclaration):
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
@@ -144,7 +145,7 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element.resultType = processResult.combining(visit(resultType, passContext: processResult.passContext))
     }
 
-    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration, contractContext:  passContext.contractBehaviorDeclarationContext!)
+    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration)
 
     processResult.passContext.functionDeclarationContext = functionDeclarationContext
 

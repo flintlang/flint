@@ -1,0 +1,23 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST:   ContractDeclaration
+// CHECK-AST:     identifier "Test"
+contract Test {}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: StructDeclaration
+// CHECK-AST:   identifier "MyStruct"
+struct MyStruct {
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "a"
+// CHECK-AST:   built-in type Int
+  var a: Int
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   identifier "foo"
+  func foo() {}
+}

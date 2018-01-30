@@ -507,8 +507,9 @@ extension Parser {
     let structToken = try consume(.struct)
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace))
+    let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace))
-    return StructDeclaration(structToken: structToken, identifier: identifier, members: [])
+    return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
   }
 
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
