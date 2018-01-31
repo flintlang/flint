@@ -108,11 +108,11 @@ public struct SemanticAnalyzer: ASTPass {
       if !passContext.scopeContext!.containsVariableDefinition(for: identifier.name) {
         if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
         } else {
-          identifier.isPropertyAccess = true
+          identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
         }
       }
 
-      if identifier.isPropertyAccess {
+      if let _ = identifier.enclosingType {
         let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
         if !contractBehaviorDeclarationContext.isPropertyDeclared(identifier.name) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
@@ -157,7 +157,7 @@ public struct SemanticAnalyzer: ASTPass {
     var binaryExpression = binaryExpression
 
     if case .self(_) = binaryExpression.lhs, case .identifier(var identifier) = binaryExpression.rhs {
-        identifier.isPropertyAccess = true
+        identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
         binaryExpression.rhs = .identifier(identifier)
     }
 

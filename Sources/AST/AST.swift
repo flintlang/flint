@@ -62,6 +62,20 @@ public struct StructDeclaration {
   public var identifier: Identifier
   public var members: [StructMember]
 
+  public var variableDeclarations: [VariableDeclaration] {
+    return members.flatMap { member in
+      guard case .variableDeclaration(let variableDeclaration) = member else { return nil }
+      return variableDeclaration
+    }
+  }
+
+  public var functionDeclarations: [FunctionDeclaration] {
+    return members.flatMap { member in
+      guard case .functionDeclaration(let functionDeclaration) = member else { return nil }
+      return functionDeclaration
+    }
+  }
+
   public init(structToken: Token, identifier: Identifier, members: [StructMember]) {
     self.structToken = structToken
     self.identifier = identifier
@@ -148,8 +162,8 @@ public struct FunctionDeclaration: SourceEntity {
     self.closeBraceToken = closeBraceToken
   }
 
-  public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
-    return MangledFunction(functionDeclaration: self, contractIdentifier: contract, callerCapabilities: callerCapabilities)
+  public func mangled(enclosingType: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
+    return MangledFunction(functionDeclaration: self, typeIdentifier: enclosingType, callerCapabilities: callerCapabilities)
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
@@ -219,7 +233,7 @@ public struct TypeAnnotation: SourceEntity {
 
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
-  public var isPropertyAccess = false
+  public var enclosingType: String? = nil
 
   public var name: String {
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
@@ -249,7 +263,7 @@ public struct Type: SourceEntity {
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
-    case userDefinedType(String)
+    case userDefinedType(Identifier)
     case errorType
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -271,24 +285,13 @@ public struct Type: SourceEntity {
       }
     }
 
-    public var size: Int {
-      switch self {
-      case .builtInType(_): return 1
-      case .fixedSizeArrayType(let rawType, let size): return rawType.size * size
-      case .arrayType(_): return 1
-      case .dictionaryType(_, _): return 1
-      case .userDefinedType(_): return 1
-      case .errorType: return 0
-      }
-    }
-
     public var name: String {
       switch self {
       case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
       case .arrayType(let rawType): return "[\(rawType.name)]"
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
-      case .userDefinedType(let name): return name
+      case .userDefinedType(let identifier): return identifier.name
       case .errorType: return "Flint$ErrorType"
       }
     }
@@ -344,7 +347,7 @@ public struct Type: SourceEntity {
     if let builtInType = BuiltInType(rawValue: name) {
       rawType = .builtInType(builtInType)
     } else {
-      rawType = .userDefinedType(name)
+      rawType = .userDefinedType(identifier)
     }
     self.genericArguments = genericArguments
     self.sourceLocation = identifier.sourceLocation

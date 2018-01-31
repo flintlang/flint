@@ -10,45 +10,6 @@ import AST
 public struct TypeChecker: ASTPass {
   public init() {}
 
-  func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext, contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext, environment: Environment) -> Type.RawType {
-    switch expression {
-    case .binaryExpression(let binaryExpression):
-      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
-
-    case .bracketedExpression(let expression):
-      return type(of: expression, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
-
-    case .functionCall(let functionCall):
-      return environment.type(of: functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) ?? .errorType
-
-    case .identifier(let identifier):
-      if !identifier.isPropertyAccess, let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
-        return localVariable.type.rawType
-      }
-      return environment.type(of: identifier, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier)!
-
-    case .literal(let token):
-      guard case .literal(let literal) = token.kind else { fatalError() }
-      switch literal {
-      case .boolean(_): return .builtInType(.bool)
-      case .decimal(.integer(_)): return .builtInType(.int)
-      default: fatalError()
-      }
-    case .self(_): return .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name)
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.type.rawType
-    case .subscriptExpression(let subscriptExpression):
-      let type = environment.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier)!
-
-      switch type {
-      case .arrayType(let elementType): return elementType
-      case .fixedSizeArrayType(let elementType, _): return elementType
-      case .dictionaryType(_, let valueType): return valueType
-      default: fatalError()
-      }
-    }
-  }
-  
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
@@ -120,9 +81,10 @@ public struct TypeChecker: ASTPass {
     let functionDeclarationContext = passContext.functionDeclarationContext!
 
     if case .punctuation(.equal) = binaryExpression.op.kind {
-      let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
-      let lhsType = type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
-      let rhsType = type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
+      let typeIdentifier = enclosingTypeIdentifier(in: passContext)
+
+      let lhsType = environment.type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
+      let rhsType = environment.type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
 
       if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
@@ -143,7 +105,7 @@ public struct TypeChecker: ASTPass {
       let expectedTypes = eventCall.type.genericArguments.map { $0.rawType }
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = type(of: argument, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
+        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, typeIdentifier: contractBehaviorDeclarationContext.contractIdentifier)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
           diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
@@ -160,12 +122,12 @@ public struct TypeChecker: ASTPass {
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     var diagnostics = [Diagnostic]()
-    let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
+    let typeIdentifier = enclosingTypeIdentifier(in: passContext)
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
 
     if let expression = returnStatement.expression {
-      let actualType = type(of: expression, functionDeclarationContext: functionDeclarationContext, contractBehaviorDeclarationContext: contractBehaviorDeclarationContext, environment: environment)
+      let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
       let expectedType = functionDeclarationContext.declaration.rawType
 
       if actualType != expectedType {

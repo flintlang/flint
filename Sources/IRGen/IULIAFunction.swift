@@ -13,12 +13,22 @@ struct IULIAFunction {
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
-  var contractIdentifier: Identifier
+  var typeIdentifier: Identifier
+
   var capabilityBinding: Identifier?
   var callerCapabilities: [CallerCapability]
 
   var contractStorage: ContractStorage
   var environment: Environment
+
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], contractStorage: ContractStorage, environment: Environment) {
+    self.functionDeclaration = functionDeclaration
+    self.typeIdentifier = typeIdentifier
+    self.capabilityBinding = capabilityBinding
+    self.callerCapabilities = callerCapabilities
+    self .contractStorage = contractStorage
+    self.environment = environment
+  }
 
   var name: String {
     return functionDeclaration.identifier.name
@@ -100,7 +110,7 @@ struct IULIAFunction {
     let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
 
-      let type = environment.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
+      let type = environment.type(of: callerCapability.identifier, typeIdentifier: typeIdentifier)!
       let offset = contractStorage.offset(for: callerCapability.name)
 
       switch type {
@@ -174,7 +184,7 @@ extension IULIAFunction {
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
       return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
-    case .identifier(let identifier) where !identifier.isPropertyAccess:
+    case .identifier(let identifier) where identifier.enclosingType == nil:
       return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
     default:
       let lhsCode = render(lhs, asLValue: true)
@@ -183,28 +193,40 @@ extension IULIAFunction {
   }
 
   func renderPropertyAccess(lhs: Expression, rhs: Expression, asLValue: Bool) -> String {
-    let rhsCode = render(rhs, asLValue: asLValue)
-
-    if case .self(_) = lhs {
-      return rhsCode
+    let lhsOffset: Int
+    if case .identifier(let lhsIdentifier) = lhs {
+      lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+    } else if case .self(_) = lhs {
+      lhsOffset = 0
+    } else {
+      fatalError()
     }
 
-    let lhsCode = render(lhs, asLValue: asLValue)
-    return "\(lhsCode).\(rhsCode)"
+    let lhsType = environment.type(of: lhs, typeIdentifier: typeIdentifier)
+    let rhsOffset = propertyOffset(for: rhs, in: lhsType)
+
+    return "sload(add(\(lhsOffset), \(rhsOffset)))"
+  }
+
+  func propertyOffset(for expression: Expression, in type: Type.RawType) -> Int {
+    guard case .identifier(let identifier) = expression else { fatalError() }
+    guard case .userDefinedType(let structIdentifier) = type else { fatalError() }
+
+    return environment.propertyOffset(for: identifier, in: structIdentifier)!
   }
 
   func render(_ functionCall: FunctionCall) -> String {
-    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
+    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: typeIdentifier) {
       let types = eventCall.type.genericArguments
 
       var stores = [String]()
       var memoryOffset = 0
       for (i, argument) in functionCall.arguments.enumerated() {
         stores.append("mstore(\(memoryOffset), \(render(argument)))")
-        memoryOffset += types[i].rawType.size * 32
+        memoryOffset += environment.size(of: types[i].rawType) * 32
       }
 
-      let totalSize = types.reduce(0) { return $0 + $1.rawType.size } * 32
+      let totalSize = types.reduce(0) { return $0 + environment.size(of: $1.rawType) } * 32
       let typeList = eventCall.type.genericArguments.map { type in
         return "\(CanonicalType(from: type.rawType)!.rawValue)"
       }.joined(separator: ",")
@@ -223,7 +245,7 @@ extension IULIAFunction {
   }
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
-    if identifier.isPropertyAccess {
+    if let _ = identifier.enclosingType {
       let offset = contractStorage.offset(for: identifier.name)
       if asLValue {
         return "\(offset)"
@@ -263,9 +285,9 @@ extension IULIAFunction {
     let offset = contractStorage.offset(for: baseIdentifier.name)
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = environment.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier)!
+    let type = environment.type(of: subscriptExpression.baseIdentifier, typeIdentifier: typeIdentifier)!
 
-    guard baseIdentifier.isPropertyAccess else {
+    guard let _ = baseIdentifier.enclosingType else {
       fatalError("Subscriptable types are only supported for contract properties right now.")
     }
 
@@ -275,23 +297,24 @@ extension IULIAFunction {
       if asLValue {
         return storageArrayOffset
       } else {
-        guard elementType.size == 1 else {
+        guard environment.size(of: elementType) == 1 else {
           fatalError("Loading array elements of size > 1 is not supported yet.")
         }
         return "sload(\(storageArrayOffset))"
       }
     case .fixedSizeArrayType(let elementType, _):
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+      let typeSize = environment.size(of: type)
+      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(typeSize))"
       if asLValue {
         return storageArrayOffset
       } else {
-        guard elementType.size == 1 else {
+        guard environment.size(of: elementType) == 1 else {
           fatalError("Loading array elements of size > 1 is not supported yet.")
         }
         return "sload(\(storageArrayOffset))"
       }
     case .dictionaryType(key: let keyType, value: let valueType):
-      guard keyType.size == 1 else {
+      guard environment.size(of: keyType) == 1 else {
         fatalError("Dictionary keys of size > 1 are not supported yet.")
       }
 
@@ -300,7 +323,7 @@ extension IULIAFunction {
       if asLValue {
         return "\(storageDictionaryOffsetForKey)"
       } else {
-        guard valueType.size == 1 else {
+        guard environment.size(of: valueType) == 1 else {
           fatalError("Loading dictionary values of size > 1 is not supported yet.")
         }
         return "sload(\(storageDictionaryOffsetForKey))"

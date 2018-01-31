@@ -10,19 +10,21 @@ import AST
 struct IULIAContract {
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
+  var structDeclarations: [StructDeclaration]
   var environment: Environment
 
   var storage = ContractStorage()
 
-  init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration], environment: Environment) {
+  init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration], structDeclarations: [StructDeclaration], environment: Environment) {
     self.contractDeclaration = contractDeclaration
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
+    self.structDeclarations = structDeclarations
     self.environment = environment
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       switch variableDeclaration.type.rawType {
       case .fixedSizeArrayType(_):
-        storage.allocate(variableDeclaration.type.rawType.size, for: variableDeclaration.identifier.name)
+        storage.allocate(environment.size(of: variableDeclaration.type.rawType), for: variableDeclaration.identifier.name)
       default:
         storage.addProperty(variableDeclaration.identifier.name)
       }
@@ -32,7 +34,7 @@ struct IULIAContract {
   func rendered() -> String {
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, contractIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, environment: environment)
+        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, environment: environment)
       }
     }
 
@@ -40,6 +42,14 @@ struct IULIAContract {
 
     let functionSelector = IULIAFunctionSelector(functions: functions)
     let selectorCode = functionSelector.rendered().indented(by: 6)
+
+    let structFunctions = structDeclarations.flatMap { structDeclaration in
+      return structDeclaration.functionDeclarations.flatMap { functionDeclaration in
+        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, contractStorage: storage, environment: environment)
+      }
+    }
+
+    let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
     let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.isBasicType && !$0.type.isEventType }
     let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
@@ -52,9 +62,9 @@ struct IULIAContract {
 
     for property in contractDeclaration.variableDeclarations where !property.type.isEventType {
       let rawType = property.type.rawType
-      let size = rawType.size
-      for _ in (0..<size) {
-        propertyDeclarations.append("\(rawType.canonicalElementType!) _flintStorage\(index);")
+      let rawTypeSize = environment.size(of: rawType)
+      for _ in (0..<rawTypeSize) {
+        propertyDeclarations.append("\(rawType.canonicalElementType?.rawValue ?? "uint256") _flintStorage\(index);")
         index += 1
       }
     }
@@ -82,6 +92,10 @@ struct IULIAContract {
 
           \(functionsCode)
 
+          // Struct functions
+    
+          \(structsFunctionsCode)
+
           // Flint runtime
 
           \(runtimeFunctionsDeclarations)
@@ -102,7 +116,7 @@ fileprivate extension Type.RawType {
     case .dictionaryType(_, _): return .uint256 // Nothing is stored in that property.
     case .arrayType(_): return .uint256 // The number of elements is stored.
     case .fixedSizeArrayType(let elementType, _): return CanonicalType(from: elementType)
-    case .userDefinedType(let userDefinedType): return CanonicalType(rawValue: userDefinedType)
+    case .userDefinedType(_): fatalError()
     }
   }
 }

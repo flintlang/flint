@@ -228,3 +228,9 @@ public struct AnyASTPass: ASTPass {
     return base.postProcess(ifStatement: ifStatement, passContext: passContext)
   }
 }
+
+extension ASTPass {
+  public func enclosingTypeIdentifier(in passContext: ASTPassContext) -> Identifier {
+    return passContext.contractBehaviorDeclarationContext?.contractIdentifier ?? passContext.structDeclarationContext!.structIdentifier
+  }
+}

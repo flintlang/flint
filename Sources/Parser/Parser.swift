@@ -95,6 +95,7 @@ extension Parser {
         declarations.append(.contractDeclaration(contractDeclaration))
       case .struct:
         let structDeclaration = try parseStructDeclaration()
+        environment.addStruct(structDeclaration)
         declarations.append(.structDeclaration(structDeclaration))
       default:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
@@ -251,7 +252,7 @@ extension Parser {
     try consume(.punctuation(.closeBrace))
 
     for functionDeclaration in functionDeclarations {
-      environment.addFunction(functionDeclaration, contractIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
+      environment.addFunction(functionDeclaration, typeIdentifier: contractIdentifier, callerCapabilities: callerCapabilities)
     }
     
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
@@ -519,6 +520,7 @@ extension Parser {
         members.append(.variableDeclaration(variableDeclaration))
       } else if let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: structIdentifier)) {
         members.append(.functionDeclaration(functionDeclaration))
+        environment.addFunction(functionDeclaration, typeIdentifier: structIdentifier)
       } else {
         break
       }

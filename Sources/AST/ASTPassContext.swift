@@ -38,6 +38,11 @@ extension ASTPassContext {
     set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }
   }
 
+  public var structDeclarationContext: StructDeclarationContext? {
+    get { return self[StructDeclarationContextEntry.self] }
+    set { self[StructDeclarationContextEntry.self] = newValue }
+  }
+
   public var functionDeclarationContext: FunctionDeclarationContext? {
     get { return self[FunctionDeclarationContextEntry.self] }
     set { self[FunctionDeclarationContextEntry.self] = newValue }
@@ -74,6 +79,10 @@ private struct AsLValueContextEntry: PassContextEntry {
 
 private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
   typealias Value = ContractBehaviorDeclarationContext
+}
+
+private struct StructDeclarationContextEntry: PassContextEntry {
+  typealias Value = StructDeclarationContext
 }
 
 private struct FunctionDeclarationContextEntry: PassContextEntry {

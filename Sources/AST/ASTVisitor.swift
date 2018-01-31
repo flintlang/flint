@@ -28,6 +28,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     
     switch processResult.element {
     case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
+
       processResult.element = .contractBehaviorDeclaration(processResult.combining(visit(contractBehaviorDeclaration, passContext: processResult.passContext)))
     case .contractDeclaration(let contractDeclaration):
       processResult.element = .contractDeclaration(processResult.combining(visit(contractDeclaration, passContext: processResult.passContext)))
@@ -86,6 +87,9 @@ public struct ASTVisitor<Pass: ASTPass> {
       return processResult.combining(visit(functionDeclaration, passContext: processResult.passContext))
     }
 
+    processResult.passContext.contractBehaviorDeclarationContext = nil
+    processResult.passContext.scopeContext = nil
+
     let postProcessResult = pass.postProcess(contractBehaviorDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
@@ -93,11 +97,22 @@ public struct ASTVisitor<Pass: ASTPass> {
   func visit(_ structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     var processResult = pass.process(structDeclaration: structDeclaration, passContext: passContext)
 
+    let declarationContext = StructDeclarationContext(structIdentifier: structDeclaration.identifier)
+    let scopeContext = ScopeContext()
+
+    processResult.passContext = processResult.passContext.withUpdates {
+      $0.structDeclarationContext = declarationContext
+      $0.scopeContext = scopeContext
+    }
+
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
     processResult.element.members = processResult.element.members.map { structMember in
       return processResult.combining(visit(structMember, passContext: processResult.passContext))
     }
+
+    processResult.passContext.structDeclarationContext = nil
+    processResult.passContext.scopeContext = nil
 
     let postProcessResult = pass.postProcess(structDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: postProcessResult.diagnostics, passContext: postProcessResult.passContext)
@@ -108,7 +123,6 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     switch processResult.element {
     case .functionDeclaration(let functionDeclaration):
-      processResult.passContext.scopeContext = ScopeContext()
       processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
     case .variableDeclaration(let variableDeclaration):
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))

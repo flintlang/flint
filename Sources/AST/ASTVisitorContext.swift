@@ -21,6 +21,14 @@ public struct ContractBehaviorDeclarationContext {
   }
 }
 
+public struct StructDeclarationContext {
+  public var structIdentifier: Identifier
+
+  public init(structIdentifier: Identifier) {
+    self.structIdentifier = structIdentifier
+  }
+}
+
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
 

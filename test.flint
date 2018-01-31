@@ -1,0 +1,18 @@
+contract A {
+  var test: Test
+}
+
+A :: (any) {
+  public func foo() -> Int {
+    return test.a
+  }
+}
+
+struct Test {
+  var a: Int
+
+  func foo() -> Int {
+    var a: Int = 3
+    return a
+  }
+}

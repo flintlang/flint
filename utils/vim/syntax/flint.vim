@@ -48,6 +48,7 @@ syn keyword flintFuncDefinition skipwhite nextgroup=flintTypeName,flintOperator
 
 syn keyword flintTypeDefinition skipwhite nextgroup=flintTypeName
       \ contract
+      \ struct
 
 syn keyword flintVarDefinition skipwhite nextgroup=flintVarName
       \ let

@@ -31,9 +31,9 @@ public struct MangledFunction: CustomStringConvertible {
     return functionDeclaration.rawType
   }
 
-  init(functionDeclaration: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
     self.functionDeclaration = functionDeclaration
-    self.contractIdentifier = contractIdentifier
+    self.contractIdentifier = typeIdentifier
     self.callerCapabilities = callerCapabilities
   }
 
