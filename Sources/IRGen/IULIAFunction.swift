@@ -226,7 +226,7 @@ extension IULIAFunction {
     if !isContractFunction {
       offset = "add(_flintSelf, \(rhsOffset))"
     } else {
-      offset = "add(\(lhsOffset), \(rhsOffset)))"
+      offset = "add(\(lhsOffset), \(rhsOffset))"
     }
 
     if asLValue {
@@ -273,12 +273,6 @@ extension IULIAFunction {
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
     if let _ = identifier.enclosingType {
-//      let enclosingTypeOffset = contractStorage.offset(for: enclosingType)
-//      let offset = contractStorage.offset(for: identifier.name)
-//      if asLValue {
-//        return "\(offset)"
-//      }
-//      return "sload(\(offset))"
       return renderPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue)
     }
     return mangleIdentifierName(identifier.name)

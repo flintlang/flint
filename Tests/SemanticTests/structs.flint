@@ -1,0 +1,22 @@
+// RUN: %flintc %s --verify
+
+struct Test {
+  var a: Int
+
+  func foo() -> Int {
+    return 2
+  }
+}
+
+contract Foo {
+  var a: Test
+  var b: Test
+  var c: Int
+  var d: Test
+}
+
+Foo :: (any) {
+  func bar() -> Int {
+    return a.a + a.foo()
+  }
+}
