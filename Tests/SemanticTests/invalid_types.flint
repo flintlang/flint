@@ -2,6 +2,7 @@
 
 contract InvalidTypes {
   var int: Int
+  var a: Int
 }
 
 InvalidTypes :: (any) {
@@ -20,6 +21,8 @@ InvalidTypes :: (any) {
     int = true // expected-error {{Incompatible assignment between values of type Int and Bool}}
 
     f(a) // expected-error {{Function f is not in scope or cannot be called using the caller capabilities (any)}}
+
+    f(self.int)
   }
 
   func f(a: Int) {}
