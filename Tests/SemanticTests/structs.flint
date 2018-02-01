@@ -16,7 +16,11 @@ contract Foo {
 }
 
 Foo :: (any) {
-  func bar() -> Int {
+  public func bar() -> Int {
     return a.a + a.foo()
+  }
+
+  public mutating func baz() {
+    a.a = 2
   }
 }
