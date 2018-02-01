@@ -1,4 +1,5 @@
 contract A {
+  var a: Int
   var test: Test
 }
 
@@ -10,9 +11,13 @@ A :: (any) {
 
 struct Test {
   var a: Int
+  var b: Bool
 
-  func foo() -> Int {
-    var a: Int = 3
+  func bar() -> Int {
     return a
+  }
+
+  func baz() -> Int {
+    return b
   }
 }

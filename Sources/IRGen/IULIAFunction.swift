@@ -160,6 +160,11 @@ extension IULIAFunction {
   }
 
   func render(_ binaryExpression: BinaryExpression, asLValue: Bool) -> String {
+
+    if case .dot = binaryExpression.opToken {
+      return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
+    }
+
     let lhs = render(binaryExpression.lhs, asLValue: asLValue)
     let rhs = render(binaryExpression.rhs, asLValue: asLValue)
     
@@ -173,7 +178,6 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
-    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     default: fatalError()
     }
   }
@@ -246,11 +250,13 @@ extension IULIAFunction {
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
     if let _ = identifier.enclosingType {
-      let offset = contractStorage.offset(for: identifier.name)
-      if asLValue {
-        return "\(offset)"
-      }
-      return "sload(\(offset))"
+//      let enclosingTypeOffset = contractStorage.offset(for: enclosingType)
+//      let offset = contractStorage.offset(for: identifier.name)
+//      if asLValue {
+//        return "\(offset)"
+//      }
+//      return "sload(\(offset))"
+      return renderPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue)
     }
     return mangleIdentifierName(identifier.name)
   }

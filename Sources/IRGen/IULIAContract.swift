@@ -62,9 +62,9 @@ struct IULIAContract {
 
     for property in contractDeclaration.variableDeclarations where !property.type.rawType.isEventType {
       let rawType = property.type.rawType
-      let rawTypeSize = environment.size(of: rawType)
-      for _ in (0..<rawTypeSize) {
-        propertyDeclarations.append("\(rawType.canonicalElementType?.rawValue ?? "uint256") _flintStorage\(index);")
+
+      for canonicalType in storageCanonicalTypes(for: rawType) {
+        propertyDeclarations.append("\(canonicalType) _flintStorage\(index);")
         index += 1
       }
     }
@@ -103,6 +103,22 @@ struct IULIAContract {
       }
     }
     """
+  }
+
+  public func storageCanonicalTypes(for type: Type.RawType) -> [String] {
+    switch type {
+    case .builtInType(_), .arrayType(_), .dictionaryType(_, _):
+      return [type.canonicalElementType!.rawValue]
+    case .fixedSizeArrayType(let rawType, let elementCount):
+      return [String](repeating: rawType.canonicalElementType!.rawValue, count: elementCount)
+    case .errorType: fatalError()
+
+    case .userDefinedType(let identifier):
+      return environment.properties(in: identifier).flatMap { property -> [String] in
+        let type = environment.type(of: property, enclosingType: identifier)!
+        return storageCanonicalTypes(for: type)
+      }
+    }
   }
 }
 

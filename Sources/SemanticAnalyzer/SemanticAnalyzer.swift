@@ -48,7 +48,9 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
-    passContext.scopeContext?.localVariables += [variableDeclaration]
+    if let _ = passContext.functionDeclarationContext {
+      passContext.scopeContext?.localVariables += [variableDeclaration]
+    }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -104,19 +106,18 @@ public struct SemanticAnalyzer: ASTPass {
 
     if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
     } else if let functionDeclarationContext = passContext.functionDeclarationContext {
-      let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
 
       if identifier.enclosingType == nil {
         let scopeContext = passContext.scopeContext!
         if !scopeContext.containsVariableDefinition(for: identifier.name) {
-          identifier.enclosingType = contractBehaviorDeclarationContext.contractIdentifier.name
+          identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
         }
       }
 
       if let enclosingType = identifier.enclosingType {
-        if !passContext.environment!.propertyIsDefined(identifier.name, enclosingType: enclosingType) {
+        if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
-          passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name)
+          passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if let asLValue = passContext.asLValue, asLValue {
           if !functionDeclarationContext.isMutating {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))

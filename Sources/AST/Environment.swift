@@ -35,24 +35,10 @@ public struct Environment {
   }
 
   mutating func setProperties(_ variableDeclarations: [VariableDeclaration], enclosingType: RawTypeIdentifier) {
+    types[enclosingType]!.orderedProperties = variableDeclarations.map { $0.identifier.name }
     for variableDeclaration in variableDeclarations {
       addProperty(variableDeclaration.identifier.name, type: variableDeclaration.type, enclosingType: enclosingType)
     }
-
-    var offsetMap = [String: Int]()
-    var offset = 0
-
-    for variableDeclaration in variableDeclarations {
-      let propertyIdentifier = variableDeclaration.identifier
-      offsetMap[propertyIdentifier.name] = offset
-
-      let propertyType = variableDeclaration.type.rawType
-      let propertySize = size(of: propertyType)
-
-      offset += propertySize
-    }
-
-    offsets[enclosingType] = OffsetTable(offsetMap: offsetMap)
   }
 
   mutating func addProperty(_ property: String, type: Type, enclosingType: RawTypeIdentifier) {
@@ -83,11 +69,28 @@ public struct Environment {
   }
 
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
-    return offsets[enclosingType]?.offset(for: property)
+    var offsetMap = [String: Int]()
+    var offset = 0
+
+    let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
+
+    for property in properties {
+      offsetMap[property] = offset
+      let propertyType = types[enclosingType]!.properties[property]!.rawType
+      let propertySize = size(of: propertyType)
+
+      offset += propertySize
+    }
+
+    return offset
   }
 
-  public func propertyIsDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
+  public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
     return types[enclosingType]!.properties.keys.contains(property)
+  }
+
+  public func properties(in enclosingType: RawTypeIdentifier) -> [String] {
+    return types[enclosingType]!.orderedProperties
   }
 
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
@@ -126,7 +129,7 @@ public struct Environment {
       return type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
-      return type(of: functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
+      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
@@ -134,7 +137,7 @@ public struct Environment {
         let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
         return localVariable.type.rawType
       }
-      return type(of: identifier.name, enclosingType: enclosingType, scopeContext: scopeContext)!
+      return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
 
     case .literal(let token):
       guard case .literal(let literal) = token.kind else { fatalError() }
@@ -147,7 +150,7 @@ public struct Environment {
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
-      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: enclosingType, scopeContext: scopeContext)!
+      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
 
       switch identifierType {
       case .arrayType(let elementType): return elementType
@@ -210,6 +213,7 @@ struct OffsetTable {
 }
 
 public struct TypeInformation {
+  var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
 }
