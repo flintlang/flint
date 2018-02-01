@@ -164,10 +164,6 @@ public struct FunctionDeclaration: SourceEntity {
     self.closeBraceToken = closeBraceToken
   }
 
-  public func mangled(enclosingType: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
-    return MangledFunction(functionDeclaration: self, typeIdentifier: enclosingType, callerCapabilities: callerCapabilities)
-  }
-
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind } 
   }
@@ -248,10 +244,6 @@ public struct Identifier: Hashable, SourceEntity {
 
   public init(identifierToken: Token) {
     self.identifierToken = identifierToken
-  }
-
-  public func mangled(in contractIdentifier: Identifier) -> MangledProperty {
-    return MangledProperty(inContract: self, contractIdentifier: contractIdentifier)
   }
 
   public var hashValue: Int {

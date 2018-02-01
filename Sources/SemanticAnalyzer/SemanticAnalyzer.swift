@@ -27,7 +27,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     let environment = passContext.environment!
 
-    if !environment.isDeclaredContract(contractBehaviorDeclaration.contractIdentifier.name) {
+    if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     }
 
@@ -163,7 +163,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     if case .dot = binaryExpression.opToken {
       let enclosingType = enclosingTypeIdentifier(in: passContext)
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name)
+      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
 
@@ -177,7 +177,7 @@ public struct SemanticAnalyzer: ASTPass {
     let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
     var diagnostics = [Diagnostic]()
 
-    switch environment.matchFunctionCall(functionCall, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .success(let matchingFunction):
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)

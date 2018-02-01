@@ -6,39 +6,30 @@
 //
 
 public struct Environment {
-//  var contractDeclarations = [ContractDeclaration]()
-//  var functions = [MangledFunction]()
-
-//  var typeUndefinedVariables = [Identifier: [Identifier]]()
-
-//  public var declaredContractsIdentifiers: [Identifier] {
-//    return contractDeclarations.map { $0.identifier }
-//  }
-
-//  var typeLayoutMap = [String: TypeLayout]()
-
   var types = [RawTypeIdentifier: TypeInformation]()
   var offsets = [RawTypeIdentifier: OffsetTable]()
+  var declaredContracts = [RawTypeIdentifier]()
 
   public init() {}
 
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
-    types[contractDeclaration.identifier.name] = TypeInformation(kind: .contract)
+    declaredContracts.append(contractDeclaration.identifier.name)
+    types[contractDeclaration.identifier.name] = TypeInformation()
     setProperties(contractDeclaration.variableDeclarations, enclosingType: contractDeclaration.identifier.name)
   }
 
   public mutating func addStruct(_ structDeclaration: StructDeclaration) {
-    types[structDeclaration.identifier.name] = TypeInformation(kind: .struct)
+    types[structDeclaration.identifier.name] = TypeInformation()
     setProperties(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
-      addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name, enclosingKind: .struct)
+      addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name)
     }
   }
 
-  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, enclosingKind: TypeInformation.Kind = .contract, callerCapabilities: [CallerCapability] = []) {
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
     let functionName = functionDeclaration.identifier.name
 
-    types[enclosingType, default: TypeInformation(kind: enclosingKind)]
+    types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
       .append(FunctionInformation(declaration: functionDeclaration, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating))
   }
@@ -72,19 +63,8 @@ public struct Environment {
     addProperty(variable.name, type: Type(inferredType: .errorType, identifier: variable), enclosingType: enclosingType)
   }
 
-//  public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
-//    contractDeclarations.append(contractDeclaration)
-//    addVariableDeclarations(contractDeclaration.variableDeclarations, enclosingType: contractDeclaration.identifier)
-//  }
-
-//  public mutating func addStruct(_ structDeclaration: StructDeclaration) {
-////    structDeclarations.append(structDeclaration)
-//    addVariableDeclarations(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier)
-//  }
-
-  public func isDeclaredContract(_ type: RawTypeIdentifier) -> Bool {
-    guard let kind = types[type]?.kind, case .contract = kind else { return false }
-    return true
+  public func isContractDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredContracts.contains(type)
   }
 
   public func size(of type: Type.RawType) -> Int {
@@ -96,55 +76,21 @@ public struct Environment {
     case .errorType: return 0
 
     case .userDefinedType(let identifier):
-//      let propertyDeclarations = properties(declaredIn: identifier)
-//      return propertyDeclarations.reduce(0, { acc, element in
-//        return acc + size(of: element.type.rawType)
-//      })
       return types[identifier]!.properties.reduce(0) { acc, element in
         return acc + size(of: element.value.rawType)
       }
     }
   }
 
-//  func matchStruct(identifier: Identifier) -> StructDeclaration? {
-//    return structDeclarations.first(where: { $0.identifier == identifier })
-//  }
-
-//  public func properties(declaredIn type: String) -> [String: PropertyInformation]? {
-//    if let contractDeclaration = contractDeclarations.first(where: { $0.identifier == type }) {
-//      return contractDeclaration.variableDeclarations
-//    }
-//
-//    if let structDeclaration = matchStruct(identifier: type) {
-//      return structDeclaration.variableDeclarations
-//    }
-//    return []
-//
-//    return types[type]?.properties
-//  }
-
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
-//    return typeLayoutMap[type]?.offset(for: property)
     return offsets[enclosingType]?.offset(for: property)
   }
 
   public func propertyIsDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-//    return typeLayoutMap[type]?.contains(property) ?? false
     return types[enclosingType]!.properties.keys.contains(property)
   }
 
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
-//    let contractDefinitionIdentifier = declaredContractsIdentifiers.first { $0.name == contractIdentifier.name }!
-//    let variables = properties(declaredIn: contractDefinitionIdentifier)
-//    return variables.filter { variable in
-//      switch variable.type.rawType {
-//      case .builtInType(.address): return true
-//      case .fixedSizeArrayType(.builtInType(.address), _): return true
-//      case .arrayType(let rawType): return rawType == .builtInType(.address)
-//      default: return false
-//      }
-//    }
-
     return types[enclosingType]!.properties.flatMap { key, value in
       switch value.rawType {
       case .builtInType(.address): return key
@@ -159,30 +105,28 @@ public struct Environment {
     return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
   }
 
-  public func type(of property: String, enclosingType: RawTypeIdentifier) -> Type.RawType? {
-//    if typeUndefinedVariables[typeIdentifier, default: []].contains(identifier) {
-//      return .errorType
-//    }
-//    let mangledIdentifier = identifier.mangled(in: typeIdentifier)
-//    return typeMap[mangledIdentifier]
+  public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType? {
+    if let scopeContext = scopeContext, let type = scopeContext.type(for: property) {
+      return type
+    }
     return types[enclosingType]?.properties[property]?.rawType
   }
 
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability]) -> Type.RawType? {
-    guard case .success(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities) else { return .errorType }
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext? = nil) -> Type.RawType? {
+    guard case .success(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) else { return .errorType }
     return matchingFunction.resultType
   }
 
-  public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) -> Type.RawType {
+  public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext? = nil) -> Type.RawType {
     switch expression {
     case .binaryExpression(let binaryExpression):
-      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities)
+      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .bracketedExpression(let expression):
-      return type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities)
+      return type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
-      return type(of: functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities) ?? .errorType
+      return type(of: functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
@@ -190,7 +134,7 @@ public struct Environment {
         let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
         return localVariable.type.rawType
       }
-      return type(of: identifier.name, enclosingType: enclosingType)!
+      return type(of: identifier.name, enclosingType: enclosingType, scopeContext: scopeContext)!
 
     case .literal(let token):
       guard case .literal(let literal) = token.kind else { fatalError() }
@@ -203,7 +147,7 @@ public struct Environment {
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
-      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: enclosingType)!
+      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: enclosingType, scopeContext: scopeContext)!
 
       switch identifierType {
       case .arrayType(let elementType): return elementType
@@ -214,28 +158,18 @@ public struct Environment {
     }
   }
 
-//  public mutating func setType(of identifier: Identifier, enclosingType: RawTypeIdentifier, type: Type) {
-//    let mangledIdentifier = identifier.mangled(in: contractIdentifier)
-//    typeMap[mangledIdentifier] = type.rawType
-//  }
-//
-//  public mutating func setType(of function: FunctionDeclaration, contractIdentifier: Identifier, callerCapabilities: [CallerCapability], type: Type) {
-//    let mangledFunction = function.mangled(enclosingType: contractIdentifier, withCallerCapabilities: callerCapabilities)
-//    typeMap[mangledFunction] = type.rawType
-//  }
-
   public enum FunctionCallMatchResult {
     case success(FunctionInformation)
     case failure(candidates: [FunctionInformation])
   }
 
-  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
+  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext? = nil) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
 
     for candidate in types[enclosingType]!.functions[functionCall.identifier.name]! {
-      let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType) }
+      let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
 
-      guard candidate.parameterTypes ==  argumentTypes,
+      guard candidate.parameterTypes == argumentTypes,
         areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
           candidates.append(candidate)
           continue
@@ -258,11 +192,8 @@ public struct Environment {
 
   public func matchEventCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     let property = types[enclosingType]?.properties[functionCall.identifier.name]
-    guard property?.rawType.isEventType ?? false else { return nil }
+    guard property?.rawType.isEventType ?? false, functionCall.arguments.count == property?.typeGenericArguments.count else { return nil }
     return property
-//
-//    return properties(declaredIn: contractIdentifier).filter({ $0.type.isEventType }).first { event in
-//    }
   }
 }
 
@@ -277,33 +208,10 @@ struct OffsetTable {
     storage = offsetMap
   }
 }
-//
-//struct PropertyType {
-//  private var storage = [String: Type]()
-//
-//  func type(of property: String) -> Type? {
-//    return storage[property]
-//  }
-//
-//  mutating func setType(_ type: Type, of property: String) {
-//    storage[property] = type
-//  }
-//}
-
 
 public struct TypeInformation {
-  public enum Kind {
-    case `struct`
-    case contract
-  }
-
-  var kind: Kind
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
-
-  init(kind: Kind) {
-    self.kind = kind
-  }
 }
 
 public struct PropertyInformation {
