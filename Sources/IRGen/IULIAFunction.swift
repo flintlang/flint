@@ -110,7 +110,7 @@ struct IULIAFunction {
     let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
 
-      let type = environment.type(of: callerCapability.identifier, typeIdentifier: typeIdentifier)!
+      let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!
       let offset = contractStorage.offset(for: callerCapability.name)
 
       switch type {
@@ -202,7 +202,7 @@ extension IULIAFunction {
       fatalError()
     }
 
-    let lhsType = environment.type(of: lhs, typeIdentifier: typeIdentifier)
+    let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name)
     let rhsOffset = propertyOffset(for: rhs, in: lhsType)
 
     return "sload(add(\(lhsOffset), \(rhsOffset)))"
@@ -212,26 +212,26 @@ extension IULIAFunction {
     guard case .identifier(let identifier) = expression else { fatalError() }
     guard case .userDefinedType(let structIdentifier) = type else { fatalError() }
 
-    return environment.propertyOffset(for: identifier, in: structIdentifier)!
+    return environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!
   }
 
   func render(_ functionCall: FunctionCall) -> String {
-    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: typeIdentifier) {
-      let types = eventCall.type.genericArguments
+    if let eventCall = environment.matchEventCall(functionCall, enclosingType: typeIdentifier.name) {
+      let types = eventCall.typeGenericArguments
 
       var stores = [String]()
       var memoryOffset = 0
       for (i, argument) in functionCall.arguments.enumerated() {
         stores.append("mstore(\(memoryOffset), \(render(argument)))")
-        memoryOffset += environment.size(of: types[i].rawType) * 32
+        memoryOffset += environment.size(of: types[i]) * 32
       }
 
-      let totalSize = types.reduce(0) { return $0 + environment.size(of: $1.rawType) } * 32
-      let typeList = eventCall.type.genericArguments.map { type in
-        return "\(CanonicalType(from: type.rawType)!.rawValue)"
+      let totalSize = types.reduce(0) { return $0 + environment.size(of: $1) } * 32
+      let typeList = eventCall.typeGenericArguments.map { type in
+        return "\(CanonicalType(from: type)!.rawValue)"
       }.joined(separator: ",")
 
-      let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
+      let eventHash = "\(functionCall.identifier.name)(\(typeList))".sha3(.keccak256)
       let log = "log1(0, \(totalSize), 0x\(eventHash))"
 
       return """
@@ -285,7 +285,7 @@ extension IULIAFunction {
     let offset = contractStorage.offset(for: baseIdentifier.name)
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = environment.type(of: subscriptExpression.baseIdentifier, typeIdentifier: typeIdentifier)!
+    let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: typeIdentifier.name)!
 
     guard let _ = baseIdentifier.enclosingType else {
       fatalError("Subscriptable types are only supported for contract properties right now.")

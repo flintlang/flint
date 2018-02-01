@@ -51,7 +51,7 @@ struct IULIAContract {
 
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
-    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.isBasicType && !$0.type.isEventType }
+    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType }
     let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
     let initializerBody = initializerParameters.map { parameter in
       return "_flintStorage\(storage.offset(for: parameter.identifier.name)) = \(parameter.identifier.name);"
@@ -60,7 +60,7 @@ struct IULIAContract {
     var index = 0
     var propertyDeclarations = [String]()
 
-    for property in contractDeclaration.variableDeclarations where !property.type.isEventType {
+    for property in contractDeclaration.variableDeclarations where !property.type.rawType.isEventType {
       let rawType = property.type.rawType
       let rawTypeSize = environment.size(of: rawType)
       for _ in (0..<rawTypeSize) {

@@ -18,7 +18,7 @@ struct IULIAInterface {
       }
     }.joined(separator: "\n")
 
-    let events = contract.contractDeclaration.variableDeclarations.filter { $0.type.isEventType }
+    let events = contract.contractDeclaration.variableDeclarations.filter { $0.type.rawType.isEventType }
     let eventDeclarations = events.map { event -> String in
       let parameters = event.type.genericArguments.map { type in
         return CanonicalType(from: type.rawType)!.rawValue
@@ -71,7 +71,7 @@ fileprivate extension FunctionDeclaration {
       guard case .expression(.functionCall(let functionCall)) = statement else {
         continue
       }
-      if environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) != nil {
+      if environment.matchEventCall(functionCall, enclosingType: contractIdentifier.name) != nil {
         return true
       }
     }

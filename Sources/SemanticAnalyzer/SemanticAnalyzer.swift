@@ -27,12 +27,11 @@ public struct SemanticAnalyzer: ASTPass {
 
     let environment = passContext.environment!
 
-    if !environment.declaredContractsIdentifiers.contains(contractBehaviorDeclaration.contractIdentifier) {
+    if !environment.isDeclaredContract(contractBehaviorDeclaration.contractIdentifier.name) {
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     }
 
-    let properties = environment.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -50,7 +49,6 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     passContext.scopeContext?.localVariables += [variableDeclaration]
-
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -103,20 +101,22 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
 
+
     if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
     } else if let functionDeclarationContext = passContext.functionDeclarationContext {
-      if !passContext.scopeContext!.containsVariableDefinition(for: identifier.name) {
-        if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
-        } else {
-          identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
+
+      if identifier.enclosingType == nil {
+        let scopeContext = passContext.scopeContext!
+        if !scopeContext.containsVariableDefinition(for: identifier.name) {
+          identifier.enclosingType = contractBehaviorDeclarationContext.contractIdentifier.name
         }
       }
 
-      if let _ = identifier.enclosingType {
-        let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
-        if !contractBehaviorDeclarationContext.isPropertyDeclared(identifier.name) {
+      if let enclosingType = identifier.enclosingType {
+        if !passContext.environment!.propertyIsDefined(identifier.name, enclosingType: enclosingType) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
-          passContext.environment!.addUsedUndefinedVariable(identifier, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier)
+          passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name)
         } else if let asLValue = passContext.asLValue, asLValue {
           if !functionDeclarationContext.isMutating {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
@@ -138,7 +138,7 @@ public struct SemanticAnalyzer: ASTPass {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if !callerCapability.isAny && !environment.containsCallerCapability(callerCapability, in: contractBehaviorDeclarationContext.contractIdentifier) {
+    if !callerCapability.isAny && !environment.containsCallerCapability(callerCapability, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) {
       diagnostics.append(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
     }
 
@@ -161,6 +161,12 @@ public struct SemanticAnalyzer: ASTPass {
         binaryExpression.rhs = .identifier(identifier)
     }
 
+    if case .dot = binaryExpression.opToken {
+      let enclosingType = enclosingTypeIdentifier(in: passContext)
+      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name)
+      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+    }
+
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
@@ -171,7 +177,7 @@ public struct SemanticAnalyzer: ASTPass {
     let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
     var diagnostics = [Diagnostic]()
 
-    switch environment.matchFunctionCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities) {
     case .success(let matchingFunction):
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
@@ -181,7 +187,7 @@ public struct SemanticAnalyzer: ASTPass {
         }
       }
     case .failure(candidates: let candidates):
-      if environment.matchEventCall(functionCall, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier) == nil {
+      if environment.matchEventCall(functionCall, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) == nil {
         diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities, candidates: candidates))
       }
     }

@@ -83,8 +83,8 @@ public struct TypeChecker: ASTPass {
     if case .punctuation(.equal) = binaryExpression.op.kind {
       let typeIdentifier = enclosingTypeIdentifier(in: passContext)
 
-      let lhsType = environment.type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
-      let rhsType = environment.type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
+      let lhsType = environment.type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name)
+      let rhsType = environment.type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name)
 
       if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
@@ -101,11 +101,11 @@ public struct TypeChecker: ASTPass {
     let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
     let contractIdentifier = contractBehaviorDeclarationContext.contractIdentifier
 
-    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
-      let expectedTypes = eventCall.type.genericArguments.map { $0.rawType }
+    if let eventCall = environment.matchEventCall(functionCall, enclosingType: contractIdentifier.name) {
+      let expectedTypes = eventCall.typeGenericArguments
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, typeIdentifier: contractBehaviorDeclarationContext.contractIdentifier)
+        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
           diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
@@ -127,7 +127,7 @@ public struct TypeChecker: ASTPass {
     let environment = passContext.environment!
 
     if let expression = returnStatement.expression {
-      let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, typeIdentifier: typeIdentifier)
+      let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name)
       let expectedType = functionDeclarationContext.declaration.rawType
 
       if actualType != expectedType {

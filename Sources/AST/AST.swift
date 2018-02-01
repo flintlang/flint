@@ -16,6 +16,8 @@ public enum TopLevelDeclaration {
   case structDeclaration(StructDeclaration)
 }
 
+public typealias RawTypeIdentifier = String
+
 public struct ContractDeclaration: SourceEntity {
   public var contractToken: Token
   public var identifier: Identifier
@@ -263,7 +265,7 @@ public struct Type: SourceEntity {
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
-    case userDefinedType(Identifier)
+    case userDefinedType(RawTypeIdentifier)
     case errorType
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -291,9 +293,18 @@ public struct Type: SourceEntity {
       case .arrayType(let rawType): return "[\(rawType.name)]"
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
-      case .userDefinedType(let identifier): return identifier.name
+      case .userDefinedType(let identifier): return identifier
       case .errorType: return "Flint$ErrorType"
       }
+    }
+
+    public var isBasicType: Bool {
+      if case .builtInType(_) = self { return true }
+      return false
+    }
+
+    public var isEventType: Bool {
+      return self == .builtInType(.event)
     }
   }
 
@@ -328,26 +339,12 @@ public struct Type: SourceEntity {
     return rawType.name
   }
 
-  public var isBasicType: Bool {
-    if case Type.RawType.builtInType(_) = rawType {
-      return true
-    }
-    return false
-  }
-
-  public var isEventType: Bool {
-    if case Type.RawType.builtInType(.event) = rawType {
-      return true
-    }
-    return false
-  }
-
   public init(identifier: Identifier, genericArguments: [Type] = []) {
     let name = identifier.name
     if let builtInType = BuiltInType(rawValue: name) {
       rawType = .builtInType(builtInType)
     } else {
-      rawType = .userDefinedType(identifier)
+      rawType = .userDefinedType(name)
     }
     self.genericArguments = genericArguments
     self.sourceLocation = identifier.sourceLocation
@@ -418,6 +415,24 @@ public indirect enum Expression: SourceEntity {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
+    }
+  }
+
+  public mutating func assigningEnclosingType(type: String) -> Expression {
+    switch self {
+    case .identifier(var identifier):
+      identifier.enclosingType = type
+      return .identifier(identifier)
+    case .binaryExpression(var binaryExpression):
+      binaryExpression.lhs = binaryExpression.lhs.assigningEnclosingType(type: type)
+      return .binaryExpression(binaryExpression)
+    case .bracketedExpression(var expression):
+      return .bracketedExpression(expression.assigningEnclosingType(type: type))
+    case .subscriptExpression(var subscriptExpression):
+      subscriptExpression.baseIdentifier.enclosingType = type
+      return .subscriptExpression(subscriptExpression)
+    default:
+      return self
     }
   }
 }

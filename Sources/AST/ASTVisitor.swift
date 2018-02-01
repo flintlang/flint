@@ -54,8 +54,7 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    let properties = passContext.environment!.properties(declaredIn: contractBehaviorDeclaration.contractIdentifier)
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, contractProperties: properties, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     var localVariables = [VariableDeclaration]()
     if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
