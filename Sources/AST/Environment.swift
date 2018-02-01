@@ -185,6 +185,7 @@ public struct Environment {
   }
 
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
+    guard !target.isEmpty else { return true }
     for callCallerCapability in source {
       if !target.contains(where: { return callCallerCapability.isSubcapability(callerCapability: $0) }) {
         return false

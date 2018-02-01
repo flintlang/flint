@@ -21,13 +21,19 @@ struct IULIAFunction {
   var contractStorage: ContractStorage
   var environment: Environment
 
+  var isContractFunction = false
+
   init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], contractStorage: ContractStorage, environment: Environment) {
     self.functionDeclaration = functionDeclaration
     self.typeIdentifier = typeIdentifier
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
-    self .contractStorage = contractStorage
+    self.contractStorage = contractStorage
     self.environment = environment
+
+    if !callerCapabilities.isEmpty {
+      isContractFunction = true
+    }
   }
 
   var name: String {
@@ -162,6 +168,13 @@ extension IULIAFunction {
   func render(_ binaryExpression: BinaryExpression, asLValue: Bool) -> String {
 
     if case .dot = binaryExpression.opToken {
+      if case .functionCall(let functionCall) = binaryExpression.rhs, case .identifier(let identifier) = binaryExpression.lhs {
+        let offset = environment.propertyOffset(for: identifier.name, enclosingType: identifier.enclosingType!)!
+        let args: String = (functionCall.arguments.map({ render($0) }) + ["\(offset)"]).joined(separator: ", ")
+        return """
+        \(functionCall.identifier.name)(\(args))
+        """
+      }
       return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     }
 
@@ -209,7 +222,17 @@ extension IULIAFunction {
     let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name)
     let rhsOffset = propertyOffset(for: rhs, in: lhsType)
 
-    return "sload(add(\(lhsOffset), \(rhsOffset)))"
+    let offset: String
+    if !isContractFunction {
+      offset = "add(_flintSelf, \(rhsOffset))"
+    } else {
+      offset = "add(\(lhsOffset), \(rhsOffset)))"
+    }
+
+    if asLValue {
+      return offset
+    }
+    return "sload(\(offset))"
   }
 
   func propertyOffset(for expression: Expression, in type: Type.RawType) -> Int {

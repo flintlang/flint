@@ -34,7 +34,8 @@ struct Compiler {
     let astPasses: [AnyASTPass] = [
       AnyASTPass(SemanticAnalyzer()),
       AnyASTPass(TypeChecker()),
-      AnyASTPass(Optimizer())
+      AnyASTPass(Optimizer()),
+      AnyASTPass(IULIAPreprocessor())
     ]
 
     let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, compilationContext: compilationContext)

@@ -114,7 +114,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.passContext.scopeContext = nil
 
     let postProcessResult = pass.postProcess(structDeclaration: processResult.element, passContext: processResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {

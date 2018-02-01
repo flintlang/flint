@@ -423,6 +423,9 @@ public indirect enum Expression: SourceEntity {
     case .subscriptExpression(var subscriptExpression):
       subscriptExpression.baseIdentifier.enclosingType = type
       return .subscriptExpression(subscriptExpression)
+    case .functionCall(var functionCall):
+      functionCall.identifier.enclosingType = type
+      return .functionCall(functionCall)
     default:
       return self
     }

@@ -1,23 +1,36 @@
-contract A {
-  var a: Int
-  var test: Test
-}
-
-A :: (any) {
-  public func foo() -> Int {
-    return test.a
-  }
-}
-
 struct Test {
   var a: Int
   var b: Bool
 
-  func bar() -> Int {
-    return a
+  func bar() {
+    a += 2
   }
 
   func baz() -> Int {
-    return b
+    return a
+  }
+}
+
+contract A {
+  var a: Int
+  var test: Test
+  var test2: Test
+}
+
+A :: (any) {
+  mutating public func modifyTest() {
+    test.bar()
+  }
+
+  mutating public func modifyTest2() {
+    test2.bar()
+  }
+
+  public func getTest() -> Int {
+    return test.baz()
+  }
+
+  public func getTest2() -> Int {
+    return test2.baz()
   }
 }

@@ -49,7 +49,3 @@ public struct IULIACodeGenerator {
     return renderedContracts + "\n" + renderedInterfaces
   }
 }
-
-struct Statement {
-  var content: String
-}

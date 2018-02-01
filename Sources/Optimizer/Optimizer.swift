@@ -5,7 +5,6 @@
 //  Created by Franklin Schrans on 1/16/18.
 //
 
-import Foundation
 import AST
 
 public struct Optimizer: ASTPass {
