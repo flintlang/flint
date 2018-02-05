@@ -235,11 +235,14 @@ extension IULIAFunction {
     return "sload(\(offset))"
   }
 
-  func propertyOffset(for expression: Expression, in type: Type.RawType) -> Int {
+  func propertyOffset(for expression: Expression, in type: Type.RawType) -> String {
+    if case .binaryExpression(let binaryExpression) = expression {
+      return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
+    }
     guard case .identifier(let identifier) = expression else { fatalError() }
     guard case .userDefinedType(let structIdentifier) = type else { fatalError() }
 
-    return environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!
+    return "\(environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
   }
 
   func render(_ functionCall: FunctionCall) -> String {

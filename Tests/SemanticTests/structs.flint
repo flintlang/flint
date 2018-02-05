@@ -8,16 +8,19 @@ struct Test {
   }
 }
 
-contract Foo {
+struct Test2 {
   var a: Test
-  var b: Test
+}
+
+contract Foo {
   var c: Int
-  var d: Test
+  var a: Test
+  var b: Test2
 }
 
 Foo :: (any) {
   public func bar() -> Int {
-    return a.a + a.foo()
+    return a.a + a.foo() + b.a.a
   }
 
   public mutating func baz() {

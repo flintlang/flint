@@ -2,7 +2,7 @@ struct Test {
   var a: Int
   var b: Bool
 
-  func bar() {
+  mutating func bar() {
     a += 2
   }
 
