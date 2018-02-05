@@ -26,4 +26,8 @@ Foo :: (any) {
   public mutating func baz() {
     a.a = 2
   }
+
+  func f() {
+    b.a.a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
 }
