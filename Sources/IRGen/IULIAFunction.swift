@@ -159,9 +159,9 @@ extension IULIAFunction {
     case .minus: return "sub(\(lhs), \(rhs))"
     case .times: return "mul(\(lhs), \(rhs))"
     case .divide: return "div(\(lhs), \(rhs))"
-    case .closeAngledBracket: return "lt(\(lhs), \(rhs))"
+    case .closeAngledBracket: return "gt(\(lhs), \(rhs))"
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
-    case .openAngledBracket: return "gt(\(lhs), \(rhs))"
+    case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
     case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     default: fatalError()
