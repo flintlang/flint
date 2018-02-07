@@ -1,0 +1,40 @@
+contract Dictionary {
+  var storage: [Address: Int]
+  var foo: Int
+  var storage2: [Address: Int]
+  var bar: Int
+}
+
+Dictionary :: (any) {
+  public mutating func write(addr: Address, value: Int) {
+    storage[addr] = value
+  }
+
+  public func get(addr: Address) -> Int {
+    return storage[addr]
+  }
+
+  public mutating func write2(addr: Address, value: Int) {
+    storage2[addr] = value
+  }
+
+  public func get2(addr: Address) -> Int {
+    return storage2[addr]
+  }
+
+  public func getFoo() -> Int {
+    return foo
+  }
+
+  public mutating func setFoo(val: Int) {
+    foo = val
+  }
+
+  public func getBar() -> Int {
+    return bar
+  }
+
+  public mutating func setBar(val: Int) {
+    bar = val
+  }
+}
