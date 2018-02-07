@@ -64,6 +64,8 @@ struct IULIAContract {
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     return """
+    pragma solidity ^0.4.19;
+    
     contract \(contractDeclaration.identifier.name) {
 
       \(propertyDeclarationsCode.indented(by: 2))
