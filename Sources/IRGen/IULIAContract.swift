@@ -21,7 +21,7 @@ struct IULIAContract {
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       switch variableDeclaration.type.rawType {
-      case .arrayType(_):
+      case .fixedSizeArrayType(_):
         storage.allocate(variableDeclaration.type.rawType.size, for: variableDeclaration.identifier.name)
       default:
         storage.addProperty(variableDeclaration.identifier.name)
