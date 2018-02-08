@@ -212,7 +212,11 @@ extension IULIAFunction {
   func renderPropertyAccess(lhs: Expression, rhs: Expression, asLValue: Bool) -> String {
     let lhsOffset: Int
     if case .identifier(let lhsIdentifier) = lhs {
-      lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+      if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+        lhsOffset = offset
+      } else {
+        lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+      }
     } else if case .self(_) = lhs {
       lhsOffset = 0
     } else {

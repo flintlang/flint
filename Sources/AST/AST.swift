@@ -430,6 +430,14 @@ public indirect enum Expression: SourceEntity {
       return self
     }
   }
+  
+  public var enclosingType: String? {
+    guard case .identifier(let identifier) = self else {
+      return nil
+    }
+    
+    return identifier.enclosingType
+  }
 }
 
 public indirect enum Statement: SourceEntity {

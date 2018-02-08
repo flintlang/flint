@@ -18,7 +18,7 @@ C :: (any) {
     return a.x
   }
 
-  public mutating setAx(x: Int) {
+  public mutating func setAx(x: Int) {
     a.x = x
   }
 
@@ -26,7 +26,7 @@ C :: (any) {
     return a.y
   }
 
-  public mutating setAy(y: Bool) {
+  public mutating func setAy(y: Bool) {
     a.y = y
   }
 
@@ -34,7 +34,7 @@ C :: (any) {
     return b.x.x
   }
 
-  public mutating setBxx(x: Int) {
+  public mutating func setBxx(x: Int) {
     b.x.x = x
   }
 
