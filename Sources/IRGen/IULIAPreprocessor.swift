@@ -119,9 +119,6 @@ public struct IULIAPreprocessor: ASTPass {
     let receiverTrail = passContext.functionCallReceiverTrail ?? []
     
     if !receiverTrail.isEmpty {
-      let receiver = constructExpression(from: receiverTrail)
-      functionCall.arguments.insert(receiver, at: 0)
-      
       let functionDeclarationContext = passContext.functionDeclarationContext!
       let enclosingType = enclosingTypeIdentifier(in: passContext).name
       let scopeContext = passContext.scopeContext!
@@ -129,8 +126,10 @@ public struct IULIAPreprocessor: ASTPass {
       let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
       
       let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-      
       if passContext.environment!.isStructDeclared(type.name) {
+        let receiver = constructExpression(from: receiverTrail)
+        functionCall.arguments.insert(receiver, at: 0)
+        
         let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
