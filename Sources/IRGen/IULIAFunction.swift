@@ -168,11 +168,16 @@ extension IULIAFunction {
   func render(_ binaryExpression: BinaryExpression, asLValue: Bool) -> String {
 
     if case .dot = binaryExpression.opToken {
-      if case .functionCall(let functionCall) = binaryExpression.rhs, case .identifier(let identifier) = binaryExpression.lhs {
-        let offset = environment.propertyOffset(for: identifier.name, enclosingType: identifier.enclosingType!)!
-        let args: String = (["\(offset)"] + functionCall.arguments.map({ render($0) })).joined(separator: ", ")
+      if case .functionCall(let functionCall) = binaryExpression.rhs {
+        var renderedArgs = ""
+
+        if let receiverArgument = functionCall.arguments.first {
+          let functionArguments = functionCall.arguments.dropFirst()
+          renderedArgs = ([render(receiverArgument, asLValue: true)] + functionArguments.map({ render($0) })).joined(separator: ", ")
+        }
+      
         return """
-        \(functionCall.identifier.name)(\(args))
+        \(functionCall.identifier.name)(\(renderedArgs))
         """
       }
       return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)

@@ -68,7 +68,7 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
-    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = nil }
+
     return ASTPassResult(element: identifier, diagnostics: [], passContext: passContext)
   }
 
@@ -132,7 +132,7 @@ public struct IULIAPreprocessor: ASTPass {
     
     functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
     
-    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = nil }
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
