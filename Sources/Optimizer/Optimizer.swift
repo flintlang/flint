@@ -75,15 +75,6 @@ public struct Optimizer: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
-    
-    if let op = binaryExpression.opToken.operatorAssignmentOperator {
-      let sourceLocation = binaryExpression.op.sourceLocation
-      let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
-      binaryExpression.op = Token(kind: .punctuation(.equal), sourceLocation: sourceLocation)
-      binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs, op: token, rhs: binaryExpression.rhs))
-    }
-
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
