@@ -9,6 +9,7 @@ public struct Environment {
   var types = [RawTypeIdentifier: TypeInformation]()
   var offsets = [RawTypeIdentifier: OffsetTable]()
   var declaredContracts = [RawTypeIdentifier]()
+  var declaredStructs = [RawTypeIdentifier]()
 
   public init() {}
 
@@ -19,6 +20,7 @@ public struct Environment {
   }
 
   public mutating func addStruct(_ structDeclaration: StructDeclaration) {
+    declaredStructs.append(structDeclaration.identifier.name)
     types[structDeclaration.identifier.name] = TypeInformation()
     setProperties(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
@@ -51,6 +53,10 @@ public struct Environment {
 
   public func isContractDeclared(_ type: RawTypeIdentifier) -> Bool {
     return declaredContracts.contains(type)
+  }
+  
+  public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredStructs.contains(type)
   }
 
   public func size(of type: Type.RawType) -> Int {

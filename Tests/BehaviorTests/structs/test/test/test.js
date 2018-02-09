@@ -12,6 +12,7 @@ contract(config.contractName, function(accounts) {
     await instance.setAx(40);
     await instance.setAy(41);
     await instance.setBxx(42);
+    await instance.setBxx2(430);
     await instance.setBxy(43);
     await instance.setBy(44);
 
@@ -23,6 +24,9 @@ contract(config.contractName, function(accounts) {
 
     t = await instance.getBxx();
     assert.equal(t.valueOf(), 42);
+
+    t = await instance.getBxx2();
+    assert.equal(t.valueOf(), 430);
 
     t = await instance.getBxy();
     assert.equal(t.valueOf(), 43);

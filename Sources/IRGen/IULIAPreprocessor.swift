@@ -44,13 +44,13 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
     
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
-    let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
-    functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
-    
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
+      
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
+      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
     }
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -121,6 +121,7 @@ public struct IULIAPreprocessor: ASTPass {
     
     functionCall.arguments.insert(receiver, at: 0)
     
+    
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let enclosingType = enclosingTypeIdentifier(in: passContext).name
     let scopeContext = passContext.scopeContext!
@@ -128,9 +129,11 @@ public struct IULIAPreprocessor: ASTPass {
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     
     let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-    let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
     
-    functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+    if passContext.environment!.isStructDeclared(type.name) {
+      let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
+      functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+    }
     
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)

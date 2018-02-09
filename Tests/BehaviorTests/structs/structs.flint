@@ -1,11 +1,27 @@
 struct A {
   var x: Int
   var y: Bool
+
+  func getX() -> Int {
+    return x
+  }
+
+  mutating func setX(x: Int) {
+    self.x = x
+  }
 }
 
 struct B {
   var x: A
   var y: Int
+
+  func getXx() -> Int {
+    return x.getX()
+  }
+
+  mutating func setXx(y: Int) {
+    x.setX(y)
+  }
 }
 
 contract C {
@@ -36,6 +52,14 @@ C :: (any) {
 
   public mutating func setBxx(x: Int) {
     b.x.x = x
+  }
+
+  public func getBxx2() -> Int {
+    return b.getXx()
+  }
+
+  public mutating func setBxx2(x: Int) {
+    b.setXx(x)
   }
 
   public func getBxy() -> Bool {
