@@ -116,23 +116,24 @@ public struct IULIAPreprocessor: ASTPass {
   
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
-    let receiverTrail = passContext.functionCallReceiverTrail!
-    let receiver = constructExpression(from: receiverTrail)
+    let receiverTrail = passContext.functionCallReceiverTrail ?? []
     
-    functionCall.arguments.insert(receiver, at: 0)
-    
-    
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
-    let scopeContext = passContext.scopeContext!
-    
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    
-    let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-    
-    if passContext.environment!.isStructDeclared(type.name) {
-      let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
-      functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+    if !receiverTrail.isEmpty {
+      let receiver = constructExpression(from: receiverTrail)
+      functionCall.arguments.insert(receiver, at: 0)
+      
+      let functionDeclarationContext = passContext.functionDeclarationContext!
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let scopeContext = passContext.scopeContext!
+      
+      let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+      
+      let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      
+      if passContext.environment!.isStructDeclared(type.name) {
+        let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
+        functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+      }
     }
     
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }

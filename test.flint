@@ -15,6 +15,7 @@ contract A {
   var a: Int
   var test: Test
   var test2: Test
+  var a: Array
 }
 
 A :: (any) {
@@ -32,5 +33,35 @@ A :: (any) {
 
   public func getTest2() -> Int {
     return test2.baz()
+  }
+
+  public mutating func add(x: Int) {
+    a.add(x)
+  }
+
+  public func get(x: Int) -> Int {
+    return a.get(x)
+  }
+
+  public func getSize() -> Int {
+    return a.size
+  }
+}
+
+struct Array {
+  var elements: [Int]
+  var size: Int
+
+  mutating func add(value: Int) {
+    elements[size] = value
+    size += 1
+  }
+
+  func get(n: Int) -> Int {
+    return elements[n]
+  }
+
+  func getSize() -> Int {
+    return size
   }
 }
