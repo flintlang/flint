@@ -26,6 +26,7 @@ struct B {
 
 contract C {
   var a: A
+  var arr: Array
   var b: B
 }
 
@@ -76,5 +77,35 @@ C :: (any) {
 
   public mutating func setBy(y: Int) {
     b.y = y
+  }
+
+  public mutating func append(x: Int) {
+    arr.add(x)
+  }
+
+  public func get(x: Int) -> Int {
+    return arr.get(x)
+  }
+
+  public func getSize() -> Int {
+    return arr.size
+  }
+}
+
+struct Array {
+  var elements: [Int]
+  var size: Int
+
+  mutating func add(value: Int) {
+    elements[size] = value
+    size += 1
+  }
+
+  func get(n: Int) -> Int {
+    return elements[n]
+  }
+
+  func getSize() -> Int {
+    return size
   }
 }
