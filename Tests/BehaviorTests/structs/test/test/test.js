@@ -5,7 +5,7 @@ var Interface = artifacts.require("./_Interface" + config.contractName + ".sol")
 Contract.abi = Interface.abi
 
 contract(config.contractName, function(accounts) {
-  it("assign values correctly", async function() {
+  it("assign basic values", async function() {
     const instance = await Contract.deployed();
     let t;
 
@@ -33,6 +33,29 @@ contract(config.contractName, function(accounts) {
 
     t = await instance.getBy();
     assert.equal(t.valueOf(), 44);
+  });
+
+  
+  it("assign to dynamic data types", async function() {
+    const instance = await Contract.deployed();
+    let t;
+
+    for (let i = 0; i < 50; i++) {
+      await instance.append(50 + i);
+    }
+
+    for (let i = 0; i < 50; i++) {
+      t = await instance.get(i);
+      assert.equal(t.valueOf(), 50 + i);
+    }
+
+    t = await instance.getSize();
+    assert.equal(t.valueOf(), 50);
+
+    await instance.append(205);
+
+    t = await instance.get(t.toNumber() + 1);
+    assert.equal(t.valueOf(), 205);
   });
 });
 
