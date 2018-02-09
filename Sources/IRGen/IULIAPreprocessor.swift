@@ -43,6 +43,11 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
+    
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
+    functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
+    
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
@@ -63,6 +68,7 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = nil }
     return ASTPassResult(element: identifier, diagnostics: [], passContext: passContext)
   }
 
@@ -83,6 +89,7 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+    var passContext = passContext
     var binaryExpression = binaryExpression
     
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
@@ -90,11 +97,42 @@ public struct IULIAPreprocessor: ASTPass {
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
       binaryExpression.op = Token(kind: .punctuation(.equal), sourceLocation: sourceLocation)
       binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs, op: token, rhs: binaryExpression.rhs))
+    } else if case .dot = binaryExpression.opToken {
+      let trail = passContext.functionCallReceiverTrail ?? []
+      passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
     }
+    
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression where Expressions.Element == Expression, Expressions.SubSequence: RandomAccessCollection {
+    guard expressions.count > 1 else { return expressions.first! }
+    let head = expressions.first!
+    let tail = expressions.dropFirst()
+    
+    let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
+    return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
+  }
+  
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    var functionCall = functionCall
+    let receiverTrail = passContext.functionCallReceiverTrail!
+    let receiver = constructExpression(from: receiverTrail)
+    
+    functionCall.arguments.insert(receiver, at: 0)
+    
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let scopeContext = passContext.scopeContext!
+    
+    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    
+    let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
+    
+    functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+    
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = nil }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
@@ -195,3 +233,13 @@ public struct IULIAPreprocessor: ASTPass {
   }
 }
 
+extension ASTPassContext {
+  var functionCallReceiverTrail: [Expression]? {
+    get { return self[FunctionCallReceiverTrailContextEntry.self] }
+    set { self[FunctionCallReceiverTrailContextEntry.self] = newValue }
+  }
+}
+
+struct FunctionCallReceiverTrailContextEntry: PassContextEntry {
+  typealias Value = [Expression]
+}
