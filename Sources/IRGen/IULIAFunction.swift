@@ -170,7 +170,7 @@ extension IULIAFunction {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs, case .identifier(let identifier) = binaryExpression.lhs {
         let offset = environment.propertyOffset(for: identifier.name, enclosingType: identifier.enclosingType!)!
-        let args: String = (functionCall.arguments.map({ render($0) }) + ["\(offset)"]).joined(separator: ", ")
+        let args: String = (["\(offset)"] + functionCall.arguments.map({ render($0) })).joined(separator: ", ")
         return """
         \(functionCall.identifier.name)(\(args))
         """

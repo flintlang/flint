@@ -174,10 +174,12 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
-    let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    
     var diagnostics = [Diagnostic]()
 
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? contractBehaviorDeclarationContext.contractIdentifier.name, callerCapabilities: contractBehaviorDeclarationContext.callerCapabilities, scopeContext: passContext.scopeContext!) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .success(let matchingFunction):
       if matchingFunction.isMutating {
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
@@ -187,8 +189,8 @@ public struct SemanticAnalyzer: ASTPass {
         }
       }
     case .failure(candidates: let candidates):
-      if environment.matchEventCall(functionCall, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: contractBehaviorDeclarationContext.callerCapabilities, candidates: candidates))
+      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
       }
     }
 

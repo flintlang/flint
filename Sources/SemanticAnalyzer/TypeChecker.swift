@@ -98,14 +98,13 @@ public struct TypeChecker: ASTPass {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
     let functionDeclarationContext = passContext.functionDeclarationContext!
-    let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
-    let contractIdentifier = contractBehaviorDeclarationContext.contractIdentifier
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
 
-    if let eventCall = environment.matchEventCall(functionCall, enclosingType: contractIdentifier.name) {
+    if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
       let expectedTypes = eventCall.typeGenericArguments
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name, scopeContext: passContext.scopeContext)
+        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, scopeContext: passContext.scopeContext)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
           diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
