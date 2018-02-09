@@ -10,10 +10,10 @@ import AST
 // MARK: Errors
 
 extension Diagnostic {
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [MangledFunction]) -> Diagnostic {
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate in
-      return Diagnostic(severity: .note, sourceLocation: candidate.functionDeclaration.sourceLocation, message: "Perhaps you meant this function, which requires one of the caller capabilities in \(renderCapabilityGroup(candidate.callerCapabilities))")
+      return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires one of the caller capabilities in \(renderCapabilityGroup(candidate.callerCapabilities))")
     }
 
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(renderCapabilityGroup(contextCallerCapabilities))", notes: candidateNotes)

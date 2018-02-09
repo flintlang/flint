@@ -33,6 +33,22 @@ extension ContractBehaviorDeclaration: Equatable {
   }
 }
 
+extension StructDeclaration: Equatable {
+  public static func ==(lhs: StructDeclaration, rhs: StructDeclaration) -> Bool {
+    return lhs.identifier == rhs.identifier && lhs.members == rhs.members
+  }
+}
+
+extension StructMember: Equatable {
+  public static func ==(lhs: StructMember, rhs: StructMember) -> Bool {
+    switch (lhs, rhs) {
+    case (.variableDeclaration(let lhs), .variableDeclaration(let rhs)): return lhs == rhs
+    case (.functionDeclaration(let lhs), .functionDeclaration(let rhs)): return lhs == rhs
+    default: return false
+    }
+  }
+}
+
 extension VariableDeclaration: Equatable {
   public static func ==(lhs: VariableDeclaration, rhs: VariableDeclaration) -> Bool {
     return

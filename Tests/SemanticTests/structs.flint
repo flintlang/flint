@@ -1,0 +1,33 @@
+// RUN: %flintc %s --verify
+
+struct Test {
+  var a: Int
+
+  func foo() -> Int {
+    return 2
+  }
+}
+
+struct Test2 {
+  var a: Test
+}
+
+contract Foo {
+  var c: Int
+  var a: Test
+  var b: Test2
+}
+
+Foo :: (any) {
+  public func bar() -> Int {
+    return a.a + a.foo() + b.a.a
+  }
+
+  public mutating func baz() {
+    a.a = 2
+  }
+
+  func f() {
+    b.a.a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+}

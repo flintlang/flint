@@ -52,6 +52,7 @@ public struct Tokenizer {
   let syntaxMap: [String: Token.Kind] = [
     "\n": .newline,
     "contract": .contract,
+    "struct": .struct,
     "var": .var,
     "func": .func,
     "mutating": .mutating,

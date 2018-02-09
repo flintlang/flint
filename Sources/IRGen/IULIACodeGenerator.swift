@@ -32,7 +32,13 @@ public struct IULIACodeGenerator {
 
         return contractBehaviorDeclaration
       }
-      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, environment: environment)
+
+      let structDeclarations = topLevelModule.declarations.flatMap { declaration -> StructDeclaration? in
+        guard case .structDeclaration(let structDeclaration) = declaration else { return nil }
+        return structDeclaration
+      }
+
+      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, structDeclarations: structDeclarations, environment: environment)
       contracts.append(contract)
       interfaces.append(IULIAInterface(contract: contract, environment: environment))
     }
@@ -42,8 +48,4 @@ public struct IULIACodeGenerator {
 
     return renderedContracts + "\n" + renderedInterfaces
   }
-}
-
-struct Statement {
-  var content: String
 }

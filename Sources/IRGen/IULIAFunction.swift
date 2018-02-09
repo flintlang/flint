@@ -13,12 +13,28 @@ struct IULIAFunction {
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
-  var contractIdentifier: Identifier
+  var typeIdentifier: Identifier
+
   var capabilityBinding: Identifier?
   var callerCapabilities: [CallerCapability]
 
   var contractStorage: ContractStorage
   var environment: Environment
+
+  var isContractFunction = false
+
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], contractStorage: ContractStorage, environment: Environment) {
+    self.functionDeclaration = functionDeclaration
+    self.typeIdentifier = typeIdentifier
+    self.capabilityBinding = capabilityBinding
+    self.callerCapabilities = callerCapabilities
+    self.contractStorage = contractStorage
+    self.environment = environment
+
+    if !callerCapabilities.isEmpty {
+      isContractFunction = true
+    }
+  }
 
   var name: String {
     return functionDeclaration.identifier.name
@@ -100,7 +116,7 @@ struct IULIAFunction {
     let checks = callerCapabilities.flatMap { callerCapability in
       guard !callerCapability.isAny else { return nil }
 
-      let type = environment.type(of: callerCapability.identifier, contractIdentifier: contractIdentifier)!
+      let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!
       let offset = contractStorage.offset(for: callerCapability.name)
 
       switch type {
@@ -150,6 +166,23 @@ extension IULIAFunction {
   }
 
   func render(_ binaryExpression: BinaryExpression, asLValue: Bool) -> String {
+
+    if case .dot = binaryExpression.opToken {
+      if case .functionCall(let functionCall) = binaryExpression.rhs {
+        var renderedArgs = ""
+
+        if let receiverArgument = functionCall.arguments.first {
+          let functionArguments = functionCall.arguments.dropFirst()
+          renderedArgs = ([render(receiverArgument, asLValue: true)] + functionArguments.map({ render($0) })).joined(separator: ", ")
+        }
+      
+        return """
+        \(functionCall.identifier.name)(\(renderedArgs))
+        """
+      }
+      return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
+    }
+
     let lhs = render(binaryExpression.lhs, asLValue: asLValue)
     let rhs = render(binaryExpression.rhs, asLValue: asLValue)
     
@@ -163,7 +196,6 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
-    case .dot: return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     default: fatalError()
     }
   }
@@ -174,7 +206,7 @@ extension IULIAFunction {
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
       return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
-    case .identifier(let identifier) where !identifier.isPropertyAccess:
+    case .identifier(let identifier) where identifier.enclosingType == nil:
       return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
     default:
       let lhsCode = render(lhs, asLValue: true)
@@ -183,33 +215,62 @@ extension IULIAFunction {
   }
 
   func renderPropertyAccess(lhs: Expression, rhs: Expression, asLValue: Bool) -> String {
-    let rhsCode = render(rhs, asLValue: asLValue)
-
-    if case .self(_) = lhs {
-      return rhsCode
+    let lhsOffset: Int
+    if case .identifier(let lhsIdentifier) = lhs {
+      if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+        lhsOffset = offset
+      } else {
+        lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+      }
+    } else if case .self(_) = lhs {
+      lhsOffset = 0
+    } else {
+      fatalError()
     }
 
-    let lhsCode = render(lhs, asLValue: asLValue)
-    return "\(lhsCode).\(rhsCode)"
+    let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name)
+    let rhsOffset = propertyOffset(for: rhs, in: lhsType)
+
+    let offset: String
+    if !isContractFunction {
+      offset = "add(_flintSelf, \(rhsOffset))"
+    } else {
+      offset = "add(\(lhsOffset), \(rhsOffset))"
+    }
+
+    if asLValue {
+      return offset
+    }
+    return "sload(\(offset))"
+  }
+
+  func propertyOffset(for expression: Expression, in type: Type.RawType) -> String {
+    if case .binaryExpression(let binaryExpression) = expression {
+      return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
+    }
+    guard case .identifier(let identifier) = expression else { fatalError() }
+    guard case .userDefinedType(let structIdentifier) = type else { fatalError() }
+
+    return "\(environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
   }
 
   func render(_ functionCall: FunctionCall) -> String {
-    if let eventCall = environment.matchEventCall(functionCall, contractIdentifier: contractIdentifier) {
-      let types = eventCall.type.genericArguments
+    if let eventCall = environment.matchEventCall(functionCall, enclosingType: typeIdentifier.name) {
+      let types = eventCall.typeGenericArguments
 
       var stores = [String]()
       var memoryOffset = 0
       for (i, argument) in functionCall.arguments.enumerated() {
         stores.append("mstore(\(memoryOffset), \(render(argument)))")
-        memoryOffset += types[i].rawType.size * 32
+        memoryOffset += environment.size(of: types[i]) * 32
       }
 
-      let totalSize = types.reduce(0) { return $0 + $1.rawType.size } * 32
-      let typeList = eventCall.type.genericArguments.map { type in
-        return "\(CanonicalType(from: type.rawType)!.rawValue)"
+      let totalSize = types.reduce(0) { return $0 + environment.size(of: $1) } * 32
+      let typeList = eventCall.typeGenericArguments.map { type in
+        return "\(CanonicalType(from: type)!.rawValue)"
       }.joined(separator: ",")
 
-      let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
+      let eventHash = "\(functionCall.identifier.name)(\(typeList))".sha3(.keccak256)
       let log = "log1(0, \(totalSize), 0x\(eventHash))"
 
       return """
@@ -223,12 +284,8 @@ extension IULIAFunction {
   }
 
   func render(_ identifier: Identifier, asLValue: Bool = false) -> String {
-    if identifier.isPropertyAccess {
-      let offset = contractStorage.offset(for: identifier.name)
-      if asLValue {
-        return "\(offset)"
-      }
-      return "sload(\(offset))"
+    if let _ = identifier.enclosingType {
+      return renderPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue)
     }
     return mangleIdentifierName(identifier.name)
   }
@@ -260,12 +317,12 @@ extension IULIAFunction {
   func render(_ subscriptExpression: SubscriptExpression, asLValue: Bool = false) -> String {
     let baseIdentifier = subscriptExpression.baseIdentifier
 
-    let offset = contractStorage.offset(for: baseIdentifier.name)
+    let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType!)!
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
-    let type = environment.type(of: subscriptExpression.baseIdentifier, contractIdentifier: contractIdentifier)!
+    let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: typeIdentifier.name)!
 
-    guard baseIdentifier.isPropertyAccess else {
+    guard let _ = baseIdentifier.enclosingType else {
       fatalError("Subscriptable types are only supported for contract properties right now.")
     }
 
@@ -275,23 +332,24 @@ extension IULIAFunction {
       if asLValue {
         return storageArrayOffset
       } else {
-        guard elementType.size == 1 else {
+        guard environment.size(of: elementType) == 1 else {
           fatalError("Loading array elements of size > 1 is not supported yet.")
         }
         return "sload(\(storageArrayOffset))"
       }
     case .fixedSizeArrayType(let elementType, _):
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(type.size))"
+      let typeSize = environment.size(of: type)
+      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(typeSize))"
       if asLValue {
         return storageArrayOffset
       } else {
-        guard elementType.size == 1 else {
+        guard environment.size(of: elementType) == 1 else {
           fatalError("Loading array elements of size > 1 is not supported yet.")
         }
         return "sload(\(storageArrayOffset))"
       }
     case .dictionaryType(key: let keyType, value: let valueType):
-      guard keyType.size == 1 else {
+      guard environment.size(of: keyType) == 1 else {
         fatalError("Dictionary keys of size > 1 are not supported yet.")
       }
 
@@ -300,7 +358,7 @@ extension IULIAFunction {
       if asLValue {
         return "\(storageDictionaryOffsetForKey)"
       } else {
-        guard valueType.size == 1 else {
+        guard environment.size(of: valueType) == 1 else {
           fatalError("Loading dictionary values of size > 1 is not supported yet.")
         }
         return "sload(\(storageDictionaryOffsetForKey))"

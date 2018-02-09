@@ -5,6 +5,8 @@
 //  Created by Franklin Schrans on 1/5/18.
 //
 
+import AST
+
 struct ContractStorage {
   private var storage = [String: Int]()
   private var indexPool = 0

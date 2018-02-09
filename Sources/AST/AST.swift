@@ -13,7 +13,10 @@ public struct TopLevelModule {
 public enum TopLevelDeclaration {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
+  case structDeclaration(StructDeclaration)
 }
+
+public typealias RawTypeIdentifier = String
 
 public struct ContractDeclaration: SourceEntity {
   public var contractToken: Token
@@ -51,6 +54,37 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   }
 }
 
+public enum StructMember {
+  case variableDeclaration(VariableDeclaration)
+  case functionDeclaration(FunctionDeclaration)
+}
+
+public struct StructDeclaration {
+  public var structToken: Token
+  public var identifier: Identifier
+  public var members: [StructMember]
+
+  public var variableDeclarations: [VariableDeclaration] {
+    return members.flatMap { member in
+      guard case .variableDeclaration(let variableDeclaration) = member else { return nil }
+      return variableDeclaration
+    }
+  }
+
+  public var functionDeclarations: [FunctionDeclaration] {
+    return members.flatMap { member in
+      guard case .functionDeclaration(let functionDeclaration) = member else { return nil }
+      return functionDeclaration
+    }
+  }
+
+  public init(structToken: Token, identifier: Identifier, members: [StructMember]) {
+    self.structToken = structToken
+    self.identifier = identifier
+    self.members = members
+  }
+}
+
 public struct VariableDeclaration: SourceEntity {
   public var varToken: Token?
   public var identifier: Identifier
@@ -85,7 +119,7 @@ public struct FunctionDeclaration: SourceEntity {
     return resultType?.rawType ?? .builtInType(.void)
   }
 
-  public var localVariables: [VariableDeclaration]
+  public var localVariables = [VariableDeclaration]()
 
   public var sourceLocation: SourceLocation {
     if let resultType = resultType {
@@ -118,7 +152,7 @@ public struct FunctionDeclaration: SourceEntity {
     return hasModifier(kind: .public)
   }
 
-  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, localVariables: [VariableDeclaration]) {
+  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -128,11 +162,6 @@ public struct FunctionDeclaration: SourceEntity {
     self.resultType = resultType
     self.body = body
     self.closeBraceToken = closeBraceToken
-    self.localVariables = localVariables
-  }
-
-  public func mangled(inContract contract: Identifier, withCallerCapabilities callerCapabilities: [CallerCapability]) -> MangledFunction {
-    return MangledFunction(functionDeclaration: self, contractIdentifier: contract, callerCapabilities: callerCapabilities)
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
@@ -202,11 +231,7 @@ public struct TypeAnnotation: SourceEntity {
 
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
-  public var enclosingContractName: String?
-
-  public var isPropertyAccess: Bool {
-    return enclosingContractName != nil
-  }
+  public var enclosingType: String? = nil
 
   public var name: String {
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
@@ -221,10 +246,6 @@ public struct Identifier: Hashable, SourceEntity {
     self.identifierToken = identifierToken
   }
 
-  public func mangled(in contractIdentifier: Identifier) -> MangledProperty {
-    return MangledProperty(inContract: self, contractIdentifier: contractIdentifier)
-  }
-
   public var hashValue: Int {
     return "\(name)_\(sourceLocation)".hashValue
   }
@@ -236,7 +257,7 @@ public struct Type: SourceEntity {
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
-    case userDefinedType(String)
+    case userDefinedType(RawTypeIdentifier)
     case errorType
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -258,26 +279,24 @@ public struct Type: SourceEntity {
       }
     }
 
-    public var size: Int {
-      switch self {
-      case .builtInType(_): return 1
-      case .fixedSizeArrayType(let rawType, let size): return rawType.size * size
-      case .arrayType(_): return 1
-      case .dictionaryType(_, _): return 1
-      case .userDefinedType(_): return 1
-      case .errorType: return 0
-      }
-    }
-
     public var name: String {
       switch self {
       case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
       case .arrayType(let rawType): return "[\(rawType.name)]"
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
-      case .userDefinedType(let name): return name
+      case .userDefinedType(let identifier): return identifier
       case .errorType: return "Flint$ErrorType"
       }
+    }
+
+    public var isBasicType: Bool {
+      if case .builtInType(_) = self { return true }
+      return false
+    }
+
+    public var isEventType: Bool {
+      return self == .builtInType(.event)
     }
   }
 
@@ -310,20 +329,6 @@ public struct Type: SourceEntity {
 
   public var name: String {
     return rawType.name
-  }
-
-  public var isBasicType: Bool {
-    if case Type.RawType.builtInType(_) = rawType {
-      return true
-    }
-    return false
-  }
-
-  public var isEventType: Bool {
-    if case Type.RawType.builtInType(.event) = rawType {
-      return true
-    }
-    return false
   }
 
   public init(identifier: Identifier, genericArguments: [Type] = []) {
@@ -403,6 +408,35 @@ public indirect enum Expression: SourceEntity {
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
     }
+  }
+
+  public mutating func assigningEnclosingType(type: String) -> Expression {
+    switch self {
+    case .identifier(var identifier):
+      identifier.enclosingType = type
+      return .identifier(identifier)
+    case .binaryExpression(var binaryExpression):
+      binaryExpression.lhs = binaryExpression.lhs.assigningEnclosingType(type: type)
+      return .binaryExpression(binaryExpression)
+    case .bracketedExpression(var expression):
+      return .bracketedExpression(expression.assigningEnclosingType(type: type))
+    case .subscriptExpression(var subscriptExpression):
+      subscriptExpression.baseIdentifier.enclosingType = type
+      return .subscriptExpression(subscriptExpression)
+    case .functionCall(var functionCall):
+      functionCall.identifier.enclosingType = type
+      return .functionCall(functionCall)
+    default:
+      return self
+    }
+  }
+  
+  public var enclosingType: String? {
+    guard case .identifier(let identifier) = self else {
+      return nil
+    }
+    
+    return identifier.enclosingType
   }
 }
 

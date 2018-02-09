@@ -1,0 +1,80 @@
+struct A {
+  var x: Int
+  var y: Bool
+
+  func getX() -> Int {
+    return x
+  }
+
+  mutating func setX(x: Int) {
+    self.x = x
+  }
+}
+
+struct B {
+  var x: A
+  var y: Int
+
+  func getXx() -> Int {
+    return x.getX()
+  }
+
+  mutating func setXx(y: Int) {
+    x.setX(y)
+  }
+}
+
+contract C {
+  var a: A
+  var b: B
+}
+
+C :: (any) {
+  public func getAx() -> Int {
+    return a.x
+  }
+
+  public mutating func setAx(x: Int) {
+    a.x = x
+  }
+
+  public func getAy() -> Bool {
+    return a.y
+  }
+
+  public mutating func setAy(y: Bool) {
+    a.y = y
+  }
+
+  public func getBxx() -> Int {
+    return b.x.x
+  }
+
+  public mutating func setBxx(x: Int) {
+    b.x.x = x
+  }
+
+  public func getBxx2() -> Int {
+    return b.getXx()
+  }
+
+  public mutating func setBxx2(x: Int) {
+    b.setXx(x)
+  }
+
+  public func getBxy() -> Bool {
+    return b.x.y
+  }
+
+  public mutating func setBxy(y: Bool) {
+    b.x.y = y
+  }
+
+  public func getBy() -> Int {
+    return b.y
+  }
+
+  public mutating func setBy(y: Int) {
+    b.y = y
+  }
+}

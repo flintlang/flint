@@ -5,7 +5,6 @@
 //  Created by Franklin Schrans on 1/16/18.
 //
 
-import Foundation
 import AST
 
 public struct Optimizer: ASTPass {
@@ -25,6 +24,14 @@ public struct Optimizer: ASTPass {
 
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -68,15 +75,6 @@ public struct Optimizer: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
-    
-    if let op = binaryExpression.opToken.operatorAssignmentOperator {
-      let sourceLocation = binaryExpression.op.sourceLocation
-      let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
-      binaryExpression.op = Token(kind: .punctuation(.equal), sourceLocation: sourceLocation)
-      binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs, op: token, rhs: binaryExpression.rhs))
-    }
-
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
@@ -110,6 +108,14 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {

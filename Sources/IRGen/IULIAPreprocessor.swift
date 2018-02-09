@@ -1,13 +1,16 @@
 //
-//  TypeChecker.swift
-//  flintc
+//  IULIAPreprocessor.swift
+//  IRGen
 //
-//  Created by Franklin Schrans on 1/11/18.
+//  Created by Franklin Schrans on 2/1/18.
 //
 
 import AST
 
-public struct TypeChecker: ASTPass {
+import Foundation
+import AST
+
+public struct IULIAPreprocessor: ASTPass {
   public init() {}
 
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -39,6 +42,16 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+    var functionDeclaration = functionDeclaration
+    
+    if let structDeclarationContext = passContext.structDeclarationContext {
+      let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
+      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
+      
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
+      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
+    }
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -55,6 +68,7 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
+
     return ASTPassResult(element: identifier, diagnostics: [], passContext: passContext)
   }
 
@@ -75,44 +89,54 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var diagnostics = [Diagnostic]()
-
-    let environment = passContext.environment!
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-
-    if case .punctuation(.equal) = binaryExpression.op.kind {
-      let typeIdentifier = enclosingTypeIdentifier(in: passContext)
-
-      let lhsType = environment.type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext)
-      let rhsType = environment.type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext)
-
-      if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
-        diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
-      }
+    var passContext = passContext
+    var binaryExpression = binaryExpression
+    
+    if let op = binaryExpression.opToken.operatorAssignmentOperator {
+      let sourceLocation = binaryExpression.op.sourceLocation
+      let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
+      binaryExpression.op = Token(kind: .punctuation(.equal), sourceLocation: sourceLocation)
+      binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs, op: token, rhs: binaryExpression.rhs))
+    } else if case .dot = binaryExpression.opToken {
+      let trail = passContext.functionCallReceiverTrail ?? []
+      passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
     }
-
-    return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
+    
+    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression where Expressions.Element == Expression, Expressions.SubSequence: RandomAccessCollection {
+    guard expressions.count > 1 else { return expressions.first! }
+    let head = expressions.first!
+    let tail = expressions.dropFirst()
+    
+    let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
+    return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
+  }
+  
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    var diagnostics = [Diagnostic]()
-    let environment = passContext.environment!
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
-
-    if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
-      let expectedTypes = eventCall.typeGenericArguments
-
-      for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, scopeContext: passContext.scopeContext)
-        let expectedType = expectedTypes[i]
-        if argumentType != expectedType {
-          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
-        }
+    var functionCall = functionCall
+    let receiverTrail = passContext.functionCallReceiverTrail ?? []
+    
+    if !receiverTrail.isEmpty {
+      let functionDeclarationContext = passContext.functionDeclarationContext!
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let scopeContext = passContext.scopeContext!
+      
+      let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+      
+      let type = passContext.environment!.type(of: receiverTrail.last!, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      if passContext.environment!.isStructDeclared(type.name) {
+        let receiver = constructExpression(from: receiverTrail)
+        functionCall.arguments.insert(receiver, at: 0)
+        
+        let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
+        functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
-
-    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+    
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
+    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
@@ -120,21 +144,7 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
-    var diagnostics = [Diagnostic]()
-    let typeIdentifier = enclosingTypeIdentifier(in: passContext)
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-    let environment = passContext.environment!
-
-    if let expression = returnStatement.expression {
-      let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext)
-      let expectedType = functionDeclarationContext.declaration.rawType
-
-      if actualType != expectedType {
-        diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
-      }
-    }
-
-    return ASTPassResult(element: returnStatement, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
@@ -161,12 +171,12 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
-    return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
-  }
-
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
+    return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
@@ -224,4 +234,15 @@ public struct TypeChecker: ASTPass {
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
+}
+
+extension ASTPassContext {
+  var functionCallReceiverTrail: [Expression]? {
+    get { return self[FunctionCallReceiverTrailContextEntry.self] }
+    set { self[FunctionCallReceiverTrailContextEntry.self] = newValue }
+  }
+}
+
+struct FunctionCallReceiverTrailContextEntry: PassContextEntry {
+  typealias Value = [Expression]
 }

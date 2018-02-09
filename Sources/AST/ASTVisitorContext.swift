@@ -7,31 +7,46 @@
 
 public struct ContractBehaviorDeclarationContext {
   public var contractIdentifier: Identifier
-  public var contractProperties: [VariableDeclaration]
   public var callerCapabilities: [CallerCapability]
 
-  public init(contractIdentifier: Identifier, contractProperties: [VariableDeclaration], callerCapabilities: [CallerCapability]) {
+  public init(contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
     self.contractIdentifier = contractIdentifier
-    self.contractProperties = contractProperties
     self.callerCapabilities = callerCapabilities
-  }
-
-  public func isPropertyDeclared(_ name: String) -> Bool {
-    return contractProperties.contains { $0.identifier.name == name }
   }
 }
 
+public struct StructDeclarationContext {
+  public var structIdentifier: Identifier
+
+  public init(structIdentifier: Identifier) {
+    self.structIdentifier = structIdentifier
+  }
+}
 
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
-  public var contractContext: ContractBehaviorDeclarationContext
 
-  public init(declaration: FunctionDeclaration, contractContext: ContractBehaviorDeclarationContext) {
+  public init(declaration: FunctionDeclaration) {
     self.declaration = declaration
-    self.contractContext = contractContext
   }
 
   public var isMutating: Bool {
     return declaration.isMutating
+  }
+}
+
+public struct ScopeContext {
+  public var localVariables = [VariableDeclaration]()
+
+  public init(localVariables: [VariableDeclaration] = []) {
+    self.localVariables = localVariables
+  }
+
+  public func containsVariableDefinition(for name: String) -> Bool {
+    return localVariables.contains { $0.identifier.name == name }
+  }
+
+  public func type(for variable: String) -> Type.RawType? {
+    return localVariables.first(where: { $0.identifier.name == variable })?.type.rawType
   }
 }
