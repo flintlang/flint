@@ -15,7 +15,7 @@ contract A {
   var a: Int
   var test: Test
   var test2: Test
-  var a: Array
+  var arr: Array
 }
 
 A :: (any) {
@@ -35,16 +35,16 @@ A :: (any) {
     return test2.baz()
   }
 
-  public mutating func add(x: Int) {
-    a.add(x)
+  public mutating func append(x: Int) {
+    arr.add(x)
   }
 
   public func get(x: Int) -> Int {
-    return a.get(x)
+    return arr.get(x)
   }
 
   public func getSize() -> Int {
-    return a.size
+    return arr.size
   }
 }
 

@@ -317,7 +317,7 @@ extension IULIAFunction {
   func render(_ subscriptExpression: SubscriptExpression, asLValue: Bool = false) -> String {
     let baseIdentifier = subscriptExpression.baseIdentifier
 
-    let offset = contractStorage.offset(for: baseIdentifier.name)
+    let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType!)!
     let indexExpressionCode = render(subscriptExpression.indexExpression)
 
     let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: typeIdentifier.name)!
