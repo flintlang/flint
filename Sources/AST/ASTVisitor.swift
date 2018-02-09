@@ -234,8 +234,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     case .bracketedExpression(let expression):
       processResult.element = .bracketedExpression(processResult.combining(visit(expression, passContext: processResult.passContext)))
     case .functionCall(let functionCall):
-      let v = visit(functionCall, passContext: processResult.passContext)
-      processResult.element = .functionCall(processResult.combining(v))
+      processResult.element = .functionCall(processResult.combining(visit(functionCall, passContext: processResult.passContext)))
     case .identifier(let identifier):
       processResult.element = .identifier(processResult.combining(visit(identifier, passContext: processResult.passContext)))
     case .literal(_), .self(_): break
