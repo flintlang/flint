@@ -23,7 +23,7 @@ contract(config.contractName, function(accounts) {
     assert.equal(t.valueOf(), 41);
 
     t = await instance.getBxx();
-    assert.equal(t.valueOf(), 42);
+    assert.equal(t.valueOf(), 430);
 
     t = await instance.getBxx2();
     assert.equal(t.valueOf(), 430);
@@ -54,7 +54,7 @@ contract(config.contractName, function(accounts) {
 
     await instance.append(205);
 
-    t = await instance.get(t.toNumber() + 1);
+    t = await instance.get(t.toNumber());
     assert.equal(t.valueOf(), 205);
   });
 });
