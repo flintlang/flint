@@ -4,6 +4,7 @@ NUM_FAILED=0
 
 for dir in */; do
   cd $dir
+  echo "Testing $dir"
   ./compile.sh
   cd test
   truffle test

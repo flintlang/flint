@@ -139,9 +139,8 @@ public struct Environment {
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
-        let functionDeclarationContext = functionDeclarationContext,
-        let localVariable = functionDeclarationContext.declaration.matchingLocalVariable(identifier) {
-        return localVariable.type.rawType
+        let type = scopeContext?.type(for: identifier.name) {
+        return type
       }
       return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
 

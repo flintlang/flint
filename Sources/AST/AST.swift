@@ -119,8 +119,6 @@ public struct FunctionDeclaration: SourceEntity {
     return resultType?.rawType ?? .builtInType(.void)
   }
 
-  public var localVariables = [VariableDeclaration]()
-
   public var sourceLocation: SourceLocation {
     if let resultType = resultType {
       return .spanning(funcToken, to: resultType)
@@ -166,10 +164,6 @@ public struct FunctionDeclaration: SourceEntity {
 
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind } 
-  }
-
-  public func matchingLocalVariable(_ identifier: Identifier) -> VariableDeclaration? {
-    return localVariables.first { $0.identifier.name ==  identifier.name }
   }
 }
 
