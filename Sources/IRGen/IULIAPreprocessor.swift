@@ -212,6 +212,7 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
 

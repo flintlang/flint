@@ -1,0 +1,32 @@
+struct T {
+  var a: Int
+}
+
+struct S {
+  var a: T
+  var b: Int
+
+  func foo() -> Int {
+    return a.a
+  }
+}
+
+contract A {
+  var a: S
+  var b: S
+}
+
+A :: (any) {
+  mutating func f() {
+    a.b = 4
+  }
+
+  func foo() -> Int {
+    return a.foo()
+  }
+
+  func bar() -> Int {
+    return b.b
+  }
+}
+
