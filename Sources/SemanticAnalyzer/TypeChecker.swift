@@ -35,6 +35,10 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
+    var passContext = passContext
+    if let _ = passContext.functionDeclarationContext {
+      passContext.scopeContext?.localVariables += [variableDeclaration]
+    }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 

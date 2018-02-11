@@ -238,15 +238,12 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
-    var functionDeclaration = functionDeclaration
     let mutatingExpressions = passContext.mutatingExpressions ?? []
     var diagnostics = [Diagnostic]()
 
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty {
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
-
-    functionDeclaration.localVariables = passContext.scopeContext!.localVariables
 
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
