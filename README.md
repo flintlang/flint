@@ -1,119 +1,23 @@
 # The Flint Programming Language [![Build Status](https://travis-ci.com/franklinsch/flint.svg?token=QwcCuJTEqyvvqgtqAD5V&branch=master)](https://travis-ci.com/franklinsch/flint)
 
-<img src="docs/flint_small.png" align="left" height="70" > </br></br></br>
+<img src="docs/flint_small.png" height="70">
 
-Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts.
+Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
-Currently, the Flint compiler, `flintc`, targets the Ethereum Virtual Machine. 
+## Documentation
 
-## Smart contracts
+The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
-Smart contracts are decentralized applications running on Ethereum's blockchain.
+## Contributing
 
-Once a smart contract is deployed, it is stored on the blockchain until a user performs a call to one of its functions. A contract, deployed at an address, can mutate its internal state through function calls. It is not possible to update a deployed contract at the same address.
-
-Flint uses **caller capabilities** to easily set restrictions on which users can call a contract function. More details are given in `docs/CallerCapabilities.md`.
-
-Functions in Flint are by default **non-mutating**: they are not allowed to modify the contract's state. This allows to more easily reason about functions in isolation. Functions can mutate the state by being declared as "mutating".
-
-### Example: `Bank.flint`
-
-The following code declares the `Bank` contract and its functions.
-
-```swift
-// Contract declarations contain only their state properties.
-contract Bank {
-  var manager: Address
-  var balances: [Address: Int]
-  var accounts: [Address]
-  var lastIndex: Int
-}
-
-// The functions in this block can be called by any user.
-Bank :: (any) {
-  // Returns the manager's address.
-  public func getManager() -> Address {
-    return manager
-  }
-}
-
-// Only the manager can call these functions.
-Bank :: (manager) {
-  // This function needs to be declared "mutating" as its body mutates
-  // the contract's state.
-  public mutating func freeDeposit(account: Address, amount: Int) {
-    balances[account] += amount
-  }
-
-  public mutating func clear(account: Int) {
-    balances[account] = 0
-  }
-}
-
-// The caller's address is bound to the `caller` local variable,
-// and can be used in the function bodies.
-Bank :: caller <- (any) {
-  public mutating func register() {
-    accounts[lastIndex] = caller
-    lastIndex += 1
-  }
-}
-
-// Any user in accounts can call these functions.
-// The matching user's address is bound to the variable account.
-Bank :: account <- (accounts) {
-  // This function is non-mutating
-  public func getBalance() -> Int {
-    return balances[account]
-  }
-
-  public mutating func transfer(amount: Int, destination: Address) {
-    balances[account] -= amount
-    balances[destination] += amount
-  }
-}
-```
-
-## Declaring a contract
-
-An `.flint` source file contains contract declarations. A contract is declared by specifying its identifier, and property declarations. Properties constitute the state of a smart contract.
-
-Consider the following example.
-
-```swift
-contract Bank {
-  var manager: Address
-  var balances: [Address: Int]
-}
-```
-
-This is the declaration of the `Bank` contract, which contains two properties. The `manager` property has type `Address`, and `balances` is a dictionary, or mapping, from `Address` to `Int`.
-
-## Specifying the behavior of a contract
-
-The behavior of a contract is specified through contract behavior declarations.
-
-Consider the following example.
-
-```swift
-Bank :: (any) {
-  public mutating func deposit(address: Address, amount: Int) {
-    balances[address] += amount
-  }
-}
-```
-
-This is the contract behavior declaration for the `Bank` contract, for callers which have the `any` capability (more info in `docs/CallerCapabilities.md`).
-
-The function `deposit` is declared as `public`, which means that anyone on the blockchain can call it.
-
-`deposit` is declared as `mutating`, and has to be: its body mutates the state of the contract. Functions are nonmutating by default.
+Contributions to Flint are highly welcomed!
+The Issues page tracks the tasks which have yet to be completed.
 
 ## Future plans
 
 Future plans for Flint are numerous, and include:
 
-1. **Cross-contract caller capabilities**: support static-checking of caller capabilities when calling a function of another Flint contract.
-2. **Gas estimation**: provide estimates about the gas execution cost of a function. Gas upper bounds are emitted as part of the contract's interface, making it possible to obtain the estimation of a call to an external Flint function.
-3. **Formalization**: specify well-defined semantics for the language.
+1. **Gas estimation**: provide estimates about the gas execution cost of a function. Gas upper bounds are emitted as part of the contract's interface, making it possible to obtain the estimation of a call to an external Flint function.
+2. **Formalization**: specify well-defined semantics for the language.
+3. **The Flint Package Manager**: create a package manager which records contract APIs as well as safety and gas cost information of dependencies, aka _Flint stones_.
 4. **Tooling**: build novel tools around smart contract development, such as new ways of simulating and visualizing different transaction orderings.
