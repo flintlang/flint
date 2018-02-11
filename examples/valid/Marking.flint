@@ -1,0 +1,26 @@
+contract Marking {
+  var lecturer: Address
+  var markers: [Address]
+  var numMarkers: Int
+  
+  var grades: [Address: Int]
+}
+
+Marking :: (lecturer) {
+  public mutating func addMarker(marker: Address) {
+    markers[numMarkers] = marker
+    numMarkers += 1
+  }
+}
+
+Marking :: (markers) {
+  public mutating func assignGrade(student: Address, grade: Int) {
+    grades[student] = grade
+  }
+}
+
+Marking :: caller <- (any) {
+  public func getGrade() -> Int {
+    return grades[caller]
+  }
+}
