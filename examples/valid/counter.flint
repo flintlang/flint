@@ -1,0 +1,17 @@
+contract Counter {
+  var value: Int
+}
+
+Counter :: (any) {
+  public func getValue() -> Int {
+    return value
+  }
+
+  mutating public func increment() {
+    value += 1
+  }
+
+  mutating public func set(value: Int) {
+    self.value = value
+  }
+}
