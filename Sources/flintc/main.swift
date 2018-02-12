@@ -14,8 +14,7 @@ func main() {
     let inputFileURL = URL(fileURLWithPath: inputFile)
 
     guard FileManager.default.fileExists(atPath: inputFile) else {
-      printFileNotFoundDiagnostic(file: inputFileURL)
-      exit(1)
+      exitWithFileNotFoundDiagnostic(file: inputFileURL)
     }
 
     let fileName = inputFileURL.deletingPathExtension().lastPathComponent
@@ -40,9 +39,21 @@ func main() {
   }.run()
 }
 
-func printFileNotFoundDiagnostic(file: URL) {
+func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
   let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "No such file: '\(file.path)'.")
   print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
+  exit(1)
+}
+
+func exitWithSolcNotInstalledDiagnostic() -> Never {
+  let diagnostic = Diagnostic(
+    severity: .error,
+    sourceLocation: nil,
+    message: "Missing dependency: solc",
+    notes: [Diagnostic(severity: .note, sourceLocation: nil, message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html for installation instructions.")]
+  )
+  print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
+  exit(1)
 }
 
 main()
