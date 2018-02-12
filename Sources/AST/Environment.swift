@@ -149,6 +149,7 @@ public struct Environment {
       switch literal {
       case .boolean(_): return .builtInType(.bool)
       case .decimal(.integer(_)): return .builtInType(.int)
+      case .string(_): return .builtInType(.string)
       default: fatalError()
       }
     case .self(_): return .userDefinedType(enclosingType)
