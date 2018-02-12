@@ -1,0 +1,14 @@
+contract String {
+  var s: String
+}
+
+String :: (any) {
+  mutating public func set(s: String) {
+    self.s = s
+  }
+
+  public func get() -> String {
+    return s
+  }
+}
+
