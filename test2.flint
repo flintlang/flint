@@ -1,8 +1,0 @@
-contract C {
-}
-
-C :: (any) {
-  func foo(a: Int) {
-    a = false
-  }
-}
