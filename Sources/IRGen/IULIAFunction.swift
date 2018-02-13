@@ -117,8 +117,7 @@ struct IULIAFunction {
       guard !callerCapability.isAny else { return nil }
 
       let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!
-      let offset = contractStorage.offset(for: callerCapability.name)
-
+      let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: typeIdentifier.name)!
       switch type {
       case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
@@ -220,7 +219,7 @@ extension IULIAFunction {
       if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = offset
       } else {
-        lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+        lhsOffset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: typeIdentifier.name)!
       }
     } else if case .self(_) = lhs {
       lhsOffset = 0

@@ -115,10 +115,12 @@ public struct Environment {
   }
 
   public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType? {
-    if let scopeContext = scopeContext, let type = scopeContext.type(for: property) {
+    if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
-    return types[enclosingType]?.properties[property]?.rawType
+    
+    guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { fatalError() }
+    return type
   }
 
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext? = nil) -> Type.RawType? {
