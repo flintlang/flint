@@ -191,10 +191,16 @@ public struct Attribute {
 public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
+
+  public var inoutToken: Token?
   public var implicitToken: Token?
 
   public var isImplicit: Bool {
     return implicitToken != nil
+  }
+
+  public var isInout: Bool {
+    return inoutToken != nil
   }
 
   public var isPayableValueParameter: Bool {
@@ -208,23 +214,27 @@ public struct Parameter: SourceEntity {
     return .spanning(identifier, to: type)
   }
 
-  public init(identifier: Identifier, type: Type, implicitToken: Token?) {
+  public init(identifier: Identifier, type: Type, implicitToken: Token?, inoutToken: Token?) {
     self.identifier = identifier
     self.type = type
     self.implicitToken = implicitToken
+    self.inoutToken = inoutToken
   }
 }
 
 public struct TypeAnnotation: SourceEntity {
   public var colonToken: Token
+
+  public var inoutToken: Token?
   public var type: Type
 
   public var sourceLocation: SourceLocation {
     return .spanning(colonToken, to: type)
   }
 
-  public init(colonToken: Token, type: Type) {
+  public init(colonToken: Token, type: Type, inoutToken: Token?) {
     self.colonToken = colonToken
+    self.inoutToken = inoutToken
     self.type = type
   }
 }

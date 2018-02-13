@@ -62,6 +62,7 @@ public struct Tokenizer {
     "else": .else,
     "self": .self,
     "implicit": .implicit,
+    "inout": .inout,
     "+": .punctuation(.plus),
     "-": .punctuation(.minus),
     "*": .punctuation(.times),

@@ -91,7 +91,14 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
-    return ASTPassResult(element: parameter, diagnostics: [], passContext: passContext)
+    let type = parameter.type
+    var diagnostics = [Diagnostic]()
+
+    if passContext.environment!.isReferenceType(type.name), !parameter.isInout {
+      diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation, message: "Structs cannot be passed by value yet, and have to be passed inout"))
+    }
+
+    return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation> {
@@ -188,6 +195,13 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
         }
       }
+
+      for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
+        if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+        }
+      }
+
     case .failure(candidates: let candidates):
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
         diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
@@ -195,6 +209,16 @@ public struct SemanticAnalyzer: ASTPass {
     }
 
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
+    switch expression {
+    case .self(_): return true
+    case .identifier(let identifier): return !scopeContext.containsVariableDefinition(for: identifier.name)
+    case .binaryExpression(let binaryExpression):
+      return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
+    default: return false
+    }
   }
 
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

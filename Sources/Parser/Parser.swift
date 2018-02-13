@@ -198,8 +198,9 @@ extension Parser {
   
   func parseTypeAnnotation() throws -> TypeAnnotation {
     let colonToken = try consume(.punctuation(.colon))
+    let inoutToken = attempt(try consume(.inout))
     let type = try parseType()
-    return TypeAnnotation(colonToken: colonToken, type: type)
+    return TypeAnnotation(colonToken: colonToken, type: type, inoutToken: inoutToken)
   }
 }
 
@@ -329,7 +330,7 @@ extension Parser {
       let implicitToken = attempt(try consume(.implicit))
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken))
+      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken, inoutToken: typeAnnotation.inoutToken))
     } while attempt(try consume(.punctuation(.comma))) != nil
     
     let closeBracketToken = try consume(.punctuation(.closeBracket))

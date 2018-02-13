@@ -136,6 +136,7 @@ extension Token {
     case `else`
     case `self`
     case implicit
+    case `inout`
 
     // Punctuation
     case punctuation(Punctuation)
@@ -161,6 +162,7 @@ extension Token.Kind: Equatable {
     case (.func, .func): return true
     case (.self, .self): return true
     case (.implicit, .implicit): return true
+    case (.inout, .inout): return true
     case (.mutating, .mutating): return true
     case (.return, .return): return true
     case (.public, .public): return true
@@ -186,6 +188,7 @@ extension Token.Kind: CustomStringConvertible {
     case .func: return "func"
     case .self: return "self"
     case .implicit: return "implicit"
+    case .inout: return "inout"
     case .mutating: return "mutating"
     case .return: return "return"
     case .public: return "public"
