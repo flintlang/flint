@@ -21,6 +21,7 @@ enum CanonicalType: String {
       case .string: self = .bytes32
       default: return nil
       }
+    case .userDefinedType(_): self = .uint256
     default: return nil
     }
   }

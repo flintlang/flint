@@ -1,8 +1,8 @@
-contract String {
+contract StringContract {
   var s: String
 }
 
-String :: (any) {
+StringContract :: (any) {
   mutating public func set(s: String) {
     self.s = s
   }

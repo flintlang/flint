@@ -43,6 +43,10 @@ struct IULIAFunction {
   var parameterNames: [String] {
     return functionDeclaration.explicitParameters.map({ render($0.identifier) })
   }
+  
+  var scopeContext: ScopeContext {
+    return ScopeContext(localVariables: functionDeclaration.parametersAsVariableDeclarations)
+  }
 
   var parameterCanonicalTypes: [CanonicalType] {
     return functionDeclaration.explicitParameters.map({ CanonicalType(from: $0.type.rawType)! })
@@ -117,8 +121,7 @@ struct IULIAFunction {
       guard !callerCapability.isAny else { return nil }
 
       let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!
-      let offset = contractStorage.offset(for: callerCapability.name)
-
+      let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: typeIdentifier.name)!
       switch type {
       case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
@@ -169,16 +172,7 @@ extension IULIAFunction {
 
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
-        var renderedArgs = ""
-
-        if let receiverArgument = functionCall.arguments.first {
-          let functionArguments = functionCall.arguments.dropFirst()
-          renderedArgs = ([render(receiverArgument, asLValue: true)] + functionArguments.map({ render($0) })).joined(separator: ", ")
-        }
-      
-        return """
-        \(functionCall.identifier.name)(\(renderedArgs))
-        """
+        return render(functionCall)
       }
       return renderPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
     }
@@ -220,7 +214,7 @@ extension IULIAFunction {
       if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = offset
       } else {
-        lhsOffset = contractStorage.offset(for: lhsIdentifier.name)
+        lhsOffset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: typeIdentifier.name)!
       }
     } else if case .self(_) = lhs {
       lhsOffset = 0
@@ -228,7 +222,7 @@ extension IULIAFunction {
       fatalError()
     }
 
-    let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name)
+    let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
     let rhsOffset = propertyOffset(for: rhs, in: lhsType)
 
     let offset: String
@@ -279,7 +273,10 @@ extension IULIAFunction {
       """
     }
 
-    let args: String = functionCall.arguments.map({ render($0) }).joined(separator: ", ")
+    let args: String = functionCall.arguments.map({ argument in
+      let type = environment.type(of: argument, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
+      return render(argument, asLValue: environment.isReferenceType(type.name))
+    }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
 

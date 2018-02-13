@@ -1,0 +1,21 @@
+struct S {
+  var a: Int
+}
+
+contract C {
+  var x: S
+}
+
+C :: (any) {
+  public mutating func set() {
+    bar(x)
+  }
+
+  public func get() -> Int {
+    return x.a
+  }
+
+  func bar(s: inout S) {
+    s.a += 2
+  }
+}

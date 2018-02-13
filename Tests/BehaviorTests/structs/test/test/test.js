@@ -33,6 +33,17 @@ contract(config.contractName, function(accounts) {
 
     t = await instance.getBy();
     assert.equal(t.valueOf(), 44);
+
+    await instance.setBxx3(434);
+    t = await instance.getBxx();
+    assert.equal(t.valueOf(), 434);
+
+    await instance.setCxx(12);
+    t = await instance.getCxx();
+    assert.equal(t.valueOf(), 12);
+
+    t = await instance.getBxx();
+    assert.equal(t.valueOf(), 434);
   });
 
   

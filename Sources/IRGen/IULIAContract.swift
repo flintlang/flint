@@ -25,8 +25,7 @@ struct IULIAContract {
       switch variableDeclaration.type.rawType {
       case .fixedSizeArrayType(_):
         storage.allocate(environment.size(of: variableDeclaration.type.rawType), for: variableDeclaration.identifier.name)
-      default:
-        storage.addProperty(variableDeclaration.identifier.name)
+      default: break
       }
     }
   }
@@ -54,7 +53,8 @@ struct IULIAContract {
     let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType }
     let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
     let initializerBody = initializerParameters.map { parameter in
-      return "_flintStorage\(storage.offset(for: parameter.identifier.name)) = \(parameter.identifier.name);"
+      let offset = environment.propertyOffset(for: parameter.identifier.name, enclosingType: contractDeclaration.identifier.name)!
+      return "_flintStorage\(offset) = \(parameter.identifier.name);"
     }.joined(separator: "\n")
 
     var index = 0

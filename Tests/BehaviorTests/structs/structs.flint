@@ -28,6 +28,7 @@ contract C {
   var a: A
   var arr: Array
   var b: B
+  var c: B
 }
 
 C :: (any) {
@@ -60,6 +61,26 @@ C :: (any) {
   }
 
   public mutating func setBxx2(x: Int) {
+    b.setXx(x)
+  }
+
+  public mutating func setBxx3(x: Int) {
+    setB(b, x)
+  }
+
+  public mutating func setCxx(x: Int) {
+    c.setXx(x)
+  }
+
+  public mutating func setCxx2(x: Int) {
+    setB(c, x)
+  }
+
+  public func getCxx() -> Int {
+    return c.getXx()
+  }
+
+  mutating func setB(b: inout B, x: Int) {
     b.setXx(x)
   }
 

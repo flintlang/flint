@@ -58,6 +58,10 @@ public struct Environment {
   public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
     return declaredStructs.contains(type)
   }
+  
+  public func isReferenceType(_ type: RawTypeIdentifier) -> Bool {
+    return declaredStructs.contains(type) || declaredContracts.contains(type)
+  }
 
   public func size(of type: Type.RawType) -> Int {
     switch type {
@@ -115,18 +119,20 @@ public struct Environment {
   }
 
   public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType? {
-    if let scopeContext = scopeContext, let type = scopeContext.type(for: property) {
+    if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
-    return types[enclosingType]?.properties[property]?.rawType
+    
+    guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { fatalError() }
+    return type
   }
 
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext? = nil) -> Type.RawType? {
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
     guard case .success(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) else { return .errorType }
     return matchingFunction.resultType
   }
 
-  public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext? = nil) -> Type.RawType {
+  public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
     switch expression {
     case .binaryExpression(let binaryExpression):
       return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
@@ -139,7 +145,7 @@ public struct Environment {
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
-        let type = scopeContext?.type(for: identifier.name) {
+        let type = scopeContext.type(for: identifier.name) {
         return type
       }
       return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
@@ -172,7 +178,7 @@ public struct Environment {
     case failure(candidates: [FunctionInformation])
   }
 
-  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext? = nil) -> FunctionCallMatchResult {
+  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
 
     for candidate in types[enclosingType]!.functions[functionCall.identifier.name]! {

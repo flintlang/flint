@@ -3,6 +3,7 @@
 contract Test {
   var a: Int[10]
   var b: Int
+  var f: Foo
 }
 
 Test :: (any) {
@@ -47,6 +48,19 @@ Test :: (any) {
   func h() {
     var b: Int = 2
     self.b = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+
+  func i(f: Foo) {} // expected-error {{Structs cannot be passed by value yet, and have to be passed inout}}
+
+  func j(f: inout Foo) {}
+
+  func k(f: inout Foo) {
+    j(self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
+    j(f)
+  }
+
+  mutating func l() {
+    j(self.f)
   }
 }
 

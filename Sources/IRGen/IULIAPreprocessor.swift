@@ -46,7 +46,7 @@ public struct IULIAPreprocessor: ASTPass {
     
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
-      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
+      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil, inoutToken: nil), at: 0)
       
       let enclosingType = enclosingTypeIdentifier(in: passContext).name
       let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)

@@ -61,6 +61,9 @@ syn keyword flintBoolean
 syn keyword flintNil
       \ nil
 
+syn keyword flintInOutKeyword skipwhite nextgroup=flintTypeName
+      \ inout
+
 syn match flintImportModule contained nextgroup=flintImportComponent
       \ /\<[A-Za-z_][A-Za-z_0-9]*\>/
 syn match flintImportComponent contained nextgroup=flintImportComponent
