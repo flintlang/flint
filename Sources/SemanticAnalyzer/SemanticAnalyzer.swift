@@ -198,7 +198,11 @@ public struct SemanticAnalyzer: ASTPass {
 
       for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
         if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+          addMutatingExpression(argument, passContext: &passContext)
+
+          if !functionDeclarationContext.isMutating {
+            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+          }
         }
       }
 

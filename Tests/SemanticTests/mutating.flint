@@ -54,9 +54,13 @@ Test :: (any) {
 
   func j(f: inout Foo) {}
 
-  func h(f: inout Foo) {
+  func k(f: inout Foo) {
     j(self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
     j(f)
+  }
+
+  mutating func l() {
+    j(self.f)
   }
 }
 

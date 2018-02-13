@@ -80,7 +80,7 @@ C :: (any) {
     return c.getXx()
   }
 
-  mutating func setB(b: B, x: Int) {
+  mutating func setB(b: inout B, x: Int) {
     b.setXx(x)
   }
 

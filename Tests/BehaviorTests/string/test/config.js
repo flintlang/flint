@@ -1,1 +1,1 @@
-exports.contractName = "String"
+exports.contractName = "StringContract"
