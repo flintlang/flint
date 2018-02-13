@@ -163,7 +163,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     if case .dot = binaryExpression.opToken {
       let enclosingType = enclosingTypeIdentifier(in: passContext)
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext)
+      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
 

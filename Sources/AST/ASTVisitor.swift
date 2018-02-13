@@ -162,9 +162,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.passContext.functionDeclarationContext = functionDeclarationContext
 
-    processResult.passContext.scopeContext!.localVariables.append(contentsOf: functionDeclaration.parameters.map { parameter in
-      return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
-    })
+    processResult.passContext.scopeContext!.localVariables.append(contentsOf: functionDeclaration.parametersAsVariableDeclarations)
 
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))

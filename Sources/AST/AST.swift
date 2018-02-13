@@ -141,6 +141,12 @@ public struct FunctionDeclaration: SourceEntity {
   public var explicitParameters: [Parameter] {
     return parameters.filter { !$0.isImplicit }
   }
+  
+  public var parametersAsVariableDeclarations: [VariableDeclaration] {
+    return parameters.map { parameter in
+      return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
+    }
+  }
 
   public var mutatingToken: Token {
     return modifiers.first { $0.kind == .mutating }!
