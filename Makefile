@@ -1,6 +1,9 @@
 all:
 	swift build	
 
-test: all
+release:
+	swift build	-c release
+
+test: release
 	swift run lite
 	cd Tests/BehaviorTests && ./run.sh
