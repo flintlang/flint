@@ -26,7 +26,7 @@ deploy:
   skip_cleanup: true
   api_key:
     secure: f1Dt+H2g5LUuYmuEqF/c4F4C03eVzsBnVyOZLBHwmytuU3b8oCGUAJz+I2kywrUjxJxFpkwPsMwiUNjqn5qsDgxpmjOOVuFrignrx7Wbxe3tfzZp2wmhSt74DE+DDs8GPge6Cf2V05Vjpgzluc8DfEEpCTzOTFiqXWwExemSUXMo6Wt/kDt9NTSS5DJDx0Do8OIvnWcgina0dYxGWhiOdE5qN7uwh+iEU1lAY5dX/SFcX9ZcXtle5J3Nhm6C/hZuVGTSkzrjG8Gxc30y/6nEpZ2sjZ0b/Y6HY3/dwmiERJIgqAEnZx/CBL3RvCDcDG3oCAvfLNcxx3zzToPo6dnAlb/FnTLLD1sShIPyVPZtCNSBlQsalRoz2vASvPv4qLfcMEYy1F7sNYM8NYEkrQERDvqJe5kr8vzULN7iyAe7v4/GjgOD3FYVPasqtGAQDNlA6yvqabKdngxJ9gBjpBGgL44bN8WjYI08PAfAqjPchF41ggUWXKRrszMMsFn/3YtuNgW4rICYzKi+CEHLLge0AR0GP5pgYjscWO/9PfrrkGOK3Xpi2qmnDVBAEtEBBB+YUvX+AFZmYjLr4IG44OARvXFeKFbiiuybWOPOmJ3vlzBlkZRMvx3Gbog15tte/NlmjA4NADKWUcvQDKnQY2Y7JzBbAZyG0sXWec7VRgY+Las=
-  file: ".build/release/flintc"
+  file: "flintc.zip"
   on:
     repo: franklinsch/flint
     tags: true
