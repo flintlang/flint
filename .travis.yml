@@ -24,10 +24,8 @@ matrix:
   - os: osx
     language: objective-c
     osx_image: xcode9
-    script:
-    - make release
-    on:
-      tags: true
+    before_deploy:
+    - make test
     deploy:
       provider: releases
       api_key:
@@ -35,3 +33,4 @@ matrix:
       file: ".build/release/flintc"
       on:
         repo: franklinsch/flint
+        tags: true
