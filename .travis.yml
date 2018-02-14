@@ -24,6 +24,7 @@ matrix:
   - os: osx
     language: objective-c
     osx_image: xcode9
+    if: tag IS present
     before_deploy:
     - make test
     deploy:
