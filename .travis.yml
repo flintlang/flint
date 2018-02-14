@@ -4,15 +4,19 @@ matrix:
     language: generic
     sudo: required
     dist: trusty
+    if: "-z $TRAVIS_TAG || $TRAVIS_TAG =~ ^*-linux$"
     before_install:
     - sudo add-apt-repository -y ppa:ethereum/ethereum
     - sudo apt-get update
     - sudo apt-get -y install solc
     - npm install -g truffle
+    install:
+    - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
     before_deploy:
       - make release
     deploy:
       provider: releases
+      all_branches: true
       api_key:
         secure: tXrsqZU5FN8Y6tF6vf24PunkcpaDKqgbS7ceNbqA4bfVD2EuKC8ZNha0HR29H7fUjJf4e8tnxWfB0WAeQwu179VMYvtAmpKOTNOdragoEzYWX9AmdaIm/DTDLHFPI3BwcFGfrn6NQKpwl8Gz5pCgLm/bh8rD2ahWLxxoRZmnQaa7rcgaUy83KSKeLEX7mQlyo5n7eFPkhIn9TO16tlt3BZlUeIo04hGap2o+/pO4ZkwoKEhzGFUXputxFV/g4ESRi8CyVa91p7fyHZWXRaO7hr904NNygMJCya2mZsCogATPk2Nut2acztahrgvciFZEWPSRm7lHAI3kTkmUcy89fYNXKzWLUv0cMu6ViGU0de+neex6swTh93Tb6ZhhlUJXx2rPKbYGV4Iig/2w+iHtcukfdp+R3hGhT6ps7x4Kg8YZhJ/qg/Ll7aGGNvFtw49hHLtK1x2EbvVlnl7cGa1vyzmD4kOU2YzRl+SW7zckakMuBz+z1lFmGkLr9EV2cc5MV1ZA1YgyyOInPdLFWKi7A84xg/ic6mzmpYfdfAQGUBuELkxCjFJ8nWzY73fGDmRYs2C9mmhbhbaRSLeMSOMkvocRBAjlb1Ed5GJ2NJ4bD7KkRLG+buL0oiW9KTp/MIT91d7wUqALpcCukUsmx0ULAp71ssLrwTeC3calhzi+y1I=
       file: ".build/release/flintc"
@@ -27,13 +31,11 @@ matrix:
       - make release
     deploy:
       provider: releases
+      all_branches: true
       api_key:
         secure: tXrsqZU5FN8Y6tF6vf24PunkcpaDKqgbS7ceNbqA4bfVD2EuKC8ZNha0HR29H7fUjJf4e8tnxWfB0WAeQwu179VMYvtAmpKOTNOdragoEzYWX9AmdaIm/DTDLHFPI3BwcFGfrn6NQKpwl8Gz5pCgLm/bh8rD2ahWLxxoRZmnQaa7rcgaUy83KSKeLEX7mQlyo5n7eFPkhIn9TO16tlt3BZlUeIo04hGap2o+/pO4ZkwoKEhzGFUXputxFV/g4ESRi8CyVa91p7fyHZWXRaO7hr904NNygMJCya2mZsCogATPk2Nut2acztahrgvciFZEWPSRm7lHAI3kTkmUcy89fYNXKzWLUv0cMu6ViGU0de+neex6swTh93Tb6ZhhlUJXx2rPKbYGV4Iig/2w+iHtcukfdp+R3hGhT6ps7x4Kg8YZhJ/qg/Ll7aGGNvFtw49hHLtK1x2EbvVlnl7cGa1vyzmD4kOU2YzRl+SW7zckakMuBz+z1lFmGkLr9EV2cc5MV1ZA1YgyyOInPdLFWKi7A84xg/ic6mzmpYfdfAQGUBuELkxCjFJ8nWzY73fGDmRYs2C9mmhbhbaRSLeMSOMkvocRBAjlb1Ed5GJ2NJ4bD7KkRLG+buL0oiW9KTp/MIT91d7wUqALpcCukUsmx0ULAp71ssLrwTeC3calhzi+y1I=
       file: ".build/release/flintc"
       on:
         repo: franklinsch/flint
-
-install:
-- eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
 script:
 - make test
