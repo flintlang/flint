@@ -26,6 +26,8 @@ matrix:
     - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
     script:
     - make release
+    on:
+      tags: true
     deploy:
       provider: releases
       api_key:
@@ -33,4 +35,3 @@ matrix:
       file: ".build/release/flintc"
       on:
         repo: franklinsch/flint
-        tags: true
