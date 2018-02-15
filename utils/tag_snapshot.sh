@@ -12,5 +12,5 @@ fi
 
 for PLATFORM in $PLATFORMS; do
   OUT="flint-$VERSION-snapshot-$DATE-$BUILD-$PLATFORM"
-  git tag -a $OUT -m "$PLATFORM $DATE development snapshot for $VERSION$BUILD"
+  git tag -a $OUT -m ""
 done
