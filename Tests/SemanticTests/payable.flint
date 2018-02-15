@@ -5,11 +5,11 @@ contract Payable {}
 Payable :: (any) {
 
   @payable
-  func foo() { // expected-error {{foo is declared @payable but doesn't have an implicit currency of a currency type}}
+  func foo() { // expected-error {{foo is declared @payable but doesn't have an implicit parameter of a currency type}}
   }
 
   @payable
-  func foo(implicit parameter: Int) { // expected-error {{foo is declared @payable but doesn't have an implicit currency of a currency type}}
+  func foo(implicit parameter: Int) { // expected-error {{foo is declared @payable but doesn't have an implicit parameter of a currency type}}
   }
 
   @payable
