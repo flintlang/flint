@@ -118,6 +118,7 @@ struct IULIAContract {
         let type = environment.type(of: property, enclosingType: identifier)!
         return storageCanonicalTypes(for: type)
       }
+    case .inoutType(_): fatalError()
     }
   }
 }
@@ -133,6 +134,7 @@ fileprivate extension Type.RawType {
     case .arrayType(_): return .uint256 // The number of elements is stored.
     case .fixedSizeArrayType(let elementType, _): return CanonicalType(from: elementType)
     case .userDefinedType(_): fatalError()
+    case .inoutType(_): fatalError()
     }
   }
 }

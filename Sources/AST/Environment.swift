@@ -69,6 +69,7 @@ public struct Environment {
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
     case .arrayType(_): return 1
     case .dictionaryType(_, _): return 1
+    case .inoutType(_): fatalError()
     case .errorType: return 0
 
     case .userDefinedType(let identifier):
@@ -134,6 +135,8 @@ public struct Environment {
 
   public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
     switch expression {
+    case .inoutExpression(let inoutExpression):
+      return .inoutType(type(of: inoutExpression.expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
     case .binaryExpression(let binaryExpression):
       return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 

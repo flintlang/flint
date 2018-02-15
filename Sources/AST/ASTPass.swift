@@ -22,6 +22,7 @@ public protocol ASTPass {
   func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
   func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression>
   func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement>
+  func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression>
   func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression>
   func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
@@ -44,6 +45,7 @@ public protocol ASTPass {
   func postProcess(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
   func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression>
   func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement>
+  func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression>
   func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression>
   func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
@@ -120,6 +122,10 @@ public struct AnyASTPass: ASTPass {
 
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return base.process(statement: statement, passContext: passContext)
+  }
+  
+  public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return base.process(inoutExpression: inoutExpression, passContext: passContext)
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
@@ -205,6 +211,10 @@ public struct AnyASTPass: ASTPass {
 
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return base.postProcess(statement: statement, passContext: passContext)
+  }
+  
+  public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return base.postProcess(inoutExpression: inoutExpression, passContext: passContext)
   }
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {

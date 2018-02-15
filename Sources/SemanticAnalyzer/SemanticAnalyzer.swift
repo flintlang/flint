@@ -56,7 +56,6 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
-
     if functionDeclaration.isPayable {
       let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
       if payableValueParameters.count > 1 {
@@ -82,7 +81,6 @@ public struct SemanticAnalyzer: ASTPass {
         diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
       }
     }
-
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -159,6 +157,10 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
+  
+  public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
@@ -219,6 +221,7 @@ public struct SemanticAnalyzer: ASTPass {
     switch expression {
     case .self(_): return true
     case .identifier(let identifier): return !scopeContext.containsVariableDefinition(for: identifier.name)
+    case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
     default: return false
@@ -272,6 +275,16 @@ public struct SemanticAnalyzer: ASTPass {
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty {
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
+    
+    var functionDeclaration = functionDeclaration
+    functionDeclaration.parameters = functionDeclaration.parameters.map { parameter in
+      guard case .inoutType(let inoutType) = parameter.type.rawType else {
+        return parameter
+      }
+      var parameter = parameter
+      parameter.type.rawType = inoutType
+      return parameter
+    }
 
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
@@ -307,6 +320,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {

@@ -75,7 +75,8 @@ statement -> branch-statement
 
 // Expression
 
-expression -> identifier | binary-expression | function-call | literal | bracketed-expression | subscript-expression
+expression -> identifier | in-out-expression | binary-expression | function-call | literal | bracketed-expression | subscript-expression
+in-out-expression -> [&] expression
 binary-expression -> expression binary-operator expression
 bracketed-expression -> [(] expression [)]
 subscript-expression -> identifier [[] expression []]

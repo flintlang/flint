@@ -25,7 +25,7 @@ struct MyStruct {
 // CHECK-AST:   identifier "bar"
 // CHECK-AST:   Parameter
 // CHECK-AST:    identifier "s"
-// CHECK-AST:    inout
+// CHECK-AST:    inout type
 // CHECK-AST:    user-defined type MyStruct
   func bar(s: inout MyStruct) {}
 }

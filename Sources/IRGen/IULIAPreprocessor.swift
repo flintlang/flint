@@ -46,7 +46,7 @@ public struct IULIAPreprocessor: ASTPass {
     
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
-      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil, inoutToken: nil), at: 0)
+      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
       
       let enclosingType = enclosingTypeIdentifier(in: passContext).name
       let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
@@ -86,6 +86,10 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+  
+  public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
@@ -214,6 +218,10 @@ public struct IULIAPreprocessor: ASTPass {
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {

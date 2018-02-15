@@ -1,0 +1,15 @@
+struct S {}
+
+contract C {
+  var s: S
+}
+
+C :: (any) {
+  mutating func bar() {
+    foo(&s)
+  }
+
+  func foo(s: inout S) {
+  }
+}
+
