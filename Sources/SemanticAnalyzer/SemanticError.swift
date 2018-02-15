@@ -32,7 +32,7 @@ extension Diagnostic {
   }
 
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "\(functionDeclaration.identifier.name) is declared @payable but doesn't have an implicit currency of a currency type")
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "\(functionDeclaration.identifier.name) is declared @payable but doesn't have an implicit parameter of a currency type")
   }
 
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
