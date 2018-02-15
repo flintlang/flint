@@ -20,6 +20,14 @@ struct MyStruct {
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   identifier "foo"
   func foo() {}
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   identifier "bar"
+// CHECK-AST:   Parameter
+// CHECK-AST:    identifier "s"
+// CHECK-AST:    inout
+// CHECK-AST:    user-defined type MyStruct
+  func bar(s: inout MyStruct) {}
 }
 
 // CHECK-AST: TopLevelDeclaration

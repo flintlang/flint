@@ -151,6 +151,9 @@ public class ASTDumper {
         self.writeLine("implicit")
       }
       self.dump(parameter.identifier)
+      if parameter.isInout {
+        self.writeLine("inout")
+      }
       self.dump(parameter.type)
     }
   }
