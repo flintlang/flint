@@ -192,7 +192,6 @@ public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
 
-  public var inoutToken: Token?
   public var implicitToken: Token?
 
   public var isImplicit: Bool {
@@ -200,7 +199,11 @@ public struct Parameter: SourceEntity {
   }
 
   public var isInout: Bool {
-    return inoutToken != nil
+    if case .inoutType = type.rawType {
+      return true
+    }
+    
+    return false
   }
 
   public var isPayableValueParameter: Bool {
@@ -214,27 +217,24 @@ public struct Parameter: SourceEntity {
     return .spanning(identifier, to: type)
   }
 
-  public init(identifier: Identifier, type: Type, implicitToken: Token?, inoutToken: Token?) {
+  public init(identifier: Identifier, type: Type, implicitToken: Token?) {
     self.identifier = identifier
     self.type = type
     self.implicitToken = implicitToken
-    self.inoutToken = inoutToken
   }
 }
 
 public struct TypeAnnotation: SourceEntity {
   public var colonToken: Token
 
-  public var inoutToken: Token?
   public var type: Type
 
   public var sourceLocation: SourceLocation {
     return .spanning(colonToken, to: type)
   }
 
-  public init(colonToken: Token, type: Type, inoutToken: Token?) {
+  public init(colonToken: Token, type: Type) {
     self.colonToken = colonToken
-    self.inoutToken = inoutToken
     self.type = type
   }
 }
@@ -268,6 +268,7 @@ public struct Type: SourceEntity {
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(RawTypeIdentifier)
+    case inoutType(RawType)
     case errorType
 
     public static func ==(lhs: RawType, rhs: RawType) -> Bool {
@@ -284,6 +285,8 @@ public struct Type: SourceEntity {
         return lhsKeyType == rhsKeyType && lhsValueType == rhsValueType
       case (.errorType, .errorType):
         return true
+      case (.inoutType(let lhs), .inoutType(let rhs)):
+        return lhs == rhs
       default:
         return false
       }
@@ -296,6 +299,7 @@ public struct Type: SourceEntity {
       case .builtInType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let identifier): return identifier
+      case .inoutType(let rawType): return "&\(rawType)"
       case .errorType: return "Flint$ErrorType"
       }
     }
@@ -352,6 +356,16 @@ public struct Type: SourceEntity {
     self.genericArguments = genericArguments
     self.sourceLocation = identifier.sourceLocation
   }
+  
+  public init(ampersandToken: Token, inoutType: Type) {
+    rawType = .inoutType(inoutType.rawType)
+    sourceLocation = ampersandToken.sourceLocation
+  }
+  
+  public init(inoutToken: Token, inoutType: Type) {
+    rawType = .inoutType(inoutType.rawType)
+    sourceLocation = inoutToken.sourceLocation
+  }
 
   public init(openSquareBracketToken: Token, arrayWithElementType type: Type, closeSquareBracketToken: Token) {
     rawType = .arrayType(type.rawType)
@@ -400,6 +414,7 @@ public struct CallerCapability: SourceEntity {
 
 public indirect enum Expression: SourceEntity {
   case identifier(Identifier)
+  case inoutExpression(InoutExpression)
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
   case literal(Token)
@@ -411,6 +426,7 @@ public indirect enum Expression: SourceEntity {
   public var sourceLocation: SourceLocation {
     switch self {
     case .identifier(let identifier): return identifier.sourceLocation
+    case .inoutExpression(let inoutExpression): return inoutExpression.sourceLocation
     case .binaryExpression(let binaryExpression): return binaryExpression.sourceLocation
     case .functionCall(let functionCall): return functionCall.sourceLocation
     case .literal(let literal): return literal.sourceLocation
@@ -462,6 +478,20 @@ public indirect enum Statement: SourceEntity {
     case .returnStatement(let returnStatement): return returnStatement.sourceLocation
     case .ifStatement(let ifStatement): return ifStatement.sourceLocation
     }
+  }
+}
+
+public struct InoutExpression: SourceEntity {
+  public var ampersandToken: Token
+  public var expression: Expression
+  
+  public var sourceLocation: SourceLocation {
+    return ampersandToken.sourceLocation
+  }
+  
+  public init(ampersandToken: Token, expression: Expression) {
+    self.ampersandToken = ampersandToken
+    self.expression = expression
   }
 }
 

@@ -157,6 +157,7 @@ extension IULIAFunction {
 
   func render(_ expression: Expression, asLValue: Bool = false) -> String {
     switch expression {
+    case .inoutExpression(let inoutExpression): return render(inoutExpression.expression, asLValue: true)
     case .binaryExpression(let binaryExpression): return render(binaryExpression, asLValue: asLValue)
     case .bracketedExpression(let expression): return render(expression)
     case .functionCall(let functionCall): return render(functionCall)

@@ -134,6 +134,17 @@ extension Parser {
     consumeNewLines()
     return token
   }
+  
+  func parseInoutExpression() throws -> InoutExpression {
+    let ampersandToken = try consume(.punctuation(.ampersand))
+    
+    guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)], maxIndex: tokens.count) else {
+      throw ParserError.expectedToken(.punctuation(.comma), sourceLocation: currentToken?.sourceLocation)
+    }
+    
+    let expression = try parseExpression(upTo: statementEndIndex)
+    return InoutExpression(ampersandToken: ampersandToken, expression: expression)
+  }
 
   func parseSelf() throws -> Token {
     guard let token = currentToken, case .self = token.kind else {
@@ -168,6 +179,11 @@ extension Parser {
       let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
       return Type(openSquareBracketToken: openSquareBracketToken, arrayWithElementType: keyType, closeSquareBracketToken: closeSquareBracketToken)
     }
+    
+    if let inoutToken = attempt(try consume(.inout)) {
+      let type = try parseType()
+      return Type(ampersandToken: inoutToken, inoutType: type)
+    }
 
     let identifier = try parseIdentifier()
     let type = Type(identifier: identifier)
@@ -198,9 +214,8 @@ extension Parser {
   
   func parseTypeAnnotation() throws -> TypeAnnotation {
     let colonToken = try consume(.punctuation(.colon))
-    let inoutToken = attempt(try consume(.inout))
     let type = try parseType()
-    return TypeAnnotation(colonToken: colonToken, type: type, inoutToken: inoutToken)
+    return TypeAnnotation(colonToken: colonToken, type: type)
   }
 }
 
@@ -330,7 +345,7 @@ extension Parser {
       let implicitToken = attempt(try consume(.implicit))
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken, inoutToken: typeAnnotation.inoutToken))
+      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken))
     } while attempt(try consume(.punctuation(.comma))) != nil
     
     let closeBracketToken = try consume(.punctuation(.closeBracket))
@@ -380,6 +395,10 @@ extension Parser {
     guard limitTokenIndex >= currentIndex else {
       // Expect any expression.
       throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: currentToken?.sourceLocation)
+    }
+    
+    if let inoutExpression = attempt(task: parseInoutExpression) {
+      return .inoutExpression(inoutExpression)
     }
 
     for op in Token.Kind.Punctuation.allBinaryOperatorsByIncreasingPrecedence {

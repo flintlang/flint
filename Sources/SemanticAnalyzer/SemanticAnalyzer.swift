@@ -56,7 +56,6 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
-
     if functionDeclaration.isPayable {
       let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
       if payableValueParameters.count > 1 {
@@ -82,7 +81,6 @@ public struct SemanticAnalyzer: ASTPass {
         diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
       }
     }
-
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -159,6 +157,10 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
+  
+  public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
@@ -178,47 +180,14 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    var passContext = passContext
-    let functionDeclarationContext = passContext.functionDeclarationContext!
-    let environment = passContext.environment!
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    
-    var diagnostics = [Diagnostic]()
-
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
-    case .success(let matchingFunction):
-      if matchingFunction.isMutating {
-        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
-
-        if !functionDeclarationContext.isMutating {
-          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
-        }
-      }
-
-      for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
-        if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-          addMutatingExpression(argument, passContext: &passContext)
-
-          if !functionDeclarationContext.isMutating {
-            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
-          }
-        }
-      }
-
-    case .failure(candidates: let candidates):
-      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
-      }
-    }
-
-    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
     case .self(_): return true
     case .identifier(let identifier): return !scopeContext.containsVariableDefinition(for: identifier.name)
+    case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
     default: return false
@@ -272,6 +241,16 @@ public struct SemanticAnalyzer: ASTPass {
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty {
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
+    
+    var functionDeclaration = functionDeclaration
+    functionDeclaration.parameters = functionDeclaration.parameters.map { parameter in
+      guard case .inoutType(let inoutType) = parameter.type.rawType else {
+        return parameter
+      }
+      var parameter = parameter
+      parameter.type.rawType = inoutType
+      return parameter
+    }
 
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
@@ -308,13 +287,51 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
+  
+  public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
+    return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    var passContext = passContext
+    let functionDeclarationContext = passContext.functionDeclarationContext!
+    let environment = passContext.environment!
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    
+    var diagnostics = [Diagnostic]()
+    
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    case .success(let matchingFunction):
+      if matchingFunction.isMutating {
+        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
+        
+        if !functionDeclarationContext.isMutating {
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+        }
+      }
+      
+      for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
+        if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
+          addMutatingExpression(argument, passContext: &passContext)
+          
+          if !functionDeclarationContext.isMutating {
+            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+          }
+        }
+      }
+      
+    case .failure(candidates: let candidates):
+      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+      }
+    }
+    
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

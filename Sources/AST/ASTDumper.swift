@@ -151,6 +151,9 @@ public class ASTDumper {
         self.writeLine("implicit")
       }
       self.dump(parameter.identifier)
+      if parameter.isInout {
+        self.writeLine("inout")
+      }
       self.dump(parameter.type)
     }
   }
@@ -207,6 +210,10 @@ public class ASTDumper {
       }
     case .userDefinedType(let userDefinedType):
       writeLine("user-defined type \(userDefinedType)")
+    case .inoutType(let rawType):
+      writeNode("inout type") {
+        self.dump(rawType)
+      }
     case .errorType:
       writeLine("Flint error type \(rawType.name)")
     }
@@ -225,6 +232,7 @@ public class ASTDumper {
   func dump(_ expression: Expression) {
     writeNode("Expression") {
       switch expression {
+      case .inoutExpression(let inoutExpression): self.dump(inoutExpression)
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
       case .bracketedExpression(let expression): self.dump(expression)
       case .functionCall(let functionCall): self.dump(functionCall)
@@ -244,6 +252,12 @@ public class ASTDumper {
       case .returnStatement(let returnStatement): self.dump(returnStatement)
       case .ifStatement(let ifStatement): self.dump(ifStatement)
       }
+    }
+  }
+  
+  func dump(_ inoutExpression: InoutExpression) {
+    writeNode("InoutExpression") {
+      self.dump(inoutExpression.expression)
     }
   }
 

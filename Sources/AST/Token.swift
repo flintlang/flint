@@ -38,11 +38,12 @@ extension Token {
       case openAngledBracket  = "<"
       case closeAngledBracket = ">"
 
-      case plus   = "+"
-      case minus  = "-"
-      case times = "*"
-      case divide = "/"
-      case dot    = "."
+      case plus       = "+"
+      case minus      = "-"
+      case times      = "*"
+      case divide     = "/"
+      case dot        = "."
+      case ampersand  = "&"
 
       // Assignments
 
@@ -72,6 +73,7 @@ extension Token {
         case .minus: return 20
         case .times: return 30
         case .divide: return 30
+        case .ampersand: return 35
         case .dot: return 40
         default: return 0
         }
