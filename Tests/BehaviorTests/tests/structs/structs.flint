@@ -65,7 +65,7 @@ C :: (any) {
   }
 
   public mutating func setBxx3(x: Int) {
-    setB(b, x)
+    setB(&b, x)
   }
 
   public mutating func setCxx(x: Int) {
@@ -73,7 +73,7 @@ C :: (any) {
   }
 
   public mutating func setCxx2(x: Int) {
-    setB(c, x)
+    setB(&c, x)
   }
 
   public func getCxx() -> Int {

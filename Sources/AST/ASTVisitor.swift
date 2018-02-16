@@ -268,7 +268,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     var processResult = pass.process(inoutExpression: inoutExpression, passContext: passContext)
     processResult.element.expression = processResult.combining(visit(processResult.element.expression, passContext: processResult.passContext))
     
-    let postProcessResult = pass.postProcess(inoutExpression: inoutExpression, passContext: processResult.passContext)
+    let postProcessResult = pass.postProcess(inoutExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
@@ -299,7 +299,9 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.passContext.isFunctionCall = false
 
     processResult.element.arguments = processResult.element.arguments.map { argument in
-      return processResult.combining(visit(argument, passContext: processResult.passContext))
+      
+      let x = visit(argument, passContext: processResult.passContext)
+      return processResult.combining(x)
     }
 
     let postProcessResult = pass.postProcess(functionCall: processResult.element, passContext: processResult.passContext)

@@ -396,6 +396,10 @@ extension Parser {
       // Expect any expression.
       throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: currentToken?.sourceLocation)
     }
+    
+    if let inoutExpression = attempt(task: parseInoutExpression) {
+      return .inoutExpression(inoutExpression)
+    }
 
     for op in Token.Kind.Punctuation.allBinaryOperatorsByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.punctuation(op)], maxIndex: limitTokenIndex) else { continue }
@@ -417,10 +421,6 @@ extension Parser {
 
     if let literal = attempt(task: parseLiteral) {
       return .literal(literal)
-    }
-    
-    if let inoutExpression = attempt(task: parseInoutExpression) {
-      return .inoutExpression(inoutExpression)
     }
 
     if let variableDeclaration = attempt(task: parseVariableDeclaration) {
