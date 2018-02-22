@@ -66,14 +66,14 @@ struct IULIAFunction {
 
     let capabilityBindingDeclaration: String
     if let capabilityBinding = capabilityBinding {
-      capabilityBindingDeclaration = "let \(mangleIdentifierName(capabilityBinding.name)) := caller()\n"
+      capabilityBindingDeclaration = "let \(IULIAFunction.mangleIdentifierName(capabilityBinding.name)) := caller()\n"
     } else {
       capabilityBindingDeclaration = ""
     }
 
     let payableValueDeclaration: String
     if let payableValueParameter = functionDeclaration.firstPayableValueParameter {
-      payableValueDeclaration = "let \(mangleIdentifierName(payableValueParameter.identifier.name)) := callvalue()\n"
+      payableValueDeclaration = "let \(IULIAFunction.mangleIdentifierName(payableValueParameter.identifier.name)) := callvalue()\n"
     } else {
       payableValueDeclaration = ""
     }
@@ -112,7 +112,7 @@ struct IULIAFunction {
     return "\(name)(\(parametersString))"
   }
 
-  func mangleIdentifierName(_ name: String) -> String {
+  static func mangleIdentifierName(_ name: String) -> String {
     return "_\(name)"
   }
 
@@ -200,9 +200,9 @@ extension IULIAFunction {
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
-      return "let \(mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
+      return "let \(IULIAFunction.mangleIdentifierName(variableDeclaration.identifier.name)) := \(rhsCode)"
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return "\(mangleIdentifierName(identifier.name)) := \(rhsCode)"
+      return "\(IULIAFunction.mangleIdentifierName(identifier.name)) := \(rhsCode)"
     default:
       let lhsCode = render(lhs, asLValue: true)
       return "sstore(\(lhsCode), \(rhsCode))"
@@ -285,7 +285,7 @@ extension IULIAFunction {
     if let _ = identifier.enclosingType {
       return renderPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue)
     }
-    return mangleIdentifierName(identifier.name)
+    return IULIAFunction.mangleIdentifierName(identifier.name)
   }
 
   func render(_ variableDeclaration: VariableDeclaration) -> String {
