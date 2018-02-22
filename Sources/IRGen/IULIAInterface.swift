@@ -57,7 +57,7 @@ struct IULIAInterface {
       returnCode = ""
     }
 
-    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attribute)public\(returnCode);"
+    return "function \(functionDeclaration.identifier.name)(\(parameters)) \(attribute)external\(returnCode);"
   }
 
   func render(_ functionParameter: Parameter) -> String {
