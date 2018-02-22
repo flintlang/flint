@@ -1,0 +1,5 @@
+contract Bank {}
+
+Bank :: (any) {
+  public func foo(address: Address) {}
+}
