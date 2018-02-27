@@ -3,6 +3,18 @@ contract Dictionary {
   var foo: Int
   var storage2: [Address: Int]
   var bar: Int
+
+  var storage3: [Int: S]
+}
+
+struct S {
+  var a: Int
+  var b: Bool
+  var c: T
+} 
+
+struct T {
+  var a: Int
 }
 
 Dictionary :: (any) {
@@ -36,5 +48,23 @@ Dictionary :: (any) {
 
   public mutating func setBar(val: Int) {
     bar = val
+  }
+
+  public mutating func write3(index: Int, a: Int, b: Bool, cA: Int) {
+    storage3[index].a = a
+    storage3[index].b = b
+    storage3[index].c.a = cA
+  }
+
+  public func value3a(index: Int) -> Int {
+    return storage3[index].a
+  }
+
+  public func value3b(index: Int) -> Bool {
+    return storage3[index].b
+  }
+
+  public func value3cA(index: Int) -> Int {
+    return storage3[index].c.a
   }
 }
