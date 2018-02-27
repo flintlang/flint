@@ -45,7 +45,11 @@ struct IULIAFunction {
   }
   
   var scopeContext: ScopeContext {
-    return ScopeContext(localVariables: functionDeclaration.parametersAsVariableDeclarations)
+    var localVariables = functionDeclaration.parametersAsVariableDeclarations
+    if let capabilityBinding = capabilityBinding {
+      localVariables.append(VariableDeclaration(varToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
+    }
+    return ScopeContext(localVariables: localVariables)
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
@@ -191,6 +195,8 @@ extension IULIAFunction {
     case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
+    case .doubleEqual: return "eq(\(lhs), \(rhs))"
+    case .notEqual: return "neq(\(lhs), \(rhs))"
     default: fatalError()
     }
   }

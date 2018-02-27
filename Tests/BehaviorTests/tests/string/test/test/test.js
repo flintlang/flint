@@ -13,6 +13,19 @@ contract(config.contractName, function(accounts) {
 
     assert.equal(web3.toUtf8(t.valueOf()), "hello");
   });
+
+  it("should be possible to compare string", async function() {
+    const instance = await Contract.deployed();
+
+    await instance.set("hello");
+    let t = await instance.isEqual("hello");
+
+    assert.equal(t.valueOf(), 1);
+
+    t = await instance.isEqual("hell");
+
+    assert.equal(t.valueOf(), 0);
+  });
 });
 
 
