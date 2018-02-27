@@ -52,11 +52,13 @@ extension Token {
       case minusEqual = "-="
       case timesEqual = "*="
       case divideEqual = "/="
-
+      
+      case doubleEqual = "=="
+      case notEqual = "!="
       case lessThanOrEqual = "<="
       case greaterThanOrEqual = ">="
 
-      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual] }
+      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual] }
       public static var allBinaryOperatorsByIncreasingPrecedence: [Punctuation] {
         return allBinaryOperators.sorted { $0.precedence < $1.precedence }
       }
@@ -68,7 +70,7 @@ extension Token {
       var precedence: Int {
         switch self {
         case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10
-        case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual: return 15
+        case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual: return 15
         case .plus: return 20
         case .minus: return 20
         case .times: return 30
