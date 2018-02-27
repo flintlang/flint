@@ -1,0 +1,74 @@
+contract PackageManager {
+  var admin: Address 
+  var packages: [String: Package]
+}
+
+PackageManager :: caller <- (any) {
+  public mutating func createPackage(name: String, version: Int, hash: String) {
+    if packageExists(name) {
+      // We should throw but Flint doesn't support that yet.
+      return
+    }
+
+    packages[name].name = name
+    packages[name].owner = caller
+    packages[name].version = version
+    packages[name].hash = hash
+  }
+
+  public mutating func updatePackage(packageName: String, newVersion: Int, newHash: String) {
+    if packageExists(packageName) == false {
+      // Package already exists.
+      return // Should throw.
+    }
+      
+    if packages[packageName].isOwnedBy(caller) == false {
+      // Caller is not the owner of the package.
+      return // Should throw.
+    }
+
+    if newVersion < packages[packageName].version {
+      // The version is not larger than the package's current version. 
+      return // Should throw.
+    }
+
+    packages[packageName].version = newVersion
+    packages[packageName].hash = newHash
+  }
+
+  public func getPackageHash(name: String) -> String {
+    return packages[name].hash
+  }
+
+  func packageExists(name: String) -> Bool {
+    if packages[name].name != "" {
+      return true
+    }
+
+    return false
+  }
+}
+
+PackageManager :: (admin) {
+  public mutating func deletePackage(name: String) {
+    // Reset the fields
+    packages[name].name = ""
+    packages[name].owner = admin
+    packages[name].version = 0
+    packages[name].hash = ""
+  }
+}
+
+struct Package {
+  var name: String
+  var owner: Address
+  var version: Int
+  var hash: String
+
+  func isOwnedBy(address: Address) -> Bool {
+    if owner == address {
+      return true
+    }
+    return false
+  }
+}
