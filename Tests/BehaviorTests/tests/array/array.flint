@@ -2,6 +2,8 @@ contract Array {
   var arr: Int[4]
   var arr2: Int[10]
   var numWrites: Int
+
+  var arr3: [S]
 }
 
 Array :: (any) {
@@ -34,4 +36,32 @@ Array :: (any) {
   public func numWrites() -> Int {
     return numWrites
   }
+
+  public mutating func write3(index: Int, a: Int, b: Bool, cA: Int) {
+    arr3[index].a = a
+    arr3[index].b = b
+    arr3[index].c.a = cA
+  }
+
+  public func value3a(index: Int) -> Int {
+    return arr3[index].a
+  }
+
+  public func value3b(index: Int) -> Bool {
+    return arr3[index].b
+  }
+
+  public func value3cA(index: Int) -> Int {
+    return arr3[index].c.a
+  }
+}
+
+struct S {
+  var a: Int
+  var b: Bool
+  var c: T
+}
+
+struct T {
+  var a: Int
 }

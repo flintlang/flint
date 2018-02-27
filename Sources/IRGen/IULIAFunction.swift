@@ -164,7 +164,7 @@ extension IULIAFunction {
     case .identifier(let identifier): return render(identifier, asLValue: asLValue)
     case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
     case .literal(let literal): return render(literalToken: literal)
-    case .self(let `self`): return render(selfToken: self)
+    case .self(let `self`): return render(selfToken: self, asLValue: asLValue)
     case .subscriptExpression(let subscriptExpression): return render(subscriptExpression, asLValue: asLValue)
     }
   }
@@ -210,18 +210,18 @@ extension IULIAFunction {
   }
 
   func renderPropertyAccess(lhs: Expression, rhs: Expression, asLValue: Bool) -> String {
-    let lhsOffset: Int
+    let lhsOffset: String
+
     if case .identifier(let lhsIdentifier) = lhs {
       if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
-        lhsOffset = offset
+        lhsOffset = "\(offset)"
       } else {
-        lhsOffset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: typeIdentifier.name)!
+        lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: typeIdentifier.name)!)"
       }
-    } else if case .self(_) = lhs {
-      lhsOffset = 0
     } else {
-      fatalError()
+      lhsOffset = render(lhs, asLValue: true)
     }
+
 
     let lhsType = environment.type(of: lhs, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
     let rhsOffset = propertyOffset(for: rhs, in: lhsType)
@@ -305,11 +305,11 @@ extension IULIAFunction {
     }
   }
 
-  func render(selfToken: Token) -> String {
+  func render(selfToken: Token, asLValue: Bool) -> String {
     guard case .self = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
-    return ""
+    return asLValue ? "0" : ""
   }
 
   func render(_ subscriptExpression: SubscriptExpression, asLValue: Bool = false) -> String {

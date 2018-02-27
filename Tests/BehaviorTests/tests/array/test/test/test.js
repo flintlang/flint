@@ -73,6 +73,33 @@ contract(config.contractName, function(accounts) {
 
     assert.fail()
   });
+
+  it("should correctly write to arrays of structs", async function() {
+    const instance = await Contract.deployed();
+    let t;
+
+    await instance.write3(0, 25, 0, 30);
+    await instance.write3(1, 25, 0, 30);
+    await instance.write3(0, 12, 1, 31);
+
+    t = await instance.value3a.call(0)
+    assert.equal(t.valueOf(), 12);
+
+    t = await instance.value3b.call(0)
+    assert.equal(t.valueOf(), 1);
+
+    t = await instance.value3cA.call(0)
+    assert.equal(t.valueOf(), 31);
+
+    t = await instance.value3a.call(1)
+    assert.equal(t.valueOf(), 25);
+
+    t = await instance.value3b.call(1)
+    assert.equal(t.valueOf(), 0);
+
+    t = await instance.value3cA.call(1)
+    assert.equal(t.valueOf(), 30);
+  });
 });
 
 contract(config.contractName, function(accounts) {
