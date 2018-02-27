@@ -18,5 +18,13 @@ StringContract :: (any) {
 
     return false
   }
+
+  public func isNotEqual(other: String) -> Bool {
+    if s != other {
+      return true
+    }
+
+    return false
+  }
 }
 

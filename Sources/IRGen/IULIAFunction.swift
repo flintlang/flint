@@ -196,7 +196,7 @@ extension IULIAFunction {
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
     case .doubleEqual: return "eq(\(lhs), \(rhs))"
-    case .notEqual: return "neq(\(lhs), \(rhs))"
+    case .notEqual: return "iszero(eq(\(lhs), \(rhs)))"
     default: fatalError()
     }
   }
