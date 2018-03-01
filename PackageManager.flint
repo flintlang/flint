@@ -1,13 +1,19 @@
+// PackageManager.flint
+// Created by Franklin Schrans
+
+// The Flint Package Manager allows developers to share and use Flint contracts.
+// This smart contract records package information, including hashes of the source
+// code and interface, and security warnings produced by the Flint compiler.
 contract PackageManager {
   var admin: Address 
   var packages: [String: Package]
 }
 
+// Public API
 PackageManager :: caller <- (any) {
   public mutating func createPackage(name: String, version: Int, hash: String) {
     if packageExists(name) {
-      // We should throw but Flint doesn't support that yet.
-      return
+      return // We should throw but Flint doesn't support that yet.
     }
 
     packages[name].name = name
@@ -36,8 +42,24 @@ PackageManager :: caller <- (any) {
     packages[packageName].hash = newHash
   }
 
+  public mutating func addSecurityWarning(packageName: String, warning: String) {
+    packages[packageName].addSecurityWarning(warning)
+  }
+
   public func getPackageHash(name: String) -> String {
     return packages[name].hash
+  }
+
+  public func getPackageVersion(name: String) -> Int {
+    return packages[name].version
+  }
+
+  public func getPackageNumSecurityWarnings(name: String) -> Int {
+    return packages[name].securityInformation.numWarnings
+  }
+
+  public func getPackageSecurityWarnings(name: String, index: Int) -> String {
+    return packages[name].getSecurityWarning(index)
   }
 
   func packageExists(name: String) -> Bool {
@@ -49,6 +71,7 @@ PackageManager :: caller <- (any) {
   }
 }
 
+// API for the PackageManager's administrator.
 PackageManager :: (admin) {
   public mutating func deletePackage(name: String) {
     // Reset the fields
@@ -59,16 +82,55 @@ PackageManager :: (admin) {
   }
 }
 
+// Represents a Flint package.
 struct Package {
+  // Name of the package.
   var name: String
+
+  // Creator and owner of the package.
   var owner: Address
+
+  // Latest version of the package.
   var version: Int
+
+  // Hash of the package's source code.
   var hash: String
+
+  // Hash of the package's interface.
+  var interfaceHash: String
+
+  // Security information relating to this package.
+  var securityInformation: SecurityInformation
+
+  // == Functions ==
 
   func isOwnedBy(address: Address) -> Bool {
     if owner == address {
       return true
     }
     return false
+  }
+
+  mutating func addSecurityWarning(warning: String) {
+    securityInformation.addWarning(warning)
+  }
+
+  func getSecurityWarning(index: Int) -> String {
+    return securityInformation.getWarning(index)
+  }
+}
+
+// Encapsulates security information about a package.
+struct SecurityInformation {
+  var numWarnings: Int
+  var warnings: [String]
+
+  mutating func addWarning(warning: String) {
+    warnings[numWarnings] = warning
+    numWarnings += 1
+  }
+
+  func getWarning(index: Int) -> String {
+    return warnings[index]
   }
 }
