@@ -33,7 +33,7 @@ PackageManager :: caller <- (any) {
       return // Should throw.
     }
 
-    if newVersion < packages[packageName].version {
+    if newVersion <= packages[packageName].version {
       // The version is not larger than the package's current version. 
       return // Should throw.
     }
