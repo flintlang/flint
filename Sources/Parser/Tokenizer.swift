@@ -78,6 +78,8 @@ public struct Tokenizer {
     "<=": .punctuation(.lessThanOrEqual),
     ">": .punctuation(.closeAngledBracket),
     ">=": .punctuation(.greaterThanOrEqual),
+    "||": .punctuation(.or),
+    "&&": .punctuation(.and),
     "==": .punctuation(.doubleEqual),
     "!=": .punctuation(.notEqual),
     "{": .punctuation(.openBrace),

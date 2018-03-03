@@ -52,13 +52,23 @@ extension Token {
       case minusEqual = "-="
       case timesEqual = "*="
       case divideEqual = "/="
+
+      // Comparisons
       
       case doubleEqual = "=="
       case notEqual = "!="
       case lessThanOrEqual = "<="
       case greaterThanOrEqual = ">="
+      case or = "||"
+      case and = "&&"
 
-      static var allBinaryOperators: [Punctuation] { return [.plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot, .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual] }
+      static var allBinaryOperators: [Punctuation] {
+        return [
+          .plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
+          .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
+          .or, .and
+        ]
+      }
       public static var allBinaryOperatorsByIncreasingPrecedence: [Punctuation] {
         return allBinaryOperators.sorted { $0.precedence < $1.precedence }
       }
@@ -67,9 +77,15 @@ extension Token {
         return [.equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual].contains(self)
       }
 
+      public var isBooleanOperator: Bool {
+        return [.doubleEqual, .notEqual, .lessThanOrEqual, .greaterThanOrEqual, .or, .and, .openAngledBracket, .closeAngledBracket].contains(self)
+      }
+
       var precedence: Int {
         switch self {
         case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10
+        case .or: return 11
+        case .and: return 12
         case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual: return 15
         case .plus: return 20
         case .minus: return 20
