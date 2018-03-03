@@ -1,0 +1,51 @@
+contract Operators {}
+
+Operators :: (any) {
+  public func lessThan(a: Int, b: Int) -> Bool {
+    return a < b
+  }
+
+  public func greaterThan(a: Int, b: Int) -> Bool {
+    return a > b
+  }
+
+  public func lessThanOrEqual(a: Int, b: Int) -> Bool {
+    return a <= b
+  }
+
+  public func greaterThanOrEqual(a: Int, b: Int) -> Bool {
+    return a >= b
+  }
+
+  public func plus(a: Int, b: Int) -> Int {
+    return a + b
+  }
+
+  public func minus(a: Int, b: Int) -> Int {
+    return a - b
+  }
+
+  public func times(a: Int, b: Int) -> Int {
+    return a * b
+  }
+
+  public func divide(a: Int, b: Int) -> Int {
+    return a / b
+  }
+
+  public func equal(a: Bool, b: Bool) -> Bool {
+    return a == b
+  }
+
+  public func notEqual(a: Bool, b: Bool) -> Bool {
+    return a != b
+  }
+
+  public func orOp(a: Bool, b: Bool) -> Bool {
+    return a || b
+  }
+
+  public func andOp(a: Bool, b: Bool) -> Bool {
+    return a && b
+  }
+}

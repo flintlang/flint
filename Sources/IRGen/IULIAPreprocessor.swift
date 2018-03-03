@@ -105,6 +105,22 @@ public struct IULIAPreprocessor: ASTPass {
       let trail = passContext.functionCallReceiverTrail ?? []
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
     }
+
+    if [.lessThanOrEqual, .greaterThanOrEqual].contains(binaryExpression.opToken) {
+      let strictOperator: Token.Kind.Punctuation = binaryExpression.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
+
+      var lhsExpression = binaryExpression
+      lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
+
+      var rhsExpression = binaryExpression
+      rhsExpression.op = Token(kind: .punctuation(.doubleEqual), sourceLocation: rhsExpression.op.sourceLocation)
+
+      binaryExpression.lhs = .binaryExpression(lhsExpression)
+      binaryExpression.rhs = .binaryExpression(rhsExpression)
+
+      let sourceLocation = binaryExpression.op.sourceLocation
+      binaryExpression.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
+    }
     
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }

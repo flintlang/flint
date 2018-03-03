@@ -138,6 +138,9 @@ public struct Environment {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
     case .binaryExpression(let binaryExpression):
+      if binaryExpression.opToken.isBooleanOperator {
+        return .builtInType(.bool)
+      }
       return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .bracketedExpression(let expression):

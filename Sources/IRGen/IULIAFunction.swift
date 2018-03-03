@@ -192,11 +192,11 @@ extension IULIAFunction {
     case .times: return "mul(\(lhs), \(rhs))"
     case .divide: return "div(\(lhs), \(rhs))"
     case .closeAngledBracket: return "gt(\(lhs), \(rhs))"
-    case .lessThanOrEqual: return "le(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
-    case .greaterThanOrEqual: return "ge(\(lhs), \(rhs))"
     case .doubleEqual: return "eq(\(lhs), \(rhs))"
     case .notEqual: return "iszero(eq(\(lhs), \(rhs)))"
+    case .or: return "or(\(lhs), \(rhs))"
+    case .and: return "and(\(lhs), \(rhs))"
     default: fatalError()
     }
   }
