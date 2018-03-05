@@ -24,4 +24,4 @@ Future plans for Flint are numerous, and include:
 
 ## License
 
-The Flint project is released under the MIT license. See the LICENSE file for more information.
+The Flint project is available under the MIT license. See the LICENSE file for more information.
