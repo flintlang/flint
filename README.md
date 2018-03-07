@@ -21,3 +21,7 @@ Future plans for Flint are numerous, and include:
 2. **Formalization**: specify well-defined semantics for the language.
 3. **The Flint Package Manager**: create a package manager which records contract APIs as well as safety and gas cost information of dependencies, aka _Flint stones_.
 4. **Tooling**: build novel tools around smart contract development, such as new ways of simulating and visualizing different transaction orderings.
+
+## License
+
+The Flint project is available under the MIT license. See the LICENSE file for more information.
