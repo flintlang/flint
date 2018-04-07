@@ -4,6 +4,8 @@
 
 Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
+Flint is still in active development, and is not ready to be used in the real world just yet.
+
 ## Documentation
 
 The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
