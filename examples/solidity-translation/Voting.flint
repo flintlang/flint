@@ -47,7 +47,7 @@ Ballot :: voter <- (voters.keys) {
    let voterWeight = voters[voter].votingWeight
 
    // Increase the weight of the delegate.
-   proposals[target].votingWeight += voterWeight
+   voters[target].votingWeight += voterWeight
 
    if voters[target].hasVoted {
      // If the delegate has already voted for a proposal, increase its number of votes.
