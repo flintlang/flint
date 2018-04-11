@@ -18,12 +18,12 @@ matrix:
     language: objective-c
     osx_image: xcode9
     if: tag =~ ^*-macos$
-before_deploy:
-- make release
-deploy:
-  provider: releases
-  api_key:
-    secure: qRBat5kNq2TUtAxaamF+SlFQs9Qq93T8ANed9cm+3xGIJrKzqVpizLl6I3nBV8uJxhtrvnx9AkFVMqcMtgypKHh+C5YXLIuqzJo7ZIXLq8ZqjYXxSIEo4exMM4E80jJUhAchmbovtPMMeW3QGOdytG90a3uVC5JhtPnc2hFehE8lZRI2rFs7UkCbhIZELIyhoV1GHK/Ze1Gm4/PZYcqpRSX0nDdoQ43CE60Uc5oS7MFyPf/8eltFGAaFA5lR+I9JHQlutPia/ebQeKFQB2ChGPdO3mwiyrpalUufwvAN4zWDDU0UL5uoecdr/ykLCNJVIhoAPzvsNxaB/rN/T07O+D7GSHmDpXLEMzA658R2MymnL43ufV0ElCMXOfEQY1msdqAXgkiaeuXrZoJWdesblrA3xjfTM8NtDQ7wYk8N7Jdjq/wWZDzcQOSgfjfMy7DzmqMpMfBeofkdI7QLRAxB1IVg0Fi9hk2lb6YuA1Pq8Hoh4sL34Dfh0bL8DalvVReFk+A/nSA/1c6jCvX11OkFRIWTw3M810vEZw0mNZA+1BO1ozVPBOLEzl4yvbInks5RcNj1V7X5N8vEyVCVOGAb/DUGmotYfka/R68hXcYKKxXyCuZyDNQvM/aEghCr52Wuh9rw8h8rrdNIBBVuo+Z+2uHr54i1LCYr4yJeW2uBR9I=
-  file: flintc.zip
-  on:
-    repo: franklinsch/flint
+#before_deploy:
+#- make release
+#deploy:
+  #provider: releases
+  #api_key:
+    #secure: qRBat5kNq2TUtAxaamF+SlFQs9Qq93T8ANed9cm+3xGIJrKzqVpizLl6I3nBV8uJxhtrvnx9AkFVMqcMtgypKHh+C5YXLIuqzJo7ZIXLq8ZqjYXxSIEo4exMM4E80jJUhAchmbovtPMMeW3QGOdytG90a3uVC5JhtPnc2hFehE8lZRI2rFs7UkCbhIZELIyhoV1GHK/Ze1Gm4/PZYcqpRSX0nDdoQ43CE60Uc5oS7MFyPf/8eltFGAaFA5lR+I9JHQlutPia/ebQeKFQB2ChGPdO3mwiyrpalUufwvAN4zWDDU0UL5uoecdr/ykLCNJVIhoAPzvsNxaB/rN/T07O+D7GSHmDpXLEMzA658R2MymnL43ufV0ElCMXOfEQY1msdqAXgkiaeuXrZoJWdesblrA3xjfTM8NtDQ7wYk8N7Jdjq/wWZDzcQOSgfjfMy7DzmqMpMfBeofkdI7QLRAxB1IVg0Fi9hk2lb6YuA1Pq8Hoh4sL34Dfh0bL8DalvVReFk+A/nSA/1c6jCvX11OkFRIWTw3M810vEZw0mNZA+1BO1ozVPBOLEzl4yvbInks5RcNj1V7X5N8vEyVCVOGAb/DUGmotYfka/R68hXcYKKxXyCuZyDNQvM/aEghCr52Wuh9rw8h8rrdNIBBVuo+Z+2uHr54i1LCYr4yJeW2uBR9I=
+  #file: flintc.zip
+  #on:
+    #repo: franklinsch/flint
