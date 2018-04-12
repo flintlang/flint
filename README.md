@@ -8,7 +8,7 @@ Flint is still in active development, and is not ready to be used in the real wo
 
 ## Documentation
 
-The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/content/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
 ## Contributing
 
