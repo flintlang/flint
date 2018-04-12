@@ -15,6 +15,8 @@ The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/) g
 Contributions to Flint are highly welcomed!
 The Issues page tracks the tasks which have yet to be completed.
 
+Flint Improvement Proposals (FIPs) track the design and implementation of large new features. An example is [FIP-0001: Introduce the Asset trait)](proposals/0001-asset-trait.md).
+
 ## Future plans
 
 Future plans for Flint are numerous, and include:
