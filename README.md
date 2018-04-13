@@ -6,6 +6,8 @@ Flint is a new type-safe, capabilities-secure, contract-oriented programming lan
 
 Flint is still in active development, and is not ready to be used in the real world just yet.
 
+The short introductory paper [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf), gives a high-level overview of Flint and its motivations.
+
 ## Documentation
 
 The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/content/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
