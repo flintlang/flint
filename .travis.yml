@@ -20,6 +20,7 @@ matrix:
     if: NOT tag IS present OR tag =~ ^*-macos$
     before_install:
     - brew update
+    - brew upgrade
     - brew tap ethereum/ethereum
     - brew install solidity
     script:
