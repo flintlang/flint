@@ -8,9 +8,81 @@ Flint is still in active development, and is not ready to be used in the real wo
 
 The short introductory paper [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf), gives a high-level overview of Flint and its motivations.
 
-## Documentation
+## Language Overview
 
 The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/content/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+
+Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
+
+### Caller Capabilities
+
+[**Caller capabilities**](https://franklinsch.gitbooks.io/flint/content/caller-capabilities.html) require programmers to think about who should be able to call the contract’s sensitive functions. Capabilities are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+
+Example:
+
+```swift
+// State declaration
+contract Bank {
+  var manager: Address
+}
+
+// Functions are declared in caller capability blocks,
+// which specify which users are allowed to call them.
+Bank :: (manager) { // manager is a state property.
+
+  // Only `manager` of the Bank can call `clear`.
+  func clear(address: Address) {
+    // body
+  }
+}
+```
+
+### Immutability by default
+
+**Restricting writes to state** in functions helps programmers more easily reason about the smart contract. A function which writes to the contract’s state needs to be annotated with the `mutating` keyword.
+
+Example:
+
+```swift
+Bank :: (any) {
+  mutating func incrementCount() {
+    // count is a state property
+    count += 1
+  }
+  
+  func getCount() -> Int {
+    return count
+  }
+  
+  func decrementCount() {
+    // error: Use of mutating statement in a nonmutating function
+    // count -= 1
+  }
+}
+```
+
+### Asset types
+
+[**Assets**](https://franklinsch.gitbooks.io/flint/content/assets.html), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
+
+A restricted set of atomic operations can be performed on Assets, ensuring a contract’s state is always consistently representing its Ether value. It is impossible to create, duplicate, or lose Ether in unprivileged code. This prevents attacks relating to double-spending and re-entrancy, such as in TheDAO attack.
+
+Example use:
+
+```swift
+Bank :: account <- (balances.keys) {
+  @payable
+  mutating func deposit(implicit value: inout Wei) {
+    // Omitting this line causes a compiler warning: the value received should be recorded.
+    balances[address].transfer(&value)
+  }
+
+  mutating func withdraw() {
+    // balances[account] is automatically set to 0 before transferring.
+    send(account, &balances[account])
+  }
+}
+```
 
 ## Contributing
 
