@@ -65,7 +65,9 @@ Bank :: (any) {
 
 [**Assets**](https://franklinsch.gitbooks.io/flint/content/assets.html), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
 
-A restricted set of atomic operations can be performed on Assets, ensuring a contract’s state is always consistently representing its Ether value. It is impossible to create, duplicate, or lose Ether in unprivileged code. This prevents attacks relating to double-spending and re-entrancy, such as in TheDAO attack.
+Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
+
+A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets (such as Ether) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy, such as in TheDAO attack.
 
 Example use:
 
@@ -83,6 +85,8 @@ Bank :: account <- (balances.keys) {
   }
 }
 ```
+
+The Asset feature is still in development. The [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md) proposal includes more details.
 
 ## Contributing
 
