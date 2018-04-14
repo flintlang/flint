@@ -18,6 +18,14 @@ matrix:
     language: objective-c
     osx_image: xcode9
     if: tag =~ ^*-macos$
+    before_install:
+    - brew update
+    - brew upgrade
+    - brew tap ethereum/ethereum
+    - brew install solidity
+    script:
+    - make test
+
 before_deploy:
 - make release
 deploy:
