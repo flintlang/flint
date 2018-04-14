@@ -4,7 +4,7 @@
 
 Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
-Flint is still in active development, and is not ready to be used in the real world just yet.
+Flint is still in **active development**, and is not ready to be used in the real world yet.
 
 The short introductory paper [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf), gives a high-level overview of Flint and its motivations.
 
@@ -87,6 +87,10 @@ Bank :: account <- (balances.keys) {
 ```
 
 The Asset feature is still in development. The [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md) proposal includes more details.
+
+### Safer semantics
+
+In the spirit of reducing vulnerabilities relating to unexpected language semantics, such as wrap-arounds due to integer overflows, Flint aims to provide safer operations. For instance, arithmetic operations on `Int` are safe by default: an overflow/underflow causes the Ethereum transaction to be reverted.
 
 ## Contributing
 
