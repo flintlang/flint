@@ -67,7 +67,7 @@ Bank :: (any) {
 
 Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
 
-A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets (such as Ether) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy, such as in TheDAO attack.
+A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets (such as Ether) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy.
 
 Example use:
 
