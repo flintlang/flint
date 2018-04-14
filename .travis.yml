@@ -17,7 +17,7 @@ matrix:
   - os: osx
     language: objective-c
     osx_image: xcode9
-    if: tag =~ ^*-macos$
+    if: NOT tag IS present OR tag =~ ^*-macos$
     before_install:
     - brew update
     - brew upgrade
