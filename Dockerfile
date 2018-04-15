@@ -1,4 +1,4 @@
-FROM swiftdocker/swift
+FROM swift
 
 LABEL maintainer "Franklin Schrans <f.schrans@me.com>"
 
