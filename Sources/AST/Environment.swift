@@ -190,16 +190,18 @@ public struct Environment {
   public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
 
-    for candidate in types[enclosingType]!.functions[functionCall.identifier.name]! {
-      let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
+    if let functions = types[enclosingType]!.functions[functionCall.identifier.name] {
+      for candidate in functions {
+        let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
 
-      guard candidate.parameterTypes == argumentTypes,
-        areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
-          candidates.append(candidate)
-          continue
+        guard candidate.parameterTypes == argumentTypes,
+          areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
+            candidates.append(candidate)
+            continue
+        }
+
+        return .success(candidate)
       }
-
-      return .success(candidate)
     }
 
     return .failure(candidates: candidates)
