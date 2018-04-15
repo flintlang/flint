@@ -92,6 +92,19 @@ The Asset feature is still in development. The [FIP-0001: Introduce the Asset tr
 
 In the spirit of reducing vulnerabilities relating to unexpected language semantics, such as wrap-arounds due to integer overflows, Flint aims to provide safer operations. For instance, arithmetic operations on `Int` are safe by default: an overflow/underflow causes the Ethereum transaction to be reverted.
 
+## Installation
+
+The Flint compiler and its dependencies can be installed using Docker:
+
+```bash
+docker pull franklinsch/flint
+docker run -i -t franklinsch/flint
+```
+
+Example smart contracts are available in `flint/examples/valid/`.
+
+Instructions for installing using a binary package or from source are available [here]( https://franklinsch.gitbooks.io/flint/content/installation.html).
+
 ## Contributing
 
 Contributions to Flint are highly welcomed!
