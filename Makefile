@@ -3,6 +3,8 @@ all:
 
 release:
 	swift build	-c release --static-swift-stdlib
+
+zip:
 	zip -j flintc.zip .build/release/flintc
 
 test:

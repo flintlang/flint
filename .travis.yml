@@ -20,6 +20,7 @@ matrix:
     if: tag =~ ^*-macos$
 before_deploy:
 - make release
+- make zip
 deploy:
   provider: releases
   skip_cleanup: true
