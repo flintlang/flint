@@ -43,7 +43,7 @@ struct IULIAContract {
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     let structFunctions = structDeclarations.flatMap { structDeclaration in
-      return structDeclaration.functionDeclarations.flatMap { functionDeclaration in
+      return structDeclaration.functionDeclarations.compactMap { functionDeclaration in
         return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, contractStorage: storage, environment: environment)
       }
     }

@@ -46,7 +46,7 @@ struct DiagnosticsVerifier {
 
   func parseExpectations(sourceCode: String) -> [Expectation] {
     let lines = sourceCode.components(separatedBy: "\n")
-    return lines.enumerated().flatMap { index, line in
+    return lines.enumerated().compactMap { index, line in
       return parseExpectation(sourceLine: line, line: index + 1)
     }
   }

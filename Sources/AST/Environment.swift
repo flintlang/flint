@@ -105,7 +105,7 @@ public struct Environment {
   }
 
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
-    return types[enclosingType]!.properties.flatMap { key, value in
+    return types[enclosingType]!.properties.compactMap { key, value in
       switch value.rawType {
       case .builtInType(.address): return key
       case .fixedSizeArrayType(.builtInType(.address), _): return key

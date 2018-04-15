@@ -65,14 +65,14 @@ public struct StructDeclaration {
   public var members: [StructMember]
 
   public var variableDeclarations: [VariableDeclaration] {
-    return members.flatMap { member in
+    return members.compactMap { member in
       guard case .variableDeclaration(let variableDeclaration) = member else { return nil }
       return variableDeclaration
     }
   }
 
   public var functionDeclarations: [FunctionDeclaration] {
-    return members.flatMap { member in
+    return members.compactMap { member in
       guard case .functionDeclaration(let functionDeclaration) = member else { return nil }
       return functionDeclaration
     }

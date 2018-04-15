@@ -89,7 +89,7 @@ struct IULIAFunction {
     """
   }
 
-  func renderBody<S : RandomAccessCollection & RangeReplaceableCollection>(_ statements: S) -> String where S.Element == AST.Statement, S.Index == Int, S.SubSequence: RandomAccessCollection {
+  func renderBody<S : RandomAccessCollection & RangeReplaceableCollection>(_ statements: S) -> String where S.Element == AST.Statement, S.Index == Int {
     guard !statements.isEmpty else { return "" }
     var statements = statements
     let first = statements.removeFirst()
@@ -121,7 +121,7 @@ struct IULIAFunction {
   }
 
   func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
-    let checks = callerCapabilities.flatMap { callerCapability in
+    let checks = callerCapabilities.compactMap { callerCapability -> String? in
       guard !callerCapability.isAny else { return nil }
 
       let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!

@@ -21,7 +21,7 @@ public struct IULIACodeGenerator {
     var interfaces = [IULIAInterface]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
-      let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.flatMap { declaration in
+      let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.compactMap { declaration in
         guard case .contractBehaviorDeclaration(let contractBehaviorDeclaration) = declaration else {
           return nil
         }
@@ -33,7 +33,7 @@ public struct IULIACodeGenerator {
         return contractBehaviorDeclaration
       }
 
-      let structDeclarations = topLevelModule.declarations.flatMap { declaration -> StructDeclaration? in
+      let structDeclarations = topLevelModule.declarations.compactMap { declaration -> StructDeclaration? in
         guard case .structDeclaration(let structDeclaration) = declaration else { return nil }
         return structDeclaration
       }
