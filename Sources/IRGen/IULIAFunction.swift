@@ -121,7 +121,7 @@ struct IULIAFunction {
   }
 
   func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
-    let checks = callerCapabilities.flatMap { callerCapability in
+    let checks = callerCapabilities.compactMap { callerCapability -> String? in
       guard !callerCapability.isAny else { return nil }
 
       let type = environment.type(of: callerCapability.identifier.name, enclosingType: typeIdentifier.name)!
