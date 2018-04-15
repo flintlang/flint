@@ -125,7 +125,7 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
-  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression where Expressions.Element == Expression, Expressions.SubSequence: RandomAccessCollection {
+  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression where Expressions.Element == Expression {
     guard expressions.count > 1 else { return expressions.first! }
     let head = expressions.first!
     let tail = expressions.dropFirst()

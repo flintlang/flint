@@ -13,7 +13,7 @@ struct IULIAInterface {
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.functionDeclarations.flatMap { functionDeclaration in
+      return contractBehaviorDeclaration.functionDeclarations.compactMap { functionDeclaration in
         return render(functionDeclaration)
       }
     }.joined(separator: "\n")
