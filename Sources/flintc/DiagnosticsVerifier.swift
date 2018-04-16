@@ -83,10 +83,6 @@ extension DiagnosticsVerifier {
     var message: String
     var line: Int
 
-    static func ==(lhs: DiagnosticsVerifier.Expectation, rhs: DiagnosticsVerifier.Expectation) -> Bool {
-      return lhs.message == rhs.message && lhs.severity == rhs.severity
-    }
-
     var hashValue: Int {
       return message.hashValue ^ severity.hashValue
     }

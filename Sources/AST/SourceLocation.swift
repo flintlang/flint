@@ -16,10 +16,6 @@ public struct SourceLocation: Equatable {
     self.length = length
   }
 
-  public static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
-    return lhs.line == rhs.line && lhs.column == rhs.column && lhs.length == rhs.length
-  }
-
   public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1, to upperBoundEntity: S2) -> SourceLocation {
     let lowerBound = lowerBoundEntity.sourceLocation
     let upperBound = upperBoundEntity.sourceLocation

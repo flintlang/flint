@@ -13,14 +13,10 @@ public struct Token: Equatable, SourceEntity {
     self.kind = kind
     self.sourceLocation = sourceLocation
   }
-
-  public static func ==(lhs: Token, rhs: Token) -> Bool {
-    return lhs.kind == rhs.kind && lhs.sourceLocation == rhs.sourceLocation
-  }
 }
 
 extension Token {
-  public enum Kind {
+  public enum Kind: Equatable {
     public enum Punctuation: String {
       case openBrace          = "{"
       case closeBrace         = "}"
@@ -112,15 +108,6 @@ extension Token {
       case boolean(BooleanLiteral)
       case decimal(DecimalLiteral)
       case string(String)
-
-      public static func ==(lhs: Literal, rhs: Literal) -> Bool {
-        switch (lhs, rhs) {
-        case (.boolean(let lhsLiteral), .boolean(let rhsLiteral)): return lhsLiteral == rhsLiteral
-        case (.decimal(let lhsLiteral), .decimal(let rhsLiteral)): return lhsLiteral == rhsLiteral
-        case (.string(let lhsLiteral), .string(let rhsLiteral)): return lhsLiteral == rhsLiteral
-        default: return false
-        }
-      }
     }
 
     public enum BooleanLiteral: String {
@@ -131,14 +118,6 @@ extension Token {
     public enum DecimalLiteral: Equatable {
       case integer(Int)
       case real(Int, Int)
-
-      public static func ==(lhs: DecimalLiteral, rhs: DecimalLiteral) -> Bool {
-        switch (lhs, rhs) {
-        case (.integer(let lhsNum), .integer(let rhsNum)): return lhsNum == rhsNum
-        case (.real(let lhsNum1, let lhsNum2), .real(let rhsNum1, let rhsNum2)): return lhsNum1 == rhsNum1 && lhsNum2 == rhsNum2
-        default: return false
-        }
-      }
     }
 
     // Newline
@@ -169,32 +148,6 @@ extension Token {
 
     // Literals
     case literal(Literal)
-  }
-}
-
-extension Token.Kind: Equatable {
-  public static func ==(lhs: Token.Kind, rhs: Token.Kind) -> Bool {
-    switch (lhs, rhs) {
-    case (.newline, .newline): return true
-    case (.contract, .contract): return true
-    case (.struct, .struct): return true
-    case (.var, .var): return true
-    case (.func, .func): return true
-    case (.self, .self): return true
-    case (.implicit, .implicit): return true
-    case (.inout, .inout): return true
-    case (.mutating, .mutating): return true
-    case (.return, .return): return true
-    case (.public, .public): return true
-    case (.if, .if): return true
-    case (.else, .else): return true
-    case (.punctuation(let punctuation1), .punctuation(let punctuation2)): return punctuation1 == punctuation2
-    case (.attribute(let lhsAttribute), .attribute(let rhsAttribute)): return lhsAttribute == rhsAttribute
-    case (.identifier(let identifier1), .identifier(let identifier2)): return identifier1 == identifier2
-    case (.literal(let lhsLiteral), .literal(let rhsLiteral)): return lhsLiteral == rhsLiteral
-    default:
-      return false
-    }
   }
 }
 

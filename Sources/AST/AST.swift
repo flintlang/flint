@@ -1,8 +1,8 @@
-public protocol SourceEntity {
+public protocol SourceEntity: Equatable {
   var sourceLocation: SourceLocation { get }
 }
 
-public struct TopLevelModule {
+public struct TopLevelModule: Equatable {
   public var declarations: [TopLevelDeclaration]
 
   public init(declarations: [TopLevelDeclaration]) {
@@ -10,7 +10,7 @@ public struct TopLevelModule {
   }
 }
 
-public enum TopLevelDeclaration {
+public enum TopLevelDeclaration: Equatable {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
   case structDeclaration(StructDeclaration)
@@ -54,15 +54,19 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   }
 }
 
-public enum StructMember {
+public enum StructMember: Equatable {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
 }
 
-public struct StructDeclaration {
+public struct StructDeclaration: SourceEntity {
   public var structToken: Token
   public var identifier: Identifier
   public var members: [StructMember]
+
+  public var sourceLocation: SourceLocation {
+    return structToken.sourceLocation
+  }
 
   public var variableDeclarations: [VariableDeclaration] {
     return members.compactMap { member in
@@ -173,9 +177,13 @@ public struct FunctionDeclaration: SourceEntity {
   }
 }
 
-public struct Attribute {
+public struct Attribute: SourceEntity {
   var kind: Kind
   var token: Token
+
+  public var sourceLocation: SourceLocation {
+    return token.sourceLocation
+  }
 
   public init?(token: Token) {
     guard case .attribute(let attribute) = token.kind, let kind = Kind(rawValue: attribute) else { return nil }
@@ -270,27 +278,6 @@ public struct Type: SourceEntity {
     case userDefinedType(RawTypeIdentifier)
     case inoutType(RawType)
     case errorType
-
-    public static func ==(lhs: RawType, rhs: RawType) -> Bool {
-      switch (lhs, rhs) {
-      case (.builtInType(let lhsType), .builtInType(let rhsType)):
-        return lhsType == rhsType
-      case (.userDefinedType(let lhsType), .userDefinedType(let rhsType)):
-        return lhsType == rhsType
-      case (.arrayType(let lhsType), .arrayType(let rhsType)):
-        return lhsType == rhsType
-      case (.fixedSizeArrayType(let lhsType, let lhsSize), .fixedSizeArrayType(let rhsType, let rhsSize)):
-        return lhsType == rhsType && lhsSize == rhsSize
-      case (.dictionaryType(let lhsKeyType, let lhsValueType), .dictionaryType(let rhsKeyType, let rhsValueType)):
-        return lhsKeyType == rhsKeyType && lhsValueType == rhsValueType
-      case (.errorType, .errorType):
-        return true
-      case (.inoutType(let lhs), .inoutType(let rhs)):
-        return lhs == rhs
-      default:
-        return false
-      }
-    }
 
     public var name: String {
       switch self {
