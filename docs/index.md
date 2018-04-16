@@ -10,4 +10,4 @@ Paper: [Writing Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint
 
 Documentation: [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/content/)
 
-GitHub: [Flint](https://github.com/franklinsch/flint). 
+GitHub: [Flint](https://github.com/franklinsch/flint)
