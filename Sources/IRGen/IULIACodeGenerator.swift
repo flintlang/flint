@@ -26,7 +26,7 @@ public struct IULIACodeGenerator {
           return nil
         }
 
-        guard contractBehaviorDeclaration.contractIdentifier == contractDeclaration.identifier else {
+        guard contractBehaviorDeclaration.contractIdentifier.name == contractDeclaration.identifier.name else {
           return nil
         }
 
