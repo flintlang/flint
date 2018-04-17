@@ -110,10 +110,15 @@ public struct SemanticAnalyzer: ASTPass {
 
     if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
     } else if let functionDeclarationContext = passContext.functionDeclarationContext {
+      let asLValue = passContext.asLValue ?? false
 
       if identifier.enclosingType == nil {
         let scopeContext = passContext.scopeContext!
-        if !scopeContext.containsVariableDefinition(for: identifier.name) {
+        if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
+          if variableDeclaration.isConstant, asLValue {
+            diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration))
+          }
+        } else {
           identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
         }
       }
@@ -122,7 +127,7 @@ public struct SemanticAnalyzer: ASTPass {
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
-        } else if let asLValue = passContext.asLValue, asLValue {
+        } else if asLValue {
           if !functionDeclarationContext.isMutating {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
           }
@@ -186,7 +191,7 @@ public struct SemanticAnalyzer: ASTPass {
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
     case .self(_): return true
-    case .identifier(let identifier): return !scopeContext.containsVariableDefinition(for: identifier.name)
+    case .identifier(let identifier): return !scopeContext.containsVariableDeclaration(for: identifier.name)
     case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)

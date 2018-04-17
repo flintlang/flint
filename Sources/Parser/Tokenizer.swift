@@ -54,6 +54,7 @@ public struct Tokenizer {
     "contract": .contract,
     "struct": .struct,
     "var": .var,
+    "let": .let,
     "func": .func,
     "mutating": .mutating,
     "return": .return,

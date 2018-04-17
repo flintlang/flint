@@ -241,10 +241,19 @@ extension Parser {
   }
 
   func parseVariableDeclaration() throws -> VariableDeclaration {
-    let varToken = try consume(.var)
+    let isConstant: Bool
+    let declarationToken: Token
+    if let varToken = attempt(try consume(.var)) {
+      declarationToken = varToken
+      isConstant = false
+    } else {
+      let letToken = try consume(.let)
+      declarationToken = letToken
+      isConstant = true
+    }
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
-    return VariableDeclaration(varToken: varToken, identifier: name, type: typeAnnotation.type)
+    return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant)
   }
 }
 

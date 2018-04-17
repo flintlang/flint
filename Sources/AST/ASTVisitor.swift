@@ -58,7 +58,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     var localVariables = [VariableDeclaration]()
     if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
-      localVariables.append(VariableDeclaration(varToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
+      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
     }
 
     let scopeContext = ScopeContext(localVariables: localVariables)
@@ -276,7 +276,10 @@ public struct ASTVisitor<Pass: ASTPass> {
     var processResult = pass.process(binaryExpression: binaryExpression, passContext: passContext)
 
     if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
-      processResult.passContext.asLValue = true
+      if case .variableDeclaration(_) = binaryExpression.lhs {
+      } else {
+        processResult.passContext.asLValue = true
+      }
     }
 
     processResult.element.lhs = processResult.combining(visit(processResult.element.lhs, passContext: processResult.passContext))

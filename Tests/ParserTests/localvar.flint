@@ -9,12 +9,25 @@ Foo :: (any) {
 
 // CHECK-AST: BinaryExpression
 // CHECK-AST:  VariableDeclaration
+// CHECK-AST:    var
 // CHECK-AST:    identifier "a"
 // CHECK-AST:    built-in type Int
 // CHECK-AST:  =
 // CHECK-AST:    literal 2
     var a: Int = 2
     a += 3
+    return a
+  }
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:  VariableDeclaration
+// CHECK-AST:    let
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    built-in type String
+// CHECK-AST:  =
+// CHECK-AST:    literal "hello"
+  func bar() -> String {
+    let a: String = "hello"
     return a
   }
 }
