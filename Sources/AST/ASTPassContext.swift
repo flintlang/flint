@@ -5,6 +5,7 @@
 //  Created by Franklin Schrans on 1/16/18.
 //
 
+/// Information collected when performing a pass over an AST.
 public struct ASTPassContext {
   var storage = [AnyHashable: Any]()
 

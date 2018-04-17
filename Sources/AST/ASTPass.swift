@@ -5,6 +5,7 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
+/// A pass over an AST.
 public protocol ASTPass {
   func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule>
   func process(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration>
