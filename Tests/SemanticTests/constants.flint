@@ -12,5 +12,11 @@ Constants :: (any) {
 
     let b: Int = a
     self.a = 3
+
+    if true {
+      a = 5 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+    } else {
+      a = 7 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+    }
   }
 }
