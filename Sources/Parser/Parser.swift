@@ -8,38 +8,57 @@
 import Foundation
 import AST
 
+/// The parser, which creates an Abstract Syntax Tree (AST) from a list of tokens.
 public class Parser {
+  /// The list of tokens from which to create an AST.
   var tokens: [Token]
 
+  /// The index of the current token being processed.
   var currentIndex: Int
 
+  /// The current token being processed.
   var currentToken: Token? {
     return currentIndex < tokens.count ? tokens[currentIndex] : nil
   }
 
+  /// Semantic information about the source program.
   var environment = Environment()
-  var diagnostics = [Diagnostic]()
   
   public init(tokens: [Token]) {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
   }
   
+  /// Parses the token list.
+  ///
+  /// - Returns:  A triple containing the top-level Flint module (the root of the AST), the generated environment,
+  ///             and the list of diagnostics emitted.
   public func parse() -> (TopLevelModule?, Environment, [Diagnostic]) {
     do {
       return (try parseTopLevelModule(), environment, [])
     } catch ParserError.expectedToken(let tokenKind, sourceLocation: let sourceLocation) {
-      return (nil, environment, diagnostics + [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
+      // A unhandled parsing error was thrown when parsing the program.
+      return (nil, environment, [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
     } catch {
+      // An invalid error was thrown.
       fatalError()
     }
   }
 
+  /// Consumes the given token from the given list, i.e. discard it and move on to the next one. Throws if the current
+  /// token being processed isn't equal to the given token.
+  ///
+  /// - Parameters:
+  ///   - token: The token to consume.
+  ///   - consumingTrailingNewlines: Whether newline tokens should be consumed after consuming the given token.
+  /// - Returns: The token which was consumed.
+  /// - Throws: A `ParserError.expectedToken` if the current token being processed isn't equal to the given token.
   @discardableResult
   func consume(_ token: Token.Kind, consumingTrailingNewlines: Bool = true) throws -> Token {
     guard let first = currentToken, first.kind == token else {
       throw ParserError.expectedToken(token, sourceLocation: currentToken?.sourceLocation)
     }
+
     currentIndex += 1
 
     if consumingTrailingNewlines {
@@ -49,12 +68,18 @@ public class Parser {
     return first
   }
 
+  /// Consume newlines tokens up to the first non-newline token.
   func consumeNewLines() {
     while currentIndex < tokens.count, tokens[currentIndex].kind == .newline {
       currentIndex += 1
     }
   }
 
+  /// Wraps the given throwable task, wrapping its return value in an optional. If the task throws, the function returns
+  /// `nil`.
+  ///
+  /// - Parameter task: The task to execute.
+  /// - Returns: The return value of the task, or `nil` if the task threw.
   func attempt<ReturnType>(task: () throws -> ReturnType) -> ReturnType? {
     let nextIndex = self.currentIndex
     do {
@@ -65,6 +90,14 @@ public class Parser {
     }
   }
 
+  /// Wraps the given throwable task, wrapping its return value in an optional. If the task throws, the function returns
+  /// `nil`.
+  ///
+  /// **Note:** This function is the same as attempt(task:), but where task is an @autoclosure. Functions cannot be
+  /// passed as @autoclosure arguments.
+  ///
+  /// - Parameter task: The task to execute.
+  /// - Returns: The return value of the task, or `nil` if the task threw.
   func attempt<ReturnType>(_ task: @autoclosure () throws -> ReturnType) -> ReturnType? {
     let nextIndex = self.currentIndex
     do {
@@ -82,12 +115,14 @@ extension Parser {
     let topLevelDeclarations = try parseTopLevelDeclarations()
     return TopLevelModule(declarations: topLevelDeclarations)
   }
-  
+
   func parseTopLevelDeclarations() throws -> [TopLevelDeclaration] {
     var declarations = [TopLevelDeclaration]()
     
     while true {
       guard let first = currentToken else { break }
+
+      // At the top-level, a contract, a struct, or a contract behavior can be declared.
       switch first.kind {
       case .contract:
         let contractDeclaration = try parseContractDeclaration()
@@ -169,8 +204,10 @@ extension Parser {
   
   func parseType() throws -> Type {
     if let openSquareBracketToken = attempt(try consume(.punctuation(.openSquareBracket))) {
+      // The type is an array type or a dictionary type.
       let keyType = try parseType()
       if attempt(try consume(.punctuation(.colon))) != nil {
+        // The type is a dictionary type.
         let valueType = try parseType()
         let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
         return Type(openSquareBracketToken: openSquareBracketToken, dictionaryWithKeyType: keyType, valueType: valueType, closeSquareBracketToken: closeSquareBracketToken)
@@ -181,6 +218,7 @@ extension Parser {
     }
     
     if let inoutToken = attempt(try consume(.inout)) {
+      // The type is declared inout (valid only for function parameters).
       let type = try parseType()
       return Type(ampersandToken: inoutToken, inoutType: type)
     }
@@ -189,18 +227,28 @@ extension Parser {
     let type = Type(identifier: identifier)
 
     if attempt(try consume(.punctuation(.openSquareBracket))) != nil {
+      // The type is a fixed-size array.
+
+      // Get the array's size.
       let literal = try parseLiteral()
-      if case .literal(.decimal(.integer(let size))) = literal.kind {
-        let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
-        return Type(fixedSizeArrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
+
+      // Ensure the literal is an integer.
+      guard case .literal(.decimal(.integer(let size))) = literal.kind else {
+        throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: literal.sourceLocation)
       }
+
+      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
+      return Type(fixedSizeArrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
     }
 
     if attempt(try consume(.punctuation(.openAngledBracket))) != nil {
+      // The type has generic arguments.
       var genericArguments = [Type]()
       while true {
         let genericArgument = try parseType()
         genericArguments.append(genericArgument)
+
+        // If the next token is not a comma, stop parsing generic arguments.
         if attempt(try consume(.punctuation(.comma))) == nil {
           break
         }
@@ -242,7 +290,9 @@ extension Parser {
 
   func parseVariableDeclaration() throws -> VariableDeclaration {
     let isConstant: Bool
+
     let declarationToken: Token
+
     if let varToken = attempt(try consume(.var)) {
       declarationToken = varToken
       isConstant = false
@@ -251,6 +301,7 @@ extension Parser {
       declarationToken = letToken
       isConstant = true
     }
+
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
     return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant)
@@ -324,10 +375,12 @@ extension Parser {
     var attributes = [Attribute]()
     var modifiers = [Token]()
 
+    // Parse function attributes such as @payable.
     while let attribute = attempt(task: parseAttribute) {
       attributes.append(attribute)
     }
-    
+
+    // Parse function modifiers.
     while true {
       if let token = attempt(try consume(.public)) {
         modifiers.append(token)
@@ -349,7 +402,8 @@ extension Parser {
     if let closeBracketToken = attempt(try consume(.punctuation(.closeBracket))) {
       return ([], closeBracketToken)
     }
-    
+
+    // Parse parameter declarations while the next token is a comma.
     repeat {
       let implicitToken = attempt(try consume(.implicit))
       let identifier = try parseIdentifier()
@@ -382,6 +436,8 @@ extension Parser {
         break
       }
 
+      // A statement is either an expression, return statement, or if statement.
+
       if let expression = attempt(try parseExpression(upTo: statementEndIndex)) {
         statements.append(.expression(expression))
       } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
@@ -398,18 +454,30 @@ extension Parser {
     return statements
   }
   
+  /// Parse an expression which ends one token before the one at `limitTokenIndex`.
+  /// For instance in the expression `a + 2)`, and `limitTokenIndex` refers to the token `)`, the function will return
+  /// the expression `a + 2`.
+  ///
+  /// - Parameter limitTokenIndex: The index of the token to parse up to.
+  /// - Throws: If an expression couldn't be parsed.
   func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
     var binaryExpression: BinaryExpression? = nil
 
     guard limitTokenIndex >= currentIndex else {
-      // Expect any expression.
+      // limitTokenIndex should be smaller than the current token's index.
       throw ParserError.expectedToken(.literal(.decimal(.integer(0))), sourceLocation: currentToken?.sourceLocation)
     }
-    
+
+    // Try to parse the expression as the different types of Flint expressions.
+
+    // Try to parse an expression passed by inout (e.g., '&a').
     if let inoutExpression = attempt(task: parseInoutExpression) {
       return .inoutExpression(inoutExpression)
     }
 
+    // Try to parse a binary expression.
+    // For each Flint binary operator, try to find it in the tokens ahead, and parse the tokens before and after as
+    // the LHS and RHS expressions.
     for op in Token.Kind.Punctuation.allBinaryOperatorsByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.punctuation(op)], maxIndex: limitTokenIndex) else { continue }
       let lhs = try parseExpression(upTo: index)
@@ -419,35 +487,43 @@ extension Parser {
       binaryExpression = BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
       break
     }
-    
+
+    // Return the binary expression if a valid one could be constructed.
     if let binExp = binaryExpression {
       return .binaryExpression(binExp)
     }
 
+    // Try to parse a function call.
     if let functionCall = attempt(try parseFunctionCall()) {
       return .functionCall(functionCall)
     }
 
+    // Try to parse a literal.
     if let literal = attempt(task: parseLiteral) {
       return .literal(literal)
     }
 
+    // Try to parse a variable declaration.
     if let variableDeclaration = attempt(task: parseVariableDeclaration) {
       return .variableDeclaration(variableDeclaration)
     }
 
+    // Try to parse a bracketed expression.
     if let bracketedExpression = attempt(try parseBracketedExpression()) {
       return .bracketedExpression(bracketedExpression)
     }
 
+    // Try to parse a self expression.
     if let `self` = attempt(task: parseSelf) {
       return .self(Token(kind: .self, sourceLocation: self.sourceLocation))
     }
 
+    // Try to parse a subscript expression.
     if let subscriptExpression = attempt(try parseSubscriptExpression()) {
       return .subscriptExpression(subscriptExpression)
     }
 
+    // If none of the previous expressions could be constructed, the expression is an identifier.
     let identifier = try parseIdentifier()
     return .identifier(identifier)
   }
@@ -547,21 +623,39 @@ extension Parser {
 }
 
 extension Parser {
-  func indexOfFirstAtCurrentDepth(_ limitTokens: [Token.Kind], maxIndex: Int? = nil) -> Int? {
+  /// Finds the index of the first token in `targetTokens` which appears between the current token being processed and
+  /// the token at `maxIndex`, at the same semantic nesting depth as the current token.
+  ///
+  /// E.g., if `targetTokens` is `[')']` and the list of remaining tokens is `f(g())` and `f` has index 0, the function
+  /// will return the second `)`'s index, i.e. 5.
+  ///
+  /// - Parameters:
+  ///   - targetTokens: The tokens being searched for.
+  ///   - maxIndex: The index of the last token to inspect in the program's tokens.
+  /// - Returns: The index of first token in `targetTokens` in the program's tokens.
+  func indexOfFirstAtCurrentDepth(_ targetTokens: [Token.Kind], maxIndex: Int? = nil) -> Int? {
     let upperBound = maxIndex ?? tokens.count
 
+    // The depth of the token, for each type of depth.
     var bracketDepth = 0
     var braceDepth = 0
     var squareBracketDepth = 0
 
     guard currentIndex <= upperBound else { return nil }
+
     let range = (currentIndex..<upperBound)
+
+    // If the brace depth is negative, the program is malformed.
     for index in range where braceDepth >= 0 {
       let token = tokens[index].kind
 
-      if limitTokens.contains(token) {
-        if bracketDepth == 0 && squareBracketDepth == 0 { return index }
+      // If we found a limit token and all the depths are 0 (at the same level the initial token was at), return its
+      // index.
+      if targetTokens.contains(token), bracketDepth == 0, braceDepth == 0, squareBracketDepth == 0 {
+        return index
       }
+
+      // Update the depths depending on the token.
       if case .punctuation(let punctuation) = token {
         switch punctuation {
         case .openBracket: bracketDepth += 1
@@ -579,6 +673,9 @@ extension Parser {
   }
 }
 
+/// An error during parsing.
+///
+/// - expectedToken: The current token did not match the token we expected.
 enum ParserError: Error {
   case expectedToken(Token.Kind, sourceLocation: SourceLocation?)
 }
