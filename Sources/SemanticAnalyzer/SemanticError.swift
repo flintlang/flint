@@ -47,6 +47,11 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return \(resultType.name)")
   }
 
+  static func reassignmentToConstant(_ identifier: Identifier, _ variableDeclaration: VariableDeclaration) -> Diagnostic {
+    let note = Diagnostic(severity: .note, sourceLocation: variableDeclaration.sourceLocation, message: "'\(variableDeclaration.identifier.name)' is declared here")
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot assign to value: '\(identifier.name)' is a 'let' constant", notes: [note])
+  }
+
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
   }

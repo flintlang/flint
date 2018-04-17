@@ -276,7 +276,10 @@ public struct ASTVisitor<Pass: ASTPass> {
     var processResult = pass.process(binaryExpression: binaryExpression, passContext: passContext)
 
     if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
-      processResult.passContext.asLValue = true
+      if case .variableDeclaration(_) = binaryExpression.lhs {
+      } else {
+        processResult.passContext.asLValue = true
+      }
     }
 
     processResult.element.lhs = processResult.combining(visit(processResult.element.lhs, passContext: processResult.passContext))

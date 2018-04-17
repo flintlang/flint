@@ -16,7 +16,7 @@ struct DiagnosticsVerifier {
 
   func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
     let expectations = parseExpectations(sourceCode: compilationContext.sourceCode)
-    var producedDiagnostics = producedDiagnostics
+    var producedDiagnostics = flatten(producedDiagnostics)
     var verifyDiagnostics = [Diagnostic]()
 
     for expectation in expectations {
@@ -42,6 +42,16 @@ struct DiagnosticsVerifier {
     }
 
     return verifyDiagnostics.isEmpty
+  }
+
+  func flatten(_ diagnostics: [Diagnostic]) -> [Diagnostic] {
+    var allDiagnostics = diagnostics
+    
+    for diagnostic in diagnostics {
+      allDiagnostics += flatten(diagnostic.notes)
+    }
+
+    return allDiagnostics
   }
 
   func parseExpectations(sourceCode: String) -> [Expectation] {

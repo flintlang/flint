@@ -1,0 +1,16 @@
+// RUN: %flintc %s --verify
+
+contract Constants {
+  var a: Int
+}
+
+Constants :: (any) {
+  mutating func foo() {
+    let a: Int = 2
+    a = 3 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+    // expected-note@9 {{'a' is declared here}}
+
+    let b: Int = a
+    self.a = 3
+  }
+}
