@@ -90,21 +90,23 @@ public struct StructDeclaration: SourceEntity {
 }
 
 public struct VariableDeclaration: SourceEntity {
-  public var varToken: Token?
+  public var declarationToken: Token?
   public var identifier: Identifier
   public var type: Type
+  public var isConstant: Bool
 
   public var sourceLocation: SourceLocation {
-    if let varToken = varToken {
-      return .spanning(varToken, to: type)
+    if let declarationToken = declarationToken {
+      return .spanning(declarationToken, to: type)
     }
     return .spanning(identifier, to: type)
   }
 
-  public init(varToken: Token?, identifier: Identifier, type: Type) {
-    self.varToken = varToken
+  public init(declarationToken: Token?, identifier: Identifier, type: Type, isConstant: Bool = false) {
+    self.declarationToken = declarationToken
     self.identifier = identifier
     self.type = type
+    self.isConstant = isConstant
   }
 }
 
@@ -148,7 +150,7 @@ public struct FunctionDeclaration: SourceEntity {
   
   public var parametersAsVariableDeclarations: [VariableDeclaration] {
     return parameters.map { parameter in
-      return VariableDeclaration(varToken: nil, identifier: parameter.identifier, type: parameter.type)
+      return VariableDeclaration(declarationToken: nil, identifier: parameter.identifier, type: parameter.type)
     }
   }
 

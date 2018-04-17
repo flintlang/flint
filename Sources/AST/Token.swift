@@ -127,6 +127,7 @@ extension Token {
     case contract
     case `struct`
     case `var`
+    case `let`
     case `func`
     case `mutating`
     case `return`
@@ -158,6 +159,7 @@ extension Token.Kind: CustomStringConvertible {
     case .contract: return "contract"
     case .struct: return "struct"
     case .var: return "var"
+    case .let: return "let"
     case .func: return "func"
     case .self: return "self"
     case .implicit: return "implicit"
