@@ -30,4 +30,10 @@ contract Foo {
 // CHECK-AST:       built-in type Bool
 // CHECK-AST:       built-in type Address
   var didCompleteSomething: Event<Int, Bool, Address>
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "assignedValue"
+// CHECK-AST:   built-in type Int
+// CHECK-AST:   literal 2
+  var assignedValue: Int = 2
 }

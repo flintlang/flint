@@ -111,6 +111,10 @@ public class ASTDumper {
       }
       self.dump(variableDeclaration.identifier)
       self.dump(variableDeclaration.type)
+
+      if let assignedExpression = variableDeclaration.assignedExpression {
+        self.dump(assignedExpression)
+      }
     }
   }
 

@@ -10,7 +10,7 @@ contract-declaration -> [contract] identifier [{] (variable-declarations) [}]
 // Variable declarations
 
 variable-declarations -> variable-declaration (variable-declarations)
-variable-declaration -> [var] identifier type-annotation
+variable-declaration -> [var] identifier type-annotation ([=] expression)
 
 // Type annotations
 
