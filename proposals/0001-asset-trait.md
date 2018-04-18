@@ -8,7 +8,7 @@
 
 ## Introduction
 
-Smart contracts can carry sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value (for example, currency such as Wei). Asset types support a restricted set of operations and have their own semantics.
+Smart contracts can carry out sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value (for example, currency such as Wei). Asset types support a restricted set of operations and have their own semantics.
 
 Assets can be **transferred** from/to other Assets of the same type (for example, transferring Wei from one variable to another). By default, it is not possible to create an Asset from a raw type (such as an Integer), and they cannot be implicitly destroyed.
 
@@ -63,7 +63,7 @@ Bank :: account <- (balances.keys) {
 }
 ```
 
-The following Solidity contracts shows how call reentrancy can result in `Vulnerable` sending more Wei to `Attacker` than intended. The `withdraw` function retrieves the balance of the given account, transfers it back, then sets its back to 0. On line 13, an external call is performed using the low-level `call` function, attaching a Wei value. No function signature is specified, so the target’s fallback function is called. The vulnerability is enacted if the target’s fallback function calls back into withdraw(address). Control flow will execute lines 11–13 again, without having set the recipient’s balance to 0. Vulnerable thus sends balance again, and the process repeats itself until the transaction’s gas is exhausted.
+The following Solidity contracts show how call reentrancy can result in contracts sending more Wei than they intended to. The `withdraw` function retrieves the balance of the given account, transfers it back, then sets it to 0. On line 13, an external call is performed using the low-level `call` function, attaching a Wei value. No function signature is specified, so the target’s fallback function is called. The vulnerability is exploited if the target’s fallback function calls back into `withdraw(address)`. Lines 11–13 will be executed again, without having set the recipient’s balance to 0. Vulnerable thus sends balance again, and the process repeats itself until the transaction’s gas is exhausted.
 
 ```
 contract Vulnerable {
@@ -86,7 +86,7 @@ contract Attacker {
 }
 ```
 
-The vulnerability can be addressed by swapping the last two lines of the `withdraw` function.
+The vulnerability can be avoided by swapping the last two lines of the `withdraw` function.
 A type system could help ensure a contract can't send more Wei than it intended to.
 
 ## Proposed solution
