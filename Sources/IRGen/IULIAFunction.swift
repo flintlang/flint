@@ -173,7 +173,7 @@ extension IULIAFunction {
     case .functionCall(let functionCall): return render(functionCall)
     case .identifier(let identifier): return render(identifier, asLValue: asLValue)
     case .variableDeclaration(let variableDeclaration): return render(variableDeclaration)
-    case .literal(let literal): return render(literalToken: literal)
+    case .literal(let literal): return IULIAFunction.render(literalToken: literal)
     case .self(let `self`): return render(selfToken: self, asLValue: asLValue)
     case .subscriptExpression(let subscriptExpression): return render(subscriptExpression, asLValue: asLValue)
     }
@@ -306,7 +306,7 @@ extension IULIAFunction {
     return "var \(variableDeclaration.identifier)"
   }
 
-  func render(literalToken: Token) -> String {
+  static func render(literalToken: Token) -> String {
     guard case .literal(let literal) = literalToken.kind else {
       fatalError("Unexpected token \(literalToken.kind).")
     }

@@ -45,12 +45,23 @@ struct IULIAContract {
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
     // Generate an initializer which takes in the 256-bit values in storage.
-    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType }
+    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType && $0.assignedExpression == nil }
     let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
-    let initializerBody = initializerParameters.map { parameter in
+    var initializerBody = initializerParameters.map { parameter in
       let offset = environment.propertyOffset(for: parameter.identifier.name, enclosingType: contractDeclaration.identifier.name)!
       return "_flintStorage\(offset) = \(parameter.identifier.name);"
     }.joined(separator: "\n")
+
+    let defaultValueAssignments = contractDeclaration.variableDeclarations.compactMap { declaration -> String? in
+      guard let assignedExpression = declaration.assignedExpression else { return nil }
+      let offset = environment.propertyOffset(for: declaration.identifier.name, enclosingType: contractDeclaration.identifier.name)!
+      guard case .literal(let literalToken) = assignedExpression else {
+        fatalError("Non-literal default values are not supported yet")
+      }
+      return "_flintStorage\(offset) = \(IULIAFunction.render(literalToken: literalToken));"
+    }
+
+    initializerBody += "\n" + defaultValueAssignments.joined(separator: "\n")
 
     var index = 0
     var propertyDeclarations = [String]()
