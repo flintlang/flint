@@ -83,7 +83,6 @@ public struct Environment {
     return declaredStructs.contains(type) || declaredContracts.contains(type)
   }
 
-
   /// Whether a property is defined in a type.
   public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
     return types[enclosingType]!.properties.keys.contains(property)
@@ -237,6 +236,7 @@ public struct Environment {
   /// The memory size of a type, in terms of number of memory slots it occupies.
   public func size(of type: Type.RawType) -> Int {
     switch type {
+    case .builtInType(.event): return 0 // Events do not use memory.
     case .builtInType(_): return 1
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
     case .arrayType(_): return 1
