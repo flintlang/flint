@@ -9,5 +9,5 @@ zip:
 
 test:
 	swift build -c release
+	cd Tests/BehaviorTests && ./compile_behavior_tests.sh
 	swift run -c release lite 
-	cd Tests/BehaviorTests && ./run_behavior_tests.sh

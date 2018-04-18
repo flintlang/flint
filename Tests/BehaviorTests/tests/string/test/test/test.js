@@ -1,3 +1,5 @@
+// RUN: cd %S && truffle test
+
 var config = require("../config.js")
 
 var Contract = artifacts.require("./" + config.contractName + ".sol");

@@ -6,6 +6,7 @@ for t in tests/*; do
 
   for f in $t/*.flint; do
     [ -f "$f" ] || break
+    echo "Compile Flint file '$f'"
     swift run -c release flintc $f --emit-ir --ir-output $t/test/contracts/
   done
 
