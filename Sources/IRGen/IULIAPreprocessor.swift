@@ -10,6 +10,7 @@ import AST
 import Foundation
 import AST
 
+/// A prepocessing step to update the program's AST before code generation.
 public struct IULIAPreprocessor: ASTPass {
   public init() {}
 
@@ -43,7 +44,8 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
-    
+
+    // For struct functions, take add `flintSelf` to the beginning of the parameters list.
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
@@ -106,6 +108,7 @@ public struct IULIAPreprocessor: ASTPass {
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
     }
 
+    // Convert <= and >= expressions.
     if [.lessThanOrEqual, .greaterThanOrEqual].contains(binaryExpression.opToken) {
       let strictOperator: Token.Kind.Punctuation = binaryExpression.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
 
@@ -133,10 +136,12 @@ public struct IULIAPreprocessor: ASTPass {
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
-  
+
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let receiverTrail = passContext.functionCallReceiverTrail ?? []
+
+    // Replace the name of a function call by its mangled name.
     
     if !receiverTrail.isEmpty {
       let functionDeclarationContext = passContext.functionDeclarationContext!
