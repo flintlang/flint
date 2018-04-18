@@ -5,6 +5,14 @@
 //  Created by Franklin Schrans on 1/16/18.
 //
 
+/// Visits an AST using an `ASTPass`.
+///
+/// The class defines `visit` functions for each AST node, which take as an additional argument an `ASTPassContext`,
+/// which records information collected during visits of previous nodes. A visit returns an `ASTPassResult`, which
+/// consists of a new `ASTPassContext` and the AST node which replaces the node currently being visited.
+///
+/// In each of the `visit` functions, the given `ASTPass`'s `process` function is called on the node, then the node's
+/// children are visited, then `postProcess` is called on the node.
 public struct ASTVisitor<Pass: ASTPass> {
   var pass: Pass
 
@@ -13,12 +21,16 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   public func visit(_ topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
+    // Process the TopLevelModule node.
     var processResult = pass.process(topLevelModule: topLevelModule, passContext: passContext)
 
+    // Visit each child node (in this case, each declaration), by updating `processResult`'s `passContext`, and
+    // replacing each child node (declaration) by the node returned by `visit`.
     processResult.element.declarations = processResult.element.declarations.map { declaration in
       processResult.combining(visit(declaration, passContext: processResult.passContext))
     }
 
+    // Call `postProcess` on the node.
     let postProcessResult = pass.postProcess(topLevelModule: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }

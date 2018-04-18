@@ -5,8 +5,12 @@
 //  Created by Franklin Schrans on 12/19/17.
 //
 
+/// A lexical token valid in Flint.
 public struct Token: Equatable, SourceEntity {
+  /// The kind of token.
   public var kind: Kind
+
+  /// The source location of the token.
   public var sourceLocation: SourceLocation
 
   public init(kind: Kind, sourceLocation: SourceLocation) {

@@ -5,6 +5,7 @@
 //  Created by Franklin Schrans on 1/7/18.
 //
 
+/// A location in a source file.
 public struct SourceLocation: Equatable {
   public var line: Int
   public var column: Int
