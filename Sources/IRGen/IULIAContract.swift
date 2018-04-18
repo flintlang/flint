@@ -7,49 +7,44 @@
 
 import AST
 
+/// A contract written in IULIA.
 struct IULIAContract {
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
   var structDeclarations: [StructDeclaration]
   var environment: Environment
 
-  var storage = ContractStorage()
-
   init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration], structDeclarations: [StructDeclaration], environment: Environment) {
     self.contractDeclaration = contractDeclaration
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
     self.structDeclarations = structDeclarations
     self.environment = environment
-
-    for variableDeclaration in contractDeclaration.variableDeclarations {
-      switch variableDeclaration.type.rawType {
-      case .fixedSizeArrayType(_):
-        storage.allocate(environment.size(of: variableDeclaration.type.rawType), for: variableDeclaration.identifier.name)
-      default: break
-      }
-    }
   }
 
   func rendered() -> String {
+    // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, contractStorage: storage, environment: environment)
+        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
       }
     }
 
     let functionsCode = functions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
+    // Create a function selector, to determine which function is called in the Ethereum transaction.
     let functionSelector = IULIAFunctionSelector(functions: functions)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
+    // Generate code for each function in the structs.
     let structFunctions = structDeclarations.flatMap { structDeclaration in
       return structDeclaration.functionDeclarations.compactMap { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, contractStorage: storage, environment: environment)
+        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, environment: environment)
       }
     }
 
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
+    // Generate an initializer which takes in the 256-bit values in storage.
     let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType }
     let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
     let initializerBody = initializerParameters.map { parameter in
@@ -71,8 +66,10 @@ struct IULIAContract {
 
     let propertyDeclarationsCode = propertyDeclarations.joined(separator: "\n")
 
+    // Generate runtime functions.
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
+    // Main contract body.
     return """
     pragma solidity ^0.4.19;
     
@@ -105,6 +102,8 @@ struct IULIAContract {
     """
   }
 
+  /// The list of canonical types for the given type. Fixed-size arrays of size `n` will result in a list of `n`
+  /// canonical types.
   public func storageCanonicalTypes(for type: Type.RawType) -> [String] {
     switch type {
     case .builtInType(_), .arrayType(_), .dictionaryType(_, _):

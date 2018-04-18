@@ -7,6 +7,7 @@
 
 import AST
 
+/// Generates IULIA code for a Flint AST.
 public struct IULIACodeGenerator {
   var topLevelModule: TopLevelModule
   var environment: Environment
@@ -20,6 +21,7 @@ public struct IULIACodeGenerator {
     var contracts = [IULIAContract]()
     var interfaces = [IULIAInterface]()
 
+    // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.compactMap { declaration in
         guard case .contractBehaviorDeclaration(let contractBehaviorDeclaration) = declaration else {
@@ -33,6 +35,7 @@ public struct IULIACodeGenerator {
         return contractBehaviorDeclaration
       }
 
+      // Find the struct declarations.
       let structDeclarations = topLevelModule.declarations.compactMap { declaration -> StructDeclaration? in
         guard case .structDeclaration(let structDeclaration) = declaration else { return nil }
         return structDeclaration
@@ -42,6 +45,10 @@ public struct IULIACodeGenerator {
       contracts.append(contract)
       interfaces.append(IULIAInterface(contract: contract, environment: environment))
     }
+
+    // Generate a IULIA contract and a IULIA interface.
+    // The interface is used for exisiting Solidity tools such as Truffle and Remix to interpret Flint code as
+    // Solidity code.
 
     let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")
     let renderedInterfaces = interfaces.map({ $0.rendered() }).joined(separator: "\n")

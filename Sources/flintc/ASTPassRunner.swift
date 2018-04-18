@@ -8,6 +8,7 @@
 import AST
 import SemanticAnalyzer
 
+/// Visits an AST using multiple AST passes.
 struct ASTPassRunner {
   var ast: TopLevelModule
 
@@ -17,6 +18,8 @@ struct ASTPassRunner {
     var diagnostics = [Diagnostic]()
 
     for pass in passes {
+      // Runs each pass, passing along the enviroment built at the previous pass.
+
       let passContext = ASTPassContext().withUpdates { $0.environment = environment }
       let result = ASTVisitor(pass: pass).visit(ast, passContext: passContext)
       environment = result.passContext.environment!
@@ -30,6 +33,7 @@ struct ASTPassRunner {
   }
 }
 
+/// The result after running a sequence of AST passes.
 struct ASTPassRunResult {
   var element: TopLevelModule
   var diagnostics: [Diagnostic]

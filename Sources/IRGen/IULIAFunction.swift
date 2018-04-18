@@ -9,6 +9,7 @@ import AST
 import Foundation
 import CryptoSwift
 
+/// A function in IULIA IR.
 struct IULIAFunction {
   static let returnVariableName = "ret"
 
@@ -18,17 +19,15 @@ struct IULIAFunction {
   var capabilityBinding: Identifier?
   var callerCapabilities: [CallerCapability]
 
-  var contractStorage: ContractStorage
   var environment: Environment
 
   var isContractFunction = false
 
-  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], contractStorage: ContractStorage, environment: Environment) {
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], environment: Environment) {
     self.functionDeclaration = functionDeclaration
     self.typeIdentifier = typeIdentifier
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
-    self.contractStorage = contractStorage
     self.environment = environment
 
     if !callerCapabilities.isEmpty {
@@ -43,7 +42,8 @@ struct IULIAFunction {
   var parameterNames: [String] {
     return functionDeclaration.explicitParameters.map({ render($0.identifier) })
   }
-  
+
+  /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     var localVariables = functionDeclaration.parametersAsVariableDeclarations
     if let capabilityBinding = capabilityBinding {
@@ -65,9 +65,12 @@ struct IULIAFunction {
     let parametersString = parameterNames.joined(separator: ", ")
     let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
 
+    // Dynamically check the caller has appropriate caller capabilities.
     let callerCapabilityChecks = renderCallerCapabilityChecks(callerCapabilities: callerCapabilities)
     let body = renderBody(functionDeclaration.body)
 
+
+    // Assign a caller capaiblity binding to a local variable.
     let capabilityBindingDeclaration: String
     if let capabilityBinding = capabilityBinding {
       capabilityBindingDeclaration = "let \(IULIAFunction.mangleIdentifierName(capabilityBinding.name)) := caller()\n"
@@ -75,6 +78,7 @@ struct IULIAFunction {
       capabilityBindingDeclaration = ""
     }
 
+    // Assign Wei value sent to a @payable function to a local variable.
     let payableValueDeclaration: String
     if let payableValueParameter = functionDeclaration.firstPayableValueParameter {
       payableValueDeclaration = "let \(IULIAFunction.mangleIdentifierName(payableValueParameter.identifier.name)) := callvalue()\n"
@@ -109,6 +113,7 @@ struct IULIAFunction {
     }
   }
 
+  /// The string representation of this function's signature, used for generating a IULIA interface.
   func mangledSignature() -> String {
     let name = functionDeclaration.identifier.name
     let parametersString = parameterCanonicalTypes.map({ $0.rawValue }).joined(separator: ",")
@@ -120,6 +125,7 @@ struct IULIAFunction {
     return "_\(name)"
   }
 
+  /// Render dynamic checks for caller capabilities.
   func renderCallerCapabilityChecks(callerCapabilities: [CallerCapability]) -> String {
     let checks = callerCapabilities.compactMap { callerCapability -> String? in
       guard !callerCapability.isAny else { return nil }

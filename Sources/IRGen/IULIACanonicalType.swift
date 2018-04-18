@@ -7,6 +7,7 @@
 
 import AST
 
+/// An EVM type.
 enum CanonicalType: String {
   case uint256
   case address
@@ -22,6 +23,9 @@ enum CanonicalType: String {
       default: return nil
       }
     case .userDefinedType(_): self = .uint256
+    case .inoutType(let rawType):
+      guard let type = CanonicalType(from: rawType) else { return nil }
+      self = type
     default: return nil
     }
   }
