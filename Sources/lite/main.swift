@@ -33,13 +33,35 @@ var fileCheckExecutableLocation: URL {
   return findAdjacentBinary("file-check")!
 }
 
-func run() -> Int32 {
+func runParserTests() -> Bool {
   let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
                               pathExtensions: ["flint"],
-                              testDirPath: nil,
+                              testDirPath: "Tests/ParserTests",
                               testLinePrefix: "//",
                               parallelismLevel: .automatic)
-  return allPassed ? EXIT_SUCCESS : EXIT_FAILURE
+  return allPassed
+}
+
+func runSemanticTests() -> Bool {
+  let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)")],
+                               pathExtensions: ["flint"],
+                               testDirPath: "Tests/SemanticTests",
+                               testLinePrefix: "//",
+                               parallelismLevel: .automatic)
+  return allPassed
+}
+
+func runBehaviorTests() -> Bool {
+  let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)")],
+                               pathExtensions: ["js"],
+                               testDirPath: "Tests/BehaviorTests",
+                               testLinePrefix: "//",
+                               parallelismLevel: .none)
+  return allPassed
+}
+
+func run() -> Int32 {
+  return runParserTests() && runSemanticTests() && runBehaviorTests() ? EXIT_SUCCESS : EXIT_FAILURE
 }
 
 exit(run())
