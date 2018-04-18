@@ -10,6 +10,8 @@
 import Foundation
 import AST
 
+/// Verifies the diagnostics emitted by a program matches exactly what was expected.
+/// The expected diagnostics are specified inline in the source file.
 struct DiagnosticsVerifier {
   private let diagnosticRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-?\\d+)\\s+\\{\\{(.*)\\}\\}")

@@ -7,6 +7,7 @@
 
 import AST
 
+/// The `ASTPass` performing type checking.
 public struct TypeChecker: ASTPass {
   public init() {}
 
@@ -37,6 +38,7 @@ public struct TypeChecker: ASTPass {
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     if let _ = passContext.functionDeclarationContext {
+      // Record local variable definitions.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -88,6 +90,7 @@ public struct TypeChecker: ASTPass {
     let environment = passContext.environment!
     let functionDeclarationContext = passContext.functionDeclarationContext!
 
+    // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {
       let typeIdentifier = enclosingTypeIdentifier(in: passContext)
 
@@ -110,6 +113,8 @@ public struct TypeChecker: ASTPass {
 
     if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
       let expectedTypes = eventCall.typeGenericArguments
+
+      // Ensure an event call's arguments match the expected types.
 
       for (i, argument) in functionCall.arguments.enumerated() {
         let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
@@ -136,6 +141,8 @@ public struct TypeChecker: ASTPass {
     if let expression = returnStatement.expression {
       let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
       let expectedType = functionDeclarationContext.declaration.rawType
+
+      // Ensure the type of the returned value in a function matches the function's return type.
 
       if actualType != expectedType {
         diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))

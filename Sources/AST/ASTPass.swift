@@ -5,6 +5,10 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
+/// A pass over an AST.
+///
+/// The class `ASTVisitor` is used to visit an AST using a given `ASTPass`. The appropriate `process` function will be
+/// called when visiting a node, and `postProcess` will be called after visiting the children of that node.
 public protocol ASTPass {
   func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule>
   func process(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration>

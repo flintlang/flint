@@ -1,7 +1,10 @@
+/// An entity appearing in a source file.
 public protocol SourceEntity: Equatable {
   var sourceLocation: SourceLocation { get }
 }
 
+/// A Flint top-level module. Includes top-level declarations, such as contract, struct, and contract behavior
+/// declarations.
 public struct TopLevelModule: Equatable {
   public var declarations: [TopLevelDeclaration]
 
@@ -10,14 +13,22 @@ public struct TopLevelModule: Equatable {
   }
 }
 
+/// A Flint top-level declaration.
+///
+/// - contractDeclaration: The declaration of a contract.
+/// - contractBehaviorDeclaration:  A Flint contract beheavior declaration, i.e. the functions of a contract for a given
+///                                 caller capability group.
+/// - structDeclaration:            The declaration of a struct.
 public enum TopLevelDeclaration: Equatable {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
   case structDeclaration(StructDeclaration)
 }
 
+/// The raw representation of an `Identifier`.
 public typealias RawTypeIdentifier = String
 
+/// The declaration of a Flint contract.
 public struct ContractDeclaration: SourceEntity {
   public var contractToken: Token
   public var identifier: Identifier
@@ -34,6 +45,7 @@ public struct ContractDeclaration: SourceEntity {
   }
 }
 
+/// A Flint contract behavior declaration, i.e. the functions of a contract for a given caller capability group.
 public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
@@ -54,11 +66,16 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   }
 }
 
+/// A member in a struct declaration.
+///
+/// - variableDeclaration: The declaration of a variable.
+/// - functionDeclaration: The declaration of a function.
 public enum StructMember: Equatable {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
 }
 
+/// The declaration of a struct.
 public struct StructDeclaration: SourceEntity {
   public var structToken: Token
   public var identifier: Identifier
@@ -89,6 +106,7 @@ public struct StructDeclaration: SourceEntity {
   }
 }
 
+/// The declaration of a variable or constant, either as a state property of a local variable.
 public struct VariableDeclaration: SourceEntity {
   public var declarationToken: Token?
   public var identifier: Identifier
@@ -110,9 +128,14 @@ public struct VariableDeclaration: SourceEntity {
   }
 }
 
+/// The declaration of a function.
 public struct FunctionDeclaration: SourceEntity {
   public var funcToken: Token
+
+  /// The attributes associated with the function, such as `@payable`.
   public var attributes: [Attribute]
+
+  /// The modifiers associted with the function, such as `public` or `mutating.`
   public var modifiers: [Token]
   public var identifier: Identifier
   public var parameters: [Parameter]
@@ -121,6 +144,7 @@ public struct FunctionDeclaration: SourceEntity {
   public var body: [Statement]
   public var closeBraceToken: Token
 
+  /// The raw type of the function's return type.
   public var rawType: Type.RawType {
     return resultType?.rawType ?? .builtInType(.void)
   }
@@ -140,14 +164,17 @@ public struct FunctionDeclaration: SourceEntity {
     return attributes.contains { $0.kind == .payable }
   }
 
+  /// The first parameter which is both `implicit` and has a currency type.
   public var firstPayableValueParameter: Parameter? {
     return parameters.first { $0.isPayableValueParameter }
   }
 
+  /// The non-implicit parameters of the function.
   public var explicitParameters: [Parameter] {
     return parameters.filter { !$0.isImplicit }
   }
   
+  /// The parameters of the function, as variable declaration values.
   public var parametersAsVariableDeclarations: [VariableDeclaration] {
     return parameters.map { parameter in
       return VariableDeclaration(declarationToken: nil, identifier: parameter.identifier, type: parameter.type)
@@ -179,6 +206,7 @@ public struct FunctionDeclaration: SourceEntity {
   }
 }
 
+/// A function attribute, such as `@payable`.
 public struct Attribute: SourceEntity {
   var kind: Kind
   var token: Token
@@ -198,6 +226,7 @@ public struct Attribute: SourceEntity {
   }
 }
 
+/// The parameter of a function.
 public struct Parameter: SourceEntity {
   public var identifier: Identifier
   public var type: Type
@@ -216,6 +245,7 @@ public struct Parameter: SourceEntity {
     return false
   }
 
+  /// Whether the parameter is both `implicit` and has a currency type.
   public var isPayableValueParameter: Bool {
     if isImplicit, case .builtInType(let type) = type.rawType, type.isCurrencyType {
       return true
@@ -234,6 +264,7 @@ public struct Parameter: SourceEntity {
   }
 }
 
+/// A type annotation for a variable.
 public struct TypeAnnotation: SourceEntity {
   public var colonToken: Token
 
@@ -249,6 +280,7 @@ public struct TypeAnnotation: SourceEntity {
   }
 }
 
+/// An identifier for a contract, struct, variable, or function.
 public struct Identifier: Hashable, SourceEntity {
   public var identifierToken: Token
   public var enclosingType: String? = nil
@@ -271,7 +303,9 @@ public struct Identifier: Hashable, SourceEntity {
   }
 }
 
+/// A Flint type.
 public struct Type: SourceEntity {
+  /// A Flint raw type, without a source location.
   public indirect enum RawType: Equatable {
     case builtInType(BuiltInType)
     case arrayType(RawType)
@@ -334,6 +368,8 @@ public struct Type: SourceEntity {
   public var name: String {
     return rawType.name
   }
+
+  // Initializers for each kind of raw type.
 
   public init(identifier: Identifier, genericArguments: [Type] = []) {
     let name = identifier.name
@@ -401,6 +437,7 @@ public struct CallerCapability: SourceEntity {
   }
 }
 
+/// A Flint expression.
 public indirect enum Expression: SourceEntity {
   case identifier(Identifier)
   case inoutExpression(InoutExpression)
@@ -456,6 +493,7 @@ public indirect enum Expression: SourceEntity {
   }
 }
 
+/// A statement.
 public indirect enum Statement: SourceEntity {
   case expression(Expression)
   case returnStatement(ReturnStatement)
@@ -470,6 +508,7 @@ public indirect enum Statement: SourceEntity {
   }
 }
 
+/// An expression passed by reference, such as `&a`.
 public struct InoutExpression: SourceEntity {
   public var ampersandToken: Token
   public var expression: Expression
@@ -484,6 +523,7 @@ public struct InoutExpression: SourceEntity {
   }
 }
 
+/// A binary expression.
 public struct BinaryExpression: SourceEntity {
   public var lhs: Expression
 
@@ -519,6 +559,7 @@ public struct BinaryExpression: SourceEntity {
   }
 }
 
+/// A call to a function.
 public struct FunctionCall: SourceEntity {
   public var identifier: Identifier
   public var arguments: [Expression]
@@ -535,6 +576,7 @@ public struct FunctionCall: SourceEntity {
   }
 }
 
+/// A subscript expression such as `a[2]`.
 public struct SubscriptExpression: SourceEntity {
   public var baseIdentifier: Identifier
   public var indexExpression: Expression
@@ -551,6 +593,7 @@ public struct SubscriptExpression: SourceEntity {
   }
 }
 
+/// A return statement.
 public struct ReturnStatement: SourceEntity {
   public var returnToken: Token
   public var expression: Expression?
@@ -569,10 +612,15 @@ public struct ReturnStatement: SourceEntity {
   }
 }
 
+/// An if statement.
 public struct IfStatement: SourceEntity {
   public var ifToken: Token
   public var condition: Expression
+
+  /// The statements in the body of the if block.
   public var body: [Statement]
+
+  /// the statements in the body of the else block.
   public var elseBody: [Statement]
 
   public var sourceLocation: SourceLocation {

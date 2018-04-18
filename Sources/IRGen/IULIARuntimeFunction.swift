@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// The runtime functions used by Flint.
 enum IULIARuntimeFunction: String {
   case selector
   case decodeAsAddress

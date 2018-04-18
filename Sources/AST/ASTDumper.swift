@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Prints an AST.
 public class ASTDumper {
   var topLevelModule: TopLevelModule
   var indentation = 0

@@ -2,6 +2,7 @@ import Foundation
 import Commander
 import AST
 
+/// The main function for the compiler.
 func main() {
   command(
     Argument<String>("input file", description: "The input file to compile."),

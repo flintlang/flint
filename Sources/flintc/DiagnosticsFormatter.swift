@@ -9,6 +9,7 @@ import Foundation
 import Rainbow
 import AST
 
+/// Formats error and warning messages.
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
   var compilationContext: CompilationContext?

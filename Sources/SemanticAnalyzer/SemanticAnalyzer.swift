@@ -7,6 +7,7 @@
 
 import AST
 
+/// The `ASTPass` performing semantic analysis.
 public struct SemanticAnalyzer: ASTPass {
   public init() {}
 
@@ -28,9 +29,12 @@ public struct SemanticAnalyzer: ASTPass {
     let environment = passContext.environment!
 
     if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
+      // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     }
 
+    // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
+    // within it are scoped by.
     let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
@@ -49,6 +53,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     if let _ = passContext.functionDeclarationContext {
+      // Add the variable to the current scope's context.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -57,15 +62,20 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
     if functionDeclaration.isPayable {
+      // If a function is marked with the @payable annotation, ensure it contains a compatible payable parameter.
       let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
       if payableValueParameters.count > 1 {
+        // If too many arguments are compatible, emit an error.
         diagnostics.append(.ambiguousPayableValueParameter(functionDeclaration))
       } else if payableValueParameters.count == 0 {
+        // If not enough arguments are compatible, emit an error.
         diagnostics.append(.payableFunctionDoesNotHavePayableValueParameter(functionDeclaration))
       }
     }
 
     let statements = functionDeclaration.body
+
+    // Find a return statement in the function.
     let returnStatementIndex = statements.index(where: { statement in
       if case .returnStatement(_) = statement { return true }
       return false
@@ -74,10 +84,13 @@ public struct SemanticAnalyzer: ASTPass {
     if let returnStatementIndex = returnStatementIndex {
       if returnStatementIndex != statements.count - 1 {
         let nextStatement = statements[returnStatementIndex + 1]
+
+        // Emit a warning if there is code after a return statement.
         diagnostics.append(.codeAfterReturn(nextStatement))
       }
     } else {
       if let resultType = functionDeclaration.resultType {
+        // Emit an error if a non-void function doesn't have a return statement.
         diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
       }
     }
@@ -93,6 +106,7 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
 
     if passContext.environment!.isReferenceType(type.name), !parameter.isInout {
+      // Ensure all structs are passed by reference, for now.
       diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation, message: "Structs cannot be passed by value yet, and have to be passed inout"))
     }
 
@@ -109,28 +123,45 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
 
     if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
+      // If the identifier is the name of a function call, do nothing. The function call will be matched in
+      // `process(functionCall:passContext:)`.
     } else if let functionDeclarationContext = passContext.functionDeclarationContext {
+      // The identifier is used within the body of a function.
+
+      // The identifier is used an l-value (the left-hand side of an assignment).
       let asLValue = passContext.asLValue ?? false
 
       if identifier.enclosingType == nil {
+        // The identifier has no explicit enclosing type, such as in the expression `a.foo`.
+
         let scopeContext = passContext.scopeContext!
+
         if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
+            // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration))
           }
         } else {
+          // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
+          // declaration in which the function appears.
           identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
         }
       }
 
       if let enclosingType = identifier.enclosingType {
+        // The identifier has an explicit enclosing type, such as `a` in the expression `a.foo`.
+
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
+          // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if asLValue {
+          // The variable is being mutated.
           if !functionDeclarationContext.isMutating {
+            // The function is declared non-mutating.
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
           }
+          // Record the mutating expression in the context.
           addMutatingExpression(.identifier(identifier), passContext: &passContext)
         }
       }
@@ -149,6 +180,7 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
 
     if !callerCapability.isAny && !environment.containsCallerCapability(callerCapability, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) {
+      // The caller capability is neither `any` or a valid property in the enclosing contract.
       diagnostics.append(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
     }
 
@@ -170,12 +202,9 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
 
-    if case .self(_) = binaryExpression.lhs, case .identifier(var identifier) = binaryExpression.rhs {
-        identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
-        binaryExpression.rhs = .identifier(identifier)
-    }
-
     if case .dot = binaryExpression.opToken {
+      // The identifier explicitly refers to a state property, such as in `self.foo`.
+      // We set its enclosing type to the type it is declared in.
       let enclosingType = enclosingTypeIdentifier(in: passContext)
       let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
@@ -188,6 +217,7 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
+  /// Whether an expression refers to a state property.
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
     case .self(_): return true
@@ -240,23 +270,17 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+    // Called after all the statements in a function have been visited.
+
     let mutatingExpressions = passContext.mutatingExpressions ?? []
     var diagnostics = [Diagnostic]()
 
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty {
+      // The function is declared mutating but its body does not contain any mutating expression.
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
-    
-    var functionDeclaration = functionDeclaration
-    functionDeclaration.parameters = functionDeclaration.parameters.map { parameter in
-      guard case .inoutType(let inoutType) = parameter.type.rawType else {
-        return parameter
-      }
-      var parameter = parameter
-      parameter.type.rawType = inoutType
-      return parameter
-    }
 
+    // Clear the context in preparation for the next time we visit a function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
@@ -302,6 +326,8 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    // Called once we've visited the function call's arguments.
+
     var passContext = passContext
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
@@ -309,17 +335,23 @@ public struct SemanticAnalyzer: ASTPass {
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     
     var diagnostics = [Diagnostic]()
-    
+
+    // Find the function declaration associated with this function call.
     switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .success(let matchingFunction):
+      // The function declaration is found.
+
       if matchingFunction.isMutating {
+        // The function is mutating.
         addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
         
         if !functionDeclarationContext.isMutating {
+          // The function in which the function call appears in is not mutating.
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
         }
       }
-      
+
+      // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
       for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
         if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
           addMutatingExpression(argument, passContext: &passContext)
@@ -331,6 +363,7 @@ public struct SemanticAnalyzer: ASTPass {
       }
       
     case .failure(candidates: let candidates):
+      // A matching function declaration couldn't be found. Try to match an event call.
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
         diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
       }
