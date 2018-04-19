@@ -134,6 +134,8 @@ public struct Tokenizer {
         // If we're in a comment, discard the characters up to a newline.
         if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
           inComment = false
+          components.append(("\n", SourceLocation(line: line, column: column, length: 1)))
+          
           line += 1
           column = 1
         }
