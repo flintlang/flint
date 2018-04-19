@@ -57,19 +57,27 @@ public struct SemanticAnalyzer: ASTPass {
     if let _ = passContext.functionDeclarationContext {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
-    }
+    } else {
+      // This is a state property declaration.
 
-    if let assignedExpression = variableDeclaration.assignedExpression {
-      // This is a state property declaration. The default value assigned needs to be a literal.
-
-      // Default values for state properties are not supported for structs yet.
-      if let _ = passContext.structDeclarationContext {
-        fatalError("Default values for state properties are not supported for structs yet.")
+      // Constants need to have a value assigned.
+      if variableDeclaration.isConstant, variableDeclaration.assignedExpression == nil {
+        diagnostics.append(.constantStatePropertyIsNotAssignedAValue(variableDeclaration))
       }
 
-      if case .literal(_) = assignedExpression {
-      } else {
-        diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+      // If a default value is assigned, it should be a literal.
+
+      if let assignedExpression = variableDeclaration.assignedExpression {
+
+        // Default values for state properties are not supported for structs yet.
+        if let _ = passContext.structDeclarationContext {
+          fatalError("Default values for state properties are not supported for structs yet.")
+        }
+
+        if case .literal(_) = assignedExpression {
+        } else {
+          diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+        }
       }
     }
 
@@ -152,11 +160,10 @@ public struct SemanticAnalyzer: ASTPass {
         // The identifier has no explicit enclosing type, such as in the expression `a.foo`.
 
         let scopeContext = passContext.scopeContext!
-
         if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
             // The variable is a constant but is attempted to be reassigned.
-            diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration))
+            diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
         } else {
           // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
@@ -173,6 +180,14 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if asLValue {
+          if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
+            // Retrieve the source location of that property's declaration.
+            let declarationSourceLocation = passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
+
+            // The state property is a constant but is attempted to be reassigned.
+            diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
+          }
+
           // The variable is being mutated.
           if !functionDeclarationContext.isMutating {
             // The function is declared non-mutating.

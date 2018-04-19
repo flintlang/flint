@@ -53,18 +53,18 @@ public struct Environment {
   mutating func setProperties(_ variableDeclarations: [VariableDeclaration], enclosingType: RawTypeIdentifier) {
     types[enclosingType]!.orderedProperties = variableDeclarations.map { $0.identifier.name }
     for variableDeclaration in variableDeclarations {
-      addProperty(variableDeclaration.identifier.name, type: variableDeclaration.type, enclosingType: enclosingType)
+      addProperty(variableDeclaration.identifier.name, type: variableDeclaration.type, isConstant: variableDeclaration.isConstant, sourceLocation: variableDeclaration.sourceLocation, enclosingType: enclosingType)
     }
   }
 
   /// Add a property to a type.
-  mutating func addProperty(_ property: String, type: Type, enclosingType: RawTypeIdentifier) {
-    types[enclosingType]!.properties[property] = PropertyInformation(type: type)
+  mutating func addProperty(_ property: String, type: Type, isConstant: Bool = false, sourceLocation: SourceLocation?, enclosingType: RawTypeIdentifier) {
+    types[enclosingType]!.properties[property] = PropertyInformation(type: type, isConstant: isConstant, sourceLocation: sourceLocation)
   }
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    addProperty(variable.name, type: Type(inferredType: .errorType, identifier: variable), enclosingType: enclosingType)
+    addProperty(variable.name, type: Type(inferredType: .errorType, identifier: variable), sourceLocation: nil, enclosingType: enclosingType)
   }
 
   /// Whether a contract has been declared in the program.
@@ -86,6 +86,15 @@ public struct Environment {
   /// Whether a property is defined in a type.
   public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
     return types[enclosingType]!.properties.keys.contains(property)
+  }
+
+  /// Whether is property is declared as a constnat.
+  public func isPropertyConstant(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return types[enclosingType]!.properties[property]!.isConstant
+  }
+
+  public func propertyDeclarationSourceLocation(_ property: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
+    return types[enclosingType]!.properties[property]!.sourceLocation
   }
 
   /// The list of properties declared in a type.
@@ -306,8 +315,13 @@ public struct TypeInformation {
 public struct PropertyInformation {
   private var type: Type
 
-  init(type: Type) {
+  public var isConstant: Bool
+  public var sourceLocation: SourceLocation?
+
+  init(type: Type, isConstant: Bool = false, sourceLocation: SourceLocation?) {
     self.type = type
+    self.isConstant = isConstant
+    self.sourceLocation = sourceLocation
   }
 
   public var rawType: Type.RawType {
