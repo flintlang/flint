@@ -6,11 +6,15 @@ contract Constants {
   var c: Int = 2 + 3 // expected-error {{The default value assigned to a state property must be a literal}}
 }
 
+struct A {
+  var a: Int = 2 + 3 // expected-error {{The default value assigned to a state property must be a literal}}
+  var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
+}
+
 Constants :: (any) {
   mutating func foo() {
-    let a: Int = 2
+    let a: Int = 2 // expected-note {{'a' is declared here}}
     a = 3 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
-    // expected-note@11 {{'a' is declared here}}
 
     let b: Int = a
     self.a = 3
