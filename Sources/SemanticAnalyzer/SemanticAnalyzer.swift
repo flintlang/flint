@@ -57,19 +57,27 @@ public struct SemanticAnalyzer: ASTPass {
     if let _ = passContext.functionDeclarationContext {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
-    }
+    } else {
+      // This is a state property declaration.
 
-    if let assignedExpression = variableDeclaration.assignedExpression {
-      // This is a state property declaration. The default value assigned needs to be a literal.
-
-      // Default values for state properties are not supported for structs yet.
-      if let _ = passContext.structDeclarationContext {
-        fatalError("Default values for state properties are not supported for structs yet.")
+      // Constants need to have a value assigned.
+      if variableDeclaration.isConstant, variableDeclaration.assignedExpression == nil {
+        diagnostics.append(.constantStatePropertyIsNotAssignedAValue(variableDeclaration))
       }
 
-      if case .literal(_) = assignedExpression {
-      } else {
-        diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+      // If a default value is assigned, it should be a literal.
+
+      if let assignedExpression = variableDeclaration.assignedExpression {
+
+        // Default values for state properties are not supported for structs yet.
+        if let _ = passContext.structDeclarationContext {
+          fatalError("Default values for state properties are not supported for structs yet.")
+        }
+
+        if case .literal(_) = assignedExpression {
+        } else {
+          diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+        }
       }
     }
 
