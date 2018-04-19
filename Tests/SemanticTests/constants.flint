@@ -4,6 +4,7 @@ contract Constants {
   var a: Int
   var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
   var c: Int = 2 + 3 // expected-error {{The default value assigned to a state property must be a literal}}
+  let d: Int = 3
 }
 
 Constants :: (any) {
@@ -19,5 +20,14 @@ Constants :: (any) {
     } else {
       a = 7 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
     }
+
+    d = 4 // expected-error {{Cannot assign to value: 'd' is a 'let' constant}}
+  }
+
+  mutating func bar() {
+    var d: Bool = true
+    d = false
+
+    self.d = 5 // expected-error {{Cannot assign to value: 'd' is a 'let' constant}}
   }
 }

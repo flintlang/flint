@@ -152,11 +152,10 @@ public struct SemanticAnalyzer: ASTPass {
         // The identifier has no explicit enclosing type, such as in the expression `a.foo`.
 
         let scopeContext = passContext.scopeContext!
-
         if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
             // The variable is a constant but is attempted to be reassigned.
-            diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration))
+            diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
         } else {
           // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
@@ -173,6 +172,14 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if asLValue {
+          if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
+            // Retrieve the source location of that property's declaration.
+            let declarationSourceLocation = passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
+
+            // The state property is a constant but is attempted to be reassigned.
+            diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
+          }
+
           // The variable is being mutated.
           if !functionDeclarationContext.isMutating {
             // The function is declared non-mutating.
