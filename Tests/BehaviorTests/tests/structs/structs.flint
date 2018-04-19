@@ -29,6 +29,8 @@ contract C {
   var arr: Array
   var b: B
   var c: B
+  var d: Int = 5
+  var e: Bool = true
 }
 
 C :: (any) {
@@ -110,6 +112,14 @@ C :: (any) {
 
   public func getSize() -> Int {
     return arr.size
+  }
+
+  public func getD() -> Int {
+    return d
+  }
+
+  public func getE() -> Bool {
+    return true
   }
 }
 

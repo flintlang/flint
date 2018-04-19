@@ -55,6 +55,10 @@ extension Diagnostic {
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
   }
+
+  static func statePropertyDeclarationIsAssignedANonLiteralExpression(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The default value assigned to a state property must be a literal")
+  }
 }
 
 // MARK: Warnings

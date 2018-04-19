@@ -272,23 +272,32 @@ extension Parser {
     let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace))
-    let variableDeclarations = try parseVariableDeclarations()
+    let variableDeclarations = try parseVariableDeclarations(asTypeProperties: true)
     try consume(.punctuation(.closeBrace))
 
     return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
   }
   
-  func parseVariableDeclarations() throws -> [VariableDeclaration] {
+  func parseVariableDeclarations(asTypeProperties: Bool = false) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
     
-    while let variableDeclaration = attempt(task: parseVariableDeclaration) {
+    while let variableDeclaration = attempt(try parseVariableDeclaration(asTypeProperty: asTypeProperties)) {
       variableDeclarations.append(variableDeclaration)
     }
     
     return variableDeclarations
   }
 
-  func parseVariableDeclaration() throws -> VariableDeclaration {
+  /// Parses the declaration of a variable, as a state property (in a type) or a local variable.
+  /// If a type property is assigned a default expression value, the expression will be stored in the
+  /// `VariableDeclaration` struct, where an assignment to a local variable will be represented as a `BinaryExpression`
+  /// with an `=` operator.
+  ///
+  /// - Parameter asTypeProperty: Whether the variable declaration should be parsed as the declaration of a
+  ///                             type property.
+  /// - Returns: The parsed `VariableDeclaration`.
+  /// - Throws: If the token streams cannot be parsed as a `VariableDeclaration`.
+  func parseVariableDeclaration(asTypeProperty: Bool = false) throws -> VariableDeclaration {
     let isConstant: Bool
 
     let declarationToken: Token
@@ -304,7 +313,20 @@ extension Parser {
 
     let name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
-    return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant)
+
+    let assignedExpression: Expression?
+
+    // If we are parsing a state property defined in a type, and it has been assigned a default value, parse it.
+    if asTypeProperty, let equalToken = attempt(try consume(.punctuation(.equal))) {
+      guard let newLineIndex = indexOfFirstAtCurrentDepth([.newline]) else {
+        throw ParserError.expectedToken(.newline, sourceLocation: equalToken.sourceLocation)
+      }
+      assignedExpression = try parseExpression(upTo: newLineIndex)
+    } else {
+      assignedExpression = nil
+    }
+
+    return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant, assignedExpression: assignedExpression)
   }
 }
 
@@ -504,7 +526,7 @@ extension Parser {
     }
 
     // Try to parse a variable declaration.
-    if let variableDeclaration = attempt(task: parseVariableDeclaration) {
+    if let variableDeclaration = attempt(try parseVariableDeclaration()) {
       return .variableDeclaration(variableDeclaration)
     }
 
@@ -608,7 +630,7 @@ extension Parser {
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
     var members = [StructMember]()
     while true {
-      if let variableDeclaration = attempt(task: parseVariableDeclaration) {
+      if let variableDeclaration = attempt(try parseVariableDeclaration(asTypeProperty: true)) {
         members.append(.variableDeclaration(variableDeclaration))
       } else if let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: structIdentifier)) {
         members.append(.functionDeclaration(functionDeclaration))

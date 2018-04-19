@@ -37,11 +37,29 @@ public struct TypeChecker: ASTPass {
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
+    var diagnostics = [Diagnostic]()
+
     if let _ = passContext.functionDeclarationContext {
-      // Record local variable definitions.
+      // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     }
-    return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
+
+    let environment = passContext.environment!
+
+    if let assignedExpression = variableDeclaration.assignedExpression {
+      // The variable declaration is a state property.
+
+      let lhsType = variableDeclaration.type.rawType
+      if case .literal(let literalToken) = assignedExpression {
+        let rhsType = environment.type(ofLiteralToken: literalToken)
+
+        if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
+          diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: assignedExpression))
+        }
+      }
+    }
+
+    return ASTPassResult(element: variableDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
@@ -88,14 +106,13 @@ public struct TypeChecker: ASTPass {
     var diagnostics = [Diagnostic]()
 
     let environment = passContext.environment!
-    let functionDeclarationContext = passContext.functionDeclarationContext!
 
     // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {
       let typeIdentifier = enclosingTypeIdentifier(in: passContext)
 
-      let lhsType = environment.type(of: binaryExpression.lhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-      let rhsType = environment.type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+      let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+      let rhsType = environment.type(of: binaryExpression.rhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
 
       if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
@@ -108,7 +125,6 @@ public struct TypeChecker: ASTPass {
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
-    let functionDeclarationContext = passContext.functionDeclarationContext!
     let enclosingType = enclosingTypeIdentifier(in: passContext).name
 
     if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
@@ -117,7 +133,7 @@ public struct TypeChecker: ASTPass {
       // Ensure an event call's arguments match the expected types.
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
+        let argumentType = environment.type(of: argument, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
           diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
@@ -139,7 +155,7 @@ public struct TypeChecker: ASTPass {
     let environment = passContext.environment!
 
     if let expression = returnStatement.expression {
-      let actualType = environment.type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+      let actualType = environment.type(of: expression, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
       let expectedType = functionDeclarationContext.declaration.rawType
 
       // Ensure the type of the returned value in a function matches the function's return type.

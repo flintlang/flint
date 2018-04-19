@@ -126,19 +126,38 @@ public struct Environment {
     return matchingFunction.resultType
   }
 
+  public func type(ofLiteralToken literalToken: Token) -> Type.RawType {
+    guard case .literal(let literal) = literalToken.kind else { fatalError() }
+    switch literal {
+    case .boolean(_): return .builtInType(.bool)
+    case .decimal(.integer(_)): return .builtInType(.int)
+    case .string(_): return .builtInType(.string)
+    default: fatalError()
+    }
+  }
+
   /// The type of an expression.
-  public func type(of expression: Expression, functionDeclarationContext: FunctionDeclarationContext? = nil, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
+  ///
+  /// - Parameters:
+  ///   - expression: The expression to compute the type for.
+  ///   - functionDeclarationContext: Contextual information if the expression is used in a function.
+  ///   - enclosingType: The enclosing type of the expression, if any.
+  ///   - callerCapabilities: The caller capabilities associated with the expression, if the expression is a function call.
+  ///   - scopeContext: Contextual information about the scope in which the expression resides.
+  /// - Returns: The `Type.RawType` of the expression.
+  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
+
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return .inoutType(type(of: inoutExpression.expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
+      return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .builtInType(.bool)
       }
-      return type(of: binaryExpression.rhs, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .bracketedExpression(let expression):
-      return type(of: expression, functionDeclarationContext: functionDeclarationContext, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      return type(of: expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
       return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
@@ -153,14 +172,6 @@ public struct Environment {
       }
       return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
 
-    case .literal(let token):
-      guard case .literal(let literal) = token.kind else { fatalError() }
-      switch literal {
-      case .boolean(_): return .builtInType(.bool)
-      case .decimal(.integer(_)): return .builtInType(.int)
-      case .string(_): return .builtInType(.string)
-      default: fatalError()
-      }
     case .self(_): return .userDefinedType(enclosingType)
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
@@ -173,6 +184,7 @@ public struct Environment {
       case .dictionaryType(_, let valueType): return valueType
       default: fatalError()
       }
+    case .literal(let literalToken): return type(ofLiteralToken: literalToken)
     }
   }
 

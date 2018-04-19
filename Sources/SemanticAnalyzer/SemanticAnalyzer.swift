@@ -52,11 +52,28 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
+    var diagnostics = [Diagnostic]()
+
     if let _ = passContext.functionDeclarationContext {
-      // Add the variable to the current scope's context.
+      // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     }
-    return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
+
+    if let assignedExpression = variableDeclaration.assignedExpression {
+      // This is a state property declaration. The default value assigned needs to be a literal.
+
+      // Default values for state properties are not supported for structs yet.
+      if let _ = passContext.structDeclarationContext {
+        fatalError("Default values for state properties are not supported for structs yet.")
+      }
+
+      if case .literal(_) = assignedExpression {
+      } else {
+        diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+      }
+    }
+
+    return ASTPassResult(element: variableDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {

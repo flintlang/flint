@@ -112,6 +112,7 @@ public struct VariableDeclaration: SourceEntity {
   public var identifier: Identifier
   public var type: Type
   public var isConstant: Bool
+  public var assignedExpression: Expression?
 
   public var sourceLocation: SourceLocation {
     if let declarationToken = declarationToken {
@@ -120,11 +121,12 @@ public struct VariableDeclaration: SourceEntity {
     return .spanning(identifier, to: type)
   }
 
-  public init(declarationToken: Token?, identifier: Identifier, type: Type, isConstant: Bool = false) {
+  public init(declarationToken: Token?, identifier: Identifier, type: Type, isConstant: Bool = false, assignedExpression: Expression? = nil) {
     self.declarationToken = declarationToken
     self.identifier = identifier
     self.type = type
     self.isConstant = isConstant
+    self.assignedExpression = assignedExpression
   }
 }
 

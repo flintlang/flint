@@ -72,3 +72,11 @@ contract(config.contractName, function(accounts) {
   });
 });
 
+contract(config.contractName, function(accounts) {
+  it("should have its properties correctly initialized", async function() {
+    const instance = await Contract.deployed();
+
+    const t = await instance.getD();
+    assert.equal(t.valueOf(), 5);
+  })
+})
