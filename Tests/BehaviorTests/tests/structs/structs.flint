@@ -29,7 +29,7 @@ contract C {
   var arr: Array
   var b: B
   var c: B
-  var d: Int = 5
+  let d: Int = 5
   var e: Bool = true
 }
 
