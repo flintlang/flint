@@ -1,0 +1,112 @@
+contract Ballot {
+  // The administrator of the ballot.
+  let chairperson: Address
+
+  // The accounts which have voted in this ballot.
+  var voters: [Address: Voter]
+
+  // The list of proposals.
+  var proposals: [Proposal]
+}
+
+Ballot :: caller <- (any) {
+  public init(proposalNames: [String]) {
+    chairperson = caller
+    voters[chairperson] = Voter(weight: 1)
+
+    for proposalName in proposalNames {
+      proposals.append(Proposal(name: proposalName))
+    }
+  }
+}
+
+Ballot :: (chairperson) {
+  // Allow an address to vote.
+  public mutating func giveRightToVote(voter: Address) {
+    // Ensure the voter hasn't voted yet, or no
+    if voters[voter].hasVoted || voters[voter].votingWeight != 0 {
+      fatalError()
+    }
+
+    voters[voter].votingWeight = 1
+  }
+}
+
+Ballot :: voter <- (voters.keys) {
+  // Delegate vote to another voter.
+  public mutating func delegate(target: Voter) {
+    if voters[voter].hasVoted { fatalError() }
+    if voter == target { fatalError() }
+    
+    // TODO: support forwarding delegations
+   
+   voters[voter].hasVoted = true
+   voters[voter].delegate = target
+
+   // The voting weight of the caller.
+   let voterWeight = voters[voter].votingWeight
+
+   // Increase the weight of the delegate.
+   voters[target].votingWeight += voterWeight
+
+   if voters[target].hasVoted {
+     // If the delegate has already voted for a proposal, increase its number of votes.
+
+     // The proposal the delegate has voted for.
+     let votedProposalID = voters[target].votedProposalID
+     proposals[votedProposalID].numVotes += voterWeight
+  }
+
+  public mutating func vote(proposalID: Int) {
+    if voters[voter].hasVoted { fatalError() }
+    voters[voter].hasVoted = true
+    voters[voter].votedProposalID = proposalID
+
+    let weight = voters[voter].votingWeight
+    proposals[proposalID].voteCount += weight
+  }
+}
+
+Ballot :: (any) {
+  public func getWinningProposalID() -> Int {
+    var maxVotes = 0
+    var winningProposalID = 0
+
+    var i = 0
+    for proposal in proposals {
+      if proposal.numVotes > maxVotes {
+        maxVotes = proposal.numVotes
+        winningProposalID = i
+      }
+
+      i += 1
+    }
+  }
+
+  public func getWinningProposalName() -> String {
+    return proposals[getWinningProposalID()].name
+  }
+}
+
+struct Voter {
+  // The weight of this voter's vote. Increases when other voters delegate
+  // their vote to this voter.
+  var votingWeight: Int
+
+  // Whether the voter has voted for a proposal.
+  var hasVoted: Bool
+
+  // The voter this voter has delegated its vote to.
+  var delegate: Address
+
+  // The ID of the proposal this voter has voted for.
+  var votedProposalID: Int
+}
+
+struct Proposal {
+  // The name of the proposal.
+  var name: String
+
+  // The number of votes for this proposal.
+  var numVotes: Int = 0
+}
