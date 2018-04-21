@@ -1,3 +1,9 @@
+// SimpleAuction.flint
+//
+// Allows a user to launch an auction and collect the highest bid.
+// When the previous highest bidder is outbid, their bid is refunded 
+// immediately.
+
 contract SimpleAuction {
   let beneficiary: Address
   var hasAuctionEnded: Bool
