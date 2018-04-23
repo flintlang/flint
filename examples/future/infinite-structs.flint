@@ -1,0 +1,7 @@
+contract A {
+  var s: S
+}
+
+struct S {
+  var x: S
+}
