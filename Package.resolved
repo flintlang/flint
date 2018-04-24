@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/llvm-swift/Lite.git",
         "state": {
           "branch": null,
-          "revision": "8516d762b1483a6c6c506482567df5dbb79cb293",
-          "version": "0.0.9"
+          "revision": "47808d5502b7328c9e91f2800f94f885357b9ffc",
+          "version": "0.0.11"
         }
       },
       {
