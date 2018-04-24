@@ -38,7 +38,8 @@ func runParserTests() -> Bool {
                               pathExtensions: ["flint"],
                               testDirPath: "Tests/ParserTests",
                               testLinePrefix: "//",
-                              parallelismLevel: .automatic)
+                              parallelismLevel: .automatic,
+                              successMessage: "Parser tests passed.")
   return allPassed
 }
 
@@ -47,7 +48,8 @@ func runSemanticTests() -> Bool {
                                pathExtensions: ["flint"],
                                testDirPath: "Tests/SemanticTests",
                                testLinePrefix: "//",
-                               parallelismLevel: .automatic)
+                               parallelismLevel: .automatic,
+                               successMessage: "Semantic tests passed.")
   return allPassed
 }
 
@@ -56,12 +58,17 @@ func runBehaviorTests() -> Bool {
                                pathExtensions: ["js"],
                                testDirPath: "Tests/BehaviorTests",
                                testLinePrefix: "//",
-                               parallelismLevel: .none)
+                               parallelismLevel: .none,
+                               successMessage: "Behavior tests passed.")
   return allPassed
 }
 
 func run() -> Int32 {
-  return runParserTests() && runSemanticTests() && runBehaviorTests() ? EXIT_SUCCESS : EXIT_FAILURE
+  let allPassed = runParserTests() && runSemanticTests() && runBehaviorTests()
+  if allPassed {
+    print("All tests passed! 🎉".green.bold)
+  }
+  return allPassed ? EXIT_SUCCESS : EXIT_FAILURE
 }
 
 exit(run())
