@@ -16,8 +16,10 @@ public protocol ASTPass {
   func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
   func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
   func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
+  func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
   func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
   func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
+  func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration>
   func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute>
   func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter>
   func process(typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation>
@@ -38,9 +40,11 @@ public protocol ASTPass {
   func postProcess(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration>
   func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
   func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
+  func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
   func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
   func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
   func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
+  func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration>
   func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute>
   func postProcess(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter>
   func postProcess(typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation>
@@ -88,12 +92,20 @@ public struct AnyASTPass: ASTPass {
     return base.process(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
   }
 
+  public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return base.process(contractBehaviorMember: contractBehaviorMember, passContext: passContext)
+  }
+
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return base.process(variableDeclaration: variableDeclaration, passContext: passContext)
   }
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return base.process(functionDeclaration: functionDeclaration, passContext: passContext)
+  }
+
+  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    return base.process(initializerDeclaration: initializerDeclaration, passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -169,12 +181,16 @@ public struct AnyASTPass: ASTPass {
     return base.postProcess(contractBehaviorDeclaration: contractBehaviorDeclaration, passContext: passContext)
   }
 
+  public func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return base.postProcess(contractBehaviorMember: contractBehaviorMember, passContext: passContext)
+  }
+
   public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    return base.process(structDeclaration: structDeclaration, passContext: passContext)
+    return base.postProcess(structDeclaration: structDeclaration, passContext: passContext)
   }
 
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
-    return base.process(structMember: structMember, passContext: passContext)
+    return base.postProcess(structMember: structMember, passContext: passContext)
   }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -183,6 +199,10 @@ public struct AnyASTPass: ASTPass {
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return base.postProcess(functionDeclaration: functionDeclaration, passContext: passContext)
+  }
+
+  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    return base.postProcess(initializerDeclaration: initializerDeclaration, passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {

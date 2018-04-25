@@ -17,6 +17,14 @@ struct MyStruct {
 // CHECK-AST:   built-in type Int
   var a: Int
 
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST: Parameter
+// CHECK-AST:   identifier "a"
+// CHECK-AST:   built-in type Int
+  init(a: Int) {
+    self.a = a
+  }
+
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   identifier "foo"
   func foo() {}

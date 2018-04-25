@@ -24,7 +24,11 @@ struct IULIAContract {
   func rendered() -> String {
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
+      return contractBehaviorDeclaration.members.compactMap { member -> IULIAFunction? in
+        guard case .functionDeclaration(let functionDeclaration) = member else {
+          return nil
+          // Rendering initializers is not supported yet.
+        }
         return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
       }
     }

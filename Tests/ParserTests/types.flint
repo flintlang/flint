@@ -37,3 +37,14 @@ contract Foo {
 // CHECK-AST:   literal 2
   var assignedValue: Int = 2
 }
+
+Foo :: (any) {
+
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST: Parameter
+// CHECK-AST:   identifier "assignedValue"
+// CHECK-AST:   built-in type Int
+  init(assignedValue: Int) {
+    self.assignedValue = assignedValue
+  }
+}

@@ -68,6 +68,7 @@ public struct Tokenizer {
     "var": .var,
     "let": .let,
     "func": .func,
+    "init": .init,
     "mutating": .mutating,
     "return": .return,
     "public": .public,

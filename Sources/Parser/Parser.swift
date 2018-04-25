@@ -339,14 +339,16 @@ extension Parser {
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
 
-    let functionDeclarations = try parseContractFunctionDeclarations(contractIdentifier: contractIdentifier)
+    let members = try parseContractBehaviorMembers()
+
     try consume(.punctuation(.closeBrace))
 
-    for functionDeclaration in functionDeclarations {
+    for case .functionDeclaration(let functionDeclaration) in members {
+      // Record all the function declarations.
       environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, callerCapabilities: callerCapabilities)
     }
-    
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, functionDeclarations: functionDeclarations)
+
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
   }
 
   func parseCapabilityBinding() throws -> Identifier {
@@ -372,18 +374,24 @@ extension Parser {
     
     return callerCapabilities
   }
-  
-  func parseContractFunctionDeclarations(contractIdentifier: Identifier) throws -> [FunctionDeclaration] {
-    var functionDeclarations = [FunctionDeclaration]()
-    
-    while let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: contractIdentifier)) {
-      functionDeclarations.append(functionDeclaration)
+
+  func parseContractBehaviorMembers() throws -> [ContractBehaviorMember] {
+    var members = [ContractBehaviorMember]()
+
+    while true {
+      if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
+        members.append(.functionDeclaration(functionDeclaration))
+      } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
+        members.append(.initializerDeclaration(initializerDeclaration))
+      } else {
+        break
+      }
     }
-    
-    return functionDeclarations
+
+    return members
   }
 
-  func parseFunctionDeclaration(typeIdentifier: Identifier) throws -> FunctionDeclaration {
+  func parseFunctionDeclaration() throws -> FunctionDeclaration {
     let (attributes, modifiers, funcToken) = try parseFunctionHead()
     let identifier = try parseIdentifier()
     let (parameters, closeBracketToken) = try parseParameters()
@@ -392,8 +400,16 @@ extension Parser {
 
     return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
   }
-  
-  func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
+
+  func parseInitializerDeclaration() throws -> InitializerDeclaration {
+    let (attributes, modifiers, initToken) = try parseInitializerHead()
+    let (parameters, closeBracketToken) = try parseParameters()
+    let (body, closeBraceToken) = try parseCodeBlock()
+
+    return InitializerDeclaration(initToken: initToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
+  }
+
+  func parseAttributesAndModifiers() throws -> (attributes: [Attribute], modifiers: [Token]) {
     var attributes = [Attribute]()
     var modifiers = [Token]()
 
@@ -412,9 +428,22 @@ extension Parser {
         break
       }
     }
+
+    return (attributes, modifiers)
+  }
+  
+  func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
+    let (attributes, modifiers) = try parseAttributesAndModifiers()
     
     let funcToken = try consume(.func)
     return (attributes, modifiers, funcToken)
+  }
+
+  func parseInitializerHead() throws -> (attributes: [Attribute], modifiers: [Token], initToken: Token) {
+    let (attributes, modifiers) = try parseAttributesAndModifiers()
+
+    let initToken = try consume(.init)
+    return (attributes, modifiers, initToken)
   }
   
   func parseParameters() throws -> ([Parameter], closeBracketToken: Token) {
@@ -632,9 +661,11 @@ extension Parser {
     while true {
       if let variableDeclaration = attempt(try parseVariableDeclaration(asTypeProperty: true)) {
         members.append(.variableDeclaration(variableDeclaration))
-      } else if let functionDeclaration = attempt(try parseFunctionDeclaration(typeIdentifier: structIdentifier)) {
+      } else if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
         members.append(.functionDeclaration(functionDeclaration))
         environment.addFunction(functionDeclaration, enclosingType: structIdentifier.name)
+      } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
+        members.append(.initializerDeclaration(initializerDeclaration))
       } else {
         break
       }

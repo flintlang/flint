@@ -27,7 +27,7 @@ public struct StructDeclarationContext {
   }
 }
 
-/// Contextual information used when visiting statements in a function, such as if it is mutating or note.
+/// Contextual information used when visiting statements in a function, such as if it is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
 
