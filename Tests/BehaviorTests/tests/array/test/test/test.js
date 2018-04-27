@@ -15,16 +15,23 @@ contract(config.contractName, function(accounts) {
     await instance.write(1, 3);
     await instance.write(2, 4590);
     await instance.write(3, 304);
-    assert.equal((await instance.value.call(0)).valueOf(), 4, "");
+
+    t = await instance.value.call(0);
+    assert.equal(t.valueOf(), 4);
+
     t = await instance.value.call(1);
-    assert.equal(t.valueOf(), 3, "");
+    assert.equal(t.valueOf(), 3);
+
     t = await instance.value.call(2);
-    assert.equal(t.valueOf(), 4590, "");
+    assert.equal(t.valueOf(), 4590);
+
     t = await instance.value.call(3);
-    assert.equal(t.valueOf(), 304, "");
+    assert.equal(t.valueOf(), 304);
+    
     await instance.write(2, 40);
+
     t = await instance.value.call(2);
-    await assert.equal(t.valueOf(), 40, "");
+    await assert.equal(t.valueOf(), 40);
   });
 
   it("should read the value it writes to the second array", async function() {
