@@ -7,7 +7,7 @@
 
 import AST
 
-/// Generates IULIA code for a Flint AST.
+/// Generates code for a Flint AST.
 public struct IULIACodeGenerator {
   var topLevelModule: TopLevelModule
   var environment: Environment

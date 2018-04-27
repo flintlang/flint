@@ -7,7 +7,7 @@
 
 import CryptoSwift
 
-/// Runtime code in IULIA which determins which function to call based on the Ethereum's transaction payload.
+/// Runtime code in IULIA which determines which function to call based on the Ethereum's transaction payload.
 struct IULIAFunctionSelector {
   var functions: [IULIAFunction]
 

@@ -7,7 +7,7 @@
 
 import AST
 
-/// A contract written in IULIA.
+/// Generates code for a contract.
 struct IULIAContract {
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
@@ -108,7 +108,7 @@ struct IULIAContract {
       guard case .literal(let literalToken) = assignedExpression else {
         fatalError("Non-literal default values are not supported yet")
       }
-      return "_flintStorage\(offset) = \(IULIAFunction.render(literalToken: literalToken));"
+      return "_flintStorage\(offset) = \(IULIALiteralToken(literalToken: literalToken).rendered());"
     }
 
     initializerBody += "\n" + defaultValueAssignments.joined(separator: "\n")

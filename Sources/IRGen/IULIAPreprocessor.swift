@@ -51,7 +51,7 @@ public struct IULIAPreprocessor: ASTPass {
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
       
       let enclosingType = enclosingTypeIdentifier(in: passContext).name
-      let mangledName = Mangler.mangledName(functionDeclaration.identifier.name, enclosingType: enclosingType)
+      let mangledName = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: enclosingType)
       functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
     }
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
@@ -154,7 +154,7 @@ public struct IULIAPreprocessor: ASTPass {
         let receiver = constructExpression(from: receiverTrail)
         functionCall.arguments.insert(receiver, at: 0)
         
-        let mangledName = Mangler.mangledName(functionCall.identifier.name, enclosingType: type.name)
+        let mangledName = Mangler.mangleName(functionCall.identifier.name, enclosingType: type.name)
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
