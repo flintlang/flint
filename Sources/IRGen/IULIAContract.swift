@@ -27,7 +27,6 @@ struct IULIAContract {
       return contractBehaviorDeclaration.members.compactMap { member -> IULIAFunction? in
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
-          // Rendering initializers is not supported yet.
         }
         return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
       }
@@ -46,24 +45,8 @@ struct IULIAContract {
       }
     }
 
-    // TODO: Generate code for initializers too.
-
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
-    let initializerBody = renderInitializers()
-
-    var index = 0
-    var propertyDeclarations = [String]()
-
-    for property in contractDeclaration.variableDeclarations where !property.type.rawType.isEventType {
-      let rawType = property.type.rawType
-
-      for canonicalType in storageCanonicalTypes(for: rawType) {
-        propertyDeclarations.append("\(canonicalType) _flintStorage\(index);")
-        index += 1
-      }
-    }
-
-    let propertyDeclarationsCode = propertyDeclarations.joined(separator: "\n")
+    let initializerBody = renderPublicInitializers()
 
     // Generate runtime functions.
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
@@ -73,8 +56,6 @@ struct IULIAContract {
     pragma solidity ^0.4.21;
     
     contract \(contractDeclaration.identifier.name) {
-
-      \(propertyDeclarationsCode.indented(by: 2))
 
       \(initializerBody.indented(by: 2))
 
@@ -99,10 +80,10 @@ struct IULIAContract {
     """
   }
 
-  func renderInitializers() -> String {
+  func renderPublicInitializers() -> String {
     return contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.members.compactMap { member -> String? in
-        guard case .initializerDeclaration(let initializerDeclaration) = member else {
+        guard case .initializerDeclaration(let initializerDeclaration) = member, initializerDeclaration.isPublic else {
           return nil
         }
 
@@ -113,8 +94,6 @@ struct IULIAContract {
           return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
         }.joined(separator: ", ")
 
-        // TODO: Assign default values set at property declarations.
-
         return """
         constructor(\(parameters)) public {
           assembly {
@@ -124,40 +103,5 @@ struct IULIAContract {
         """
       }
     }.joined(separator: "\n")
-  }
-
-  /// The list of canonical types for the given type. Fixed-size arrays of size `n` will result in a list of `n`
-  /// canonical types.
-  public func storageCanonicalTypes(for type: Type.RawType) -> [String] {
-    switch type {
-    case .builtInType(_), .arrayType(_), .dictionaryType(_, _):
-      return [type.canonicalElementType!.rawValue]
-    case .fixedSizeArrayType(let rawType, let elementCount):
-      return [String](repeating: rawType.canonicalElementType!.rawValue, count: elementCount)
-    case .errorType: fatalError()
-
-    case .userDefinedType(let identifier):
-      return environment.properties(in: identifier).flatMap { property -> [String] in
-        let type = environment.type(of: property, enclosingType: identifier)!
-        return storageCanonicalTypes(for: type)
-      }
-    case .inoutType(_): fatalError()
-    }
-  }
-}
-
-fileprivate extension Type.RawType {
-
-  /// The canonical type of self, or its element's canonical type in the case of arrays and dictionaries.
-  var canonicalElementType: CanonicalType? {
-    switch self {
-    case .builtInType(_): return CanonicalType(from: self)
-    case .errorType: return CanonicalType(from: self)
-    case .dictionaryType(_, _): return .uint256 // Nothing is stored in that property.
-    case .arrayType(_): return .uint256 // The number of elements is stored.
-    case .fixedSizeArrayType(let elementType, _): return CanonicalType(from: elementType)
-    case .userDefinedType(_): fatalError()
-    case .inoutType(_): fatalError()
-    }
   }
 }

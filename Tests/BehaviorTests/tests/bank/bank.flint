@@ -8,7 +8,7 @@ contract Bank {
 }
 
 Bank :: account <- (any) {
-  init(manager: Address) {
+  public init(manager: Address) {
     self.manager = manager
   }
 

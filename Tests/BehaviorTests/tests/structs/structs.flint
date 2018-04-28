@@ -34,7 +34,7 @@ contract C {
 }
 
 C :: (any) {
-  init() {}
+  public init() {}
 
   public func getAx() -> Int {
     return a.x
