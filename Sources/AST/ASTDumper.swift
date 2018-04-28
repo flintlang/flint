@@ -78,8 +78,8 @@ public class ASTDumper {
       for callerCapability in contractBehaviorDeclaration.callerCapabilities {
         self.dump(callerCapability)
       }
-      for functionDeclaration in contractBehaviorDeclaration.functionDeclarations {
-        self.dump(functionDeclaration)
+      for member in contractBehaviorDeclaration.members {
+        self.dump(member)
       }
       self.dump(contractBehaviorDeclaration.closeBracketToken)
     }
@@ -95,14 +95,25 @@ public class ASTDumper {
     }
   }
 
-    func dump(_ structMember: StructMember) {
-      switch structMember {
-      case .functionDeclaration(let functionDeclaration):
-        self.dump(functionDeclaration)
-      case .variableDeclaration(let variableDeclaration):
-        self.dump(variableDeclaration)
-      }
+  func dump(_ structMember: StructMember) {
+    switch structMember {
+    case .functionDeclaration(let functionDeclaration):
+      self.dump(functionDeclaration)
+    case .variableDeclaration(let variableDeclaration):
+      self.dump(variableDeclaration)
+    case .initializerDeclaration(let initializerDeclaration):
+      self.dump(initializerDeclaration)
     }
+  }
+
+  func dump(_ contractBehaviorMember: ContractBehaviorMember) {
+    switch contractBehaviorMember {
+    case .functionDeclaration(let functionDeclaration):
+      self.dump(functionDeclaration)
+    case .initializerDeclaration(let initializerDeclaration):
+      self.dump(initializerDeclaration)
+    }
+  }
 
   func dump(_ variableDeclaration: VariableDeclaration) {
     writeNode("VariableDeclaration") {
@@ -120,33 +131,44 @@ public class ASTDumper {
 
   func dump(_ functionDeclaration: FunctionDeclaration) {
     writeNode("FunctionDeclaration") {
-      for attribute in functionDeclaration.attributes {
-        self.dump(attribute)
+      self.dumpNodeContents(functionDeclaration)
+    }
+  }
+
+
+  func dump(_ initializerDeclaration: InitializerDeclaration) {
+    writeNode("InitializerDeclaration") {
+      self.dumpNodeContents(initializerDeclaration.asFunctionDeclaration)
+    }
+  }
+
+  func dumpNodeContents(_ functionDeclaration: FunctionDeclaration) {
+    for attribute in functionDeclaration.attributes {
+      self.dump(attribute)
+    }
+
+    for modifier in functionDeclaration.modifiers {
+      self.dump(modifier)
+    }
+
+    self.dump(functionDeclaration.funcToken)
+
+    self.dump(functionDeclaration.identifier)
+
+    for parameter in functionDeclaration.parameters {
+      self.dump(parameter)
+    }
+
+    self.dump(functionDeclaration.closeBracketToken)
+
+    if let resultType = functionDeclaration.resultType {
+      self.writeNode("ResultType") {
+        self.dump(resultType)
       }
+    }
 
-      for modifier in functionDeclaration.modifiers {
-        self.dump(modifier)
-      }
-
-      self.dump(functionDeclaration.funcToken)
-
-      self.dump(functionDeclaration.identifier)
-
-      for parameter in functionDeclaration.parameters {
-        self.dump(parameter)
-      }
-
-      self.dump(functionDeclaration.closeBracketToken)
-
-      if let resultType = functionDeclaration.resultType {
-        self.writeNode("ResultType") {
-          self.dump(resultType)
-        }
-      }
-
-      for statement in functionDeclaration.body {
-        self.dump(statement)
-      }
+    for statement in functionDeclaration.body {
+      self.dump(statement)
     }
   }
 

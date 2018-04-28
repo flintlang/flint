@@ -14,8 +14,14 @@ struct IULIAInterface {
 
   func rendered() -> String {
     let functionSignatures = contract.contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.functionDeclarations.compactMap { functionDeclaration in
-        return render(functionDeclaration)
+      return contractBehaviorDeclaration.members.compactMap { member in
+        switch member {
+        case .functionDeclaration(let functionDeclaration):
+          return render(functionDeclaration)
+        case .initializerDeclaration(_):
+          return ""
+          // Rendering initializers is not supported yet.
+        }
       }
     }.joined(separator: "\n")
 

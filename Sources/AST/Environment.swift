@@ -234,6 +234,16 @@ public struct Environment {
     return .failure(candidates: candidates)
   }
 
+  /// Set the public initializer for the given contract. A contract should have at most one public initializer.
+  public mutating func setPublicInitializer(_ publicInitializer: InitializerDeclaration, forContract contract: RawTypeIdentifier) {
+    types[contract]!.publicInitializer = publicInitializer
+  }
+
+  /// The public initializer for the given contract. A contract should have at most one public initializer.
+  public func publicInitializer(forContract contract: RawTypeIdentifier) -> InitializerDeclaration? {
+    return types[contract]!.publicInitializer
+  }
+
   /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
   /// able to call a function which require caller capabilities `target`.
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
@@ -309,6 +319,7 @@ public struct TypeInformation {
   var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
+  var publicInitializer: InitializerDeclaration? = nil
 }
 
 /// Information about a property defined in a type, such as its type and generic arguments.

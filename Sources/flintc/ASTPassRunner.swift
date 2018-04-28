@@ -29,7 +29,7 @@ struct ASTPassRunner {
       diagnostics.append(contentsOf: result.diagnostics)
     }
 
-    return ASTPassRunResult(element: ast, diagnostics: diagnostics)
+    return ASTPassRunResult(element: ast, diagnostics: diagnostics, environment: environment)
   }
 }
 
@@ -37,4 +37,5 @@ struct ASTPassRunner {
 struct ASTPassRunResult {
   var element: TopLevelModule
   var diagnostics: [Diagnostic]
+  var environment: Environment
 }

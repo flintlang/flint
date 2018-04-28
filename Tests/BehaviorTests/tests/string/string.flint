@@ -3,6 +3,10 @@ contract StringContract {
 }
 
 StringContract :: (any) {
+  public init(s: String) {
+    self.s = s
+  }
+
   mutating public func set(s: String) {
     self.s = s
   }

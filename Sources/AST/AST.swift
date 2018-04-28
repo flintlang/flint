@@ -45,24 +45,33 @@ public struct ContractDeclaration: SourceEntity {
   }
 }
 
+/// A member in a contract behavior declaration.
+///
+/// - functionDeclaration: The declaration of a function.
+/// - initializerDeclaration: The declaration of an initializer.
+public enum ContractBehaviorMember: Equatable {
+  case functionDeclaration(FunctionDeclaration)
+  case initializerDeclaration(InitializerDeclaration)
+}
+
 /// A Flint contract behavior declaration, i.e. the functions of a contract for a given caller capability group.
 public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
-  public var functionDeclarations: [FunctionDeclaration]
+  public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
 
   public var sourceLocation: SourceLocation {
     return .spanning(contractIdentifier, to: closeBracketToken)
   }
 
-  public init(contractIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, functionDeclarations: [FunctionDeclaration]) {
+  public init(contractIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
-    self.functionDeclarations = functionDeclarations
     self.closeBracketToken = closeBracketToken
+    self.members = members
   }
 }
 
@@ -73,6 +82,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
 public enum StructMember: Equatable {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
+  case initializerDeclaration(InitializerDeclaration)
 }
 
 /// The declaration of a struct.
@@ -205,6 +215,54 @@ public struct FunctionDeclaration: SourceEntity {
 
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind } 
+  }
+}
+
+public struct InitializerDeclaration: SourceEntity {
+  public var initToken: Token
+
+  /// The attributes associated with the function, such as `@payable`.
+  public var attributes: [Attribute]
+
+  /// The modifiers associted with the function, such as `public`.
+  public var modifiers: [Token]
+  public var parameters: [Parameter]
+  public var closeBracketToken: Token
+  public var body: [Statement]
+  public var closeBraceToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return initToken.sourceLocation
+  }
+
+  /// The non-implicit parameters of the initializer.
+  public var explicitParameters: [Parameter] {
+    return asFunctionDeclaration.explicitParameters
+  }
+
+  /// A function declaration equivalent of the initializer.
+  public var asFunctionDeclaration: FunctionDeclaration {
+    let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
+    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken)
+  }
+
+  /// The parameters of the initializer, as variable declaration values.
+  public var parametersAsVariableDeclarations: [VariableDeclaration] {
+    return asFunctionDeclaration.parametersAsVariableDeclarations
+  }
+
+  public var isPublic: Bool {
+    return asFunctionDeclaration.isPublic
+  }
+
+  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token) {
+    self.initToken = initToken
+    self.attributes = attributes
+    self.modifiers = modifiers
+    self.parameters = parameters
+    self.closeBracketToken = closeBracketToken
+    self.body = body
+    self.closeBraceToken = closeBracketToken
   }
 }
 

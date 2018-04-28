@@ -24,7 +24,10 @@ struct IULIAContract {
   func rendered() -> String {
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.functionDeclarations.map { functionDeclaration in
+      return contractBehaviorDeclaration.members.compactMap { member -> IULIAFunction? in
+        guard case .functionDeclaration(let functionDeclaration) = member else {
+          return nil
+        }
         return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
       }
     }
@@ -43,32 +46,16 @@ struct IULIAContract {
     }
 
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
-    let initializerBody = renderInitializer()
-
-    var index = 0
-    var propertyDeclarations = [String]()
-
-    for property in contractDeclaration.variableDeclarations where !property.type.rawType.isEventType {
-      let rawType = property.type.rawType
-
-      for canonicalType in storageCanonicalTypes(for: rawType) {
-        propertyDeclarations.append("\(canonicalType) _flintStorage\(index);")
-        index += 1
-      }
-    }
-
-    let propertyDeclarationsCode = propertyDeclarations.joined(separator: "\n")
+    let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
 
     // Main contract body.
     return """
-    pragma solidity ^0.4.19;
+    pragma solidity ^0.4.21;
     
     contract \(contractDeclaration.identifier.name) {
-
-      \(propertyDeclarationsCode.indented(by: 2))
 
       \(initializerBody.indented(by: 2))
 
@@ -93,64 +80,53 @@ struct IULIAContract {
     """
   }
 
-  func renderInitializer() -> String {
-    // Generate an initializer which takes in the 256-bit values in storage.
-    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType && $0.assignedExpression == nil }
-    let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
-    var initializerBody = initializerParameters.map { parameter in
-      let offset = environment.propertyOffset(for: parameter.identifier.name, enclosingType: contractDeclaration.identifier.name)!
-      return "_flintStorage\(offset) = \(parameter.identifier.name);"
-      }.joined(separator: "\n")
+  func renderPublicInitializer() -> String {
+    let initializerDeclaration: InitializerDeclaration
 
-    let defaultValueAssignments = contractDeclaration.variableDeclarations.compactMap { declaration -> String? in
-      guard let assignedExpression = declaration.assignedExpression else { return nil }
-      let offset = environment.propertyOffset(for: declaration.identifier.name, enclosingType: contractDeclaration.identifier.name)!
-      guard case .literal(let literalToken) = assignedExpression else {
-        fatalError("Non-literal default values are not supported yet")
-      }
-      return "_flintStorage\(offset) = \(IULIALiteralToken(literalToken: literalToken).rendered());"
+    // The contract behavior declaration the initializer resides in.
+    let contractBehaviorDeclaration: ContractBehaviorDeclaration?
+
+    if let publicInitializer = environment.publicInitializer(forContract: contractDeclaration.identifier.name) {
+      initializerDeclaration = publicInitializer
+      contractBehaviorDeclaration = findEnclosingContractBehaviorDeclaration(forInitializer: initializerDeclaration)!
+    } else {
+      // If there is not public initializer defined, synthesize one.
+      initializerDeclaration = synthesizeInitializer()
+      contractBehaviorDeclaration = nil
     }
 
-    initializerBody += "\n" + defaultValueAssignments.joined(separator: "\n")
+    let capabilityBinding = contractBehaviorDeclaration?.capabilityBinding
+    let callerCapabilities = contractBehaviorDeclaration?.callerCapabilities ?? []
+
+    let initializer = IULIAInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
+
+    let parameters = initializerDeclaration.parameters.map { parameter in
+      let parameterName = Mangler.mangleName(parameter.identifier.name)
+      return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
+      }.joined(separator: ", ")
+
     return """
-    function \(contractDeclaration.identifier.name)(\(initializerParameterList)) public {
-      \(initializerBody.indented(by: 2))
+    constructor(\(parameters)) public {
+      assembly {
+        \(initializer.indented(by: 4))
+      }
     }
     """
   }
 
-  /// The list of canonical types for the given type. Fixed-size arrays of size `n` will result in a list of `n`
-  /// canonical types.
-  public func storageCanonicalTypes(for type: Type.RawType) -> [String] {
-    switch type {
-    case .builtInType(_), .arrayType(_), .dictionaryType(_, _):
-      return [type.canonicalElementType!.rawValue]
-    case .fixedSizeArrayType(let rawType, let elementCount):
-      return [String](repeating: rawType.canonicalElementType!.rawValue, count: elementCount)
-    case .errorType: fatalError()
+  func synthesizeInitializer() -> InitializerDeclaration {
+    let sourceLocation = contractDeclaration.sourceLocation
 
-    case .userDefinedType(let identifier):
-      return environment.properties(in: identifier).flatMap { property -> [String] in
-        let type = environment.type(of: property, enclosingType: identifier)!
-        return storageCanonicalTypes(for: type)
-      }
-    case .inoutType(_): fatalError()
-    }
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation))
   }
-}
 
-fileprivate extension Type.RawType {
-
-  /// The canonical type of self, or its element's canonical type in the case of arrays and dictionaries.
-  var canonicalElementType: CanonicalType? {
-    switch self {
-    case .builtInType(_): return CanonicalType(from: self)
-    case .errorType: return CanonicalType(from: self)
-    case .dictionaryType(_, _): return .uint256 // Nothing is stored in that property.
-    case .arrayType(_): return .uint256 // The number of elements is stored.
-    case .fixedSizeArrayType(let elementType, _): return CanonicalType(from: elementType)
-    case .userDefinedType(_): fatalError()
-    case .inoutType(_): fatalError()
+  /// Finds the contract behavior declaration associated with the given initializer. A contract should only have one
+  /// public initializer.
+  func findEnclosingContractBehaviorDeclaration(forInitializer initializer: InitializerDeclaration) -> ContractBehaviorDeclaration? {
+    return contractBehaviorDeclarations.first { contractBehaviorDeclaration -> Bool in
+      return contractBehaviorDeclaration.members.contains { member in
+        return member == .initializerDeclaration(initializer)
+      }
     }
   }
 }

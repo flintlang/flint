@@ -60,6 +60,15 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "'let' constant 'e' needs to be assigned a value")
   }
 
+  static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
+    let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
+    return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
+  }
+
+  static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability \"any\"")
+  }
+
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
   }

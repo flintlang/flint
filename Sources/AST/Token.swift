@@ -133,6 +133,7 @@ extension Token {
     case `var`
     case `let`
     case `func`
+    case `init`
     case `mutating`
     case `return`
     case `public`
@@ -165,6 +166,7 @@ extension Token.Kind: CustomStringConvertible {
     case .var: return "var"
     case .let: return "let"
     case .func: return "func"
+    case .init: return "init"
     case .self: return "self"
     case .implicit: return "implicit"
     case .inout: return "inout"

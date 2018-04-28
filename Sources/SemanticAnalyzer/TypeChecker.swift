@@ -27,6 +27,10 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
+  }
+
   public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -64,6 +68,10 @@ public struct TypeChecker: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+  
+  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -188,6 +196,10 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -202,6 +214,10 @@ public struct TypeChecker: ASTPass {
 
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {

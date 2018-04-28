@@ -1,0 +1,23 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var a: Address
+}
+
+Test :: caller <- (any) {
+  public init(a: Address) { // expected-note {{A public initializer is already declared here}}
+    self.a = a
+  }
+
+  public init() { // expected-error {{A public initializer has already been defined}}
+    self.a = caller
+  }
+
+  init() {
+  }
+}
+
+Test :: (a) {
+  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability "any"}}
+  }
+}

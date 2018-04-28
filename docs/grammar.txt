@@ -27,11 +27,13 @@ generic-parameter-list -> type | type [,] generic-argument-list
 
 struct-declaration -> [struct] identifier [{] (struct-members) [}]
 struct-members -> struct-member (struct-members)
-struct-member -> variable-declaration | function-declaration
+struct-member -> variable-declaration | function-declaration | initializer-declaration
 
 // Contract behavior declaration
 
-contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (function-declarations)
+contract-behavior-declaration -> identifier [::] (caller-capability-binding) caller-capability-group (contract-behavior-members)
+contract-behavior-members -> contract-behavior-member (contract-behavior-members)
+contract-behavior-member -> function-declaration | initializer-declaration
 
 // Caller capability group
 
@@ -44,12 +46,14 @@ caller-capability-binding -> identifier [<-]
 
 identifier -> [a-zA-Z] . [a-zA-Z0-9]*
 
-// Function declarations
+// Function and initializer declarations
 
-function-declarations -> function-declaration (function-declarations)
+initializer-declaration -> initializer-head parameter-clause code-block
 function-declaration -> function-head identifier parameter-clause (function-result) code-block
 
+initializer-head -> (declaration-attributes) (declaration-modifiers) [init]
 function-head -> (declaration-attributes) (declaration-modifiers) [func]
+
 declaration-modifier -> [public] | [mutating]
 declaration-modifiers -> declaration-modifier (declaration-modifiers)
 

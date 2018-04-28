@@ -42,6 +42,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
+  }
+
   public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -120,6 +124,10 @@ public struct SemanticAnalyzer: ASTPass {
       }
     }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -289,6 +297,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
+    return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -315,6 +327,33 @@ public struct SemanticAnalyzer: ASTPass {
     // Clear the context in preparation for the next time we visit a function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    var diagnostics = [Diagnostic]()
+    var passContext = passContext
+
+    var environmment = passContext.environment!
+
+    // If we are in a contract behavior declaration, check there is only one public initializer.
+    if let context = passContext.contractBehaviorDeclarationContext, initializerDeclaration.isPublic {
+      let contractName = context.contractIdentifier.name
+
+      // The caller capability block in which this initializer appears should be scoped by "any".
+      if !context.callerCapabilities.contains(where: { $0.isAny }) {
+        diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(initializerDeclaration))
+      } else {
+        if let publicInitializer = environmment.publicInitializer(forContract: contractName) {
+          diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
+        } else {
+          // This is the first public initializer we encounter in this contract.
+          environmment.setPublicInitializer(initializerDeclaration, forContract: contractName)
+        }
+      }
+    }
+
+    passContext.environment = environmment
+    return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -423,6 +462,7 @@ public struct SemanticAnalyzer: ASTPass {
 }
 
 extension ASTPassContext {
+  /// The list of mutating expressions in a function.
   var mutatingExpressions: [Expression]? {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
