@@ -127,17 +127,7 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    var diagnostics = [Diagnostic]()
-    var passContext = passContext
-
-    if initializerDeclaration.isPublic {
-      if let publicInitializerSourceLocation = passContext.publicInitializerSourceLocation {
-        diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializerSourceLocation))
-      } else {
-        passContext.publicInitializerSourceLocation = initializerDeclaration.sourceLocation
-      }
-    }
-    return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -304,9 +294,6 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    let passContext = passContext.withUpdates {
-      $0.publicInitializerSourceLocation = nil
-    }
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -315,9 +302,6 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    let passContext = passContext.withUpdates {
-      $0.publicInitializerSourceLocation = nil
-    }
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -346,7 +330,24 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    var passContext = passContext
+
+    var environmment = passContext.environment!
+
+    // If we are in a contract behavior declaration, check there is only one public initializer.
+    if let context = passContext.contractBehaviorDeclarationContext, initializerDeclaration.isPublic {
+      let contractName = context.contractIdentifier.name
+      if let publicInitializer = environmment.publicInitializer(forContract: contractName) {
+        diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
+      } else {
+        // This is the first public initializer we encounter in this contract.
+        environmment.setPublicInitializer(initializerDeclaration, forContract: contractName)
+      }
+    }
+
+    passContext.environment = environmment
+    return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -460,18 +461,8 @@ extension ASTPassContext {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
   }
-
-  /// The source location of the public initializer in a type, if one has been declared.
-  public var publicInitializerSourceLocation: SourceLocation? {
-    get { return self[PublicInitializerSourceLocation.self] }
-    set { self[PublicInitializerSourceLocation.self] = newValue }
-  }
 }
 
 struct MutatingExpressionContextEntry: PassContextEntry {
   typealias Value = [Expression]
-}
-
-struct PublicInitializerSourceLocation: PassContextEntry {
-  typealias Value = SourceLocation
 }

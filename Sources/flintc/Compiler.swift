@@ -68,7 +68,7 @@ struct Compiler {
     }
 
     // Generate IULIA IR code.
-    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, environment: environment).generateCode()
+    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment).generateCode()
 
     // Compile the IULIA IR code using solc.
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()

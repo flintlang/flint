@@ -1,0 +1,96 @@
+InitializerDeclaration
+▿ initToken : Token
+- kind : init
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 10
+- length : 4
+- attributes : 0 elements
+▿ modifiers : 1 element
+▿ 0 : Token
+- kind : public
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 3
+- length : 6
+▿ parameters : 1 element
+▿ 0 : Parameter
+▿ identifier : Identifier
+▿ identifierToken : Token
+▿ kind : identifier "manager"
+- identifier : "manager"
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 15
+- length : 7
+- enclosingType : nil
+▿ type : Type
+▿ rawType : RawType
+- builtInType : AST.Type.BuiltInType.address
+- genericArguments : 0 elements
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 24
+- length : 7
+- implicitToken : nil
+▿ closeBracketToken : Token
+▿ kind : )
+- punctuation : AST.Token.Kind.Punctuation.closeBracket
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 31
+- length : 1
+▿ body : 1 element
+▿ 0 : Statement
+▿ expression : Expression
+▿ binaryExpression : BinaryExpression
+▿ lhs : Expression
+▿ binaryExpression : BinaryExpression
+▿ lhs : Expression
+▿ self : Token
+- kind : self
+▿ sourceLocation : SourceLocation
+- line : 12
+- column : 5
+- length : 4
+▿ op : Token
+▿ kind : .
+- punctuation : AST.Token.Kind.Punctuation.dot
+▿ sourceLocation : SourceLocation
+- line : 12
+- column : 9
+- length : 1
+▿ rhs : Expression
+▿ identifier : Identifier
+▿ identifierToken : Token
+▿ kind : identifier "manager"
+- identifier : "manager"
+▿ sourceLocation : SourceLocation
+- line : 12
+- column : 10
+- length : 7
+- enclosingType : nil
+▿ op : Token
+▿ kind : =
+- punctuation : AST.Token.Kind.Punctuation.equal
+▿ sourceLocation : SourceLocation
+- line : 12
+- column : 18
+- length : 1
+▿ rhs : Expression
+▿ identifier : Identifier
+▿ identifierToken : Token
+▿ kind : identifier "manager"
+- identifier : "manager"
+▿ sourceLocation : SourceLocation
+- line : 12
+- column : 20
+- length : 7
+- enclosingType : nil
+▿ closeBraceToken : Token
+▿ kind : )
+- punctuation : AST.Token.Kind.Punctuation.closeBracket
+▿ sourceLocation : SourceLocation
+- line : 11
+- column : 31
+- length : 1

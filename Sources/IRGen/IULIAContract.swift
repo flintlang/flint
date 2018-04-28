@@ -46,7 +46,7 @@ struct IULIAContract {
     }
 
     let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
-    let initializerBody = renderPublicInitializers()
+    let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
     let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
@@ -80,28 +80,53 @@ struct IULIAContract {
     """
   }
 
-  func renderPublicInitializers() -> String {
-    return contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.members.compactMap { member -> String? in
-        guard case .initializerDeclaration(let initializerDeclaration) = member, initializerDeclaration.isPublic else {
-          return nil
-        }
+  func renderPublicInitializer() -> String {
+    let initializerDeclaration: InitializerDeclaration
 
-        let initializer = IULIAInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment, isContractFunction: true).rendered()
+    // The contract behavior declaration the initializer resides in.
+    let contractBehaviorDeclaration: ContractBehaviorDeclaration?
 
-        let parameters = initializerDeclaration.parameters.map { parameter in
-          let parameterName = Mangler.mangleName(parameter.identifier.name)
-          return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
-        }.joined(separator: ", ")
+    if let publicInitializer = environment.publicInitializer(forContract: contractDeclaration.identifier.name) {
+      initializerDeclaration = publicInitializer
+      contractBehaviorDeclaration = findEnclosingContractBehaviorDeclaration(forInitializer: initializerDeclaration)!
+    } else {
+      // If there is not public initializer defined, synthesize one.
+      initializerDeclaration = synthesizeInitializer()
+      contractBehaviorDeclaration = nil
+    }
 
-        return """
-        constructor(\(parameters)) public {
-          assembly {
-            \(initializer.indented(by: 4))
-          }
-        }
-        """
+    let capabilityBinding = contractBehaviorDeclaration?.capabilityBinding
+    let callerCapabilities = contractBehaviorDeclaration?.callerCapabilities ?? []
+
+    let initializer = IULIAInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
+
+    let parameters = initializerDeclaration.parameters.map { parameter in
+      let parameterName = Mangler.mangleName(parameter.identifier.name)
+      return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
+      }.joined(separator: ", ")
+
+    return """
+    constructor(\(parameters)) public {
+      assembly {
+        \(initializer.indented(by: 4))
       }
-    }.joined(separator: "\n")
+    }
+    """
+  }
+
+  func synthesizeInitializer() -> InitializerDeclaration {
+    let sourceLocation = contractDeclaration.sourceLocation
+
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation))
+  }
+
+  /// Finds the contract behavior declaration associated with the given initializer. A contract should only have one
+  /// public initializer.
+  func findEnclosingContractBehaviorDeclaration(forInitializer initializer: InitializerDeclaration) -> ContractBehaviorDeclaration? {
+    return contractBehaviorDeclarations.first { contractBehaviorDeclaration -> Bool in
+      return contractBehaviorDeclaration.members.contains { member in
+        return member == .initializerDeclaration(initializer)
+      }
+    }
   }
 }
