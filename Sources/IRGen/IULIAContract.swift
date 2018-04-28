@@ -126,31 +126,6 @@ struct IULIAContract {
     }.joined(separator: "\n")
   }
 
-//    // Generate an initializer which takes in the 256-bit values in storage.
-//    let initializerParameters = contractDeclaration.variableDeclarations.filter { $0.type.rawType.isBasicType && !$0.type.rawType.isEventType && $0.assignedExpression == nil }
-//    let initializerParameterList = initializerParameters.map { "\(CanonicalType(from: $0.type.rawType)!.rawValue) \($0.identifier.name)" }.joined(separator: ", ")
-//    var initializerBody = initializerParameters.map { parameter in
-//      let offset = environment.propertyOffset(for: parameter.identifier.name, enclosingType: contractDeclaration.identifier.name)!
-//      return "_flintStorage\(offset) = \(parameter.identifier.name);"
-//      }.joined(separator: "\n")
-//
-//    let defaultValueAssignments = contractDeclaration.variableDeclarations.compactMap { declaration -> String? in
-//      guard let assignedExpression = declaration.assignedExpression else { return nil }
-//      let offset = environment.propertyOffset(for: declaration.identifier.name, enclosingType: contractDeclaration.identifier.name)!
-//      guard case .literal(let literalToken) = assignedExpression else {
-//        fatalError("Non-literal default values are not supported yet")
-//      }
-//      return "_flintStorage\(offset) = \(IULIALiteralToken(literalToken: literalToken).rendered());"
-//    }
-//
-//    initializerBody += "\n" + defaultValueAssignments.joined(separator: "\n")
-//    return """
-//    function \(contractDeclaration.identifier.name)(\(initializerParameterList)) public {
-//      \(initializerBody.indented(by: 2))
-//    }
-//    """
-//  }
-
   /// The list of canonical types for the given type. Fixed-size arrays of size `n` will result in a list of `n`
   /// canonical types.
   public func storageCanonicalTypes(for type: Type.RawType) -> [String] {

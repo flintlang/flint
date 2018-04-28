@@ -71,7 +71,6 @@ struct IULIAInitializer {
   func renderDefaultValuesAssignments() -> String {
     let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> String? in
       guard let assignedExpression = declaration.assignedExpression else { return nil }
-//      let offset = environment.propertyOffset(for: declaration.identifier.name, enclosingType: typeIdentifier.name)!
       guard case .literal(let literalToken) = assignedExpression else {
         fatalError("Non-literal default values are not supported yet")
       }
@@ -80,7 +79,6 @@ struct IULIAInitializer {
       identifier.enclosingType = typeIdentifier.name
 
       return IULIAAssignment(lhs: .identifier(identifier), rhs: .literal(literalToken)).rendered(functionContext: functionContext)
-//      return "sstore(\(), \(IULIALiteralToken(literalToken: literalToken).rendered()));"
     }
 
     return defaultValueAssignments.joined(separator: "\n")
