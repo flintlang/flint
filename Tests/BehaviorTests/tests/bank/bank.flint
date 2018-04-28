@@ -8,6 +8,10 @@ contract Bank {
 }
 
 Bank :: account <- (any) {
+  init(manager: Address) {
+    self.manager = manager
+  }
+
   public mutating func register() {
     accounts[lastIndex] = account
     lastIndex += 1

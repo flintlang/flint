@@ -127,7 +127,17 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    var passContext = passContext
+
+    if initializerDeclaration.isPublic {
+      if let publicInitializerSourceLocation = passContext.publicInitializerSourceLocation {
+        diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializerSourceLocation))
+      } else {
+        passContext.publicInitializerSourceLocation = initializerDeclaration.sourceLocation
+      }
+    }
+    return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -294,6 +304,9 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+    let passContext = passContext.withUpdates {
+      $0.publicInitializerSourceLocation = nil
+    }
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -302,6 +315,9 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    let passContext = passContext.withUpdates {
+      $0.publicInitializerSourceLocation = nil
+    }
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -439,12 +455,23 @@ public struct SemanticAnalyzer: ASTPass {
 }
 
 extension ASTPassContext {
+  /// The list of mutating expressions in a function.
   var mutatingExpressions: [Expression]? {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
+  }
+
+  /// The source location of the public initializer in a type, if one has been declared.
+  public var publicInitializerSourceLocation: SourceLocation? {
+    get { return self[PublicInitializerSourceLocation.self] }
+    set { self[PublicInitializerSourceLocation.self] = newValue }
   }
 }
 
 struct MutatingExpressionContextEntry: PassContextEntry {
   typealias Value = [Expression]
+}
+
+struct PublicInitializerSourceLocation: PassContextEntry {
+  typealias Value = SourceLocation
 }

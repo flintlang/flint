@@ -235,10 +235,24 @@ public struct InitializerDeclaration: SourceEntity {
     return initToken.sourceLocation
   }
 
+  /// The non-implicit parameters of the initializer.
+  public var explicitParameters: [Parameter] {
+    return asFunctionDeclaration.explicitParameters
+  }
+
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
     let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
     return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken)
+  }
+
+  /// The parameters of the initializer, as variable declaration values.
+  public var parametersAsVariableDeclarations: [VariableDeclaration] {
+    return asFunctionDeclaration.parametersAsVariableDeclarations
+  }
+
+  public var isPublic: Bool {
+    return asFunctionDeclaration.isPublic
   }
 
   public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token) {

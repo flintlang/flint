@@ -1,0 +1,25 @@
+contract Inits {
+  var a: Int
+  var b: Address
+  var s: String
+}
+
+Inits :: caller <- (any) {
+  public init(a: Int, s: String) {
+    self.a = a
+    self.b = caller
+    self.s = s
+  }
+
+  public func getA() -> Int {
+    return a
+  }
+
+  public func getB() -> Address {
+    return b
+  }
+
+  public func getS() -> String {
+    return s
+  }
+}
