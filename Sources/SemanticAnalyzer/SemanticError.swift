@@ -65,6 +65,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
 
+  static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability \"any\"")
+  }
+
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
   }

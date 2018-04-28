@@ -16,3 +16,8 @@ Test :: caller <- (any) {
   init() {
   }
 }
+
+Test :: (a) {
+  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability "any"}}
+  }
+}

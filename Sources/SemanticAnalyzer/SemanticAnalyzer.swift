@@ -338,11 +338,17 @@ public struct SemanticAnalyzer: ASTPass {
     // If we are in a contract behavior declaration, check there is only one public initializer.
     if let context = passContext.contractBehaviorDeclarationContext, initializerDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
-      if let publicInitializer = environmment.publicInitializer(forContract: contractName) {
-        diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
+
+      // The caller capability block in which this initializer appears should be scoped by "any".
+      if !context.callerCapabilities.contains(where: { $0.isAny }) {
+        diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(initializerDeclaration))
       } else {
-        // This is the first public initializer we encounter in this contract.
-        environmment.setPublicInitializer(initializerDeclaration, forContract: contractName)
+        if let publicInitializer = environmment.publicInitializer(forContract: contractName) {
+          diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
+        } else {
+          // This is the first public initializer we encounter in this contract.
+          environmment.setPublicInitializer(initializerDeclaration, forContract: contractName)
+        }
       }
     }
 
