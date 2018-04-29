@@ -57,7 +57,7 @@ extension Diagnostic {
   }
 
   static func constantStatePropertyIsNotAssignedAValue(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "'let' constant 'e' needs to be assigned a value")
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "'let' constant '\(variableDeclaration.identifier.name)' needs to be assigned a value")
   }
 
   static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
