@@ -4,6 +4,7 @@ contract Test {
   var a: Address
   var b: [Address] = []
   var c: [Address: Int] = [] // expected-error {{Incompatible assignment between values of type [Address: Int] and [Any]}}
+  var d: [Int] = [:] // expected-error {{Incompatible assignment between values of type [Int] and [Any: Any]}}
 }
 
 Test :: caller <- (any) {
