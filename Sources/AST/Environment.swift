@@ -53,18 +53,18 @@ public struct Environment {
   mutating func setProperties(_ variableDeclarations: [VariableDeclaration], enclosingType: RawTypeIdentifier) {
     types[enclosingType]!.orderedProperties = variableDeclarations.map { $0.identifier.name }
     for variableDeclaration in variableDeclarations {
-      addProperty(variableDeclaration.identifier.name, type: variableDeclaration.type, isConstant: variableDeclaration.isConstant, sourceLocation: variableDeclaration.sourceLocation, enclosingType: enclosingType)
+      addProperty(variableDeclaration, enclosingType: enclosingType)
     }
   }
 
   /// Add a property to a type.
-  mutating func addProperty(_ property: String, type: Type, isConstant: Bool = false, sourceLocation: SourceLocation?, enclosingType: RawTypeIdentifier) {
-    types[enclosingType]!.properties[property] = PropertyInformation(type: type, isConstant: isConstant, sourceLocation: sourceLocation)
+  mutating func addProperty(_ variableDeclaration: VariableDeclaration, enclosingType: RawTypeIdentifier) {
+    types[enclosingType]!.properties[variableDeclaration.identifier.name] = PropertyInformation(variableDeclaration: variableDeclaration)
   }
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    addProperty(variable.name, type: Type(inferredType: .errorType, identifier: variable), sourceLocation: nil, enclosingType: enclosingType)
+    addProperty(VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable)), enclosingType: enclosingType)
   }
 
   /// Whether a contract has been declared in the program.
@@ -93,13 +93,23 @@ public struct Environment {
     return types[enclosingType]!.properties[property]!.isConstant
   }
 
+  public func isPropertyAssignedDefaultValue(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return types[enclosingType]!.properties[property]!.isAssignedDefaultValue
+  }
+
+  /// The source location of a property declaration.
   public func propertyDeclarationSourceLocation(_ property: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
     return types[enclosingType]!.properties[property]!.sourceLocation
   }
 
-  /// The list of properties declared in a type.
+  /// The names of the properties declared in a type.
   public func properties(in enclosingType: RawTypeIdentifier) -> [String] {
     return types[enclosingType]!.orderedProperties
+  }
+
+  /// The list of property declarations in a type.
+  public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [VariableDeclaration] {
+    return types[enclosingType]!.properties.values.map { $0.variableDeclaration }
   }
 
   /// The list of properties declared in a type which can be used as caller capabilities.
@@ -381,23 +391,30 @@ public struct TypeInformation {
 
 /// Information about a property defined in a type, such as its type and generic arguments.
 public struct PropertyInformation {
-  private var type: Type
+  public var variableDeclaration: VariableDeclaration
 
-  public var isConstant: Bool
-  public var sourceLocation: SourceLocation?
+  public var isConstant: Bool {
+    return variableDeclaration.isConstant
+  }
 
-  init(type: Type, isConstant: Bool = false, sourceLocation: SourceLocation?) {
-    self.type = type
-    self.isConstant = isConstant
-    self.sourceLocation = sourceLocation
+  public var isAssignedDefaultValue: Bool {
+    return variableDeclaration.assignedExpression != nil
+  }
+
+  public var sourceLocation: SourceLocation? {
+    return variableDeclaration.sourceLocation
+  }
+
+  init(variableDeclaration: VariableDeclaration) {
+    self.variableDeclaration = variableDeclaration
   }
 
   public var rawType: Type.RawType {
-    return type.rawType
+    return variableDeclaration.type.rawType
   }
 
   public var typeGenericArguments: [Type.RawType] {
-    return type.genericArguments.map { $0.rawType }
+    return variableDeclaration.type.genericArguments.map { $0.rawType }
   }
 }
 

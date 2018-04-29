@@ -64,11 +64,6 @@ public struct SemanticAnalyzer: ASTPass {
     } else {
       // This is a state property declaration.
 
-      // Constants need to have a value assigned.
-      if variableDeclaration.isConstant, variableDeclaration.assignedExpression == nil {
-        diagnostics.append(.constantStatePropertyIsNotAssignedAValue(variableDeclaration))
-      }
-
       // If a default value is assigned, it should be a literal.
 
       if let assignedExpression = variableDeclaration.assignedExpression {
@@ -126,6 +121,18 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let environment = passContext.environment!
+
+    // Gather properties of the enclosing type which haven't been assigned a default value.
+    let properties = environment.propertyDeclarations(in: enclosingType).filter { propertyDeclaration in
+      return propertyDeclaration.assignedExpression == nil
+    }
+
+    let passContext = passContext.withUpdates {
+      $0.unassignedProperties = properties
+    }
+
     return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -154,17 +161,21 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
 
+    let inFunctionDeclaration = passContext.functionDeclarationContext != nil
+    let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
+    let inFunctionOrInitializer = inFunctionDeclaration || inInitializerDeclaration
+
     if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
       // If the identifier is the name of a function call, do nothing. The function call will be matched in
       // `process(functionCall:passContext:)`.
-    } else if let functionDeclarationContext = passContext.functionDeclarationContext {
-      // The identifier is used within the body of a function.
+    } else if inFunctionOrInitializer {
+      // The identifier is used within the body of a function or an initializer
 
       // The identifier is used an l-value (the left-hand side of an assignment).
       let asLValue = passContext.asLValue ?? false
 
       if identifier.enclosingType == nil {
-        // The identifier has no explicit enclosing type, such as in the expression `a.foo`.
+        // The identifier has no explicit enclosing type, such as in the expression `foo` instead of `a.foo`.
 
         let scopeContext = passContext.scopeContext!
         if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
@@ -187,21 +198,34 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if asLValue {
+
           if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
             // Retrieve the source location of that property's declaration.
             let declarationSourceLocation = passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
-
-            // The state property is a constant but is attempted to be reassigned.
-            diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
+            
+            if !inInitializerDeclaration || passContext.environment!.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType) {
+              // The state property is a constant but is attempted to be reassigned.
+              diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
+            }
           }
 
-          // The variable is being mutated.
-          if !functionDeclarationContext.isMutating {
-            // The function is declared non-mutating.
-            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+          if let _ = passContext.initializerDeclarationContext {
+            // Check if the property has been marked as assigned yet.
+            if let first = passContext.unassignedProperties!.index(where: { $0.identifier.name == identifier.name && $0.identifier.enclosingType == identifier.enclosingType }) {
+              // Mark the property as assigned.
+              passContext.unassignedProperties!.remove(at: first)
+            }
           }
-          // Record the mutating expression in the context.
-          addMutatingExpression(.identifier(identifier), passContext: &passContext)
+
+          if let functionDeclarationContext = passContext.functionDeclarationContext {
+            // The variable is being mutated in a function.
+            if !functionDeclarationContext.isMutating {
+              // The function is declared non-mutating.
+              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+            }
+            // Record the mutating expression in the context.
+            addMutatingExpression(.identifier(identifier), passContext: &passContext)
+          }
         }
       }
     }
@@ -340,8 +364,6 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
     var passContext = passContext
 
-    var environmment = passContext.environment!
-
     // If we are in a contract behavior declaration, check there is only one public initializer.
     if let context = passContext.contractBehaviorDeclarationContext, initializerDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
@@ -350,16 +372,20 @@ public struct SemanticAnalyzer: ASTPass {
       if !context.callerCapabilities.contains(where: { $0.isAny }) {
         diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(initializerDeclaration))
       } else {
-        if let publicInitializer = environmment.publicInitializer(forContract: contractName) {
+        if let publicInitializer = passContext.environment!.publicInitializer(forContract: contractName) {
           diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
         } else {
           // This is the first public initializer we encounter in this contract.
-          environmment.setPublicInitializer(initializerDeclaration, forContract: contractName)
+          passContext.environment!.setPublicInitializer(initializerDeclaration, forContract: contractName)
         }
       }
     }
 
-    passContext.environment = environmment
+    // Check all the properties in the type have been assigned.
+    if let unassignedProperties = passContext.unassignedProperties, unassignedProperties.count > 0 {
+      diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: unassignedProperties))
+    }
+
     return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -482,8 +508,19 @@ extension ASTPassContext {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
   }
+
+  /// The list of unassigned properties in a type.
+  var unassignedProperties: [VariableDeclaration]? {
+    get { return self[UnassignedPropertiesContextEntry.self] }
+    set { self[UnassignedPropertiesContextEntry.self] = newValue }
+  }
 }
 
 struct MutatingExpressionContextEntry: PassContextEntry {
   typealias Value = [Expression]
 }
+
+struct UnassignedPropertiesContextEntry: PassContextEntry {
+  typealias Value = [VariableDeclaration]
+}
+

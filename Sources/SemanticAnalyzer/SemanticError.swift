@@ -49,7 +49,7 @@ extension Diagnostic {
 
   static func reassignmentToConstant(_ identifier: Identifier, _ declarationSourceLocation: SourceLocation) -> Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: declarationSourceLocation, message: "'\(identifier.name)' is declared here")
-    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot assign to value: '\(identifier.name)' is a 'let' constant", notes: [note])
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reassign to value: '\(identifier.name)' is a 'let' constant", notes: [note])
   }
 
   static func statePropertyDeclarationIsAssignedANonLiteralExpression(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
@@ -58,6 +58,14 @@ extension Diagnostic {
 
   static func constantStatePropertyIsNotAssignedAValue(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "'let' constant '\(variableDeclaration.identifier.name)' needs to be assigned a value")
+  }
+
+  static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {
+    let notes = unassignedProperties.map { property in
+      return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "\(property.identifier.name) is uninitialized")
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
   }
 
   static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {

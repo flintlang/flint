@@ -262,7 +262,7 @@ public struct InitializerDeclaration: SourceEntity {
     self.parameters = parameters
     self.closeBracketToken = closeBracketToken
     self.body = body
-    self.closeBraceToken = closeBracketToken
+    self.closeBraceToken = closeBraceToken
   }
 }
 
