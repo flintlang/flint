@@ -54,12 +54,21 @@ public struct TypeChecker: ASTPass {
       // The variable declaration is a state property.
 
       let lhsType = variableDeclaration.type.rawType
-      if case .literal(let literalToken) = assignedExpression {
-        let rhsType = environment.type(ofLiteralToken: literalToken)
+      let rhsType: Type.RawType?
 
-        if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
-          diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: assignedExpression))
-        }
+      switch assignedExpression {
+      case .literal(let literalToken):
+        rhsType = environment.type(ofLiteralToken: literalToken)
+      case .arrayLiteral(_):
+        rhsType = Type.RawType.arrayType(.any)
+      case .dictionaryLiteral(_):
+        rhsType = Type.RawType.dictionaryType(key: .any, value: .any)
+      default:
+        rhsType = nil
+      }
+
+      if let rhsType = rhsType, !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
+        diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: assignedExpression))
       }
     }
 
@@ -150,6 +159,14 @@ public struct TypeChecker: ASTPass {
     }
 
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
@@ -262,6 +279,14 @@ public struct TypeChecker: ASTPass {
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

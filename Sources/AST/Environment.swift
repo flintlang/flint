@@ -135,6 +135,7 @@ public struct Environment {
     return matchingFunction.resultType
   }
 
+  /// The type of a literal token.
   public func type(ofLiteralToken literalToken: Token) -> Type.RawType {
     guard case .literal(let literal) = literalToken.kind else { fatalError() }
     switch literal {
@@ -143,6 +144,57 @@ public struct Environment {
     case .string(_): return .builtInType(.string)
     default: fatalError()
     }
+  }
+
+  // The type of an array literal.
+  public func type(ofArrayLiteral arrayLiteral: ArrayLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
+    var elementType: Type.RawType?
+
+    for element in arrayLiteral.elements {
+      let _type = type(of: element, enclosingType: enclosingType, scopeContext: scopeContext)
+
+      if let elementType = elementType, elementType != _type {
+        // The elements have different types.
+        return .errorType
+      }
+
+      if elementType == nil {
+        elementType = _type
+      }
+    }
+
+    return .arrayType(elementType ?? .any)
+  }
+
+  // The type of a dictionary literal.
+  public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
+    var keyType: Type.RawType?
+    var valueType: Type.RawType?
+
+    for element in dictionaryLiteral.elements {
+      let _keyType = type(of: element.key, enclosingType: enclosingType, scopeContext: scopeContext)
+      let _valueType = type(of: element.value, enclosingType: enclosingType, scopeContext: scopeContext)
+
+      if let _keyType = keyType, _keyType != keyType {
+        // The keys have conflicting types.
+        return .errorType
+      }
+
+      if let _valueType = valueType, _valueType != valueType {
+        // The values have conflicting types.
+        return .errorType
+      }
+
+      if keyType == nil {
+        keyType = _keyType
+      }
+
+      if valueType == nil {
+        valueType = _valueType
+      }
+    }
+
+    return .dictionaryType(key: keyType ?? .any, value: valueType ?? .any)
   }
 
   /// The type of an expression.
@@ -194,6 +246,10 @@ public struct Environment {
       default: fatalError()
       }
     case .literal(let literalToken): return type(ofLiteralToken: literalToken)
+    case .arrayLiteral(let arrayLiteral):
+      return type(ofArrayLiteral: arrayLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
+    case .dictionaryLiteral(let dictionaryLiteral):
+      return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     }
   }
 
@@ -273,6 +329,7 @@ public struct Environment {
     case .arrayType(_): return 1
     case .dictionaryType(_, _): return 1
     case .inoutType(_): fatalError()
+    case .any: return 0
     case .errorType: return 0
 
     case .userDefinedType(let identifier):

@@ -169,6 +169,73 @@ extension Parser {
     consumeNewLines()
     return token
   }
+
+  func parseArrayLiteral() throws -> ArrayLiteral {
+    let openSquareBracket = try consume(.punctuation(.openSquareBracket))
+
+    var elements = [Expression]()
+
+    var closeSquareBracket: Token?
+
+    while let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) {
+      if let element = try? parseExpression(upTo: elementEnd) {
+        let token = try consume(tokens[elementEnd].kind)
+        if token.kind == .punctuation(.closeSquareBracket) { closeSquareBracket = token }
+        elements.append(element)
+      } else {
+        break
+      }
+    }
+
+    if elements.isEmpty {
+      closeSquareBracket = try consume(.punctuation(.closeSquareBracket))
+    }
+
+    return ArrayLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+  }
+
+  func parseDictionaryLiteral() throws -> AST.DictionaryLiteral {
+    let openSquareBracket = try consume(.punctuation(.openSquareBracket))
+
+    var elements = [AST.DictionaryLiteral.Entry]()
+
+    var closeSquareBracket: Token?
+
+    if let _ = try? consume(.punctuation(.colon)) {
+      /// The dictionary literal doesn't contain any elements.
+      
+      closeSquareBracket = try consume(.punctuation(.closeSquareBracket))
+      return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+    }
+
+    while let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) {
+      if let element = try? parseDictionaryElement(upTo: elementEnd) {
+        let token = try consume(tokens[elementEnd].kind)
+        if token.kind == .punctuation(.closeSquareBracket) { closeSquareBracket = token }
+        elements.append(.init(key: element.0, value: element.1))
+      } else {
+        break
+      }
+    }
+
+    if elements.isEmpty {
+      closeSquareBracket = try consume(.punctuation(.closeSquareBracket))
+    }
+
+    return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+  }
+
+  func parseDictionaryElement(upTo commaIndex: Int) throws -> (Expression, Expression) {
+    guard let colonIndex = indexOfFirstAtCurrentDepth([.punctuation(.comma)], maxIndex: commaIndex) else {
+      throw ParserError.expectedToken(.punctuation(.comma), sourceLocation: currentToken?.sourceLocation)
+    }
+
+    let key = try parseExpression(upTo: colonIndex)
+    try consume(.punctuation(.colon))
+    let value = try parseExpression(upTo: commaIndex)
+
+    return (key, value)
+  }
   
   func parseInoutExpression() throws -> InoutExpression {
     let ampersandToken = try consume(.punctuation(.ampersand))
@@ -547,6 +614,16 @@ extension Parser {
     // Try to parse a function call.
     if let functionCall = attempt(try parseFunctionCall()) {
       return .functionCall(functionCall)
+    }
+
+    // Try to parse an array literal.
+    if let arrayLiteral = attempt(task: parseArrayLiteral) {
+      return .arrayLiteral(arrayLiteral)
+    }
+
+    // Try to parse a dictionary literal.
+    if let dictionaryLiteral = attempt(task: parseDictionaryLiteral) {
+      return .dictionaryLiteral(dictionaryLiteral)
     }
 
     // Try to parse a literal.

@@ -373,6 +373,7 @@ public struct Type: SourceEntity {
     case dictionaryType(key: RawType, value: RawType)
     case userDefinedType(RawTypeIdentifier)
     case inoutType(RawType)
+    case any
     case errorType
 
     public var name: String {
@@ -383,6 +384,7 @@ public struct Type: SourceEntity {
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let identifier): return identifier
       case .inoutType(let rawType): return "&\(rawType)"
+      case .any: return "Any"
       case .errorType: return "Flint$ErrorType"
       }
     }
@@ -394,6 +396,34 @@ public struct Type: SourceEntity {
 
     public var isEventType: Bool {
       return self == .builtInType(.event)
+    }
+
+    /// Whether the type is a dynamic type.
+    public var isDynamicType: Bool {
+      if case .builtInType(_) = self {
+        return false
+      }
+
+      return true
+    }
+
+    /// Whether the type is compatible with the given type, i.e., if two expressions of those types can be used
+    /// interchangeably.
+    public func isCompatible(with otherType: Type.RawType) -> Bool {
+      if self == .any || otherType == .any { return true }
+      guard self != otherType else { return true }
+
+      switch (self, otherType) {
+      case (.arrayType(let e1), .arrayType(let e2)):
+        return e1.isCompatible(with: e2)
+      case (.fixedSizeArrayType(let e1, _), .fixedSizeArrayType(let e2, _)):
+        return e1.isCompatible(with: e2)
+      case (.fixedSizeArrayType(let e1, _), .arrayType(let e2)):
+        return e1.isCompatible(with: e2)
+      case (.dictionaryType(let key1, let value1), .dictionaryType(let key2, let value2)):
+        return key1.isCompatible(with: key2) && value1.isCompatible(with: value2)
+      default: return false
+      }
     }
   }
 
@@ -504,6 +534,8 @@ public indirect enum Expression: SourceEntity {
   case binaryExpression(BinaryExpression)
   case functionCall(FunctionCall)
   case literal(Token)
+  case arrayLiteral(ArrayLiteral)
+  case dictionaryLiteral(DictionaryLiteral)
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
@@ -516,6 +548,8 @@ public indirect enum Expression: SourceEntity {
     case .binaryExpression(let binaryExpression): return binaryExpression.sourceLocation
     case .functionCall(let functionCall): return functionCall.sourceLocation
     case .literal(let literal): return literal.sourceLocation
+    case .arrayLiteral(let arrayLiteral): return arrayLiteral.sourceLocation
+    case .dictionaryLiteral(let dictionaryLiteral): return dictionaryLiteral.sourceLocation
     case .self(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
@@ -550,6 +584,13 @@ public indirect enum Expression: SourceEntity {
     }
     
     return identifier.enclosingType
+  }
+
+  public var isLiteral: Bool {
+    switch self {
+    case .literal(_), .arrayLiteral(_), .dictionaryLiteral(_): return true
+    default: return false
+    }
   }
 }
 
@@ -633,6 +674,50 @@ public struct FunctionCall: SourceEntity {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken
+  }
+}
+
+/// An array literal, such as "[1,2,3]"
+public struct ArrayLiteral: SourceEntity {
+  public var openSquareBracketToken: Token
+  public var elements: [Expression]
+  public var closeSquareBracketToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+  }
+
+  public init(openSquareBracketToken: Token, elements: [Expression], closeSquareBracketToken: Token) {
+    self.openSquareBracketToken = openSquareBracketToken
+    self.elements = elements
+    self.closeSquareBracketToken = closeSquareBracketToken
+  }
+}
+
+/// A dictionary literal, such as "[1: 2, 3: 4]"
+public struct DictionaryLiteral: SourceEntity {
+  public var openSquareBracketToken: Token
+  public var elements: [Entry]
+  public var closeSquareBracketToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+  }
+
+  public init(openSquareBracketToken: Token, elements: [Entry], closeSquareBracketToken: Token) {
+    self.openSquareBracketToken = openSquareBracketToken
+    self.elements = elements
+    self.closeSquareBracketToken = closeSquareBracketToken
+  }
+
+  public struct Entry: Equatable {
+    var key: Expression
+    var value: Expression
+
+    public init(key: Expression, value: Expression) {
+      self.key = key
+      self.value = value
+    }
   }
 }
 

@@ -95,6 +95,14 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
+  public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: AST.ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
+  }
+
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     return ASTPassResult(element: subscriptExpression, diagnostics: [], passContext: passContext)
   }
@@ -189,6 +197,14 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

@@ -241,6 +241,8 @@ public class ASTDumper {
       writeNode("inout type") {
         self.dump(rawType)
       }
+    case .any:
+      writeLine("Any")
     case .errorType:
       writeLine("Flint error type \(rawType.name)")
     }
@@ -265,6 +267,8 @@ public class ASTDumper {
       case .functionCall(let functionCall): self.dump(functionCall)
       case .identifier(let identifier): self.dump(identifier)
       case .literal(let token): self.dump(token)
+      case .arrayLiteral(let arrayLiteral): self.dump(arrayLiteral)
+      case .dictionaryLiteral(let dictionaryLiteral): self.dump(dictionaryLiteral)
       case .self(let token): self.dump(token)
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
       case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
@@ -345,5 +349,22 @@ public class ASTDumper {
 
   func dump(_ token: Token) {
     writeLine("token: \(token.kind.description)")
+  }
+
+  func dump(_ arrayLiteral: ArrayLiteral) {
+    writeNode("ArrayLiteral") {
+      for element in arrayLiteral.elements {
+        self.dump(element)
+      }
+    }
+  }
+
+  func dump(_ dictionaryLiteral: DictionaryLiteral) {
+    writeNode("DictionaryLiteral") {
+      for element in dictionaryLiteral.elements {
+        self.dump(element.key)
+        self.dump(element.value)
+      }
+    }
   }
 }

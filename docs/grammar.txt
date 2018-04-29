@@ -107,5 +107,8 @@ literal -> numeric-literal | string-literal | boolean-literal
 numeric-literal -> decimal-literal
 decimal-literal -> [0-9]+ | [0-9]+ [.] [0-9]+
 
+array-literal -> [[]]
+dictionary-literal -> [[:]]
+
 string-literal -> ["] [a-zA-Z0-9]* ["]
 boolean-literal -> [true] | [false]

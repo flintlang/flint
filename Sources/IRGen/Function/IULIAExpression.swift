@@ -33,6 +33,12 @@ struct IULIAExpression {
       return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered()
     case .literal(let literal):
       return IULIALiteralToken(literalToken: literal).rendered()
+    case .arrayLiteral(let arrayLiteral):
+      guard arrayLiteral.elements.count == 0 else { fatalError("Cannot render non-empty array literals yet") }
+      return "0"
+    case .dictionaryLiteral(let dictionaryLiteral):
+      guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
+      return "0"
     case .self(let `self`):
       return IULIASelf(selfToken: self, asLValue: asLValue).rendered()
     case .subscriptExpression(let subscriptExpression):
@@ -144,7 +150,13 @@ struct IULIAAssignment {
   var lhs: Expression
   var rhs: Expression
   
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> String {
+    if !asTypeProperty {
+      guard !functionContext.environment.type(of: rhs, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext).isDynamicType else {
+        fatalError("Assigning dynamic types is not supported yet.")
+      }
+    }
+
     let rhsCode = IULIAExpression(expression: rhs).rendered(functionContext: functionContext)
     
     switch lhs {
