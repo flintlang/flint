@@ -16,13 +16,15 @@ contract Test {
 // CHECK-AST:   FixedSizeArrayType
 // CHECK-AST:     built-in type Int
 // CHECK-AST:     size 4
-  var arr: Int[4]
+// CHECK-AST:   ArrayLiteral
+  var arr: Int[4] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "arr2"
 // CHECK-AST:   ArrayType
 // CHECK-AST:     built-in type Int
-  var arr2: [Int]
+// CHECK-AST:   ArrayLiteral
+  var arr2: [Int] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "numWrites"

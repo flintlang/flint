@@ -78,8 +78,7 @@ public struct SemanticAnalyzer: ASTPass {
           fatalError("Default values for state properties are not supported for structs yet.")
         }
 
-        if case .literal(_) = assignedExpression {
-        } else {
+        if !assignedExpression.isLiteral {
           diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
         }
       }
@@ -255,6 +254,14 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
   /// Whether an expression refers to a state property.
@@ -441,6 +448,14 @@ public struct SemanticAnalyzer: ASTPass {
     }
     
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
+    return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

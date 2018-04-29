@@ -71,14 +71,11 @@ struct IULIAInitializer {
   func renderDefaultValuesAssignments() -> String {
     let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> String? in
       guard let assignedExpression = declaration.assignedExpression else { return nil }
-      guard case .literal(let literalToken) = assignedExpression else {
-        fatalError("Non-literal default values are not supported yet")
-      }
 
       var identifier = declaration.identifier
       identifier.enclosingType = typeIdentifier.name
 
-      return IULIAAssignment(lhs: .identifier(identifier), rhs: .literal(literalToken)).rendered(functionContext: functionContext)
+      return IULIAAssignment(lhs: .identifier(identifier), rhs: assignedExpression).rendered(functionContext: functionContext, asTypeProperty: true)
     }
 
     return defaultValueAssignments.joined(separator: "\n")

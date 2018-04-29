@@ -15,7 +15,8 @@ contract Foo {
 // CHECK-AST:    DictionaryType
 // CHECK-AST:      built-in type Address
 // CHECK-AST:      built-in type Int
-  var dictionary: [Address: Int]
+// CHECK-AST:   DictionaryLiteral
+  var dictionary: [Address: Int] = [:]
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "value"

@@ -288,6 +288,10 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .bracketedExpression(processResult.combining(visit(expression, passContext: processResult.passContext)))
     case .functionCall(let functionCall):
       processResult.element = .functionCall(processResult.combining(visit(functionCall, passContext: processResult.passContext)))
+    case .arrayLiteral(let arrayLiteral):
+      processResult.element = .arrayLiteral(processResult.combining(visit(arrayLiteral, passContext: processResult.passContext)))
+    case .dictionaryLiteral(let dictionaryLiteral):
+      processResult.element = .dictionaryLiteral(processResult.combining(visit(dictionaryLiteral, passContext: processResult.passContext)))
     case .identifier(let identifier):
       processResult.element = .identifier(processResult.combining(visit(identifier, passContext: processResult.passContext)))
     case .literal(_), .self(_): break
@@ -361,6 +365,31 @@ public struct ASTVisitor<Pass: ASTPass> {
     }
 
     let postProcessResult = pass.postProcess(functionCall: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
+    var processResult = pass.process(arrayLiteral: arrayLiteral, passContext: passContext)
+
+    processResult.element.elements = processResult.element.elements.map { element in
+      return processResult.combining(visit(element, passContext: processResult.passContext))
+    }
+
+    let postProcessResult = pass.postProcess(arrayLiteral: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral> {
+    var processResult = pass.process(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
+
+    processResult.element.elements = processResult.element.elements.map { element in
+      var element = element
+      element.key = processResult.combining(visit(element.key, passContext: processResult.passContext))
+      element.value = processResult.combining(visit(element.value, passContext: processResult.passContext))
+      return element
+    }
+
+    let postProcessResult = pass.postProcess(dictionaryLiteral: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
