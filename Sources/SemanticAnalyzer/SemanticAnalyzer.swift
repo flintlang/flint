@@ -58,10 +58,12 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
 
-    if let _ = passContext.functionDeclarationContext {
+    let inFunctionOrInitializer = passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil
+
+    if inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
-    } else {
+    } else if let contractStateDeclarationContext = passContext.contractStateDeclarationContext {
       // This is a state property declaration.
 
       // If a default value is assigned, it should be a literal.
@@ -75,6 +77,12 @@ public struct SemanticAnalyzer: ASTPass {
 
         if !assignedExpression.isLiteral {
           diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
+        }
+      } else {
+        if variableDeclaration.type.rawType.isBuiltInType && !variableDeclaration.type.rawType.isEventType && passContext.environment!.publicInitializer(forContract: contractStateDeclarationContext.contractIdentifier.name) == nil {
+          // The contract has no public initializer, so a default value must be provided.
+
+          diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
         }
       }
     }
@@ -372,7 +380,8 @@ public struct SemanticAnalyzer: ASTPass {
       if !context.callerCapabilities.contains(where: { $0.isAny }) {
         diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(initializerDeclaration))
       } else {
-        if let publicInitializer = passContext.environment!.publicInitializer(forContract: contractName) {
+        if let publicInitializer = passContext.environment!.publicInitializer(forContract: contractName), publicInitializer.sourceLocation != initializerDeclaration.sourceLocation {
+          // There can be at most one public initializer.
           diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
         } else {
           // This is the first public initializer we encounter in this contract.
@@ -382,8 +391,13 @@ public struct SemanticAnalyzer: ASTPass {
     }
 
     // Check all the properties in the type have been assigned.
-    if let unassignedProperties = passContext.unassignedProperties, unassignedProperties.count > 0 {
-      diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: unassignedProperties))
+    if let unassignedProperties = passContext.unassignedProperties {
+      let propertiesWithBuiltInTypes = unassignedProperties.filter { $0.type.rawType.isBuiltInType && !$0.type.rawType.isEventType }
+      
+      // For now, only non user-defined types need to be assigned a value.
+      if propertiesWithBuiltInTypes.count > 0 {
+        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: unassignedProperties))
+      }
     }
 
     return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)

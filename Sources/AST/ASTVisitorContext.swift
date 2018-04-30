@@ -5,6 +5,11 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
+/// Contextual information used when visiting the state properties declared in a contract declaration.
+public struct ContractStateDeclarationContext {
+  public var contractIdentifier: Identifier
+}
+
 /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
 /// contract the functions are declared for, and the caller capability associated with them.
 public struct ContractBehaviorDeclarationContext {

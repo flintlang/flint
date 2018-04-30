@@ -116,9 +116,9 @@ public struct Environment {
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
     return types[enclosingType]!.properties.compactMap { key, value in
       switch value.rawType {
-      case .builtInType(.address): return key
-      case .fixedSizeArrayType(.builtInType(.address), _): return key
-      case .arrayType(.builtInType(.address)): return key
+      case .basicType(.address): return key
+      case .fixedSizeArrayType(.basicType(.address), _): return key
+      case .arrayType(.basicType(.address)): return key
       default: return nil
       }
     }
@@ -145,13 +145,13 @@ public struct Environment {
     return matchingFunction.resultType
   }
 
-  /// The type of a literal token.
+  /// The types a literal token can be.
   public func type(ofLiteralToken literalToken: Token) -> Type.RawType {
     guard case .literal(let literal) = literalToken.kind else { fatalError() }
     switch literal {
-    case .boolean(_): return .builtInType(.bool)
-    case .decimal(.integer(_)): return .builtInType(.int)
-    case .string(_): return .builtInType(.string)
+    case .boolean(_): return .basicType(.bool)
+    case .decimal(.integer(_)): return .basicType(.int)
+    case .string(_): return .basicType(.string)
     default: fatalError()
     }
   }
@@ -223,7 +223,7 @@ public struct Environment {
       return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
-        return .builtInType(.bool)
+        return .basicType(.bool)
       }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
@@ -333,8 +333,8 @@ public struct Environment {
   /// The memory size of a type, in terms of number of memory slots it occupies.
   public func size(of type: Type.RawType) -> Int {
     switch type {
-    case .builtInType(.event): return 0 // Events do not use memory.
-    case .builtInType(_): return 1
+    case .basicType(.event): return 0 // Events do not use memory.
+    case .basicType(_): return 1
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
     case .arrayType(_): return 1
     case .dictionaryType(_, _): return 1

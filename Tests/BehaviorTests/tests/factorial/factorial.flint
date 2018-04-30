@@ -1,5 +1,5 @@
 contract Factorial {
-  var value: Int
+  var value: Int = 0
 }
 
 Factorial :: (any) {

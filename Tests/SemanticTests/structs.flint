@@ -13,7 +13,7 @@ struct Test2 {
 }
 
 contract Foo {
-  var c: Int
+  var c: Int = 0
   var a: Test
   var b: Test2
 }

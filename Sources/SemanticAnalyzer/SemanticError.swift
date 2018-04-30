@@ -56,8 +56,8 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The default value assigned to a state property must be a literal")
   }
 
-  static func constantStatePropertyIsNotAssignedAValue(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "'let' constant '\(variableDeclaration.identifier.name)' needs to be assigned a value")
+  static func statePropertyIsNotAssignedAValue(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "State property '\(variableDeclaration.identifier.name)' needs to be assigned a value")
   }
 
   static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {

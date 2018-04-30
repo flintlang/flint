@@ -1,7 +1,7 @@
 // RUN: %flintc %s --verify
 
 contract Test {
-  var x: Int
+  var x: Int = 0
 }
 
 Test :: (any) {

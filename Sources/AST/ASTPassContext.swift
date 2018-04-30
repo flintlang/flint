@@ -55,6 +55,12 @@ extension ASTPassContext {
     set { self[AsLValueContextEntry.self] = newValue }
   }
 
+  /// Contextual information used when visiting the state properties declared in a contract declaration.
+  public var contractStateDeclarationContext: ContractStateDeclarationContext? {
+    get { return self[ContractStateDeclarationContextEntry.self] }
+    set { self[ContractStateDeclarationContextEntry.self] = newValue }
+  }
+
   /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
   /// contract the functions are declared for, and the caller capability associated with them.
   public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
@@ -112,6 +118,10 @@ private struct EnvironmentContextEntry: PassContextEntry {
 
 private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
+}
+
+private struct ContractStateDeclarationContextEntry: PassContextEntry {
+  typealias Value = ContractStateDeclarationContext
 }
 
 private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {

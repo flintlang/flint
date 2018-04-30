@@ -1,8 +1,8 @@
 // RUN: %flintc %s --verify
 
 contract Test {
-  var a: Int[10]
-  var b: Int
+  var a: Int[10] = []
+  var b: Int = 0
   var f: Foo
 }
 

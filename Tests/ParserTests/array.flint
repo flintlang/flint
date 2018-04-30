@@ -29,15 +29,23 @@ contract Test {
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "numWrites"
 // CHECK-AST:   built-in type Int
-  var numWrites: Int
+// CHECK-AST:   0
+  var numWrites: Int = 0
 }
 
 // CHECK-AST: TopLevelDeclaration
 // CHECK-AST: ContractBehaviorDeclaration
 // CHECK-AST:   identifier "Test"
+// CHECK-AST:   capability binding "caller"
 // CHECK-AST:   CallerCapability
 // CHECK-AST:     identifier "any"
-Test :: (any) {
+Test :: caller <- (any) {
+  
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {
+    self.owner = caller
+  }
 
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   mutating

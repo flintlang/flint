@@ -15,7 +15,7 @@ enum CanonicalType: String {
 
   init?(from rawType: Type.RawType) {
     switch rawType {
-    case .builtInType(let builtInType):
+    case .basicType(let builtInType):
       switch builtInType {
       case .address: self = .address
       case .int, .bool, .wei: self = .uint256

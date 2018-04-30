@@ -17,10 +17,12 @@ Test :: caller <- (any) {
   }
 
   init() {
+    self.a = caller
   }
 }
 
 Test :: (a) {
   public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability "any"}}
+    self.a = a
   }
 }

@@ -8,7 +8,7 @@ contract Foo {
 // CHECK-AST:  FixedSizeArrayType
 // CHECK-AST:   built-in type Int
 // CHECK-AST:   size 16
-  var array: Int[16]
+  var array: Int[16] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:  identifier "dictionary"
@@ -21,7 +21,7 @@ contract Foo {
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "value"
 // CHECK-AST:   built-in type Int
-  var value: Int
+  var value: Int = 0
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "didCompleteSomething"

@@ -411,7 +411,7 @@ extension Parser {
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
 
-    let members = try parseContractBehaviorMembers()
+    let members = try parseContractBehaviorMembers(contractIdentifier: contractIdentifier.name)
 
     try consume(.punctuation(.closeBrace))
 
@@ -447,7 +447,7 @@ extension Parser {
     return callerCapabilities
   }
 
-  func parseContractBehaviorMembers() throws -> [ContractBehaviorMember] {
+  func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
     var members = [ContractBehaviorMember]()
 
     while true {
@@ -455,6 +455,12 @@ extension Parser {
         members.append(.functionDeclaration(functionDeclaration))
       } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
         members.append(.initializerDeclaration(initializerDeclaration))
+
+        if initializerDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
+          // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+          // contract's state properties.
+          environment.setPublicInitializer(initializerDeclaration, forContract: contractIdentifier)
+        }
       } else {
         break
       }
