@@ -231,7 +231,7 @@ public class ASTDumper {
         self.dump(keyType)
         self.dump(valueType)
       }
-    case .builtInType(let builtInType):
+    case .basicType(let builtInType):
       writeNode("BuiltInType") {
         self.dump(builtInType)
       }
@@ -248,7 +248,7 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ builtInType: Type.BuiltInType) {
+  func dump(_ builtInType: Type.BasicType) {
     writeLine("built-in type \(builtInType.rawValue)")
   }
 

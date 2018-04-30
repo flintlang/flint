@@ -339,16 +339,16 @@ extension Parser {
     let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace))
-    let variableDeclarations = try parseVariableDeclarations(asTypeProperties: true)
+    let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
 
     return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
   }
   
-  func parseVariableDeclarations(asTypeProperties: Bool = false) throws -> [VariableDeclaration] {
+  func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
     
-    while let variableDeclaration = attempt(try parseVariableDeclaration(asTypeProperty: asTypeProperties)) {
+    while let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: enclosingType)) {
       variableDeclarations.append(variableDeclaration)
     }
     
@@ -360,11 +360,10 @@ extension Parser {
   /// `VariableDeclaration` struct, where an assignment to a local variable will be represented as a `BinaryExpression`
   /// with an `=` operator.
   ///
-  /// - Parameter asTypeProperty: Whether the variable declaration should be parsed as the declaration of a
-  ///                             type property.
+  /// - Parameter enclosingType: The name of the type in which the variable is declared, if it is a state property.
   /// - Returns: The parsed `VariableDeclaration`.
   /// - Throws: If the token streams cannot be parsed as a `VariableDeclaration`.
-  func parseVariableDeclaration(asTypeProperty: Bool = false) throws -> VariableDeclaration {
+  func parseVariableDeclaration(enclosingType: RawTypeIdentifier? = nil) throws -> VariableDeclaration {
     let isConstant: Bool
 
     let declarationToken: Token
@@ -378,10 +377,12 @@ extension Parser {
       isConstant = true
     }
 
-    let name = try parseIdentifier()
+    var name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
 
     let assignedExpression: Expression?
+
+    let asTypeProperty = enclosingType != nil
 
     // If we are parsing a state property defined in a type, and it has been assigned a default value, parse it.
     if asTypeProperty, let equalToken = attempt(try consume(.punctuation(.equal))) {
@@ -391,6 +392,10 @@ extension Parser {
       assignedExpression = try parseExpression(upTo: newLineIndex)
     } else {
       assignedExpression = nil
+    }
+
+    if let enclosingType = enclosingType {
+      name.enclosingType = enclosingType
     }
 
     return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant, assignedExpression: assignedExpression)
@@ -406,7 +411,7 @@ extension Parser {
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace))
 
-    let members = try parseContractBehaviorMembers()
+    let members = try parseContractBehaviorMembers(contractIdentifier: contractIdentifier.name)
 
     try consume(.punctuation(.closeBrace))
 
@@ -442,7 +447,7 @@ extension Parser {
     return callerCapabilities
   }
 
-  func parseContractBehaviorMembers() throws -> [ContractBehaviorMember] {
+  func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
     var members = [ContractBehaviorMember]()
 
     while true {
@@ -450,6 +455,12 @@ extension Parser {
         members.append(.functionDeclaration(functionDeclaration))
       } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
         members.append(.initializerDeclaration(initializerDeclaration))
+
+        if initializerDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
+          // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+          // contract's state properties.
+          environment.setPublicInitializer(initializerDeclaration, forContract: contractIdentifier)
+        }
       } else {
         break
       }
@@ -736,7 +747,7 @@ extension Parser {
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
     var members = [StructMember]()
     while true {
-      if let variableDeclaration = attempt(try parseVariableDeclaration(asTypeProperty: true)) {
+      if let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: structIdentifier.name)) {
         members.append(.variableDeclaration(variableDeclaration))
       } else if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
         members.append(.functionDeclaration(functionDeclaration))

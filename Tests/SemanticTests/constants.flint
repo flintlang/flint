@@ -1,34 +1,34 @@
 // RUN: %flintc %s --verify
 
 contract Constants {
-  var a: Int
+  var a: Int // expected-error {{State property 'a' needs to be assigned a value}}
   var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
   let c: Int = 2 + 3 // expected-error {{The default value assigned to a state property must be a literal}}
   let d: Int = 3
-  let e: Int // expected-error {{'let' constant 'e' needs to be assigned a value}}
+  let e: Int // expected-error {{State property 'e' needs to be assigned a value}}
 }
 
 Constants :: (any) {
   mutating func foo() {
     let a: Int = 2 // expected-note {{'a' is declared here}}
-    a = 3 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+    a = 3 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}
 
     let b: Int = a
     self.a = 3
 
     if true {
-      a = 5 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+      a = 5 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}
     } else {
-      a = 7 // expected-error {{Cannot assign to value: 'a' is a 'let' constant}}
+      a = 7 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}
     }
 
-    d = 4 // expected-error {{Cannot assign to value: 'd' is a 'let' constant}}
+    d = 4 // expected-error {{Cannot reassign to value: 'd' is a 'let' constant}}
   }
 
   mutating func bar() {
     var d: Bool = true
     d = false
 
-    self.d = 5 // expected-error {{Cannot assign to value: 'd' is a 'let' constant}}
+    self.d = 5 // expected-error {{Cannot reassign to value: 'd' is a 'let' constant}}
   }
 }

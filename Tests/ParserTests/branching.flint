@@ -2,10 +2,14 @@
 
 contract Wallet {
   var owner: Address
-  var contents: Int
+  var contents: Int = 0
 }
 
 Wallet :: (any) {
+  public init(owner: Address) {
+    self.owner = owner
+  }
+
   public func factorial(n: Int) -> Int {
 
 // CHECK-AST: IfStatement

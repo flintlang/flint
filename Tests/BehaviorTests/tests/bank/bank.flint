@@ -1,10 +1,10 @@
 contract Bank {
   var manager: Address
-  var balances: [Address: Int]
-  var accounts: [Address]
-  var lastIndex: Int
+  var balances: [Address: Int] = [:]
+  var accounts: [Address] = []
+  var lastIndex: Int = 0
 
-  var totalDonations: Wei
+  var totalDonations: Wei = 0
 }
 
 Bank :: account <- (any) {

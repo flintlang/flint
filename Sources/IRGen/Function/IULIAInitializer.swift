@@ -36,7 +36,7 @@ struct IULIAInitializer {
   var scopeContext: ScopeContext {
     var localVariables = initializerDeclaration.parametersAsVariableDeclarations
     if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .builtInType(.address), identifier: capabilityBinding)))
+      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
     }
     return ScopeContext(localVariables: localVariables)
   }

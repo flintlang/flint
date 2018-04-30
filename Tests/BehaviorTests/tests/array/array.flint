@@ -1,9 +1,9 @@
 contract Array {
-  var arr: Int[4]
-  var arr2: Int[10]
-  var numWrites: Int
+  var arr: Int[4] = []
+  var arr2: Int[10] = []
+  var numWrites: Int = 0
 
-  var arr3: [S]
+  var arr3: [S] = []
 }
 
 Array :: (any) {

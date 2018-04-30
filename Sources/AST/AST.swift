@@ -158,7 +158,7 @@ public struct FunctionDeclaration: SourceEntity {
 
   /// The raw type of the function's return type.
   public var rawType: Type.RawType {
-    return resultType?.rawType ?? .builtInType(.void)
+    return resultType?.rawType ?? .basicType(.void)
   }
 
   public var sourceLocation: SourceLocation {
@@ -262,7 +262,7 @@ public struct InitializerDeclaration: SourceEntity {
     self.parameters = parameters
     self.closeBracketToken = closeBracketToken
     self.body = body
-    self.closeBraceToken = closeBracketToken
+    self.closeBraceToken = closeBraceToken
   }
 }
 
@@ -307,7 +307,7 @@ public struct Parameter: SourceEntity {
 
   /// Whether the parameter is both `implicit` and has a currency type.
   public var isPayableValueParameter: Bool {
-    if isImplicit, case .builtInType(let type) = type.rawType, type.isCurrencyType {
+    if isImplicit, case .basicType(let type) = type.rawType, type.isCurrencyType {
       return true
     }
     return false
@@ -367,7 +367,7 @@ public struct Identifier: Hashable, SourceEntity {
 public struct Type: SourceEntity {
   /// A Flint raw type, without a source location.
   public indirect enum RawType: Equatable {
-    case builtInType(BuiltInType)
+    case basicType(BasicType)
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
@@ -380,7 +380,7 @@ public struct Type: SourceEntity {
       switch self {
       case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
       case .arrayType(let rawType): return "[\(rawType.name)]"
-      case .builtInType(let builtInType): return "\(builtInType.rawValue)"
+      case .basicType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let identifier): return identifier
       case .inoutType(let rawType): return "&\(rawType)"
@@ -389,18 +389,24 @@ public struct Type: SourceEntity {
       }
     }
 
-    public var isBasicType: Bool {
-      if case .builtInType(_) = self { return true }
-      return false
+    public var isBuiltInType: Bool {
+      switch self {
+      case .basicType(_), .any, .errorType: return true
+      case .arrayType(let element): return element.isBuiltInType
+      case .fixedSizeArrayType(let element, _): return element.isBuiltInType
+      case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
+      case .inoutType(let element): return element.isBuiltInType
+      case .userDefinedType(_): return false
+      }
     }
 
     public var isEventType: Bool {
-      return self == .builtInType(.event)
+      return self == .basicType(.event)
     }
 
     /// Whether the type is a dynamic type.
     public var isDynamicType: Bool {
-      if case .builtInType(_) = self {
+      if case .basicType(_) = self {
         return false
       }
 
@@ -427,7 +433,7 @@ public struct Type: SourceEntity {
     }
   }
 
-  public enum BuiltInType: String {
+  public enum BasicType: String {
     case address = "Address"
     case int = "Int"
     case string = "String"
@@ -463,8 +469,8 @@ public struct Type: SourceEntity {
 
   public init(identifier: Identifier, genericArguments: [Type] = []) {
     let name = identifier.name
-    if let builtInType = BuiltInType(rawValue: name) {
-      rawType = .builtInType(builtInType)
+    if let builtInType = BasicType(rawValue: name) {
+      rawType = .basicType(builtInType)
     } else {
       rawType = .userDefinedType(name)
     }

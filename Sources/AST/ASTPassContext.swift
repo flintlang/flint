@@ -55,6 +55,12 @@ extension ASTPassContext {
     set { self[AsLValueContextEntry.self] = newValue }
   }
 
+  /// Contextual information used when visiting the state properties declared in a contract declaration.
+  public var contractStateDeclarationContext: ContractStateDeclarationContext? {
+    get { return self[ContractStateDeclarationContextEntry.self] }
+    set { self[ContractStateDeclarationContextEntry.self] = newValue }
+  }
+
   /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
   /// contract the functions are declared for, and the caller capability associated with them.
   public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
@@ -69,10 +75,16 @@ extension ASTPassContext {
     set { self[StructDeclarationContextEntry.self] = newValue }
   }
 
-  /// Contextual information used when visiting statements in a function, such as if it is mutating or note.
+  /// Contextual information used when visiting statements in a function, such as if the function is mutating or note.
   public var functionDeclarationContext: FunctionDeclarationContext? {
     get { return self[FunctionDeclarationContextEntry.self] }
     set { self[FunctionDeclarationContextEntry.self] = newValue }
+  }
+
+  /// Contextual information used when visiting statements in an initializer.
+  public var initializerDeclarationContext: InitializerDeclarationContext? {
+    get { return self[InitializerDeclarationContextEntry.self] }
+    set { self[InitializerDeclarationContextEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting a scope, such as the local variables which are accessible in that
@@ -108,6 +120,10 @@ private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
+private struct ContractStateDeclarationContextEntry: PassContextEntry {
+  typealias Value = ContractStateDeclarationContext
+}
+
 private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
   typealias Value = ContractBehaviorDeclarationContext
 }
@@ -118,6 +134,10 @@ private struct StructDeclarationContextEntry: PassContextEntry {
 
 private struct FunctionDeclarationContextEntry: PassContextEntry {
   typealias Value = FunctionDeclarationContext
+}
+
+private struct InitializerDeclarationContextEntry: PassContextEntry {
+  typealias Value = InitializerDeclarationContext
 }
 
 private struct ScopeContextContextEntry: PassContextEntry {
