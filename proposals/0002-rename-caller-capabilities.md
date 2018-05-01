@@ -12,24 +12,24 @@ The term "caller capabilities" has been used to refer to the mechanism which ens
 Flint contract can only be called by a specific set of users. In particular, we say the caller of a
 function must have the correct "caller capability" in order to be able to call a function. This term
 might be however confusing, as the term "capability" is used differently in other languages which
-feature "capabilities". The key difference is that capabilities are usually _transferable_, where
-Flint caller capabilities are not. We propose renaming caller capabilities to **caller identities**.
+feature capabilities. Capabilities are usually _transferable_, and Flint caller capabilities are 
+not. We propose renaming caller capabilities to **caller identities**.
 
 ## Motivation
 
-Programming languages such as [Pony](http://ponylang.org) use the term ["reference
-capabilities"](https://tutorial.ponylang.org/capabilities/reference-capabilities.html) to express
+Programming languages such as [Pony](http://ponylang.org) use the term "[reference
+capabilities](https://tutorial.ponylang.org/capabilities/reference-capabilities.html)" to express
 access rights on _objects_. In Flint, caller capabilities express access rights to _functions_.
 However, the term "capability" usually refers to _transferable_ access rights. This means that if an
 entity is allowed to access a resource, it should be able to transfer that right to another entity.
 [Mark Miller et al.](http://srl.cs.jhu.edu/pubs/SRL2003-02.pdf) describe four security models which 
-make the distinction between _Access Control Lists (ACLs)_ and different types of _capabilities_.
-Flint caller capability would actually fit under _Model 1. ACLs as columns_.
+make the distinction between Access Control Lists (ACLs) and different types of capabilities.
+Flint caller capability would actually fit more under "Model 1. ACLs as columns".
 Some definitions regard a capability as an _unforgeable token_, i.e., a bit string which when
 possessed by a user, allows access to a resource.
 
-Flint caller capabilities in fact implement something more similar to  Role-Based Access Control
-(RBAC). RBAC based systems restrict certain operations to sets of users, through _roles_: if a user
+Flint caller capabilities in fact implement something more similar to  [Role-Based Access Control](https://csrc.nist.gov/publications/detail/conference-paper/1992/10/13/role-based-access-controls)
+(RBAC). RBAC-based systems restrict certain operations to sets of users, through _roles_: if a user
 has the appropriate role, it is allowed to perform the operation. In Flint, functions can only be
 called if the user has the appropriate role.
 
@@ -48,9 +48,8 @@ Bank :: (manager) {
 }
 ```
 
-However, the manager's right to call `clear(address:)` is non-transferable, i.e., it cannot be
-delegated to another Ethereum user. Hence referring to `address` as a caller capability is wrong 
-under the classical definition of the term "capability".
+The manager's right to call `clear(address:)` is non-transferable, i.e., it cannot be delegated to 
+another Ethereum user, which might be the expectation when thinking about a capability.
 
 ## Proposed solution
 
@@ -58,8 +57,8 @@ We suggest the term **caller identity**. It clearly portrays that the determinat
 caller is allowed to call a function is based on an _identity_ check. Naturally, identities cannot
 be transferred, and this term better describes Flint's mechanism.
 
-We'll say a caller is allowed to call a function if it has an appropriate **caller identity**, or
-simply an appropriate _identity_, rather than a _capability_.
+We'll say a caller is allowed to call a function if it has the appropriate **caller identity**, or
+simply the appropriate _identity_, rather than _capability_.
 
 The error message related to invalid function calls due to incompatible caller identities would be
 updated:
