@@ -57,29 +57,33 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
 
     let inFunctionOrInitializer = passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil
 
     if inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
-    } else if let contractStateDeclarationContext = passContext.contractStateDeclarationContext {
+    } else {
+      // Whether the type has an initializer defined.
+      let isInitializerDeclared: Bool
+
+      if let contractStateDeclarationContext = passContext.contractStateDeclarationContext {
+        isInitializerDeclared = environment.publicInitializer(forContract: contractStateDeclarationContext.contractIdentifier.name) != nil
+      } else {
+        isInitializerDeclared = environment.initializers(in: passContext.structDeclarationContext!.structIdentifier.name).count > 0
+      }
+
       // This is a state property declaration.
 
       // If a default value is assigned, it should be a literal.
 
       if let assignedExpression = variableDeclaration.assignedExpression {
-
-        // Default values for state properties are not supported for structs yet.
-        if let _ = passContext.structDeclarationContext {
-          fatalError("Default values for state properties are not supported for structs yet.")
-        }
-
         if !assignedExpression.isLiteral {
           diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
         }
       } else {
-        if variableDeclaration.type.rawType.isBuiltInType && !variableDeclaration.type.rawType.isEventType && passContext.environment!.publicInitializer(forContract: contractStateDeclarationContext.contractIdentifier.name) == nil {
+        if variableDeclaration.type.rawType.isBuiltInType && !variableDeclaration.type.rawType.isEventType && !isInitializerDeclared {
           // The contract has no public initializer, so a default value must be provided.
 
           diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
@@ -217,6 +221,7 @@ public struct SemanticAnalyzer: ASTPass {
             }
           }
 
+          // In initializers.
           if let _ = passContext.initializerDeclarationContext {
             // Check if the property has been marked as assigned yet.
             if let first = passContext.unassignedProperties!.index(where: { $0.identifier.name == identifier.name && $0.identifier.enclosingType == identifier.enclosingType }) {
@@ -280,11 +285,15 @@ public struct SemanticAnalyzer: ASTPass {
       let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
-
+    
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    if let _ = passContext.initializerDeclarationContext {
+      // Function calls are not allowed in initializers yet
+      fatalError("Function calls are not allowed in initializers yet.")
+    }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
@@ -447,43 +456,47 @@ public struct SemanticAnalyzer: ASTPass {
     // Called once we've visited the function call's arguments.
 
     var passContext = passContext
-    let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
     let enclosingType = enclosingTypeIdentifier(in: passContext).name
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    
+
     var diagnostics = [Diagnostic]()
 
-    // Find the function declaration associated with this function call.
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
-    case .success(let matchingFunction):
-      // The function declaration is found.
+    if let functionDeclarationContext = passContext.functionDeclarationContext {
+      // Find the function declaration associated with this function call.
+      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+      case .matchedFunction(let matchingFunction):
+        // The function declaration is found.
 
-      if matchingFunction.isMutating {
-        // The function is mutating.
-        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
-        
-        if !functionDeclarationContext.isMutating {
-          // The function in which the function call appears in is not mutating.
-          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
-        }
-      }
+        if matchingFunction.isMutating {
+          // The function is mutating.
+          addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
-      // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
-      for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
-        if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-          addMutatingExpression(argument, passContext: &passContext)
-          
           if !functionDeclarationContext.isMutating {
+            // The function in which the function call appears in is not mutating.
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
           }
         }
-      }
-      
-    case .failure(candidates: let candidates):
-      // A matching function declaration couldn't be found. Try to match an event call.
-      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+
+        // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
+        for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
+          if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
+            addMutatingExpression(argument, passContext: &passContext)
+
+            if !functionDeclarationContext.isMutating {
+              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+            }
+          }
+        }
+
+      case .matchedInitializer(_):
+        break
+
+      case .failure(let candidates):
+        // A matching function declaration couldn't be found. Try to match an event call.
+        if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+          diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+        }
       }
     }
     

@@ -2,6 +2,8 @@ contract Inits {
   var a: Int
   var b: Address
   var s: String
+  var s1: String = "foo"
+  var t: T
 }
 
 Inits :: caller <- (any) {
@@ -21,5 +23,36 @@ Inits :: caller <- (any) {
 
   public func getS() -> String {
     return s
+  }
+
+  public func getS1() -> String {
+    return s1
+  }
+
+  public mutating func setT(x: Int, y: Bool) {
+    t = T(x, y)
+  }
+
+  public func getTx() -> Int {
+    return t.x
+  }
+
+  public func getTy() -> Bool {
+    return t.y
+  }
+
+  public func getTs() -> String {
+    return t.s
+  }
+}
+
+struct T {
+  var x: Int
+  var y: Bool
+  let s: String = "test"
+  
+  public init(x: Int, y: Bool) {
+    self.x = x
+    self.y = y
   }
 }

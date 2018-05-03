@@ -7,7 +7,7 @@
 
 /// Information about the source program.
 public struct Environment {
-  /// Information abbout each type (contracts and structs) which the program define, such as its properties and
+  /// Information about each type (contracts and structs) which the program define, such as its properties and
   /// functions.
   var types = [RawTypeIdentifier: TypeInformation]()
 
@@ -32,7 +32,9 @@ public struct Environment {
   /// Add a struct declaration to the environment.
   public mutating func addStruct(_ structDeclaration: StructDeclaration) {
     declaredStructs.append(structDeclaration.identifier.name)
-    types[structDeclaration.identifier.name] = TypeInformation()
+    if types[structDeclaration.identifier.name] == nil {
+      types[structDeclaration.identifier.name] = TypeInformation()
+    }
     setProperties(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
       addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name)
@@ -47,6 +49,12 @@ public struct Environment {
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
       .append(FunctionInformation(declaration: functionDeclaration, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating))
+  }
+
+  /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
+  /// capabilities is expected.
+  public mutating func addInitializer(_ initializerDeclaration: InitializerDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
+    types[enclosingType, default: TypeInformation()].initializers.append(InitializerInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
   }
 
   /// Add a list of properties to a type.
@@ -75,6 +83,11 @@ public struct Environment {
   /// Whether a struct has been declared in the program.
   public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
     return declaredStructs.contains(type)
+  }
+
+  /// Whether a function call refers to an initializer.
+  public func isInitializerCall(_ functionCall: FunctionCall) -> Bool {
+    return isStructDeclared(functionCall.identifier.name)
   }
   
   /// Whether the given type is a reference type (a contract).
@@ -112,6 +125,11 @@ public struct Environment {
     return types[enclosingType]!.properties.values.map { $0.variableDeclaration }
   }
 
+  /// The list of initializers in a type.
+  public func initializers(in enclosingType: RawTypeIdentifier) -> [InitializerInformation] {
+    return types[enclosingType]!.initializers
+  }
+
   /// The list of properties declared in a type which can be used as caller capabilities.
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
     return types[enclosingType]!.properties.compactMap { key, value in
@@ -141,7 +159,7 @@ public struct Environment {
 
   /// The type return type of a function call, determined by looking up the function's declaration.
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
-    guard case .success(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) else { return .errorType }
+    guard case .matchedFunction(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) else { return .errorType }
     return matchingFunction.resultType
   }
 
@@ -265,10 +283,12 @@ public struct Environment {
 
   /// The result of attempting to match a function call to its function declaration.
   ///
-  /// - success: The function declaration has been found.
+  /// - matchedFunction: A matching function declaration has been found.
+  /// - matchedInitializer: A matching initializer declaration has been found
   /// - failure: The function declaration could not be found.
   public enum FunctionCallMatchResult {
-    case success(FunctionInformation)
+    case matchedFunction(FunctionInformation)
+    case matchedInitializer(InitializerInformation)
     case failure(candidates: [FunctionInformation])
   }
 
@@ -283,9 +303,12 @@ public struct Environment {
   public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
 
+    var match: FunctionCallMatchResult? = nil
+
+    let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
+
     if let functions = types[enclosingType]!.functions[functionCall.identifier.name] {
       for candidate in functions {
-        let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
 
         guard candidate.parameterTypes == argumentTypes,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
@@ -293,11 +316,28 @@ public struct Environment {
             continue
         }
 
-        return .success(candidate)
+        match = .matchedFunction(candidate)
       }
     }
 
-    return .failure(candidates: candidates)
+    if let initializers = types[functionCall.identifier.name]?.initializers {
+      for candidate in initializers {
+        guard candidate.parameterTypes == argumentTypes,
+          areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
+            // TODO: Add initializer candidates.
+            continue
+        }
+
+        if match != nil {
+          // This is an ambiguous call. There are too many matches.
+          return .failure(candidates: [])
+        }
+        
+        match = .matchedInitializer(candidate)
+      }
+    }
+
+    return match ?? .failure(candidates: candidates)
   }
 
   /// Set the public initializer for the given contract. A contract should have at most one public initializer.
@@ -386,6 +426,7 @@ public struct TypeInformation {
   var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
+  var initializers = [InitializerInformation]()
   var publicInitializer: InitializerDeclaration? = nil
 }
 
@@ -430,5 +471,15 @@ public struct FunctionInformation {
 
   var resultType: Type.RawType? {
     return declaration.resultType?.rawType
+  }
+}
+
+/// Informatino about an initializer.
+public struct InitializerInformation {
+  public var declaration: InitializerDeclaration
+  public var callerCapabilities: [CallerCapability]
+
+  var parameterTypes: [Type.RawType] {
+    return declaration.parameters.map { $0.type.rawType }
   }
 }

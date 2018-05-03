@@ -7,8 +7,8 @@
 
 import AST
 
-/// Generates code for an initializer.
-struct IULIAInitializer {
+/// Generates code for a contract initializer.
+struct IULIAContractInitializer {
   var initializerDeclaration: InitializerDeclaration
   var typeIdentifier: Identifier
 
@@ -45,14 +45,14 @@ struct IULIAInitializer {
     let parameterSizes = initializerDeclaration.explicitParameters.map { environment.size(of: $0.type.rawType) }
     let offsetsAndSizes = zip(parameterSizes.reversed().reduce((0, [Int]())) { (acc, element) in
       let (size, sizes) = acc
-      let nextSize = size + element * 32
+      let nextSize = size + element * EVM.wordSize
       return (nextSize, sizes + [nextSize])
     }.1.reversed(), parameterSizes)
 
     let parameterBindings = zip(parameterNames, offsetsAndSizes).map { arg -> String in
       let (parameter, (offset, size)) = arg
       return """
-      codecopy(0x0, sub(codesize, \(offset)), \(size * 32))
+      codecopy(0x0, sub(codesize, \(offset)), \(size * EVM.wordSize))
       let \(parameter) := mload(0)
       """
     }.joined(separator: "\n")

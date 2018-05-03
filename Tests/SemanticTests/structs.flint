@@ -1,7 +1,7 @@
 // RUN: %flintc %s --verify
 
 struct Test {
-  var a: Int
+  var a: Int = 0
 
   func foo() -> Int {
     return 2
