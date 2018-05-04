@@ -159,8 +159,13 @@ public struct Environment {
 
   /// The type return type of a function call, determined by looking up the function's declaration.
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
-    guard case .matchedFunction(let matchingFunction) = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) else { return .errorType }
-    return matchingFunction.resultType
+    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    
+    switch match {
+    case .matchedFunction(let matchingFunction): return matchingFunction.resultType
+    case .matchedInitializer(_): return .userDefinedType(functionCall.identifier.name)
+    default: return .errorType
+    }
   }
 
   /// The types a literal token can be.

@@ -8,6 +8,7 @@ contract Test {
   var e: Bool
   var f: Int
   let g: Bool
+  var x: B
 }
 
 Test :: caller <- (any) {
@@ -31,7 +32,10 @@ Test :: caller <- (any) {
     g = false
   }
 
-  func foo() {}
+  mutating func foo() {
+    x = B(1, true) 
+    x = C(1) // expected-error {{Incompatible assignment between values of type B and C}}
+  }
 }
 
 Test :: (a) {
@@ -49,10 +53,24 @@ struct A {
   var c: C
 }
 
+struct B {
+  var a: Int = 0
+  var b: Bool
+  var c: C
+
+  init(a: Int, b: Bool) {
+    self.a = a
+    self.b = b
+  }
+}
+
 struct C {
-  var a: Int
+  var a: Int // expected-note {{a is uninitialized}}
   let b: Bool = false
 
   init() {} // expected-error {{Return from initializer without initializing all properties}}
-  // expected-note@53 {{a is uninitialized}}
+
+  init(a: Int) {
+    self.a = a
+  }
 }
