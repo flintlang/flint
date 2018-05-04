@@ -37,6 +37,13 @@ Bank :: (manager) { // manager is a state property.
     // body
   }
 }
+
+// Anyone can initialize the contract.
+Bank :: (any) {
+  public init(manager: Address) {
+    self.manager = manager
+  }
+}
 ```
 
 ### Immutability by default
