@@ -12,13 +12,13 @@ Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk
 
 ## Language Overview
 
-The [Flint Programming Language Guide](https://franklinsch.gitbooks.io/flint/content/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+The [Flint Programming Language Guide](https://docs.flintlang.org/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
 Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
 
 ### Caller Capabilities
 
-[**Caller capabilities**](https://franklinsch.gitbooks.io/flint/content/caller-capabilities.html) require programmers to think about who should be able to call the contract’s sensitive functions. Capabilities are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+[**Caller capabilities**](https://docs.flintlang.org/caller-capabilities) require programmers to think about who should be able to call the contract’s sensitive functions. Capabilities are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
 
 Example:
 
@@ -65,7 +65,7 @@ Bank :: (any) {
 
 ### Asset types
 
-[**Assets**](https://franklinsch.gitbooks.io/flint/content/assets.html), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
+[**Assets**](https://docs.flintlang.org/assets), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
 
 Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
 
@@ -105,7 +105,7 @@ docker run -i -t franklinsch/flint
 
 Example smart contracts are available in `flint/examples/valid/`.
 
-Instructions for installing using a binary package or from source are available [here]( https://franklinsch.gitbooks.io/flint/content/installation.html).
+Instructions for installing using a binary package or from source are available [here]( https://docs.flintlang.org/installation).
 
 ## Contributing
 
