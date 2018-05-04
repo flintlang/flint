@@ -1,0 +1,27 @@
+// RUN: %flintc %s --verify
+
+contract A {
+  let x: Int = 0
+  let x: Int = 2 // expected-error {{Invalid redeclaration of x}}
+}
+
+A :: caller <- (any) {
+  func foo() -> Int {
+    return 0
+  }
+
+  func foo(a: String) { // expected-error {{Invalid redeclaration of foo}}
+  }
+
+  func A() { // expected-error {{Invalid redeclaration of A}}
+  }
+
+  func bar() {
+    let a: Int = 0
+    let a: Int = 0 // expected-error {{Invalid redeclaration of a}}
+    let caller: Int = 0 // expected-error {{Invalid redeclaration of caller}}
+  }
+}
+
+struct A { // expected-error {{Invalid redeclaration of A}}
+}
