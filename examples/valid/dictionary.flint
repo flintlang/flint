@@ -1,8 +1,8 @@
 contract Dictionary {
-  var storage: [Address: Int]
-  var foo: Int
-  var storage2: [Address: Int]
-  var bar: Int
+  var storage: [Address: Int] = [:]
+  var foo: Int = 0
+  var storage2: [Address: Int] = [:]
+  var bar: Int = 0
 }
 
 Dictionary :: (any) {

@@ -49,9 +49,17 @@ public struct ContractDeclaration: SourceEntity {
 ///
 /// - functionDeclaration: The declaration of a function.
 /// - initializerDeclaration: The declaration of an initializer.
-public enum ContractBehaviorMember: Equatable {
+public enum ContractBehaviorMember: Equatable, SourceEntity {
   case functionDeclaration(FunctionDeclaration)
   case initializerDeclaration(InitializerDeclaration)
+
+  public var sourceLocation: SourceLocation {
+    switch self {
+    case .functionDeclaration(let functionDeclaration): return functionDeclaration.sourceLocation
+    case .initializerDeclaration(let initializerDeclaration): return initializerDeclaration.sourceLocation
+    }
+  }
+
 }
 
 /// A Flint contract behavior declaration, i.e. the functions of a contract for a given caller capability group.
@@ -106,6 +114,13 @@ public struct StructDeclaration: SourceEntity {
     return members.compactMap { member in
       guard case .functionDeclaration(let functionDeclaration) = member else { return nil }
       return functionDeclaration
+    }
+  }
+
+  public var initializerDeclarations: [InitializerDeclaration] {
+    return members.compactMap { member in
+      guard case .initializerDeclaration(let initializerDeclaration) = member else { return nil }
+      return initializerDeclaration
     }
   }
 
@@ -218,6 +233,7 @@ public struct FunctionDeclaration: SourceEntity {
   }
 }
 
+/// The declaration of an initializer.
 public struct InitializerDeclaration: SourceEntity {
   public var initToken: Token
 

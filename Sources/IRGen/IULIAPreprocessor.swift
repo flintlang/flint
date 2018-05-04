@@ -39,6 +39,27 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
+    var structMember = structMember
+
+    if case .initializerDeclaration(var initializerDeclaration) = structMember {
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
+
+      let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> Statement? in
+        guard let assignedExpression = declaration.assignedExpression else { return nil }
+
+        var identifier = declaration.identifier
+        identifier.enclosingType = enclosingType
+
+        return .expression(.binaryExpression(BinaryExpression(lhs: .identifier(identifier), op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation), rhs: assignedExpression)))
+      }
+
+      initializerDeclaration.body.insert(contentsOf: defaultValueAssignments, at: 0)
+
+      // Convert the initializer to a function.
+      structMember = .functionDeclaration(initializerDeclaration.asFunctionDeclaration)
+    }
+
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
@@ -49,14 +70,12 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
-    // For struct functions, take add `flintSelf` to the beginning of the parameters list.
+    // For struct functions, add `flintSelf` to the beginning of the parameters list.
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
-      
-      let enclosingType = enclosingTypeIdentifier(in: passContext).name
-      let mangledName = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: enclosingType)
-      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionDeclaration.sourceLocation))
+      let name = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: structDeclarationContext.structIdentifier.name)
+      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
     }
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -78,7 +97,6 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
-
     return ASTPassResult(element: identifier, diagnostics: [], passContext: passContext)
   }
 
@@ -91,6 +109,20 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
+    var expression = expression
+    let environment = passContext.environment!
+
+    if case .binaryExpression(let binaryExpression) = expression,
+      case .equal = binaryExpression.opToken,
+      case .functionCall(var functionCall) = binaryExpression.rhs {
+      if environment.isInitializerCall(functionCall) {
+        // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
+        let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation), expression: binaryExpression.lhs)
+        functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+        expression = .functionCall(functionCall)
+      }
+    }
+
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
 
@@ -147,26 +179,30 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
+    let environment = passContext.environment!
     let receiverTrail = passContext.functionCallReceiverTrail ?? []
 
-    // Replace the name of a function call by its mangled name.
-    
-    if !receiverTrail.isEmpty {
+    if environment.isStructDeclared(functionCall.identifier.name) {
+      // We're calling an initializer.
+      let mangledName = Mangler.mangleInitializer(enclosingType: functionCall.identifier.name)
+      functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+    } else if !receiverTrail.isEmpty {
       let enclosingType = enclosingTypeIdentifier(in: passContext).name
       let scopeContext = passContext.scopeContext!
-      
+
       let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-      
+
       let type = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
       if passContext.environment!.isStructDeclared(type.name) {
         let receiver = constructExpression(from: receiverTrail)
         functionCall.arguments.insert(receiver, at: 0)
-        
+
+        // Replace the name of a function call by its mangled name.
         let mangledName = Mangler.mangleName(functionCall.identifier.name, enclosingType: type.name)
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
-    
+
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }

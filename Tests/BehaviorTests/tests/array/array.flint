@@ -57,11 +57,11 @@ Array :: (any) {
 }
 
 struct S {
-  var a: Int
-  var b: Bool
+  var a: Int = 0
+  var b: Bool = false
   var c: T
 }
 
 struct T {
-  var a: Int
+  var a: Int = 0
 }

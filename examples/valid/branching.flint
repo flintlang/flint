@@ -1,5 +1,5 @@
 contract Test {
-  var data: Int
+  var data: Int = 0
 }
 
 Test :: (any) {

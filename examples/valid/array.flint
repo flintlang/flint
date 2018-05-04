@@ -1,11 +1,15 @@
 contract Test {
   var owner: Address
-  var arr: Int[4]
-  var arr2: Int[10]
-  var numWrites: Int
+  var arr: Int[4] = []
+  var arr2: Int[10] = []
+  var numWrites: Int = 0
 }
 
-Test :: (any) {
+Test :: caller <- (any) {
+  public init() {
+    self.owner = caller
+  }
+  
   mutating func increaseNumWrites() {
     self.numWrites += 1 
   }

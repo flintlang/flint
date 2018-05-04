@@ -754,10 +754,12 @@ extension Parser {
         environment.addFunction(functionDeclaration, enclosingType: structIdentifier.name)
       } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
         members.append(.initializerDeclaration(initializerDeclaration))
+        environment.addInitializer(initializerDeclaration, enclosingType: structIdentifier.name)
       } else {
         break
       }
     }
+
     return members
   }
 

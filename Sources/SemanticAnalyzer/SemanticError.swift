@@ -72,7 +72,7 @@ extension Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
-
+  
   static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability \"any\"")
   }

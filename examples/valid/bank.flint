@@ -1,14 +1,19 @@
 contract Bank {
   var manager: Address
-  var balances: [Address: Int]
-  var accounts: [Address]
-  var lastIndex: Int
+  var balances: [Address: Int] = [:]
+  var accounts: [Address] = []
+  var lastIndex: Int = 0
 
-  var totalDonations: Wei
+  var totalDonations: Wei = 0
   var didCompleteTransfer: Event<Address, Address, Int>
 }
 
 Bank :: account <- (any) {
+
+  public init(manager: Address) {
+    self.manager = manager
+  }
+
   public mutating func register() {
     accounts[lastIndex] = account
     lastIndex += 1

@@ -371,6 +371,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     }
 
     let postProcessResult = pass.postProcess(functionCall: processResult.element, passContext: processResult.passContext)
+
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

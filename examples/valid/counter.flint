@@ -1,5 +1,5 @@
 contract Counter {
-  var value: Int
+  var value: Int = 0
 }
 
 Counter :: (any) {

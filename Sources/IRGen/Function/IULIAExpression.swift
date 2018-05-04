@@ -64,7 +64,7 @@ struct IULIABinaryExpression {
       }
       return IULIAPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
     }
-    
+
     let lhs = IULIAExpression(expression: binaryExpression.lhs, asLValue: asLValue).rendered(functionContext: functionContext)
     let rhs = IULIAExpression(expression: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
 
@@ -151,12 +151,6 @@ struct IULIAAssignment {
   var rhs: Expression
   
   func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> String {
-    if !asTypeProperty {
-      guard !functionContext.environment.type(of: rhs, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext).isDynamicType else {
-        fatalError("Assigning dynamic types is not supported yet.")
-      }
-    }
-
     let rhsCode = IULIAExpression(expression: rhs).rendered(functionContext: functionContext)
     
     switch lhs {
@@ -204,10 +198,10 @@ struct IULIAEventCall {
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = IULIAExpression(expression: argument)
       stores.append("mstore(\(memoryOffset), \(argument))")
-      memoryOffset += functionContext.environment.size(of: types[i]) * 32
+      memoryOffset += functionContext.environment.size(of: types[i]) * EVM.wordSize
     }
     
-    let totalSize = types.reduce(0) { return $0 + functionContext.environment.size(of: $1) } * 32
+    let totalSize = types.reduce(0) { return $0 + functionContext.environment.size(of: $1) } * EVM.wordSize
     let typeList = eventInformation.typeGenericArguments.map { type in
       return "\(CanonicalType(from: type)!.rawValue)"
       }.joined(separator: ",")

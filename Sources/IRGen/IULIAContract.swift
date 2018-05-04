@@ -39,13 +39,10 @@ struct IULIAContract {
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     // Generate code for each function in the structs.
-    let structFunctions = structDeclarations.flatMap { structDeclaration in
-      return structDeclaration.functionDeclarations.compactMap { functionDeclaration in
-        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, environment: environment)
-      }
-    }
+    let structFunctions = structDeclarations.map { structDeclaration in
+      return IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered()
+    }.joined(separator: "\n\n").indented(by: 6)
 
-    let structsFunctionsCode = structFunctions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
     let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
@@ -69,7 +66,7 @@ struct IULIAContract {
 
           // Struct functions
     
-          \(structsFunctionsCode)
+          \(structFunctions)
 
           // Flint runtime
 
@@ -86,9 +83,9 @@ struct IULIAContract {
     // The contract behavior declaration the initializer resides in.
     let contractBehaviorDeclaration: ContractBehaviorDeclaration?
 
-    if let publicInitializer = environment.publicInitializer(forContract: contractDeclaration.identifier.name) {
+    if let (publicInitializer, contractBehaviorDeclaration_) = findContractPublicInitializer() {
       initializerDeclaration = publicInitializer
-      contractBehaviorDeclaration = findEnclosingContractBehaviorDeclaration(forInitializer: initializerDeclaration)!
+      contractBehaviorDeclaration = contractBehaviorDeclaration_
     } else {
       // If there is not public initializer defined, synthesize one.
       initializerDeclaration = synthesizeInitializer()
@@ -98,7 +95,7 @@ struct IULIAContract {
     let capabilityBinding = contractBehaviorDeclaration?.capabilityBinding
     let callerCapabilities = contractBehaviorDeclaration?.callerCapabilities ?? []
 
-    let initializer = IULIAInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
+    let initializer = IULIAContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
 
     let parameters = initializerDeclaration.parameters.map { parameter in
       let parameterName = Mangler.mangleName(parameter.identifier.name)
@@ -120,13 +117,21 @@ struct IULIAContract {
     return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation))
   }
 
-  /// Finds the contract behavior declaration associated with the given initializer. A contract should only have one
-  /// public initializer.
-  func findEnclosingContractBehaviorDeclaration(forInitializer initializer: InitializerDeclaration) -> ContractBehaviorDeclaration? {
-    return contractBehaviorDeclarations.first { contractBehaviorDeclaration -> Bool in
-      return contractBehaviorDeclaration.members.contains { member in
-        return member == .initializerDeclaration(initializer)
+  /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.
+  func findContractPublicInitializer() -> (InitializerDeclaration, ContractBehaviorDeclaration)? {
+    let result = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
+      return contractBehaviorDeclaration.members.compactMap { member -> (InitializerDeclaration, ContractBehaviorDeclaration)? in
+        guard case .initializerDeclaration(let initializerDeclaration) = member, initializerDeclaration.isPublic else {
+          return nil
+        }
+        return (initializerDeclaration, contractBehaviorDeclaration)
       }
     }
+
+    guard result.count < 2 else {
+      fatalError("Too many initializers")
+    }
+
+    return result.first
   }
 }
