@@ -1,5 +1,5 @@
 contract ExplicitSelfReference {
-  var property: Int
+  var property: Int = 0
 }
 
 ExplicitSelfReference :: (any) {

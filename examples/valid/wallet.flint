@@ -1,20 +1,24 @@
 contract Wallet {
   var owner: Address
-  var contents: Ether
+  var contents: Wei = 0 
 }
 
-Wallet :: (any) {
-  public mutating func deposit(money: Ether) {
+Wallet :: caller <- (any) {
+  public init() {
+    owner = caller
+  }
+
+  public mutating func deposit(money: Wei) {
     contents += money;
   }
 }
 
 Wallet :: (owner) {
-  public mutating func withdraw(money: Ether) {
+  public mutating func withdraw(money: Wei) {
     contents -= money;
   }
 
-  public func getContents(a: Int) -> Ether {
+  public func getContents(a: Int) -> Wei {
     return contents;
   }
 }

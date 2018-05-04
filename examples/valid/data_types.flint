@@ -1,12 +1,17 @@
 contract Test {
-  var test: Int
-  var dict: [Address: Int]
-  var arr: Address[10]
+  var test: Int = 0
+  var dict: [Address: Int] = [:]
+  var arr: Address[10] = []
   var p1: Address
   var p2: Address
 }
 
 Test :: (any) {
+  public init(p1: Address, p2: Address) {
+    self.p1 = p1
+    self.p2 = p2
+  }
+
   public mutating func setP1(p1: Address) {
     self.p1 = p1
   }
