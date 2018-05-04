@@ -10,6 +10,11 @@ import AST
 // MARK: Errors
 
 extension Diagnostic {
+  static func invalidRedeclaration(_ identifier: Identifier, originalSource: Identifier) -> Diagnostic {
+    let note = Diagnostic(severity: .note, sourceLocation: originalSource.sourceLocation, message: "\(originalSource.name) is declared here")
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Invalid redeclaration of \(identifier.name)", notes: [note])
+  }
+
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate in

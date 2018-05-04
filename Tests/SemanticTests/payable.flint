@@ -9,14 +9,14 @@ Payable :: (any) {
   }
 
   @payable
-  func foo(implicit parameter: Int) { // expected-error {{foo is declared @payable but doesn't have an implicit parameter of a currency type}}
+  func bar(implicit parameter: Int) { // expected-error {{bar is declared @payable but doesn't have an implicit parameter of a currency type}}
   }
 
   @payable
-  func foo(implicit parameter: Wei, implicit parameter2: Wei) { // expected-error {{Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type}}
+  func baz(implicit parameter: Wei, implicit parameter2: Wei) { // expected-error {{Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type}}
   }
 
   @payable
-  func foo(implicit parameter: Wei, implicit parameter2: Int) {
+  func qux(implicit parameter: Wei, implicit parameter2: Int) {
   }
 }

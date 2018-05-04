@@ -20,7 +20,11 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
-    return ASTPassResult(element: contractDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: contractDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(contractDeclaration.identifier, originalSource: conflict))
+    }
+    return ASTPassResult(element: contractDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
@@ -47,7 +51,11 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: structDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(structDeclaration.identifier, originalSource: conflict))
+    }
+    return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
@@ -62,10 +70,21 @@ public struct SemanticAnalyzer: ASTPass {
     let inFunctionOrInitializer = passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil
 
     if inFunctionOrInitializer {
+      if let conflict = passContext.scopeContext!.variableDeclaration(for: variableDeclaration.identifier.name) {
+        diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict.identifier))
+      }
+
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     } else {
-      // Whether the type has an initializer defined.
+      // It's a property declaration.
+
+      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      if let conflict = environment.conflictingPropertyDeclaration(for: variableDeclaration.identifier, in: enclosingType) {
+        diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict))
+      }
+
+      // Whether the enclosing type has an initializer defined.
       let isInitializerDeclared: Bool
 
       if let contractStateDeclarationContext = passContext.contractStateDeclarationContext {
@@ -96,6 +115,12 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
+
+    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    if let conflict = passContext.environment!.conflictingFunctionDeclaration(for: functionDeclaration.identifier, in: enclosingType) {
+      diagnostics.append(.invalidRedeclaration(functionDeclaration.identifier, originalSource: conflict))
+    }
+
     if functionDeclaration.isPayable {
       // If a function is marked with the @payable annotation, ensure it contains a compatible payable parameter.
       let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
@@ -550,4 +575,3 @@ struct MutatingExpressionContextEntry: PassContextEntry {
 struct UnassignedPropertiesContextEntry: PassContextEntry {
   typealias Value = [VariableDeclaration]
 }
-

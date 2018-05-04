@@ -15,23 +15,23 @@ public struct Environment {
   var offsets = [RawTypeIdentifier: OffsetTable]()
 
   /// A list of the names of the contracts which have been declared in the program.
-  var declaredContracts = [RawTypeIdentifier]()
+  var declaredContracts = [Identifier]()
 
   /// A list of the names of the structs which have been declared in the program.
-  var declaredStructs = [RawTypeIdentifier]()
+  var declaredStructs = [Identifier]()
 
   public init() {}
 
   /// Add a contract declaration to the environment.
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
-    declaredContracts.append(contractDeclaration.identifier.name)
+    declaredContracts.append(contractDeclaration.identifier)
     types[contractDeclaration.identifier.name] = TypeInformation()
     setProperties(contractDeclaration.variableDeclarations, enclosingType: contractDeclaration.identifier.name)
   }
 
   /// Add a struct declaration to the environment.
   public mutating func addStruct(_ structDeclaration: StructDeclaration) {
-    declaredStructs.append(structDeclaration.identifier.name)
+    declaredStructs.append(structDeclaration.identifier)
     if types[structDeclaration.identifier.name] == nil {
       types[structDeclaration.identifier.name] = TypeInformation()
     }
@@ -67,7 +67,9 @@ public struct Environment {
 
   /// Add a property to a type.
   mutating func addProperty(_ variableDeclaration: VariableDeclaration, enclosingType: RawTypeIdentifier) {
-    types[enclosingType]!.properties[variableDeclaration.identifier.name] = PropertyInformation(variableDeclaration: variableDeclaration)
+    if types[enclosingType]!.properties[variableDeclaration.identifier.name] == nil {
+      types[enclosingType]!.properties[variableDeclaration.identifier.name] = PropertyInformation(variableDeclaration: variableDeclaration)
+    }
   }
 
   /// Add a use of an undefined variable.
@@ -77,12 +79,12 @@ public struct Environment {
 
   /// Whether a contract has been declared in the program.
   public func isContractDeclared(_ type: RawTypeIdentifier) -> Bool {
-    return declaredContracts.contains(type)
+    return declaredContracts.contains { $0.name == type }
   }
 
   /// Whether a struct has been declared in the program.
   public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
-    return declaredStructs.contains(type)
+    return declaredStructs.contains { $0.name == type }
   }
 
   /// Whether a function call refers to an initializer.
@@ -93,7 +95,7 @@ public struct Environment {
   /// Whether the given type is a reference type (a contract).
   public func isReferenceType(_ type: RawTypeIdentifier) -> Bool {
     // TODO: it should be possible to pass structs by value as well.
-    return declaredStructs.contains(type) || declaredContracts.contains(type)
+    return isContractDeclared(type) || isStructDeclared(type)
   }
 
   /// Whether a property is defined in a type.
@@ -123,6 +125,34 @@ public struct Environment {
   /// The list of property declarations in a type.
   public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [VariableDeclaration] {
     return types[enclosingType]!.properties.values.map { $0.variableDeclaration }
+  }
+
+  private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
+    return identifier1 != identifier2 &&
+      identifier1.name == identifier2.name &&
+      identifier1.sourceLocation.line < identifier2.sourceLocation.line
+  }
+
+  private func conflictingDeclaration(of identifier: Identifier, in identifiers: [Identifier]) -> Identifier? {
+    return identifiers
+      .filter({ isRedeclaration($0, identifier) })
+      .lazy.sorted(by: { $0.sourceLocation.line < $1.sourceLocation.line }).first
+  }
+
+  /// Attempts to find a conflicting declaration of the given type.
+  public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts)
+  }
+
+  /// Attempts to find a conflicting declaration of the given function declaration
+  public func conflictingFunctionDeclaration(for function: Identifier, in type: RawTypeIdentifier) -> Identifier? {
+    let functions = types[type]!.functions[function.name]?.map { $0.declaration.identifier } ?? []
+    return conflictingDeclaration(of: function, in: functions + declaredStructs + declaredContracts)
+  }
+
+  /// Attempts to find a conflicting declaration of the given property declaration.
+  public func conflictingPropertyDeclaration(for identifier: Identifier, in type: RawTypeIdentifier) -> Identifier? {
+    return conflictingDeclaration(of: identifier, in: propertyDeclarations(in: type).map { $0.identifier })
   }
 
   /// The list of initializers in a type.

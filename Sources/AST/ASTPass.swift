@@ -285,6 +285,8 @@ public struct AnyASTPass: ASTPass {
 
 extension ASTPass {
   public func enclosingTypeIdentifier(in passContext: ASTPassContext) -> Identifier {
-    return passContext.contractBehaviorDeclarationContext?.contractIdentifier ?? passContext.structDeclarationContext!.structIdentifier
+    return passContext.contractBehaviorDeclarationContext?.contractIdentifier ??
+      passContext.structDeclarationContext?.structIdentifier ??
+      passContext.contractStateDeclarationContext!.contractIdentifier
   }
 }
