@@ -30,7 +30,7 @@ struct IULIAExpression {
     case .identifier(let identifier):
       return IULIAIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
-      return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered()
+      return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered(functionContext: functionContext)
     case .literal(let literal):
       return IULIALiteralToken(literalToken: literal).rendered()
     case .arrayLiteral(let arrayLiteral):
@@ -180,11 +180,23 @@ struct IULIAFunctionCall {
     }
     
     let args: String = functionCall.arguments.map({ argument in
-      let type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
+      var type: Type.RawType
+      var argument = argument
+      
+      // If the receiver is a local variable of user-defined type, extract it.
+      if case .inoutExpression(let inoutExpression) = argument,
+        case .variableDeclaration(let variableDeclaration) = inoutExpression.expression {
+        type = variableDeclaration.type.rawType
+        argument = .identifier(variableDeclaration.identifier)
+      } else {
+        type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
+      }
+      
       return IULIAExpression(expression: argument, asLValue: type.isUserDefinedType).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
+
 }
 
 /// Generates code for an event call.
@@ -244,8 +256,9 @@ struct IULIAIdentifier {
 struct IULIAVariableDeclaration {
   var variableDeclaration: VariableDeclaration
   
-  func rendered() -> String {
-    return "var \(variableDeclaration.identifier)"
+  func rendered(functionContext: FunctionContext) -> String {
+    let allocate = IULIARuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
+    return "let \(variableDeclaration.identifier.name) := \(allocate)"
   }
 }
 

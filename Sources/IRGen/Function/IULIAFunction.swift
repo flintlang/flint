@@ -50,11 +50,7 @@ struct IULIAFunction {
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = functionDeclaration.parametersAsVariableDeclarations
-    if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
-    }
-    return ScopeContext(localVariables: localVariables)
+    return functionDeclaration.scopeContext!
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
@@ -101,11 +97,7 @@ struct IULIAFunctionBody {
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = functionDeclaration.parametersAsVariableDeclarations
-    if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
-    }
-    return ScopeContext(localVariables: localVariables)
+    return functionDeclaration.scopeContext!
   }
 
   var functionContext: FunctionContext {

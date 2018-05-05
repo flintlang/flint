@@ -23,22 +23,6 @@ enum IULIARuntimeFunction {
     case storageFixedSizeArrayOffset
     case storageDictionaryOffsetForKey
   }
-//
-//  var declaration: String {
-//    switch self {
-//    case .selector: return IRRuntimeFunctionDeclaration.selector
-//    case .decodeAsAddress: return IRRuntimeFunctionDeclaration.decodeAsAddress
-//    case .decodeAsUInt: return IRRuntimeFunctionDeclaration.decodeAsUInt
-//    case .store: return IRRuntimeFunctionDeclaration.store
-//    case .allocateMemory: return IRRuntimeFunctionDeclaration.allocateMemory
-//    case .isValidCallerCapability: return IRRuntimeFunctionDeclaration.isValidCallerCapability
-//    case .return32Bytes: return IRRuntimeFunctionDeclaration.return32Bytes
-//    case .isInvalidSubscriptExpression: return IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression
-//    case .storageArrayOffset: return IRRuntimeFunctionDeclaration.storageArrayOffset
-//    case .isCallerCapabilityInArray: return IRRuntimeFunctionDeclaration.isCallerCapabilityInArray
-//    case .storageFixedSizeArrayOffset: return IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset
-//    case .storageDictionaryOffsetForKey: return IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey
-//    }
 
   static func selector() -> String {
     return "\(Identifiers.selector)()"

@@ -397,6 +397,9 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Clear the context in preparation for the next time we visit a function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
+    
+    var functionDeclaration = functionDeclaration
+    functionDeclaration.scopeContext = passContext.scopeContext
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -432,6 +435,8 @@ public struct SemanticAnalyzer: ASTPass {
       }
     }
 
+    var initializerDeclaration = initializerDeclaration
+    initializerDeclaration.scopeContext = passContext.scopeContext
     return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 

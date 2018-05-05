@@ -120,12 +120,12 @@ public struct IULIAPreprocessor: ASTPass {
         let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
         let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
         functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+        expression = .functionCall(functionCall)
 
         if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
           variableDeclaration.type.rawType.isUserDefinedType {
-            expression = .sequence([.functionCall(functionCall), .variableDeclaration(variableDeclaration)])
+            expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
         }
-
       }
     }
 
@@ -187,7 +187,7 @@ public struct IULIAPreprocessor: ASTPass {
     var functionCall = functionCall
     let environment = passContext.environment!
     let receiverTrail = passContext.functionCallReceiverTrail ?? []
-
+  
     if environment.isStructDeclared(functionCall.identifier.name) {
       // We're calling an initializer.
       let mangledName = Mangler.mangleInitializer(enclosingType: functionCall.identifier.name)

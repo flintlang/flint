@@ -114,7 +114,7 @@ struct IULIAContract {
   func synthesizeInitializer() -> InitializerDeclaration {
     let sourceLocation = contractDeclaration.sourceLocation
 
-    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation))
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation), scopeContext: ScopeContext(localVariables: []))
   }
 
   /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.

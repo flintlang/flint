@@ -215,8 +215,11 @@ public struct FunctionDeclaration: SourceEntity {
   public var isPublic: Bool {
     return hasModifier(kind: .public)
   }
+  
+  // Contextual information for the scope defined by the function.
+  public var scopeContext: ScopeContext? = nil
 
-  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
+  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -226,6 +229,7 @@ public struct FunctionDeclaration: SourceEntity {
     self.resultType = resultType
     self.body = body
     self.closeBraceToken = closeBraceToken
+    self.scopeContext = scopeContext
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
@@ -250,6 +254,9 @@ public struct InitializerDeclaration: SourceEntity {
   public var sourceLocation: SourceLocation {
     return initToken.sourceLocation
   }
+  
+  // Contextual information for the scope defined by the function.
+  public var scopeContext: ScopeContext? = nil
 
   /// The non-implicit parameters of the initializer.
   public var explicitParameters: [Parameter] {
@@ -259,7 +266,7 @@ public struct InitializerDeclaration: SourceEntity {
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
     let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
-    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken)
+    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
   }
 
   /// The parameters of the initializer, as variable declaration values.
@@ -271,7 +278,7 @@ public struct InitializerDeclaration: SourceEntity {
     return asFunctionDeclaration.isPublic
   }
 
-  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token) {
+  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
     self.initToken = initToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -279,6 +286,7 @@ public struct InitializerDeclaration: SourceEntity {
     self.closeBracketToken = closeBracketToken
     self.body = body
     self.closeBraceToken = closeBraceToken
+    self.scopeContext = scopeContext
   }
 }
 
@@ -799,6 +807,12 @@ public struct IfStatement: SourceEntity {
   public var sourceLocation: SourceLocation {
     return .spanning(ifToken, to: condition)
   }
+  
+  // Contextual information for the scope defined by the if body.
+  public var ifBodyScopeContext: ScopeContext? = nil
+  
+  // Contextual information for the scope defined by the else body.
+  public var elseBodyScopeContext: ScopeContext? = nil
 
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in

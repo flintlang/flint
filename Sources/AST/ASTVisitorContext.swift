@@ -56,7 +56,7 @@ public struct InitializerDeclarationContext {
 
 /// Contextual information used when visiting a scope, such as the local variables which are accessible in that
 /// scope.
-public struct ScopeContext {
+public struct ScopeContext: Equatable {
   public var localVariables = [VariableDeclaration]()
 
   public init(localVariables: [VariableDeclaration] = []) {

@@ -305,7 +305,10 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
       processResult.element = .subscriptExpression(processResult.combining(visit(subscriptExpression, passContext: processResult.passContext)))
-    case .sequence(_): break
+    case .sequence(let elements):
+      for element in elements {
+        processResult.element = processResult.combining(visit(element, passContext: passContext))
+      }
     }
 
     let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)
@@ -433,11 +436,21 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
+    
+    if processResult.element.ifBodyScopeContext == nil {
+      processResult.element.ifBodyScopeContext = processResult.passContext.scopeContext
+    }
+    
     processResult.passContext.scopeContext = scopeContext
 
     processResult.element.elseBody = processResult.element.elseBody.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
+    
+    if processResult.element.elseBodyScopeContext == nil {
+      processResult.element.elseBodyScopeContext = processResult.passContext.scopeContext
+    }
+    
     processResult.passContext.scopeContext = scopeContext
 
     let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
