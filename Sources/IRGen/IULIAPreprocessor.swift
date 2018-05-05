@@ -122,9 +122,11 @@ public struct IULIAPreprocessor: ASTPass {
         functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
         expression = .functionCall(functionCall)
 
-        if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
+        if case .variableDeclaration(var variableDeclaration) = binaryExpression.lhs,
           variableDeclaration.type.rawType.isUserDefinedType {
-            expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
+          let mangled = Mangler.mangleName(variableDeclaration.identifier.name)
+          variableDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangled), sourceLocation: variableDeclaration.identifier.sourceLocation))
+          expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
         }
       }
     }
