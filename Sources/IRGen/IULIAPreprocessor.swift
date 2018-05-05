@@ -42,7 +42,7 @@ public struct IULIAPreprocessor: ASTPass {
     var structMember = structMember
 
     if case .initializerDeclaration(var initializerDeclaration) = structMember {
-      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let enclosingType = passContext.enclosingTypeIdentifier!.name
       let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
 
       let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> Statement? in
@@ -57,8 +57,7 @@ public struct IULIAPreprocessor: ASTPass {
       initializerDeclaration.body.insert(contentsOf: defaultValueAssignments, at: 0)
 
       // Convert the initializer to a function.
-      let extractedExpr: FunctionDeclaration = initializerDeclaration.asFunctionDeclaration
-      structMember = .functionDeclaration(extractedExpr)
+      structMember = .functionDeclaration(initializerDeclaration.asFunctionDeclaration)
     }
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
@@ -118,9 +117,15 @@ public struct IULIAPreprocessor: ASTPass {
       case .functionCall(var functionCall) = binaryExpression.rhs {
       if environment.isInitializerCall(functionCall) {
         // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
-        let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation), expression: binaryExpression.lhs)
+        let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
+        let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
         functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
-        expression = .functionCall(functionCall)
+
+        if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
+          variableDeclaration.type.rawType.isUserDefinedType {
+            expression = .sequence([.functionCall(functionCall), .variableDeclaration(variableDeclaration)])
+        }
+
       }
     }
 
@@ -188,7 +193,7 @@ public struct IULIAPreprocessor: ASTPass {
       let mangledName = Mangler.mangleInitializer(enclosingType: functionCall.identifier.name)
       functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
     } else if !receiverTrail.isEmpty {
-      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let enclosingType = passContext.enclosingTypeIdentifier!.name
       let scopeContext = passContext.scopeContext!
 
       let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []

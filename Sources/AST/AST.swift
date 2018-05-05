@@ -416,6 +416,10 @@ public struct Type: SourceEntity {
       }
     }
 
+    public var isUserDefinedType: Bool {
+      return !isBuiltInType
+    }
+
     public var isEventType: Bool {
       return self == .basicType(.event)
     }
@@ -562,6 +566,7 @@ public indirect enum Expression: SourceEntity {
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
   case subscriptExpression(SubscriptExpression)
+  case sequence([Expression])
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -576,6 +581,7 @@ public indirect enum Expression: SourceEntity {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
+    case .sequence(let expressions): return expressions.first!.sourceLocation
     }
   }
 

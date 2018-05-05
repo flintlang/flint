@@ -305,6 +305,7 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
       processResult.element = .subscriptExpression(processResult.combining(visit(subscriptExpression, passContext: processResult.passContext)))
+    case .sequence(_): break
     }
 
     let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)

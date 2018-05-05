@@ -43,6 +43,8 @@ struct IULIAExpression {
       return IULIASelf(selfToken: self, asLValue: asLValue).rendered()
     case .subscriptExpression(let subscriptExpression):
       return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+    case .sequence(let expressions):
+      return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
     }
   }
 }
@@ -159,7 +161,7 @@ struct IULIAAssignment {
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return "\(Mangler.mangleName(identifier.name)) := \(rhsCode)"
     default:
-      // LHS refers to a storage property.
+      // LHS refers to a property.
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
       return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
     }
@@ -179,7 +181,7 @@ struct IULIAFunctionCall {
     
     let args: String = functionCall.arguments.map({ argument in
       let type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
-      return IULIAExpression(expression: argument, asLValue: functionContext.environment.isReferenceType(type.name)).rendered(functionContext: functionContext)
+      return IULIAExpression(expression: argument, asLValue: type.isUserDefinedType).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }

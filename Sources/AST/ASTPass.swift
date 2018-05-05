@@ -273,20 +273,11 @@ public struct AnyASTPass: ASTPass {
     return base.postProcess(subscriptExpression: subscriptExpression, passContext: passContext)
   }
 
-
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return base.postProcess(returnStatement: returnStatement, passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return base.postProcess(ifStatement: ifStatement, passContext: passContext)
-  }
-}
-
-extension ASTPass {
-  public func enclosingTypeIdentifier(in passContext: ASTPassContext) -> Identifier {
-    return passContext.contractBehaviorDeclarationContext?.contractIdentifier ??
-      passContext.structDeclarationContext?.structIdentifier ??
-      passContext.contractStateDeclarationContext!.contractIdentifier
   }
 }
