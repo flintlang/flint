@@ -1,0 +1,21 @@
+contract C {
+}
+
+C :: (any) {
+  func foo() {
+    let a: Int = 0
+    let s: S = S()
+  }
+}
+
+struct S {
+  var a: Int = 0
+
+  init() {
+    self.a = 2
+  }
+
+  mutating func foo() {
+    a = 2
+  }
+}

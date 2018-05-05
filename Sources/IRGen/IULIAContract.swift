@@ -46,7 +46,7 @@ struct IULIAContract {
     let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
-    let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
+    let runtimeFunctionsDeclarations = IULIARuntimeFunction.allDeclarations.joined(separator: "\n\n").indented(by: 6)
 
     // Main contract body.
     return """

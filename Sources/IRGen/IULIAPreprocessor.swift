@@ -57,7 +57,8 @@ public struct IULIAPreprocessor: ASTPass {
       initializerDeclaration.body.insert(contentsOf: defaultValueAssignments, at: 0)
 
       // Convert the initializer to a function.
-      structMember = .functionDeclaration(initializerDeclaration.asFunctionDeclaration)
+      let extractedExpr: FunctionDeclaration = initializerDeclaration.asFunctionDeclaration
+      structMember = .functionDeclaration(extractedExpr)
     }
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)

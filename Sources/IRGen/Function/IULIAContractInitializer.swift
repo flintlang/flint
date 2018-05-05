@@ -61,10 +61,13 @@ struct IULIAContractInitializer {
 
     let body = IULIAFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
+    // TODO: Remove IRRuntimeFunctionDeclaration.store once constructor code and function code is unified.
+
     return """
     \(parameterBindings)
     \(defaultValuesAssignments)
     \(body)
+    \(IRRuntimeFunctionDeclaration.store)
     """
   }
 

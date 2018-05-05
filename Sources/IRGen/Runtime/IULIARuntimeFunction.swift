@@ -8,37 +8,91 @@
 import Foundation
 
 /// The runtime functions used by Flint.
-enum IULIARuntimeFunction: String {
-  case selector
-  case decodeAsAddress
-  case decodeAsUInt
-  case isValidCallerCapability
-  case isCallerCapabilityInArray
-  case return32Bytes
-  case isInvalidSubscriptExpression
-  case storageArrayOffset
-  case storageFixedSizeArrayOffset
-  case storageDictionaryOffsetForKey
+enum IULIARuntimeFunction {
+  enum Identifiers: String {
+    case selector
+    case decodeAsAddress
+    case decodeAsUInt
+    case store
+    case allocateMemory
+    case isValidCallerCapability
+    case isCallerCapabilityInArray
+    case return32Bytes
+    case isInvalidSubscriptExpression
+    case storageArrayOffset
+    case storageFixedSizeArrayOffset
+    case storageDictionaryOffsetForKey
+  }
+//
+//  var declaration: String {
+//    switch self {
+//    case .selector: return IRRuntimeFunctionDeclaration.selector
+//    case .decodeAsAddress: return IRRuntimeFunctionDeclaration.decodeAsAddress
+//    case .decodeAsUInt: return IRRuntimeFunctionDeclaration.decodeAsUInt
+//    case .store: return IRRuntimeFunctionDeclaration.store
+//    case .allocateMemory: return IRRuntimeFunctionDeclaration.allocateMemory
+//    case .isValidCallerCapability: return IRRuntimeFunctionDeclaration.isValidCallerCapability
+//    case .return32Bytes: return IRRuntimeFunctionDeclaration.return32Bytes
+//    case .isInvalidSubscriptExpression: return IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression
+//    case .storageArrayOffset: return IRRuntimeFunctionDeclaration.storageArrayOffset
+//    case .isCallerCapabilityInArray: return IRRuntimeFunctionDeclaration.isCallerCapabilityInArray
+//    case .storageFixedSizeArrayOffset: return IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset
+//    case .storageDictionaryOffsetForKey: return IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey
+//    }
 
-  var declaration: String {
-    switch self {
-    case .selector: return IRRuntimeFunctionDeclaration.selector
-    case .decodeAsAddress: return IRRuntimeFunctionDeclaration.decodeAsAddress
-    case .decodeAsUInt: return IRRuntimeFunctionDeclaration.decodeAsUInt
-    case .isValidCallerCapability: return IRRuntimeFunctionDeclaration.isValidCallerCapability
-    case .return32Bytes: return IRRuntimeFunctionDeclaration.return32Bytes
-    case .isInvalidSubscriptExpression: return IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression
-    case .storageArrayOffset: return IRRuntimeFunctionDeclaration.storageArrayOffset
-    case .isCallerCapabilityInArray: return IRRuntimeFunctionDeclaration.isCallerCapabilityInArray
-    case .storageFixedSizeArrayOffset: return IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset
-    case .storageDictionaryOffsetForKey: return IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey
-    }
+  static func selector() -> String {
+    return "\(Identifiers.selector)()"
   }
 
-  static let all: [IULIARuntimeFunction] = [.selector, .decodeAsAddress, .decodeAsUInt, .isValidCallerCapability, .isCallerCapabilityInArray, .return32Bytes, .isInvalidSubscriptExpression, .storageArrayOffset, .storageFixedSizeArrayOffset, .storageDictionaryOffsetForKey]
+  static func decodeAsAddress(offset: Int) -> String {
+    return "\(Identifiers.decodeAsAddress)(\(offset))"
+  }
+
+  static func decodeAsUInt(offset: Int) -> String {
+    return "\(Identifiers.decodeAsUInt)(\(offset))"
+  }
+
+  static func store(address: String, value: String, inMemory: Bool) -> String {
+    return "\(Identifiers.store)(\(address), \(value), \(inMemory ? 0 : 1))"
+  }
+
+  static func allocateMemory(size: Int) -> String {
+    return "\(Identifiers.allocateMemory)(\(size))"
+  }
+
+  static func isValidCallerCapability(address: String) -> String {
+    return "\(Identifiers.isValidCallerCapability)(\(address))"
+  }
+
+  static func isCallerCapabilityInArray(arrayOffset: Int) -> String {
+    return "\(Identifiers.isCallerCapabilityInArray)(\(arrayOffset))"
+  }
+
+  static func return32Bytes(value: String) -> String {
+    return "\(Identifiers.return32Bytes)(\(value))"
+  }
+
+  static func isInvalidSubscriptExpression(index: Int, arraySize: Int) -> String {
+    return "\(Identifiers.isInvalidSubscriptExpression)(\(index), \(arraySize))"
+  }
+
+  static func storageFixedSizeArrayOffset(arrayOffset: Int, index: String, arraySize: Int) -> String {
+    return "\(Identifiers.storageFixedSizeArrayOffset)(\(arrayOffset), \(index), \(arraySize))"
+  }
+
+  static func storageArrayOffset(arrayOffset: Int, index: String) -> String {
+    return "\(Identifiers.storageArrayOffset)(\(arrayOffset), \(index))"
+  }
+
+  static func storageDictionaryOffsetForKey(dictionaryOffset: Int, key: String) -> String {
+    return "\(Identifiers.storageDictionaryOffsetForKey)(\(dictionaryOffset), \(key))"
+  }
+
+  static let allDeclarations: [String] = [IRRuntimeFunctionDeclaration.selector, IRRuntimeFunctionDeclaration.decodeAsAddress, IRRuntimeFunctionDeclaration.decodeAsUInt, IRRuntimeFunctionDeclaration.store, IRRuntimeFunctionDeclaration.allocateMemory, IRRuntimeFunctionDeclaration.isValidCallerCapability, IRRuntimeFunctionDeclaration.isCallerCapabilityInArray, IRRuntimeFunctionDeclaration.return32Bytes, IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression, IRRuntimeFunctionDeclaration.storageArrayOffset, IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey]
+
 }
 
-fileprivate struct IRRuntimeFunctionDeclaration {
+struct IRRuntimeFunctionDeclaration {
   static let selector =
   """
   function selector() -> ret {
@@ -57,6 +111,27 @@ fileprivate struct IRRuntimeFunctionDeclaration {
   """
   function decodeAsUInt(offset) -> ret {
     ret := calldataload(add(4, mul(offset, 0x20)))
+  }
+  """
+
+  static let store =
+  """
+  function store(ptr, val, mem) {
+    switch iszero(mem)
+    case 0 {
+      sstore(ptr, val)
+    }
+    default {
+      mstore(ptr, val)
+    }
+  }
+  """
+
+  static let allocateMemory =
+  """
+  function allocateMemory(size) -> ret {
+    ret := mload(0x40)
+    mstore(0x40, add(ret, size))
   }
   """
 

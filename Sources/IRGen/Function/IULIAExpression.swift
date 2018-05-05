@@ -161,7 +161,7 @@ struct IULIAAssignment {
     default:
       // LHS refers to a storage property.
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-      return "sstore(\(lhsCode), \(rhsCode))"
+      return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
     }
   }
 }
@@ -299,7 +299,7 @@ struct IULIASubscriptExpression {
 
     switch type {
     case .arrayType(let elementType):
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode))"
+      let storageArrayOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: indexExpressionCode)
       if asLValue {
         return storageArrayOffset
       } else {
@@ -310,7 +310,7 @@ struct IULIASubscriptExpression {
       }
     case .fixedSizeArrayType(let elementType, _):
       let typeSize = environment.size(of: type)
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(typeSize))"
+      let storageArrayOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: indexExpressionCode, arraySize: typeSize)
       if asLValue {
         return storageArrayOffset
       } else {
@@ -324,7 +324,7 @@ struct IULIASubscriptExpression {
         fatalError("Dictionary keys of size > 1 are not supported yet.")
       }
 
-      let storageDictionaryOffsetForKey = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode))"
+      let storageDictionaryOffsetForKey = IULIARuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: indexExpressionCode)
 
       if asLValue {
         return "\(storageDictionaryOffsetForKey)"
