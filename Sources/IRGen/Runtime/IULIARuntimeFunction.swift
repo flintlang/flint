@@ -37,7 +37,7 @@ enum IULIARuntimeFunction {
   }
 
   static func store(address: String, value: String, inMemory: Bool) -> String {
-    return "\(Identifiers.store)(\(address), \(value), \(inMemory ? 0 : 1))"
+    return "\(Identifiers.store)(\(address), \(value), \(inMemory ? 1 : 0))"
   }
 
   static func allocateMemory(size: Int) -> String {
@@ -103,10 +103,10 @@ struct IRRuntimeFunctionDeclaration {
   function store(ptr, val, mem) {
     switch iszero(mem)
     case 0 {
-      sstore(ptr, val)
+      mstore(ptr, val)
     }
     default {
-      mstore(ptr, val)
+      sstore(ptr, val)
     }
   }
   """

@@ -106,6 +106,8 @@ struct IULIAPropertyAccess {
     if case .identifier(let lhsIdentifier) = lhs {
       if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = "\(offset)"
+      } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
+        lhsOffset = Mangler.mangleName(lhsIdentifier.name)
       } else {
         lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
       }
