@@ -64,6 +64,13 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
+    var passContext = passContext
+
+    if let _ = passContext.functionDeclarationContext {
+      // We're in a function. Record the local variable declaration.
+      passContext.scopeContext?.localVariables += [variableDeclaration]
+    }
+
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -74,6 +81,10 @@ public struct IULIAPreprocessor: ASTPass {
     if let structDeclarationContext = passContext.structDeclarationContext {
       let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
       functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
+
+      let isMemIdentifier = Identifier(identifierToken: Token(kind: .identifier("isMem"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
+      functionDeclaration.parameters.insert(Parameter(identifier: isMemIdentifier, type: Type(inferredType: .basicType(.bool), identifier: selfIdentifier), implicitToken: nil), at: 1)
+
       let name = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: structDeclarationContext.structIdentifier.name)
       functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
     }
@@ -120,6 +131,19 @@ public struct IULIAPreprocessor: ASTPass {
         let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
         let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
         functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+
+        let isMem: Bool
+
+        if case .variableDeclaration(_) = binaryExpression.lhs {
+          isMem = true
+        } else if let enclosingType = binaryExpression.lhs.enclosingType, passContext.scopeContext!.containsVariableDeclaration(for: enclosingType) {
+          isMem = true
+        } else {
+          isMem = false
+        }
+
+        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: binaryExpression.lhs.sourceLocation)), at: 1)
+
         expression = .functionCall(functionCall)
 
         if case .variableDeclaration(var variableDeclaration) = binaryExpression.lhs,
@@ -204,6 +228,15 @@ public struct IULIAPreprocessor: ASTPass {
       if passContext.environment!.isStructDeclared(type.name) {
         let receiver = constructExpression(from: receiverTrail)
         functionCall.arguments.insert(receiver, at: 0)
+
+        let isMem: Bool
+        if let enclosingType = receiver.enclosingType, passContext.scopeContext!.containsVariableDeclaration(for: enclosingType) {
+          isMem = true
+        } else {
+          isMem = false
+        }
+
+        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: receiver.sourceLocation)), at: 1)
 
         // Replace the name of a function call by its mangled name.
         let mangledName = Mangler.mangleName(functionCall.identifier.name, enclosingType: type.name)

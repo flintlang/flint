@@ -102,12 +102,15 @@ struct IULIAPropertyAccess {
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
     let isInContractFunction = functionContext.isInContractFunction
+
+    var isMemoryAccess: Bool = false
     
     if case .identifier(let lhsIdentifier) = lhs {
-      if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+      if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = "\(offset)"
       } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
         lhsOffset = Mangler.mangleName(lhsIdentifier.name)
+        isMemoryAccess = true
       } else {
         lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
       }
@@ -121,15 +124,20 @@ struct IULIAPropertyAccess {
     let offset: String
     if !isInContractFunction {
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = "add(_flintSelf, \(rhsOffset))"
+      offset =  IULIARuntimeFunction.addOffset(base: "_flintSelf", offset: rhsOffset, inMemory: "_isMem")
     } else {
-      offset = "add(\(lhsOffset), \(rhsOffset))"
+      offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
     
     if asLValue {
       return offset
     }
-    return "sload(\(offset))"
+
+    if !functionContext.isInContractFunction {
+      return IULIARuntimeFunction.load(address: offset, inMemory: "_isMem")
+    }
+
+    return IULIARuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
   }
 }
 
@@ -163,9 +171,23 @@ struct IULIAAssignment {
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return "\(Mangler.mangleName(identifier.name)) := \(rhsCode)"
     default:
-      // LHS refers to a property.
+      // LHS refers to a property in storage or memory.
+
+      let isMemoryAccess: Bool
+
+      if let enclosingType = lhs.enclosingType, functionContext.scopeContext.containsVariableDeclaration(for: enclosingType) {
+        isMemoryAccess = true
+      } else {
+        isMemoryAccess = false
+      }
+
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-      return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
+
+      if !functionContext.isInContractFunction {
+        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: "_isMem")
+      }
+
+      return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: isMemoryAccess)
     }
   }
 }

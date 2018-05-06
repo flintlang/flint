@@ -14,6 +14,8 @@ enum IULIARuntimeFunction {
     case decodeAsAddress
     case decodeAsUInt
     case store
+    case load
+    case computeOffset
     case allocateMemory
     case isValidCallerCapability
     case isCallerCapabilityInArray
@@ -37,7 +39,27 @@ enum IULIARuntimeFunction {
   }
 
   static func store(address: String, value: String, inMemory: Bool) -> String {
-    return "\(Identifiers.store)(\(address), \(value), \(inMemory ? 1 : 0))"
+    return "\(inMemory ? "mstore" : "sstore")(\(address), \(value))"
+  }
+
+  static func store(address: String, value: String, inMemory: String) -> String {
+    return "\(Identifiers.store)(\(address), \(value), \(inMemory))"
+  }
+
+  static func addOffset(base: String, offset: String, inMemory: Bool) -> String {
+    return inMemory ? "add(\(base), mul(\(EVM.wordSize), \(offset)))" : "add(\(base), \(offset))"
+  }
+
+  static func addOffset(base: String, offset: String, inMemory: String) -> String {
+    return "\(Identifiers.computeOffset)(\(base), \(offset), \(inMemory))"
+  }
+
+  static func load(address: String, inMemory: Bool) -> String {
+    return "\(inMemory ? "mload" : "sload")(\(address))"
+  }
+
+  static func load(address: String, inMemory: String) -> String {
+    return "\(Identifiers.load)(\(address), \(inMemory))"
   }
 
   static func allocateMemory(size: Int) -> String {
@@ -72,11 +94,11 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.storageDictionaryOffsetForKey)(\(dictionaryOffset), \(key))"
   }
 
-  static let allDeclarations: [String] = [IRRuntimeFunctionDeclaration.selector, IRRuntimeFunctionDeclaration.decodeAsAddress, IRRuntimeFunctionDeclaration.decodeAsUInt, IRRuntimeFunctionDeclaration.store, IRRuntimeFunctionDeclaration.allocateMemory, IRRuntimeFunctionDeclaration.isValidCallerCapability, IRRuntimeFunctionDeclaration.isCallerCapabilityInArray, IRRuntimeFunctionDeclaration.return32Bytes, IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression, IRRuntimeFunctionDeclaration.storageArrayOffset, IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey]
+  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey]
 
 }
 
-struct IRRuntimeFunctionDeclaration {
+struct IULIARuntimeFunctionDeclaration {
   static let selector =
   """
   function selector() -> ret {
@@ -107,6 +129,32 @@ struct IRRuntimeFunctionDeclaration {
     }
     default {
       sstore(ptr, val)
+    }
+  }
+  """
+
+  static let load =
+  """
+  function load(ptr, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := mload(ptr)
+    }
+    default {
+      ret := sload(ptr)
+    }
+  }
+  """
+
+  static let computeOffset =
+  """
+  function computeOffset(base, offset, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := add(base, mul(offset, \(EVM.wordSize)))
+    }
+    default {
+      ret := add(base, offset)
     }
   }
   """

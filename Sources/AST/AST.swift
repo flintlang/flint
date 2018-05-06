@@ -615,11 +615,15 @@ public indirect enum Expression: SourceEntity {
   }
   
   public var enclosingType: String? {
-    guard case .identifier(let identifier) = self else {
-      return nil
+    switch self {
+    case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
+    case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingType
+    case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
+    case .bracketedExpression(let expression): return expression.enclosingType
+    case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier.enclosingType
+    default : return nil
     }
-    
-    return identifier.enclosingType
   }
 
   public var isLiteral: Bool {
