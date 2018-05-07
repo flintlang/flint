@@ -58,6 +58,9 @@ struct IULIAContract {
 
       function () public payable {
         assembly {
+          // Memory address 0x40 holds the next available memory location.
+          mstore(0x40, 0x60)
+
           \(selectorCode)
 
           // User-defined functions

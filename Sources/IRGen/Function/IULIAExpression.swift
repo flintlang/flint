@@ -104,11 +104,11 @@ struct IULIAPropertyAccess {
     let isInStructFunction = functionContext.isInStructFunction
 
     var isMemoryAccess: Bool = false
-    
+
     if case .identifier(let lhsIdentifier) = lhs {
       if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = "\(offset)"
-      } else if functionContext.scopeContext.containsDeclaration(for: lhsIdentifier.name) {
+      } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
         lhsOffset = lhsIdentifier.name.mangled
         isMemoryAccess = true
       } else {
@@ -122,9 +122,16 @@ struct IULIAPropertyAccess {
     let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     
     let offset: String
-    if isInStructFunction, !isMemoryAccess {
+    if isInStructFunction {
+      let enclosingName: String
+      if lhs.enclosingType != functionContext.enclosingTypeName, let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+        enclosingName = enclosingIdentifier.name
+      } else {
+        enclosingName = "flintSelf"
+      }
+
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = IULIARuntimeFunction.addOffset(base: "flintSelf".mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: "flintSelf").mangled)
+      offset = IULIARuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
       offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }

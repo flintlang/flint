@@ -1,0 +1,48 @@
+struct Coin {
+  var value: Int
+
+  init(amount: Int) {
+    self.value = amount
+  }
+
+  mutating func transfer(other: inout Coin, amount: Int) {
+    if other.value >= amount {
+      value += amount
+      other.value -= amount
+    }
+  }
+}
+
+contract C {
+  var account1: Coin
+  var account2: Coin
+}
+
+C :: (any) {
+
+  public mutating func mint1(amount: Int) {
+    account1 = Coin(amount)
+  }
+
+  public mutating func mint2(amount: Int) {
+    account2 = Coin(amount)
+  }
+
+  mutating public func transfer1(amount: Int) {
+    let w: Coin = Coin(0)
+    w.transfer(&account1, amount)
+    account2.transfer(&w, amount)
+  }
+
+  mutating public func transfer2(amount: Int) {
+    account1.transfer(&account2, amount)
+  }
+
+  public func get1() -> Int {
+    return account1.value
+  }
+
+  public func get2() -> Int {
+    return account2.value
+  }
+}
