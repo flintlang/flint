@@ -68,7 +68,7 @@ public struct SemanticAnalyzer: ASTPass {
     let environment = passContext.environment!
 
     if passContext.inFunctionOrInitializer {
-      if let conflict = passContext.scopeContext!.variableDeclaration(for: variableDeclaration.identifier.name) {
+      if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict.identifier))
       }
 
@@ -213,7 +213,7 @@ public struct SemanticAnalyzer: ASTPass {
         // The identifier has no explicit enclosing type, such as in the expression `foo` instead of `a.foo`.
 
         let scopeContext = passContext.scopeContext!
-        if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
+        if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
@@ -332,7 +332,7 @@ public struct SemanticAnalyzer: ASTPass {
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
     case .self(_): return true
-    case .identifier(let identifier): return !scopeContext.containsVariableDeclaration(for: identifier.name)
+    case .identifier(let identifier): return !scopeContext.containsDeclaration(for: identifier.name)
     case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)

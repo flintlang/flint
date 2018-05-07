@@ -200,13 +200,6 @@ public struct FunctionDeclaration: SourceEntity {
   public var explicitParameters: [Parameter] {
     return parameters.filter { !$0.isImplicit }
   }
-  
-  /// The parameters of the function, as variable declaration values.
-  public var parametersAsVariableDeclarations: [VariableDeclaration] {
-    return parameters.map { parameter in
-      return VariableDeclaration(declarationToken: nil, identifier: parameter.identifier, type: parameter.type)
-    }
-  }
 
   public var mutatingToken: Token {
     return modifiers.first { $0.kind == .mutating }!
@@ -267,11 +260,6 @@ public struct InitializerDeclaration: SourceEntity {
   public var asFunctionDeclaration: FunctionDeclaration {
     let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
     return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
-  }
-
-  /// The parameters of the initializer, as variable declaration values.
-  public var parametersAsVariableDeclarations: [VariableDeclaration] {
-    return asFunctionDeclaration.parametersAsVariableDeclarations
   }
 
   public var isPublic: Bool {
@@ -339,6 +327,10 @@ public struct Parameter: SourceEntity {
 
   public var sourceLocation: SourceLocation {
     return .spanning(identifier, to: type)
+  }
+
+  public var asVariableDeclaration: VariableDeclaration {
+    return VariableDeclaration(declarationToken: nil, identifier: identifier, type: type)
   }
 
   public init(identifier: Identifier, type: Type, implicitToken: Token?) {
@@ -622,6 +614,18 @@ public indirect enum Expression: SourceEntity {
     case .bracketedExpression(let expression): return expression.enclosingType
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier.enclosingType
+    default : return nil
+    }
+  }
+
+  public var enclosingIdentifier: Identifier? {
+    switch self {
+    case .identifier(let identifier): return identifier
+    case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingIdentifier
+    case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier
+    case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingIdentifier
+    case .bracketedExpression(let expression): return expression.enclosingIdentifier
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier
     default : return nil
     }
   }

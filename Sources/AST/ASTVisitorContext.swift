@@ -57,21 +57,33 @@ public struct InitializerDeclarationContext {
 /// Contextual information used when visiting a scope, such as the local variables which are accessible in that
 /// scope.
 public struct ScopeContext: Equatable {
+  public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
 
-  public init(localVariables: [VariableDeclaration] = []) {
+  public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
+    self.parameters = parameters
     self.localVariables = localVariables
+  }
+
+  public func containsParameterDeclaration(for name: String) -> Bool {
+    return parameters.contains { $0.identifier.name == name }
   }
 
   public func containsVariableDeclaration(for name: String) -> Bool {
     return localVariables.contains { $0.identifier.name == name }
   }
 
-  public func variableDeclaration(for name: String) -> VariableDeclaration? {
-    return localVariables.first(where: { $0.identifier.name == name })
+  public func containsDeclaration(for name: String) -> Bool {
+    return containsParameterDeclaration(for: name) || containsVariableDeclaration(for: name)
+  }
+
+  public func declaration(for name: String) -> VariableDeclaration? {
+    let all = localVariables + parameters.map { $0.asVariableDeclaration }
+    return all.first(where: { $0.identifier.name == name })
   }
 
   public func type(for variable: String) -> Type.RawType? {
-    return localVariables.first(where: { $0.identifier.name == variable })?.type.rawType
+    let all = localVariables + parameters.map { $0.asVariableDeclaration }
+    return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }
 }

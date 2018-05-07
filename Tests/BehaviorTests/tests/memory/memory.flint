@@ -50,7 +50,7 @@ C :: (any) {
 }
 
 struct S {
-  var a: Int = 0
+  var a: Int = 10
   var b: Int = 3
   var s: String
   var t: T

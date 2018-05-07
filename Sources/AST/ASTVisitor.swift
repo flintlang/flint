@@ -194,7 +194,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.passContext.functionDeclarationContext = functionDeclarationContext
 
-    processResult.passContext.scopeContext!.localVariables.append(contentsOf: functionDeclaration.parametersAsVariableDeclarations)
+    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
@@ -221,7 +221,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.passContext.initializerDeclarationContext = initializerDeclarationContext
 
     let functionDeclaration = initializerDeclaration.asFunctionDeclaration
-    processResult.passContext.scopeContext!.localVariables.append(contentsOf: functionDeclaration.parametersAsVariableDeclarations)
+    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))

@@ -23,7 +23,7 @@ struct IULIAContractInitializer {
   var isContractFunction = false
 
   var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInContractFunction: isContractFunction)
+    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
   }
 
   var parameterNames: [String] {
@@ -34,11 +34,11 @@ struct IULIAContractInitializer {
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = initializerDeclaration.parametersAsVariableDeclarations
+    var localVariables = [VariableDeclaration]()
     if let capabilityBinding = capabilityBinding {
       localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
     }
-    return ScopeContext(localVariables: localVariables)
+    return ScopeContext(parameters: initializerDeclaration.parameters, localVariables: localVariables)
   }
 
   func rendered() -> String {

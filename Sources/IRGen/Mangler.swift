@@ -13,4 +13,15 @@ struct Mangler {
   static func mangleInitializer(enclosingType: String) -> String {
     return "\(enclosingType)_init"
   }
+
+  /// Constructs the parameter name to indicate whether the given parameter is a memory reference.
+  static func isMem(for parameter: String) -> String {
+    return "\(parameter)$isMem"
+  }
+}
+
+extension String {
+  var mangled: String {
+    return Mangler.mangleName(self)
+  }
 }

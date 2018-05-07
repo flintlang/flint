@@ -77,18 +77,31 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
-    // For struct functions, add `flintSelf` to the beginning of the parameters list.
     if let structDeclarationContext = passContext.structDeclarationContext {
-      let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier("flintSelf"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
-      functionDeclaration.parameters.insert(Parameter(identifier: selfIdentifier, type: Type(inferredType: .userDefinedType(structDeclarationContext.structIdentifier.name), identifier: selfIdentifier), implicitToken: nil), at: 0)
+      // For struct functions, add `flintSelf` to the beginning of the parameters list.
+      let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
+      functionDeclaration.parameters.insert(parameter, at: 0)
 
-      let isMemIdentifier = Identifier(identifierToken: Token(kind: .identifier("isMem"), sourceLocation: SourceLocation(line: 0, column: 0, length: 0)))
-      functionDeclaration.parameters.insert(Parameter(identifier: isMemIdentifier, type: Type(inferredType: .basicType(.bool), identifier: selfIdentifier), implicitToken: nil), at: 1)
-
-      let name = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: structDeclarationContext.structIdentifier.name)
+      let name = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: passContext.enclosingTypeIdentifier!.name)
       functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
     }
+
+    // Add an isMem parameter for each struct parameter.
+    let dynamicParameters = functionDeclaration.parameters.enumerated().filter { $0.1.type.rawType.isDynamicType }
+
+    var offset = 0
+    for (index, parameter) in dynamicParameters {
+      let isMemParameter = constructParameter(name: Mangler.isMem(for: parameter.identifier.name), type: .basicType(.bool), sourceLocation: parameter.sourceLocation)
+      functionDeclaration.parameters.insert(isMemParameter, at: index + 1 + offset)
+      offset += 1
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  func constructParameter(name: String, type: Type.RawType, sourceLocation: SourceLocation) -> Parameter {
+    let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
+    return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
@@ -132,23 +145,11 @@ public struct IULIAPreprocessor: ASTPass {
         let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
         functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
 
-        let isMem: Bool
-
-        if case .variableDeclaration(_) = binaryExpression.lhs {
-          isMem = true
-        } else if let enclosingType = binaryExpression.lhs.enclosingType, passContext.scopeContext!.containsVariableDeclaration(for: enclosingType) {
-          isMem = true
-        } else {
-          isMem = false
-        }
-
-        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: binaryExpression.lhs.sourceLocation)), at: 1)
-
         expression = .functionCall(functionCall)
 
         if case .variableDeclaration(var variableDeclaration) = binaryExpression.lhs,
           variableDeclaration.type.rawType.isUserDefinedType {
-          let mangled = Mangler.mangleName(variableDeclaration.identifier.name)
+          let mangled = variableDeclaration.identifier.name.mangled
           variableDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(mangled), sourceLocation: variableDeclaration.identifier.sourceLocation))
           expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
         }
@@ -228,15 +229,6 @@ public struct IULIAPreprocessor: ASTPass {
       if passContext.environment!.isStructDeclared(type.name) {
         let receiver = constructExpression(from: receiverTrail)
         functionCall.arguments.insert(receiver, at: 0)
-
-        let isMem: Bool
-        if let enclosingType = receiver.enclosingType, passContext.scopeContext!.containsVariableDeclaration(for: enclosingType) {
-          isMem = true
-        } else {
-          isMem = false
-        }
-
-        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: receiver.sourceLocation)), at: 1)
 
         // Replace the name of a function call by its mangled name.
         let mangledName = Mangler.mangleName(functionCall.identifier.name, enclosingType: type.name)
@@ -350,6 +342,29 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    var functionCall = functionCall
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+
+    var callerCapabilities = [CallerCapability]()
+    let scopeContext = passContext.scopeContext!
+
+    if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext {
+      callerCapabilities = contractBehaviorDeclarationContext.callerCapabilities
+    }
+
+    var offset = 0
+    for (index, argument) in functionCall.arguments.enumerated() {
+      let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      if type.isDynamicType {
+        var isMem = false
+        if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsDeclaration(for: enclosingIdentifier.name) {
+          isMem = true
+        }
+
+        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: argument.sourceLocation)), at: index + offset + 1)
+        offset += 1
+      }
+    }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 

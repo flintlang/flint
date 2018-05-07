@@ -1,0 +1,31 @@
+contract A {}
+
+A :: (any) {
+  mutating func foo() {
+    var t: T = T(2)
+    var s: S = S(&t)
+
+    t.set(4)
+  }
+}
+
+struct S {
+  var a: Int
+
+  init(b: inout T) {
+    self.a = b.a
+    b.a = 0
+  }
+}
+
+struct T {
+  var a: Int = 0
+
+  init(a: Int) {
+    self.a = a
+  }
+
+  mutating func set(a: Int) {
+    self.a = a
+  }
+}

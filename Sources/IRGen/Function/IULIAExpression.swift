@@ -101,15 +101,15 @@ struct IULIAPropertyAccess {
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
-    let isInContractFunction = functionContext.isInContractFunction
+    let isInStructFunction = functionContext.isInStructFunction
 
     var isMemoryAccess: Bool = false
     
     if case .identifier(let lhsIdentifier) = lhs {
       if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
         lhsOffset = "\(offset)"
-      } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
-        lhsOffset = Mangler.mangleName(lhsIdentifier.name)
+      } else if functionContext.scopeContext.containsDeclaration(for: lhsIdentifier.name) {
+        lhsOffset = lhsIdentifier.name.mangled
         isMemoryAccess = true
       } else {
         lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
@@ -122,9 +122,9 @@ struct IULIAPropertyAccess {
     let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     
     let offset: String
-    if !isInContractFunction {
+    if isInStructFunction, !isMemoryAccess {
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset =  IULIARuntimeFunction.addOffset(base: "_flintSelf", offset: rhsOffset, inMemory: "_isMem")
+      offset = IULIARuntimeFunction.addOffset(base: "flintSelf".mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: "flintSelf").mangled)
     } else {
       offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
@@ -133,8 +133,9 @@ struct IULIAPropertyAccess {
       return offset
     }
 
-    if !functionContext.isInContractFunction {
-      return IULIARuntimeFunction.load(address: offset, inMemory: "_isMem")
+    if isInStructFunction, !isMemoryAccess {
+      let lhsEnclosingIdentifier = lhs.enclosingIdentifier?.name.mangled ?? "flintSelf".mangled
+      return IULIARuntimeFunction.load(address: offset, inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
     }
 
     return IULIARuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
@@ -169,13 +170,13 @@ struct IULIAAssignment {
     case .variableDeclaration(let variableDeclaration):
       return "let \(Mangler.mangleName(variableDeclaration.identifier.name)) := \(rhsCode)"
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return "\(Mangler.mangleName(identifier.name)) := \(rhsCode)"
+      return "\(identifier.name.mangled) := \(rhsCode)"
     default:
       // LHS refers to a property in storage or memory.
 
       let isMemoryAccess: Bool
 
-      if let enclosingType = lhs.enclosingType, functionContext.scopeContext.containsVariableDeclaration(for: enclosingType) {
+      if let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsDeclaration(for: enclosingIdentifier.name) {
         isMemoryAccess = true
       } else {
         isMemoryAccess = false
@@ -183,8 +184,15 @@ struct IULIAAssignment {
 
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
 
-      if !functionContext.isInContractFunction {
-        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: "_isMem")
+
+      if functionContext.isInStructFunction {
+        let enclosingName: String
+        if lhs.enclosingType != functionContext.enclosingTypeName, let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+          enclosingName = enclosingIdentifier.name
+        } else {
+          enclosingName = "flintSelf"
+        }
+        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
       }
 
       return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: isMemoryAccess)
@@ -268,7 +276,7 @@ struct IULIAIdentifier {
     if let _ = identifier.enclosingType {
       return IULIAPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
     }
-    return Mangler.mangleName(identifier.name)
+    return identifier.name.mangled
   }
 
   static func mangleName(_ name: String) -> String {
