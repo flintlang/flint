@@ -96,27 +96,12 @@ struct IULIAPropertyAccess {
   var asLValue: Bool
   
   func rendered(functionContext: FunctionContext) -> String {
-    let lhsOffset: String
-    
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
     let isInStructFunction = functionContext.isInStructFunction
 
     var isMemoryAccess: Bool = false
-
-    if case .identifier(let lhsIdentifier) = lhs {
-      if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
-        lhsOffset = "\(offset)"
-      } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
-        lhsOffset = lhsIdentifier.name.mangled
-        isMemoryAccess = true
-      } else {
-        lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
-      }
-    } else {
-      lhsOffset = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-    }
     
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
     let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
@@ -124,8 +109,8 @@ struct IULIAPropertyAccess {
     let offset: String
     if isInStructFunction {
       let enclosingName: String
-      if lhs.enclosingType != functionContext.enclosingTypeName, let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
-        enclosingName = enclosingIdentifier.name
+      if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+        enclosingName = enclosingParameter
       } else {
         enclosingName = "flintSelf"
       }
@@ -133,6 +118,20 @@ struct IULIAPropertyAccess {
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
       offset = IULIARuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
+      let lhsOffset: String
+      if case .identifier(let lhsIdentifier) = lhs {
+        if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+          lhsOffset = "\(offset)"
+        } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
+          lhsOffset = lhsIdentifier.name.mangled
+          isMemoryAccess = true
+        } else {
+          lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
+        }
+      } else {
+        lhsOffset = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+      }
+
       offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
     
@@ -181,25 +180,23 @@ struct IULIAAssignment {
     default:
       // LHS refers to a property in storage or memory.
 
-      let isMemoryAccess: Bool
-
-      if let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsDeclaration(for: enclosingIdentifier.name) {
-        isMemoryAccess = true
-      } else {
-        isMemoryAccess = false
-      }
-
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-
 
       if functionContext.isInStructFunction {
         let enclosingName: String
-        if lhs.enclosingType != functionContext.enclosingTypeName, let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
-          enclosingName = enclosingIdentifier.name
+        if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+          enclosingName = enclosingParameter
         } else {
           enclosingName = "flintSelf"
         }
         return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
+      }
+
+      let isMemoryAccess: Bool
+      if let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+        isMemoryAccess = true
+      } else {
+        isMemoryAccess = false
       }
 
       return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: isMemoryAccess)

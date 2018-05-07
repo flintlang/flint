@@ -86,4 +86,18 @@ public struct ScopeContext: Equatable {
     let all = localVariables + parameters.map { $0.asVariableDeclaration }
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }
+
+  /// Returns the parameter name for the enclosing identifier of the given expression.
+  ///
+  /// For example, when given the expression "a.foo.x", the function will return "a" if "a" is a parameter to the
+  /// function.
+  public func enclosingParameter(expression: Expression, enclosingTypeName: String) -> String? {
+    guard expression.enclosingType != enclosingTypeName,
+      let enclosingIdentifier = expression.enclosingIdentifier,
+      containsParameterDeclaration(for: enclosingIdentifier.name) else {
+      return nil
+    }
+
+    return enclosingIdentifier.name
+  }
 }
