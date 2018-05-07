@@ -56,22 +56,48 @@ public struct InitializerDeclarationContext {
 
 /// Contextual information used when visiting a scope, such as the local variables which are accessible in that
 /// scope.
-public struct ScopeContext {
+public struct ScopeContext: Equatable {
+  public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
 
-  public init(localVariables: [VariableDeclaration] = []) {
+  public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
+    self.parameters = parameters
     self.localVariables = localVariables
+  }
+
+  public func containsParameterDeclaration(for name: String) -> Bool {
+    return parameters.contains { $0.identifier.name == name }
   }
 
   public func containsVariableDeclaration(for name: String) -> Bool {
     return localVariables.contains { $0.identifier.name == name }
   }
 
-  public func variableDeclaration(for name: String) -> VariableDeclaration? {
-    return localVariables.first(where: { $0.identifier.name == name })
+  public func containsDeclaration(for name: String) -> Bool {
+    return containsParameterDeclaration(for: name) || containsVariableDeclaration(for: name)
+  }
+
+  public func declaration(for name: String) -> VariableDeclaration? {
+    let all = localVariables + parameters.map { $0.asVariableDeclaration }
+    return all.first(where: { $0.identifier.name == name })
   }
 
   public func type(for variable: String) -> Type.RawType? {
-    return localVariables.first(where: { $0.identifier.name == variable })?.type.rawType
+    let all = localVariables + parameters.map { $0.asVariableDeclaration }
+    return all.first(where: { $0.identifier.name == variable })?.type.rawType
+  }
+
+  /// Returns the parameter name for the enclosing identifier of the given expression.
+  ///
+  /// For example, when given the expression "a.foo.x", the function will return "a" if "a" is a parameter to the
+  /// function.
+  public func enclosingParameter(expression: Expression, enclosingTypeName: String) -> String? {
+    guard expression.enclosingType != enclosingTypeName,
+      let enclosingIdentifier = expression.enclosingIdentifier,
+      containsParameterDeclaration(for: enclosingIdentifier.name) else {
+      return nil
+    }
+
+    return enclosingIdentifier.name
   }
 }

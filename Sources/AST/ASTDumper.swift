@@ -272,6 +272,7 @@ public class ASTDumper {
       case .self(let token): self.dump(token)
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
       case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
+      case .sequence(let expressions): expressions.forEach { self.dump($0) }
       }
     }
   }

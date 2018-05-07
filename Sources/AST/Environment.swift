@@ -91,12 +91,6 @@ public struct Environment {
   public func isInitializerCall(_ functionCall: FunctionCall) -> Bool {
     return isStructDeclared(functionCall.identifier.name)
   }
-  
-  /// Whether the given type is a reference type (a contract).
-  public func isReferenceType(_ type: RawTypeIdentifier) -> Bool {
-    // TODO: it should be possible to pass structs by value as well.
-    return isContractDeclared(type) || isStructDeclared(type)
-  }
 
   /// Whether a property is defined in a type.
   public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
@@ -313,6 +307,7 @@ public struct Environment {
       return type(ofArrayLiteral: arrayLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
+    case .sequence(_): fatalError()
     }
   }
 

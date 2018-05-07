@@ -18,6 +18,6 @@ struct FunctionContext {
   /// The type in which the function is declared.
   var enclosingTypeName: String
 
-  /// Whether the function is declared in a contract.
-  var isInContractFunction: Bool
+  /// Whether the function is declared in a struct.
+  var isInStructFunction: Bool
 }

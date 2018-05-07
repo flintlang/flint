@@ -67,10 +67,8 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
-    let inFunctionOrInitializer = passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil
-
-    if inFunctionOrInitializer {
-      if let conflict = passContext.scopeContext!.variableDeclaration(for: variableDeclaration.identifier.name) {
+    if passContext.inFunctionOrInitializer {
+      if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict.identifier))
       }
 
@@ -79,7 +77,7 @@ public struct SemanticAnalyzer: ASTPass {
     } else {
       // It's a property declaration.
 
-      let enclosingType = enclosingTypeIdentifier(in: passContext).name
+      let enclosingType = passContext.enclosingTypeIdentifier!.name
       if let conflict = environment.conflictingPropertyDeclaration(for: variableDeclaration.identifier, in: enclosingType) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict))
       }
@@ -116,7 +114,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
 
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
     if let conflict = passContext.environment!.conflictingFunctionDeclaration(for: functionDeclaration.identifier, in: enclosingType) {
       diagnostics.append(.invalidRedeclaration(functionDeclaration.identifier, originalSource: conflict))
     }
@@ -158,7 +156,7 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
     let environment = passContext.environment!
 
     // Gather properties of the enclosing type which haven't been assigned a default value.
@@ -178,10 +176,10 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
-    let type = parameter.type
+//    let type = parameter.type
     var diagnostics = [Diagnostic]()
 
-    if passContext.environment!.isReferenceType(type.name), !parameter.isInout {
+    if parameter.type.rawType.isUserDefinedType, !parameter.isInout {
       // Ensure all structs are passed by reference, for now.
       diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation, message: "Structs cannot be passed by value yet, and have to be passed inout"))
     }
@@ -215,7 +213,7 @@ public struct SemanticAnalyzer: ASTPass {
         // The identifier has no explicit enclosing type, such as in the expression `foo` instead of `a.foo`.
 
         let scopeContext = passContext.scopeContext!
-        if let variableDeclaration = scopeContext.variableDeclaration(for: identifier.name) {
+        if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
@@ -223,7 +221,7 @@ public struct SemanticAnalyzer: ASTPass {
         } else {
           // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
           // declaration in which the function appears.
-          identifier.enclosingType = enclosingTypeIdentifier(in: passContext).name
+          identifier.enclosingType = passContext.enclosingTypeIdentifier!.name
         }
       }
 
@@ -306,7 +304,7 @@ public struct SemanticAnalyzer: ASTPass {
     if case .dot = binaryExpression.opToken {
       // The identifier explicitly refers to a state property, such as in `self.foo`.
       // We set its enclosing type to the type it is declared in.
-      let enclosingType = enclosingTypeIdentifier(in: passContext)
+      let enclosingType = passContext.enclosingTypeIdentifier!
       let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
@@ -334,7 +332,7 @@ public struct SemanticAnalyzer: ASTPass {
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
     case .self(_): return true
-    case .identifier(let identifier): return !scopeContext.containsVariableDeclaration(for: identifier.name)
+    case .identifier(let identifier): return !scopeContext.containsDeclaration(for: identifier.name)
     case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
@@ -399,6 +397,9 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Clear the context in preparation for the next time we visit a function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
+    
+    var functionDeclaration = functionDeclaration
+    functionDeclaration.scopeContext = passContext.scopeContext
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -434,6 +435,8 @@ public struct SemanticAnalyzer: ASTPass {
       }
     }
 
+    var initializerDeclaration = initializerDeclaration
+    initializerDeclaration.scopeContext = passContext.scopeContext
     return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -482,7 +485,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     var passContext = passContext
     let environment = passContext.environment!
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
 
     var diagnostics = [Diagnostic]()

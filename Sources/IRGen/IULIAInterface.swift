@@ -68,7 +68,7 @@ struct IULIAInterface {
   }
 
   func render(_ functionParameter: Parameter) -> String {
-    return "\(CanonicalType(from: functionParameter.type.rawType)!.rawValue) \(Mangler.mangleName(functionParameter.identifier.name))"
+    return "\(CanonicalType(from: functionParameter.type.rawType)!.rawValue) \(functionParameter.identifier.name.mangled)"
   }
 }
 

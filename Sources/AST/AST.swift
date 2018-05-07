@@ -200,13 +200,6 @@ public struct FunctionDeclaration: SourceEntity {
   public var explicitParameters: [Parameter] {
     return parameters.filter { !$0.isImplicit }
   }
-  
-  /// The parameters of the function, as variable declaration values.
-  public var parametersAsVariableDeclarations: [VariableDeclaration] {
-    return parameters.map { parameter in
-      return VariableDeclaration(declarationToken: nil, identifier: parameter.identifier, type: parameter.type)
-    }
-  }
 
   public var mutatingToken: Token {
     return modifiers.first { $0.kind == .mutating }!
@@ -215,8 +208,11 @@ public struct FunctionDeclaration: SourceEntity {
   public var isPublic: Bool {
     return hasModifier(kind: .public)
   }
+  
+  // Contextual information for the scope defined by the function.
+  public var scopeContext: ScopeContext? = nil
 
-  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token) {
+  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -226,6 +222,7 @@ public struct FunctionDeclaration: SourceEntity {
     self.resultType = resultType
     self.body = body
     self.closeBraceToken = closeBraceToken
+    self.scopeContext = scopeContext
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
@@ -250,6 +247,9 @@ public struct InitializerDeclaration: SourceEntity {
   public var sourceLocation: SourceLocation {
     return initToken.sourceLocation
   }
+  
+  // Contextual information for the scope defined by the function.
+  public var scopeContext: ScopeContext? = nil
 
   /// The non-implicit parameters of the initializer.
   public var explicitParameters: [Parameter] {
@@ -259,19 +259,14 @@ public struct InitializerDeclaration: SourceEntity {
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
     let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
-    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken)
-  }
-
-  /// The parameters of the initializer, as variable declaration values.
-  public var parametersAsVariableDeclarations: [VariableDeclaration] {
-    return asFunctionDeclaration.parametersAsVariableDeclarations
+    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
   }
 
   public var isPublic: Bool {
     return asFunctionDeclaration.isPublic
   }
 
-  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token) {
+  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
     self.initToken = initToken
     self.attributes = attributes
     self.modifiers = modifiers
@@ -279,6 +274,7 @@ public struct InitializerDeclaration: SourceEntity {
     self.closeBracketToken = closeBracketToken
     self.body = body
     self.closeBraceToken = closeBraceToken
+    self.scopeContext = scopeContext
   }
 }
 
@@ -331,6 +327,10 @@ public struct Parameter: SourceEntity {
 
   public var sourceLocation: SourceLocation {
     return .spanning(identifier, to: type)
+  }
+
+  public var asVariableDeclaration: VariableDeclaration {
+    return VariableDeclaration(declarationToken: nil, identifier: identifier, type: type)
   }
 
   public init(identifier: Identifier, type: Type, implicitToken: Token?) {
@@ -414,6 +414,10 @@ public struct Type: SourceEntity {
       case .inoutType(let element): return element.isBuiltInType
       case .userDefinedType(_): return false
       }
+    }
+
+    public var isUserDefinedType: Bool {
+      return !isBuiltInType
     }
 
     public var isEventType: Bool {
@@ -562,6 +566,7 @@ public indirect enum Expression: SourceEntity {
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(Expression)
   case subscriptExpression(SubscriptExpression)
+  case sequence([Expression])
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -576,6 +581,7 @@ public indirect enum Expression: SourceEntity {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
+    case .sequence(let expressions): return expressions.first!.sourceLocation
     }
   }
 
@@ -601,11 +607,27 @@ public indirect enum Expression: SourceEntity {
   }
   
   public var enclosingType: String? {
-    guard case .identifier(let identifier) = self else {
-      return nil
+    switch self {
+    case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
+    case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingType
+    case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
+    case .bracketedExpression(let expression): return expression.enclosingType
+    case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier.enclosingType
+    default : return nil
     }
-    
-    return identifier.enclosingType
+  }
+
+  public var enclosingIdentifier: Identifier? {
+    switch self {
+    case .identifier(let identifier): return identifier
+    case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingIdentifier
+    case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier
+    case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingIdentifier
+    case .bracketedExpression(let expression): return expression.enclosingIdentifier
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier
+    default : return nil
+    }
   }
 
   public var isLiteral: Bool {
@@ -793,6 +815,12 @@ public struct IfStatement: SourceEntity {
   public var sourceLocation: SourceLocation {
     return .spanning(ifToken, to: condition)
   }
+  
+  // Contextual information for the scope defined by the if body.
+  public var ifBodyScopeContext: ScopeContext? = nil
+  
+  // Contextual information for the scope defined by the else body.
+  public var elseBodyScopeContext: ScopeContext? = nil
 
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in

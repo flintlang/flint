@@ -30,7 +30,7 @@ struct IULIAExpression {
     case .identifier(let identifier):
       return IULIAIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
-      return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered()
+      return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered(functionContext: functionContext)
     case .literal(let literal):
       return IULIALiteralToken(literalToken: literal).rendered()
     case .arrayLiteral(let arrayLiteral):
@@ -43,6 +43,8 @@ struct IULIAExpression {
       return IULIASelf(selfToken: self, asLValue: asLValue).rendered()
     case .subscriptExpression(let subscriptExpression):
       return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+    case .sequence(let expressions):
+      return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
     }
   }
 }
@@ -94,38 +96,55 @@ struct IULIAPropertyAccess {
   var asLValue: Bool
   
   func rendered(functionContext: FunctionContext) -> String {
-    let lhsOffset: String
-    
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
-    let isInContractFunction = functionContext.isInContractFunction
-    
-    if case .identifier(let lhsIdentifier) = lhs {
-      if let enclosingType = lhs.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
-        lhsOffset = "\(offset)"
-      } else {
-        lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
-      }
-    } else {
-      lhsOffset = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-    }
+    let isInStructFunction = functionContext.isInStructFunction
+
+    var isMemoryAccess: Bool = false
     
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
     let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     
     let offset: String
-    if !isInContractFunction {
+    if isInStructFunction {
+      let enclosingName: String
+      if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+        enclosingName = enclosingParameter
+      } else {
+        enclosingName = "flintSelf"
+      }
+
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = "add(_flintSelf, \(rhsOffset))"
+      offset = IULIARuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
-      offset = "add(\(lhsOffset), \(rhsOffset))"
+      let lhsOffset: String
+      if case .identifier(let lhsIdentifier) = lhs {
+        if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+          lhsOffset = "\(offset)"
+        } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
+          lhsOffset = lhsIdentifier.name.mangled
+          isMemoryAccess = true
+        } else {
+          lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
+        }
+      } else {
+        lhsOffset = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+      }
+
+      offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
     
     if asLValue {
       return offset
     }
-    return "sload(\(offset))"
+
+    if isInStructFunction, !isMemoryAccess {
+      let lhsEnclosingIdentifier = lhs.enclosingIdentifier?.name.mangled ?? "flintSelf".mangled
+      return IULIARuntimeFunction.load(address: offset, inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
+    }
+
+    return IULIARuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
   }
 }
 
@@ -157,11 +176,30 @@ struct IULIAAssignment {
     case .variableDeclaration(let variableDeclaration):
       return "let \(Mangler.mangleName(variableDeclaration.identifier.name)) := \(rhsCode)"
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return "\(Mangler.mangleName(identifier.name)) := \(rhsCode)"
+      return "\(identifier.name.mangled) := \(rhsCode)"
     default:
-      // LHS refers to a storage property.
+      // LHS refers to a property in storage or memory.
+
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-      return "sstore(\(lhsCode), \(rhsCode))"
+
+      if functionContext.isInStructFunction {
+        let enclosingName: String
+        if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+          enclosingName = enclosingParameter
+        } else {
+          enclosingName = "flintSelf"
+        }
+        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
+      }
+
+      let isMemoryAccess: Bool
+      if let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+        isMemoryAccess = true
+      } else {
+        isMemoryAccess = false
+      }
+
+      return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: isMemoryAccess)
     }
   }
 }
@@ -178,11 +216,23 @@ struct IULIAFunctionCall {
     }
     
     let args: String = functionCall.arguments.map({ argument in
-      let type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
-      return IULIAExpression(expression: argument, asLValue: functionContext.environment.isReferenceType(type.name)).rendered(functionContext: functionContext)
+      var type: Type.RawType
+      var argument = argument
+      
+      // If the receiver is a local variable of user-defined type, extract it.
+      if case .inoutExpression(let inoutExpression) = argument,
+        case .variableDeclaration(let variableDeclaration) = inoutExpression.expression {
+        type = variableDeclaration.type.rawType
+        argument = .identifier(variableDeclaration.identifier)
+      } else {
+        type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
+      }
+      
+      return IULIAExpression(expression: argument, asLValue: type.isUserDefinedType).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
+
 }
 
 /// Generates code for an event call.
@@ -230,7 +280,7 @@ struct IULIAIdentifier {
     if let _ = identifier.enclosingType {
       return IULIAPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
     }
-    return Mangler.mangleName(identifier.name)
+    return identifier.name.mangled
   }
 
   static func mangleName(_ name: String) -> String {
@@ -242,8 +292,9 @@ struct IULIAIdentifier {
 struct IULIAVariableDeclaration {
   var variableDeclaration: VariableDeclaration
   
-  func rendered() -> String {
-    return "var \(variableDeclaration.identifier)"
+  func rendered(functionContext: FunctionContext) -> String {
+    let allocate = IULIARuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
+    return "let \(variableDeclaration.identifier.name) := \(allocate)"
   }
 }
 
@@ -299,7 +350,7 @@ struct IULIASubscriptExpression {
 
     switch type {
     case .arrayType(let elementType):
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageArrayOffset.rawValue)(\(offset), \(indexExpressionCode))"
+      let storageArrayOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: indexExpressionCode)
       if asLValue {
         return storageArrayOffset
       } else {
@@ -310,7 +361,7 @@ struct IULIASubscriptExpression {
       }
     case .fixedSizeArrayType(let elementType, _):
       let typeSize = environment.size(of: type)
-      let storageArrayOffset = "\(IULIARuntimeFunction.storageFixedSizeArrayOffset.rawValue)(\(offset), \(indexExpressionCode), \(typeSize))"
+      let storageArrayOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: indexExpressionCode, arraySize: typeSize)
       if asLValue {
         return storageArrayOffset
       } else {
@@ -324,7 +375,7 @@ struct IULIASubscriptExpression {
         fatalError("Dictionary keys of size > 1 are not supported yet.")
       }
 
-      let storageDictionaryOffsetForKey = "\(IULIARuntimeFunction.storageDictionaryOffsetForKey.rawValue)(\(offset), \(indexExpressionCode))"
+      let storageDictionaryOffsetForKey = IULIARuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: indexExpressionCode)
 
       if asLValue {
         return "\(storageDictionaryOffsetForKey)"

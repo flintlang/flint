@@ -1,0 +1,78 @@
+contract C {
+  var s: S
+  var t: T
+}
+
+C :: (any) {
+  public mutating func setS(a: Int, b: String) {
+    let s: S = S(a, b)
+    s.incrementA()
+    self.s = S(s.a, s.s)
+  }
+
+  public mutating func setT1(a: Int) {
+    let t1: T = T(a)
+    let t2: T = T(a + 1)
+
+    self.t = T(t1.x)
+  }
+
+  public mutating func setT2(a: Int) {
+    let t1: T = T(a)
+    let t2: T = T(a + 1)
+
+    self.t = T(t2.x)
+  }
+
+  public mutating func setT3(c: Bool, a: Int, b: Int) {
+    if c {
+      let t: T = T(a)
+      t.increment()
+      self.t = T(t.x)
+    } else {
+      let t: T = T(b)
+      t.increment()
+      self.t = T(t.x)
+    }
+  }
+
+  public func getSa() -> Int {
+    return s.a
+  }
+
+  public func getSs() -> String {
+    return s.s
+  }
+
+  public func getTx() -> Int {
+    return t.x
+  }
+}
+
+struct S {
+  var a: Int = 10
+  var b: Int = 3
+  var s: String
+  var t: T
+
+  init(a: Int, s: String) {
+    self.a = a
+    self.s = s
+  }
+
+  mutating func incrementA() {
+    self.a += 1
+  }
+}
+
+struct T {
+  var x: Int = 2
+
+  init(x: Int) {
+    self.x = x
+  }
+
+  mutating func increment() {
+    self.x += 1
+  }
+}

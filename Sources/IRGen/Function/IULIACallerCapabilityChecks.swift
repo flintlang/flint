@@ -19,15 +19,19 @@ struct IULIACallerCapabilityChecks {
 
       let type = environment.type(of: callerCapability.identifier.name, enclosingType: functionContext.enclosingTypeName)!
       let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: functionContext.enclosingTypeName)!
+
       switch type {
       case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
-          "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(add(\(offset), \(index)))))"
+          let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset), \(index)))")
+          return "_flintCallerCheck := add(_flintCallerCheck, \(check)"
           }.joined(separator: "\n")
       case .arrayType(_):
-        return "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isCallerCapabilityInArray.rawValue)(\(offset)))"
+        let check = IULIARuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
+        return "_flintCallerCheck := add(_flintCallerCheck, \(check))"
       default:
-        return "_flintCallerCheck := add(_flintCallerCheck, \(IULIARuntimeFunction.isValidCallerCapability.rawValue)(sload(\(offset))))"
+        let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(\(offset)))")
+        return "_flintCallerCheck := add(_flintCallerCheck, \(check)"
       }
     }
 

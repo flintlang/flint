@@ -46,7 +46,7 @@ struct IULIAContract {
     let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
-    let runtimeFunctionsDeclarations = IULIARuntimeFunction.all.map { $0.declaration }.joined(separator: "\n\n").indented(by: 6)
+    let runtimeFunctionsDeclarations = IULIARuntimeFunction.allDeclarations.joined(separator: "\n\n").indented(by: 6)
 
     // Main contract body.
     return """
@@ -58,6 +58,9 @@ struct IULIAContract {
 
       function () public payable {
         assembly {
+          // Memory address 0x40 holds the next available memory location.
+          mstore(0x40, 0x60)
+
           \(selectorCode)
 
           // User-defined functions
@@ -98,7 +101,7 @@ struct IULIAContract {
     let initializer = IULIAContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
 
     let parameters = initializerDeclaration.parameters.map { parameter in
-      let parameterName = Mangler.mangleName(parameter.identifier.name)
+      let parameterName = parameter.identifier.name.mangled
       return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
       }.joined(separator: ", ")
 
@@ -114,7 +117,7 @@ struct IULIAContract {
   func synthesizeInitializer() -> InitializerDeclaration {
     let sourceLocation = contractDeclaration.sourceLocation
 
-    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation))
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation), scopeContext: ScopeContext(localVariables: []))
   }
 
   /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.

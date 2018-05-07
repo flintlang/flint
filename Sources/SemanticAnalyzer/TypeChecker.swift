@@ -128,7 +128,7 @@ public struct TypeChecker: ASTPass {
 
     // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {
-      let typeIdentifier = enclosingTypeIdentifier(in: passContext)
+      let typeIdentifier = passContext.enclosingTypeIdentifier!
 
       let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
       let rhsType = environment.type(of: binaryExpression.rhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
@@ -144,7 +144,7 @@ public struct TypeChecker: ASTPass {
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
-    let enclosingType = enclosingTypeIdentifier(in: passContext).name
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
 
     if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
       let expectedTypes = eventCall.typeGenericArguments
@@ -177,7 +177,7 @@ public struct TypeChecker: ASTPass {
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     var diagnostics = [Diagnostic]()
-    let typeIdentifier = enclosingTypeIdentifier(in: passContext)
+    let typeIdentifier = passContext.enclosingTypeIdentifier!
     let functionDeclarationContext = passContext.functionDeclarationContext!
     let environment = passContext.environment!
 

@@ -99,6 +99,18 @@ extension ASTPassContext {
     get { return self[IsFunctionCallContextEntry.self] }
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
+
+  /// The identifier of the enclosing type (a contract or a struct).
+  public var enclosingTypeIdentifier: Identifier? {
+    return contractBehaviorDeclarationContext?.contractIdentifier ??
+      structDeclarationContext?.structIdentifier ??
+      contractStateDeclarationContext?.contractIdentifier
+  }
+
+  /// Whether we are visiting a node in a function declaration or initializer.
+  public var inFunctionOrInitializer: Bool {
+    return functionDeclarationContext != nil || functionDeclarationContext != nil
+  }
 }
 
 /// A entry used to index in an `ASTPassContext`.

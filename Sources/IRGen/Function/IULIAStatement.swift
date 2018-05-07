@@ -26,6 +26,10 @@ struct IULIAIfStatement {
 
   func rendered(functionContext: FunctionContext) -> String {
     let condition = IULIAExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
+
+    var functionContext = functionContext
+    functionContext.scopeContext = ifStatement.ifBodyScopeContext!
+
     let body = ifStatement.body.map { statement in
       return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
       }.joined(separator: "\n")
@@ -34,13 +38,14 @@ struct IULIAIfStatement {
     ifCode = """
     switch \(condition)
     case 1 {
-    \(body.indented(by: 2))
+      \(body.indented(by: 2))
     }
     """
 
     var elseCode = ""
 
     if !ifStatement.elseBody.isEmpty {
+      functionContext.scopeContext = ifStatement.elseBodyScopeContext!
       let body = ifStatement.elseBody.map { statement in
         if case .returnStatement(_) = statement {
           fatalError("Return statements in else blocks are not supported yet")
@@ -49,7 +54,7 @@ struct IULIAIfStatement {
         }.joined(separator: "\n")
       elseCode = """
       default {
-      \(body.indented(by: 2))
+        \(body.indented(by: 2))
       }
       """
     }

@@ -23,7 +23,7 @@ struct IULIAFunction {
   var isContractFunction = false
 
   var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInContractFunction: isContractFunction)
+    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
   }
 
   init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], environment: Environment) {
@@ -50,11 +50,7 @@ struct IULIAFunction {
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = functionDeclaration.parametersAsVariableDeclarations
-    if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
-    }
-    return ScopeContext(localVariables: localVariables)
+    return functionDeclaration.scopeContext!
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
@@ -101,15 +97,11 @@ struct IULIAFunctionBody {
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = functionDeclaration.parametersAsVariableDeclarations
-    if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
-    }
-    return ScopeContext(localVariables: localVariables)
+    return functionDeclaration.scopeContext!
   }
 
   var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInContractFunction: isContractFunction)
+    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
   }
 
   func rendered() -> String {
@@ -120,7 +112,7 @@ struct IULIAFunctionBody {
     // Assign a caller capaiblity binding to a local variable.
     let capabilityBindingDeclaration: String
     if let capabilityBinding = capabilityBinding {
-      capabilityBindingDeclaration = "let \(Mangler.mangleName(capabilityBinding.name)) := caller()\n"
+      capabilityBindingDeclaration = "let \(capabilityBinding.name.mangled) := caller()\n"
     } else {
       capabilityBindingDeclaration = ""
     }
@@ -128,7 +120,7 @@ struct IULIAFunctionBody {
     // Assign Wei value sent to a @payable function to a local variable.
     let payableValueDeclaration: String
     if let payableValueParameter = functionDeclaration.firstPayableValueParameter {
-      payableValueDeclaration = "let \(Mangler.mangleName(payableValueParameter.identifier.name)) := callvalue()\n"
+      payableValueDeclaration = "let \(payableValueParameter.identifier.name.mangled) := callvalue()\n"
     } else {
       payableValueDeclaration = ""
     }
