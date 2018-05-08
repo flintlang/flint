@@ -5,8 +5,12 @@ struct Coin {
     self.value = amount
   }
 
+  func getValue() -> Int {
+    return value
+  }
+
   mutating func transfer(other: inout Coin, amount: Int) {
-    if other.value >= amount {
+    if other.getValue() >= amount {
       value += amount
       other.value -= amount
     }

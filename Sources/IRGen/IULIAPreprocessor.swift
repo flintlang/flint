@@ -96,6 +96,7 @@ public struct IULIAPreprocessor: ASTPass {
       offset += 1
     }
 
+    functionDeclaration.scopeContext?.parameters = functionDeclaration.parameters
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -356,12 +357,16 @@ public struct IULIAPreprocessor: ASTPass {
     for (index, argument) in functionCall.arguments.enumerated() {
       let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
       if type.isDynamicType {
-        var isMem = false
-        if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsDeclaration(for: enclosingIdentifier.name) {
-          isMem = true
+        let isMem: Expression
+        if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+          isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
+        } else if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+          isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)), sourceLocation: argument.sourceLocation)))
+        } else {
+          isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
         }
 
-        functionCall.arguments.insert(.literal(Token(kind: .literal(.boolean(isMem ? .true : .false)), sourceLocation: argument.sourceLocation)), at: index + offset + 1)
+        functionCall.arguments.insert(isMem, at: index + offset + 1)
         offset += 1
       }
     }
