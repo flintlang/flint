@@ -20,7 +20,7 @@ type-annotation -> [:] type
 
 type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
 
-generic-argument-clause -> [<] generic-parameter-list [>]
+generic-argument-clause -> [<] generic-argument-list [>]
 generic-argument-list -> type | type [,] generic-argument-list
 
 // Struct declaration
