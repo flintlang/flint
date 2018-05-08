@@ -122,9 +122,18 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+    var binaryExpression = binaryExpression
     var diagnostics = [Diagnostic]()
 
     let environment = passContext.environment!
+
+    if case .dot = binaryExpression.opToken {
+      // The identifier explicitly refers to a state property, such as in `self.foo`.
+      // We set its enclosing type to the type it is declared in.
+      let enclosingType = passContext.enclosingTypeIdentifier!
+      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
+      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+    }
 
     // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {

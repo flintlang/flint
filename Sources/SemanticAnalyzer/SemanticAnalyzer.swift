@@ -308,7 +308,7 @@ public struct SemanticAnalyzer: ASTPass {
       let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
-    
+
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
@@ -491,40 +491,42 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
 
     if let functionDeclarationContext = passContext.functionDeclarationContext {
+
       // Find the function declaration associated with this function call.
       switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
       case .matchedFunction(let matchingFunction):
         // The function declaration is found.
-
+        
         if matchingFunction.isMutating {
           // The function is mutating.
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
-
+          
           if !functionDeclarationContext.isMutating {
             // The function in which the function call appears in is not mutating.
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
           }
         }
-
+        
         // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
         for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
           if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
             addMutatingExpression(argument, passContext: &passContext)
-
+            
             if !functionDeclarationContext.isMutating {
               diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
             }
           }
         }
-
+        
       case .matchedInitializer(_):
         break
-
+        
       case .failure(let candidates):
         // A matching function declaration couldn't be found. Try to match an event call.
         if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
           diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
         }
+
       }
     }
     
