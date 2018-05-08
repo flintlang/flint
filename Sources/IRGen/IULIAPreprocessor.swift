@@ -42,25 +42,27 @@ public struct IULIAPreprocessor: ASTPass {
     var structMember = structMember
 
     if case .initializerDeclaration(var initializerDeclaration) = structMember {
-      let enclosingType = passContext.enclosingTypeIdentifier!.name
-      let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
-
-      let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> Statement? in
-        guard let assignedExpression = declaration.assignedExpression else { return nil }
-
-        var identifier = declaration.identifier
-        identifier.enclosingType = enclosingType
-
-        return .expression(.binaryExpression(BinaryExpression(lhs: .identifier(identifier), op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation), rhs: assignedExpression)))
-      }
-
-      initializerDeclaration.body.insert(contentsOf: defaultValueAssignments, at: 0)
-
+      initializerDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
       structMember = .functionDeclaration(initializerDeclaration.asFunctionDeclaration)
     }
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+  
+  /// Returns assignment statements for all the properties which have been assigned default values.
+  func defaultValueAssignments(in passContext: ASTPassContext) -> [Statement] {
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
+    
+    return propertiesInEnclosingType.compactMap { declaration -> Statement? in
+      guard let assignedExpression = declaration.assignedExpression else { return nil }
+      
+      var identifier = declaration.identifier
+      identifier.enclosingType = enclosingType
+      
+      return .expression(.binaryExpression(BinaryExpression(lhs: .identifier(identifier), op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation), rhs: assignedExpression)))
+    }
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -106,6 +108,8 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+    var initializerDeclaration = initializerDeclaration
+    initializerDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
     return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
 

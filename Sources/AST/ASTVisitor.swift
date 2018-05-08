@@ -168,6 +168,13 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
     processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: processResult.passContext))
+    
+    if let assignedExpression = processResult.element.assignedExpression {
+      // Create an empty scope context.
+      processResult.passContext.scopeContext = ScopeContext()
+      processResult.element.assignedExpression = processResult.combining(visit(assignedExpression, passContext: processResult.passContext))
+      processResult.passContext.scopeContext = nil
+    }
 
     let postProcessResult = pass.postProcess(variableDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)

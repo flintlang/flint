@@ -2,6 +2,8 @@ struct A {
   var x: Int = 0
   var y: Bool = false
 
+  init() {}
+
   func getX() -> Int {
     return x
   }
@@ -12,8 +14,10 @@ struct A {
 }
 
 struct B {
-  var x: A
+  var x: A = A()
   var y: Int = 0
+  
+  init() {}
 
   func getXx() -> Int {
     return x.getX()
@@ -25,10 +29,10 @@ struct B {
 }
 
 contract C {
-  var a: A
+  var a: A = A()
   var arr: Array
-  var b: B
-  var c: B
+  var b: B = B()
+  var c: B = B()
   let d: Int = 5
   var e: Bool = true
 }

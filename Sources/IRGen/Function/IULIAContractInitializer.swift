@@ -57,30 +57,16 @@ struct IULIAContractInitializer {
       """
     }.joined(separator: "\n")
 
-    let defaultValuesAssignments = renderDefaultValuesAssignments()
-
     let body = IULIAFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
     // TODO: Remove IULIARuntimeFunctionDeclaration.store once constructor code and function code is unified.
 
     return """
-    \(parameterBindings)
-    \(defaultValuesAssignments)
-    \(body)
-    \(IULIARuntimeFunctionDeclaration.store)
-    """
-  }
-
-  func renderDefaultValuesAssignments() -> String {
-    let defaultValueAssignments = propertiesInEnclosingType.compactMap { declaration -> String? in
-      guard let assignedExpression = declaration.assignedExpression else { return nil }
-
-      var identifier = declaration.identifier
-      identifier.enclosingType = typeIdentifier.name
-
-      return IULIAAssignment(lhs: .identifier(identifier), rhs: assignedExpression).rendered(functionContext: functionContext, asTypeProperty: true)
+    init()
+    function init() {
+      \(parameterBindings.indented(by: 2))
+      \(body.indented(by: 2))
     }
-
-    return defaultValueAssignments.joined(separator: "\n")
+    """
   }
 }

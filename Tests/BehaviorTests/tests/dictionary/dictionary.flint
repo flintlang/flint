@@ -10,11 +10,13 @@ contract Dictionary {
 struct S {
   var a: Int = 0
   var b: Bool = false
-  var c: T
+  var c: T = T()
 } 
 
 struct T {
   var a: Int = 0
+
+  init() {}
 }
 
 Dictionary :: (any) {

@@ -8,7 +8,7 @@ contract Test {
   var e: Bool
   var f: Int
   let g: Bool
-  var x: B
+  var x: B = B(0, false)
 }
 
 Test :: caller <- (any) {
@@ -50,13 +50,13 @@ Test :: (a) {
 struct A {
   var a: Int = 0
   var b: Bool // expected-error {{State property 'b' needs to be assigned a value}}
-  var c: C
+  var c: C = C(0)
 }
 
 struct B {
   var a: Int = 0
   var b: Bool
-  var c: C
+  var c: C = C(0)
 
   init(a: Int, b: Bool) {
     self.a = a

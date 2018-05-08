@@ -94,17 +94,11 @@ public struct SemanticAnalyzer: ASTPass {
       // This is a state property declaration.
 
       // If a default value is assigned, it should be a literal.
-
-      if let assignedExpression = variableDeclaration.assignedExpression {
-        if !assignedExpression.isLiteral {
-          diagnostics.append(.statePropertyDeclarationIsAssignedANonLiteralExpression(variableDeclaration))
-        }
-      } else {
-        if variableDeclaration.type.rawType.isBuiltInType && !variableDeclaration.type.rawType.isEventType && !isInitializerDeclared {
-          // The contract has no public initializer, so a default value must be provided.
-
-          diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
-        }
+      
+      if variableDeclaration.assignedExpression == nil, !variableDeclaration.type.rawType.isEventType, !isInitializerDeclared {
+        // The contract has no public initializer, so a default value must be provided.
+        
+        diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
       }
     }
 
@@ -313,10 +307,6 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    if let _ = passContext.initializerDeclarationContext {
-      // Function calls are not allowed in initializers yet
-      fatalError("Function calls are not allowed in initializers yet.")
-    }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
@@ -489,8 +479,8 @@ public struct SemanticAnalyzer: ASTPass {
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
 
     var diagnostics = [Diagnostic]()
-
-    if let functionDeclarationContext = passContext.functionDeclarationContext {
+    
+    let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
       // Find the function declaration associated with this function call.
       switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
@@ -501,9 +491,9 @@ public struct SemanticAnalyzer: ASTPass {
           // The function is mutating.
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
           
-          if !functionDeclarationContext.isMutating {
+          if !isMutating {
             // The function in which the function call appears in is not mutating.
-            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
           }
         }
         
@@ -512,8 +502,8 @@ public struct SemanticAnalyzer: ASTPass {
           if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
             addMutatingExpression(argument, passContext: &passContext)
             
-            if !functionDeclarationContext.isMutating {
-              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: functionDeclarationContext.declaration))
+            if !isMutating {
+              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
             }
           }
         }
@@ -528,7 +518,6 @@ public struct SemanticAnalyzer: ASTPass {
         }
 
       }
-    }
     
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }

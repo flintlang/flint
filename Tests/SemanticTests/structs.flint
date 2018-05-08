@@ -3,13 +3,17 @@
 struct Test {
   var a: Int = 0
 
+  init() {}
+
   func foo() -> Int {
     return 2
   }
 }
 
 struct Test2 {
-  var a: Test
+  var a: Test = Test()
+
+  init() {}
 }
 
 contract Foo {
@@ -19,6 +23,12 @@ contract Foo {
 }
 
 Foo :: (any) {
+
+  public init() {
+    a = Test()
+    b = Test2()
+  }
+
   public func bar() -> Int {
     return a.a + a.foo() + b.a.a
   }

@@ -57,9 +57,9 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reassign to value: '\(identifier.name)' is a 'let' constant", notes: [note])
   }
 
-  static func statePropertyDeclarationIsAssignedANonLiteralExpression(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The default value assigned to a state property must be a literal")
-  }
+//  static func statePropertyDeclarationIsAssignedANonLiteralExpression(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+//    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The default value assigned to a state property must be a literal")
+//  }
 
   static func statePropertyIsNotAssignedAValue(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "State property '\(variableDeclaration.identifier.name)' needs to be assigned a value")

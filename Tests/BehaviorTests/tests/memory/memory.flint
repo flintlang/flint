@@ -1,6 +1,6 @@
 contract C {
-  var s: S
-  var t: T
+  var s: S = S(0, "")
+  var t: T = T(2)
 }
 
 C :: (any) {
