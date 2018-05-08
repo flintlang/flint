@@ -21,7 +21,7 @@ type-annotation -> [:] type
 type -> identifier (generic-argument-clause) | [[] type []] | type [[] numeric-literal []] | [[] type [:] type []]
 
 generic-argument-clause -> [<] generic-parameter-list [>]
-generic-parameter-list -> type | type [,] generic-argument-list
+generic-argument-list -> type | type [,] generic-argument-list
 
 // Struct declaration
 
@@ -75,7 +75,7 @@ code-block -> [{] statements [}]
 statements -> statement (statements)
 statement -> expression
 statement -> [return] (expression)
-statement -> branch-statement
+statement -> if-statement
 
 // Expression
 
