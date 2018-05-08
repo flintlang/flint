@@ -342,7 +342,7 @@ struct IULIASubscriptExpression {
     let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType!)!
     let indexExpressionCode = IULIAExpression(expression: subscriptExpression.indexExpression).rendered(functionContext: functionContext)
 
-    let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: functionContext.enclosingTypeName)!
+    let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: functionContext.enclosingTypeName)
 
     guard let _ = baseIdentifier.enclosingType else {
       fatalError("Subscriptable types are only supported for contract properties right now.")

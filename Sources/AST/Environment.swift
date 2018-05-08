@@ -172,12 +172,12 @@ public struct Environment {
   }
 
   /// The type of a property in the given enclosing type or in a scope if it is a local variable.
-  public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType? {
+  public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType {
     if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
     
-    guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { fatalError() }
+    guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { return .errorType }
     return type
   }
 
@@ -288,13 +288,13 @@ public struct Environment {
         }
         return type
       }
-      return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
+      return type(of: identifier.name, enclosingType: identifier.enclosingType ?? enclosingType, scopeContext: scopeContext)
 
     case .self(_): return .userDefinedType(enclosingType)
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
-      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType ?? enclosingType, scopeContext: scopeContext)!
+      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType ?? enclosingType, scopeContext: scopeContext)
 
       switch identifierType {
       case .arrayType(let elementType): return elementType
@@ -337,7 +337,7 @@ public struct Environment {
 
     let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
 
-    if let functions = types[enclosingType]!.functions[functionCall.identifier.name] {
+    if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
         guard candidate.parameterTypes == argumentTypes,

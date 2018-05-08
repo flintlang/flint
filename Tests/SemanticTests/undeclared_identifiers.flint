@@ -1,0 +1,18 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var owner: Address
+}
+
+Test :: caller <- (any) {
+  public init() {
+    self.owner = owner
+  }
+
+  public func foo() {
+    var a: Int = 0
+    a += 1
+    b.foo() // expected-error {{Use of undeclared identifier b}}
+    // expected-error@15 {{Function foo is not in scope or cannot be called using the caller capabilities (any)}}
+  }
+}

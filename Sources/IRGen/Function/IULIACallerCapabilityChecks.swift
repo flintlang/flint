@@ -17,7 +17,7 @@ struct IULIACallerCapabilityChecks {
     let checks = callerCapabilities.compactMap { callerCapability -> String? in
       guard !callerCapability.isAny else { return nil }
 
-      let type = environment.type(of: callerCapability.identifier.name, enclosingType: functionContext.enclosingTypeName)!
+      let type = environment.type(of: callerCapability.identifier.name, enclosingType: functionContext.enclosingTypeName)
       let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: functionContext.enclosingTypeName)!
 
       switch type {
