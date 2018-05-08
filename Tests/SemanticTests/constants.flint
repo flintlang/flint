@@ -3,7 +3,7 @@
 contract Constants {
   var a: Int // expected-error {{State property 'a' needs to be assigned a value}}
   var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
-  let c: Int = 2 + 3 // expected-error {{The default value assigned to a state property must be a literal}}
+  let c: Int = 2 + 3
   let d: Int = 3
   let e: Int // expected-error {{State property 'e' needs to be assigned a value}}
 }

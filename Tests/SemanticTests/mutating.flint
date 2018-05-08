@@ -3,7 +3,7 @@
 contract Test {
   var a: Int[10] = []
   var b: Int = 0
-  var f: Foo
+  var f: Foo = Foo()
 }
 
 Test :: (any) {
@@ -66,6 +66,8 @@ Test :: (any) {
 
 struct Foo {
   var a: Int = 0
+
+  init() {}
 
   func h() { 
     a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}

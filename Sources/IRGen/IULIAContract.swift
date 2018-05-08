@@ -39,14 +39,12 @@ struct IULIAContract {
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     // Generate code for each function in the structs.
-    let structFunctions = structDeclarations.map { structDeclaration in
-      return IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered()
-    }.joined(separator: "\n\n").indented(by: 6)
+    let structFunctions = renderStructFunctions().indented(by: 6)
 
     let initializerBody = renderPublicInitializer()
 
     // Generate runtime functions.
-    let runtimeFunctionsDeclarations = IULIARuntimeFunction.allDeclarations.joined(separator: "\n\n").indented(by: 6)
+    let runtimeFunctionsDeclarations = renderRuntimeFunctions().indented(by: 6)
 
     // Main contract body.
     return """
@@ -79,6 +77,16 @@ struct IULIAContract {
     }
     """
   }
+  
+  func renderStructFunctions() -> String {
+    return structDeclarations.map { structDeclaration in
+      return IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered()
+    }.joined(separator: "\n\n")
+  }
+  
+  func renderRuntimeFunctions() -> String {
+    return IULIARuntimeFunction.allDeclarations.joined(separator: "\n\n")
+  }
 
   func renderPublicInitializer() -> String {
     let initializerDeclaration: InitializerDeclaration
@@ -108,7 +116,12 @@ struct IULIAContract {
     return """
     constructor(\(parameters)) public {
       assembly {
+        // Memory address 0x40 holds the next available memory location.
+        mstore(0x40, 0x60)
+    
         \(initializer.indented(by: 4))
+        \(renderStructFunctions().indented(by: 4))
+        \(renderRuntimeFunctions().indented(by: 4))
       }
     }
     """
