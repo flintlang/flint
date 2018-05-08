@@ -11,12 +11,12 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
     let t;
 
-    await instance.mint1(20);
+    await instance.mint(0, 20);
 
-    t = await instance.get1();
+    t = await instance.get(0);
     assert.equal(t.valueOf(), 20);
 
-    t = await instance.get2();
+    t = await instance.get(1);
     assert.equal(t.valueOf(), 0);
   });
 
@@ -24,12 +24,12 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
     let t;
 
-    await instance.transfer1(5);
+    await instance.transfer1(0, 1, 5);
 
-    t = await instance.get1();
+    t = await instance.get(0);
     assert.equal(t.valueOf(), 15);
 
-    t = await instance.get2();
+    t = await instance.get(1);
     assert.equal(t.valueOf(), 5);
   });
   
@@ -37,12 +37,12 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
     let t;
 
-    await instance.transfer2(2);
+    await instance.transfer2(1, 0, 2);
 
-    t = await instance.get1();
+    t = await instance.get(0);
     assert.equal(t.valueOf(), 17);
 
-    t = await instance.get2();
+    t = await instance.get(1);
     assert.equal(t.valueOf(), 3);
   });
 });

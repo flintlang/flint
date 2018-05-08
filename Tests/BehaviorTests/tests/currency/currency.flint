@@ -18,35 +18,25 @@ struct Coin {
 }
 
 contract C {
-  var account1: Coin
-  var account2: Coin
+  var accounts: [Int: Coin] = [:]
 }
 
 C :: (any) {
-
-  public mutating func mint1(amount: Int) {
-    account1 = Coin(amount)
+  public mutating func mint(index: Int, amount: Int) {
+    accounts[index].value = amount
   }
 
-  public mutating func mint2(amount: Int) {
-    account2 = Coin(amount)
-  }
-
-  mutating public func transfer1(amount: Int) {
+  mutating public func transfer1(from: Int, to: Int, amount: Int) {
     let w: Coin = Coin(0)
-    w.transfer(&account1, amount)
-    account2.transfer(&w, amount)
+    w.transfer(&accounts[from], amount)
+    accounts[to].transfer(&w, amount)
   }
 
-  mutating public func transfer2(amount: Int) {
-    account1.transfer(&account2, amount)
+  mutating public func transfer2(from: Int, to: Int, amount: Int) {
+    accounts[to].transfer(&accounts[from], amount)
   }
 
-  public func get1() -> Int {
-    return account1.value
-  }
-
-  public func get2() -> Int {
-    return account2.value
+  public func get(index: Int) -> Int {
+    return accounts[index].getValue()
   }
 }
