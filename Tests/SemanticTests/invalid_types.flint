@@ -9,20 +9,20 @@ InvalidTypes :: (any) {
   public init() {}
 
   func foo() -> Bool {
-    return int // expected-error {{Cannot convert expression of type Int to expected return type Bool}}
+    return int // expected-error {{Cannot convert expression of type 'Int' to expected return type 'Bool'}}
   }
 
   func bar() {
-    return 2 // expected-error {{Cannot convert expression of type Int to expected return type Void}}
+    return 2 // expected-error {{Cannot convert expression of type 'Int' to expected return type 'Void'}}
   }
 
   mutating func baz() {
     var a: Bool = true
-    a = b // expected-error {{Use of undeclared identifier b}}
+    a = b // expected-error {{Use of undeclared identifier 'b'}}
 
-    int = true // expected-error {{Incompatible assignment between values of type Int and Bool}}
+    int = true // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
 
-    f(a) // expected-error {{Function f is not in scope or cannot be called using the caller capabilities (any)}}
+    f(a) // expected-error {{Function 'f' is not in scope or cannot be called using the caller capability 'any'}}
 
     f(self.int)
   }

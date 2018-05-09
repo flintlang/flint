@@ -8,7 +8,7 @@ Test :: (any) {
   public init() {}
 
   func foo() -> Int {
-    var a: Int = b // expected-error {{Use of undeclared identifier b}}
+    var a: Int = b // expected-error {{Use of undeclared identifier 'b'}}
     return 2
   }
 
@@ -16,7 +16,7 @@ Test :: (any) {
     if true {
       var a: Int = x
     } else {
-      a += 2 // expected-error {{Use of undeclared identifier a}}
+      a += 2 // expected-error {{Use of undeclared identifier 'a'}}
     }
   }
 }

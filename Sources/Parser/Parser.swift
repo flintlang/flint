@@ -38,7 +38,7 @@ public class Parser {
       return (try parseTopLevelModule(), environment, [])
     } catch ParserError.expectedToken(let tokenKind, sourceLocation: let sourceLocation) {
       // A unhandled parsing error was thrown when parsing the program.
-      return (nil, environment, [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token \(tokenKind)")])
+      return (nil, environment, [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token '\(tokenKind)'")])
     } catch {
       // An invalid error was thrown.
       fatalError()

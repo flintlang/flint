@@ -12,24 +12,34 @@ import AST
 extension Diagnostic {
   static func invalidRedeclaration(_ identifier: Identifier, originalSource: Identifier) -> Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalSource.sourceLocation, message: "\(originalSource.name) is declared here")
-    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Invalid redeclaration of \(identifier.name)", notes: [note])
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Invalid redeclaration of '\(identifier.name)'", notes: [note])
   }
 
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
 
-    let candidateNotes = candidates.map { candidate in
-      return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires one of the caller capabilities in \(renderCapabilityGroup(candidate.callerCapabilities))")
+    let candidateNotes = candidates.map { candidate -> Diagnostic in
+      let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
+      let messageTail: String
+      
+      if candidate.callerCapabilities.count > 1 {
+        messageTail = "one of the caller capabilities in '(\(callerCapabilities))'"
+      } else {
+        messageTail = "the caller capability '\(callerCapabilities)'"
+      }
+      
+      return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
-
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function \(functionCall.identifier.name) is not in scope or cannot be called using the caller capabilities \(renderCapabilityGroup(contextCallerCapabilities))", notes: candidateNotes)
+    
+    let plural = contextCallerCapabilities.count > 1
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
   }
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for \(contractBehaviorDeclaration.contractIdentifier.name) has no associated contract declaration")
+    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has no associated contract declaration")
   }
 
   static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability \(callerCapability.name) is undefined in \(contractIdentifier.name) or has incompatible type")
+    return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability '\(callerCapability.name)' is undefined in '\(contractIdentifier.name)' or has incompatible type")
   }
 
   static func useOfMutatingExpressionInNonMutatingFunction(_ expression: Expression, functionDeclaration: FunctionDeclaration) -> Diagnostic {
@@ -37,7 +47,7 @@ extension Diagnostic {
   }
 
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "\(functionDeclaration.identifier.name) is declared @payable but doesn't have an implicit parameter of a currency type")
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
   }
 
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
@@ -45,11 +55,11 @@ extension Diagnostic {
   }
 
   static func useOfUndeclaredIdentifier(_ identifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier \(identifier.name)")
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier '\(identifier.name)'")
   }
 
   static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return \(resultType.name)")
+    return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return '\(resultType.name)'")
   }
 
   static func reassignmentToConstant(_ identifier: Identifier, _ declarationSourceLocation: SourceLocation) -> Diagnostic {
@@ -63,14 +73,14 @@ extension Diagnostic {
 
   static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
-      return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "\(property.identifier.name) is uninitialized")
+      return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")
     }
 
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
   }
 
   static func contractDoesNotHaveAPublicInitializer(contractIdentifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability any")
+    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability 'any'")
   }
 
   static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
@@ -79,11 +89,11 @@ extension Diagnostic {
   }
   
   static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability \"any\"")
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }
 
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
-    return "(\(capabilities.map({ $0.name }).joined(separator: ", ")))"
+    return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
   }
 }
 
