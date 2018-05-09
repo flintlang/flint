@@ -6,6 +6,8 @@ contract A {
 }
 
 A :: caller <- (any) {
+  public init() {}
+
   func foo() -> Int {
     return 0
   }

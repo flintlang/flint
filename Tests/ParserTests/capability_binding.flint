@@ -6,4 +6,9 @@ contract CapabilityBinding {}
 // CHECK-AST:   identifier "CapabilityBinding"
 // CHECK-AST:   capability binding "caller"
 // CHECK-AST:   identifier "any"
-CapabilityBinding :: caller <- (any) {}
+CapabilityBinding :: caller <- (any) {
+  
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
+}

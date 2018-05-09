@@ -3,6 +3,7 @@
 contract Payable {}
 
 Payable :: (any) {
+  public init() {}
 
   @payable
   func foo() { // expected-error {{foo is declared @payable but doesn't have an implicit parameter of a currency type}}

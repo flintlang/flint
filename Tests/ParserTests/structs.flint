@@ -7,6 +7,12 @@
 // CHECK-AST:     identifier "Test"
 contract Test {}
 
+Test :: (any) {
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
+}
+
 // CHECK-AST: TopLevelDeclaration
 // CHECK-AST: StructDeclaration
 // CHECK-AST:   identifier "MyStruct"

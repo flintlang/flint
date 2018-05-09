@@ -40,6 +40,9 @@ contract Foo {
 }
 
 Foo :: (any) {
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
 
 // CHECK-AST: InitializerDeclaration
 // CHECK-AST: Parameter

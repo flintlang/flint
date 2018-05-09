@@ -3,6 +3,8 @@
 contract Returns {}
 
 Returns :: (any) {
+  public init() {}
+
   func foo() -> Int {
     return 3
     var a: Int = 2 // expected-warning {{Code after return will never be executed}}

@@ -5,6 +5,10 @@
 contract Foo {}
 
 Foo :: (any) {
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
+  
   func foo() -> Int {
 
 // CHECK-AST: BinaryExpression

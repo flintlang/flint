@@ -1,6 +1,8 @@
 contract Operators {}
 
 Operators :: (any) {
+  public init() {}
+
   public func lessThan(a: Int, b: Int) -> Bool {
     return a < b
   }
