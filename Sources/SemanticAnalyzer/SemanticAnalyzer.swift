@@ -417,11 +417,10 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Check all the properties in the type have been assigned.
     if let unassignedProperties = passContext.unassignedProperties {
-      let propertiesWithBuiltInTypes = unassignedProperties.filter { $0.type.rawType.isBuiltInType && !$0.type.rawType.isEventType }
-      
-      // For now, only non user-defined types need to be assigned a value.
-      if propertiesWithBuiltInTypes.count > 0 {
-        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: unassignedProperties))
+      let nonEventProperties = unassignedProperties.filter { !$0.type.rawType.isEventType }
+
+      if nonEventProperties.count > 0 {
+        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: nonEventProperties))
       }
     }
 
