@@ -53,7 +53,7 @@ struct S {
   var a: Int = 10
   var b: Int = 3
   var s: String
-  var t: T
+  var t: T = T(0)
 
   init(a: Int, s: String) {
     self.a = a

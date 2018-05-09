@@ -3,7 +3,7 @@ contract Inits {
   var b: Address
   var s: String
   var s1: String = "foo"
-  var t: T
+  var t: T = T(0, false)
 }
 
 Inits :: caller <- (any) {

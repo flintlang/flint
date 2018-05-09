@@ -8,7 +8,7 @@ contract Test {
   var e: Bool
   var f: Int
   let g: Bool
-  var x: B = B(0, false)
+  var x: B
 }
 
 Test :: caller <- (any) {
@@ -17,12 +17,14 @@ Test :: caller <- (any) {
     self.f = f
   } // expected-error {{Return from initializer without initializing all properties}}
   // expected-note@8 {{e is uninitialized}}
+  // expected-note@11 {{x is uninitialized}}
 
   public init() { // expected-error {{A public initializer has already been defined}}
     self.a = caller
     e = false
     f = 0
     g = false
+    x = B(0, false)
   }
 
   init() {
@@ -30,6 +32,7 @@ Test :: caller <- (any) {
     e = false
     f = 0
     g = false
+    x = B(0, false)
   }
 
   mutating func foo() {
@@ -44,6 +47,7 @@ Test :: (a) {
     e = false
     f = 0
     g = false
+    x = B(0, false)
   }
 }
 

@@ -1,0 +1,19 @@
+struct S {
+  var s: T
+
+  init() {
+  }
+}
+
+struct T {
+  init() {}
+}
+
+contract A {
+  var a: S
+}
+
+A :: (any) {
+  public init() {
+  }
+}

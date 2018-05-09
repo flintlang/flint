@@ -30,7 +30,7 @@ struct B {
 
 contract C {
   var a: A = A()
-  var arr: Array
+  var arr: Array = Array()
   var b: B = B()
   var c: B = B()
   let d: Int = 5
@@ -132,6 +132,8 @@ C :: (any) {
 struct Array {
   var elements: [Int] = []
   var size: Int = 0
+
+  init() {}
 
   mutating func add(value: Int) {
     elements[size] = value
