@@ -89,22 +89,10 @@ struct IULIAContract {
   }
 
   func renderPublicInitializer() -> String {
-    let initializerDeclaration: InitializerDeclaration
+    let (initializerDeclaration, contractBehaviorDeclaration) = findContractPublicInitializer()!
 
-    // The contract behavior declaration the initializer resides in.
-    let contractBehaviorDeclaration: ContractBehaviorDeclaration?
-
-    if let (publicInitializer, contractBehaviorDeclaration_) = findContractPublicInitializer() {
-      initializerDeclaration = publicInitializer
-      contractBehaviorDeclaration = contractBehaviorDeclaration_
-    } else {
-      // If there is not public initializer defined, synthesize one.
-      initializerDeclaration = synthesizeInitializer()
-      contractBehaviorDeclaration = nil
-    }
-
-    let capabilityBinding = contractBehaviorDeclaration?.capabilityBinding
-    let callerCapabilities = contractBehaviorDeclaration?.callerCapabilities ?? []
+    let capabilityBinding = contractBehaviorDeclaration.capabilityBinding
+    let callerCapabilities = contractBehaviorDeclaration.callerCapabilities
 
     let initializer = IULIAContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
 
@@ -125,12 +113,6 @@ struct IULIAContract {
       }
     }
     """
-  }
-
-  func synthesizeInitializer() -> InitializerDeclaration {
-    let sourceLocation = contractDeclaration.sourceLocation
-
-    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: sourceLocation), attributes: [], modifiers: [Token(kind: .public, sourceLocation: sourceLocation)], parameters: [], closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: sourceLocation), body: [], closeBraceToken: Token(kind: .punctuation(.closeBrace), sourceLocation: sourceLocation), scopeContext: ScopeContext(localVariables: []))
   }
 
   /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.
