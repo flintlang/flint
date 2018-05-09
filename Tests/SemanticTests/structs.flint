@@ -3,8 +3,6 @@
 struct Test {
   var a: Int = 0
 
-  init() {}
-
   func foo() -> Int {
     return 2
   }
@@ -12,8 +10,6 @@ struct Test {
 
 struct Test2 {
   var a: Test = Test()
-
-  init() {}
 }
 
 contract Foo {

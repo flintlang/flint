@@ -69,8 +69,6 @@ Test :: (any) {
 struct Foo {
   var a: Int = 0
 
-  init() {}
-
   func h() { 
     a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
   }

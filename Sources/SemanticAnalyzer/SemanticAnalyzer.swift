@@ -60,6 +60,7 @@ public struct SemanticAnalyzer: ASTPass {
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: structDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(structDeclaration.identifier, originalSource: conflict))
     }
+
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 

@@ -741,7 +741,20 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace))
-    return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
+
+    let structDeclaration = StructDeclaration(structToken: structToken, identifier: identifier, members: members)
+
+    for member in structDeclaration.members {
+      switch member {
+      case .functionDeclaration(let functionDeclaration):
+        environment.addFunction(functionDeclaration, enclosingType: identifier.name)
+      case .initializerDeclaration(let initializerDeclaration):
+        environment.addInitializer(initializerDeclaration, enclosingType: identifier.name)
+      case .variableDeclaration(_): break
+      }
+    }
+
+    return structDeclaration
   }
 
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
@@ -751,10 +764,8 @@ extension Parser {
         members.append(.variableDeclaration(variableDeclaration))
       } else if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
         members.append(.functionDeclaration(functionDeclaration))
-        environment.addFunction(functionDeclaration, enclosingType: structIdentifier.name)
       } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
         members.append(.initializerDeclaration(initializerDeclaration))
-        environment.addInitializer(initializerDeclaration, enclosingType: structIdentifier.name)
       } else {
         break
       }

@@ -15,8 +15,6 @@ struct S {
 
 struct T {
   var a: Int = 0
-
-  init() {}
 }
 
 Dictionary :: (any) {
