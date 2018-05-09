@@ -117,7 +117,7 @@ public struct StructDeclaration: SourceEntity {
     }
   }
 
-  public var shouldInitializerBeSynthesized: Bool {
+  private var shouldInitializerBeSynthesized: Bool {
     let containsInitializer = members.contains { member in
       if case .initializerDeclaration(_) = member { return true }
       return false
