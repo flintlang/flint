@@ -6,6 +6,8 @@ contract InvalidTypes {
 }
 
 InvalidTypes :: (any) {
+  public init() {}
+
   func foo() -> Bool {
     return int // expected-error {{Cannot convert expression of type Int to expected return type Bool}}
   }

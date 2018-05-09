@@ -7,6 +7,8 @@ contract Test {
 }
 
 Test :: (any) {
+  public init() {}
+
   func foo() -> Int {
     a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
     return a[0]

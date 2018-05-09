@@ -5,19 +5,18 @@ contract EventTest {
 }
 
 EventTest :: (any) {
-  func eventA(a: Int, b: Bool, c: Address) {
-  }
+  public init() {}
 
   func foo(c: Address) {
     eventA(3, true, c)
 
     eventA(true, false, c) // expected-error {{Cannot convert expression of type Bool to expected argument type Int}}
 
-    // expected-error@18 {{Cannot convert expression of type Bool to expected argument type Int}}
-    // expected-error@18 {{Cannot convert expression of type Int to expected argument type Bool}}
+    // expected-error@17 {{Cannot convert expression of type Bool to expected argument type Int}}
+    // expected-error@17 {{Cannot convert expression of type Int to expected argument type Bool}}
     eventA(true, 3, c) 
 
-// expected-error@21 {{Function eventA is not in scope or cannot be called using the caller capabilities (any)}}
+// expected-error@20 {{Function eventA is not in scope or cannot be called using the caller capabilities (any)}}
     eventA(true)
   }
 }

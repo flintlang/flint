@@ -1,0 +1,3 @@
+// RUN: %flintc %s --verify
+
+contract Test {} // expected-error {{Contract 'Test' needs a public initializer accessible using the capability any}}

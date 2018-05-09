@@ -20,6 +20,8 @@ struct T {
 }
 
 Dictionary :: (any) {
+  public init() {}
+
   public mutating func write(addr: Address, value: Int) {
     storage[addr] = value
   }

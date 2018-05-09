@@ -69,6 +69,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
   }
 
+  static func contractDoesNotHaveAPublicInitializer(contractIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability any")
+  }
+
   static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])

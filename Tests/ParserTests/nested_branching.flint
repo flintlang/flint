@@ -3,6 +3,10 @@
 contract Branching {}
 
 Branching :: (any) {
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
+  
   public func foo(a: Int) -> Int {
     if a > 6 {
       return 0

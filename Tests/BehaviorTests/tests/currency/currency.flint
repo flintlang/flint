@@ -22,6 +22,8 @@ contract C {
 }
 
 C :: (any) {
+  public init() {}
+
   public mutating func mint(index: Int, amount: Int) {
     accounts[index].value = amount
   }

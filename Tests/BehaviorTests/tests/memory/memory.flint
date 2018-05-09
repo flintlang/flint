@@ -4,6 +4,8 @@ contract C {
 }
 
 C :: (any) {
+  public init() {}
+
   public mutating func setS(a: Int, b: String) {
     let s: S = S(a, b)
     s.incrementA()

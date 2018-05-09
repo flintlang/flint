@@ -21,8 +21,13 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
     var diagnostics = [Diagnostic]()
-    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: contractDeclaration.identifier) {
+    let environment = passContext.environment!
+    if let conflict = environment.conflictingTypeDeclaration(for: contractDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(contractDeclaration.identifier, originalSource: conflict))
+    }
+
+    if environment.publicInitializer(forContract: contractDeclaration.identifier.name) == nil {
+      diagnostics.append(.contractDoesNotHaveAPublicInitializer(contractIdentifier: contractDeclaration.identifier))
     }
     return ASTPassResult(element: contractDeclaration, diagnostics: diagnostics, passContext: passContext)
   }

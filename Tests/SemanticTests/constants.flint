@@ -1,14 +1,16 @@
 // RUN: %flintc %s --verify
 
 contract Constants {
-  var a: Int // expected-error {{State property 'a' needs to be assigned a value}}
+  var a: Int // expected-note {{a is uninitialized}}
   var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
   let c: Int = 2 + 3
   let d: Int = 3
-  let e: Int // expected-error {{State property 'e' needs to be assigned a value}}
+  let e: Int // expected-note {{e is uninitialized}}
 }
 
 Constants :: (any) {
+  public init() {} // expected-error {{Return from initializer without initializing all properties}}
+
   mutating func foo() {
     let a: Int = 2 // expected-note {{'a' is declared here}}
     a = 3 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}

@@ -23,7 +23,6 @@ contract Foo {
 }
 
 Foo :: (any) {
-
   public init() {
     a = Test()
     b = Test2()
