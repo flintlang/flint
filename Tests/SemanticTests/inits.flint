@@ -3,8 +3,8 @@
 contract Test {
   let a: Address
   var b: [Address] = []
-  var c: [Address: Int] = [] // expected-error {{Incompatible assignment between values of type [Address: Int] and [Any]}}
-  var d: [Int] = [:] // expected-error {{Incompatible assignment between values of type [Int] and [Any: Any]}}
+  var c: [Address: Int] = [] // expected-error {{Incompatible assignment between values of type '[Address: Int]' and '[Any]'}}
+  var d: [Int] = [:] // expected-error {{Incompatible assignment between values of type '[Int]' and '[Any: Any]'}}
   var e: Bool
   var f: Int
   let g: Bool
@@ -16,8 +16,8 @@ Test :: caller <- (any) {
     self.a = a
     self.f = f
   } // expected-error {{Return from initializer without initializing all properties}}
-  // expected-note@8 {{e is uninitialized}}
-  // expected-note@11 {{x is uninitialized}}
+  // expected-note@8 {{'e' is uninitialized}}
+  // expected-note@11 {{'x' is uninitialized}}
 
   public init() { // expected-error {{A public initializer has already been defined}}
     self.a = caller
@@ -37,12 +37,12 @@ Test :: caller <- (any) {
 
   mutating func foo() {
     x = B(1, true) 
-    x = C(1) // expected-error {{Incompatible assignment between values of type B and C}}
+    x = C(1) // expected-error {{Incompatible assignment between values of type 'B' and 'C'}}
   }
 }
 
 Test :: (a) {
-  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability "any"}}
+  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability 'any'}}
     self.a = a
     e = false
     f = 0
@@ -69,7 +69,7 @@ struct B {
 }
 
 struct C {
-  var a: Int // expected-note {{a is uninitialized}}
+  var a: Int // expected-note {{'a' is uninitialized}}
   let b: Bool = false
 
   init() {} // expected-error {{Return from initializer without initializing all properties}}

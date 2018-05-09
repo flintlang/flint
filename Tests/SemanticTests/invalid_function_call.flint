@@ -11,7 +11,7 @@ Test :: caller <- (any) {
 
   public func foo() {
 
-// expected-error@15 {{Function bar is not in scope or cannot be called using the caller capabilities (any)}}
+// expected-error@15 {{Function 'bar' is not in scope or cannot be called using the caller capability 'any'}}
     bar()
   }
 }

@@ -1,11 +1,11 @@
 // RUN: %flintc %s --verify
 
 contract Constants {
-  var a: Int // expected-note {{a is uninitialized}}
-  var b: Int = "a" // expected-error {{Incompatible assignment between values of type Int and String}}
+  var a: Int // expected-note {{'a' is uninitialized}}
+  var b: Int = "a" // expected-error {{Incompatible assignment between values of type 'Int' and 'String'}}
   let c: Int = 2 + 3
   let d: Int = 3
-  let e: Int // expected-note {{e is uninitialized}}
+  let e: Int // expected-note {{'e' is uninitialized}}
 }
 
 Constants :: (any) {

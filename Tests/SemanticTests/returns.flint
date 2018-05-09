@@ -10,5 +10,5 @@ Returns :: (any) {
     var a: Int = 2 // expected-warning {{Code after return will never be executed}}
   }
 
-  func bar() -> Int {}  // expected-error {{Missing return in function expected to return Int}}
+  func bar() -> Int {}  // expected-error {{Missing return in function expected to return 'Int'}}
 }

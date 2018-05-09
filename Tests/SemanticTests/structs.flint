@@ -42,11 +42,11 @@ Foo :: (any) {
 
   mutating func a() {
     b(&a)
-    b(&b) // expected-error {{Function b is not in scope or cannot be called using the caller capabilities (any)}}
+    b(&b) // expected-error {{Function 'b' is not in scope or cannot be called using the caller capability 'any'}}
   }
 
   mutating func b(b: inout Test) {
     b(&b)
-    b(&self.b) // expected-error {{Function b is not in scope or cannot be called using the caller capabilities (any)}}
+    b(&self.b) // expected-error {{Function 'b' is not in scope or cannot be called using the caller capability 'any'}}
   }
 }

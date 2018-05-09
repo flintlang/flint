@@ -10,7 +10,7 @@ Test :: caller <- (any) {
   }
 }
 
-Test :: (alice) { // expected-error {{Caller capability alice is undefined in Test or has incompatible type}}
+Test :: (alice) { // expected-error {{Caller capability 'alice' is undefined in 'Test' or has incompatible type}}
   func bar() {
   }
 }

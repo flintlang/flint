@@ -1,10 +1,10 @@
 // RUN: %flintc %s --verify
 
-// expected-error@4 {{Contract behavior declaration for Test has no associated contract declaration}}
+// expected-error@4 {{Contract behavior declaration for 'Test' has no associated contract declaration}}
 Test :: (any) { 
   func foo(a: Int) {
 
-    // expected-error@8 {{Cannot convert expression of type Int to expected return type Void}}
+    // expected-error@8 {{Cannot convert expression of type 'Int' to expected return type 'Void'}}
     return 3 * (1 + 2);
   }
 }
