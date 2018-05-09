@@ -2,8 +2,6 @@ struct A {
   var x: Int = 0
   var y: Bool = false
 
-  init() {}
-
   func getX() -> Int {
     return x
   }
@@ -16,8 +14,6 @@ struct A {
 struct B {
   var x: A = A()
   var y: Int = 0
-  
-  init() {}
 
   func getXx() -> Int {
     return x.getX()
@@ -132,8 +128,6 @@ C :: (any) {
 struct Array {
   var elements: [Int] = []
   var size: Int = 0
-
-  init() {}
 
   mutating func add(value: Int) {
     elements[size] = value

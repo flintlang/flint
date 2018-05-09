@@ -117,17 +117,45 @@ public struct StructDeclaration: SourceEntity {
     }
   }
 
-  public var initializerDeclarations: [InitializerDeclaration] {
-    return members.compactMap { member in
-      guard case .initializerDeclaration(let initializerDeclaration) = member else { return nil }
-      return initializerDeclaration
+  private var shouldInitializerBeSynthesized: Bool {
+    let containsInitializer = members.contains { member in
+      if case .initializerDeclaration(_) = member { return true }
+      return false
     }
+
+    guard !containsInitializer else { return false }
+
+    let unassignedProperties = members.compactMap { member -> VariableDeclaration? in
+      guard case .variableDeclaration(let variableDeclaration) = member,
+        variableDeclaration.assignedExpression == nil else {
+        return nil
+      }
+      return variableDeclaration
+    }
+
+    return unassignedProperties.count == 0
   }
 
   public init(structToken: Token, identifier: Identifier, members: [StructMember]) {
     self.structToken = structToken
     self.identifier = identifier
     self.members = members
+
+    // Synthesize an initializer if none was defined.
+    if shouldInitializerBeSynthesized {
+      self.members.append(.initializerDeclaration(synthesizeInitializer()))
+    }
+  }
+
+  func synthesizeInitializer() -> InitializerDeclaration {
+    let statements: [Statement] = variableDeclarations
+      .filter { $0.assignedExpression != nil }
+      .map { .expression(.variableDeclaration($0)) }
+
+    let dummySourceLocation = sourceLocation
+    let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
+    let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: statements, closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
   }
 }
 
