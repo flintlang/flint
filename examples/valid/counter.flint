@@ -3,6 +3,8 @@ contract Counter {
 }
 
 Counter :: (any) {
+  public init() {}
+
   public func getValue() -> Int {
     return value
   }
