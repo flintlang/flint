@@ -147,15 +147,12 @@ public struct StructDeclaration: SourceEntity {
     }
   }
 
-  func synthesizeInitializer() -> InitializerDeclaration {
-    let statements: [Statement] = variableDeclarations
-      .filter { $0.assignedExpression != nil }
-      .map { .expression(.variableDeclaration($0)) }
-
+  mutating func synthesizeInitializer() -> InitializerDeclaration {
+    // Synthesize the initializer.
     let dummySourceLocation = sourceLocation
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
-    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: statements, closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
   }
 }
 

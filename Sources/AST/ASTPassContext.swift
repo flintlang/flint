@@ -95,8 +95,8 @@ extension ASTPassContext {
   }
 
   /// When visiting arguments in a function call, this property is set to `true`.
-  public var isFunctionCall: Bool? {
-    get { return self[IsFunctionCallContextEntry.self] }
+  public var isFunctionCall: Bool {
+    get { return self[IsFunctionCallContextEntry.self] ?? false }
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
@@ -110,6 +110,12 @@ extension ASTPassContext {
   /// Whether we are visiting a node in a function declaration or initializer.
   public var inFunctionOrInitializer: Bool {
     return functionDeclarationContext != nil || functionDeclarationContext != nil
+  }
+
+  /// Whether we are visiting a property's default assignment.
+  public var isPropertyDefaultAssignment: Bool {
+    get { return self[IsPropertyDefaultAssignment.self] ?? false }
+    set { self[IsPropertyDefaultAssignment.self] = newValue }
   }
 }
 
@@ -157,5 +163,9 @@ private struct ScopeContextContextEntry: PassContextEntry {
 }
 
 private struct IsFunctionCallContextEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsPropertyDefaultAssignment: PassContextEntry {
   typealias Value = Bool
 }

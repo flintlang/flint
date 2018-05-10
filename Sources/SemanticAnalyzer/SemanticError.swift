@@ -71,6 +71,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "State property '\(variableDeclaration.identifier.name)' needs to be assigned a value")
   }
 
+  static func statePropertyUsedWithinPropertyInitializer(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot use state property '\(identifier.name)' within the initialization of another property")
+  }
+
   static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
       return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")

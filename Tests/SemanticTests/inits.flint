@@ -9,6 +9,9 @@ contract Test {
   var f: Int
   let g: Bool
   var x: B
+  var y: B = B(f, g) 
+  // expected-error@12 {{Cannot use state property 'f' within the initialization of another property}}
+  // expected-error@12 {{Cannot use state property 'g' within the initialization of another property}}
 }
 
 Test :: caller <- (any) {
@@ -77,4 +80,11 @@ struct C {
   init(a: Int) {
     self.a = a
   }
+}
+
+struct D {
+  let a: Int = 0
+  let b: Int = a // expected-error {{Cannot use state property 'a' within the initialization of another property}}
+  let c: Int = a + 1 // expected-error {{Cannot use state property 'a' within the initialization of another property}}
+  let d: B = B(a, false) // expected-error {{Cannot use state property 'a' within the initialization of another property}}
 }

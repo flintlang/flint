@@ -172,7 +172,9 @@ public struct ASTVisitor<Pass: ASTPass> {
     if let assignedExpression = processResult.element.assignedExpression {
       // Create an empty scope context.
       processResult.passContext.scopeContext = ScopeContext()
+      processResult.passContext.isPropertyDefaultAssignment = true
       processResult.element.assignedExpression = processResult.combining(visit(assignedExpression, passContext: processResult.passContext))
+      processResult.passContext.isPropertyDefaultAssignment = false
       processResult.passContext.scopeContext = nil
     }
 
