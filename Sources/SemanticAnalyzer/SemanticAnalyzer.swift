@@ -99,7 +99,7 @@ public struct SemanticAnalyzer: ASTPass {
 
       // This is a state property declaration.
 
-      // If a default value is assigned, it should be a literal.
+      // If a default value is assigned, it should not refer to another property.
       
       if variableDeclaration.assignedExpression == nil, !variableDeclaration.type.rawType.isEventType, !isInitializerDeclared {
         // The contract has no public initializer, so a default value must be provided.
@@ -176,7 +176,6 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
-//    let type = parameter.type
     var diagnostics = [Diagnostic]()
 
     if parameter.type.rawType.isUserDefinedType, !parameter.isInout {
@@ -200,7 +199,11 @@ public struct SemanticAnalyzer: ASTPass {
     let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
     let inFunctionOrInitializer = inFunctionDeclaration || inInitializerDeclaration
 
-    if let isFunctionCall = passContext.isFunctionCall, isFunctionCall {
+    if passContext.isPropertyDefaultAssignment, !passContext.environment!.isStructDeclared(identifier.name) {
+      diagnostics.append(.statePropertyUsedWithinPropertyInitializer(identifier))
+    }
+
+    if passContext.isFunctionCall {
       // If the identifier is the name of a function call, do nothing. The function call will be matched in
       // `process(functionCall:passContext:)`.
     } else if inFunctionOrInitializer {

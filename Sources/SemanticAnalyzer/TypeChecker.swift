@@ -57,14 +57,12 @@ public struct TypeChecker: ASTPass {
       let rhsType: Type.RawType?
 
       switch assignedExpression {
-      case .literal(let literalToken):
-        rhsType = environment.type(ofLiteralToken: literalToken)
       case .arrayLiteral(_):
         rhsType = Type.RawType.arrayType(.any)
       case .dictionaryLiteral(_):
         rhsType = Type.RawType.dictionaryType(key: .any, value: .any)
       default:
-        rhsType = nil
+        rhsType = environment.type(of: assignedExpression, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: ScopeContext())
       }
 
       // Numeric literals can be assigned to Wei properties (until we support struct initializers)
