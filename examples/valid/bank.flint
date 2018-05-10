@@ -49,8 +49,10 @@ Bank :: account <- (accounts) {
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    balances[account] -= amount
-    balances[destination] += amount
-    didCompleteTransfer(account, destination, amount)
+    if balances[account] >= amount {
+      balances[account] -= amount
+      balances[destination] += amount
+      didCompleteTransfer(account, destination, amount)
+    }
   }
 }

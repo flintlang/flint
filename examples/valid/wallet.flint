@@ -9,16 +9,18 @@ Wallet :: caller <- (any) {
   }
 
   public mutating func deposit(money: Wei) {
-    contents += money;
+    contents += money
   }
 }
 
 Wallet :: (owner) {
   public mutating func withdraw(money: Wei) {
-    contents -= money;
+    if money > contents {
+      contents -= money
+    }
   }
 
   public func getContents(a: Int) -> Wei {
-    return contents;
+    return contents
   }
 }

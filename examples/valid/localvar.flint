@@ -1,9 +1,0 @@
-contract Foo {}
-
-Foo :: (any) {
-  func foo() -> Int {
-    var a: Int = 2
-    a = 2 + 3
-    return a
-  }
-}

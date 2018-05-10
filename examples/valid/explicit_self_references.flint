@@ -1,9 +1,0 @@
-contract ExplicitSelfReference {
-  var property: Int = 0
-}
-
-ExplicitSelfReference :: (any) {
-  mutating func foo(property: Int) {
-    self.property = property
-  }
-}
