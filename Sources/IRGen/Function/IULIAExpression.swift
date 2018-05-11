@@ -339,7 +339,11 @@ struct IULIASubscriptExpression {
 
     let environment = functionContext.environment
 
-    let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType!)!
+    guard let enclosingType = subscriptExpression.baseIdentifier.enclosingType,
+      let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: enclosingType) else {
+      fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
+    }
+
     let indexExpressionCode = IULIAExpression(expression: subscriptExpression.indexExpression).rendered(functionContext: functionContext)
 
     let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: functionContext.enclosingTypeName)
