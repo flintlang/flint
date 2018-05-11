@@ -140,7 +140,7 @@ public struct TypeChecker: ASTPass {
       let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
       let rhsType = environment.type(of: binaryExpression.rhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
 
-      if lhsType != rhsType, ![lhsType, rhsType].contains(.errorType) {
+      if !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
       }
     }
