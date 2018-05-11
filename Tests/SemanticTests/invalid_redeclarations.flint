@@ -25,5 +25,23 @@ A :: caller <- (any) {
   }
 }
 
+struct B {
+  func foo() -> Int {
+    return 0
+  }
+
+  func foo(a: String) { 
+  }
+
+  func A() { // expected-error {{Invalid redeclaration of 'A'}}
+  }
+
+  func bar() {
+    let a: Int = 0
+    let a: Int = 0 // expected-error {{Invalid redeclaration of 'a'}}
+    let caller: Int = 0 
+  }
+}
+
 struct A { // expected-error {{Invalid redeclaration of 'A'}}
 }

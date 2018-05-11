@@ -1,17 +1,25 @@
 //
 //  Mangler.swift
-//  IRGen
+//  AST
 //
 //  Created by Franklin Schrans on 09/02/2018.
 //
 
+import AST
+
 struct Mangler {
-  static func mangleName(_ name: String, enclosingType: String? = nil) -> String {
-    return "\(enclosingType ?? "")_\(name)"
+  static func mangleName(_ name: String) -> String {
+    return "_\(name)"
   }
 
-  static func mangleInitializer(enclosingType: String) -> String {
-    return "\(enclosingType)_init"
+  static func mangleFunctionName(_ name: String, parameterTypes: [Type.RawType], enclosingType: String) -> String {
+    let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
+    let underscore = parameters.isEmpty ? "" : "_"
+    return "\(enclosingType)_\(name)\(underscore)\(parameters)"
+  }
+
+  static func mangleInitializerName(_ enclosingType: String, parameterTypes: [Type.RawType]) -> String {
+    return mangleFunctionName("init", parameterTypes: parameterTypes, enclosingType: enclosingType)
   }
 
   /// Constructs the parameter name to indicate whether the given parameter is a memory reference.

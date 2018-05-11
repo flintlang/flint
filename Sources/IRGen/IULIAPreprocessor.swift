@@ -80,11 +80,13 @@ public struct IULIAPreprocessor: ASTPass {
     var functionDeclaration = functionDeclaration
 
     if let structDeclarationContext = passContext.structDeclarationContext {
+      let parameters = functionDeclaration.parameters.map { $0.type.rawType }
+      let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
+      
       // For struct functions, add `flintSelf` to the beginning of the parameters list.
       let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.parameters.insert(parameter, at: 0)
 
-      let name = Mangler.mangleName(functionDeclaration.identifier.name, enclosingType: passContext.enclosingTypeIdentifier!.name)
       functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
     }
 
@@ -219,10 +221,16 @@ public struct IULIAPreprocessor: ASTPass {
     var functionCall = functionCall
     let environment = passContext.environment!
     let receiverTrail = passContext.functionCallReceiverTrail ?? []
-  
+
     if environment.isStructDeclared(functionCall.identifier.name) {
+      var initializerWithoutReceiver = functionCall
+      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil {
+        // Remove the receiver as an argument.
+        initializerWithoutReceiver.arguments.remove(at: 0)
+      }
+
       // We're calling an initializer.
-      let mangledName = Mangler.mangleInitializer(enclosingType: functionCall.identifier.name)
+      let mangledName = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
       functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
     } else if !receiverTrail.isEmpty {
       let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -232,17 +240,38 @@ public struct IULIAPreprocessor: ASTPass {
 
       let type = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
       if passContext.environment!.isStructDeclared(type.name) {
+        let mangledName = mangledFunctionName(for: functionCall, in: passContext)
         let receiver = constructExpression(from: receiverTrail)
         functionCall.arguments.insert(receiver, at: 0)
 
         // Replace the name of a function call by its mangled name.
-        let mangledName = Mangler.mangleName(functionCall.identifier.name, enclosingType: type.name)
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
 
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
+
+  func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String {
+    let environment = passContext.environment!
+
+    let enclosingType: String = functionCall.identifier.enclosingType ?? passContext.enclosingTypeIdentifier!.name
+    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+
+    switch matchResult {
+    case .matchedFunction(let functionInformation):
+      let declaration = functionInformation.declaration
+      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
+    case .matchedInitializer(let initializerInformation):
+      let declaration = initializerInformation.declaration
+      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
+    case .failure(_):
+      fatalError("Unable to find declaration of \(functionCall)")
+    }
   }
 
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
