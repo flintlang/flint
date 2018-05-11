@@ -424,7 +424,7 @@ public struct Type: SourceEntity {
       case .basicType(let builtInType): return "\(builtInType.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let identifier): return identifier
-      case .inoutType(let rawType): return "&\(rawType)"
+      case .inoutType(let rawType): return "$inout\(rawType.name)"
       case .any: return "Any"
       case .errorType: return "Flint$ErrorType"
       }
@@ -738,6 +738,8 @@ public struct FunctionCall: SourceEntity {
   public var sourceLocation: SourceLocation {
     return .spanning(identifier, to: closeBracketToken)
   }
+
+  public var mangledIdentifier: String? = nil
 
   public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token) {
     self.identifier = identifier

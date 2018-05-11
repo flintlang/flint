@@ -123,6 +123,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
     processResult.element.members = processResult.element.members.map { structMember in
+      processResult.passContext.scopeContext = ScopeContext()
       return processResult.combining(visit(structMember, passContext: processResult.passContext))
     }
 

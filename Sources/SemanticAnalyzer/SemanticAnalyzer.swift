@@ -115,7 +115,7 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
 
     let enclosingType = passContext.enclosingTypeIdentifier!.name
-    if let conflict = passContext.environment!.conflictingFunctionDeclaration(for: functionDeclaration.identifier, in: enclosingType) {
+    if let conflict = passContext.environment!.conflictingFunctionDeclaration(for: functionDeclaration, in: enclosingType) {
       diagnostics.append(.invalidRedeclaration(functionDeclaration.identifier, originalSource: conflict))
     }
 
@@ -494,7 +494,7 @@ public struct SemanticAnalyzer: ASTPass {
       switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
       case .matchedFunction(let matchingFunction):
         // The function declaration is found.
-        
+
         if matchingFunction.isMutating {
           // The function is mutating.
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)

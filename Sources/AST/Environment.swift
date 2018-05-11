@@ -139,9 +139,30 @@ public struct Environment {
   }
 
   /// Attempts to find a conflicting declaration of the given function declaration
-  public func conflictingFunctionDeclaration(for function: Identifier, in type: RawTypeIdentifier) -> Identifier? {
-    let functions = types[type]!.functions[function.name]?.map { $0.declaration.identifier } ?? []
-    return conflictingDeclaration(of: function, in: functions + declaredStructs + declaredContracts)
+  public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
+    var contractFunctions = [Identifier]()
+
+    if isContractDeclared(type) {
+      // Contract functions do not support overloading.
+      contractFunctions = types[type]!.functions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
+    }
+
+    if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
+      return conflict
+    }
+
+    let functions = types[type]!.functions[function.identifier.name]?.filter { functionInformation in
+      let identifier1 = function.identifier
+      let identifier2 = functionInformation.declaration.identifier
+      let parameterList1 = function.parameters.map { $0.type.rawType.name }
+      let parameterList2 = functionInformation.declaration.parameters.map { $0.type.rawType.name }
+
+      return identifier1.name == identifier2.name &&
+        parameterList1 == parameterList2 &&
+        identifier1.sourceLocation.line < identifier2.sourceLocation.line
+    }
+
+    return functions?.first?.declaration.identifier
   }
 
   /// Attempts to find a conflicting declaration of the given property declaration.
