@@ -1,8 +1,10 @@
 all: 
+	mkdir -p .build/debug
 	cp -r stdlib .build/debug/
 	swift build	
 
 release:
+	mkdir -p .build/debug
 	cp -r stdlib .build/release/
 	swift build	-c release --static-swift-stdlib
 
