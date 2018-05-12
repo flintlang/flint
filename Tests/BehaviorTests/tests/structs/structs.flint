@@ -9,6 +9,10 @@ struct A {
   mutating func setX(x: Int) {
     self.x = x
   }
+
+  func getY() -> Int {
+    return getX()
+  }
 }
 
 struct B {
@@ -17,6 +21,10 @@ struct B {
 
   func getXx() -> Int {
     return x.getX()
+  }
+
+  func getXx2() -> Int {
+    return x.getY()
   }
 
   mutating func setXx(y: Int) {
@@ -62,6 +70,10 @@ C :: (any) {
 
   public func getBxx2() -> Int {
     return b.getXx()
+  }
+
+  public func getBxx3() -> Int {
+    return b.getXx2()
   }
 
   public mutating func setBxx2(x: Int) {

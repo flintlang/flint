@@ -46,6 +46,9 @@ contract(config.contractName, function(accounts) {
 
     t = await instance.getBxx();
     assert.equal(t.valueOf(), 434);
+
+    t = await instance.getBxx2();
+    assert.equal(t.valueOf(), 434);
   });
 
   
