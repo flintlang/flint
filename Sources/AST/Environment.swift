@@ -208,7 +208,12 @@ public struct Environment {
     
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
-    case .matchedInitializer(_): return .userDefinedType(functionCall.identifier.name)
+    case .matchedInitializer(_):
+      let name = functionCall.identifier.name
+      if let stdlibType = Type.StdlibType(rawValue: name) {
+        return .stdlibType(stdlibType)
+      }
+      return .userDefinedType(name)
     default: return .errorType
     }
   }
@@ -329,6 +334,7 @@ public struct Environment {
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence(_): fatalError()
+    case .rawAssembly(_, let resultType): return resultType!
     }
   }
 
@@ -356,7 +362,9 @@ public struct Environment {
 
     var match: FunctionCallMatchResult? = nil
 
-    let argumentTypes = functionCall.arguments.map { type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext) }
+    let argumentTypes = functionCall.arguments.map {
+      type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
+    }
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
@@ -433,6 +441,10 @@ public struct Environment {
     case .any: return 0
     case .errorType: return 0
 
+    case .stdlibType(let type):
+      return types[type.rawValue]!.properties.reduce(0) { acc, element in
+        return acc + size(of: element.value.rawType)
+      }
     case .userDefinedType(let identifier):
       return types[identifier]!.properties.reduce(0) { acc, element in
         return acc + size(of: element.value.rawType)

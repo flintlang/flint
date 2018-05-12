@@ -5,7 +5,7 @@
 //  Created by Franklin Schrans on 12/29/17.
 //
 
-import Foundation
+import AST
 
 /// The runtime functions used by Flint.
 enum IULIARuntimeFunction {
@@ -24,6 +24,7 @@ enum IULIARuntimeFunction {
     case storageArrayOffset
     case storageFixedSizeArrayOffset
     case storageDictionaryOffsetForKey
+    case callvalue
   }
 
   static func selector() -> String {
@@ -92,6 +93,10 @@ enum IULIARuntimeFunction {
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: Int, key: String) -> String {
     return "\(Identifiers.storageDictionaryOffsetForKey)(\(dictionaryOffset), \(key))"
+  }
+
+  static func callvalue() -> String {
+    return "\(Identifiers.callvalue)()"
   }
 
   static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey]

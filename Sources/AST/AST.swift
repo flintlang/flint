@@ -344,7 +344,7 @@ public struct Parameter: SourceEntity {
 
   /// Whether the parameter is both `implicit` and has a currency type.
   public var isPayableValueParameter: Bool {
-    if isImplicit, case .basicType(let type) = type.rawType, type.isCurrencyType {
+    if isImplicit, type.isCurrencyType {
       return true
     }
     return false
@@ -409,6 +409,7 @@ public struct Type: SourceEntity {
   /// A Flint raw type, without a source location.
   public indirect enum RawType: Equatable {
     case basicType(BasicType)
+    case stdlibType(StdlibType)
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
@@ -422,6 +423,7 @@ public struct Type: SourceEntity {
       case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
       case .arrayType(let rawType): return "[\(rawType.name)]"
       case .basicType(let builtInType): return "\(builtInType.rawValue)"
+      case .stdlibType(let type): return "\(type.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
       case .userDefinedType(let identifier): return identifier
       case .inoutType(let rawType): return "$inout\(rawType.name)"
@@ -432,7 +434,7 @@ public struct Type: SourceEntity {
 
     public var isBuiltInType: Bool {
       switch self {
-      case .basicType(_), .any, .errorType: return true
+      case .basicType(_), .stdlibType(_), .any, .errorType: return true
       case .arrayType(let element): return element.isBuiltInType
       case .fixedSizeArrayType(let element, _): return element.isBuiltInType
       case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
@@ -484,7 +486,6 @@ public struct Type: SourceEntity {
     case string = "String"
     case void = "Void"
     case bool = "Bool"
-    case wei = "Wei"
     case event = "Event"
 
     var isCallerCapabilityType: Bool {
@@ -493,13 +494,10 @@ public struct Type: SourceEntity {
       default: return false
       }
     }
+  }
 
-    var isCurrencyType: Bool {
-      switch self {
-      case .wei: return true
-      default: return false
-      }
-    }
+  public enum StdlibType: String {
+    case wei = "Wei"
   }
 
   public var rawType: RawType
@@ -510,12 +508,21 @@ public struct Type: SourceEntity {
     return rawType.name
   }
 
+  var isCurrencyType: Bool {
+    switch rawType {
+    case .stdlibType(.wei): return true
+    default: return false
+    }
+  }
+
   // Initializers for each kind of raw type.
 
   public init(identifier: Identifier, genericArguments: [Type] = []) {
     let name = identifier.name
     if let builtInType = BasicType(rawValue: name) {
       rawType = .basicType(builtInType)
+    } else if let stdlibType = StdlibType(rawValue: name) {
+      rawType = .stdlibType(stdlibType)
     } else {
       rawType = .userDefinedType(name)
     }
@@ -592,6 +599,7 @@ public indirect enum Expression: SourceEntity {
   case bracketedExpression(Expression)
   case subscriptExpression(SubscriptExpression)
   case sequence([Expression])
+  case rawAssembly(String, resultType: Type.RawType?)
 
   public var sourceLocation: SourceLocation {
     switch self {
@@ -607,6 +615,7 @@ public indirect enum Expression: SourceEntity {
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
+    case .rawAssembly(_): fatalError()
     }
   }
 

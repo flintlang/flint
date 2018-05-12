@@ -18,7 +18,7 @@ enum CanonicalType: String {
     case .basicType(let builtInType):
       switch builtInType {
       case .address: self = .address
-      case .int, .bool, .wei: self = .uint256
+      case .int, .bool: self = .uint256
       case .string: self = .bytes32
       default: return nil
       }

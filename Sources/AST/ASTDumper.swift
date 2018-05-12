@@ -231,10 +231,12 @@ public class ASTDumper {
         self.dump(keyType)
         self.dump(valueType)
       }
-    case .basicType(let builtInType):
-      writeNode("BuiltInType") {
-        self.dump(builtInType)
+    case .basicType(let rawType):
+      writeNode("BasicType") {
+        self.dump(rawType)
       }
+    case .stdlibType(let type):
+      writeLine("Stdlib type \(type.rawValue)")
     case .userDefinedType(let userDefinedType):
       writeLine("user-defined type \(userDefinedType)")
     case .inoutType(let rawType):
@@ -273,6 +275,7 @@ public class ASTDumper {
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
       case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
+      case .rawAssembly(_): fatalError()
       }
     }
   }
