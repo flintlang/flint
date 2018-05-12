@@ -20,7 +20,7 @@ struct Compiler {
   var shouldVerify: Bool
   
   func compile() -> CompilationOutcome {
-    let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8)
+    let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8) + retrieveStandardLibraryCode()
 
     // Turn the source code into tokens.
     let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
@@ -79,6 +79,10 @@ struct Compiler {
   func exitWithFailure() -> Never {
     print("Failed to compile \(inputFile.lastPathComponent).")
     exit(1)
+  }
+
+  func retrieveStandardLibraryCode() -> String {
+    return StandardLibrary.default.sourceCode()
   }
 }
 

@@ -1,10 +1,10 @@
 contract Bank {
   var manager: Address
-  var balances: [Address: Int] = [:]
+  var balances: [Address: Wei] = [:]
   var accounts: [Address] = []
   var lastIndex: Int = 0
 
-  var totalDonations: Wei = 0
+  var totalDonations: Wei = Wei(0)
   var didCompleteTransfer: Event<Address, Address, Int>
 }
 
@@ -25,34 +25,31 @@ Bank :: account <- (any) {
 
   @payable
   public mutating func donate(implicit value: Wei) {
-    totalDonations = totalDonations + value
+    totalDonations.transfer(&value)
   }
 }
 
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
-    balances[account] += amount
+    var w: Wei = Wei(amount)
+    balances[account].transfer(&w)
   }
 
   public mutating func clear(account: Int) {
-    balances[account] = 0
+    balances[account] = Wei(0)
   }
 
-  public func getDonations() -> Wei {
-    return totalDonations
+  public func getDonations() -> Int {
+    return totalDonations.getRawValue()
   }
 }
 
 Bank :: account <- (accounts) {
   public func getBalance() -> Int {
-    return balances[account]
+    return balances[account].getRawValue()
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    if balances[account] >= amount {
-      balances[account] -= amount
-      balances[destination] += amount
-      didCompleteTransfer(account, destination, amount)
-    }
+    balances[destination].transfer(&balances[account], amount)
   }
 }

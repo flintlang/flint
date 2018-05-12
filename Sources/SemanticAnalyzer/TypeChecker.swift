@@ -65,9 +65,7 @@ public struct TypeChecker: ASTPass {
         rhsType = environment.type(of: assignedExpression, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: ScopeContext())
       }
 
-      // Numeric literals can be assigned to Wei properties (until we support struct initializers)
-      if let rhsType = rhsType, rhsType == .basicType(.int), lhsType == .basicType(.wei) {
-      } else if let rhsType = rhsType, !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
+      if let rhsType = rhsType, !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: assignedExpression))
       }
     }

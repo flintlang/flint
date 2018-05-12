@@ -45,6 +45,7 @@ struct IULIAExpression {
       return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .sequence(let expressions):
       return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
+    case .rawAssembly(let assembly, _): return assembly
     }
   }
 }
@@ -158,7 +159,14 @@ struct IULIAPropertyOffset {
       return IULIAPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true).rendered(functionContext: functionContext)
     }
     guard case .identifier(let identifier) = expression else { fatalError() }
-    guard case .userDefinedType(let structIdentifier) = enclosingType else { fatalError() }
+
+    let structIdentifier: String
+
+    switch enclosingType {
+    case .stdlibType(let type): structIdentifier = type.rawValue
+    case .userDefinedType(let type): structIdentifier = type
+    default: fatalError()
+    }
     
     return "\(functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
   }
@@ -216,18 +224,6 @@ struct IULIAFunctionCall {
     }
     
     let args: String = functionCall.arguments.map({ argument in
-      var type: Type.RawType
-      var argument = argument
-      
-      // If the receiver is a local variable of user-defined type, extract it.
-      if case .inoutExpression(let inoutExpression) = argument,
-        case .variableDeclaration(let variableDeclaration) = inoutExpression.expression {
-        type = variableDeclaration.type.rawType
-        argument = .identifier(variableDeclaration.identifier)
-      } else {
-        type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
-      }
-      
       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
@@ -294,7 +290,7 @@ struct IULIAVariableDeclaration {
   
   func rendered(functionContext: FunctionContext) -> String {
     let allocate = IULIARuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
-    return "let \(variableDeclaration.identifier.name) := \(allocate)"
+    return "let \(variableDeclaration.identifier.name.mangled) := \(allocate)"
   }
 }
 

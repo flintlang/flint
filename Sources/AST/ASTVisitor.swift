@@ -171,12 +171,13 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: processResult.passContext))
     
     if let assignedExpression = processResult.element.assignedExpression {
+      let previousScopeContext = processResult.passContext.scopeContext
       // Create an empty scope context.
       processResult.passContext.scopeContext = ScopeContext()
       processResult.passContext.isPropertyDefaultAssignment = true
       processResult.element.assignedExpression = processResult.combining(visit(assignedExpression, passContext: processResult.passContext))
       processResult.passContext.isPropertyDefaultAssignment = false
-      processResult.passContext.scopeContext = nil
+      processResult.passContext.scopeContext = previousScopeContext
     }
 
     let postProcessResult = pass.postProcess(variableDeclaration: processResult.element, passContext: processResult.passContext)
@@ -317,8 +318,9 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .subscriptExpression(processResult.combining(visit(subscriptExpression, passContext: processResult.passContext)))
     case .sequence(let elements):
       processResult.element = .sequence(elements.map { element in
-        return processResult.combining(visit(element, passContext: passContext))
+        return processResult.combining(visit(element, passContext: processResult.passContext))
       })
+    case .rawAssembly(_): break
     }
 
     let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)

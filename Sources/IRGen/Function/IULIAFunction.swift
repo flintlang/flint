@@ -117,15 +117,7 @@ struct IULIAFunctionBody {
       capabilityBindingDeclaration = ""
     }
 
-    // Assign Wei value sent to a @payable function to a local variable.
-    let payableValueDeclaration: String
-    if let payableValueParameter = functionDeclaration.firstPayableValueParameter {
-      payableValueDeclaration = "let \(payableValueParameter.identifier.name.mangled) := callvalue()\n"
-    } else {
-      payableValueDeclaration = ""
-    }
-
-    return "\(callerCapabilityChecks)\(payableValueDeclaration)\(capabilityBindingDeclaration)\(body)"
+    return "\(callerCapabilityChecks)\(capabilityBindingDeclaration)\(body)"
   }
 
   func renderBody<S : RandomAccessCollection & RangeReplaceableCollection>(_ statements: S, functionContext: FunctionContext) -> String where S.Element == AST.Statement, S.Index == Int {

@@ -87,6 +87,14 @@ public struct ScopeContext: Equatable {
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }
 
+  /// Whether the given parameter is implicit.
+  public func isParameterImplicit(_ parameterName: String) -> Bool {
+    guard let parameter = parameters.first(where: { $0.identifier.name == parameterName }) else {
+      fatalError("Parameter \(parameterName) does not exist.")
+    }
+    return parameter.isImplicit
+  }
+
   /// Returns the parameter name for the enclosing identifier of the given expression.
   ///
   /// For example, when given the expression "a.foo.x", the function will return "a" if "a" is a parameter to the
