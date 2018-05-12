@@ -1,6 +1,6 @@
 contract Wallet {
   var owner: Address
-  var contents: Wei = 0 
+  var contents: Wei = Wei(0)
 }
 
 Wallet :: caller <- (any) {
@@ -8,19 +8,21 @@ Wallet :: caller <- (any) {
     owner = caller
   }
 
-  public mutating func deposit(money: Wei) {
-    contents += money
+  @payable
+  public mutating func deposit(implicit value: Wei) {
+    contents.transfer(&value)
   }
 }
 
 Wallet :: (owner) {
-  public mutating func withdraw(money: Wei) {
-    if money > contents {
-      contents -= money
+  public mutating func withdraw(value: Int) {
+    if value <= contents.getRawValue() {
+      var w: Wei = Wei(0)
+      w.transfer(&contents, value)
     }
   }
 
-  public func getContents(a: Int) -> Wei {
-    return contents
+  public func getContents() -> Int {
+    return contents.getRawValue()
   }
 }

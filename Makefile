@@ -1,9 +1,9 @@
 all: 
-	cp -r Sources/stdlib .build/debug/
+	cp -r stdlib .build/debug/
 	swift build	
 
 release:
-	cp -r Sources/stdlib .build/release/
+	cp -r stdlib .build/release/
 	swift build	-c release --static-swift-stdlib
 
 zip:

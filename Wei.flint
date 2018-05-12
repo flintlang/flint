@@ -1,0 +1,29 @@
+struct Wei {
+  var rawValue: Int
+
+  init(unsafeRawValue: Int) {
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout Wei, amount: Int) {
+    if source.getRawValue() >= amount {
+      source.rawValue -= amount
+      rawValue += amount
+    }
+  }
+
+  mutating func transfer(source: inout Wei, amount: Int) {
+    if source.getRawValue() >= amount {
+      source.rawValue -= amount
+      rawValue += amount
+    }
+  }
+
+  mutating func transfer(source: inout Wei) {
+    transfer(&source, source.getRawValue())
+  }
+
+  func getRawValue() -> Int {
+    return rawValue
+  }
+}
