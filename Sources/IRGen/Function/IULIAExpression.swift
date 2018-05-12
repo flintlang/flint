@@ -40,7 +40,7 @@ struct IULIAExpression {
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
       return "0"
     case .self(let `self`):
-      return IULIASelf(selfToken: self, asLValue: asLValue).rendered()
+      return IULIASelf(selfToken: self, asLValue: asLValue).rendered(functionContext: functionContext)
     case .subscriptExpression(let subscriptExpression):
       return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .sequence(let expressions):
@@ -228,7 +228,7 @@ struct IULIAFunctionCall {
         type = environment.type(of: argument, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
       }
       
-      return IULIAExpression(expression: argument, asLValue: type.isUserDefinedType).rendered(functionContext: functionContext)
+      return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
@@ -321,11 +321,12 @@ struct IULIASelf {
   var selfToken: Token
   var asLValue: Bool
   
-  func rendered() -> String {
+  func rendered(functionContext: FunctionContext) -> String {
     guard case .self = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
-    return asLValue ? "0" : ""
+
+    return functionContext.isInStructFunction ? "_flintSelf" : asLValue ? "0" : ""
   }
 }
 

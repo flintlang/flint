@@ -220,7 +220,11 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let environment = passContext.environment!
-    let receiverTrail = passContext.functionCallReceiverTrail ?? []
+    var receiverTrail = passContext.functionCallReceiverTrail ?? []
+
+    if receiverTrail.isEmpty {
+      receiverTrail = [.self(Token(kind: .self, sourceLocation: functionCall.sourceLocation))]
+    }
 
     if environment.isStructDeclared(functionCall.identifier.name) {
       var initializerWithoutReceiver = functionCall
@@ -232,17 +236,17 @@ public struct IULIAPreprocessor: ASTPass {
       // We're calling an initializer.
       let mangledName = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
       functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
-    } else if !receiverTrail.isEmpty {
+    } else {
       let enclosingType = passContext.enclosingTypeIdentifier!.name
       let scopeContext = passContext.scopeContext!
 
       let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-
       let type = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
       if passContext.environment!.isStructDeclared(type.name) {
         let mangledName = mangledFunctionName(for: functionCall, in: passContext)
         let receiver = constructExpression(from: receiverTrail)
-        functionCall.arguments.insert(receiver, at: 0)
+        let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
+        functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
 
         // Replace the name of a function call by its mangled name.
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
@@ -393,8 +397,10 @@ public struct IULIAPreprocessor: ASTPass {
         let isMem: Expression
         if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
           isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-        } else if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+        } else if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsDeclaration(for: enclosingIdentifier.name) {
           isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)), sourceLocation: argument.sourceLocation)))
+        } else if case .inoutExpression(let inoutExpression) = argument, case .self(_) = inoutExpression.expression {
+          isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")), sourceLocation: argument.sourceLocation)))
         } else {
           isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
         }
