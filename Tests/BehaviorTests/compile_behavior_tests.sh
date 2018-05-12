@@ -7,7 +7,7 @@ for t in tests/*; do
   for f in $t/*.flint; do
     [ -f "$f" ] || break
     echo "Compile Flint file '$f'"
-    swift run -c release flintc $f --emit-ir --ir-output $t/test/contracts/
+    ../../.build/release/flintc $f --emit-ir --ir-output $t/test/contracts/
   done
 
   echo "pragma solidity ^0.4.2; contract Migrations {}" > $t/test/contracts/Migrations.sol
