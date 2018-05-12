@@ -82,12 +82,7 @@ struct Compiler {
   }
 
   func retrieveStandardLibraryCode() -> String {
-    guard let path = ProcessInfo.processInfo.environment["FLINT_STDLIB"] else {
-      print("No stdlib was found.".red.bold)
-      return ""
-    }
-
-    return StandardLibrary(url: URL(fileURLWithPath: path, isDirectory: true)).sourceCode()
+    return StandardLibrary.default.sourceCode()
   }
 }
 

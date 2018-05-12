@@ -15,7 +15,7 @@ let package = Package(
   targets: [
     .target(
       name: "flintc",
-      dependencies: ["Parser", "SemanticAnalyzer", "Optimizer", "IRGen", "Commander", "Rainbow"]),
+      dependencies: ["Parser", "SemanticAnalyzer", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic"]),
     .target(
       name: "AST",
       dependencies: []),
