@@ -10,16 +10,19 @@ Wallet :: caller <- (any) {
 
   @payable
   public mutating func deposit(implicit value: Wei) {
+    // Record the Wei received into the contents state property.
     contents.transfer(&value)
   }
 }
 
 Wallet :: (owner) {
   public mutating func withdraw(value: Int) {
-    if contents.getRawValue() >= value {
-      var w: Wei = Wei(&contents, value)
-      send(owner, &w)
-    }
+    // Transfer an amount of Wei into a local variable. This
+    // removes Wei from the contents state property.
+    var w: Wei = Wei(&contents, value)
+   
+    // Send Wei to the owner's Ethereum address.
+    send(owner, &w)
   }
 
   public func getContents() -> Int {
