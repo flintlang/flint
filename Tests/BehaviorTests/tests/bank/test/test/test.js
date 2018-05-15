@@ -91,4 +91,63 @@ contract(config.contractName, function(accounts) {
     t = await instance.getBalance.call({from: accounts[0]});
     assert.equal(t.valueOf(), 0);
   });
+
+  it("should be possible to withdraw money", async function() {
+    const instance = await Contract.deployed();
+    let t;
+
+    const oldBalance = web3.eth.getBalance(accounts[3]);
+
+    const registerTxInfo = await instance.register({from: accounts[3]});
+    const registerTx = await web3.eth.getTransaction(registerTxInfo.tx);
+    const registerGasCost = registerTx.gasPrice.mul(registerTxInfo.receipt.gasUsed);
+
+    const depositTxInfo = await instance.deposit({from: accounts[3], value: 10000000000000000000});
+    const depositTx = await web3.eth.getTransaction(depositTxInfo.tx);
+    const depositGasCost = depositTx.gasPrice.mul(depositTxInfo.receipt.gasUsed);
+
+    t = await instance.getBalance.call({from: accounts[3]});
+    assert.equal(t.valueOf(), 10000000000000000000);
+
+    const withdrawTxInfo = await instance.withdraw(4000000000000000000, {from: accounts[3]});
+    const withdrawTx = await web3.eth.getTransaction(withdrawTxInfo.tx);
+    const withdrawGasCost = withdrawTx.gasPrice.mul(withdrawTxInfo.receipt.gasUsed);
+
+    t = await instance.getBalance.call({from: accounts[3]});
+    assert.equal(t.valueOf(), 6000000000000000000);
+
+    const newBalance = web3.eth.getBalance(accounts[3]);
+
+    assert.equal(newBalance.valueOf(), oldBalance.sub(6000000000000000000).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+  })
+
+  it("should not be possible to withdraw too much money", async function() {
+    const instance = await Contract.deployed();
+    let t;
+
+    const oldBalance = web3.eth.getBalance(accounts[4]);
+
+    const registerTxInfo = await instance.register({from: accounts[4]});
+    const registerTx = await web3.eth.getTransaction(registerTxInfo.tx);
+    const registerGasCost = registerTx.gasPrice.mul(registerTxInfo.receipt.gasUsed);
+
+    const depositTxInfo = await instance.deposit({from: accounts[4], value: 10000000000000000000});
+    const depositTx = await web3.eth.getTransaction(depositTxInfo.tx);
+    const depositGasCost = depositTx.gasPrice.mul(depositTxInfo.receipt.gasUsed);
+
+    t = await instance.getBalance.call({from: accounts[4]});
+    assert.equal(t.valueOf(), 10000000000000000000);
+
+    let withdrawGasCost = 0
+
+    const withdrawTxInfo = await instance.withdraw(20000000000000000000, {from: accounts[4]});
+    const withdrawTx = await web3.eth.getTransaction(withdrawTxInfo.tx);
+    withdrawGasCost = withdrawTx.gasPrice.mul(withdrawTxInfo.receipt.gasUsed);
+    t = await instance.getBalance.call({from: accounts[4]});
+    assert.equal(t.valueOf(), 10000000000000000000);
+
+    const newBalance = web3.eth.getBalance(accounts[4]);
+
+    assert.equal(newBalance.valueOf(), oldBalance.sub(10000000000000000000).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+  })
 });

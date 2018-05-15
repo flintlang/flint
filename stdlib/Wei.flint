@@ -8,8 +8,14 @@ struct Wei {
   init(source: inout Wei, amount: Int) {
     if source.getRawValue() >= amount {
       source.rawValue -= amount
-      rawValue += amount
+      rawValue = amount
     }
+  }
+
+  init(source: inout Wei) {
+    let value: Int = source.getRawValue()
+    source.rawValue -= value
+    rawValue = value
   }
 
   mutating func transfer(source: inout Wei, amount: Int) {

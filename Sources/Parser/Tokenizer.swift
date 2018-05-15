@@ -18,7 +18,7 @@ public struct Tokenizer {
 
   var isFromStdlib: Bool
   
-  public init(sourceFile: URL, isFromStdlib: Bool = true) {
+  public init(sourceFile: URL, isFromStdlib: Bool = false) {
     self.sourceFile = sourceFile
     self.sourceCode = try! String(contentsOf: sourceFile)
     self.isFromStdlib = isFromStdlib
@@ -155,7 +155,7 @@ public struct Tokenizer {
         acc += String(char)
       } else if inStringLiteral {
         acc += String(char)
-      } else if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) || char == "@" {
+      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "@" {
         acc += String(char)
       } else {
         if !acc.isEmpty {
@@ -195,6 +195,11 @@ public struct Tokenizer {
 
     // Remove empty string components.
     return components.filter { !$0.0.isEmpty }
+  }
+
+  /// The set of characters which can be used in identifiers.
+  var identifierChars: CharacterSet {
+    return CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "$"))
   }
 
   /// Indicates whether two string components can be merged to form a single component.

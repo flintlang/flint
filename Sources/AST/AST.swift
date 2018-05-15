@@ -118,6 +118,11 @@ public struct StructDeclaration: SourceEntity {
   }
 
   private var shouldInitializerBeSynthesized: Bool {
+    // Don't synthesize an initializer for the special stdlib Flint$Global struct.
+    guard identifier.name != Environment.globalFunctionStructName else {
+      return false
+    }
+
     let containsInitializer = members.contains { member in
       if case .initializerDeclaration(_) = member { return true }
       return false
