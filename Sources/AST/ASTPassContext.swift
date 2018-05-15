@@ -109,7 +109,7 @@ extension ASTPassContext {
 
   /// Whether we are visiting a node in a function declaration or initializer.
   public var inFunctionOrInitializer: Bool {
-    return functionDeclarationContext != nil || functionDeclarationContext != nil
+    return functionDeclarationContext != nil || initializerDeclarationContext != nil
   }
 
   /// Whether we are visiting a property's default assignment.

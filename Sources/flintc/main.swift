@@ -15,7 +15,7 @@ func main() {
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
-      guard FileManager.default.fileExists(atPath: inputFile.path) else {
+      guard FileManager.default.fileExists(atPath: inputFile.path), inputFile.pathExtension == "flint" else {
         exitWithFileNotFoundDiagnostic(file: inputFile)
       }
     }
@@ -24,7 +24,8 @@ func main() {
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
     
     let compilationOutcome = Compiler(
-      inputFiles: inputFiles + StandardLibrary.default.files,
+      inputFiles: inputFiles,
+      stdlibFiles: StandardLibrary.default.files,
       outputDirectory: outputDirectory,
       emitBytecode: emitBytecode,
       shouldVerify: shouldVerify
@@ -48,7 +49,7 @@ func main() {
 }
 
 func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
-  let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "No such file: '\(file.path)'.")
+  let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "Invalid file: '\(file.path)'.")
   print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
   exit(1)
 }

@@ -13,12 +13,14 @@ public struct SourceLocation: Equatable {
   public var column: Int
   public var length: Int
   public var file: URL
+  public var isFromStdlib: Bool
 
-  public init(line: Int, column: Int, length: Int, file: URL) {
+  public init(line: Int, column: Int, length: Int, file: URL, isFromStdlib: Bool = false) {
     self.line = line
     self.column = column
     self.length = length
     self.file = file
+    self.isFromStdlib = isFromStdlib
   }
 
   public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1, to upperBoundEntity: S2) -> SourceLocation {

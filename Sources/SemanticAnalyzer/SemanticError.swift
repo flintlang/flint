@@ -15,6 +15,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Invalid redeclaration of '\(identifier.name)'", notes: [note])
   }
 
+  static func invalidCharacter(_ identifier: Identifier, character: Character) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of invalid character '\(character)' in '\(identifier.name)'")
+  }
+
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate -> Diagnostic in

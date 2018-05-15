@@ -20,6 +20,17 @@ public struct Environment {
   /// A list of the names of the structs which have been declared in the program.
   var declaredStructs = [Identifier]()
 
+  /// The name of the stdlib struct which contains all global functions.
+  public static let globalFunctionStructName = "Flint$Global"
+
+  /// The prefix for Flint runtime functions.
+  public static var runtimeFunctionPrefix = "flint$"
+
+  /// Whether the given function call is a runtime function.
+  public static func isRuntimeFunctionCall(_ functionCall: FunctionCall) -> Bool {
+    return functionCall.identifier.name.starts(with: runtimeFunctionPrefix)
+  }
+
   public init() {}
 
   /// Add a contract declaration to the environment.
@@ -346,6 +357,7 @@ public struct Environment {
   public enum FunctionCallMatchResult {
     case matchedFunction(FunctionInformation)
     case matchedInitializer(InitializerInformation)
+    case matchedGlobalFunction(FunctionInformation)
     case failure(candidates: [FunctionInformation])
   }
 
@@ -393,6 +405,21 @@ public struct Environment {
         }
         
         match = .matchedInitializer(candidate)
+      }
+    }
+
+    // Check if it's a global function.
+
+    if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
+      for candidate in functions {
+
+        guard candidate.parameterTypes == argumentTypes,
+          areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
+            candidates.append(candidate)
+            continue
+        }
+
+        match = .matchedGlobalFunction(candidate)
       }
     }
 

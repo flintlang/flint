@@ -6,6 +6,7 @@
 //
 
 import AST
+import Foundation
 
 /// The `ASTPass` performing semantic analysis.
 public struct SemanticAnalyzer: ASTPass {
@@ -190,10 +191,21 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: typeAnnotation, diagnostics: [], passContext: passContext)
   }
 
+  /// The set of characters for identifiers which can only be used in the stdlib.
+  var stdlibReservedCharacters: CharacterSet {
+    return CharacterSet(charactersIn: "$")
+  }
+
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
+
+    // Only allow stdlib files to include special characters, such as '$'.
+    if !identifier.sourceLocation.isFromStdlib,
+      let char = identifier.name.first(where: { return stdlibReservedCharacters.contains($0.unicodeScalars.first!) }) {
+      diagnostics.append(.invalidCharacter(identifier, character: char))
+    }
 
     let inFunctionDeclaration = passContext.functionDeclarationContext != nil
     let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
@@ -479,8 +491,11 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    // Called once we've visited the function call's arguments.
+    guard !Environment.isRuntimeFunctionCall(functionCall) else {
+      return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    }
 
+    // Called once we've visited the function call's arguments.
     var passContext = passContext
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -516,7 +531,7 @@ public struct SemanticAnalyzer: ASTPass {
           }
         }
         
-      case .matchedInitializer(_):
+      case .matchedInitializer(_), .matchedGlobalFunction(_):
         break
         
       case .failure(let candidates):

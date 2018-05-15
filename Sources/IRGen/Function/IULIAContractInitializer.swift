@@ -59,8 +59,6 @@ struct IULIAContractInitializer {
 
     let body = IULIAFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
-    // TODO: Remove IULIARuntimeFunctionDeclaration.store once constructor code and function code is unified.
-
     return """
     init()
     function init() {

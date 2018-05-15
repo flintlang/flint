@@ -55,4 +55,9 @@ Bank :: account <- (accounts) {
   public mutating func transfer(amount: Int, destination: Address) {
     balances[destination].transfer(&balances[account], amount)
   }
+
+  public mutating func withdraw(amount: Int) {
+    let w: Wei = Wei(&balances[account], amount)
+    send(account, &w)
+  }
 }

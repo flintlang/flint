@@ -79,6 +79,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
+    // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable, let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"), sourceLocation: payableParameterIdentifier.sourceLocation))
       let variableDeclaration = VariableDeclaration(declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
@@ -92,12 +93,13 @@ public struct IULIAPreprocessor: ASTPass {
     if let structDeclarationContext = passContext.structDeclarationContext {
       let parameters = functionDeclaration.parameters.map { $0.type.rawType }
       let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
-      
-      // For struct functions, add `flintSelf` to the beginning of the parameters list.
-      let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
-      functionDeclaration.parameters.insert(parameter, at: 0)
-
       functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
+
+      if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+        // For struct functions, add `flintSelf` to the beginning of the parameters list.
+        let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
+        functionDeclaration.parameters.insert(parameter, at: 0)
+      }
     }
 
     // Add an isMem parameter for each struct parameter.
@@ -232,6 +234,14 @@ public struct IULIAPreprocessor: ASTPass {
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
+
+    let scopeContext = passContext.scopeContext!
+
+    guard !Environment.isRuntimeFunctionCall(functionCall) else {
+      // Don't mangle runtime functions.
+      return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    }
 
     if receiverTrail.isEmpty {
       receiverTrail = [.self(Token(kind: .self, sourceLocation: functionCall.sourceLocation))]
@@ -248,24 +258,30 @@ public struct IULIAPreprocessor: ASTPass {
       let mangledName = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
       functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
     } else {
-      let scopeContext = passContext.scopeContext!
 
       // Get the result type of the call.
-      let type = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      let declarationEnclosingType: RawTypeIdentifier
+
+      if isGlobalFunctionCall {
+        declarationEnclosingType = Environment.globalFunctionStructName
+      } else {
+        declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext).name
+      }
 
       // If it returns a dynamic type, pass the receiver as the first parameter.
-      if passContext.environment!.isStructDeclared(type.name) {
+      if passContext.environment!.isStructDeclared(declarationEnclosingType) {
         let mangledName = mangledFunctionName(for: functionCall, in: passContext)
-        let receiver = constructExpression(from: receiverTrail)
-        let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
-        functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+
+        if !isGlobalFunctionCall {
+          let receiver = constructExpression(from: receiverTrail)
+          let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
+          functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+        }
 
         // Replace the name of a function call by its mangled name.
         functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
-
-    let scopeContext = passContext.scopeContext!
 
     // For each non-implicit dynamic type, add an isMem parameter.
     var offset = 0
@@ -304,6 +320,11 @@ public struct IULIAPreprocessor: ASTPass {
   }
 
   func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String {
+    // Don't mangle runtime functions.
+    guard !Environment.isRuntimeFunctionCall(functionCall) else {
+      return functionCall.identifier.name
+    }
+
     let environment = passContext.environment!
 
     let enclosingType: String = functionCall.identifier.enclosingType ?? passContext.enclosingTypeIdentifier!.name
@@ -319,9 +340,28 @@ public struct IULIAPreprocessor: ASTPass {
       let declaration = initializerInformation.declaration
       let parameterTypes = declaration.parameters.map { $0.type.rawType }
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
+    case .matchedGlobalFunction(let functionInformation):
+      let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
     case .failure(_):
       fatalError("Unable to find declaration of \(functionCall)")
     }
+  }
+
+  func isGlobalFunctionCall(_ functionCall: FunctionCall, in passContext: ASTPassContext) -> Bool {
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let scopeContext = passContext.scopeContext!
+    let environment = passContext.environment!
+
+    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+
+    // Mangle global function
+    if case .matchedGlobalFunction(_) = match {
+      return true
+    }
+
+    return false
   }
 
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {

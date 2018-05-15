@@ -9,7 +9,7 @@ import AST
 
 /// The runtime functions used by Flint.
 enum IULIARuntimeFunction {
-  enum Identifiers: String {
+  enum Identifiers {
     case selector
     case decodeAsAddress
     case decodeAsUInt
@@ -25,18 +25,23 @@ enum IULIARuntimeFunction {
     case storageFixedSizeArrayOffset
     case storageDictionaryOffsetForKey
     case callvalue
+    case send
+
+    var mangled: String {
+      return "\(Environment.runtimeFunctionPrefix)\(self)"
+    }
   }
 
   static func selector() -> String {
-    return "\(Identifiers.selector)()"
+    return "\(Identifiers.selector.mangled)()"
   }
 
   static func decodeAsAddress(offset: Int) -> String {
-    return "\(Identifiers.decodeAsAddress)(\(offset))"
+    return "\(Identifiers.decodeAsAddress.mangled)(\(offset))"
   }
 
   static func decodeAsUInt(offset: Int) -> String {
-    return "\(Identifiers.decodeAsUInt)(\(offset))"
+    return "\(Identifiers.decodeAsUInt.mangled)(\(offset))"
   }
 
   static func store(address: String, value: String, inMemory: Bool) -> String {
@@ -44,7 +49,7 @@ enum IULIARuntimeFunction {
   }
 
   static func store(address: String, value: String, inMemory: String) -> String {
-    return "\(Identifiers.store)(\(address), \(value), \(inMemory))"
+    return "\(Identifiers.store.mangled)(\(address), \(value), \(inMemory))"
   }
 
   static func addOffset(base: String, offset: String, inMemory: Bool) -> String {
@@ -52,7 +57,7 @@ enum IULIARuntimeFunction {
   }
 
   static func addOffset(base: String, offset: String, inMemory: String) -> String {
-    return "\(Identifiers.computeOffset)(\(base), \(offset), \(inMemory))"
+    return "\(Identifiers.computeOffset.mangled)(\(base), \(offset), \(inMemory))"
   }
 
   static func load(address: String, inMemory: Bool) -> String {
@@ -60,74 +65,74 @@ enum IULIARuntimeFunction {
   }
 
   static func load(address: String, inMemory: String) -> String {
-    return "\(Identifiers.load)(\(address), \(inMemory))"
+    return "\(Identifiers.load.mangled)(\(address), \(inMemory))"
   }
 
   static func allocateMemory(size: Int) -> String {
-    return "\(Identifiers.allocateMemory)(\(size))"
+    return "\(Identifiers.allocateMemory.mangled)(\(size))"
   }
 
   static func isValidCallerCapability(address: String) -> String {
-    return "\(Identifiers.isValidCallerCapability)(\(address))"
+    return "\(Identifiers.isValidCallerCapability.mangled)(\(address))"
   }
 
   static func isCallerCapabilityInArray(arrayOffset: Int) -> String {
-    return "\(Identifiers.isCallerCapabilityInArray)(\(arrayOffset))"
+    return "\(Identifiers.isCallerCapabilityInArray.mangled)(\(arrayOffset))"
   }
 
   static func return32Bytes(value: String) -> String {
-    return "\(Identifiers.return32Bytes)(\(value))"
+    return "\(Identifiers.return32Bytes.mangled)(\(value))"
   }
 
   static func isInvalidSubscriptExpression(index: Int, arraySize: Int) -> String {
-    return "\(Identifiers.isInvalidSubscriptExpression)(\(index), \(arraySize))"
+    return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
   static func storageFixedSizeArrayOffset(arrayOffset: Int, index: String, arraySize: Int) -> String {
-    return "\(Identifiers.storageFixedSizeArrayOffset)(\(arrayOffset), \(index), \(arraySize))"
+    return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
   }
 
   static func storageArrayOffset(arrayOffset: Int, index: String) -> String {
-    return "\(Identifiers.storageArrayOffset)(\(arrayOffset), \(index))"
+    return "\(Identifiers.storageArrayOffset.mangled)(\(arrayOffset), \(index))"
   }
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: Int, key: String) -> String {
-    return "\(Identifiers.storageDictionaryOffsetForKey)(\(dictionaryOffset), \(key))"
+    return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
   }
 
   static func callvalue() -> String {
     return "\(Identifiers.callvalue)()"
   }
 
-  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey]
+  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send]
 
 }
 
 struct IULIARuntimeFunctionDeclaration {
   static let selector =
   """
-  function selector() -> ret {
+  function flint$selector() -> ret {
     ret := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
   }
   """
 
   static let decodeAsAddress =
   """
-  function decodeAsAddress(offset) -> ret {
-    ret := decodeAsUInt(offset)
+  function flint$decodeAsAddress(offset) -> ret {
+    ret := flint$decodeAsUInt(offset)
   }
   """
 
   static let decodeAsUInt =
   """
-  function decodeAsUInt(offset) -> ret {
+  function flint$decodeAsUInt(offset) -> ret {
     ret := calldataload(add(4, mul(offset, 0x20)))
   }
   """
 
   static let store =
   """
-  function store(ptr, val, mem) {
+  function flint$store(ptr, val, mem) {
     switch iszero(mem)
     case 0 {
       mstore(ptr, val)
@@ -140,7 +145,7 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let load =
   """
-  function load(ptr, mem) -> ret {
+  function flint$load(ptr, mem) -> ret {
     switch iszero(mem)
     case 0 {
       ret := mload(ptr)
@@ -153,7 +158,7 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let computeOffset =
   """
-  function computeOffset(base, offset, mem) -> ret {
+  function flint$computeOffset(base, offset, mem) -> ret {
     switch iszero(mem)
     case 0 {
       ret := add(base, mul(offset, \(EVM.wordSize)))
@@ -166,7 +171,7 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let allocateMemory =
   """
-  function allocateMemory(size) -> ret {
+  function flint$allocateMemory(size) -> ret {
     ret := mload(0x40)
     mstore(0x40, add(ret, size))
   }
@@ -174,20 +179,20 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let isValidCallerCapability =
   """
-  function isValidCallerCapability(_address) -> ret {
+  function flint$isValidCallerCapability(_address) -> ret {
     ret := eq(_address, caller())
   }
   """
 
   static let isCallerCapabilityInArray =
   """
-  function isCallerCapabilityInArray(arrayOffset) -> ret {
+  function flint$isCallerCapabilityInArray(arrayOffset) -> ret {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
     let arrayStart := add(arrayOffset, 1)
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
-      if eq(sload(storageArrayOffset(arrayOffset, i)), _caller) {
+      if eq(sload(flint$storageArrayOffset(arrayOffset, i)), _caller) {
         found := 1
       }
     }
@@ -197,7 +202,7 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let return32Bytes =
   """
-  function return32Bytes(v) {
+  function flint$return32Bytes(v) {
     mstore(0, v)
     return(0, 0x20)
   }
@@ -205,42 +210,53 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let isInvalidSubscriptExpression =
   """
-  function isInvalidSubscriptExpression(index, arraySize) -> ret {
+  function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
     ret := or(iszero(arraySize), or(lt(index, 0), gt(index, sub(arraySize, 1))))
   }
   """
 
   static let storageFixedSizeArrayOffset =
   """
-  function storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
-    if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+  function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
+    if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     ret := add(arrayOffset, index)
   }
   """
 
   static let storageArrayOffset =
   """
-  function storageArrayOffset(arrayOffset, index) -> ret {
+  function flint$storageArrayOffset(arrayOffset, index) -> ret {
     let arraySize := sload(arrayOffset)
 
     switch eq(arraySize, index)
     case 0 {
-      if isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+      if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     }
     default {
       sstore(arrayOffset, add(arraySize, 1))
     }
 
-    ret := storageDictionaryOffsetForKey(arrayOffset, index)
+    ret := flint$storageDictionaryOffsetForKey(arrayOffset, index)
   }
   """
 
   static let storageDictionaryOffsetForKey =
   """
-  function storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
+  function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
     mstore(0, key)
     mstore(32, dictionaryOffset)
     ret := sha3(0, 64)
+  }
+  """
+
+  static let send =
+  """
+  function flint$send(_value, _address) {
+    let ret := call(gas(), _address, _value, 0, 0, 0, 0)
+
+    if iszero(ret) {
+      revert(0, 0)
+    }
   }
   """
 }

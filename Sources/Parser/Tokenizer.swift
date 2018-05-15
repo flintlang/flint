@@ -15,10 +15,13 @@ public struct Tokenizer {
 
   /// The original source code of the Flint program.
   var sourceCode: String
+
+  var isFromStdlib: Bool
   
-  public init(sourceFile: URL) {
+  public init(sourceFile: URL, isFromStdlib: Bool = false) {
     self.sourceFile = sourceFile
     self.sourceCode = try! String(contentsOf: sourceFile)
+    self.isFromStdlib = isFromStdlib
   }
   
   /// Converts the source code into a list of tokens.
@@ -152,7 +155,7 @@ public struct Tokenizer {
         acc += String(char)
       } else if inStringLiteral {
         acc += String(char)
-      } else if CharacterSet.alphanumerics.contains(char.unicodeScalars.first!) || char == "@" {
+      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "@" {
         acc += String(char)
       } else {
         if !acc.isEmpty {
@@ -194,6 +197,11 @@ public struct Tokenizer {
     return components.filter { !$0.0.isEmpty }
   }
 
+  /// The set of characters which can be used in identifiers.
+  var identifierChars: CharacterSet {
+    return CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "$"))
+  }
+
   /// Indicates whether two string components can be merged to form a single component.
   /// For example, `/` and `/` can be merged to form `//`.
   ///
@@ -205,6 +213,6 @@ public struct Tokenizer {
 
   /// Creates a source location for the current file.
   func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
-    return SourceLocation(line: line, column: column, length: length, file: sourceFile)
+    return SourceLocation(line: line, column: column, length: length, file: sourceFile, isFromStdlib: isFromStdlib)
   }
 }

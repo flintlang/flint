@@ -15,7 +15,7 @@ struct IULIAFunctionSelector {
     let cases = renderCases()
 
     return """
-    switch selector()
+    switch \(IULIARuntimeFunction.selector())
     \(cases)
     default {
       revert(0, 0)
