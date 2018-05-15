@@ -57,9 +57,7 @@ Bank :: account <- (accounts) {
   }
 
   public mutating func withdraw(amount: Int) {
-    if balances[account].getRawValue() >= amount {
-      let w: Wei = Wei(&balances[account], amount)
-      send(account, &w)
-    }
+    let w: Wei = Wei(&balances[account], amount)
+    send(account, &w)
   }
 }
