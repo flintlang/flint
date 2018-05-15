@@ -27,7 +27,7 @@ struct SolcCompiler {
 
     verifySolc(launchPath: process.launchPath!)
     process.standardError = Pipe()
-    process.arguments = [temporaryFile.path, "--bin", emitBytecode ? "--opcodes" : "", "-o", outputDirectory.path]
+    process.arguments = [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
 
     process.launch()
     process.waitUntilExit()
