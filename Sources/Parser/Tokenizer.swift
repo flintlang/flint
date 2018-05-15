@@ -10,11 +10,15 @@ import AST
 
 /// The tokenizer, which turns the source code into a list of tokens.
 public struct Tokenizer {
+  /// The URL of the source file of the Flint program.
+  var sourceFile: URL
+
   /// The original source code of the Flint program.
   var sourceCode: String
   
-  public init(sourceCode: String) {
-    self.sourceCode = sourceCode
+  public init(sourceFile: URL) {
+    self.sourceFile = sourceFile
+    self.sourceCode = try! String(contentsOf: sourceFile)
   }
   
   /// Converts the source code into a list of tokens.
@@ -135,7 +139,7 @@ public struct Tokenizer {
         // If we're in a comment, discard the characters up to a newline.
         if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
           inComment = false
-          components.append(("\n", SourceLocation(line: line, column: column, length: 1)))
+          components.append(("\n", sourceLocation(line: line, column: column, length: 1)))
           
           line += 1
           column = 1
@@ -153,14 +157,14 @@ public struct Tokenizer {
       } else {
         if !acc.isEmpty {
           // Add the component to the list and reset.
-          components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
+          components.append((acc, sourceLocation(line: line, column: column - acc.count, length: acc.count)))
           acc = ""
         }
 
         // If the last component and the new one can be merged, merge them.
-        if let (last, sourceLocation) = components.last, canBeMerged(last, String(char)) {
-          let sourceLocation = SourceLocation(line: sourceLocation.line, column: sourceLocation.column, length: sourceLocation.length + 1)
-          components[components.endIndex.advanced(by: -1)] = ("\(last)\(char)", sourceLocation)
+        if let (last, loc) = components.last, canBeMerged(last, String(char)) {
+          let loc = sourceLocation(line: loc.line, column: loc.column, length: loc.length + 1)
+          components[components.endIndex.advanced(by: -1)] = ("\(last)\(char)", loc)
           column += 1
 
           if components.last!.0 == "//" {
@@ -173,7 +177,7 @@ public struct Tokenizer {
         }
 
         // The character is a newline.
-        components.append((String(char), SourceLocation(line: line, column: column, length: 1)))
+        components.append((String(char), sourceLocation(line: line, column: column, length: 1)))
       }
 
       column += 1
@@ -184,7 +188,7 @@ public struct Tokenizer {
       }
     }
 
-    components.append((acc, SourceLocation(line: line, column: column - acc.count, length: acc.count)))
+    components.append((acc, sourceLocation(line: line, column: column - acc.count, length: acc.count)))
 
     // Remove empty string components.
     return components.filter { !$0.0.isEmpty }
@@ -197,5 +201,10 @@ public struct Tokenizer {
   func canBeMerged(_ component1: String, _ component2: String) -> Bool {
     let mergeable = syntaxMap.keys.filter { $0.count == 2 }
     return mergeable.contains { $0 == component1 + component2 }
+  }
+
+  /// Creates a source location for the current file.
+  func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
+    return SourceLocation(line: line, column: column, length: length, file: sourceFile)
   }
 }

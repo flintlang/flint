@@ -19,9 +19,10 @@ public struct DiagnosticsFormatter {
   }
 
   func renderDiagnostic(_ diagnostic: Diagnostic, highlightColor: Color = .lightRed, style: Style = .bold) -> String {
+    let diagnosticFile = diagnostic.sourceLocation?.file
     var sourceFileText = ""
-    if let compilationContext = compilationContext {
-      sourceFileText = " in \(compilationContext.fileName.bold)"
+    if let file = diagnosticFile {
+      sourceFileText = " in \(file.path.bold)"
     }
 
     let infoTopic: String
@@ -35,10 +36,11 @@ public struct DiagnosticsFormatter {
     let infoLine = "\(infoTopic)\(sourceFileText):"
     let body: String
 
-    if let compilationContext = compilationContext {
+    if let compilationContext = compilationContext, let file = diagnosticFile {
+      let sourceCode = compilationContext.sourceCode(in: file)
       body = """
       \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
-      \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: compilationContext.sourceCode, highlightColor: highlightColor, style: style))
+      \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: sourceCode, highlightColor: highlightColor, style: style))
       """
     } else {
       body = "  \(diagnostic.message.indented(by: 2).bold)"

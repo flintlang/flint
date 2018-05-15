@@ -13,11 +13,9 @@ struct StandardLibrary {
   /// Path to the stdlib directory.
   var url: URL
 
-  func sourceCode() -> String {
-    let files = try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
+  var files: [URL] {
+    return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
       .filter { $0.pathExtension == "flint" }
-
-    return try! files.map(String.init(contentsOf:)).joined(separator: "\n\n")
   }
 
   static var `default`: StandardLibrary {
