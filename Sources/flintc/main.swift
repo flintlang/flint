@@ -5,26 +5,33 @@ import AST
 /// The main function for the compiler.
 func main() {
   command(
-    Argument<String>("input file", description: "The input file to compile."),
     Flag("emit-ir", flag: "i", description: "Emit the internal representation of the code."),
     Option<String>("ir-output", default: "", description: "The path at which the IR file should be created."),
     Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code."),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
-    Flag("verify", flag: "v", description: "Verify expected diagnostics were produced.")
-  ) { inputFile, emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify in
-    let inputFileURL = URL(fileURLWithPath: inputFile)
+    Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
+    VariadicArgument<String>("input files", description: "The input files to compile.")
+  ) { emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify, inputFilePaths in
+    let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
-    guard FileManager.default.fileExists(atPath: inputFile) else {
-      exitWithFileNotFoundDiagnostic(file: inputFileURL)
+    for inputFile in inputFiles {
+      guard FileManager.default.fileExists(atPath: inputFile.path) else {
+        exitWithFileNotFoundDiagnostic(file: inputFile)
+      }
     }
 
-    let fileName = inputFileURL.deletingPathExtension().lastPathComponent
-    let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin/\(fileName)")
+    let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin")
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
-    let compilationOutcome = Compiler(inputFile: inputFileURL, outputDirectory: outputDirectory, emitBytecode: emitBytecode, shouldVerify: shouldVerify).compile()
+    
+    let compilationOutcome = Compiler(
+      inputFiles: inputFiles + StandardLibrary.default.files,
+      outputDirectory: outputDirectory,
+      emitBytecode: emitBytecode,
+      shouldVerify: shouldVerify
+    ).compile()
 
     if emitIR {
-      let fileName = inputFileURL.deletingPathExtension().lastPathComponent + ".sol"
+      let fileName = "main.sol"
       let irFileURL: URL
       if irOutputPath.isEmpty {
         irFileURL = outputDirectory.appendingPathComponent(fileName)

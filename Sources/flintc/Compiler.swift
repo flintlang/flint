@@ -14,22 +14,23 @@ import IRGen
 
 /// Runs the different stages of the compiler.
 struct Compiler {
-  var inputFile: URL
+  var inputFiles: [URL]
   var outputDirectory: URL
   var emitBytecode: Bool
   var shouldVerify: Bool
+
+  func tokenizeFiles() -> [Token] {
+    return inputFiles.flatMap { Tokenizer(sourceFile: $0).tokenize() }
+  }
   
   func compile() -> CompilationOutcome {
-    let sourceCode = try! String(contentsOf: inputFile, encoding: .utf8) + retrieveStandardLibraryCode()
-
-    // Turn the source code into tokens.
-    let tokens = Tokenizer(sourceCode: sourceCode).tokenize()
+    let tokens = tokenizeFiles()
 
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
     // Create a compilation context.
-    let compilationContext = CompilationContext(sourceCode: sourceCode, fileName: inputFile.lastPathComponent)
+    let compilationContext = CompilationContext(sourceFiles: inputFiles)
 
     guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
       // If there are any parser errors, abort execution.
@@ -73,22 +74,22 @@ struct Compiler {
     // Compile the IULIA IR code using solc.
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
+    print("Produced binary in \(outputDirectory.path.bold).")
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
   }
 
   func exitWithFailure() -> Never {
-    print("Failed to compile \(inputFile.lastPathComponent).")
+    print("Failed to compile.")
     exit(1)
-  }
-
-  func retrieveStandardLibraryCode() -> String {
-    return StandardLibrary.default.sourceCode()
   }
 }
 
 struct CompilationContext {
-  var sourceCode: String
-  var fileName: String
+  var sourceFiles: [URL]
+
+  func sourceCode(in sourceFile: URL) -> String {
+    return try! String(contentsOf: sourceFile)
+  }
 }
 
 struct CompilationOutcome {

@@ -17,7 +17,19 @@ struct DiagnosticsVerifier {
   private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-?\\d+)\\s+\\{\\{(.*)\\}\\}")
 
   func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
-    let expectations = parseExpectations(sourceCode: compilationContext.sourceCode)
+    var success = true
+
+    for file in compilationContext.sourceFiles {
+      let sourceCode = compilationContext.sourceCode(in: file)
+      let diagnostics = producedDiagnostics.filter { $0.sourceLocation?.file == file }
+      success = success && verify(producedDiagnostics: diagnostics, sourceFile: file, sourceCode: sourceCode, compilationContext: compilationContext)
+    }
+
+    return success
+  }
+
+  func verify(producedDiagnostics: [Diagnostic], sourceFile: URL, sourceCode: String, compilationContext: CompilationContext) -> Bool {
+    let expectations = parseExpectations(sourceCode: sourceCode)
     var producedDiagnostics = flatten(producedDiagnostics)
     var verifyDiagnostics = [Diagnostic]()
 
@@ -30,12 +42,12 @@ struct DiagnosticsVerifier {
       if let index = index {
         producedDiagnostics.remove(at: index)
       } else {
-        verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: expectation.line, column: 0, length: 0), message: "Verify: Should have produced \(expectation.severity) \"\(expectation.message)\""))
+        verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile), message: "Verify: Should have produced \(expectation.severity) \"\(expectation.message)\""))
       }
     }
 
     for producedDiagnostic in producedDiagnostics where producedDiagnostic.severity != .note {
-      verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: producedDiagnostic.sourceLocation!.line, column: 0, length: 0), message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\""))
+      verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: producedDiagnostic.sourceLocation!.line, column: 0, length: 0, file: sourceFile), message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\""))
     }
 
     let output = DiagnosticsFormatter(diagnostics: verifyDiagnostics, compilationContext: compilationContext).rendered()
