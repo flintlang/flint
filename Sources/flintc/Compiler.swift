@@ -15,12 +15,16 @@ import IRGen
 /// Runs the different stages of the compiler.
 struct Compiler {
   var inputFiles: [URL]
+  var stdlibFiles: [URL]
   var outputDirectory: URL
   var emitBytecode: Bool
   var shouldVerify: Bool
 
   func tokenizeFiles() -> [Token] {
-    return inputFiles.flatMap { Tokenizer(sourceFile: $0).tokenize() }
+    let stdlibTokens = StandardLibrary.default.files.flatMap { Tokenizer(sourceFile: $0, isFromStdlib: true).tokenize() }
+    let userTokens = inputFiles.flatMap { Tokenizer(sourceFile: $0).tokenize() }
+
+    return stdlibTokens + userTokens
   }
   
   func compile() -> CompilationOutcome {

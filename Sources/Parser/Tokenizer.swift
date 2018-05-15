@@ -15,10 +15,13 @@ public struct Tokenizer {
 
   /// The original source code of the Flint program.
   var sourceCode: String
+
+  var isFromStdlib: Bool
   
-  public init(sourceFile: URL) {
+  public init(sourceFile: URL, isFromStdlib: Bool = true) {
     self.sourceFile = sourceFile
     self.sourceCode = try! String(contentsOf: sourceFile)
+    self.isFromStdlib = isFromStdlib
   }
   
   /// Converts the source code into a list of tokens.
@@ -205,6 +208,6 @@ public struct Tokenizer {
 
   /// Creates a source location for the current file.
   func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
-    return SourceLocation(line: line, column: column, length: length, file: sourceFile)
+    return SourceLocation(line: line, column: column, length: length, file: sourceFile, isFromStdlib: isFromStdlib)
   }
 }

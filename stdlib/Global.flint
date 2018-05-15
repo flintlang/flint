@@ -1,0 +1,3 @@
+struct Flint$Global {
+  func foo() {}
+}

@@ -24,7 +24,8 @@ func main() {
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
     
     let compilationOutcome = Compiler(
-      inputFiles: inputFiles + StandardLibrary.default.files,
+      inputFiles: inputFiles,
+      stdlibFiles: StandardLibrary.default.files,
       outputDirectory: outputDirectory,
       emitBytecode: emitBytecode,
       shouldVerify: shouldVerify
