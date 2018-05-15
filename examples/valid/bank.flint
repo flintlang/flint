@@ -52,4 +52,11 @@ Bank :: account <- (accounts) {
   public mutating func transfer(amount: Int, destination: Address) {
     balances[destination].transfer(&balances[account], amount)
   }
+
+  public mutating func withdraw(amount: Int) {
+    if balances[account].getRawValue() >= amount {
+      let w: Wei = Wei(&balances[account], amount)
+      send(&w, account)
+    }
+  }
 }

@@ -16,9 +16,9 @@ Wallet :: caller <- (any) {
 
 Wallet :: (owner) {
   public mutating func withdraw(value: Int) {
-    if value <= contents.getRawValue() {
-      var w: Wei = Wei(0)
-      w.transfer(&contents, value)
+    if contents.getRawValue() >= value {
+      var w: Wei = Wei(&contents, value)
+      send(&w, owner)
     }
   }
 
