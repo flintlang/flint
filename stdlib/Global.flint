@@ -1,5 +1,5 @@
 struct Flint$Global {
-  func send(value: inout Wei, address: Address) {
+  func send(address: Address, value: inout Wei) {
     let w: Wei = Wei(&value)
     flint$send(w.getRawValue(), address)
   }

@@ -18,7 +18,7 @@ Wallet :: (owner) {
   public mutating func withdraw(value: Int) {
     if contents.getRawValue() >= value {
       var w: Wei = Wei(&contents, value)
-      send(&w, owner)
+      send(owner, &w)
     }
   }
 
