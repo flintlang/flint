@@ -102,23 +102,23 @@ contract(config.contractName, function(accounts) {
     const registerTx = await web3.eth.getTransaction(registerTxInfo.tx);
     const registerGasCost = registerTx.gasPrice.mul(registerTxInfo.receipt.gasUsed);
 
-    const depositTxInfo = await instance.deposit({from: accounts[3], value: 10000000000000000000});
+    const depositTxInfo = await instance.deposit({from: accounts[3], value: web3.toWei(10, 'ether')});
     const depositTx = await web3.eth.getTransaction(depositTxInfo.tx);
     const depositGasCost = depositTx.gasPrice.mul(depositTxInfo.receipt.gasUsed);
 
     t = await instance.getBalance.call({from: accounts[3]});
-    assert.equal(t.valueOf(), 10000000000000000000);
+    assert.equal(t.valueOf(), web3.toWei(10, 'ether'));
 
-    const withdrawTxInfo = await instance.withdraw(4000000000000000000, {from: accounts[3]});
+    const withdrawTxInfo = await instance.withdraw(web3.toWei(4, 'ether'), {from: accounts[3]});
     const withdrawTx = await web3.eth.getTransaction(withdrawTxInfo.tx);
     const withdrawGasCost = withdrawTx.gasPrice.mul(withdrawTxInfo.receipt.gasUsed);
 
     t = await instance.getBalance.call({from: accounts[3]});
-    assert.equal(t.valueOf(), 6000000000000000000);
+    assert.equal(t.valueOf(), web3.toWei(6, 'ether'));
 
     const newBalance = web3.eth.getBalance(accounts[3]);
 
-    assert.equal(newBalance.valueOf(), oldBalance.sub(6000000000000000000).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+    assert.equal(newBalance.valueOf(), oldBalance.sub(web3.toWei(6, 'ether')).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
   })
 
   it("should not be possible to withdraw too much money", async function() {
@@ -131,23 +131,28 @@ contract(config.contractName, function(accounts) {
     const registerTx = await web3.eth.getTransaction(registerTxInfo.tx);
     const registerGasCost = registerTx.gasPrice.mul(registerTxInfo.receipt.gasUsed);
 
-    const depositTxInfo = await instance.deposit({from: accounts[4], value: 10000000000000000000});
+    const depositTxInfo = await instance.deposit({from: accounts[4], value: web3.toWei(10, 'ether')});
     const depositTx = await web3.eth.getTransaction(depositTxInfo.tx);
     const depositGasCost = depositTx.gasPrice.mul(depositTxInfo.receipt.gasUsed);
 
     t = await instance.getBalance.call({from: accounts[4]});
     assert.equal(t.valueOf(), 10000000000000000000);
 
-    let withdrawGasCost = 0
+    try {
+      const withdrawTxInfo = await instance.withdraw(web3.toWei(20, 'ether'), {from: accounts[4]});
+    } catch (e) {
+      t = await instance.getBalance.call({from: accounts[4]});
+      assert.equal(t.valueOf(), web3.toWei(10, 'ether'));
 
-    const withdrawTxInfo = await instance.withdraw(20000000000000000000, {from: accounts[4]});
-    const withdrawTx = await web3.eth.getTransaction(withdrawTxInfo.tx);
-    withdrawGasCost = withdrawTx.gasPrice.mul(withdrawTxInfo.receipt.gasUsed);
-    t = await instance.getBalance.call({from: accounts[4]});
-    assert.equal(t.valueOf(), 10000000000000000000);
+      const newBalance = web3.eth.getBalance(accounts[4]);
 
-    const newBalance = web3.eth.getBalance(accounts[4]);
+      // Estimate
+      const withdrawGasCost = registerGasCost / 2
 
-    assert.equal(newBalance.valueOf(), oldBalance.sub(10000000000000000000).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+      assert.isAtMost(newBalance.valueOf(), oldBalance.sub(web3.toWei(10, 'ether')).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+      return
+    }
+
+    assert.fail();
   })
 });

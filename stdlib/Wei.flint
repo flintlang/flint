@@ -6,10 +6,12 @@ struct Wei {
   }
 
   init(source: inout Wei, amount: Int) {
-    if source.getRawValue() >= amount {
-      source.rawValue -= amount
-      rawValue = amount
+    if source.getRawValue() < amount {
+      fatalError()
     }
+
+    source.rawValue -= amount
+    rawValue = amount
   }
 
   init(source: inout Wei) {
@@ -19,10 +21,12 @@ struct Wei {
   }
 
   mutating func transfer(source: inout Wei, amount: Int) {
-    if source.getRawValue() >= amount {
-      source.rawValue -= amount
-      rawValue += amount
+    if source.getRawValue() < amount {
+      fatalError()
     }
+
+    source.rawValue -= amount
+    rawValue += amount
   }
 
   mutating func transfer(source: inout Wei) {
