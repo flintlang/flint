@@ -1,3 +1,5 @@
+// This program doesn't compile yet.
+
 contract Ballot {
   // The administrator of the ballot.
   let chairperson: Address

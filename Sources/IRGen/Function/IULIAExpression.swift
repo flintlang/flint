@@ -218,7 +218,7 @@ struct IULIAFunctionCall {
   
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
-    
+
     if let eventInformation = environment.matchEventCall(functionCall, enclosingType: functionContext.enclosingTypeName) {
       return IULIAEventCall(eventCall: functionCall, eventInformation: eventInformation).rendered(functionContext: functionContext)
     }
