@@ -347,6 +347,8 @@ public struct SemanticAnalyzer: ASTPass {
     case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
+    case .subscriptExpression(let subscriptExpression):
+      return isStorageReference(expression: .identifier(subscriptExpression.baseIdentifier), scopeContext: scopeContext)
     default: return false
     }
   }
@@ -519,35 +521,35 @@ public struct SemanticAnalyzer: ASTPass {
     
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
-      // Find the function declaration associated with this function call.
-      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
-      case .matchedFunction(let matchingFunction):
-        // The function declaration is found.
+    // Find the function declaration associated with this function call.
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    case .matchedFunction(let matchingFunction):
+      // The function declaration is found.
 
-        if matchingFunction.isMutating {
-          // The function is mutating.
-          addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
-          
-          if !isMutating {
-            // The function in which the function call appears in is not mutating.
-            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
-          }
+      if matchingFunction.isMutating {
+        // The function is mutating.
+        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
+
+        if !isMutating {
+          // The function in which the function call appears in is not mutating.
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
         }
-        checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
-        
-      case .matchedInitializer(let matchingInitializer):
-        checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
-
-      case .matchedGlobalFunction(_):
-        break
-        
-      case .failure(let candidates):
-        // A matching function declaration couldn't be found. Try to match an event call.
-        if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-          diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
-        }
-
       }
+      checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
+
+    case .matchedInitializer(let matchingInitializer):
+      checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
+
+    case .matchedGlobalFunction(_):
+      break
+
+    case .failure(let candidates):
+      // A matching function declaration couldn't be found. Try to match an event call.
+      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+      }
+
+    }
     
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
