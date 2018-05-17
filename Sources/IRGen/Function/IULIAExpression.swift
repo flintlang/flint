@@ -242,7 +242,7 @@ struct IULIAEventCall {
     var stores = [String]()
     var memoryOffset = 0
     for (i, argument) in eventCall.arguments.enumerated() {
-      let argument = IULIAExpression(expression: argument)
+      let argument = IULIAExpression(expression: argument).rendered(functionContext: functionContext)
       stores.append("mstore(\(memoryOffset), \(argument))")
       memoryOffset += functionContext.environment.size(of: types[i]) * EVM.wordSize
     }
