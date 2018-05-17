@@ -283,6 +283,10 @@ public struct IULIAPreprocessor: ASTPass {
       }
     }
 
+    guard environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil else {
+      return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    }
+
     // For each non-implicit dynamic type, add an isMem parameter.
     var offset = 0
     for (index, argument) in functionCall.arguments.enumerated() {

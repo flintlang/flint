@@ -6,26 +6,27 @@
 
 contract SimpleAuction {
   let beneficiary: Address
-  var hasAuctionEnded: Bool
+  var hasAuctionEnded: Bool = false
 
   var highestBidder: Address
-  var highestBid: Wei
+  var highestBid: Wei = Wei(0)
 
   var highestBidDidIncrease: Event<Address, Int>
-  var auctionDidEnd: Event<Address, Amount>
+  var auctionDidEnd: Event<Address, Int>
 }
 
 SimpleAuction :: caller <- (any) {
   public init() {
     beneficiary = caller
+    highestBidder = caller
   }
 
   @payable
-  public mutating func bid(implicit wei: Wei) {
+  public mutating func bid(implicit value: Wei) {
     if hasAuctionEnded { fatalError() }
-    if wei.getValue() <= highestBid.getValue() { fatalError() }
+    if value.getRawValue() <= highestBid.getRawValue() { fatalError() }
 
-    if highestBid.getValue() > 0 {
+    if highestBid.getRawValue() > 0 {
       // Reimburse the previous highest bidder.
       send(highestBidder, &highestBid)
     }
@@ -34,9 +35,17 @@ SimpleAuction :: caller <- (any) {
     highestBidder = caller
 
     // Record the new highest bid.
-    highestBid.transfer(from: wei)
+    highestBid.transfer(&value)
 
-    highestBidDidIncrease(caller, wei.getValue())
+    highestBidDidIncrease(caller, value.getRawValue())
+  }
+
+  public func getHighestBid() -> Int {
+    return highestBid.getRawValue()
+  }
+
+  public func getHighestBidder() -> Address {
+    return highestBidder
   }
 }
 
@@ -45,7 +54,7 @@ SimpleAuction :: (beneficiary) {
     if hasAuctionEnded { fatalError() }
 
     hasAuctionEnded = true
-    auctionDidEnd(highestBidder, highestBid)
+    auctionDidEnd(highestBidder, highestBid.getRawValue())
 
     send(beneficiary, &highestBid)
   }
