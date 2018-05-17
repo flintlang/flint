@@ -490,6 +490,20 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  /// Checks whether the function arguments are storage references, and creates an error if the enclosing function is not mutating.
+  fileprivate func checkFunctionArguments(_ functionCall: FunctionCall, _ declaration: (FunctionDeclaration), _ passContext: inout ASTPassContext, _ isMutating: Bool, _ diagnostics: inout [Diagnostic]) {
+    // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
+    for (argument, parameter) in zip(functionCall.arguments, declaration.parameters) where parameter.isInout {
+      if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
+        addMutatingExpression(argument, passContext: &passContext)
+
+        if !isMutating {
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
+        }
+      }
+    }
+  }
+
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
@@ -519,19 +533,12 @@ public struct SemanticAnalyzer: ASTPass {
             diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
           }
         }
+        checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
         
-        // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
-        for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
-          if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-            addMutatingExpression(argument, passContext: &passContext)
-            
-            if !isMutating {
-              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
-            }
-          }
-        }
-        
-      case .matchedInitializer(_), .matchedGlobalFunction(_):
+      case .matchedInitializer(let matchingInitializer):
+        checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
+
+      case .matchedGlobalFunction(_):
         break
         
       case .failure(let candidates):
