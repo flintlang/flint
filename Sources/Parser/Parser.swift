@@ -695,8 +695,11 @@ extension Parser {
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
       if let argument = try? parseExpression(upTo: argumentEnd) {
         let token = try consume(tokens[argumentEnd].kind)
-        if token.kind == .punctuation(.closeBracket) { closeBracketToken = token}
         arguments.append(argument)
+        if token.kind == .punctuation(.closeBracket) {
+          closeBracketToken = token
+          break
+        }
       } else {
         break
       }
