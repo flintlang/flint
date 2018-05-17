@@ -24,6 +24,14 @@ contract Foo {
   var value: Int = 0
 
 // CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "s"
+// CHECK-AST:   user-defined type S
+// CHECK-AST:   FunctionCall
+// CHECK-AST:     identifier "S"
+// CHECK-AST:     literal 0
+  var s: S = S(0)
+
+// CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "didCompleteSomething"
 // CHECK-AST:   built-in type Event
 // CHECK-AST:     Generic Arguments
@@ -51,4 +59,10 @@ Foo :: (any) {
   init(assignedValue: Int) {
     self.assignedValue = assignedValue
   }
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: StructDeclaration
+struct S {
+  init (a: Int) {}
 }
