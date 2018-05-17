@@ -347,6 +347,8 @@ public struct SemanticAnalyzer: ASTPass {
     case .inoutExpression(let inoutExpression): return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
+    case .subscriptExpression(let subscriptExpression):
+      return isStorageReference(expression: .identifier(subscriptExpression.baseIdentifier), scopeContext: scopeContext)
     default: return false
     }
   }
@@ -490,6 +492,20 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  /// Checks whether the function arguments are storage references, and creates an error if the enclosing function is not mutating.
+  fileprivate func checkFunctionArguments(_ functionCall: FunctionCall, _ declaration: (FunctionDeclaration), _ passContext: inout ASTPassContext, _ isMutating: Bool, _ diagnostics: inout [Diagnostic]) {
+    // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
+    for (argument, parameter) in zip(functionCall.arguments, declaration.parameters) where parameter.isInout {
+      if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
+        addMutatingExpression(argument, passContext: &passContext)
+
+        if !isMutating {
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
+        }
+      }
+    }
+  }
+
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
@@ -505,42 +521,35 @@ public struct SemanticAnalyzer: ASTPass {
     
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
-      // Find the function declaration associated with this function call.
-      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
-      case .matchedFunction(let matchingFunction):
-        // The function declaration is found.
+    // Find the function declaration associated with this function call.
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    case .matchedFunction(let matchingFunction):
+      // The function declaration is found.
 
-        if matchingFunction.isMutating {
-          // The function is mutating.
-          addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
-          
-          if !isMutating {
-            // The function in which the function call appears in is not mutating.
-            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
-          }
-        }
-        
-        // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
-        for (argument, parameter) in zip(functionCall.arguments, matchingFunction.declaration.parameters) where parameter.isInout {
-          if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-            addMutatingExpression(argument, passContext: &passContext)
-            
-            if !isMutating {
-              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
-            }
-          }
-        }
-        
-      case .matchedInitializer(_), .matchedGlobalFunction(_):
-        break
-        
-      case .failure(let candidates):
-        // A matching function declaration couldn't be found. Try to match an event call.
-        if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-          diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
-        }
+      if matchingFunction.isMutating {
+        // The function is mutating.
+        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
+        if !isMutating {
+          // The function in which the function call appears in is not mutating.
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
+        }
       }
+      checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
+
+    case .matchedInitializer(let matchingInitializer):
+      checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
+
+    case .matchedGlobalFunction(_):
+      break
+
+    case .failure(let candidates):
+      // A matching function declaration couldn't be found. Try to match an event call.
+      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+      }
+
+    }
     
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }

@@ -59,6 +59,11 @@ Test :: (any) {
   func k(f: inout Foo) {
     j(&self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
     j(&f)
+
+    let foo: Foo = Foo()
+    Foo(&foo)
+
+    Foo(&self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
   }
 
   mutating func l() {
@@ -68,6 +73,9 @@ Test :: (any) {
 
 struct Foo {
   var a: Int = 0
+
+  init() {}
+  init(a: inout Foo) {}
 
   func h() { 
     a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
