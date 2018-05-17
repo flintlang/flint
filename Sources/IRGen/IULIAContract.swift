@@ -34,8 +34,10 @@ struct IULIAContract {
 
     let functionsCode = functions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
+    let publicFunctions = functions.filter { $0.functionDeclaration.isPublic }
+
     // Create a function selector, to determine which function is called in the Ethereum transaction.
-    let functionSelector = IULIAFunctionSelector(functions: functions)
+    let functionSelector = IULIAFunctionSelector(functions: publicFunctions)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     // Generate code for each function in the structs.
