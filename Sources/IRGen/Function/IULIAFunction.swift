@@ -105,8 +105,6 @@ struct IULIAFunctionBody {
   }
 
   func rendered() -> String {
-    // Dynamically check the caller has appropriate caller capabilities.
-    let callerCapabilityChecks = IULIACallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(functionContext: functionContext)
     let body = renderBody(functionDeclaration.body, functionContext: functionContext)
 
     // Assign a caller capaiblity binding to a local variable.
@@ -117,7 +115,7 @@ struct IULIAFunctionBody {
       capabilityBindingDeclaration = ""
     }
 
-    return "\(callerCapabilityChecks)\(capabilityBindingDeclaration)\(body)"
+    return "\(capabilityBindingDeclaration)\(body)"
   }
 
   func renderBody<S : RandomAccessCollection & RangeReplaceableCollection>(_ statements: S, functionContext: FunctionContext) -> String where S.Element == AST.Statement, S.Index == Int {
