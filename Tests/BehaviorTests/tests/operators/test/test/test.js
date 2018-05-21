@@ -136,7 +136,7 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
 
     try {
-      await instance.sub(0, 1);
+      await instance.minus(0, 1);
     } catch(e) {
       return;
     }
@@ -150,7 +150,7 @@ contract(config.contractName, function(accounts) {
     const maxInt = web3.toBigNumber(2).pow(256)
 
     try {
-      await instance.mul(maxInt.div(2), maxInt.div(2));
+      await instance.times(maxInt.div(2), maxInt.div(2));
     } catch(e) {
       return;
     }
@@ -162,7 +162,7 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
 
     try {
-      await instance.mul(2, 0);
+      await instance.divide(2, 0);
     } catch(e) {
       return;
     }
