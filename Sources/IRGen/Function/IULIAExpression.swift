@@ -76,8 +76,11 @@ struct IULIABinaryExpression {
       return IULIAAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs).rendered(functionContext: functionContext)
 
     case .plus: return IULIARuntimeFunction.add(a: lhs, b: rhs)
+    case .overflowingPlus: return "add(\(lhs), \(rhs))"
     case .minus: return IULIARuntimeFunction.sub(a: lhs, b: rhs)
+    case .overflowingMinus: return "sub(\(lhs), \(rhs))"
     case .times: return IULIARuntimeFunction.mul(a: lhs, b: rhs)
+    case .overflowingTimes: return "mul(\(lhs), \(rhs))"
     case .divide: return IULIARuntimeFunction.div(a: lhs, b: rhs)
     case .closeAngledBracket: return "gt(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"

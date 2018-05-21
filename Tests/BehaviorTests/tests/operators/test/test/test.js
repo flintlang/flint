@@ -121,7 +121,7 @@ contract(config.contractName, function(accounts) {
   it("should crash on + overflow", async function() {
     const instance = await Contract.deployed();
 
-    const maxInt = web3.toBigNumber(2).pow(256).sub(1)
+    const maxInt = web3.toBigNumber(2).pow(256).sub(1);
 
     try {
       await instance.plus(maxInt, 1);
@@ -147,7 +147,7 @@ contract(config.contractName, function(accounts) {
   it("should crash on * overflow", async function() {
     const instance = await Contract.deployed();
 
-    const maxInt = web3.toBigNumber(2).pow(256)
+    const maxInt = web3.toBigNumber(2).pow(256);
 
     try {
       await instance.times(maxInt.div(2), maxInt.div(2));
@@ -168,5 +168,38 @@ contract(config.contractName, function(accounts) {
     }
 
     assert.fail()
+  });
+});
+
+contract(config.contractName, function(accounts) {
+  it("should support overflowing +", async function() {
+    const instance = await Contract.deployed();
+    let t;
+
+    const maxInt = web3.toBigNumber(2).pow(256).sub(1);
+
+    t = await instance.overflowingPlus(maxInt, 1);
+    assert.equal(t.valueOf(), 0);
+
+    t = await instance.overflowingPlus(maxInt, 40);
+    assert.equal(t.valueOf(), 39);
+  });
+
+  it("should support overflowing -", async function() {
+    const instance = await Contract.deployed();
+
+    const maxInt = web3.toBigNumber(2).pow(256).sub(1);
+
+    const t = await instance.overflowingMinus(0, 1);
+    assert.equal(t.valueOf(), maxInt);
+  });
+
+  it("should support overflowing *", async function() {
+    const instance = await Contract.deployed();
+
+    const maxInt = web3.toBigNumber(2).pow(256);
+
+    const t = await instance.overflowingTimes(maxInt.div(2), maxInt.div(2));
+    assert.equal(t.valueOf(), 0);
   });
 });
