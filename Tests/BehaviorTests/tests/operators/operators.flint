@@ -23,12 +23,24 @@ Operators :: (any) {
     return a + b
   }
 
+  public func overflowingPlus(a: Int, b: Int) -> Int {
+    return a &+ b
+  }
+
   public func minus(a: Int, b: Int) -> Int {
     return a - b
   }
 
+  public func overflowingMinus(a: Int, b: Int) -> Int {
+    return a &- b
+  }
+
   public func times(a: Int, b: Int) -> Int {
     return a * b
+  }
+
+  public func overflowingTimes(a: Int, b: Int) -> Int {
+    return a &* b
   }
 
   public func divide(a: Int, b: Int) -> Int {

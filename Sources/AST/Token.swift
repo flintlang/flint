@@ -38,9 +38,12 @@ extension Token {
       case openAngledBracket  = "<"
       case closeAngledBracket = ">"
 
-      case plus       = "+"
-      case minus      = "-"
-      case times      = "*"
+      case plus             = "+"
+      case overflowingPlus  = "&+"
+      case minus            = "-"
+      case overflowingMinus = "&-"
+      case times            = "*"
+      case overflowingTimes = "&*"
       case divide     = "/"
       case dot        = "."
       case ampersand  = "&"
@@ -64,7 +67,7 @@ extension Token {
 
       static var allBinaryOperators: [Punctuation] {
         return [
-          .plus, .minus, .times, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
+          .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
           .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
           .or, .and
         ]
@@ -87,9 +90,9 @@ extension Token {
         case .or: return 11
         case .and: return 12
         case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual: return 15
-        case .plus: return 20
-        case .minus: return 20
-        case .times: return 30
+        case .plus, .overflowingPlus: return 20
+        case .minus, .overflowingMinus: return 20
+        case .times, .overflowingTimes: return 30
         case .divide: return 30
         case .ampersand: return 35
         case .dot: return 40
