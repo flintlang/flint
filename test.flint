@@ -1,0 +1,8 @@
+contract A {
+}
+
+A :: (any) {
+  public init() {
+    let a: Int = 2 / 0.45
+  }
+}

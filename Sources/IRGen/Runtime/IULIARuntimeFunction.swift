@@ -26,6 +26,10 @@ enum IULIARuntimeFunction {
     case storageDictionaryOffsetForKey
     case callvalue
     case send
+    case add
+    case sub
+    case mul
+    case div
 
     var mangled: String {
       return "\(Environment.runtimeFunctionPrefix)\(self)"
@@ -103,9 +107,24 @@ enum IULIARuntimeFunction {
   static func callvalue() -> String {
     return "\(Identifiers.callvalue)()"
   }
+  
+  static func add(a: String, b: String) -> String {
+    return "\(Identifiers.add.mangled)(\(a), \(b))"
+  }
+  
+  static func sub(a: String, b: String) -> String {
+    return "\(Identifiers.sub.mangled)(\(a), \(b))"
+  }
+  
+  static func mul(a: String, b: String) -> String {
+    return "\(Identifiers.mul.mangled)(\(a), \(b))"
+  }
+  
+  static func div(a: String, b: String) -> String {
+    return "\(Identifiers.div.mangled)(\(a), \(b))"
+  }
 
-  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send, IULIARuntimeFunctionDeclaration.fatalError]
-
+  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send, IULIARuntimeFunctionDeclaration.fatalError, IULIARuntimeFunctionDeclaration.add, IULIARuntimeFunctionDeclaration.sub, IULIARuntimeFunctionDeclaration.mul, IULIARuntimeFunctionDeclaration.div]
 }
 
 struct IULIARuntimeFunctionDeclaration {
@@ -264,6 +283,48 @@ struct IULIARuntimeFunctionDeclaration {
   """
   function flint$fatalError() {
     revert(0, 0)
+  }
+  """
+  
+  static let add =
+  """
+  function flint$add(a, b) -> ret {
+    let c := add(a, b)
+
+    if lt(c, a) { revert(0, 0) }
+    ret := c
+  }
+  """
+  
+  static let sub =
+  """
+  function flint$sub(a, b) -> ret {
+    if gt(b, a) { revert(0, 0) }
+
+    ret := sub(a, b)
+  }
+  """
+  
+  static let mul =
+  """
+  function flint$mul(a, b) -> ret {
+    switch iszero(a)
+    case 1 {
+      ret := 0
+    }
+    default {
+      let c := mul(a, b)
+      if iszero(eq(div(c, a), b)) { revert(0, 0) }
+      ret := c
+    }
+  }
+  """
+  
+  static let div =
+  """
+  function flint$div(a, b) -> ret {
+    if eq(b, 0) { revert(0, 0) }
+    ret := div(a, b)
   }
   """
 }

@@ -117,3 +117,56 @@ contract(config.contractName, function(accounts) {
 });
 
 
+contract(config.contractName, function(accounts) {
+  it("should crash on + overflow", async function() {
+    const instance = await Contract.deployed();
+
+    const maxInt = web3.toBigNumber(2).pow(256).sub(1)
+
+    try {
+      await instance.plus(maxInt, 1);
+    } catch(e) {
+      return;
+    }
+
+    assert.fail()
+  });
+
+  it("should crash on - overflow", async function() {
+    const instance = await Contract.deployed();
+
+    try {
+      await instance.sub(0, 1);
+    } catch(e) {
+      return;
+    }
+
+    assert.fail()
+  });
+
+  it("should crash on * overflow", async function() {
+    const instance = await Contract.deployed();
+
+    const maxInt = web3.toBigNumber(2).pow(256)
+
+    try {
+      await instance.mul(maxInt.div(2), maxInt.div(2));
+    } catch(e) {
+      return;
+    }
+
+    assert.fail()
+  });
+
+  it("should crash on / by 0", async function() {
+    const instance = await Contract.deployed();
+
+    try {
+      await instance.mul(2, 0);
+    } catch(e) {
+      return;
+    }
+
+    assert.fail()
+  });
+});
