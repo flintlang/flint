@@ -131,6 +131,13 @@ public struct SemanticAnalyzer: ASTPass {
         diagnostics.append(.payableFunctionDoesNotHavePayableValueParameter(functionDeclaration))
       }
     }
+    
+    if functionDeclaration.isPublic {
+      let dynamicParameters = functionDeclaration.parameters.filter { $0.type.rawType.isDynamicType && !$0.isImplicit }
+      if !dynamicParameters.isEmpty {
+        diagnostics.append(.useOfDynamicParamaterInFunctionDeclaration(functionDeclaration, dynamicParameters: dynamicParameters))
+      }
+    }
 
     let statements = functionDeclaration.body
 
