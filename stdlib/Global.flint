@@ -10,4 +10,9 @@ struct Flint$Global {
   func fatalError() {
     flint$fatalError()
   }
+
+  // Ensure the given condition holds, otherwise crash.
+  func assert(condition: Bool) {
+    if condition == false { fatalError() }
+  }
 }
