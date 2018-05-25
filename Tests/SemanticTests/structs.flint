@@ -45,4 +45,7 @@ Foo :: (any) {
     b(&b)
     b(&self.b) // expected-error {{Function 'b' is not in scope or cannot be called using the caller capability 'any'}}
   }
-}
+
+  public func c(x: inout Test) {} // expected-error {{Function 'c' cannot have dynamic parameters}}
+  public func d(x: [Int]) {} // expected-error {{Function 'd' cannot have dynamic parameters}}
+} 

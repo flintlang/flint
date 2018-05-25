@@ -53,6 +53,11 @@ extension Diagnostic {
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
   }
+  
+  static func useOfDynamicParamaterInFunctionDeclaration(_ functionDeclaration: FunctionDeclaration, dynamicParameters: [Parameter]) -> Diagnostic {
+    let notes = dynamicParameters.map { Diagnostic(severity: .note, sourceLocation: $0.sourceLocation, message: "\($0.identifier.name) cannot be used as a parameter") }
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' cannot have dynamic parameters", notes: notes)
+  }
 
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type")
