@@ -68,6 +68,11 @@ Bank :: account <- (accounts) {
     // Emit the Ethereum event.
     didCompleteTransfer(account, destination, amount)
   }
+
+  @payable
+  public mutating func deposit(implicit value: Wei) {
+    balances[account].transfer(&value)
+  }
   
   public mutating func withdraw(amount: Int) {
     // Transfer some Wei from balances[account] into a local variable.
