@@ -5,6 +5,7 @@ contract Bank {
 
 Bank :: (any) {
   public mutating func deposit(address: Address, amount: Int) {
+    // do we want to allow people to deposit negative value sinot other people's accounts
     accounts[address] += amount
     try? clear(address)
   }
