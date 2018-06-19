@@ -209,7 +209,7 @@ struct IULIARuntimeFunctionDeclaration {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
-    let arrayStart := add(arrayOffset, 1)
+    let arrayStart := flint$add(arrayOffset, 1)
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
       if eq(sload(flint$storageArrayOffset(arrayOffset, i)), _caller) {
         found := 1
@@ -230,7 +230,7 @@ struct IULIARuntimeFunctionDeclaration {
   static let isInvalidSubscriptExpression =
   """
   function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
-    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, sub(arraySize, 1))))
+    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, flint$sub(arraySize, 1))))
   }
   """
 
@@ -238,7 +238,7 @@ struct IULIARuntimeFunctionDeclaration {
   """
   function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
     if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
-    ret := add(arrayOffset, index)
+    ret := flint$add(arrayOffset, index)
   }
   """
 
@@ -252,7 +252,7 @@ struct IULIARuntimeFunctionDeclaration {
       if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     }
     default {
-      sstore(arrayOffset, add(arraySize, 1))
+      sstore(arrayOffset, flint$add(arraySize, 1))
     }
 
     ret := flint$storageDictionaryOffsetForKey(arrayOffset, index)
