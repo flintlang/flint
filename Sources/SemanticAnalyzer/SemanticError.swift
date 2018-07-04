@@ -24,16 +24,16 @@ extension Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
       let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
       let messageTail: String
-      
+
       if candidate.callerCapabilities.count > 1 {
         messageTail = "one of the caller capabilities in '(\(callerCapabilities))'"
       } else {
         messageTail = "the caller capability '\(callerCapabilities)'"
       }
-      
+
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
-    
+
     let plural = contextCallerCapabilities.count > 1
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
   }
@@ -54,6 +54,14 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
   }
   
+  static func payableFunctionHasNonPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+      return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Payable function '\(functionDeclaration.identifier.name)' has an implicit parameter of non-currency type")
+  }
+
+  static func unpayableFunctionHasImplicitParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+      return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is not declared @payable but has an implicit parameter")
+  }
+
   static func useOfDynamicParamaterInFunctionDeclaration(_ functionDeclaration: FunctionDeclaration, dynamicParameters: [Parameter]) -> Diagnostic {
     let notes = dynamicParameters.map { Diagnostic(severity: .note, sourceLocation: $0.sourceLocation, message: "\($0.identifier.name) cannot be used as a parameter") }
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' cannot have dynamic parameters", notes: notes)
@@ -100,7 +108,7 @@ extension Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
-  
+
   static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }

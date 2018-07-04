@@ -18,6 +18,16 @@ Payable :: (any) {
   }
 
   @payable
-  func qux(implicit parameter: Wei, implicit parameter2: Int) {
+  func qux(implicit parameter: Int, implicit parameter2: Wei) { // expected-error {{Payable function 'qux' has an implicit parameter of non-currency type}}
+  }
+
+  @payable
+  func payableImplicitCurrency(implicit parameter: Wei) {
+  }
+
+  func unpayableImplicitCurrency(implicit parameter: Wei) { // expected-error {{'unpayableImplicitCurrency' is not declared @payable but has an implicit parameter}}
+  }
+
+  func unpayableImplicitNonCurrency(implicit parameter: Int) { // expected-error {{'unpayableImplicitNonCurrency' is not declared @payable but has an implicit parameter}}
   }
 }

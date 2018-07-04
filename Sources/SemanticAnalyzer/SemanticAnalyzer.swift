@@ -120,15 +120,24 @@ public struct SemanticAnalyzer: ASTPass {
       diagnostics.append(.invalidRedeclaration(functionDeclaration.identifier, originalSource: conflict))
     }
 
+    let implicitParameters = functionDeclaration.parameters.filter { $0.isImplicit }
+    let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
     if functionDeclaration.isPayable {
-      // If a function is marked with the @payable annotation, ensure it contains a compatible payable parameter.
-      let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
+      // If a function is marked with the @payable annotation, ensure it contains one compatible payable parameter, and no other implicit parameters.
       if payableValueParameters.count > 1 {
         // If too many arguments are compatible, emit an error.
         diagnostics.append(.ambiguousPayableValueParameter(functionDeclaration))
       } else if payableValueParameters.count == 0 {
         // If not enough arguments are compatible, emit an error.
         diagnostics.append(.payableFunctionDoesNotHavePayableValueParameter(functionDeclaration))
+      } else if implicitParameters.count != payableValueParameters.count {
+        // If all implicit parameters are not payable value parameters, emit an error.
+        diagnostics.append(.payableFunctionHasNonPayableValueParameter(functionDeclaration))
+      }
+    } else {
+      // If a function is not marked with payable annotation, ensure that it does not contain any implicit parameters.
+      if implicitParameters.count != 0 {
+          diagnostics.append(.unpayableFunctionHasImplicitParameter(functionDeclaration))
       }
     }
     
