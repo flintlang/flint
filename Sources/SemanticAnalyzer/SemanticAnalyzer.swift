@@ -136,8 +136,8 @@ public struct SemanticAnalyzer: ASTPass {
       }
     } else {
       // If a function is not marked with payable annotation, ensure that it does not contain any implicit parameters.
-      if implicitParameters.count != 0 {
-          diagnostics.append(.unpayableFunctionHasImplicitParameter(functionDeclaration))
+      for parameter in implicitParameters {
+          diagnostics.append(.invalidImplicitParameter(functionDeclaration, parameter.identifier))
       }
     }
     

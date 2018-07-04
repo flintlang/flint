@@ -51,15 +51,15 @@ extension Diagnostic {
   }
 
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
   }
   
   static func payableFunctionHasNonPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
       return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Payable function '\(functionDeclaration.identifier.name)' has an implicit parameter of non-currency type")
   }
 
-  static func unpayableFunctionHasImplicitParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-      return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "'\(functionDeclaration.identifier.name)' is not declared @payable but has an implicit parameter")
+  static func invalidImplicitParameter(_ functionDeclaration: FunctionDeclaration, _ violatingParameter: Identifier) -> Diagnostic {
+      return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Parameter '\(violatingParameter.name)' cannot be marked 'implicit' in function '\(functionDeclaration.identifier.name)'")
   }
 
   static func useOfDynamicParamaterInFunctionDeclaration(_ functionDeclaration: FunctionDeclaration, dynamicParameters: [Parameter]) -> Diagnostic {
