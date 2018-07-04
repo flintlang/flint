@@ -8,11 +8,20 @@ Test :: caller <- (any) {
   public init() {
     self.owner = caller
   }
+  
+  public func baz(a: Int, b: Int) {
+  }
 
   public func foo() {
 
-// expected-error@15 {{Function 'bar' is not in scope or cannot be called using the caller capability 'any'}}
+// expected-error@17 {{Function 'bar' is not in scope or cannot be called using the caller capability 'any'}}
     bar()
+    
+// expected-error@21 {{Function 'baz' called with incorrect parameter label 'cat'. Expected 'a'}}
+   baz(cat: 5, b: 6)
+    
+// expected-error@24 {{Function 'baz' called with incorrect parameter label 'cat'. Expected 'b'}}
+    baz(a: 5, cat: 6)
   }
 }
 
