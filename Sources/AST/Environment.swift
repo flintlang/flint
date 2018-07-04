@@ -373,15 +373,20 @@ public struct Environment {
     var candidates = [FunctionInformation]()
 
     var match: FunctionCallMatchResult? = nil
+    
+    let argumentIdentifiers = functionCall.arguments.map {
+        $0.identifier
+    }
 
     let argumentTypes = functionCall.arguments.map {
-      type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
+      type(of: $0.expression, enclosingType: enclosingType, scopeContext: scopeContext)
     }
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
         guard candidate.parameterTypes == argumentTypes,
+          candidate.parameterIdentifiers == argumentIdentifiers,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(candidate)
             continue
@@ -554,6 +559,10 @@ public struct FunctionInformation {
   public var declaration: FunctionDeclaration
   public var callerCapabilities: [CallerCapability]
   public var isMutating: Bool
+  
+  var parameterIdentifiers: [Identifier] {
+      return declaration.parameters.map{ $0.identifier }
+  }
 
   var parameterTypes: [Type.RawType] {
     return declaration.parameters.map { $0.type.rawType }
@@ -564,7 +573,7 @@ public struct FunctionInformation {
   }
 }
 
-/// Informatino about an initializer.
+/// Information about an initializer.
 public struct InitializerInformation {
   public var declaration: InitializerDeclaration
   public var callerCapabilities: [CallerCapability]

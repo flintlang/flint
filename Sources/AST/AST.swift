@@ -743,10 +743,27 @@ public struct BinaryExpression: SourceEntity {
   }
 }
 
+/// An argument in a function call.
+public struct FunctionArgument: SourceEntity {
+  public var identifier: Identifier
+  public var expression: Expression
+
+  public var sourceLocation: SourceLocation {
+    return identifier.sourceLocation
+  }
+
+  public var mangledIdentifier: String? = nil
+
+  public init(identifier: Identifier, expression: Expression) {
+    self.identifier = identifier
+    self.expression = expression
+  }
+}
+
 /// A call to a function.
 public struct FunctionCall: SourceEntity {
   public var identifier: Identifier
-  public var arguments: [Expression]
+  public var arguments: [FunctionArgument]
   public var closeBracketToken: Token
 
   public var sourceLocation: SourceLocation {
@@ -755,7 +772,7 @@ public struct FunctionCall: SourceEntity {
 
   public var mangledIdentifier: String? = nil
 
-  public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token) {
+  public init(identifier: Identifier, arguments: [FunctionArgument], closeBracketToken: Token) {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken
@@ -877,4 +894,3 @@ public struct IfStatement: SourceEntity {
     self.elseBody = elseClauseStatements
   }
 }
-

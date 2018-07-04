@@ -304,6 +304,13 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ functionArgument: FunctionArgument) {
+    writeNode("FunctionArgument") {
+      self.dump(functionArgument.identifier)
+      self.dump(functionArgument.expression)
+    }
+  }
+
   func dump(_ functionCall: FunctionCall) {
     writeNode("FunctionCall") {
       self.dump(functionCall.identifier)
