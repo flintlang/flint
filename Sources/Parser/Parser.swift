@@ -685,15 +685,15 @@ extension Parser {
     return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken)
   }
 
-  func parseFunctionCallArgumentList() throws -> ([Expression], closeBracketToken: Token) {
-    var arguments = [Expression]()
+  func parseFunctionCallArgumentList() throws -> ([FunctionArgument], closeBracketToken: Token) {
+    var arguments = [FunctionArgument]()
 
     try consume(.punctuation(.openBracket))
 
     var closeBracketToken: Token!
 
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
-      if let argument = try? parseExpression(upTo: argumentEnd) {
+      if let argument = try? parseFunctionCallArgument(upTo: argumentEnd) {
         let token = try consume(tokens[argumentEnd].kind)
         arguments.append(argument)
         if token.kind == .punctuation(.closeBracket) {
@@ -710,6 +710,14 @@ extension Parser {
     }
 
     return (arguments, closeBracketToken)
+  }
+  
+  func parseFunctionCallArgument(upTo: Int) throws -> FunctionArgument {
+      let identifier = try parseIdentifier()
+      try consume(.punctuation(.colon))
+      let expression = try parseExpression(upTo: argumentEnd)
+      
+      return FunctionArgument(identifier: identifier, expression: expression)
   }
   
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
