@@ -149,7 +149,7 @@ contract(config.contractName, function(accounts) {
       // Estimate
       const withdrawGasCost = registerGasCost / 2
 
-      assert.isAtMost(newBalance.valueOf(), oldBalance.sub(web3.toWei(10, 'ether')).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost).valueOf());
+      assert.isTrue(newBalance.lessThan(oldBalance.sub(web3.toWei(10, 'ether')).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost)));
       return
     }
 
