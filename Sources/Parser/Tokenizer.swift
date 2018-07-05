@@ -85,6 +85,8 @@ public struct Tokenizer {
     "public": .public,
     "if": .if,
     "else": .else,
+    "for": .for,
+    "in": .in,
     "self": .self,
     "implicit": .implicit,
     "inout": .inout,
@@ -102,6 +104,9 @@ public struct Tokenizer {
     "*=": .punctuation(.timesEqual),
     "/=": .punctuation(.divideEqual),
     ".": .punctuation(.dot),
+    "..": .punctuation(.dotdot),
+    "..<": .punctuation(.halfOpenRange),
+    "...": .punctuation(.closedRange),
     "&": .punctuation(.ampersand),
     "<": .punctuation(.openAngledBracket),
     "<=": .punctuation(.lessThanOrEqual),
@@ -215,15 +220,14 @@ public struct Tokenizer {
   ///
   /// - Returns: Whether `component1` and `component2` can be merged.
   func canBeMerged(_ component1: String, _ component2: String) -> Bool {
-    let mergeable = syntaxMap.keys.filter { $0.count == 2 }
-    return mergeable.contains { $0 == component1 + component2 }
+    return syntaxMap.keys.contains { $0 == component1 + component2 }
   }
 
   func toInt(_ component: String) -> Int? {
     let stripped = component.replacingOccurrences(of: "_", with: "")
     return Int(stripped)
   }
-
+  
   /// Creates a source location for the current file.
   func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
     return SourceLocation(line: line, column: column, length: length, file: sourceFile, isFromStdlib: isFromStdlib)

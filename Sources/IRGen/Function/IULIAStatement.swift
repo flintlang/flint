@@ -16,6 +16,7 @@ struct IULIAStatement {
     case .expression(let expression): return IULIAExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext)
     case .ifStatement(let ifStatement): return IULIAIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
     case .returnStatement(let returnStatement): return IULIAReturnStatement(returnStatement: returnStatement).rendered(functionContext: functionContext)
+    case .forStatement(let forStatement): return IULIAForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     }
   }
 }
@@ -60,6 +61,146 @@ struct IULIAIfStatement {
     }
 
     return ifCode + "\n" + elseCode
+  }
+}
+
+/// Generates code for a for statement.
+struct IULIAForStatement {
+  var forStatement: ForStatement
+
+  func rendered(functionContext: FunctionContext) -> String {
+    var functionContext = functionContext
+    functionContext.scopeContext = forStatement.forBodyScopeContext!
+    
+    let setup: String
+
+    switch forStatement.iterable {
+    case .identifier(let arrayIdentifier):
+      setup = generateArrayFor(prefix: "flint$\(forStatement.variable.identifier.name)$", iterable: arrayIdentifier, functionContext: functionContext)
+    case .range(let rangeExpression):
+      setup = generateRangeFor(iterable: rangeExpression, functionContext: functionContext)
+    default:
+      fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
+    }
+
+    let body = forStatement.body.map { statement in
+      return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
+      }.joined(separator: "\n")
+    
+    return """
+    for \(setup)
+      \(body.indented(by: 2))
+    }
+    """
+  }
+  
+  func generateArrayFor(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
+    // Iterating over an array
+    let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
+    let offset: String
+    if !isLocal,
+      let intOffset = functionContext.environment.propertyOffset(for: iterable.name, enclosingType: functionContext.enclosingTypeName) {
+      // Is contract array
+        offset = String(intOffset)
+    }
+    else if isLocal {
+      offset = "_\(iterable.name)"
+    }
+    else {
+      fatalError("Couldn't find offset for iterable")
+    }
+    
+    let storageArrayOffset: String
+    let loadArrLen: String
+    let toAssign: String
+
+    let type = functionContext.environment.type(of: iterable.name, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
+    switch type {
+    case .arrayType(_):
+      storageArrayOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
+      loadArrLen = IULIARuntimeFunction.load(address: offset, inMemory: false)
+      switch forStatement.variable.type.rawType {
+        case .arrayType(_), .fixedSizeArrayType(_):
+          toAssign = String(storageArrayOffset)
+        default:
+          toAssign = IULIARuntimeFunction.load(address: storageArrayOffset, inMemory: false)
+      }
+
+    case .fixedSizeArrayType(_):
+      let typeSize = functionContext.environment.size(of: type)
+      loadArrLen = String(typeSize)
+      storageArrayOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      toAssign = IULIARuntimeFunction.load(address: storageArrayOffset, inMemory: false)
+    default:
+      fatalError()
+    }
+    
+    let variableUse = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: .rawAssembly(toAssign, resultType: nil)).rendered(functionContext: functionContext, asTypeProperty: false)
+    
+    return """
+    {
+    let \(prefix)i := 0
+    let \(prefix)arrLen := \(loadArrLen)
+    } lt(\(prefix)i, \(prefix)arrLen) { \(prefix)i := add(\(prefix)i, 1) } {
+      let \(variableUse)
+    """
+  }
+  
+  func generateRangeFor(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
+    // Iterating over a range
+    
+    // Check valid range
+    guard case .literal(let rangeStart) = iterable.initial,
+      case .literal(let rangeEnd) = iterable.bound else {
+        fatalError("Non-literal ranges are not supported")
+    }
+    guard case .literal(.decimal(.integer(let start))) = rangeStart.kind,
+      case .literal(.decimal(.integer(let end))) = rangeEnd.kind else {
+        fatalError("Only integer decimal ranges supported")
+    }
+    
+    let ascending = start < end
+    
+    var comparisonToken: Token.Kind = ascending ? .punctuation(.lessThanOrEqual) : .punctuation(.greaterThanOrEqual)
+    if case .punctuation(.halfOpenRange) = iterable.op.kind {
+      comparisonToken = ascending ? .punctuation(.openAngledBracket) : .punctuation(.closeAngledBracket)
+    }
+    
+    let changeToken: Token.Kind = ascending ? .punctuation(.plus) : .punctuation(.minus)
+    
+    // Create IULIA statements for loop sub-statements
+    let initialisation = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: iterable.initial).rendered(functionContext: functionContext, asTypeProperty: false)
+    var condition = BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
+                                     op: Token(kind: comparisonToken, sourceLocation: forStatement.sourceLocation),
+                                     rhs: .identifier(Identifier(identifierToken: Token(kind: .identifier("bound"), sourceLocation: forStatement.sourceLocation))))
+    let change: Expression = .binaryExpression(BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
+                                                                op: Token(kind: changeToken, sourceLocation: forStatement.sourceLocation),
+                                                                rhs: .literal(Token(kind: .literal(.decimal(.integer(1))), sourceLocation: forStatement.sourceLocation))))
+    let update = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change).rendered(functionContext: functionContext, asTypeProperty: false)
+    
+    // Change <= into (< || ==)
+    if [.lessThanOrEqual, .greaterThanOrEqual].contains(condition.opToken) {
+      let strictOperator: Token.Kind.Punctuation = condition.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
+      
+      var lhsExpression = condition
+      lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
+      
+      var rhsExpression = condition
+      rhsExpression.op = Token(kind: .punctuation(.doubleEqual), sourceLocation: rhsExpression.op.sourceLocation)
+      
+      condition.lhs = .binaryExpression(lhsExpression)
+      condition.rhs = .binaryExpression(rhsExpression)
+      
+      let sourceLocation = condition.op.sourceLocation
+      condition.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
+    }
+    
+    return """
+    {
+    let \(initialisation)
+    let _bound := \(IULIAExpression(expression: iterable.bound).rendered(functionContext: functionContext))
+    } \(IULIAExpression(expression: .binaryExpression(condition)).rendered(functionContext: functionContext)) { \(update) } {
+    """
   }
 }
 

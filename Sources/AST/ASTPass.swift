@@ -32,11 +32,13 @@ public protocol ASTPass {
   func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression>
   func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral>
+  func process(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression>
   func process(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral>
   func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
   func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
+  func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 
   func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule>
   func postProcess(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration>
@@ -60,11 +62,13 @@ public protocol ASTPass {
   func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression>
   func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral>
+  func postProcess(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression>
   func postProcess(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral>
   func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
   func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
+  func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 }
 
 public struct AnyASTPass: ASTPass {
@@ -161,6 +165,10 @@ public struct AnyASTPass: ASTPass {
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return base.process(arrayLiteral: arrayLiteral, passContext: passContext)
   }
+  
+  public func process(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression> {
+    return base.process(rangeExpression: rangeExpression, passContext: passContext)
+  }
 
   public func process(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral> {
     return base.process(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
@@ -183,6 +191,10 @@ public struct AnyASTPass: ASTPass {
     return base.process(ifStatement: ifStatement, passContext: passContext)
   }
 
+  public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    return base.process(forStatement: forStatement, passContext: passContext)
+  }
+  
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return base.postProcess(topLevelModule: topLevelModule, passContext: passContext)
   }
@@ -268,15 +280,19 @@ public struct AnyASTPass: ASTPass {
   }
 
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
-    return base.process(arrayLiteral: arrayLiteral, passContext: passContext)
+    return base.postProcess(arrayLiteral: arrayLiteral, passContext: passContext)
   }
-
+  
+  public func postProcess(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression> {
+    return base.postProcess(rangeExpression: rangeExpression, passContext: passContext)
+  }
+  
   public func postProcess(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral> {
     return base.postProcess(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
   }
 
   public func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
-    return base.process(literalToken: literalToken, passContext: passContext)
+    return base.postProcess(literalToken: literalToken, passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
@@ -289,5 +305,9 @@ public struct AnyASTPass: ASTPass {
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return base.postProcess(ifStatement: ifStatement, passContext: passContext)
+  }
+  
+  public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    return base.postProcess(forStatement: forStatement, passContext: passContext)
   }
 }

@@ -50,6 +50,7 @@ struct IULIAExpression {
     case .sequence(let expressions):
       return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
     case .rawAssembly(let assembly, _): return assembly
+    case .range(_): fatalError("Range shouldn't be rendered directly")
     }
   }
 }
