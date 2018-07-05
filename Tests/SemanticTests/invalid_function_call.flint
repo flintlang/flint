@@ -14,14 +14,18 @@ Test :: caller <- (any) {
 
   public func foo() {
 
-// expected-error@17 {{Function 'bar' is not in scope or cannot be called using the caller capability 'any'}}
+// expected-error@18 {{Function 'bar' is not in scope or cannot be called using the caller capability 'any'. Perhaps argument labels are incorrect?}}
     bar()
-    
-// expected-error@21 {{Function 'baz' called with incorrect parameter label 'cat'. Expected 'a'}}
-   baz(cat: 5, b: 6)
-    
-// expected-error@24 {{Function 'baz' called with incorrect parameter label 'cat'. Expected 'b'}}
+
+// expected-error@21 {{Function 'baz' is not in scope or cannot be called using the caller capability 'any'. Perhaps argument labels are incorrect?}}
+    baz(cat: 5, b: 6)
+
+// expected-error@24 {{Function 'baz' is not in scope or cannot be called using the caller capability 'any'. Perhaps argument labels are incorrect?}}
     baz(a: 5, cat: 6)
+    
+    baz(5, 6)
+    
+    baz(a: 5, b: 6)
   }
 }
 

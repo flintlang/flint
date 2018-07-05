@@ -387,7 +387,7 @@ public struct Environment {
         var identifiersMatch = (candidate.parameterIdentifiers.count == argumentIdentifiers.count)
         if identifiersMatch {
             for (index, identifier) in candidate.parameterIdentifiers.enumerated() {
-                let matching = argumentIdentifiers[index] == nil || (argumentIdentifiers[index]! == identifier)
+                let matching = argumentIdentifiers[index] == nil || (argumentIdentifiers[index]!.identifierToken.kind == identifier.identifierToken.kind)
                 if !matching {
                     identifiersMatch = matching
                     break
