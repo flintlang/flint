@@ -24,7 +24,7 @@ extension Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
       let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
       let messageTail: String
-
+      
       if candidate.callerCapabilities.count > 1 {
         messageTail = "one of the caller capabilities in '(\(callerCapabilities))'"
       } else {
@@ -33,7 +33,7 @@ extension Diagnostic {
 
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
-
+    
     let plural = contextCallerCapabilities.count > 1
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
   }
@@ -108,7 +108,7 @@ extension Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
-
+  
   static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }
