@@ -30,7 +30,7 @@ extension Diagnostic {
       } else {
         messageTail = "the caller capability '\(callerCapabilities)'"
       }
-
+      
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
     
