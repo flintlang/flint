@@ -6,11 +6,11 @@ Payable :: (any) {
   public init() {}
 
   @payable
-  func foo() { // expected-error {{'foo' is declared @payable but doesn't have an implicit parameter of a currency type}}
+  func foo() { // expected-error {{Function 'foo' is declared @payable but doesn't have an implicit parameter of a currency type}}
   }
 
   @payable
-  func bar(implicit parameter: Int) { // expected-error {{'bar' is declared @payable but doesn't have an implicit parameter of a currency type}}
+  func bar(implicit parameter: Int) { // expected-error {{Function 'bar' is declared @payable but doesn't have an implicit parameter of a currency type}}
   }
 
   @payable
@@ -18,6 +18,16 @@ Payable :: (any) {
   }
 
   @payable
-  func qux(implicit parameter: Wei, implicit parameter2: Int) {
+  func qux(implicit parameter: Int, implicit parameter2: Wei) { // expected-error {{Payable function 'qux' has an implicit parameter of non-currency type}}
+  }
+
+  @payable
+  func payableImplicitCurrency(implicit parameter: Wei) {
+  }
+
+  func unpayableImplicitCurrency(implicit parameter: Wei) { // expected-error {{Parameter 'parameter' cannot be marked 'implicit' in function 'unpayableImplicitCurrency'}}
+  }
+
+  func unpayableImplicitNonCurrency(implicit parameter: Int) { // expected-error {{Parameter 'parameter' cannot be marked 'implicit' in function 'unpayableImplicitNonCurrency'}}
   }
 }
