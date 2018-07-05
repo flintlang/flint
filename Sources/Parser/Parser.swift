@@ -713,11 +713,16 @@ extension Parser {
   }
   
   func parseFunctionCallArgument(upTo: Int) throws -> FunctionArgument {
+    // Find next colon
+    if let firstPartEnd = indexOfFirstAtCurrentDepth([.punctuation(.colon)]),
+      firstPartEnd < upTo {
       let identifier = try parseIdentifier()
       try consume(.punctuation(.colon))
       let expression = try parseExpression(upTo: upTo)
-      
       return FunctionArgument(identifier: identifier, expression: expression)
+    }
+    let expression = try parseExpression(upTo: upTo)
+    return FunctionArgument(identifier: nil, expression: expression)
   }
   
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {

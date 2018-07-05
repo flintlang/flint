@@ -384,9 +384,19 @@ public struct Environment {
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
+        var identifiersMatch = (candidate.parameterIdentifiers.count == argumentIdentifiers.count)
+        if identifiersMatch {
+            for (index, identifier) in candidate.parameterIdentifiers.enumerated() {
+                let matching = argumentIdentifiers[index] == nil || (argumentIdentifiers[index]! == identifier)
+                if !matching {
+                    identifiersMatch = matching
+                    break
+                }
+            }
+        }
 
         guard candidate.parameterTypes == argumentTypes,
-          candidate.parameterIdentifiers == argumentIdentifiers,
+          identifiersMatch,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(candidate)
             continue
