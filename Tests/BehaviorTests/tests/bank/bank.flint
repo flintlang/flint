@@ -33,7 +33,7 @@ Bank :: (manager) {
     balances[account].transfer(&w)
   }
 
-  public mutating func clear(account: Int) {
+  public mutating func clear(account: Address) {
     balances[account] = Wei(0)
   }
 
