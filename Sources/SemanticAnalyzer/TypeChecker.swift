@@ -145,6 +145,10 @@ public struct TypeChecker: ASTPass {
 
     return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
   }
+  
+  public func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
+  }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var diagnostics = [Diagnostic]()
@@ -157,10 +161,10 @@ public struct TypeChecker: ASTPass {
       // Ensure an event call's arguments match the expected types.
 
       for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
+        let argumentType = environment.type(of: argument.expression, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
         let expectedType = expectedTypes[i]
         if argumentType != expectedType {
-          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
+          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument.expression))
         }
       }
     }
@@ -282,6 +286,10 @@ public struct TypeChecker: ASTPass {
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {

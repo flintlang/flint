@@ -745,16 +745,16 @@ public struct BinaryExpression: SourceEntity {
 
 /// An argument in a function call.
 public struct FunctionArgument: SourceEntity {
-  public var identifier: Identifier
+  public var identifier: Identifier?
   public var expression: Expression
 
   public var sourceLocation: SourceLocation {
-    return identifier.sourceLocation
+    return expression.sourceLocation
   }
 
   public var mangledIdentifier: String? = nil
 
-  public init(identifier: Identifier, expression: Expression) {
+  public init(identifier: Identifier?, expression: Expression) {
     self.identifier = identifier
     self.expression = expression
   }

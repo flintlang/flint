@@ -84,7 +84,7 @@ public struct IULIAPreprocessor: ASTPass {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"), sourceLocation: payableParameterIdentifier.sourceLocation))
       let variableDeclaration = VariableDeclaration(declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
       let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: payableParameterIdentifier.sourceLocation)
-      let wei = FunctionCall(identifier: weiType, arguments: [.rawAssembly(IULIARuntimeFunction.callvalue(), resultType: .basicType(.int))], closeBracketToken: closeBracketToken)
+      let wei = FunctionCall(identifier: weiType, arguments: [FunctionArgument(identifier: nil, expression: .rawAssembly(IULIARuntimeFunction.callvalue(), resultType: .basicType(.int)))], closeBracketToken: closeBracketToken)
       let equal = Token(kind: .punctuation(.equal), sourceLocation: payableParameterIdentifier.sourceLocation)
       let assignment: Expression = .binaryExpression(BinaryExpression(lhs: .variableDeclaration(variableDeclaration), op: equal, rhs: .functionCall(wei)))
       functionDeclaration.body.insert(.expression(assignment), at: 0)
@@ -162,13 +162,13 @@ public struct IULIAPreprocessor: ASTPass {
       if environment.isInitializerCall(functionCall) {
         // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
         let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
-        functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+        functionCall.arguments.insert(FunctionArgument(identifier: nil, expression:  .inoutExpression(inoutExpression)), at: 0)
 
         expression = .functionCall(functionCall)
 
         if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
           variableDeclaration.type.rawType.isDynamicType {
-          functionCall.arguments[0] = .inoutExpression(InoutExpression(ampersandToken: ampersandToken, expression: .identifier(variableDeclaration.identifier)))
+          functionCall.arguments[0] = FunctionArgument(identifier: nil, expression: .inoutExpression(InoutExpression(ampersandToken: ampersandToken, expression: .identifier(variableDeclaration.identifier))))
           expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
         }
       }
@@ -227,6 +227,10 @@ public struct IULIAPreprocessor: ASTPass {
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
+  
+  public func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
+  }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
@@ -275,7 +279,7 @@ public struct IULIAPreprocessor: ASTPass {
         if !isGlobalFunctionCall {
           let receiver = constructExpression(from: receiverTrail)
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
-          functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+          functionCall.arguments.insert(FunctionArgument(identifier: nil, expression: .inoutExpression(inoutExpression)), at: 0)
         }
 
         // Replace the name of a function call by its mangled name.
@@ -292,21 +296,21 @@ public struct IULIAPreprocessor: ASTPass {
     for (index, argument) in functionCall.arguments.enumerated() {
       let isMem: Expression
 
-      if let parameterName = scopeContext.enclosingParameter(expression: argument, enclosingTypeName: enclosingType),
+      if let parameterName = scopeContext.enclosingParameter(expression: argument.expression, enclosingTypeName: enclosingType),
         scopeContext.isParameterImplicit(parameterName) {
         isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
       } else {
-        let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+        let type = passContext.environment!.type(of: argument.expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
         guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
-        if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+        if let enclosingIdentifier = argument.expression.enclosingIdentifier, scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
           // If the argument is declared locally, it's stored in memory.
           isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-        } else if let enclosingIdentifier = argument.enclosingIdentifier, scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+      } else if let enclosingIdentifier = argument.expression.enclosingIdentifier, scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
           // If the argument is a parameter to the enclosing function, use its isMem parameter.
           isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)), sourceLocation: argument.sourceLocation)))
-        } else if case .inoutExpression(let inoutExpression) = argument, case .self(_) = inoutExpression.expression {
+      } else if case .inoutExpression(let inoutExpression) = argument.expression, case .self(_) = inoutExpression.expression {
           // If the argument is self, use flintSelf
           isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")), sourceLocation: argument.sourceLocation)))
         } else {
@@ -315,7 +319,7 @@ public struct IULIAPreprocessor: ASTPass {
         }
       }
 
-      functionCall.arguments.insert(isMem, at: index + offset + 1)
+      functionCall.arguments.insert(FunctionArgument(identifier: nil, expression: isMem), at: index + offset + 1)
       offset += 1
     }
 
@@ -467,6 +471,10 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func postProcess(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {

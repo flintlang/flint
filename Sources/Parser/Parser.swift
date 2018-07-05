@@ -715,7 +715,7 @@ extension Parser {
   func parseFunctionCallArgument(upTo: Int) throws -> FunctionArgument {
       let identifier = try parseIdentifier()
       try consume(.punctuation(.colon))
-      let expression = try parseExpression(upTo: argumentEnd)
+      let expression = try parseExpression(upTo: upTo)
       
       return FunctionArgument(identifier: identifier, expression: expression)
   }

@@ -342,6 +342,10 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
+  
+  public func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
+  }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
@@ -512,14 +516,18 @@ public struct SemanticAnalyzer: ASTPass {
   fileprivate func checkFunctionArguments(_ functionCall: FunctionCall, _ declaration: (FunctionDeclaration), _ passContext: inout ASTPassContext, _ isMutating: Bool, _ diagnostics: inout [Diagnostic]) {
     // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
     for (argument, parameter) in zip(functionCall.arguments, declaration.parameters) where parameter.isInout {
-      if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-        addMutatingExpression(argument, passContext: &passContext)
+      if isStorageReference(expression: argument.expression, scopeContext: passContext.scopeContext!) {
+        addMutatingExpression(argument.expression, passContext: &passContext)
 
         if !isMutating {
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
         }
       }
     }
+  }
+  
+  public func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+      return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {

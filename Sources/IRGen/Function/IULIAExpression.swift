@@ -227,7 +227,7 @@ struct IULIAFunctionCall {
     }
     
     let args: String = functionCall.arguments.map({ argument in
-      return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
+      return IULIAExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     return "\(functionCall.identifier.name)(\(args))"
   }
@@ -245,7 +245,7 @@ struct IULIAEventCall {
     var stores = [String]()
     var memoryOffset = 0
     for (i, argument) in eventCall.arguments.enumerated() {
-      let argument = IULIAExpression(expression: argument).rendered(functionContext: functionContext)
+      let argument = IULIAExpression(expression: argument.expression).rendered(functionContext: functionContext)
       stores.append("mstore(\(memoryOffset), \(argument))")
       memoryOffset += functionContext.environment.size(of: types[i]) * EVM.wordSize
     }
