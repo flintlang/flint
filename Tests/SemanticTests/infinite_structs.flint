@@ -1,0 +1,13 @@
+// RUN: %flintc %s --verify
+
+struct S { // expected-error {{Declaration of recursive struct 'S'}}
+  var x: S = S()
+}
+
+struct T { // expected-error {{Declaration of recursive struct 'T'}}
+  var x: U = U()
+}
+
+struct U { // expected-error {{Declaration of recursive struct 'U'}}
+  var x: T = T()
+}

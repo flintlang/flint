@@ -92,6 +92,11 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot use state property '\(identifier.name)' within the initialization of another property")
   }
 
+  static func recursiveStruct(_ structIdentifier: Identifier, _ enclosingType: PropertyInformation) -> Diagnostic {
+    let note = Diagnostic(severity: .note, sourceLocation: enclosingType.sourceLocation, message: "State property '\(enclosingType.variableDeclaration.identifier.name)' of type '\(enclosingType.rawType.name)' refers to enclosing type of '\(structIdentifier.name)'")
+    return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Declaration of recursive struct '\(structIdentifier.name)'", notes: [note])
+  }
+    
   static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
       return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")
