@@ -311,7 +311,9 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .dictionaryLiteral(processResult.combining(visit(dictionaryLiteral, passContext: processResult.passContext)))
     case .identifier(let identifier):
       processResult.element = .identifier(processResult.combining(visit(identifier, passContext: processResult.passContext)))
-    case .literal(_), .self(_): break
+    case .literal(let literalToken):
+      processResult.element = .literal(processResult.combining(visit(literalToken, passContext: processResult.passContext)))
+    case .self(_): break
     case .variableDeclaration(let variableDeclaration):
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
@@ -414,6 +416,12 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     let postProcessResult = pass.postProcess(dictionaryLiteral: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    let processResult = pass.process(literalToken: literalToken, passContext: passContext)
+    let postProcessResult = pass.process(literalToken: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: postProcessResult.diagnostics, passContext: passContext)
   }
 
   func visit(_ subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

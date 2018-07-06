@@ -103,6 +103,10 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
+  public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return ASTPassResult(element: literalToken, diagnostics: [], passContext: passContext)
+  }
+
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     return ASTPassResult(element: subscriptExpression, diagnostics: [], passContext: passContext)
   }
@@ -205,6 +209,10 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return ASTPassResult(element: literalToken, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {

@@ -33,6 +33,7 @@ public protocol ASTPass {
   func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral>
   func process(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral>
+  func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
   func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
@@ -60,6 +61,7 @@ public protocol ASTPass {
   func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall>
   func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral>
   func postProcess(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral>
+  func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
   func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
@@ -164,6 +166,10 @@ public struct AnyASTPass: ASTPass {
     return base.process(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
   }
 
+  public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return base.process(literalToken: literalToken, passContext: passContext)
+  }
+
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     return base.process(subscriptExpression: subscriptExpression, passContext: passContext)
   }
@@ -266,7 +272,11 @@ public struct AnyASTPass: ASTPass {
   }
 
   public func postProcess(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral> {
-    return base.process(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
+    return base.postProcess(dictionaryLiteral: dictionaryLiteral, passContext: passContext)
+  }
+
+  public func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return base.process(literalToken: literalToken, passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
