@@ -362,7 +362,13 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
-    return ASTPassResult(element: literalToken, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    if case .literal(let token) = literalToken.kind,
+      case .address(let address) = token,
+      address.count != 42 {
+      diagnostics.append(.invalidAddressLiteral(literalToken))
+    }
+    return ASTPassResult(element: literalToken, diagnostics: diagnostics, passContext: passContext)
   }
 
   /// Whether an expression refers to a state property.

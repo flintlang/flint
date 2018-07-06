@@ -115,6 +115,7 @@ extension Token {
       case boolean(BooleanLiteral)
       case decimal(DecimalLiteral)
       case string(String)
+      case address(String)
     }
 
     public enum BooleanLiteral: String {
@@ -191,7 +192,8 @@ extension Token.Kind.Literal: CustomStringConvertible {
     switch self {
     case .boolean(let boolean): return boolean.rawValue
     case .decimal(let decimal): return decimal.description
-    case .string(let string): return "literal \"\(string)\""
+    case .string(let string):   return "literal \"\(string)\""
+    case .address(let hex):     return "literal \(hex)"
     }
   }
 }

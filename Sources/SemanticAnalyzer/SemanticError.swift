@@ -19,6 +19,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of invalid character '\(character)' in '\(identifier.name)'")
   }
 
+  static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
+  }
+
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate -> Diagnostic in

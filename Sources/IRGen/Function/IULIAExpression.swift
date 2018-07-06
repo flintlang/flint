@@ -311,6 +311,7 @@ struct IULIALiteralToken {
     case .decimal(.real(let num1, let num2)): return "\(num1).\(num2)"
     case .decimal(.integer(let num)): return "\(num)"
     case .string(let string): return "\"\(string)\""
+    case .address(let hex): return hex
     }
   }
 }
