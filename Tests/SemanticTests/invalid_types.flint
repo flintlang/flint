@@ -22,7 +22,7 @@ InvalidTypes :: (any) {
 
     int = true // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
 
-    f(a) // expected-error {{Function 'f' is not in scope or cannot be called using the caller capability 'any'}}
+    f(a) // expected-error {{Function 'f' is not in scope or cannot be called using the caller capability 'any'. Perhaps argument labels are incorrect?}}
 
     f(self.int)
   }

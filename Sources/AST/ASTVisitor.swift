@@ -372,6 +372,17 @@ public struct ASTVisitor<Pass: ASTPass> {
     let postProcessResult = pass.postProcess(binaryExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
+  
+  func visit(_ functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+    var processResult = pass.process(functionArgument: functionArgument, passContext: passContext)
+    // if let identifier = processResult.element.identifier {
+    //   processResult.element.identifier = processResult.combining(visit(identifier, passContext: processResult.passContext))
+    // }
+    processResult.element.expression = processResult.combining(visit(processResult.element.expression, passContext: processResult.passContext))
+
+    let postProcessResult = pass.postProcess(functionArgument: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
 
   func visit(_ functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var processResult = pass.process(functionCall: functionCall, passContext: passContext)
