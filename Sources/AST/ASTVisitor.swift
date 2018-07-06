@@ -313,7 +313,6 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .identifier(processResult.combining(visit(identifier, passContext: processResult.passContext)))
     case .literal(let literalToken):
       processResult.element = .literal(processResult.combining(visit(literalToken, passContext: processResult.passContext)))
-      break
     case .self(_): break
     case .variableDeclaration(let variableDeclaration):
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
