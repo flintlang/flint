@@ -1,0 +1,48 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: ContractDeclaration
+// CHECK-AST:  identifier "Foo"
+contract Foo {}
+
+Foo :: (any) {
+// CHECK-AST: InitializerDeclaration
+// CHECK-AST:   public
+  public init() {}
+  
+  func foo() -> Int {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:  VariableDeclaration
+// CHECK-AST:    var
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    built-in type Int
+// CHECK-AST:  =
+// CHECK-AST:    literal 2
+    var a: Int = 2
+    return a
+  }
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:  VariableDeclaration
+// CHECK-AST:    let
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    built-in type String
+// CHECK-AST:  =
+// CHECK-AST:    literal "hello"
+  func bar() -> String {
+    let a: String = "hello"
+    return a
+  }
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:  VariableDeclaration
+// CHECK-AST:    let
+// CHECK-AST:    identifier "a"
+// CHECK-AST:    built-in type Address
+// CHECK-AST:    =
+// CHECK-AST:    literal 0x0000000000000000000000000000000000000000
+  func zoo() -> Address {
+    let a: Address = 0x0000000000000000000000000000000000000000
+    return a
+  }
+}

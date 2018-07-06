@@ -252,6 +252,7 @@ public struct Environment {
     case .boolean(_): return .basicType(.bool)
     case .decimal(.integer(_)): return .basicType(.int)
     case .string(_): return .basicType(.string)
+    case .address(_): return .basicType(.address)
     default: fatalError()
     }
   }

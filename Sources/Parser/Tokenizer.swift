@@ -52,6 +52,9 @@ public struct Tokenizer {
         } else {
           tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
         }
+      } else if component.hasPrefix("0x") {
+        // The token is an address literal.
+        tokens.append(Token(kind: .literal(.address(component)), sourceLocation: sourceLocation))
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
         // The token is a string literal.
         tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
