@@ -355,6 +355,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
 
+  public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return ASTPassResult(element: literalToken, diagnostics: [], passContext: passContext)
+  }
+
   /// Whether an expression refers to a state property.
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
@@ -576,6 +580,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+    return ASTPassResult(element: literalToken, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
