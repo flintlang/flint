@@ -37,7 +37,7 @@ public struct Tokenizer {
 
     for (component, sourceLocation) in components {
       // Skip whitespace.
-      if component == " " {
+      if component.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty {
         continue
       } else if let token = syntaxMap[component] {
         // The token is punctuation or a keyword.
