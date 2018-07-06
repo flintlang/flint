@@ -1,9 +1,0 @@
-// This code shouldn't compile, as variable s in contract A uses infinite memory.
-
-contract A {
-  var s: S
-}
-
-struct S {
-  var x: S
-}

@@ -98,6 +98,22 @@ public struct Environment {
     return declaredStructs.contains { $0.name == type }
   }
 
+  /// Whether a struct is self referencing.
+  public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
+    guard let enclosingMemberTypes = types[enclosingType] else { return nil }
+
+    for member in enclosingMemberTypes.orderedProperties {
+      guard let memberType = enclosingMemberTypes.properties[member]?.variableDeclaration.type.name else { return nil }
+      if memberType == type {
+        return enclosingMemberTypes.properties[member]
+      }
+      if let member = selfReferentialProperty(in: type, enclosingType: memberType) {
+        return member
+      }
+    }
+    return nil
+  }
+
   /// Whether a function call refers to an initializer.
   public func isInitializerCall(_ functionCall: FunctionCall) -> Bool {
     return isStructDeclared(functionCall.identifier.name)

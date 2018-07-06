@@ -61,7 +61,13 @@ public struct SemanticAnalyzer: ASTPass {
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: structDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(structDeclaration.identifier, originalSource: conflict))
     }
-
+    // Detect Recursive types
+    let structName = structDeclaration.identifier.name
+    
+    if let conflict = passContext.environment!.selfReferentialProperty(in: structName, enclosingType: structName) {
+      diagnostics.append(.recursiveStruct(structDeclaration.identifier, conflict))
+    }
+    
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
