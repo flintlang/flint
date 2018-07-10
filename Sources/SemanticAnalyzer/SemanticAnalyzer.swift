@@ -159,6 +159,11 @@ public struct SemanticAnalyzer: ASTPass {
       }
     }
 
+    // A function may not return a struct type.
+    if let rawType = functionDeclaration.resultType?.rawType, case .userDefinedType(_) = rawType {
+      diagnostics.append(.invalidReturnTypeInFunction(functionDeclaration))
+    }
+
     let statements = functionDeclaration.body
 
     // Find a return statement in the function.
