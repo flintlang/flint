@@ -408,7 +408,13 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
-    return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    
+    if !environment.hasDeclaredContract() {
+        diagnostics.append(.contractNotDeclaredInModule())
+    }
+    return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration> {

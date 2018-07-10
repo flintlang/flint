@@ -145,4 +145,8 @@ extension Diagnostic {
   static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
   }
+
+  static func contractNotDeclaredInModule() -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: nil, message: "No contract declaration in top level module")
+  }
 }

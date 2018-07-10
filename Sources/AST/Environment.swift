@@ -93,6 +93,11 @@ public struct Environment {
     return declaredContracts.contains { $0.name == type }
   }
 
+  // Whether any contract has been declared in the program.
+  public func hasDeclaredContract() -> Bool {
+    return !declaredContracts.isEmpty
+  }
+
   /// Whether a struct has been declared in the program.
   public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
     return declaredStructs.contains { $0.name == type }
