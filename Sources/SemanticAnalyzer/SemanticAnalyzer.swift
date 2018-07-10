@@ -80,6 +80,11 @@ public struct SemanticAnalyzer: ASTPass {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
+    // Ensure that the type is declared.
+    if case .userDefinedType(let typeIdentifier) = variableDeclaration.type.rawType, !environment.isTypeDeclared(typeIdentifier) {
+        diagnostics.append(.useOfUndeclaredType(variableDeclaration.type))
+    }
+
     if passContext.inFunctionOrInitializer {
       if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict.identifier))

@@ -98,6 +98,11 @@ public struct Environment {
     return declaredStructs.contains { $0.name == type }
   }
 
+  /// Whether a type has been declared in the program.
+  public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
+      return types[type] != nil
+  }
+
   /// Whether a struct is self referencing.
   public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }

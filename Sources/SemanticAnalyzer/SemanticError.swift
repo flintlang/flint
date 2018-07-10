@@ -79,6 +79,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier '\(identifier.name)'")
   }
 
+  static func useOfUndeclaredType(_ type: Type) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: type.sourceLocation, message: "Use of undeclared type '\(type.name)'")
+  }
+
   static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return '\(resultType.name)'")
   }
