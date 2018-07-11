@@ -1,0 +1,21 @@
+// RUN: %flintc %s --verify
+
+contract Subscripts {
+  var a: [Int]
+  var b: [Int: Int]
+  var c: Container
+}
+
+Subscripts :: (any) {
+  public init() {
+    a = []
+    self.b = [:]
+    self.a[1] = 2
+    self.b[2] = 3
+    self.c.a[1] = 4
+  }
+}
+
+struct Container {
+    var a: [Int] = []
+}
