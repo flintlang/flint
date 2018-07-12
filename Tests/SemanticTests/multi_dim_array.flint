@@ -1,0 +1,25 @@
+// RUN: %flintc %s --verify
+
+contract MultiDimArray {
+  var arr: [[Int]] = []
+  var dict: [Int: [String: Bool]] = [:]
+}
+
+MultiDimArray :: (any) {
+  public init() {}
+
+  public func value(i: Int, j: Bool) -> Int {
+    return arr[i][j] // expected-error {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
+  }
+  public func value1(i: Bool, j: Int) -> Int {
+    return arr[i][j] // expected-error {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
+  }
+  public func value2(i: Int, j: String) -> Bool {
+    return dict[i][j]
+  }
+  public func value3(i: Int, j: String) -> Int {
+    return dict[j][i] // expected-error {{Cannot convert expression of type 'Bool' to expected return type 'Int'}}
+                      // expected-error@21 {{Cannot convert expression of type 'String' to expected subscript type 'Int'}}
+                      // expected-error@21 {{Cannot convert expression of type 'Int' to expected subscript type 'String'}}
+  }
+}

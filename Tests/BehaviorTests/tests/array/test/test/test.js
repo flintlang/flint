@@ -109,6 +109,61 @@ contract(config.contractName, function(accounts) {
     t = await instance.value3cA.call(1)
     assert.equal(t.valueOf(), 30);
   });
+         
+  it("should correctly write to nested arrays and dictionaries", async function() {
+    const instance = await Contract.deployed();
+    let t;
+     
+    await instance.nestedSet(0, 0, 1);
+    await instance.nestedSet(0, 1, 2);
+    await instance.nestedSet(1, 0, 3);
+    await instance.nestedSet(0, 1, 4);
+     
+    t = await instance.nestedValue.call(0, 0)
+    assert.equal(t.valueOf(), 1);
+    t = await instance.nestedValue.call(0, 1)
+    assert.equal(t.valueOf(), 4);
+    t = await instance.nestedValue.call(1, 0)
+    assert.equal(t.valueOf(), 3);
+     
+    await instance.nestedSet2(0, 0, 1);
+    await instance.nestedSet2(0, 1, 2);
+    await instance.nestedSet2(1, 0, 3);
+    await instance.nestedSet2(0, 1, 4);
+
+    t = await instance.nestedValue2.call(0, 0)
+    assert.equal(t.valueOf(), 1);
+    t = await instance.nestedValue2.call(0, 1)
+    assert.equal(t.valueOf(), 4);
+    t = await instance.nestedValue2.call(1, 0)
+    assert.equal(t.valueOf(), 3);
+
+    await instance.nestedSet3(0, 0, 0, 1);
+    await instance.nestedSet3(0, 0, 1, 5);
+    await instance.nestedSet3(0, 1, 0, 2);
+    await instance.nestedSet3(1, 0, 0, 3);
+    await instance.nestedSet3(0, 1, 0, 4);
+
+    t = await instance.nestedValue3.call(0, 0, 0)
+    assert.equal(t.valueOf(), 1);
+    t = await instance.nestedValue3.call(0, 0, 1)
+    assert.equal(t.valueOf(), 5);
+    t = await instance.nestedValue3.call(0, 1, 0)
+    assert.equal(t.valueOf(), 4);
+    t = await instance.nestedValue3.call(1, 0, 0)
+    assert.equal(t.valueOf(), 3);
+     
+   await instance.nestedSetDict(0x50, 0, 100);
+   await instance.nestedSetDict(0x50, 1, 500);
+   await instance.nestedSetDict(0x08, 0, 400);
+   
+   t = await instance.nestedValueDict.call(0x50, 0)
+   assert.equal(t.valueOf(), 100);
+   t = await instance.nestedValueDict.call(0x50, 1)
+   assert.equal(t.valueOf(), 500);
+   t = await instance.nestedValueDict.call(0x08, 0)
+   assert.equal(t.valueOf(), 400);
+  });
 });
 
 contract(config.contractName, function(accounts) {

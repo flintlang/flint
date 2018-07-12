@@ -258,6 +258,8 @@ extension Parser {
   }
 
   func parseSubscriptExpression() throws -> SubscriptExpression {
+    var base: SubscriptExpression
+    
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openSquareBracket))
     guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
@@ -265,8 +267,17 @@ extension Parser {
     }
     let indexExpression = try parseExpression(upTo: index)
     let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
-
-    return SubscriptExpression(baseIdentifier: identifier, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+    base = SubscriptExpression(baseExpression: .identifier(identifier), indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+    while let _ = try? consume(.punctuation(.openSquareBracket)) {
+      guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
+        throw ParserError.expectedToken(.punctuation(.closeSquareBracket), sourceLocation: identifier.sourceLocation)
+      }
+      let indexExpression = try parseExpression(upTo: index)
+      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
+      base = SubscriptExpression(baseExpression: .subscriptExpression(base), indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+    }
+    
+    return base
   }
   
   func parseType() throws -> Type {

@@ -34,7 +34,11 @@ struct IULIAExpression {
     case .literal(let literal):
       return IULIALiteralToken(literalToken: literal).rendered()
     case .arrayLiteral(let arrayLiteral):
-      guard arrayLiteral.elements.count == 0 else { fatalError("Cannot render non-empty array literals yet") }
+      for e in arrayLiteral.elements {
+        guard case .arrayLiteral(_) = e else {
+          fatalError("Cannot render non-empty array literals yet")
+        }
+      }
       return "0"
     case .dictionaryLiteral(let dictionaryLiteral):
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
@@ -337,62 +341,57 @@ struct IULIASubscriptExpression {
   var subscriptExpression: SubscriptExpression
   var asLValue: Bool
   
-  func rendered(functionContext: FunctionContext) -> String {
-    let baseIdentifier = subscriptExpression.baseIdentifier
-
-    let environment = functionContext.environment
-
-    guard let enclosingType = subscriptExpression.baseIdentifier.enclosingType,
-      let offset = environment.propertyOffset(for: subscriptExpression.baseIdentifier.name, enclosingType: enclosingType) else {
-      fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
+  func baseIdentifier(_ baseExpression: Expression) -> AST.Identifier? {
+    if case .identifier(let identifier) = baseExpression {
+      return identifier
     }
-
-    let indexExpressionCode = IULIAExpression(expression: subscriptExpression.indexExpression).rendered(functionContext: functionContext)
-
-    let type = environment.type(of: subscriptExpression.baseIdentifier.name, enclosingType: functionContext.enclosingTypeName)
-
-    guard let _ = baseIdentifier.enclosingType else {
-      fatalError("Subscriptable types are only supported for contract properties right now.")
+    if case .subscriptExpression(let subscriptExpression) = baseExpression {
+      return baseIdentifier(subscriptExpression.baseExpression)
     }
-
+    return nil
+  }
+  
+  func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int, functionContext: FunctionContext) -> String {
+    let indexExpressionCode = IULIAExpression(expression: subExpr.indexExpression).rendered(functionContext: functionContext)
+    
+    let type = functionContext.environment.type(of: subExpr.baseExpression, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
+    let runtimeFunc: (String, String) -> String
+    
     switch type {
-    case .arrayType(let elementType):
-      let storageArrayOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: indexExpressionCode)
-      if asLValue {
-        return storageArrayOffset
-      } else {
-        guard environment.size(of: elementType) == 1 else {
-          fatalError("Loading array elements of size > 1 is not supported yet.")
-        }
-        return "sload(\(storageArrayOffset))"
-      }
-    case .fixedSizeArrayType(let elementType, _):
-      let typeSize = environment.size(of: type)
-      let storageArrayOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: indexExpressionCode, arraySize: typeSize)
-      if asLValue {
-        return storageArrayOffset
-      } else {
-        guard environment.size(of: elementType) == 1 else {
-          fatalError("Loading array elements of size > 1 is not supported yet.")
-        }
-        return "sload(\(storageArrayOffset))"
-      }
-    case .dictionaryType(key: let keyType, value: let valueType):
-      guard environment.size(of: keyType) == 1 else {
-        fatalError("Dictionary keys of size > 1 are not supported yet.")
-      }
-
-      let storageDictionaryOffsetForKey = IULIARuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: indexExpressionCode)
-
-      if asLValue {
-        return "\(storageDictionaryOffsetForKey)"
-      } else {
-        guard environment.size(of: valueType) == 1 else {
-          fatalError("Loading dictionary values of size > 1 is not supported yet.")
-        }
-        return "sload(\(storageDictionaryOffsetForKey))"
-      }
-    default: fatalError()
+    case .arrayType(_):
+      runtimeFunc = IULIARuntimeFunction.storageArrayOffset
+    case .fixedSizeArrayType(_):
+      let typeSize = functionContext.environment.size(of: type)
+      runtimeFunc = {IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, arraySize: typeSize)}
+    case .dictionaryType(_):
+      runtimeFunc = IULIARuntimeFunction.storageDictionaryOffsetForKey
+    default: fatalError("Invalid type")
+    }
+    
+    switch subExpr.baseExpression {
+    case .identifier(_):
+      return runtimeFunc(String(baseOffset), indexExpressionCode)
+    case .subscriptExpression(let newBase):
+      return runtimeFunc(nestedStorageOffset(subExpr: newBase, baseOffset: baseOffset, functionContext: functionContext), indexExpressionCode)
+    default:
+      fatalError("Subscript expression has an invalid type")
+    }
+  }
+  
+  func rendered(functionContext: FunctionContext) -> String {
+    guard let identifier = baseIdentifier(.subscriptExpression(subscriptExpression)),
+      let enclosingType = identifier.enclosingType,
+      let baseOffset = functionContext.environment.propertyOffset(for: identifier.name, enclosingType: enclosingType) else {
+        fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
+    }
+    
+    let memLocation: String = nestedStorageOffset(subExpr: subscriptExpression, baseOffset: baseOffset, functionContext: functionContext)
+    
+    if asLValue {
+      return memLocation
+    }
+    else {
+      return "sload(\(memLocation))"
     }
   }
 }

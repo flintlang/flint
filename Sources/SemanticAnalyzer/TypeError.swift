@@ -20,8 +20,8 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected argument type '\(expectedType.name)'")
   }
 
-  static func incompatibleSubscript(actualType: Type.RawType, identifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot subscript expression of type '\(actualType.name)'")
+  static func incompatibleSubscript(actualType: Type.RawType, expression: Expression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot subscript expression of type '\(actualType.name)'")
   }
   
   static func incompatibleSubscriptIndex(actualType: Type.RawType, expectedType: Type.RawType, expression: Expression) -> Diagnostic {

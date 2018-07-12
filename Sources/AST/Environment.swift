@@ -348,7 +348,7 @@ public struct Environment {
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
-      let identifierType = type(of: subscriptExpression.baseIdentifier.name, enclosingType: subscriptExpression.baseIdentifier.enclosingType ?? enclosingType, scopeContext: scopeContext)
+      let identifierType = type(of: subscriptExpression.baseExpression, enclosingType: enclosingType, scopeContext: scopeContext)
 
       switch identifierType {
       case .arrayType(let elementType): return elementType
@@ -498,14 +498,15 @@ public struct Environment {
 
   /// The memory offset of a property in a type.
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
+    
     var offsetMap = [String: Int]()
     var offset = 0
-
+    
     let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
 
-    for property in properties {
-      offsetMap[property] = offset
-      let propertyType = types[enclosingType]!.properties[property]!.rawType
+    for p in properties {
+      offsetMap[p] = offset
+      let propertyType = types[enclosingType]!.properties[p]!.rawType
       let propertySize = size(of: propertyType)
 
       offset += propertySize
