@@ -44,6 +44,7 @@ extension Token {
       case overflowingMinus = "&-"
       case times            = "*"
       case overflowingTimes = "&*"
+      case power            = "**"
       case divide     = "/"
       case dot        = "."
       case ampersand  = "&"
@@ -57,7 +58,7 @@ extension Token {
       case divideEqual = "/="
 
       // Comparisons
-      
+
       case doubleEqual = "=="
       case notEqual = "!="
       case lessThanOrEqual = "<="
@@ -67,7 +68,7 @@ extension Token {
 
       static var allBinaryOperators: [Punctuation] {
         return [
-          .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
+          .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
           .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
           .or, .and
         ]
@@ -94,6 +95,7 @@ extension Token {
         case .minus, .overflowingMinus: return 20
         case .times, .overflowingTimes: return 30
         case .divide: return 30
+        case .power: return 31
         case .ampersand: return 35
         case .dot: return 40
         default: return 0
@@ -206,4 +208,3 @@ extension Token.Kind.DecimalLiteral: CustomStringConvertible {
     }
   }
 }
-

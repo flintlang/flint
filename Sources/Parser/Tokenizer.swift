@@ -94,6 +94,7 @@ public struct Tokenizer {
     "&-": .punctuation(.overflowingMinus),
     "*": .punctuation(.times),
     "&*": .punctuation(.overflowingTimes),
+    "**": .punctuation(.power),
     "/": .punctuation(.divide),
     "=": .punctuation(.equal),
     "+=": .punctuation(.plusEqual),
