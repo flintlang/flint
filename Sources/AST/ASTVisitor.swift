@@ -379,6 +379,8 @@ public struct ASTVisitor<Pass: ASTPass> {
       break
     case .fixedSizeArrayType(_):
       break
+    case .dictionaryType(_):
+      break
     default:
       processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
     }

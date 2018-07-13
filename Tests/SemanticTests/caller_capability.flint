@@ -1,0 +1,16 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var owners: [Int: Address]
+}
+
+Test :: caller <- (any) {
+  public init() {
+    self.owners[1] = caller
+  }
+}
+
+Test :: (owners) {
+  func bar() {
+  }
+}

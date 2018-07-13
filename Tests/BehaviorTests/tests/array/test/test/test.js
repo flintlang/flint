@@ -21,7 +21,7 @@ contract(config.contractName, function(accounts) {
       const instance = await Contract.deployed()
       let t;
 
-      t = await instance.size3.call();
+      t = await instance.sizeUp3.call();
       assert.equal(t.valueOf(), 0);
   });
   it("should read the value it writes to the first array", async function() {
@@ -138,7 +138,6 @@ contract(config.contractName, function(accounts) {
       t = await instance.sizeUp3.call();
       assert.equal(t.valueOf(), 2);
   });
-<<<<<<< HEAD
 
   it("should correctly write to nested arrays and dictionaries", async function() {
     const instance = await Contract.deployed();
@@ -183,19 +182,17 @@ contract(config.contractName, function(accounts) {
     t = await instance.nestedValue3.call(1, 0, 0)
     assert.equal(t.valueOf(), 3);
 
-   await instance.nestedSetDict(0x50, 0, 100);
-   await instance.nestedSetDict(0x50, 1, 500);
-   await instance.nestedSetDict(0x08, 0, 400);
+    await instance.nestedSetDict(0x50, 0, 100);
+    await instance.nestedSetDict(0x50, 1, 500);
+    await instance.nestedSetDict(0x08, 0, 400);
 
-   t = await instance.nestedValueDict.call(0x50, 0)
-   assert.equal(t.valueOf(), 100);
-   t = await instance.nestedValueDict.call(0x50, 1)
-   assert.equal(t.valueOf(), 500);
-   t = await instance.nestedValueDict.call(0x08, 0)
-   assert.equal(t.valueOf(), 400);
-   });
-=======
->>>>>>> Working fixed-size array length provision. Also added tests.
+    t = await instance.nestedValueDict.call(0x50, 0)
+    assert.equal(t.valueOf(), 100);
+    t = await instance.nestedValueDict.call(0x50, 1)
+    assert.equal(t.valueOf(), 500);
+    t = await instance.nestedValueDict.call(0x08, 0)
+    assert.equal(t.valueOf(), 400);
+  });
 });
 
 contract(config.contractName, function(accounts) {

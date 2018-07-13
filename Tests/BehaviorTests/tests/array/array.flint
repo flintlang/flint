@@ -36,11 +36,11 @@ Array :: (any) {
     return i
   }
 
-  public func size2() -> Int {
+  public func sizeUp2() -> Int {
     return arr2.size
   }
 
-  public func size3() -> Int {
+  public func sizeUp3() -> Int {
     return arr3.size
   }
 

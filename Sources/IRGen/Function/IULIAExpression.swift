@@ -115,7 +115,6 @@ struct IULIAPropertyAccess {
 
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
 
-=======
     let rhsOffset: String
     // Special cases.
     switch lhsType {
@@ -128,6 +127,12 @@ struct IULIAPropertyAccess {
     case .arrayType(_):
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
         rhsOffset = "0"
+      } else {
+        fatalError()
+      }
+    case .dictionaryType(_):
+      if case .identifier(let identifier) = rhs, identifier.name == "size" {
+        rhsOffset = "0" // TODO: check!
       } else {
         fatalError()
       }
@@ -217,7 +222,6 @@ struct IULIAAssignment {
       return "\(identifier.name.mangled) := \(rhsCode)"
     default:
       // LHS refers to a property in storage or memory.
-
       let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
 
       if functionContext.isInStructFunction {
@@ -228,16 +232,12 @@ struct IULIAAssignment {
           enclosingName = "flintSelf"
         }
         return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
-      }
-
-      let isMemoryAccess: Bool
-      if let enclosingIdentifier = lhs.enclosingIdentifier, functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        isMemoryAccess = true
+      } else if let enclosingIdentifier = lhs.enclosingIdentifier,
+        functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true)
       } else {
-        isMemoryAccess = false
+        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
       }
-
-      return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: isMemoryAccess)
     }
   }
 }
