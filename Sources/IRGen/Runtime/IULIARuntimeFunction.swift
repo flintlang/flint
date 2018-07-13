@@ -220,7 +220,6 @@ struct IULIARuntimeFunctionDeclaration {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
-    let arrayStart := flint$add(arrayOffset, 1)
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
       if eq(sload(flint$storageArrayOffset(arrayOffset, i)), _caller) {
         found := 1
