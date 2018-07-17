@@ -1,0 +1,15 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var userType: UDT
+  var owner: T // expected-error {{Use of undeclared type 'T'}}
+}
+
+Test :: (any) {
+  public init() {
+    self.owner = owner
+    self.userType = userType
+  }
+}
+
+struct UDT {}

@@ -49,18 +49,18 @@ public struct IULIAPreprocessor: ASTPass {
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   /// Returns assignment statements for all the properties which have been assigned default values.
   func defaultValueAssignments(in passContext: ASTPassContext) -> [Statement] {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
-    
+
     return propertiesInEnclosingType.compactMap { declaration -> Statement? in
       guard let assignedExpression = declaration.assignedExpression else { return nil }
-      
+
       var identifier = declaration.identifier
       identifier.enclosingType = enclosingType
-      
+
       return .expression(.binaryExpression(BinaryExpression(lhs: .identifier(identifier), op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation), rhs: assignedExpression)))
     }
   }
@@ -180,7 +180,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
@@ -188,7 +188,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
-    
+
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
       let sourceLocation = binaryExpression.op.sourceLocation
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
@@ -215,7 +215,7 @@ public struct IULIAPreprocessor: ASTPass {
       let sourceLocation = binaryExpression.op.sourceLocation
       binaryExpression.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
     }
-    
+
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
@@ -223,7 +223,7 @@ public struct IULIAPreprocessor: ASTPass {
     guard expressions.count > 1 else { return expressions.first! }
     let head = expressions.first!
     let tail = expressions.dropFirst()
-    
+
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
@@ -464,7 +464,7 @@ public struct IULIAPreprocessor: ASTPass {
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }

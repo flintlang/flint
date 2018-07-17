@@ -26,7 +26,7 @@ struct Compiler {
 
     return stdlibTokens + userTokens
   }
-  
+
   func compile() -> CompilationOutcome {
     let tokens = tokenizeFiles()
 
@@ -59,7 +59,7 @@ struct Compiler {
     }
 
     if shouldVerify {
-      // Used during development of the compilre: verify that the diagnostics emitted matches what we expected.
+      // Used during development of the compiler: verify that the diagnostics emitted matches what we expected.
       if DiagnosticsVerifier().verify(producedDiagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext) {
         exit(0)
       } else {

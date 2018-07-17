@@ -93,9 +93,19 @@ public struct Environment {
     return declaredContracts.contains { $0.name == type }
   }
 
+  // Whether any contract has been declared in the program.
+  public func hasDeclaredContract() -> Bool {
+    return !declaredContracts.isEmpty
+  }
+
   /// Whether a struct has been declared in the program.
   public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
     return declaredStructs.contains { $0.name == type }
+  }
+
+  /// Whether a type has been declared in the program.
+  public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
+      return types[type] != nil
   }
 
   /// Whether a struct is self referencing.
@@ -224,7 +234,7 @@ public struct Environment {
     if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
-    
+
     guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { return .errorType }
     return type
   }
@@ -232,7 +242,7 @@ public struct Environment {
   /// The type return type of a function call, determined by looking up the function's declaration.
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
     let match = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-    
+
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
     case .matchedInitializer(_):
@@ -420,7 +430,7 @@ public struct Environment {
           // This is an ambiguous call. There are too many matches.
           return .failure(candidates: [])
         }
-        
+
         match = .matchedInitializer(candidate)
       }
     }
