@@ -234,7 +234,7 @@ public struct Environment {
     if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
-    
+
     guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { return .errorType }
     return type
   }
@@ -242,7 +242,7 @@ public struct Environment {
   /// The type return type of a function call, determined by looking up the function's declaration.
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
     let match = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-    
+
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
     case .matchedInitializer(_):
@@ -430,7 +430,7 @@ public struct Environment {
           // This is an ambiguous call. There are too many matches.
           return .failure(candidates: [])
         }
-        
+
         match = .matchedInitializer(candidate)
       }
     }

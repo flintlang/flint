@@ -63,11 +63,11 @@ public struct SemanticAnalyzer: ASTPass {
     }
     // Detect Recursive types
     let structName = structDeclaration.identifier.name
-    
+
     if let conflict = passContext.environment!.selfReferentialProperty(in: structName, enclosingType: structName) {
       diagnostics.append(.recursiveStruct(structDeclaration.identifier, conflict))
     }
-    
+
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -112,10 +112,10 @@ public struct SemanticAnalyzer: ASTPass {
       // This is a state property declaration.
 
       // If a default value is assigned, it should not refer to another property.
-      
+
       if variableDeclaration.assignedExpression == nil, !variableDeclaration.type.rawType.isEventType, !isInitializerDeclared {
         // The contract has no public initializer, so a default value must be provided.
-        
+
         diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
       }
     }
@@ -151,7 +151,7 @@ public struct SemanticAnalyzer: ASTPass {
           diagnostics.append(.invalidImplicitParameter(functionDeclaration, parameter.identifier))
       }
     }
-    
+
     if functionDeclaration.isPublic {
       let dynamicParameters = functionDeclaration.parameters.filter { $0.type.rawType.isDynamicType && !$0.isImplicit }
       if !dynamicParameters.isEmpty {
@@ -284,7 +284,7 @@ public struct SemanticAnalyzer: ASTPass {
           if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
             // Retrieve the source location of that property's declaration.
             let declarationSourceLocation = passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
-            
+
             if !inInitializerDeclaration || passContext.environment!.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType) {
               // The state property is a constant but is attempted to be reassigned.
               diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
@@ -340,7 +340,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
@@ -410,9 +410,9 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
-    
+
     if !environment.hasDeclaredContract() {
-        diagnostics.append(.contractNotDeclaredInModule())
+      diagnostics.append(.contractNotDeclaredInModule())
     }
     return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
   }
@@ -458,7 +458,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Clear the context in preparation for the next time we visit a function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
-    
+
     var functionDeclaration = functionDeclaration
     functionDeclaration.scopeContext = passContext.scopeContext
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
@@ -531,7 +531,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
@@ -566,7 +566,7 @@ public struct SemanticAnalyzer: ASTPass {
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
 
     var diagnostics = [Diagnostic]()
-    
+
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
     // Find the function declaration associated with this function call.
@@ -598,7 +598,7 @@ public struct SemanticAnalyzer: ASTPass {
       }
 
     }
-    
+
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 

@@ -1,3 +1,0 @@
-// RUN: %flintc %s --verify
-
-// expected-warning {{No contract declaration in top level module}}
