@@ -62,4 +62,8 @@ Operators :: (any) {
   public func andOp(a: Bool, b: Bool) -> Bool {
     return a && b
   }
+
+  public func power(a: Int, b: Int) -> Int {
+    return a ** b
+  }
 }
