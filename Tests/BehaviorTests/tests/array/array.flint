@@ -31,16 +31,16 @@ Array :: (any) {
     return arr2[index]
   }
 
-  public func sizeUp() -> Int {
+  public func size() -> Int {
     let i: Int = arr.size
     return i
   }
 
-  public func sizeUp2() -> Int {
+  public func size2() -> Int {
     return arr2.size
   }
 
-  public func sizeUp3() -> Int {
+  public func size3() -> Int {
     return arr3.size
   }
 

@@ -11,17 +11,17 @@ contract(config.contractName, function(accounts) {
       const instance = await Contract.deployed()
       let t;
 
-      t = await instance.sizeUp.call();
+      t = await instance.size.call();
       assert.equal(t.valueOf(), 4);
 
-      t = await instance.sizeUp2.call();
+      t = await instance.size2.call();
       assert.equal(t.valueOf(), 10);
   });
   it("should return the correct size for empty dynamically sized arrays", async function() {
       const instance = await Contract.deployed()
       let t;
 
-      t = await instance.sizeUp3.call();
+      t = await instance.size3.call();
       assert.equal(t.valueOf(), 0);
   });
   it("should read the value it writes to the first array", async function() {
