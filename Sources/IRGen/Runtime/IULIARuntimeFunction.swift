@@ -93,15 +93,15 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: Int, index: String, arraySize: Int) -> String {
+  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, arraySize: Int) -> String {
     return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
   }
 
-  static func storageArrayOffset(arrayOffset: Int, index: String) -> String {
+  static func storageArrayOffset(arrayOffset: String, index: String) -> String {
     return "\(Identifiers.storageArrayOffset.mangled)(\(arrayOffset), \(index))"
   }
 
-  static func storageDictionaryOffsetForKey(dictionaryOffset: Int, key: String) -> String {
+  static func storageDictionaryOffsetForKey(dictionaryOffset: String, key: String) -> String {
     return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
   }
 

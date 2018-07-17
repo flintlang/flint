@@ -186,7 +186,7 @@ public struct TypeChecker: ASTPass {
     let typeIdentifier = passContext.enclosingTypeIdentifier!
     let scopeContext = passContext.scopeContext!
     
-    let identifierType = environment.type(of: .identifier(subscriptExpression.baseIdentifier), enclosingType: typeIdentifier.name, scopeContext: scopeContext)
+    let identifierType = environment.type(of: subscriptExpression.baseExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
     
     let actualType = environment.type(of: subscriptExpression.indexExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
     var expectedType: Type.RawType = .errorType
@@ -195,7 +195,7 @@ public struct TypeChecker: ASTPass {
     case .arrayType (_), .fixedSizeArrayType(_): expectedType = .basicType(.int)
     case .dictionaryType(let keyType, _): expectedType = keyType
     default:
-      diagnostics.append(.incompatibleSubscript(actualType: identifierType, identifier: subscriptExpression.baseIdentifier))
+      diagnostics.append(.incompatibleSubscript(actualType: identifierType, expression: subscriptExpression.baseExpression))
     }
     
     if !actualType.isCompatible(with: expectedType), ![actualType, expectedType].contains(.errorType) {

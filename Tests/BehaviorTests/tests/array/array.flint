@@ -4,6 +4,11 @@ contract Array {
   var numWrites: Int = 0
 
   var arr3: [S] = []
+
+  var nested: [[Int]] = [[]]
+  var nested2: [Int[4]] = [[]]
+  var nested3: [[[Address]]] = [[[]]]
+  var nestedDict: [Address: [Int]] = [:]
 }
 
 Array :: (any) {
@@ -56,6 +61,36 @@ Array :: (any) {
   public func value3cA(index: Int) -> Int {
     return arr3[index].c.a
   }
+
+  public mutating func nestedSet(i: Int, j: Int, v: Int) {
+    nested[i][j] = v
+  }
+
+  public mutating func nestedSet2(i: Int, j: Int, v: Int) {
+    nested2[i][j] = v
+  }
+
+  public mutating func nestedSet3(i: Int, j: Int, k: Int, v: Address) {
+    nested3[i][j][k] = v
+  }
+
+  public mutating func nestedSetDict(caller: Address, i: Int, v: Int) {
+    nestedDict[caller][i] = v
+  }
+
+  public func nestedValue(i: Int, j: Int) -> Int {
+    return nested[i][j]
+  }
+  public func nestedValue2(i: Int, j: Int) -> Int {
+    return nested2[i][j]
+  }
+  public func nestedValue3(i: Int, j: Int, k: Int) -> Address {
+    return nested3[i][j][k]
+  }
+  public func nestedValueDict(i: Address, j: Int) -> Int {
+    return nestedDict[i][j]
+  }
+
 }
 
 struct S {

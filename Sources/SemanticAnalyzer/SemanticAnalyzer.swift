@@ -390,7 +390,7 @@ public struct SemanticAnalyzer: ASTPass {
     case .binaryExpression(let binaryExpression):
       return isStorageReference(expression: binaryExpression.lhs, scopeContext: scopeContext)
     case .subscriptExpression(let subscriptExpression):
-      return isStorageReference(expression: .identifier(subscriptExpression.baseIdentifier), scopeContext: scopeContext)
+      return isStorageReference(expression: subscriptExpression.baseExpression, scopeContext: scopeContext)
     default: return false
     }
   }

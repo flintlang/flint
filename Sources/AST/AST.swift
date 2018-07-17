@@ -635,7 +635,7 @@ public indirect enum Expression: SourceEntity {
     case .bracketedExpression(var expression):
       return .bracketedExpression(expression.assigningEnclosingType(type: type))
     case .subscriptExpression(var subscriptExpression):
-      subscriptExpression.baseIdentifier.enclosingType = type
+      subscriptExpression.baseExpression = subscriptExpression.baseExpression.assigningEnclosingType(type: type)
       return .subscriptExpression(subscriptExpression)
     case .functionCall(var functionCall):
       functionCall.identifier.enclosingType = type
@@ -652,7 +652,11 @@ public indirect enum Expression: SourceEntity {
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
     case .bracketedExpression(let expression): return expression.enclosingType
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
-    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier.enclosingType
+    case .subscriptExpression(let subscriptExpression):
+      if case .identifier(let identifier) = subscriptExpression.baseExpression {
+        return identifier.enclosingType
+      }
+      return nil
     default : return nil
     }
   }
@@ -664,7 +668,7 @@ public indirect enum Expression: SourceEntity {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingIdentifier
     case .bracketedExpression(let expression): return expression.enclosingIdentifier
-    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseIdentifier
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseExpression.enclosingIdentifier
     default : return nil
     }
   }
@@ -808,16 +812,16 @@ public struct DictionaryLiteral: SourceEntity {
 
 /// A subscript expression such as `a[2]`.
 public struct SubscriptExpression: SourceEntity {
-  public var baseIdentifier: Identifier
+  public var baseExpression: Expression
   public var indexExpression: Expression
   public var closeSquareBracketToken: Token
 
   public var sourceLocation: SourceLocation {
-    return .spanning(baseIdentifier, to: closeSquareBracketToken)
+    return .spanning(baseExpression, to: closeSquareBracketToken)
   }
 
-  public init(baseIdentifier: Identifier, indexExpression: Expression, closeSquareBracketToken: Token) {
-    self.baseIdentifier = baseIdentifier
+  public init(baseExpression: Expression, indexExpression: Expression, closeSquareBracketToken: Token) {
+    self.baseExpression = baseExpression
     self.indexExpression = indexExpression
     self.closeSquareBracketToken = closeSquareBracketToken
   }

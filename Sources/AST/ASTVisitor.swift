@@ -427,7 +427,7 @@ public struct ASTVisitor<Pass: ASTPass> {
   func visit(_ subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     var processResult = pass.process(subscriptExpression: subscriptExpression, passContext: passContext)
 
-    processResult.element.baseIdentifier = processResult.combining(visit(processResult.element.baseIdentifier, passContext: processResult.passContext))
+    processResult.element.baseExpression = processResult.combining(visit(processResult.element.baseExpression, passContext: processResult.passContext))
 
     processResult.element.indexExpression = processResult.combining(visit(processResult.element.indexExpression, passContext: processResult.passContext))
 

@@ -26,11 +26,31 @@ contract Test {
 // CHECK-AST:   ArrayLiteral
   var arr2: [Int] = []
 
-// CHECK-AST: VariableDeclaration
-// CHECK-AST:   identifier "numWrites"
-// CHECK-AST:   built-in type Int
-// CHECK-AST:   0
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "numWrites"
+  // CHECK-AST:   built-in type Int
+  // CHECK-AST:   0
   var numWrites: Int = 0
+
+
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "nestedArr"
+  // CHECK-AST:   ArrayType
+  // CHECK-AST:     ArrayType
+  // CHECK-AST:     built-in type Int
+  // CHECK-AST:   ArrayLiteral
+  // CHECK-AST:     ArrayLiteral
+  var nestedArr: [[Int]] = [[]]
+
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "nestedArr2"
+  // CHECK-AST:   ArrayType
+  // CHECK-AST:     FixedSizeArrayType
+  // CHECK-AST:     built-in type Int
+  // CHECK-AST:     size 4
+  // CHECK-AST:   ArrayLiteral
+  // CHECK-AST:     ArrayLiteral
+  var nestedArr2: [Int[4]] = [[]]
 }
 
 // CHECK-AST: TopLevelDeclaration
@@ -40,7 +60,7 @@ contract Test {
 // CHECK-AST:   CallerCapability
 // CHECK-AST:     identifier "any"
 Test :: caller <- (any) {
-  
+
 // CHECK-AST: InitializerDeclaration
 // CHECK-AST:   public
   public init() {
@@ -90,6 +110,10 @@ Test :: caller <- (any) {
     increaseNumWrites()
   }
 
+  public mutating func set(index: Int, value: Int){
+    arr[index] = value
+  }
+
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   public
 // CHECK-AST:   identifier "value"
@@ -104,5 +128,22 @@ Test :: caller <- (any) {
 // CHECK-AST:   identifier "arr"
 // CHECK-AST:   identifier "index"
     return arr[index]
+  }
+
+  public func value2(index1: Int, index2: Int) -> Int {
+    // CHECK-AST: SubscriptExpression
+    // CHECK-AST:   SubscriptExpression
+    // CHECK-AST:     identifier "nestedArr"
+    // CHECK-AST:     identifier "index1"
+    // CHECK-AST:   identifier "index2"
+    return nestedArr[index1][index2]
+  }
+  public func value3(index1: Int, index2: Int) -> Int {
+    // CHECK-AST: SubscriptExpression
+    // CHECK-AST:   SubscriptExpression
+    // CHECK-AST:     identifier "nestedArr2"
+    // CHECK-AST:     identifier "index1"
+    // CHECK-AST:   identifier "index2"
+    return nestedArr2[index1][index2]
   }
 }
