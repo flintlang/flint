@@ -1,13 +1,9 @@
 // RUN: %flintc %s --verify
 
-contract Test {
-  var owner: Address
-}
+contract Test {}
 
 Test :: caller <- (any) {
-  public init() {
-    self.owner = owner
-  }
+  public init() {}
 }
 
 Test :: (alice) { // expected-error {{Caller capability 'alice' is undefined in 'Test' or has incompatible type}}
