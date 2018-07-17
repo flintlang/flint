@@ -92,7 +92,8 @@ struct IULIABinaryExpression {
     case .notEqual: return "iszero(eq(\(lhs), \(rhs)))"
     case .or: return "or(\(lhs), \(rhs))"
     case .and: return "and(\(lhs), \(rhs))"
-    default: fatalError()
+    case .power: return IULIARuntimeFunction.power(b: lhs, e: rhs)
+    default: fatalError("opToken not supported")
     }
   }
 }

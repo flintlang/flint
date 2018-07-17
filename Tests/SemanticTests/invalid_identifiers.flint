@@ -1,5 +1,7 @@
 // RUN: %flintc %s --verify
 
+// expected-warning@0 {{No contract declaration in top level module}}
+
 struct $ { // expected-error {{Use of invalid character '$' in '$'}}
   func foo$() { // expected-error {{Use of invalid character '$' in 'foo$'}}
     let a$ap: Int = 0 // expected-error {{Use of invalid character '$' in 'a$ap'}}

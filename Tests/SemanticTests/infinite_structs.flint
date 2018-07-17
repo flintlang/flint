@@ -1,5 +1,7 @@
 // RUN: %flintc %s --verify
 
+// expected-warning@0 {{No contract declaration in top level module}}
+
 struct S { // expected-error {{Declaration of recursive struct 'S'}}
   var x: S = S()
 }

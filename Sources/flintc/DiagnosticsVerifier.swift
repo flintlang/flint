@@ -21,7 +21,7 @@ struct DiagnosticsVerifier {
 
     for file in compilationContext.sourceFiles {
       let sourceCode = compilationContext.sourceCode(in: file)
-      let diagnostics = producedDiagnostics.filter { $0.sourceLocation?.file == file }
+      let diagnostics = producedDiagnostics.filter { $0.sourceLocation == nil || $0.sourceLocation?.file == file }
       success = success && verify(producedDiagnostics: diagnostics, sourceFile: file, sourceCode: sourceCode, compilationContext: compilationContext)
     }
 
@@ -35,19 +35,26 @@ struct DiagnosticsVerifier {
 
     for expectation in expectations {
       let index = producedDiagnostics.index(where: { diagnostic in
-        let equalLineLocation = diagnostic.sourceLocation?.line == expectation.line
+        let equalLineLocation: Bool
+        if let sourceLocation = diagnostic.sourceLocation {
+          equalLineLocation = sourceLocation.line == expectation.line
+        } else {
+          // 0 line locations do not exist - specifying 0 matches diagnostics with nil sourceLocation.
+          equalLineLocation = expectation.line == 0
+        }
         return diagnostic.message == expectation.message && diagnostic.severity == expectation.severity && equalLineLocation
       })
 
       if let index = index {
         producedDiagnostics.remove(at: index)
       } else {
-        verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile), message: "Verify: Should have produced \(expectation.severity) \"\(expectation.message)\""))
+        let sourceLocation = expectation.line == 0 ? nil : SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile)
+        verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Verify: Should have produced \(expectation.severity) \"\(expectation.message)\""))
       }
     }
 
     for producedDiagnostic in producedDiagnostics where producedDiagnostic.severity != .note {
-      verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: SourceLocation(line: producedDiagnostic.sourceLocation!.line, column: 0, length: 0, file: sourceFile), message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\""))
+      verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: producedDiagnostic.sourceLocation, message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\""))
     }
 
     let output = DiagnosticsFormatter(diagnostics: verifyDiagnostics, compilationContext: compilationContext).rendered()
@@ -60,7 +67,7 @@ struct DiagnosticsVerifier {
 
   func flatten(_ diagnostics: [Diagnostic]) -> [Diagnostic] {
     var allDiagnostics = diagnostics
-    
+
     for diagnostic in diagnostics {
       allDiagnostics += flatten(diagnostic.notes)
     }

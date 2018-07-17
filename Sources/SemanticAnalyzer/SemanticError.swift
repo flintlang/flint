@@ -79,8 +79,16 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Use of undeclared identifier '\(identifier.name)'")
   }
 
+  static func useOfUndeclaredType(_ type: Type) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: type.sourceLocation, message: "Use of undeclared type '\(type.name)'")
+  }
+
   static func missingReturnInNonVoidFunction(closeBraceToken: Token, resultType: Type) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: closeBraceToken.sourceLocation, message: "Missing return in function expected to return '\(resultType.name)'")
+  }
+
+  static func invalidReturnTypeInFunction(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Type '\(functionDeclaration.resultType!.name)' not valid as return type in function '\(functionDeclaration.identifier.name)'")
   }
 
   static func reassignmentToConstant(_ identifier: Identifier, _ declarationSourceLocation: SourceLocation) -> Diagnostic {
@@ -136,5 +144,9 @@ extension Diagnostic {
 
   static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: mutatingToken.sourceLocation, message: "Function does not have to be declared mutating: none of its statements are mutating")
+  }
+
+  static func contractNotDeclaredInModule() -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: nil, message: "No contract declaration in top level module")
   }
 }

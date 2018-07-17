@@ -17,13 +17,13 @@ public struct Tokenizer {
   var sourceCode: String
 
   var isFromStdlib: Bool
-  
+
   public init(sourceFile: URL, isFromStdlib: Bool = false) {
     self.sourceFile = sourceFile
     self.sourceCode = try! String(contentsOf: sourceFile)
     self.isFromStdlib = isFromStdlib
   }
-  
+
   /// Converts the source code into a list of tokens.
   public func tokenize() -> [Token] {
     return tokenize(string: sourceCode)
@@ -42,7 +42,7 @@ public struct Tokenizer {
       } else if let token = syntaxMap[component] {
         // The token is punctuation or a keyword.
         tokens.append(Token(kind: token, sourceLocation: sourceLocation))
-      } else if let num = Int(component) {
+      } else if let num = toInt(component) {
         // The token is a number literal.
         let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
 
@@ -54,7 +54,8 @@ public struct Tokenizer {
         }
       } else if component.hasPrefix("0x") {
         // The token is an address literal.
-        tokens.append(Token(kind: .literal(.address(component)), sourceLocation: sourceLocation))
+        let hex = component.replacingOccurrences(of: "_", with: "")
+        tokens.append(Token(kind: .literal(.address(hex)), sourceLocation: sourceLocation))
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
         // The token is a string literal.
         tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
@@ -93,6 +94,7 @@ public struct Tokenizer {
     "&-": .punctuation(.overflowingMinus),
     "*": .punctuation(.times),
     "&*": .punctuation(.overflowingTimes),
+    "**": .punctuation(.power),
     "/": .punctuation(.divide),
     "=": .punctuation(.equal),
     "+=": .punctuation(.plusEqual),
@@ -149,7 +151,7 @@ public struct Tokenizer {
         if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
           inComment = false
           components.append(("\n", sourceLocation(line: line, column: column, length: 1)))
-          
+
           line += 1
           column = 1
         }
@@ -161,7 +163,7 @@ public struct Tokenizer {
         acc += String(char)
       } else if inStringLiteral {
         acc += String(char)
-      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "@" {
+      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "@" || char == "_" {
         acc += String(char)
       } else {
         if !acc.isEmpty {
@@ -215,6 +217,11 @@ public struct Tokenizer {
   func canBeMerged(_ component1: String, _ component2: String) -> Bool {
     let mergeable = syntaxMap.keys.filter { $0.count == 2 }
     return mergeable.contains { $0 == component1 + component2 }
+  }
+
+  func toInt(_ component: String) -> Int? {
+    let stripped = component.replacingOccurrences(of: "_", with: "")
+    return Int(stripped)
   }
 
   /// Creates a source location for the current file.
