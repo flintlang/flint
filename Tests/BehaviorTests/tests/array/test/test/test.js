@@ -7,6 +7,16 @@ var Interface = artifacts.require("./_Interface" + config.contractName + ".sol")
 Contract.abi = Interface.abi
 
 contract(config.contractName, function(accounts) {
+  it("should return the correct size for fixed size arrays", async function() {
+      const instance = await Contract.deployed()
+      let t;
+
+      t = await instance.size.call();
+      assert.equal(t.valueOf(), 4);
+
+      t = await instance.size2.call();
+      assert.equal(t.valueOf(), 10);
+  });
   it("should read the value it writes to the first array", async function() {
     const instance = await Contract.deployed()
     let t;
@@ -27,7 +37,7 @@ contract(config.contractName, function(accounts) {
 
     t = await instance.value.call(3);
     assert.equal(t.valueOf(), 304);
-    
+
     await instance.write(2, 40);
 
     t = await instance.value.call(2);
@@ -178,5 +188,3 @@ contract(config.contractName, function(accounts) {
     assert.equal(t.valueOf(), 2);
   });
 });
-
-
