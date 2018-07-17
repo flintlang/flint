@@ -3,6 +3,8 @@
 contract InvalidTypes {
   var int: Int = 0
   var a: Int = 0
+  var arr: [Address] = []
+  var dict: [Address: Bool] = [:]
 }
 
 InvalidTypes :: (any) {
@@ -19,6 +21,15 @@ InvalidTypes :: (any) {
   mutating func baz() {
     var a: Bool = true
     a = b // expected-error {{Use of undeclared identifier 'b'}}
+
+    // expected-error@27 {{Incompatible assignment between values of type 'Address' and 'Bool'}}
+    // expected-error@27 {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
+    arr[a] = a
+
+    dict[3] // expected-error {{Cannot convert expression of type 'Int' to expected subscript type 'Address'}}
+    dict[a] // expected-error {{Cannot convert expression of type 'Bool' to expected subscript type 'Address'}}
+
+    a[1] // expected-error {{Cannot subscript expression of type 'Bool'}}
 
     int = true // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
 

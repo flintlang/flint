@@ -181,7 +181,27 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
-    return ASTPassResult(element: subscriptExpression, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    let typeIdentifier = passContext.enclosingTypeIdentifier!
+    let scopeContext = passContext.scopeContext!
+    
+    let identifierType = environment.type(of: .identifier(subscriptExpression.baseIdentifier), enclosingType: typeIdentifier.name, scopeContext: scopeContext)
+    
+    let actualType = environment.type(of: subscriptExpression.indexExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
+    var expectedType: Type.RawType = .errorType
+    
+    switch identifierType {
+    case .arrayType (_), .fixedSizeArrayType(_): expectedType = .basicType(.int)
+    case .dictionaryType(let keyType, _): expectedType = keyType
+    default:
+      diagnostics.append(.incompatibleSubscript(actualType: identifierType, identifier: subscriptExpression.baseIdentifier))
+    }
+    
+    if !actualType.isCompatible(with: expectedType), ![actualType, expectedType].contains(.errorType) {
+      diagnostics.append(.incompatibleSubscriptIndex(actualType: actualType, expectedType: expectedType, expression: .subscriptExpression(subscriptExpression)))
+    }
+    return ASTPassResult(element: subscriptExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
