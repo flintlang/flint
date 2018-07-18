@@ -1,4 +1,4 @@
-# The Flint Programming Language [![Build Status](https://travis-ci.org/franklinsch/flint.svg?branch=master)](https://travis-ci.org/franklinsch/flint)
+# The Flint Programming Language [![Build Status](https://travis-ci.org/flintlang/flint.svg?branch=master)](https://travis-ci.org/flintlang/flint)
 
 <img src="docs/flint_small.png" height="70">
 
