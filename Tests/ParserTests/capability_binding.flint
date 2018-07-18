@@ -8,7 +8,13 @@ contract CapabilityBinding {}
 // CHECK-AST:   identifier "any"
 CapabilityBinding :: caller <- (any) {
   
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
+// CHECK-AST:   init
   public init() {}
+
+// CHECK-AST: SpecialDeclaration
+// CHECK-AST:   public
+// CHECK-AST:   fallback
+  public fallback() {}
 }

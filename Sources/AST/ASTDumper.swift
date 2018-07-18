@@ -101,8 +101,8 @@ public class ASTDumper {
       self.dump(functionDeclaration)
     case .variableDeclaration(let variableDeclaration):
       self.dump(variableDeclaration)
-    case .initializerDeclaration(let initializerDeclaration):
-      self.dump(initializerDeclaration)
+    case .specialDeclaration(let specialDeclaration):
+      self.dump(specialDeclaration)
     }
   }
 
@@ -110,8 +110,8 @@ public class ASTDumper {
     switch contractBehaviorMember {
     case .functionDeclaration(let functionDeclaration):
       self.dump(functionDeclaration)
-    case .initializerDeclaration(let initializerDeclaration):
-      self.dump(initializerDeclaration)
+    case .specialDeclaration(let specialDeclaration):
+      self.dump(specialDeclaration)
     }
   }
 
@@ -136,9 +136,9 @@ public class ASTDumper {
   }
 
 
-  func dump(_ initializerDeclaration: InitializerDeclaration) {
-    writeNode("InitializerDeclaration") {
-      self.dumpNodeContents(initializerDeclaration.asFunctionDeclaration)
+  func dump(_ specialDeclaration: SpecialDeclaration) {
+    writeNode("SpecialDeclaration") {
+      self.dumpNodeContents(specialDeclaration.asFunctionDeclaration)
     }
   }
 

@@ -10,20 +10,31 @@ import AST
 
 /// Runtime code in IULIA which determines which function to call based on the Ethereum's transaction payload.
 struct IULIAFunctionSelector {
+  var fallback: SpecialDeclaration?
   var functions: [IULIAFunction]
-  var enclosingType: RawTypeIdentifier
+  var enclosingType: Identifier
   var environment: Environment
 
   func rendered() -> String {
     let cases = renderCases()
+    let fallback = renderFallback()
 
     return """
     switch \(IULIARuntimeFunction.selector())
     \(cases)
     default {
-      revert(0, 0)
+      \(fallback)
     }
     """
+  }
+
+  func renderFallback() -> String {
+    if let fallbackDeclaration = fallback {
+      return IULIAContractFallback(fallbackDeclaration: fallbackDeclaration, typeIdentifier: enclosingType, environment: environment).rendered()
+    }
+    else {
+      return "revert(0, 0)"
+    }
   }
 
   func renderCases() -> String {
@@ -43,7 +54,7 @@ struct IULIAFunctionSelector {
   func renderCaseBody(function: IULIAFunction) -> String {
     // Dynamically check the caller has appropriate caller capabilities.
     let callerCapabilities = function.callerCapabilities
-    let callerCapabilityChecks = IULIACallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType, environment: environment)
+    let callerCapabilityChecks = IULIACallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType.name, environment: environment)
 
     let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
       let (index, type) = arg

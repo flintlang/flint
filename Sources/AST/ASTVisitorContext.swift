@@ -46,10 +46,10 @@ public struct FunctionDeclarationContext {
 }
 
 /// Contextual information used when visiting statements in an initializer.
-public struct InitializerDeclarationContext {
-  public var declaration: InitializerDeclaration
+public struct SpecialDeclarationContext {
+  public var declaration: SpecialDeclaration
 
-  public init(declaration: InitializerDeclaration) {
+  public init(declaration: SpecialDeclaration) {
     self.declaration = declaration
   }
 }

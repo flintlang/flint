@@ -48,11 +48,11 @@ contract Foo {
 }
 
 Foo :: (any) {
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {}
 
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST: Parameter
 // CHECK-AST:   identifier "assignedValue"
 // CHECK-AST:   built-in type Int

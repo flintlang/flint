@@ -106,6 +106,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.passContext.scopeContext = nil
 
     let postProcessResult = pass.postProcess(contractBehaviorDeclaration: processResult.element, passContext: processResult.passContext)
+
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
@@ -142,8 +143,8 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
     case .variableDeclaration(let variableDeclaration):
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
-    case .initializerDeclaration(let initializerDeclaration):
-      processResult.element = .initializerDeclaration(processResult.combining(visit(initializerDeclaration, passContext: processResult.passContext)))
+    case .specialDeclaration(let specialDeclaration):
+      processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(structMember: processResult.element, passContext: processResult.passContext)
@@ -156,8 +157,8 @@ public struct ASTVisitor<Pass: ASTPass> {
     switch processResult.element {
     case .functionDeclaration(let functionDeclaration):
       processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
-    case .initializerDeclaration(let initializerDeclaration):
-      processResult.element = .initializerDeclaration(processResult.combining(visit(initializerDeclaration, passContext: processResult.passContext)))
+    case .specialDeclaration(let specialDeclaration):
+      processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(contractBehaviorMember: processResult.element, passContext: processResult.passContext)
@@ -217,8 +218,8 @@ public struct ASTVisitor<Pass: ASTPass> {
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
-  func visit(_ initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    var processResult = pass.process(initializerDeclaration: initializerDeclaration, passContext: passContext)
+  func visit(_ specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    var processResult = pass.process(specialDeclaration: specialDeclaration, passContext: passContext)
 
     processResult.element.attributes = processResult.element.attributes.map { attribute in
       return processResult.combining(visit(attribute, passContext: processResult.passContext))
@@ -228,19 +229,21 @@ public struct ASTVisitor<Pass: ASTPass> {
       return processResult.combining(visit(parameter, passContext: processResult.passContext))
     }
 
-    let initializerDeclarationContext = InitializerDeclarationContext(declaration: initializerDeclaration)
-    processResult.passContext.initializerDeclarationContext = initializerDeclarationContext
-
-    let functionDeclaration = initializerDeclaration.asFunctionDeclaration
+    let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
+    processResult.passContext.specialDeclarationContext = specialDeclarationContext
+    
+    let functionDeclaration = specialDeclaration.asFunctionDeclaration
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 
-    processResult.element.body = processResult.element.body.map { statement in
-      return processResult.combining(visit(statement, passContext: processResult.passContext))
+    var newBody = [Statement]()
+    for statement in processResult.element.body {
+      newBody.append(processResult.combining(visit(statement, passContext: processResult.passContext)))
     }
+    processResult.element.body = newBody
+    processResult.passContext.specialDeclarationContext = nil
 
-    processResult.passContext.initializerDeclarationContext = nil
+    let postProcessResult = pass.postProcess(specialDeclaration: processResult.element, passContext: processResult.passContext)
 
-    let postProcessResult = pass.postProcess(initializerDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

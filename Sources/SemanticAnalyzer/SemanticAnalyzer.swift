@@ -188,10 +188,21 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+  public func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
 
+    if specialDeclaration.isFallback {
+      if !specialDeclaration.parameters.isEmpty {
+        diagnostics.append(.fallbackDeclaredWithArguments(specialDeclaration))
+      }
+      let complexStatements = specialDeclaration.body.filter({isComplexStatement($0, env: environment, enclosingType: enclosingType)})
+      if !complexStatements.isEmpty || specialDeclaration.body.count > 2 {
+        diagnostics.append(.fallbackShouldBeSimple(specialDeclaration, complexStatements: complexStatements))
+      }
+    }
+    
     // Gather properties of the enclosing type which haven't been assigned a default value.
     let properties = environment.propertyDeclarations(in: enclosingType).filter { propertyDeclaration in
       return propertyDeclaration.assignedExpression == nil
@@ -201,7 +212,40 @@ public struct SemanticAnalyzer: ASTPass {
       $0.unassignedProperties = properties
     }
 
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+    return ASTPassResult(element: specialDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  private func isComplexStatement(_ statement: Statement, env environment: Environment, enclosingType: RawTypeIdentifier) -> Bool {
+    switch statement {
+    case .expression(let expression):
+      switch expression {
+      case .binaryExpression(let binaryExpression):
+        if binaryExpression.op.kind == .punctuation(.equal) {
+          return true
+        }
+      case .functionCall(let function):
+        let match = environment.matchFunctionCall(function, enclosingType: enclosingType, callerCapabilities: [], scopeContext: ScopeContext())
+        if case .matchedFunction(let functionInformation) = match,
+          !functionInformation.isMutating {
+          return false
+        }
+        if environment.matchEventCall(function, enclosingType: enclosingType) != nil {
+          return false
+        }
+        return true
+      case .identifier(_), .inoutExpression(_), .literal(_), .arrayLiteral(_),
+           .dictionaryLiteral(_), .self(_), .variableDeclaration(_), .bracketedExpression(_),
+           .subscriptExpression(_),  .range(_):
+        return false
+      case .rawAssembly(_), .sequence(_):
+        return true
+      }
+    case .ifStatement(_):
+      return false
+    case .returnStatement(_), .forStatement(_):
+      return true
+    }
+    return true
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -249,7 +293,7 @@ public struct SemanticAnalyzer: ASTPass {
     }
 
     let inFunctionDeclaration = passContext.functionDeclarationContext != nil
-    let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
+    let inInitializerDeclaration = passContext.specialDeclarationContext != nil
     let inFunctionOrInitializer = inFunctionDeclaration || inInitializerDeclaration
 
     if passContext.isPropertyDefaultAssignment, !passContext.environment!.isStructDeclared(identifier.name) {
@@ -300,8 +344,8 @@ public struct SemanticAnalyzer: ASTPass {
             }
           }
 
-          // In initializers.
-          if let _ = passContext.initializerDeclarationContext {
+          // In initializers or fallback
+          if let _ = passContext.specialDeclarationContext {
             // Check if the property has been marked as assigned yet.
             if let first = passContext.unassignedProperties!.index(where: { $0.identifier.name == identifier.name && $0.identifier.enclosingType == identifier.enclosingType }) {
               // Mark the property as assigned.
@@ -442,6 +486,15 @@ public struct SemanticAnalyzer: ASTPass {
     if !environment.hasDeclaredContract() {
       diagnostics.append(.contractNotDeclaredInModule())
     }
+    for declaration in topLevelModule.declarations {
+      if case .contractDeclaration(let contractDeclaration) = declaration,
+        passContext.environment!.publicFallback(forContract: contractDeclaration.identifier.name) == nil {
+        let fallbacks = passContext.environment!.fallbacks(in: contractDeclaration.identifier.name)
+        if !fallbacks.isEmpty {
+          diagnostics.append(.contractOnlyHasPrivateFallbacks(contractIdentifier: contractDeclaration.identifier, fallbacks.map{$0.declaration}))
+        }
+      }
+    }
     return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -492,40 +545,55 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
+  public func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var diagnostics = [Diagnostic]()
     var passContext = passContext
-
+    
     // If we are in a contract behavior declaration, check there is only one public initializer.
-    if let context = passContext.contractBehaviorDeclarationContext, initializerDeclaration.isPublic {
+    if let context = passContext.contractBehaviorDeclarationContext, specialDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
 
       // The caller capability block in which this initializer appears should be scoped by "any".
       if !context.callerCapabilities.contains(where: { $0.isAny }) {
-        diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(initializerDeclaration))
+        if specialDeclaration.isInit {
+          diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(specialDeclaration))
+        } else if specialDeclaration.isFallback {
+          diagnostics.append(.contractFallbackNotDeclaredInAnyCallerCapabilityBlock(specialDeclaration))
+        }
       } else {
-        if let publicInitializer = passContext.environment!.publicInitializer(forContract: contractName), publicInitializer.sourceLocation != initializerDeclaration.sourceLocation {
+        if let publicFallback = passContext.environment!.publicFallback(forContract: contractName),
+          publicFallback.sourceLocation != specialDeclaration.sourceLocation,
+          specialDeclaration.isFallback {
+          diagnostics.append(.multiplePublicFallbacksDefined(specialDeclaration, originalFallbackLocation: publicFallback.sourceLocation))
+        } else if let publicInitializer = passContext.environment!.publicInitializer(forContract: contractName),
+               publicInitializer.sourceLocation != specialDeclaration.sourceLocation,
+               specialDeclaration.isInit {
           // There can be at most one public initializer.
-          diagnostics.append(.multiplePublicInitializersDefined(initializerDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
+            diagnostics.append(.multiplePublicInitializersDefined(specialDeclaration, originalInitializerLocation: publicInitializer.sourceLocation))
         } else {
           // This is the first public initializer we encounter in this contract.
-          passContext.environment!.setPublicInitializer(initializerDeclaration, forContract: contractName)
+          if specialDeclaration.isInit {
+            passContext.environment!.setPublicInitializer(specialDeclaration, forContract: contractName)
+          } else if specialDeclaration.isFallback {
+            passContext.environment!.setPublicFallback(specialDeclaration, forContract: contractName)
+          }
         }
       }
     }
 
+    
     // Check all the properties in the type have been assigned.
-    if let unassignedProperties = passContext.unassignedProperties {
+    if specialDeclaration.isInit, let unassignedProperties = passContext.unassignedProperties {
       let nonEventProperties = unassignedProperties.filter { !$0.type.rawType.isEventType }
 
       if nonEventProperties.count > 0 {
-        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: nonEventProperties))
+        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(specialDeclaration, unassignedProperties: nonEventProperties))
       }
     }
 
-    var initializerDeclaration = initializerDeclaration
-    initializerDeclaration.scopeContext = passContext.scopeContext
-    return ASTPassResult(element: initializerDeclaration, diagnostics: diagnostics, passContext: passContext)
+    var specialDeclaration = specialDeclaration
+    specialDeclaration.scopeContext = passContext.scopeContext ?? ScopeContext()
+    return ASTPassResult(element: specialDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -616,6 +684,9 @@ public struct SemanticAnalyzer: ASTPass {
     case .matchedInitializer(let matchingInitializer):
       checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
 
+    case .matchedFallback(_):
+      break
+      
     case .matchedGlobalFunction(_):
       break
 

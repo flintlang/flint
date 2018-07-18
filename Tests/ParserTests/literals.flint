@@ -5,7 +5,7 @@
 contract Foo {}
 
 Foo :: (any) {
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {}
 
