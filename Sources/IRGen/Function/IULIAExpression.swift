@@ -115,7 +115,7 @@ struct IULIAPropertyAccess {
 
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
 
-<<<<<<< HEAD
+=======
     let rhsOffset: String
     // Special cases.
     switch lhsType {
@@ -135,17 +135,6 @@ struct IULIAPropertyAccess {
       rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     }
 
-=======
-    // Special cases.
-    if case .fixedSizeArrayType(_, let size) = lhsType,
-      case .identifier(let identifier) = rhs,
-      identifier.name == "size" {
-      return "\(size)"
-    }
-
-    let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
-
->>>>>>> Testing issue 122
     let offset: String
     if isInStructFunction {
       let enclosingName: String

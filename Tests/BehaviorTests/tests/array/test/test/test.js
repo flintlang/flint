@@ -11,10 +11,10 @@ contract(config.contractName, function(accounts) {
       const instance = await Contract.deployed()
       let t;
 
-      t = await instance.size.call();
+      t = await instance.sizeUp.call();
       assert.equal(t.valueOf(), 4);
 
-      t = await instance.size2.call();
+      t = await instance.sizeUp2.call();
       assert.equal(t.valueOf(), 10);
   });
   it("should return the correct size for empty dynamically sized arrays", async function() {
@@ -138,6 +138,7 @@ contract(config.contractName, function(accounts) {
       t = await instance.sizeUp3.call();
       assert.equal(t.valueOf(), 2);
   });
+<<<<<<< HEAD
 
   it("should correctly write to nested arrays and dictionaries", async function() {
     const instance = await Contract.deployed();
@@ -193,6 +194,8 @@ contract(config.contractName, function(accounts) {
    t = await instance.nestedValueDict.call(0x08, 0)
    assert.equal(t.valueOf(), 400);
    });
+=======
+>>>>>>> Working fixed-size array length provision. Also added tests.
 });
 
 contract(config.contractName, function(accounts) {

@@ -31,7 +31,7 @@ Array :: (any) {
     return arr2[index]
   }
 
-  public func size() -> Int {
+  public func sizeUp() -> Int {
     let i: Int = arr.size
     return i
   }
