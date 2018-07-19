@@ -374,7 +374,12 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.passContext.asLValue = false
     }
 
-    if case .arrayType(_) != passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
+    switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
+    case .arrayType(_):
+      break
+    case .fixedSizeArrayType(_):
+      break
+    default:
       processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
     }
 

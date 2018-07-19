@@ -31,14 +31,17 @@ Array :: (any) {
     return arr2[index]
   }
 
-  public func size() -> Int {
+  public func sizeUp() -> Int {
     let i: Int = arr.size
     return i
   }
 
-  public func size2() -> Int {
-    return 0
-    //return arr2.size
+  public func sizeUp2() -> Int {
+    return arr2.size
+  }
+
+  public func sizeUp3() -> Int {
+    return arr3.size
   }
 
   public mutating func write2(index: Int, val: Int) {

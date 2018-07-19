@@ -350,6 +350,16 @@ public struct Environment {
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
+      if binaryExpression.opToken == .dot {
+        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
+        case .arrayType(_):
+          return .basicType(.int)
+        case .fixedSizeArrayType(_):
+          return .basicType(.int)
+        default:
+          break
+        }
+      }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .bracketedExpression(let expression):
