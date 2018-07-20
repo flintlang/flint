@@ -14,8 +14,8 @@ struct Mangler {
 
   static func mangleFunctionName(_ name: String, parameterTypes: [Type.RawType], enclosingType: String) -> String {
     let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
-    let underscore = parameters.isEmpty ? "" : "_"
-    return "\(enclosingType)_\(name)\(underscore)\(parameters)"
+    let dollar = parameters.isEmpty ? "" : "$"
+    return "\(enclosingType)$\(name)\(dollar)\(parameters)"
   }
 
   static func mangleInitializerName(_ enclosingType: String, parameterTypes: [Type.RawType]) -> String {
