@@ -62,6 +62,9 @@ public struct Tokenizer {
       } else if component.first == "@" {
         // The token is a function attribute.
         tokens.append(Token(kind: .attribute(String(component.dropFirst())), sourceLocation: sourceLocation))
+      } else if let _ = component.rangeOfCharacter(from: identifierChars.inverted) {
+        // The token is not valid.
+        fatalError("Parse error: invalid token")
       } else {
         // The token is an identifier.
         tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
