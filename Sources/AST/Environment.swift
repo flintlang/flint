@@ -287,6 +287,20 @@ public struct Environment {
     return .arrayType(elementType ?? .any)
   }
 
+  // The type of a range.
+  public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
+    let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
+    let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
+    
+    if elementType != boundType {
+      // The bounds have different types.
+      return .errorType
+    }
+    
+    return .rangeType(elementType)
+  }
+
+  
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -369,6 +383,8 @@ public struct Environment {
     case .literal(let literalToken): return type(ofLiteralToken: literalToken)
     case .arrayLiteral(let arrayLiteral):
       return type(ofArrayLiteral: arrayLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
+    case .range(let rangeExpression):
+      return type(ofRangeExpression: rangeExpression, enclosingType: enclosingType, scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence(_): fatalError()
@@ -490,6 +506,7 @@ public struct Environment {
     case .basicType(_): return 1
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
     case .arrayType(_): return 1
+    case .rangeType(_): return 0 // Ranges do not use memory
     case .dictionaryType(_, _): return 1
     case .inoutType(_): fatalError()
     case .any: return 0

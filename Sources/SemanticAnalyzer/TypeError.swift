@@ -12,6 +12,14 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected return type '\(expectedType.name)'")
   }
 
+  static func incompatibleForIterableType(iterableType: Type.RawType, statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Invalid iterable type '\(iterableType.name)'")
+  }
+  
+  static func incompatibleForVariableType(varType: Type.RawType, valueType: Type.RawType, statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Cannot convert variable of type '\(varType.name)' to expected iterable value type '\(valueType.name)'")
+  }
+  
   static func incompatibleAssignment(lhsType: Type.RawType, rhsType: Type.RawType, expression: Expression) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Incompatible assignment between values of type '\(lhsType.name)' and '\(rhsType.name)'")
   }

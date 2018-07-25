@@ -1,0 +1,39 @@
+// RUN: %flintc %s --verify
+contract Foo {
+  var addrArr: [Address] = []
+  var intArr: [Int] = []
+  var boolArr: [Bool] = []
+  var dict: [Address: Int] = [:]
+}
+
+Foo :: (any) {
+  public init(){}
+
+  func foo() {
+    for let x: Int in addrArr {} // expected-error {{Cannot convert variable of type 'Int' to expected iterable value type 'Address'}}
+    for let x: Int in intArr {}
+    for let x: Address in boolArr {} // expected-error {{Cannot convert variable of type 'Address' to expected iterable value type 'Bool'}}
+    for let x: Bool in boolArr {}
+  }
+
+  func bar() {
+    for let x: Int in (1...4) {}
+    for let x: Bool in (1...4) {} // expected-error {{Cannot convert variable of type 'Bool' to expected iterable value type 'Int'}}
+    for let x: Int in (1..<10) {}
+    for let x: Int in (100...3) {}
+    for let x: Int in (100..<3) {}
+    for let x: Int in (2...2) {}
+    for let x: Int in (2..<2) {} // expected-warning {{Range is empty therefore content will be skipped}}
+    for let x: Bool in (true...false) {} // expected-error {{Invalid iterable type '(Bool)'}}
+    for let x: Address in (0xF668Cb74A4E9901972057cf4BEAC00b8826Fa99D...0xF668Cb74A4E9901972057cf4BEAC00b8826Fa99E) {} // expected-error {{Invalid iterable type '(Address)'}}
+
+    for let x: Int in (1...4) {
+      x = 2 // expected-error {{Cannot reassign to value: 'x' is a 'let' constant}}
+    }
+
+    for var x: Int in (1...4) {
+      x = 1
+    }
+  }
+
+}

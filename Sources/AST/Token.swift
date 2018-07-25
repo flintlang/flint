@@ -47,6 +47,7 @@ extension Token {
       case power            = "**"
       case divide     = "/"
       case dot        = "."
+      case dotdot     = ".."
       case ampersand  = "&"
 
       // Assignments
@@ -56,9 +57,12 @@ extension Token {
       case minusEqual = "-="
       case timesEqual = "*="
       case divideEqual = "/="
-
+      
+      // Ranges
+      case halfOpenRange = "..<"
+      case closedRange = "..."
+      
       // Comparisons
-
       case doubleEqual = "=="
       case notEqual = "!="
       case lessThanOrEqual = "<="
@@ -145,6 +149,8 @@ extension Token {
     case `public`
     case `if`
     case `else`
+    case `for`
+    case `in`
     case `self`
     case implicit
     case `inout`
@@ -181,6 +187,8 @@ extension Token.Kind: CustomStringConvertible {
     case .public: return "public"
     case .if: return "if"
     case .else: return "else"
+    case .for: return "for"
+    case .in: return "in"
     case .punctuation(let punctuation): return punctuation.rawValue
     case .attribute(let attribute): return "@\(attribute)"
     case .identifier(let identifier): return "identifier \"\(identifier)\""

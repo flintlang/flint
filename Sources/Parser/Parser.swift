@@ -67,6 +67,29 @@ public class Parser {
 
     return first
   }
+  
+  /// Consumes one of the given tokens from the given list, i.e. discard it and move on to the next one. Throws if the current
+  /// token being processed isn't equal to any of the given tokens.
+  ///
+  /// - Parameters:
+  ///   - tokens: The tokens that can be consumed.
+  ///   - consumingTrailingNewlines: Whether newline tokens should be consumed after consuming the given token.
+  /// - Returns: The token which was consumed.
+  /// - Throws: A `ParserError.expectedTokens` if the current token being processed isn't equal to the given token.
+  @discardableResult
+  func consume(anyOf: [Token.Kind], consumingTrailingNewlines: Bool = true) throws -> Token {
+    guard let first = currentToken, anyOf.contains(first.kind) else {
+      throw ParserError.expectedTokens(anyOf, sourceLocation: currentToken?.sourceLocation)
+    }
+    
+    currentIndex += 1
+    
+    if consumingTrailingNewlines {
+      consumeNewLines()
+    }
+    
+    return first
+  }
 
   /// Consume newlines tokens up to the first non-newline token.
   func consumeNewLines() {
@@ -192,6 +215,16 @@ extension Parser {
     }
 
     return ArrayLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+  }
+  
+  func parseRangeExpression() throws -> AST.RangeExpression {
+    let startToken = try consume(.punctuation(.openBracket))
+    let start = try parseLiteral()
+    let op = try consume(anyOf: [.punctuation(.halfOpenRange), .punctuation(.closedRange)])
+    let end = try parseLiteral()
+    let endToken = try consume(.punctuation(.closeBracket))
+    
+    return AST.RangeExpression(startToken: startToken, endToken: endToken, initial: .literal(start), bound: .literal(end), op: op)
   }
 
   func parseDictionaryLiteral() throws -> AST.DictionaryLiteral {
@@ -582,6 +615,8 @@ extension Parser {
         statements.append(.expression(expression))
       } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
         statements.append(.returnStatement(returnStatement))
+      } else if let forStatement = attempt(try parseForStatement()) {
+        statements.append(.forStatement(forStatement))
       } else if let ifStatement = attempt(try parseIfStatement()) {
         statements.append(.ifStatement(ifStatement))
       } else {
@@ -638,6 +673,11 @@ extension Parser {
       return .functionCall(functionCall)
     }
 
+    // Try to parse an range.
+    if let rangeExpression = attempt(task: parseRangeExpression) {
+      return .range(rangeExpression)
+    }
+    
     // Try to parse an array literal.
     if let arrayLiteral = attempt(task: parseArrayLiteral) {
       return .arrayLiteral(arrayLiteral)
@@ -741,6 +781,20 @@ extension Parser {
     return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
   }
 
+  func parseForStatement() throws -> ForStatement {
+    let forToken = try consume(.for)
+    let variable = try parseVariableDeclaration()
+    try consume(.in)
+    
+    guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
+      throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
+    }
+    let iterable = try parseExpression(upTo: nextOpenBraceIndex)
+    let (statements, _) = try parseCodeBlock()
+    
+    return ForStatement(forToken: forToken, variable: variable, iterable: iterable, statements: statements)
+  }
+  
   func parseElseClause() throws -> [Statement] {
     try consume(.else)
     return try parseCodeBlock().0
@@ -846,4 +900,5 @@ extension Parser {
 /// - expectedToken: The current token did not match the token we expected.
 enum ParserError: Error {
   case expectedToken(Token.Kind, sourceLocation: SourceLocation?)
+  case expectedTokens([Token.Kind], sourceLocation: SourceLocation?)
 }
