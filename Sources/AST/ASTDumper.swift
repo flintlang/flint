@@ -226,6 +226,10 @@ public class ASTDumper {
       writeNode("ArrayType") {
         self.dump(rawType)
       }
+    case .rangeType(let rawType):
+      writeNode("RangeType"){
+        self.dump(rawType)
+      }
     case .dictionaryType(key: let keyType, value: let valueType):
       self.writeNode("DictionaryType") {
         self.dump(keyType)
@@ -275,6 +279,7 @@ public class ASTDumper {
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
       case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
+      case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly(_): fatalError()
       }
     }
@@ -286,6 +291,7 @@ public class ASTDumper {
       case .expression(let expression): self.dump(expression)
       case .returnStatement(let returnStatement): self.dump(returnStatement)
       case .ifStatement(let ifStatement): self.dump(ifStatement)
+      case .forStatement(let forStatment): self.dump(forStatment)
       }
     }
   }
@@ -351,6 +357,17 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ forStatement: ForStatement) {
+    writeNode("ForStatement") {
+      self.dump(forStatement.forToken)
+      self.dump(forStatement.variable)
+      self.dump(forStatement.iterable)
+      for statement in forStatement.body {
+        self.dump(statement)
+      }
+    }
+  }
+  
   func dump(_ token: Token) {
     writeLine("token: \(token.kind.description)")
   }
@@ -363,6 +380,14 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ rangeExpression: RangeExpression){
+    writeNode("RangeExpression") {
+      self.dump(rangeExpression.initial)
+      self.dump(rangeExpression.op)
+      self.dump(rangeExpression.bound)
+    }
+  }
+  
   func dump(_ dictionaryLiteral: DictionaryLiteral) {
     writeNode("DictionaryLiteral") {
       for element in dictionaryLiteral.elements {

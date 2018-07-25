@@ -103,6 +103,10 @@ extension Diagnostic {
   static func statePropertyUsedWithinPropertyInitializer(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot use state property '\(identifier.name)' within the initialization of another property")
   }
+  
+  static func invalidRangeDeclaration(_ literalExpression: Expression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: literalExpression.sourceLocation, message: "Cannot create ranges of non-numeric literals")
+  }
 
   static func recursiveStruct(_ structIdentifier: Identifier, _ enclosingType: PropertyInformation) -> Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: enclosingType.sourceLocation, message: "State property '\(enclosingType.variableDeclaration.identifier.name)' of type '\(enclosingType.rawType.name)' refers to enclosing type of '\(structIdentifier.name)'")
@@ -140,6 +144,10 @@ extension Diagnostic {
 extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
+  }
+  
+  static func emptyRange(_ rangeExpression: AST.RangeExpression) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: rangeExpression.sourceLocation, message: "Range is empty therefore content will be skipped")
   }
 
   static func functionCanBeDeclaredNonMutating(_ mutatingToken: Token) -> Diagnostic {

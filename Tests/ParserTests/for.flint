@@ -1,0 +1,45 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+contract Foo {
+  var arr: [Address] = []
+}
+
+Foo :: (any) {
+  public init() {}
+
+  func foo() -> Address {
+    var largest: Address
+    var max: Int
+    // CHECK-AST: ForStatement
+
+    // CHECK-AST:   token: var
+    // CHECK-AST:   identifier "x"
+    // CHECK-AST:   type Address
+
+    // CHECK-AST:   identifier "arr"
+
+    for var x: Address in arr {
+      if(x > largest){
+        largest = x
+      }
+    }
+
+    // CHECK-AST: ForStatement
+
+    // CHECK-AST:   RangeExpression
+    // CHECK-AST:   token: literal 1
+    // CHECK-AST:   token: ...
+    // CHECK-AST:   token: literal 4
+    for var x: Int in (1...4) {}
+
+    // CHECK-AST: ForStatement
+
+    // CHECK-AST:   RangeExpression
+    // CHECK-AST:   token: literal 10
+    // CHECK-AST:   token: ..<
+    // CHECK-AST:   token: literal 2
+    for var x: Int in (10..<2) {}
+
+    return largest;
+  }
+}

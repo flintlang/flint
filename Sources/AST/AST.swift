@@ -415,6 +415,7 @@ public struct Type: SourceEntity {
   public indirect enum RawType: Equatable {
     case basicType(BasicType)
     case stdlibType(StdlibType)
+    case rangeType(RawType)
     case arrayType(RawType)
     case fixedSizeArrayType(RawType, size: Int)
     case dictionaryType(key: RawType, value: RawType)
@@ -427,6 +428,7 @@ public struct Type: SourceEntity {
       switch self {
       case .fixedSizeArrayType(let rawType, size: let size): return "\(rawType.name)[\(size)]"
       case .arrayType(let rawType): return "[\(rawType.name)]"
+      case .rangeType(let rawType): return "(\(rawType.name))"
       case .basicType(let builtInType): return "\(builtInType.rawValue)"
       case .stdlibType(let type): return "\(type.rawValue)"
       case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
@@ -441,6 +443,7 @@ public struct Type: SourceEntity {
       switch self {
       case .basicType(_), .stdlibType(_), .any, .errorType: return true
       case .arrayType(let element): return element.isBuiltInType
+      case .rangeType(let element): return element.isBuiltInType
       case .fixedSizeArrayType(let element, _): return element.isBuiltInType
       case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
       case .inoutType(let element): return element.isBuiltInType
@@ -604,6 +607,7 @@ public indirect enum Expression: SourceEntity {
   case bracketedExpression(Expression)
   case subscriptExpression(SubscriptExpression)
   case sequence([Expression])
+  case range(RangeExpression)
   case rawAssembly(String, resultType: Type.RawType?)
 
   public var sourceLocation: SourceLocation {
@@ -619,6 +623,7 @@ public indirect enum Expression: SourceEntity {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
+    case .range(let rangeExpression): return rangeExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
     case .rawAssembly(_): fatalError()
     }
@@ -686,12 +691,14 @@ public indirect enum Statement: SourceEntity {
   case expression(Expression)
   case returnStatement(ReturnStatement)
   case ifStatement(IfStatement)
+  case forStatement(ForStatement)
 
   public var sourceLocation: SourceLocation {
     switch self {
     case .expression(let expression): return expression.sourceLocation
     case .returnStatement(let returnStatement): return returnStatement.sourceLocation
     case .ifStatement(let ifStatement): return ifStatement.sourceLocation
+    case .forStatement(let forStatement): return forStatement.sourceLocation
     }
   }
 }
@@ -780,6 +787,31 @@ public struct ArrayLiteral: SourceEntity {
     self.openSquareBracketToken = openSquareBracketToken
     self.elements = elements
     self.closeSquareBracketToken = closeSquareBracketToken
+  }
+}
+
+public struct RangeExpression: SourceEntity {
+  public var openSquareBracketToken: Token
+  public var closeSquareBracketToken: Token
+  
+  public var initial: Expression
+  public var bound: Expression
+  public var op: Token
+  
+  public var sourceLocation: SourceLocation {
+    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+  }
+  
+  public var isClosed: Bool {
+    return op.kind == .punctuation(.closedRange)
+  }
+  
+  public init(startToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token){
+    self.openSquareBracketToken = startToken
+    self.closeSquareBracketToken = endToken
+    self.initial = initial
+    self.bound = bound
+    self.op = op
   }
 }
 
@@ -879,6 +911,37 @@ public struct IfStatement: SourceEntity {
     self.condition = condition
     self.body = statements
     self.elseBody = elseClauseStatements
+  }
+}
+
+/// A for statement.
+public struct ForStatement: SourceEntity {
+  public var forToken: Token
+  public var variable: VariableDeclaration
+  public var iterable: Expression
+  
+  /// The statements in the body of the for block.
+  public var body: [Statement]
+  
+  public var sourceLocation: SourceLocation {
+    return .spanning(forToken, to: iterable)
+  }
+  
+  // Contextual information for the scope defined by the for body.
+  public var forBodyScopeContext: ScopeContext? = nil
+  
+  public var endsWithReturnStatement: Bool {
+    return body.contains { statement in
+      if case .returnStatement(_) = statement { return true }
+      return false
+    }
+  }
+  
+  public init(forToken: Token, variable: VariableDeclaration, iterable: Expression, statements: [Statement]) {
+    self.forToken = forToken
+    self.variable = variable
+    self.iterable = iterable
+    self.body = statements
   }
 }
 

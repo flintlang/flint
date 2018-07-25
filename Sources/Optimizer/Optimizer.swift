@@ -98,6 +98,10 @@ public struct Optimizer: ASTPass {
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
+  
+  public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
+    return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: AST.ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
@@ -119,6 +123,10 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
+  }
+  
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
@@ -206,6 +214,10 @@ public struct Optimizer: ASTPass {
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
+  
+  public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
+    return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
@@ -225,5 +237,9 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
 }
