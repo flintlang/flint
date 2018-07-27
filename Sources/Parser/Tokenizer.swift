@@ -62,9 +62,6 @@ public struct Tokenizer {
       } else if component.first == "@" {
         // The token is a function attribute.
         tokens.append(Token(kind: .attribute(String(component.dropFirst())), sourceLocation: sourceLocation))
-      } else if let _ = component.rangeOfCharacter(from: identifierChars.inverted) {
-        // The token is not valid.
-        fatalError("Parse error: invalid token")
       } else {
         // The token is an identifier.
         tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
@@ -230,7 +227,7 @@ public struct Tokenizer {
     let stripped = component.replacingOccurrences(of: "_", with: "")
     return Int(stripped)
   }
-  
+
   /// Creates a source location for the current file.
   func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
     return SourceLocation(line: line, column: column, length: length, file: sourceFile, isFromStdlib: isFromStdlib)
