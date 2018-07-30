@@ -409,7 +409,7 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.passContext.asLValue = false
     }
     processResult.passContext.isEnclosing = false
-    
+
     processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
 
     let postProcessResult = pass.postProcess(binaryExpression: processResult.element, passContext: processResult.passContext)

@@ -156,7 +156,7 @@ public struct Environment {
   public func property(_ identifier: String, _ enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     return types[enclosingType]?.properties[identifier]
   }
-  
+
   /// Whether is property is declared as a constant.
   public func isPropertyConstant(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
     return property(identifier, enclosingType)!.isConstant
@@ -556,7 +556,7 @@ public struct Environment {
     var offset = 0
 
     let rootType = types[enclosingType]!
-    
+
     for p in rootType.orderedProperties.prefix(while: { $0 != property }) {
       offsetMap[p] = offset
       let propertyType = rootType.properties[p]!.rawType
@@ -660,7 +660,7 @@ public struct PropertyInformation {
       return enumCase.sourceLocation
     }
   }
-
+  
   public var rawType: Type.RawType {
     return property.type!.rawType
   }
@@ -672,10 +672,6 @@ public struct PropertyInformation {
     case .enumCase(_):
       return []
     }
-  }
-
-  init(property: Property){
-    self.property = property
   }
 }
 

@@ -77,7 +77,7 @@ public struct SemanticAnalyzer: ASTPass {
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
     }
-    
+
     if case .basicType(_) = enumDeclaration.typeAnnotation.type.rawType {
       // Basic types are supported as hidden types
     } else {
