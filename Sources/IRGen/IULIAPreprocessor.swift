@@ -52,6 +52,14 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
   public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
   }

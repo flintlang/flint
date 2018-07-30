@@ -61,6 +61,12 @@ extension ASTPassContext {
     set { self[isEnclosingEntry.self] = newValue }
   }
 
+  /// Whether the node currently being visited is being the enclosing variable i.e. 'a' in 'a.foo'
+  public var isEnclosing: Bool {
+    get { return self[isEnclosingEntry.self] ?? false }
+    set { self[isEnclosingEntry.self] = newValue }
+  }
+
   /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
   public var isInBecome: Bool {
     get { return self[isInBecomeEntry.self] ?? false }

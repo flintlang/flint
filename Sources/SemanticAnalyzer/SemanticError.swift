@@ -152,6 +152,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }
 
+  static func cannotInferHiddenValue(_ identifier: Identifier, _ type: Type) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot infer hidden values in case '\(identifier.name)' for hidden type '\(type.name)'")
+  }
+
   // FALLBACK ERRORS //
 
   static func multiplePublicFallbacksDefined(_ invalidAdditionalFallback: SpecialDeclaration, originalFallbackLocation: SourceLocation) -> Diagnostic {

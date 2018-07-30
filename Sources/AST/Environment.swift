@@ -731,6 +731,47 @@ public enum Property {
   }
 }
 
+public enum Property {
+  case variableDeclaration(VariableDeclaration)
+  case enumCase(EnumCase)
+
+  public var identifier: Identifier {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.identifier
+    case .enumCase(let enumCase):
+      return enumCase.identifier
+    }
+  }
+
+  public var value: Expression? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.assignedExpression
+    case .enumCase(let enumCase):
+      return enumCase.hiddenValue
+    }
+  }
+
+  public var type: Type? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type
+    case .enumCase(let enumCase):
+      return enumCase.type
+    }
+  }
+
+  public var sourceLocation: SourceLocation {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.sourceLocation
+    case .enumCase(let enumCase):
+      return enumCase.sourceLocation
+    }
+  }
+}
+
 /// Information about a property defined in a type, such as its type and generic arguments.
 public struct PropertyInformation {
   public var property: Property

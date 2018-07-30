@@ -273,7 +273,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
     processResult.passContext.specialDeclarationContext = specialDeclarationContext
-    
+
     let functionDeclaration = specialDeclaration.asFunctionDeclaration
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 

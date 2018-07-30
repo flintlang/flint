@@ -74,10 +74,10 @@ Test :: (any) {
     // expected-error@-1 {{Incompatible use of operator '+' on values of types 'D' and 'E'}}
   }
 
-// Binary operations aren't type checked...
-//  public func type1b() -> Int {
-//    return D.a + 1
-//  }
+
+  public func type1b() -> Int {
+    return D.a + 1 // expected-error {{Incompatible use of operator '+' on values of types 'D' and 'Int'}}
+  }
 
   public func type2() -> Int {
     return I.a // expected-error {{Cannot convert expression of type 'I' to expected return type 'Int'}}

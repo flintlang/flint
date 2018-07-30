@@ -90,7 +90,7 @@ public class Parser {
 
     return first
   }
-  
+
   /// Consume newlines tokens up to the first non-newline token.
   func consumeNewLines() {
     while currentIndex < tokens.count, tokens[currentIndex].kind == .newline {
@@ -490,7 +490,7 @@ extension Parser {
     try consume(.punctuation(.openBracket))
     let identifiers = try parseIdentifierList()
     let closeBracketToken = try consume(.punctuation(.closeBracket))
-    
+
     return (identifiers, closeBracketToken)
   }
 

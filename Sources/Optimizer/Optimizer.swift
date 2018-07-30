@@ -180,6 +180,14 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
