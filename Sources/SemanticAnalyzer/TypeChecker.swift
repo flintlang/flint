@@ -38,6 +38,27 @@ public struct TypeChecker: ASTPass {
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
+  
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    var passContext = passContext
+    var diagnostics = [Diagnostic]()
+    let enviroment = passContext.environment!
+    
+    let hiddenType = enumDeclaration.typeAnnotation.type.rawType
+    for enumCase in enumDeclaration.cases {
+      if let hiddenValue = enumCase.hiddenValue {
+        let valueType = enviroment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
+        if !hiddenType.isCompatible(with: valueType), ![hiddenType, valueType].contains(.errorType) {
+          diagnostics.append(.incompatibleCaseValueType(actualType: valueType, expectedType: hiddenType, expression: hiddenValue))
+        }
+      }
+    }
+    return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
@@ -118,18 +139,9 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
     var diagnostics = [Diagnostic]()
 
     let environment = passContext.environment!
-
-    if case .dot = binaryExpression.opToken {
-      // The identifier explicitly refers to a state property, such as in `self.foo`.
-      // We set its enclosing type to the type it is declared in.
-      let enclosingType = passContext.enclosingTypeIdentifier!
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
-      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
-    }
 
     // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {
@@ -294,6 +306,14 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+  
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }

@@ -155,6 +155,10 @@ extension Parser {
         let structDeclaration = try parseStructDeclaration()
         environment.addStruct(structDeclaration)
         declarations.append(.structDeclaration(structDeclaration))
+      case .enum:
+        let enumDeclaration = try parseEnumDeclaration()
+        environment.addEnum(enumDeclaration)
+        declarations.append(.enumDeclaration(enumDeclaration))
       default:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
@@ -842,6 +846,40 @@ extension Parser {
     return members
   }
 
+}
+
+extension Parser {
+  func parseEnumDeclaration() throws -> EnumDeclaration {
+    let enumToken = try consume(.enum)
+    let identifier = try parseIdentifier()
+    let typeAnnotation = try parseTypeAnnotation()
+    try consume(.punctuation(.openBrace))
+    let cases = try parseEnumCases(enumIdentifier: identifier, hiddenType: typeAnnotation.type)
+    try consume(.punctuation(.closeBrace))
+
+    return EnumDeclaration(enumToken: enumToken, identifier: identifier, typeAnnotation: typeAnnotation, cases: cases)
+  }
+  
+  func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumCase] {
+    var cases = [EnumCase]()
+    while let enumCase = attempt(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType)) {
+      cases.append(enumCase)
+    }
+
+    return cases
+  }
+  
+  func parseEnumCase(enumIdentifier: Identifier, hiddenType: Type) throws -> EnumCase {
+    let caseToken = try consume(.case)
+    var identifier = try parseIdentifier()
+    identifier.enclosingType = enumIdentifier.name
+    var hiddenValue: Expression? = nil
+    if attempt(try consume(.punctuation(.equal))) != nil {
+      hiddenValue = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
+    }
+    return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
+  }
+  
 }
 
 extension Parser {

@@ -76,6 +76,8 @@ public struct Tokenizer {
     "\n": .newline,
     "contract": .contract,
     "struct": .struct,
+    "enum": .enum,
+    "case": .case,
     "var": .var,
     "let": .let,
     "func": .func,

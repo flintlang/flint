@@ -32,6 +32,16 @@ public struct StructDeclarationContext {
   }
 }
 
+/// Contextual information used when visiting declarations in a enum, such as the name of the enum the cases
+/// are declared for.
+public struct EnumDeclarationContext {
+  public var enumIdentifier: Identifier
+  
+  public init(enumIdentifier: Identifier) {
+    self.enumIdentifier = enumIdentifier
+  }
+}
+
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration

@@ -54,6 +54,8 @@ public class ASTDumper {
         self.dump(contractBehaviorDeclaration)
       case .structDeclaration(let structDeclaration):
         self.dump(structDeclaration)
+      case .enumDeclaration(let enumDeclaration):
+        self.dump(enumDeclaration)
       }
     }
   }
@@ -95,6 +97,27 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ enumDeclaration: EnumDeclaration) {
+    writeNode("EnumDeclaration") {
+      self.dump(enumDeclaration.identifier)
+      self.dump(enumDeclaration.typeAnnotation)
+      self.writeNode("Cases") {
+        for enumCase in enumDeclaration.cases {
+          self.dump(enumCase)
+        }
+      }
+    }
+  }
+  
+  func dump(_ enumCase: EnumCase) {
+    writeNode("EnumCase") {
+      self.dump(enumCase.identifier)
+      if let rawValue = enumCase.hiddenValue {
+        self.dump(rawValue)
+      }
+    }
+  }
+  
   func dump(_ structMember: StructMember) {
     switch structMember {
     case .functionDeclaration(let functionDeclaration):

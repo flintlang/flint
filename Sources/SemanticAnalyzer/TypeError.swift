@@ -28,6 +28,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected argument type '\(expectedType.name)'")
   }
 
+  static func incompatibleCaseValueType(actualType: Type.RawType, expectedType: Type.RawType, expression: Expression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected hidden type '\(expectedType.name)'")
+  }
+  
   static func incompatibleSubscript(actualType: Type.RawType, expression: Expression) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot subscript expression of type '\(actualType.name)'")
   }

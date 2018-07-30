@@ -139,6 +139,8 @@ extension Token {
 
     // Keywords
     case contract
+    case `enum`
+    case `case`
     case `struct`
     case `var`
     case `let`
@@ -175,6 +177,8 @@ extension Token.Kind: CustomStringConvertible {
     case .newline: return "\\\n"
     case .contract: return "contract"
     case .struct: return "struct"
+    case .enum: return "enum"
+    case .case: return "case"
     case .var: return "var"
     case .let: return "let"
     case .func: return "func"

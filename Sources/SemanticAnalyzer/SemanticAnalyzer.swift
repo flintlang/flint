@@ -70,9 +70,42 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
-
+  
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    var diagnostics = [Diagnostic]()
+    
+    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
+    }
+    
+    if case .basicType(_) = enumDeclaration.typeAnnotation.type.rawType {
+      // Basic types are supported as hidden types
+    } else {
+      diagnostics.append(.invalidHiddenType(enumDeclaration))
+    }
+    return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+  
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+  
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    
+    if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier, in: enumCase.type.rawType.name) {
+      diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
+    }
+    
+    if enumCase.hiddenValue == nil {
+      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
+    }
+    else if case .literal(_)? = enumCase.hiddenValue {} else {
+      diagnostics.append(.invalidHiddenValue(enumCase))
+    }
+    
+    return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -194,7 +227,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Gather properties of the enclosing type which haven't been assigned a default value.
     let properties = environment.propertyDeclarations(in: enclosingType).filter { propertyDeclaration in
-      return propertyDeclaration.assignedExpression == nil
+      return propertyDeclaration.value == nil
     }
 
     let passContext = passContext.withUpdates {
@@ -265,10 +298,13 @@ public struct SemanticAnalyzer: ASTPass {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
-        } else {
-          // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
+        } else if !passContext.environment!.isEnumDeclared(identifier.name){
+          // If the variable is not declared locally and doesn't refer to an enum, assign its enclosing type to the struct or contract behavior
           // declaration in which the function appears.
           identifier.enclosingType = passContext.enclosingTypeIdentifier!.name
+        } else if !(passContext.isEnclosing) {
+          // Checking if we are refering to 'foo' in 'a.foo'
+          diagnostics.append(.invalidReference(identifier))
         }
       }
 
@@ -347,13 +383,19 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
+    let environment = passContext.environment!
 
     if case .dot = binaryExpression.opToken {
       // The identifier explicitly refers to a state property, such as in `self.foo`.
       // We set its enclosing type to the type it is declared in.
       let enclosingType = passContext.enclosingTypeIdentifier!
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
-      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
+      if case .identifier(let enumIdentifier) = binaryExpression.lhs,
+         environment.isEnumDeclared(enumIdentifier.name) {
+        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
+      } else {
+        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      }
     }
 
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
@@ -459,6 +501,14 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
+  
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -507,7 +557,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Check all the properties in the type have been assigned.
     if let unassignedProperties = passContext.unassignedProperties {
-      let nonEventProperties = unassignedProperties.filter { !$0.type.rawType.isEventType }
+      let nonEventProperties = unassignedProperties.filter { !($0.type!.rawType.isEventType) } // TODO: Rework in events patch
 
       if nonEventProperties.count > 0 {
         diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: nonEventProperties))
@@ -667,7 +717,7 @@ extension ASTPassContext {
   }
 
   /// The list of unassigned properties in a type.
-  var unassignedProperties: [VariableDeclaration]? {
+  var unassignedProperties: [Property]? {
     get { return self[UnassignedPropertiesContextEntry.self] }
     set { self[UnassignedPropertiesContextEntry.self] = newValue }
   }
@@ -678,5 +728,5 @@ struct MutatingExpressionContextEntry: PassContextEntry {
 }
 
 struct UnassignedPropertiesContextEntry: PassContextEntry {
-  typealias Value = [VariableDeclaration]
+  typealias Value = [Property]
 }
