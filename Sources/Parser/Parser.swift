@@ -386,11 +386,29 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
+    let states = try? parseStates()
     try consume(.punctuation(.openBrace))
     let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, variableDeclarations: variableDeclarations)
+  }
+  
+  func parseStates() throws -> [Identifier] {
+    try consume(.punctuation(.openBracket))
+    let states = try! parseStateList()
+    try consume(.punctuation(.closeBracket))
+    return states
+  }
+  
+  func parseStateList() throws -> [Identifier] {
+    var states = [Identifier]()
+    repeat {
+      let identifier = try parseIdentifier()
+      states.append(identifier)
+    } while attempt(try consume(.punctuation(.comma))) != nil
+    
+    return states
   }
   
   func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {

@@ -64,9 +64,19 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
-
+      if let states = contractDeclaration.states {
+        self.dump(states)
+      }
       for variableDeclaration in contractDeclaration.variableDeclarations {
         self.dump(variableDeclaration)
+      }
+    }
+  }
+  
+  func dump(_ states: [Identifier]) {
+    writeNode("States") {
+      for state in states {
+        self.dump(state)
       }
     }
   }
