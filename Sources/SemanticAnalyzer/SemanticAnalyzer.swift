@@ -274,15 +274,6 @@ public struct SemanticAnalyzer: ASTPass {
 
       if let enclosingType = identifier.enclosingType {
         // The identifier has an explicit enclosing type, such as `a` in the expression `a.foo`.
-        // if identifier.name == "size" {
-        //   print(identifier)
-        //   print(identifier.enclosingType)
-        //   print()
-        //   print()
-        //   fatalError()
-        // } else {
-        //   print(identifier.name)
-        // }
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
