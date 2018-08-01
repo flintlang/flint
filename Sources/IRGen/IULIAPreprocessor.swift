@@ -151,6 +151,10 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     var expression = expression
     let environment = passContext.environment!
@@ -375,7 +379,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -395,7 +399,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
@@ -464,6 +468,10 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -484,7 +492,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }

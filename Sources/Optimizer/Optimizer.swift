@@ -75,6 +75,10 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -82,7 +86,7 @@ public struct Optimizer: ASTPass {
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
@@ -98,7 +102,7 @@ public struct Optimizer: ASTPass {
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
@@ -126,7 +130,7 @@ public struct Optimizer: ASTPass {
   public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
@@ -191,6 +195,10 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -214,7 +222,7 @@ public struct Optimizer: ASTPass {
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
@@ -238,7 +246,7 @@ public struct Optimizer: ASTPass {
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }

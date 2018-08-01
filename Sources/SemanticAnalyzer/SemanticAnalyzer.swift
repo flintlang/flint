@@ -333,6 +333,12 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    // TODO: Check that type state exists, etc.
+
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -369,7 +375,7 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     var diagnostics = [Diagnostic]()
-    
+
     if case .literal(let startToken) = rangeExpression.initial,
        case .literal(let endToken) = rangeExpression.bound {
       if startToken.kind == endToken.kind, rangeExpression.op.kind == .punctuation(.halfOpenRange) {
@@ -381,7 +387,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: rangeExpression, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -543,6 +549,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -628,7 +638,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -648,7 +658,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
