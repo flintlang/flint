@@ -291,16 +291,16 @@ public struct Environment {
   public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
     let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
-    
+
     if elementType != boundType {
       // The bounds have different types.
       return .errorType
     }
-    
+
     return .rangeType(elementType)
   }
 
-  
+
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -484,7 +484,7 @@ public struct Environment {
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
     guard !target.isEmpty else { return true }
     for callCallerCapability in source {
-      if !target.contains(where: { return callCallerCapability.isSubcapability(callerCapability: $0) }) {
+      if !target.contains(where: { return callCallerCapability.isSubCapability(of: $0) }) {
         return false
       }
     }
@@ -525,10 +525,10 @@ public struct Environment {
 
   /// The memory offset of a property in a type.
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
-    
+
     var offsetMap = [String: Int]()
     var offset = 0
-    
+
     let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
 
     for p in properties {

@@ -30,6 +30,7 @@ extension Token {
       case doubleColon        = "::"
       case openBracket        = "("
       case closeBracket       = ")"
+      case at                 = "@"
       case arrow              = "->"
       case leftArrow          = "<-"
       case comma              = ","
@@ -57,11 +58,11 @@ extension Token {
       case minusEqual = "-="
       case timesEqual = "*="
       case divideEqual = "/="
-      
+
       // Ranges
       case halfOpenRange = "..<"
       case closedRange = "..."
-      
+
       // Comparisons
       case doubleEqual = "=="
       case notEqual = "!="

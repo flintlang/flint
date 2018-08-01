@@ -124,6 +124,7 @@ public struct Tokenizer {
     "::": .punctuation(.doubleColon),
     "(": .punctuation(.openBracket),
     ")": .punctuation(.closeBracket),
+    "@": .punctuation(.at),
     "->": .punctuation(.arrow),
     "<-": .punctuation(.leftArrow),
     ",": .punctuation(.comma),
@@ -192,12 +193,13 @@ public struct Tokenizer {
           continue
         }
 
-        // The character is a newline.
+        // Add the new character directly to the components.
         components.append((String(char), sourceLocation(line: line, column: column, length: 1)))
       }
 
       column += 1
 
+      // The character is a newline.
       if CharacterSet.newlines.contains(char.unicodeScalars.first!) {
         line += 1
         column = 1
@@ -227,7 +229,7 @@ public struct Tokenizer {
     let stripped = component.replacingOccurrences(of: "_", with: "")
     return Int(stripped)
   }
-  
+
   /// Creates a source location for the current file.
   func sourceLocation(line: Int, column: Int, length: Int) -> SourceLocation {
     return SourceLocation(line: line, column: column, length: length, file: sourceFile, isFromStdlib: isFromStdlib)

@@ -75,6 +75,11 @@ public class ASTDumper {
       if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
         self.writeLine("capability binding \"\(capabilityBinding.name)\"")
       }
+      if let typeStates = contractBehaviorDeclaration.typeStates {
+        for typeState in typeStates {
+          self.dump(typeState)
+        }
+      }
       for callerCapability in contractBehaviorDeclaration.callerCapabilities {
         self.dump(callerCapability)
       }
@@ -264,6 +269,12 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ typeState: TypeState) {
+    writeNode("TypeState") {
+      self.dump(typeState.identifier)
+    }
+  }
+
   func dump(_ expression: Expression) {
     writeNode("Expression") {
       switch expression {
@@ -295,7 +306,7 @@ public class ASTDumper {
       }
     }
   }
-  
+
   func dump(_ inoutExpression: InoutExpression) {
     writeNode("InoutExpression") {
       self.dump(inoutExpression.expression)
@@ -367,7 +378,7 @@ public class ASTDumper {
       }
     }
   }
-  
+
   func dump(_ token: Token) {
     writeLine("token: \(token.kind.description)")
   }
@@ -387,7 +398,7 @@ public class ASTDumper {
       self.dump(rangeExpression.bound)
     }
   }
-  
+
   func dump(_ dictionaryLiteral: DictionaryLiteral) {
     writeNode("DictionaryLiteral") {
       for element in dictionaryLiteral.elements {
