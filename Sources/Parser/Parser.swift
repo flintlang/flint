@@ -386,7 +386,7 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
-    let states = try? parseStates()
+    let states = try? parseTypeStateGroup()
     try consume(.punctuation(.openBrace))
     let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
@@ -472,12 +472,7 @@ extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
 
-    let typeStates: [TypeState]?
-    if let typeStateGroup = try? parseTypeStateGroup() {
-      typeStates = typeStateGroup.typeStates
-    } else {
-      typeStates = nil
-    }
+    let states = try? parseTypeStateGroup()
 
     try consume(.punctuation(.doubleColon))
 
@@ -494,7 +489,7 @@ extension Parser {
       environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, callerCapabilities: callerCapabilities)
     }
 
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, typeStates: typeStates, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, typeStates: states ?? [], capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
   }
 
   func parseCapabilityBinding() throws -> Identifier {
@@ -529,14 +524,14 @@ extension Parser {
     return (callerCapabilities, closeBracketToken)
   }
 
-  func parseTypeStateGroup() throws -> (typeStates: [TypeState], closeBracketToken: Token) {
+  func parseTypeStateGroup() throws -> [TypeState] {
     try consume(.punctuation(.at))
-    let (identifiers, closeBracketToken) = try parseIdentifierGroup()
+    let (identifiers, _) = try parseIdentifierGroup()
     let typeStates = identifiers.map {
       return TypeState(identifier: $0)
     }
 
-    return (typeStates, closeBracketToken)
+    return typeStates
   }
 
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {

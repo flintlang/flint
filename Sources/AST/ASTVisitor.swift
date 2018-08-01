@@ -89,10 +89,8 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.element.contractIdentifier = processResult.combining(visit(processResult.element.contractIdentifier, passContext: processResult.passContext))
 
-    if let typeStates = processResult.element.typeStates {
-      processResult.element.typeStates = typeStates.map { typeState in
-        return processResult.combining(visit(typeState, passContext: processResult.passContext))
-      }
+    processResult.element.typeStates = processResult.element.typeStates.map { typeState in
+      return processResult.combining(visit(typeState, passContext: processResult.passContext))
     }
 
     if let capabilityBinding = processResult.element.capabilityBinding {

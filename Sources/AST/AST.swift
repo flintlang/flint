@@ -33,7 +33,7 @@ public typealias RawTypeIdentifier = String
 public struct ContractDeclaration: SourceEntity {
   public var contractToken: Token
   public var identifier: Identifier
-  public var states: [Identifier]
+  public var states: [TypeState]
   public var variableDeclarations: [VariableDeclaration]
   
   public var sourceLocation: SourceLocation {
@@ -44,7 +44,7 @@ public struct ContractDeclaration: SourceEntity {
     return !states.isEmpty
   }
   
-  public init(contractToken: Token, identifier: Identifier, states: [Identifier], variableDeclarations: [VariableDeclaration]) {
+  public init(contractToken: Token, identifier: Identifier, states: [TypeState], variableDeclarations: [VariableDeclaration]) {
     self.identifier = identifier
     self.variableDeclarations = variableDeclarations
     self.states = states
@@ -74,7 +74,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
-  public var typeStates: [TypeState]?
+  public var typeStates: [TypeState]
   public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
 
@@ -82,7 +82,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
     return .spanning(contractIdentifier, to: closeBracketToken)
   }
 
-  public init(contractIdentifier: Identifier, typeStates: [TypeState]?, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
+  public init(contractIdentifier: Identifier, typeStates: [TypeState], capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier
     self.typeStates = typeStates
     self.capabilityBinding = capabilityBinding

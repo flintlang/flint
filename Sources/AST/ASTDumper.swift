@@ -64,7 +64,7 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
-      self.dump(states)
+      self.dump(contractDeclaration.states)
 
       for variableDeclaration in contractDeclaration.variableDeclarations {
         self.dump(variableDeclaration)
@@ -72,7 +72,7 @@ public class ASTDumper {
     }
   }
   
-  func dump(_ states: [Identifier]) {
+  func dump(_ states: [TypeState]) {
     writeNode("States") {
       for state in states {
         self.dump(state)
@@ -86,11 +86,8 @@ public class ASTDumper {
       if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
         self.writeLine("capability binding \"\(capabilityBinding.name)\"")
       }
-      if let typeStates = contractBehaviorDeclaration.typeStates {
-        for typeState in typeStates {
-          self.dump(typeState)
-        }
-      }
+      self.dump(contractBehaviorDeclaration.typeStates)
+
       for callerCapability in contractBehaviorDeclaration.callerCapabilities {
         self.dump(callerCapability)
       }
