@@ -74,6 +74,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
+  public var typeStates: [TypeState]?
   public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
 
@@ -81,8 +82,9 @@ public struct ContractBehaviorDeclaration: SourceEntity {
     return .spanning(contractIdentifier, to: closeBracketToken)
   }
 
-  public init(contractIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
+  public init(contractIdentifier: Identifier, typeStates: [TypeState]?, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier
+    self.typeStates = typeStates
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
     self.closeBracketToken = closeBracketToken
@@ -663,8 +665,32 @@ public struct CallerCapability: SourceEntity {
     self.identifier = identifier
   }
 
-  public func isSubcapability(callerCapability: CallerCapability) -> Bool {
-    return name == callerCapability.name || callerCapability.isAny
+  public func isSubCapability(of parent: CallerCapability) -> Bool {
+    return parent.isAny || name == parent.name
+  }
+}
+
+public struct TypeState: SourceEntity {
+  public var identifier: Identifier
+
+  public var sourceLocation: SourceLocation {
+    return identifier.sourceLocation
+  }
+
+  public var name: String {
+    return identifier.name
+  }
+
+  public var isAny: Bool {
+    return name == "any"
+  }
+
+  public init(identifier: Identifier) {
+    self.identifier = identifier
+  }
+
+  public func isSubState(of parent: TypeState) -> Bool {
+    return parent.isAny || name == parent.name
   }
 }
 
