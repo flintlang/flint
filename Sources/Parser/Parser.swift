@@ -393,23 +393,6 @@ extension Parser {
 
     return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], variableDeclarations: variableDeclarations)
   }
-  
-  func parseStates() throws -> [Identifier] {
-    try consume(.punctuation(.openBracket))
-    let states = try! parseStateList()
-    try consume(.punctuation(.closeBracket))
-    return states
-  }
-  
-  func parseStateList() throws -> [Identifier] {
-    var states = [Identifier]()
-    repeat {
-      let identifier = try parseIdentifier()
-      states.append(identifier)
-    } while attempt(try consume(.punctuation(.comma))) != nil
-    
-    return states
-  }
 
   func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
@@ -472,6 +455,7 @@ extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
 
+    let _ = attempt(try consume(.punctuation(.at)))
     let states = try? parseTypeStateGroup()
 
     try consume(.punctuation(.doubleColon))
@@ -525,7 +509,6 @@ extension Parser {
   }
 
   func parseTypeStateGroup() throws -> [TypeState] {
-    try consume(.punctuation(.at))
     let (identifiers, _) = try parseIdentifierGroup()
     let typeStates = identifiers.map {
       return TypeState(identifier: $0)
