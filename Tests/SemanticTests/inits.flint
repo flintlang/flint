@@ -9,9 +9,8 @@ contract Test {
   var f: Int
   let g: Bool
   var x: B
-  var y: B = B(f, g) 
-  // expected-error@12 {{Cannot use state property 'f' within the initialization of another property}}
-  // expected-error@12 {{Cannot use state property 'g' within the initialization of another property}}
+  var y: B = B(f, g) // expected-error {{Cannot use state property 'f' within the initialization of another property}}
+                     // expected-error@-1 {{Cannot use state property 'g' within the initialization of another property}}
 }
 
 Test :: caller <- (any) {
@@ -19,8 +18,8 @@ Test :: caller <- (any) {
     self.a = a
     self.f = f
   } // expected-error {{Return from initializer without initializing all properties}}
-  // expected-note@8 {{'e' is uninitialized}}
-  // expected-note@11 {{'x' is uninitialized}}
+    // expected-note@8 {{'e' is uninitialized}}
+    // expected-note@11 {{'x' is uninitialized}}
 
   public init() { // expected-error {{A public initializer has already been defined}}
     self.a = caller
