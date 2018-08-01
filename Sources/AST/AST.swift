@@ -201,6 +201,8 @@ public struct FunctionDeclaration: SourceEntity {
   public var body: [Statement]
   public var closeBraceToken: Token
 
+  public var mangledIdentifier: String? = nil
+
   /// The raw type of the function's return type.
   public var rawType: Type.RawType {
     return resultType?.rawType ?? .basicType(.void)
@@ -238,7 +240,7 @@ public struct FunctionDeclaration: SourceEntity {
   public var isPublic: Bool {
     return hasModifier(kind: .public)
   }
-  
+
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext? = nil
 
@@ -256,7 +258,7 @@ public struct FunctionDeclaration: SourceEntity {
   }
 
   private func hasModifier(kind: Token.Kind) -> Bool {
-    return modifiers.contains { $0.kind == kind } 
+    return modifiers.contains { $0.kind == kind }
   }
 }
 
@@ -277,7 +279,7 @@ public struct InitializerDeclaration: SourceEntity {
   public var sourceLocation: SourceLocation {
     return initToken.sourceLocation
   }
-  
+
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext? = nil
 
@@ -343,7 +345,7 @@ public struct Parameter: SourceEntity {
     if case .inoutType = type.rawType {
       return true
     }
-    
+
     return false
   }
 
@@ -537,12 +539,12 @@ public struct Type: SourceEntity {
     self.genericArguments = genericArguments
     self.sourceLocation = identifier.sourceLocation
   }
-  
+
   public init(ampersandToken: Token, inoutType: Type) {
     rawType = .inoutType(inoutType.rawType)
     sourceLocation = ampersandToken.sourceLocation
   }
-  
+
   public init(inoutToken: Token, inoutType: Type) {
     rawType = .inoutType(inoutType.rawType)
     sourceLocation = inoutToken.sourceLocation
@@ -649,7 +651,7 @@ public indirect enum Expression: SourceEntity {
       return self
     }
   }
-  
+
   public var enclosingType: String? {
     switch self {
     case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
@@ -707,11 +709,11 @@ public indirect enum Statement: SourceEntity {
 public struct InoutExpression: SourceEntity {
   public var ampersandToken: Token
   public var expression: Expression
-  
+
   public var sourceLocation: SourceLocation {
     return ampersandToken.sourceLocation
   }
-  
+
   public init(ampersandToken: Token, expression: Expression) {
     self.ampersandToken = ampersandToken
     self.expression = expression
@@ -793,19 +795,19 @@ public struct ArrayLiteral: SourceEntity {
 public struct RangeExpression: SourceEntity {
   public var openSquareBracketToken: Token
   public var closeSquareBracketToken: Token
-  
+
   public var initial: Expression
   public var bound: Expression
   public var op: Token
-  
+
   public var sourceLocation: SourceLocation {
     return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }
-  
+
   public var isClosed: Bool {
     return op.kind == .punctuation(.closedRange)
   }
-  
+
   public init(startToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token){
     self.openSquareBracketToken = startToken
     self.closeSquareBracketToken = endToken
@@ -892,10 +894,10 @@ public struct IfStatement: SourceEntity {
   public var sourceLocation: SourceLocation {
     return .spanning(ifToken, to: condition)
   }
-  
+
   // Contextual information for the scope defined by the if body.
   public var ifBodyScopeContext: ScopeContext? = nil
-  
+
   // Contextual information for the scope defined by the else body.
   public var elseBodyScopeContext: ScopeContext? = nil
 
@@ -919,24 +921,24 @@ public struct ForStatement: SourceEntity {
   public var forToken: Token
   public var variable: VariableDeclaration
   public var iterable: Expression
-  
+
   /// The statements in the body of the for block.
   public var body: [Statement]
-  
+
   public var sourceLocation: SourceLocation {
     return .spanning(forToken, to: iterable)
   }
-  
+
   // Contextual information for the scope defined by the for body.
   public var forBodyScopeContext: ScopeContext? = nil
-  
+
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in
       if case .returnStatement(_) = statement { return true }
       return false
     }
   }
-  
+
   public init(forToken: Token, variable: VariableDeclaration, iterable: Expression, statements: [Statement]) {
     self.forToken = forToken
     self.variable = variable
@@ -944,4 +946,3 @@ public struct ForStatement: SourceEntity {
     self.body = statements
   }
 }
-
