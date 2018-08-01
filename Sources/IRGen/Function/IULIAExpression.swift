@@ -16,7 +16,7 @@ struct IULIAExpression {
     self.expression = expression
     self.asLValue = asLValue
   }
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     switch expression {
     case .inoutExpression(let inoutExpression):
@@ -50,6 +50,7 @@ struct IULIAExpression {
     case .sequence(let expressions):
       return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
     case .rawAssembly(let assembly, _): return assembly
+    case .range(_): fatalError("Range shouldn't be rendered directly")
     }
   }
 }
@@ -63,7 +64,7 @@ struct IULIABinaryExpression {
     self.binaryExpression = binaryExpression
     self.asLValue = asLValue
   }
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
@@ -103,7 +104,7 @@ struct IULIAPropertyAccess {
   var lhs: Expression
   var rhs: Expression
   var asLValue: Bool
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
@@ -111,10 +112,10 @@ struct IULIAPropertyAccess {
     let isInStructFunction = functionContext.isInStructFunction
 
     var isMemoryAccess: Bool = false
-    
+
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
     let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
-    
+
     let offset: String
     if isInStructFunction {
       let enclosingName: String
@@ -143,7 +144,7 @@ struct IULIAPropertyAccess {
 
       offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
-    
+
     if asLValue {
       return offset
     }
@@ -161,7 +162,7 @@ struct IULIAPropertyAccess {
 struct IULIAPropertyOffset {
   var expression: Expression
   var enclosingType: Type.RawType
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     if case .binaryExpression(let binaryExpression) = expression {
       return IULIAPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true).rendered(functionContext: functionContext)
@@ -177,7 +178,7 @@ struct IULIAPropertyOffset {
     case .userDefinedType(let type): structIdentifier = type
     default: fatalError()
     }
-    
+
     return "\(functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
   }
 }
@@ -186,10 +187,10 @@ struct IULIAPropertyOffset {
 struct IULIAAssignment {
   var lhs: Expression
   var rhs: Expression
-  
+
   func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> String {
     let rhsCode = IULIAExpression(expression: rhs).rendered(functionContext: functionContext)
-    
+
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
       return "let \(Mangler.mangleName(variableDeclaration.identifier.name)) := \(rhsCode)"
@@ -225,18 +226,19 @@ struct IULIAAssignment {
 /// Generates code for a function call.
 struct IULIAFunctionCall {
   var functionCall: FunctionCall
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
 
     if let eventInformation = environment.matchEventCall(functionCall, enclosingType: functionContext.enclosingTypeName) {
       return IULIAEventCall(eventCall: functionCall, eventInformation: eventInformation).rendered(functionContext: functionContext)
     }
-    
+
     let args: String = functionCall.arguments.map({ argument in
       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
-    return "\(functionCall.identifier.name)(\(args))"
+    let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
+    return "\(identifier)(\(args))"
   }
 
 }
@@ -245,10 +247,10 @@ struct IULIAFunctionCall {
 struct IULIAEventCall {
   var eventCall: FunctionCall
   var eventInformation: PropertyInformation
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     let types = eventInformation.typeGenericArguments
-    
+
     var stores = [String]()
     var memoryOffset = 0
     for (i, argument) in eventCall.arguments.enumerated() {
@@ -256,15 +258,15 @@ struct IULIAEventCall {
       stores.append("mstore(\(memoryOffset), \(argument))")
       memoryOffset += functionContext.environment.size(of: types[i]) * EVM.wordSize
     }
-    
+
     let totalSize = types.reduce(0) { return $0 + functionContext.environment.size(of: $1) } * EVM.wordSize
     let typeList = eventInformation.typeGenericArguments.map { type in
       return "\(CanonicalType(from: type)!.rawValue)"
       }.joined(separator: ",")
-    
+
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
     let log = "log1(0, \(totalSize), 0x\(eventHash))"
-    
+
     return """
     \(stores.joined(separator: "\n"))
     \(log)
@@ -281,7 +283,7 @@ struct IULIAIdentifier {
     self.identifier = identifier
     self.asLValue = asLValue
   }
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     if let _ = identifier.enclosingType {
       return IULIAPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
@@ -297,7 +299,7 @@ struct IULIAIdentifier {
 /// Generates code for a variable declaration.
 struct IULIAVariableDeclaration {
   var variableDeclaration: VariableDeclaration
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     let allocate = IULIARuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
     return "let \(variableDeclaration.identifier.name.mangled) := \(allocate)"
@@ -327,7 +329,7 @@ struct IULIALiteralToken {
 struct IULIASelf {
   var selfToken: Token
   var asLValue: Bool
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     guard case .self = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
@@ -341,7 +343,7 @@ struct IULIASelf {
 struct IULIASubscriptExpression {
   var subscriptExpression: SubscriptExpression
   var asLValue: Bool
-  
+
   func baseIdentifier(_ baseExpression: Expression) -> AST.Identifier? {
     if case .identifier(let identifier) = baseExpression {
       return identifier
@@ -351,13 +353,13 @@ struct IULIASubscriptExpression {
     }
     return nil
   }
-  
+
   func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int, functionContext: FunctionContext) -> String {
     let indexExpressionCode = IULIAExpression(expression: subExpr.indexExpression).rendered(functionContext: functionContext)
-    
+
     let type = functionContext.environment.type(of: subExpr.baseExpression, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
     let runtimeFunc: (String, String) -> String
-    
+
     switch type {
     case .arrayType(_):
       runtimeFunc = IULIARuntimeFunction.storageArrayOffset
@@ -368,7 +370,7 @@ struct IULIASubscriptExpression {
       runtimeFunc = IULIARuntimeFunction.storageDictionaryOffsetForKey
     default: fatalError("Invalid type")
     }
-    
+
     switch subExpr.baseExpression {
     case .identifier(_):
       return runtimeFunc(String(baseOffset), indexExpressionCode)
@@ -378,16 +380,16 @@ struct IULIASubscriptExpression {
       fatalError("Subscript expression has an invalid type")
     }
   }
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     guard let identifier = baseIdentifier(.subscriptExpression(subscriptExpression)),
       let enclosingType = identifier.enclosingType,
       let baseOffset = functionContext.environment.propertyOffset(for: identifier.name, enclosingType: enclosingType) else {
         fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
     }
-    
+
     let memLocation: String = nestedStorageOffset(subExpr: subscriptExpression, baseOffset: baseOffset, functionContext: functionContext)
-    
+
     if asLValue {
       return memLocation
     }

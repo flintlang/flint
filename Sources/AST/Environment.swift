@@ -287,6 +287,20 @@ public struct Environment {
     return .arrayType(elementType ?? .any)
   }
 
+  // The type of a range.
+  public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
+    let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
+    let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
+    
+    if elementType != boundType {
+      // The bounds have different types.
+      return .errorType
+    }
+    
+    return .rangeType(elementType)
+  }
+
+  
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -369,6 +383,8 @@ public struct Environment {
     case .literal(let literalToken): return type(ofLiteralToken: literalToken)
     case .arrayLiteral(let arrayLiteral):
       return type(ofArrayLiteral: arrayLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
+    case .range(let rangeExpression):
+      return type(ofRangeExpression: rangeExpression, enclosingType: enclosingType, scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence(_): fatalError()
@@ -407,7 +423,6 @@ public struct Environment {
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
-
         guard candidate.parameterTypes == argumentTypes,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(candidate)
@@ -490,6 +505,7 @@ public struct Environment {
     case .basicType(_): return 1
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
     case .arrayType(_): return 1
+    case .rangeType(_): return 0 // Ranges do not use memory
     case .dictionaryType(_, _): return 1
     case .inoutType(_): fatalError()
     case .any: return 0
@@ -508,10 +524,10 @@ public struct Environment {
 
   /// The memory offset of a property in a type.
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
-    
+
     var offsetMap = [String: Int]()
     var offset = 0
-    
+
     let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
 
     for p in properties {

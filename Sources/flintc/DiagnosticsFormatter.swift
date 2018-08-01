@@ -76,7 +76,7 @@ public struct DiagnosticsFormatter {
 
   func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>, highlightColor: Color, style: Style) -> String {
     let lowerBound = rangeOfInterest.lowerBound != 0 ? rangeOfInterest.lowerBound - 1 : 0
-    let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : sourceLine.count - 1
+    let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : max(0, sourceLine.count - 1)
 
     let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: lowerBound)
     let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: upperBound)

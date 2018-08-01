@@ -172,6 +172,10 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
 
+  public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
+    return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
+  }
+  
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -228,6 +232,36 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    var diagnostics = [Diagnostic]()
+    let typeIdentifier = passContext.enclosingTypeIdentifier!
+    let environment = passContext.environment!
+    
+    let varType = environment.type(of: .variableDeclaration(forStatement.variable), enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+    let iterableType = environment.type(of: forStatement.iterable, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+    
+    let valueType: Type.RawType;
+    switch iterableType {
+      case .arrayType(let v): valueType = v
+      case .rangeType(let v): valueType = v
+      case .fixedSizeArrayType(let v, _): valueType = v
+      case .dictionaryType(_, let v): valueType = v
+      default:
+        diagnostics.append(.incompatibleForIterableType(iterableType: iterableType, statement: .forStatement(forStatement)))
+        valueType = .errorType
+    }
+    
+    if case .range(_) = forStatement.iterable, valueType != .basicType(.int) {
+      diagnostics.append(.incompatibleForIterableType(iterableType: iterableType, statement: .forStatement(forStatement)))
+    }
+    
+    if !varType.isCompatible(with: valueType), ![varType, valueType].contains(.errorType){
+      diagnostics.append(.incompatibleForVariableType(varType: varType, valueType: valueType, statement: .forStatement(forStatement)))
+    }
+    
+    return ASTPassResult(element: forStatement, diagnostics: diagnostics, passContext: passContext)
+  }
+  
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
@@ -315,6 +349,10 @@ public struct TypeChecker: ASTPass {
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
+  
+  public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
+    return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
+  }
 
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
@@ -334,5 +372,9 @@ public struct TypeChecker: ASTPass {
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
+    return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
 }
