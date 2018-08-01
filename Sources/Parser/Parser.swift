@@ -391,7 +391,7 @@ extension Parser {
     let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, variableDeclarations: variableDeclarations)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], variableDeclarations: variableDeclarations)
   }
   
   func parseStates() throws -> [Identifier] {

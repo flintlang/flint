@@ -33,14 +33,18 @@ public typealias RawTypeIdentifier = String
 public struct ContractDeclaration: SourceEntity {
   public var contractToken: Token
   public var identifier: Identifier
-  public var states: [Identifier]?
+  public var states: [Identifier]
   public var variableDeclarations: [VariableDeclaration]
   
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)
   }
 
-  public init(contractToken: Token, identifier: Identifier, states: [Identifier]?, variableDeclarations: [VariableDeclaration]) {
+  public var isStateful: Bool {
+    return !states.isEmpty
+  }
+  
+  public init(contractToken: Token, identifier: Identifier, states: [Identifier], variableDeclarations: [VariableDeclaration]) {
     self.identifier = identifier
     self.variableDeclarations = variableDeclarations
     self.states = states

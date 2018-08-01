@@ -12,7 +12,7 @@ public struct IULIAEnum {
   var structDeclaration: StructDeclaration
   var environment: Environment
   
-  // Struct declarations never reach IR - references are removed in IULIAPreprocessing
+  // Enum declarations never reach IR - references are removed in IULIAPreprocessing
   func rendered() -> String {
     return ""
   }
