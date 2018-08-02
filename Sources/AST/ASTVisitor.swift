@@ -59,6 +59,10 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
+    processResult.element.states = processResult.element.states.map { typeState in
+      return processResult.combining(visit(typeState, passContext: processResult.passContext))
+    }
+
     processResult.passContext.contractStateDeclarationContext = ContractStateDeclarationContext(contractIdentifier: contractDeclaration.identifier)
 
     processResult.element.variableDeclarations = processResult.element.variableDeclarations.map { variableDeclaration in

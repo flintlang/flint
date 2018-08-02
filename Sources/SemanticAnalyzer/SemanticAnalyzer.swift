@@ -276,7 +276,7 @@ public struct SemanticAnalyzer: ASTPass {
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
-
+    
     // Only allow stdlib files to include special characters, such as '$'.
     if !identifier.sourceLocation.isFromStdlib,
       let char = identifier.name.first(where: { return stdlibReservedCharacters.contains($0.unicodeScalars.first!) }) {

@@ -1,6 +1,6 @@
 // RUN: %flintc %s --verify
 
-contract TypeStatesInvalid ($state$, ss, TypeStatesInvalid) {} // expected-error {{Diallow $ in this identifier too!}}
+contract TypeStatesInvalid ($state$, ss, TypeStatesInvalid) {} // expected-error {{Use of invalid character '$' in '$state$'}}
 
 TypeStatesInvalid :: (any) {
   public init() {
@@ -10,11 +10,11 @@ TypeStatesInvalid :: (any) {
 
 contract TypeStates (State1, State2, State3) {}
 
-TypeStates :: (any) {
+TypeStates :: (any) { // expected-error {{State not specified in stateful contract}}
 public init() {} // expected-error {{Return from initializer without initializing state in stateful contract}}
 }
 
-TypeStates :: (any) {
+TypeStates @(any) :: (any) {
   public func foo() {
     become Alpha // expected-error {{Invalid state for contract 'TypeStates' to become}}
                  // expected-warning@-1 {{Only final become will change state}}
@@ -55,7 +55,7 @@ TypeStates @(State1) :: (any) {
   }
 }
 
-TypeStates @(State2) :: (any) {
+TypeStates @(State2, State3) :: (any) {
   public func becomeState3() {
     become State3
   }
