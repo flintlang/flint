@@ -78,7 +78,7 @@ public struct SemanticAnalyzer: ASTPass {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
     }
 
-    if case .basicType(_) = enumDeclaration.typeAnnotation.type.rawType {
+    if case .basicType(_) = enumDeclaration.type.rawType {
       // Basic types are supported as hidden types
     } else {
       diagnostics.append(.invalidHiddenType(enumDeclaration))
@@ -283,7 +283,7 @@ public struct SemanticAnalyzer: ASTPass {
     if passContext.isFunctionCall {
       // If the identifier is the name of a function call, do nothing. The function call will be matched in
       // `process(functionCall:passContext:)`.
-    } else if inFunctionOrInitializer {
+    } else if inFunctionOrInitializer, !passContext.isInBecome {
       // The identifier is used within the body of a function or an initializer
 
       // The identifier is used an l-value (the left-hand side of an assignment).
@@ -464,6 +464,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
@@ -703,6 +707,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

@@ -9,7 +9,7 @@ import AST
 
 /// The optimizer pass for the AST.
 public struct Optimizer: ASTPass {
-  
+
   public init() {}
 
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -130,6 +130,10 @@ public struct Optimizer: ASTPass {
 
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
@@ -258,6 +262,10 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

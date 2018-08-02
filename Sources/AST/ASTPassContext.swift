@@ -61,6 +61,12 @@ extension ASTPassContext {
     set { self[isEnclosingEntry.self] = newValue }
   }
 
+  /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
+  public var isInBecome: Bool {
+    get { return self[isInBecomeEntry.self] ?? false }
+    set { self[isInBecomeEntry.self] = newValue }
+  }
+
   /// Contextual information used when visiting the state properties declared in a contract declaration.
   public var contractStateDeclarationContext: ContractStateDeclarationContext? {
     get { return self[ContractStateDeclarationContextEntry.self] }
@@ -153,6 +159,10 @@ private struct AsLValueContextEntry: PassContextEntry {
 }
 
 private struct isEnclosingEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct isInBecomeEntry: PassContextEntry {
   typealias Value = Bool
 }
 

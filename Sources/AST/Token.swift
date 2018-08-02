@@ -149,6 +149,7 @@ extension Token {
     case `init`
     case `mutating`
     case `return`
+    case become
     case `public`
     case `if`
     case `else`
@@ -189,6 +190,7 @@ extension Token.Kind: CustomStringConvertible {
     case .inout: return "inout"
     case .mutating: return "mutating"
     case .return: return "return"
+    case .become: return "become"
     case .public: return "public"
     case .if: return "if"
     case .else: return "else"

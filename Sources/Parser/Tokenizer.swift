@@ -84,6 +84,7 @@ public struct Tokenizer {
     "init": .init,
     "mutating": .mutating,
     "return": .return,
+    "become": .become,
     "public": .public,
     "if": .if,
     "else": .else,

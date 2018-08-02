@@ -40,6 +40,7 @@ public protocol ASTPass {
   func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
+  func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement>
   func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
   func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 
@@ -73,11 +74,13 @@ public protocol ASTPass {
   func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
+  func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement>
   func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
   func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 }
 
 public struct AnyASTPass: ASTPass {
+
   var base: ASTPass
 
   public init(_ base: ASTPass) {
@@ -192,9 +195,12 @@ public struct AnyASTPass: ASTPass {
     return base.process(subscriptExpression: subscriptExpression, passContext: passContext)
   }
 
-
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return base.process(returnStatement: returnStatement, passContext: passContext)
+  }
+
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return base.process(becomeStatement: becomeStatement, passContext: passContext)
   }
 
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
@@ -325,6 +331,10 @@ public struct AnyASTPass: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return base.postProcess(returnStatement: returnStatement, passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return base.postProcess(becomeStatement: becomeStatement, passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

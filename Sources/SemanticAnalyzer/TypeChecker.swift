@@ -244,6 +244,24 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    var diagnostics = [Diagnostic]()
+    let typeIdentifier = passContext.enclosingTypeIdentifier!
+    let environment = passContext.environment!
+
+    let actualType = environment.type(of: becomeStatement.expression, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+    // TODO: Check become has this contracts state types
+    //    let expectedType = functionDeclarationContext.declaration.rawType
+    //
+    //    // Ensure the type of the returned value in a function matches the function's return type.
+    //
+    //    if actualType != expectedType {
+    //      diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
+    //    }
+
+    return ASTPassResult(element: becomeStatement, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -396,6 +414,10 @@ public struct TypeChecker: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

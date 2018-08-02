@@ -419,6 +419,20 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    var becomeStatement = becomeStatement
+
+    let enumName = ContractDeclaration.contractEnumPrefix + passContext.enclosingTypeIdentifier!.name
+    let enumReference: Expression = .identifier(Identifier(identifierToken: Token(kind: .identifier(enumName), sourceLocation: becomeStatement.sourceLocation)))
+    let state = becomeStatement.expression.assigningEnclosingType(type: enumName)
+
+    let dot = Token(kind: .punctuation(.dot), sourceLocation: becomeStatement.sourceLocation)
+
+    becomeStatement.expression = .binaryExpression(BinaryExpression(lhs: enumReference, op: dot, rhs: state))
+
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -546,6 +560,10 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

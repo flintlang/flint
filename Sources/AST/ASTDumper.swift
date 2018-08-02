@@ -330,6 +330,7 @@ public class ASTDumper {
       switch statement {
       case .expression(let expression): self.dump(expression)
       case .returnStatement(let returnStatement): self.dump(returnStatement)
+      case .becomeStatement(let becomeStatement): self.dump(becomeStatement)
       case .ifStatement(let ifStatement): self.dump(ifStatement)
       case .forStatement(let forStatment): self.dump(forStatment)
       }
@@ -377,6 +378,13 @@ public class ASTDumper {
       if let expression = returnStatement.expression {
         self.dump(expression)
       }
+    }
+  }
+
+  func dump(_ becomeStatement: BecomeStatement) {
+    writeNode("BecomeStatement") {
+      self.dump(becomeStatement.becomeToken)
+      self.dump(becomeStatement.expression)
     }
   }
 

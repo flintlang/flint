@@ -10,6 +10,8 @@ import AST
 /// Generates code for a contract.
 struct IULIAContract {
 
+  static var stateVariablePrefix = "flintState$"
+
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
   var structDeclarations: [StructDeclaration]

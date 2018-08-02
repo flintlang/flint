@@ -386,11 +386,12 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .expression(processResult.combining(visit(expression, passContext: processResult.passContext)))
     case .returnStatement(let returnStatement):
       processResult.element = .returnStatement(processResult.combining(visit(returnStatement, passContext: processResult.passContext)))
+    case .becomeStatement(let becomeStatement):
+      processResult.element = .becomeStatement(processResult.combining(visit(becomeStatement, passContext: processResult.passContext)))
     case .ifStatement(let ifStatement):
       processResult.element = .ifStatement(processResult.combining(visit(ifStatement, passContext: processResult.passContext)))
     case .forStatement(let forStatement):
       processResult.element = .forStatement(processResult.combining(visit(forStatement, passContext: processResult.passContext)))
-
     }
 
     let postProcessResult = pass.postProcess(statement: processResult.element, passContext: processResult.passContext)
@@ -507,6 +508,17 @@ public struct ASTVisitor<Pass: ASTPass> {
     }
 
     let postProcessResult = pass.postProcess(returnStatement: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    var processResult = pass.process(becomeStatement: becomeStatement, passContext: passContext)
+
+    processResult.passContext.isInBecome = true
+    processResult.element.expression = processResult.combining(visit(processResult.element.expression, passContext: processResult.passContext))
+    processResult.passContext.isInBecome = false
+
+    let postProcessResult = pass.postProcess(becomeStatement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

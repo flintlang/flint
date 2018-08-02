@@ -644,6 +644,8 @@ extension Parser {
         statements.append(.expression(expression))
       } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
         statements.append(.returnStatement(returnStatement))
+      } else if let becomeStatement = attempt (try parseBecomeStatement(statementEndIndex: statementEndIndex)) {
+        statements.append(.becomeStatement(becomeStatement))
       } else if let forStatement = attempt(try parseForStatement()) {
         statements.append(.forStatement(forStatement))
       } else if let ifStatement = attempt(try parseIfStatement()) {
@@ -798,6 +800,12 @@ extension Parser {
     return ReturnStatement(returnToken: returnToken, expression: expression)
   }
 
+  func parseBecomeStatement(statementEndIndex: Int) throws -> BecomeStatement {
+    let becomeToken = try consume(.become)
+    let expression = try parseExpression(upTo: statementEndIndex)
+    return BecomeStatement(becomeToken: becomeToken, expression: expression)
+  }
+
   func parseIfStatement() throws -> IfStatement {
     let ifToken = try consume(.if)
     guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
@@ -882,7 +890,7 @@ extension Parser {
     let cases = try parseEnumCases(enumIdentifier: identifier, hiddenType: typeAnnotation.type)
     try consume(.punctuation(.closeBrace))
     
-    return EnumDeclaration(enumToken: enumToken, identifier: identifier, typeAnnotation: typeAnnotation, cases: cases)
+    return EnumDeclaration(enumToken: enumToken, identifier: identifier, type: typeAnnotation.type, cases: cases)
   }
   
   func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumCase] {

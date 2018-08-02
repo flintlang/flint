@@ -31,7 +31,7 @@ public typealias RawTypeIdentifier = String
 
 /// The declaration of a Flint contract.
 public struct ContractDeclaration: SourceEntity {
-  static var contractEnumPrefix = "flintStateEnum$"
+  public static var contractEnumPrefix = "flintStateEnum$"
 
   public var contractToken: Token
   public var identifier: Identifier
@@ -501,6 +501,10 @@ public struct Identifier: Hashable, SourceEntity {
     self.identifierToken = identifierToken
   }
 
+  public init(name: String, sourceLocation: SourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))) {
+    self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
+  }
+
   public var hashValue: Int {
     return "\(name)_\(sourceLocation)".hashValue
   }
@@ -811,6 +815,7 @@ public indirect enum Expression: SourceEntity {
 public indirect enum Statement: SourceEntity {
   case expression(Expression)
   case returnStatement(ReturnStatement)
+  case becomeStatement(BecomeStatement)
   case ifStatement(IfStatement)
   case forStatement(ForStatement)
 
@@ -818,6 +823,7 @@ public indirect enum Statement: SourceEntity {
     switch self {
     case .expression(let expression): return expression.sourceLocation
     case .returnStatement(let returnStatement): return returnStatement.sourceLocation
+    case .becomeStatement(let becomeStatement): return becomeStatement.sourceLocation
     case .ifStatement(let ifStatement): return ifStatement.sourceLocation
     case .forStatement(let forStatement): return forStatement.sourceLocation
     }
@@ -995,6 +1001,21 @@ public struct ReturnStatement: SourceEntity {
 
   public init(returnToken: Token, expression: Expression?) {
     self.returnToken = returnToken
+    self.expression = expression
+  }
+}
+
+/// A become statement.
+public struct BecomeStatement: SourceEntity {
+  public var becomeToken: Token
+  public var expression: Expression
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(becomeToken, to: expression)
+  }
+
+  public init(becomeToken: Token, expression: Expression) {
+    self.becomeToken = becomeToken
     self.expression = expression
   }
 }
