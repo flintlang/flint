@@ -127,14 +127,15 @@ public struct Environment {
       return types[type] != nil
   }
 
+  public func isStateful(_ contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return declaredEnums.contains(where: { $0.name == enumName })
+  }
+
   /// Whether a state has been declared in this contract.
   public func isStateDeclared(_ state: Identifier, in contract: RawTypeIdentifier) -> Bool {
     let enumName = ContractDeclaration.contractEnumPrefix + contract
-    if declaredEnums.contains(where: { $0.name == enumName }),
-      types[enumName]?.properties[state.name] != nil {
-      return true
-    }
-    return false
+    return types[enumName]?.properties[state.name] != nil
   }
 
   /// Whether a struct is self referencing.

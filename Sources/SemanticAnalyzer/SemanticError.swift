@@ -121,6 +121,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
   }
 
+  static func returnFromInitializerWithoutInitializingState(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Return from initializer without initializing state in stateful contract")
+  }
+
   static func contractDoesNotHaveAPublicInitializer(contractIdentifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability 'any'")
   }
@@ -149,7 +153,11 @@ extension Diagnostic {
   static func invalidReference(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reference enum '\(identifier.name)' alone")
   }
-  
+
+  static func multipleReturns(_ statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Early returns are not supported yet")
+  }
+
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
   }
@@ -159,9 +167,13 @@ extension Diagnostic {
 
 extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
-    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
+    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return/become will never be executed")
   }
-  
+
+  static func multipleBecomes(_ statement: Statement) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Only final become will change state")
+  }
+
   static func emptyRange(_ rangeExpression: AST.RangeExpression) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: rangeExpression.sourceLocation, message: "Range is empty therefore content will be skipped")
   }

@@ -199,25 +199,36 @@ public struct SemanticAnalyzer: ASTPass {
 
     let statements = functionDeclaration.body
 
-    // Find a return statement in the function.
-    let returnStatementIndex = statements.index(where: { statement in
-      if case .returnStatement(_) = statement { return true }
-      return false
-    })
+    // Find a statement after the first return/become in the function.
 
-    if let returnStatementIndex = returnStatementIndex {
-      if returnStatementIndex != statements.count - 1 {
-        let nextStatement = statements[returnStatementIndex + 1]
-
-        // Emit a warning if there is code after a return statement.
-        diagnostics.append(.codeAfterReturn(nextStatement))
-      }
-    } else {
-      if let resultType = functionDeclaration.resultType {
-        // Emit an error if a non-void function doesn't have a return statement.
-        diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
-      }
+    let remaining = statements.drop(while: { !$0.isEnding })
+    let returns = statements.filter { statement in
+      if case .returnStatement(_) = statement { return true } else { return false }
     }
+    let becomes = statements.filter { statement in
+      if case .becomeStatement(_) = statement { return true } else { return false }
+    }
+
+    let remaingNonEndingStatements = remaining.filter({!$0.isEnding})
+
+    remaingNonEndingStatements.forEach { statement in
+      // Emit a warning if there is code after an ending statement.
+      diagnostics.append(.codeAfterReturn(statement))
+    }
+
+    if returns.isEmpty,
+      let resultType = functionDeclaration.resultType {
+      // Emit an error if a non-void function doesn't have a return statement.
+      diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
+    }
+
+    returns.dropLast().forEach { statement in
+      diagnostics.append(.multipleReturns(statement))
+    }
+    becomes.dropLast().forEach { statement in
+      diagnostics.append(.multipleBecomes(statement))
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -562,6 +573,15 @@ public struct SemanticAnalyzer: ASTPass {
           // This is the first public initializer we encounter in this contract.
           passContext.environment!.setPublicInitializer(initializerDeclaration, forContract: contractName)
         }
+      }
+
+      // Check that stateful contracts have initial state set
+      let containsBecome = initializerDeclaration.body.contains(where: { statement in
+        if case .becomeStatement(_) = statement { return true } else { return false }
+      })
+
+      if passContext.environment!.isStateful(contractName), !containsBecome {
+        diagnostics.append(.returnFromInitializerWithoutInitializingState(initializerDeclaration))
       }
     }
 

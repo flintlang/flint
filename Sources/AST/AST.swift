@@ -829,6 +829,13 @@ public indirect enum Statement: SourceEntity {
     case .forStatement(let forStatement): return forStatement.sourceLocation
     }
   }
+
+  public var isEnding: Bool {
+    switch self {
+    case .returnStatement(_), .becomeStatement(_): return true
+    default: return false
+    }
+  }
 }
 
 /// An expression passed by reference, such as `&a`.
