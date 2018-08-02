@@ -48,7 +48,7 @@ public struct TypeChecker: ASTPass {
     var diagnostics = [Diagnostic]()
     let enviroment = passContext.environment!
     
-    let hiddenType = enumDeclaration.typeAnnotation.type.rawType
+    let hiddenType = enumDeclaration.type.rawType
     for enumCase in enumDeclaration.cases {
       if let hiddenValue = enumCase.hiddenValue {
         let valueType = enviroment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )

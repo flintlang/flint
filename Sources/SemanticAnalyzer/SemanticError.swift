@@ -143,7 +143,7 @@ extension Diagnostic {
   }
   
   static func invalidHiddenType(_ enumDeclaration: EnumDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: enumDeclaration.typeAnnotation.sourceLocation, message: "Invalid hidden type '\(enumDeclaration.typeAnnotation.type.name)' for enum '\(enumDeclaration.identifier.name)'")
+    return Diagnostic(severity: .error, sourceLocation: enumDeclaration.type.sourceLocation, message: "Invalid hidden type '\(enumDeclaration.type.name)' for enum '\(enumDeclaration.identifier.name)'")
   }
   
   static func invalidReference(_ identifier: Identifier) -> Diagnostic {

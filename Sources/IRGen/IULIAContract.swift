@@ -9,6 +9,7 @@ import AST
 
 /// Generates code for a contract.
 struct IULIAContract {
+
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
   var structDeclarations: [StructDeclaration]
@@ -20,6 +21,7 @@ struct IULIAContract {
     self.structDeclarations = structDeclarations
     self.environment = environment
   }
+
 
   func rendered() -> String {
     // Generate code for each function in the contract.

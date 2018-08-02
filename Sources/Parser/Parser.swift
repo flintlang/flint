@@ -150,6 +150,9 @@ extension Parser {
       case .contract:
         let contractDeclaration = try parseContractDeclaration()
         environment.addContract(contractDeclaration)
+        if contractDeclaration.isStateful {
+          environment.addEnum(contractDeclaration.stateEnum)
+        }
         declarations.append(.contractDeclaration(contractDeclaration))
       case .struct:
         let structDeclaration = try parseStructDeclaration()
@@ -878,7 +881,7 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let cases = try parseEnumCases(enumIdentifier: identifier, hiddenType: typeAnnotation.type)
     try consume(.punctuation(.closeBrace))
-
+    
     return EnumDeclaration(enumToken: enumToken, identifier: identifier, typeAnnotation: typeAnnotation, cases: cases)
   }
   

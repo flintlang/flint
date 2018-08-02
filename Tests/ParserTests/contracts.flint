@@ -1,16 +1,7 @@
 // RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
 // CHECK-AST: ContractDeclaration
-// CHECK-AST:  identifier "Foo"
-contract C {}
-
-C :: (any) {
-public init() {}
-}
-
-
-// CHECK-AST: ContractDeclaration
-// CHECK-AST:  identifier "C2""
+// CHECK-AST:  identifier "C2"
 // CHECK-AST:  States
 // CHECK-AST:    TypeState
 // CHECK-AST:      "State1"
@@ -18,7 +9,8 @@ public init() {}
 // CHECK-AST:      "State2"
 // CHECK-AST:    TypeState
 // CHECK-AST:      "State3"
-contract C2 (State1, State2, State3) {}
+contract C2 (State1, State2, State3) {
+}
 
 C2 :: (any) {
 public init() {}

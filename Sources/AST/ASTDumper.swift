@@ -111,7 +111,7 @@ public class ASTDumper {
   func dump(_ enumDeclaration: EnumDeclaration) {
     writeNode("EnumDeclaration") {
       self.dump(enumDeclaration.identifier)
-      self.dump(enumDeclaration.typeAnnotation)
+      self.dump(enumDeclaration.type)
       self.writeNode("Cases") {
         for enumCase in enumDeclaration.cases {
           self.dump(enumCase)

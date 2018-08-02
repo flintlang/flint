@@ -308,7 +308,7 @@ public struct SemanticAnalyzer: ASTPass {
         }
       }
 
-      if let enclosingType = identifier.enclosingType {
+      if let enclosingType = identifier.enclosingType, enclosingType != Type.RawType.errorType.name {
         // The identifier has an explicit enclosing type, such as `a` in the expression `a.foo`.
 
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
