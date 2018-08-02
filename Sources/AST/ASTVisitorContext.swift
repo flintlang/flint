@@ -14,10 +14,12 @@ public struct ContractStateDeclarationContext {
 /// contract the functions are declared for, and the caller capability associated with them.
 public struct ContractBehaviorDeclarationContext {
   public var contractIdentifier: Identifier
+  public var typeStates: [TypeState]
   public var callerCapabilities: [CallerCapability]
 
-  public init(contractIdentifier: Identifier, callerCapabilities: [CallerCapability]) {
+  public init(contractIdentifier: Identifier, typeStates: [TypeState], callerCapabilities: [CallerCapability]) {
     self.contractIdentifier = contractIdentifier
+    self.typeStates         = typeStates
     self.callerCapabilities = callerCapabilities
   }
 }
@@ -36,7 +38,7 @@ public struct StructDeclarationContext {
 /// are declared for.
 public struct EnumDeclarationContext {
   public var enumIdentifier: Identifier
-  
+
   public init(enumIdentifier: Identifier) {
     self.enumIdentifier = enumIdentifier
   }
