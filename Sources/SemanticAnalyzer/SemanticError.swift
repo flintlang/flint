@@ -28,22 +28,27 @@ extension Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
       let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
       let messageTail: String
-      
+
       if candidate.callerCapabilities.count > 1 {
         messageTail = "one of the caller capabilities in '(\(callerCapabilities))'"
       } else {
         messageTail = "the caller capability '\(callerCapabilities)'"
       }
-      
+
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
-    
+
     let plural = contextCallerCapabilities.count > 1
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
   }
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has no associated contract declaration")
+  }
+
+  static func contractBehaviorDeclarationMismatchedStatefulness(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
+    let statefulMessage = contractBehaviorDeclaration.typeStates == [] ? "" : "not "
+    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has mismatched statefulness. Expected behavior declaration \(statefulMessage)to have type state specifier")
   }
 
   static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
@@ -57,7 +62,7 @@ extension Diagnostic {
   static func payableFunctionDoesNotHavePayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' is declared @payable but doesn't have an implicit parameter of a currency type")
   }
-  
+
   static func payableFunctionHasNonPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
       return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Payable function '\(functionDeclaration.identifier.name)' has an implicit parameter of non-currency type")
   }
@@ -103,7 +108,7 @@ extension Diagnostic {
   static func statePropertyUsedWithinPropertyInitializer(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot use state property '\(identifier.name)' within the initialization of another property")
   }
-  
+
   static func invalidRangeDeclaration(_ literalExpression: Expression) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalExpression.sourceLocation, message: "Cannot create ranges of non-numeric literals")
   }
@@ -112,7 +117,7 @@ extension Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: enclosingType.sourceLocation, message: "State property '\(enclosingType.property.identifier.name)' of type '\(enclosingType.rawType.name)' refers to enclosing type of '\(structIdentifier.name)'")
     return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Declaration of recursive struct '\(structIdentifier.name)'", notes: [note])
   }
-    
+
   static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [Property]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
       return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")
@@ -129,11 +134,11 @@ extension Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
-  
+
   static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }
-  
+
   static func cannotInferHiddenValue(_ identifier: Identifier, _ type: Type) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot infer hidden values in case '\(identifier.name)' for hidden type '\(type.name)'")
   }
@@ -141,15 +146,15 @@ extension Diagnostic {
   static func invalidHiddenValue(_ enumCase: EnumCase) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: enumCase.hiddenValue!.sourceLocation, message: "Invalid hidden value for enum case '\(enumCase.identifier.name)'")
   }
-  
+
   static func invalidHiddenType(_ enumDeclaration: EnumDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: enumDeclaration.type.sourceLocation, message: "Invalid hidden type '\(enumDeclaration.type.name)' for enum '\(enumDeclaration.identifier.name)'")
   }
-  
+
   static func invalidReference(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reference enum '\(identifier.name)' alone")
   }
-  
+
   static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
     return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
   }
@@ -161,7 +166,7 @@ extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
   }
-  
+
   static func emptyRange(_ rangeExpression: AST.RangeExpression) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: rangeExpression.sourceLocation, message: "Range is empty therefore content will be skipped")
   }
