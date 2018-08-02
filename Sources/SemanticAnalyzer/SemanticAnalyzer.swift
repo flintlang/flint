@@ -41,6 +41,9 @@ public struct SemanticAnalyzer: ASTPass {
     if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
+    } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier) != (contractBehaviorDeclaration.typeStates != []) {
+      // The statefullness of the contract declaration and contract behavior declaration do not match.
+      diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
     }
 
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
