@@ -1,0 +1,67 @@
+// RUN: %flintc %s --verify
+
+contract TypeStatesInvalid ($state$, ss, TypeStatesInvalid) {}
+
+TypeStatesInvalid :: (any) {
+  public init() {
+    become ss
+  } // expected-error {{No become}}
+}
+
+contract TypeStates (State1, State2, State3) {}
+
+TypeStates :: (any) {
+public init() {} // expected-error {{No become}}
+}
+
+TypeStates :: (any) {
+  public func foo() {
+    become Alpha // expected-error {{Invalid state for contract 'TypeStates' to become}}
+    become State1 // expected-error {{Multiple becomes}}
+  }
+
+  public func bar() {
+    var x: Int = 0
+    become State1
+    x = 2 // expected-error {{Statement after become}}
+  }
+
+  public func returnVar() -> Int {
+    var x: Int = 42
+    return x
+    become State2
+  }
+
+  public func returnVar2() -> Int {
+    var x: Int = 32
+    become State1 // expected-error {{Become must be last statement}}
+    return x
+  }
+}
+
+TypeStates @(State1) :: (any) {
+  public func becomeState2() {
+    become State2
+  }
+
+  public func becomeState3WithoutState2() {
+    becomeState3() // expected-error {{Invalid capabilities}}
+  }
+
+  public func moveToState2AndDoStuff() {
+    becomeState2()
+    let x: Int = 0
+  }
+}
+
+TypeStates @(State2) :: (any) {
+  public func becomeState3() {
+    become State3
+  }
+}
+
+TypeStates @(State4) :: (any) { // expected-error {{Invalid state for contract 'TypeStates'}}
+}
+
+TypeStates @(State1, State4) :: (any) { // expected-error {{Invalid state for contract 'TypeStates'}}
+}

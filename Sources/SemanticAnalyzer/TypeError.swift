@@ -12,6 +12,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected return type '\(expectedType.name)'")
   }
 
+  static func invalidState(falseState: Expression, contract: RawTypeIdentifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: falseState.sourceLocation, message: "Invalid state for contract '\(contract)' to become")
+  }
+
   static func incompatibleForIterableType(iterableType: Type.RawType, statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Invalid iterable type '\(iterableType.name)'")
   }

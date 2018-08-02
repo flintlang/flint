@@ -127,6 +127,16 @@ public struct Environment {
       return types[type] != nil
   }
 
+  /// Whether a state has been declared in this contract.
+  public func isStateDeclared(_ state: Identifier, in contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    if declaredEnums.contains(where: { $0.name == enumName }),
+      types[enumName]?.properties[state.name] != nil {
+      return true
+    }
+    return false
+  }
+
   /// Whether a struct is self referencing.
   public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }
