@@ -45,7 +45,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
     // within it are scoped by.
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.typeStates, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -70,10 +70,10 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     var diagnostics = [Diagnostic]()
-    
+
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
     }
@@ -85,26 +85,26 @@ public struct SemanticAnalyzer: ASTPass {
     }
     return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
-    
+
     if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier, in: enumCase.type.rawType.name) {
       diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
     }
-    
+
     if enumCase.hiddenValue == nil {
       diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
     }
     else if case .literal(_)? = enumCase.hiddenValue {} else {
       diagnostics.append(.invalidHiddenValue(enumCase))
     }
-    
+
     return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -522,11 +522,11 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -666,6 +666,7 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
 
     var diagnostics = [Diagnostic]()
@@ -673,7 +674,7 @@ public struct SemanticAnalyzer: ASTPass {
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
     // Find the function declaration associated with this function call.
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .matchedFunction(let matchingFunction):
       // The function declaration is found.
 
