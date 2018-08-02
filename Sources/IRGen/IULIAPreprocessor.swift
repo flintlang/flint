@@ -12,7 +12,7 @@ import AST
 
 /// A prepocessing step to update the program's AST before code generation.
 public struct IULIAPreprocessor: ASTPass {
-  
+
   public init() {}
 
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -50,11 +50,11 @@ public struct IULIAPreprocessor: ASTPass {
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
   }
@@ -258,6 +258,7 @@ public struct IULIAPreprocessor: ASTPass {
     let environment = passContext.environment!
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
@@ -317,7 +318,7 @@ public struct IULIAPreprocessor: ASTPass {
         scopeContext.isParameterImplicit(parameterName) {
         isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
       } else {
-        let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+        let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
         guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
@@ -359,8 +360,9 @@ public struct IULIAPreprocessor: ASTPass {
       return functionCall.identifier.name
     }
 
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
 
     switch matchResult {
     case .matchedFunction(let functionInformation):
@@ -381,11 +383,12 @@ public struct IULIAPreprocessor: ASTPass {
 
   func isGlobalFunctionCall(_ functionCall: FunctionCall, in passContext: ASTPassContext) -> Bool {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     let scopeContext = passContext.scopeContext!
     let environment = passContext.environment!
 
-    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     // Mangle global function
     if case .matchedGlobalFunction(_) = match {
@@ -472,11 +475,11 @@ public struct IULIAPreprocessor: ASTPass {
   public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }

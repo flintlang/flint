@@ -459,7 +459,7 @@ extension Parser {
     let contractIdentifier = try parseIdentifier()
 
     let _ = attempt(try consume(.punctuation(.at)))
-    let states = try? parseTypeStateGroup()
+    let typeStates = (try? parseTypeStateGroup()) ?? []
 
     try consume(.punctuation(.doubleColon))
 
@@ -473,10 +473,10 @@ extension Parser {
 
     for case .functionDeclaration(let functionDeclaration) in members {
       // Record all the function declarations.
-      environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, callerCapabilities: callerCapabilities)
+      environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, typeStates: typeStates, callerCapabilities: callerCapabilities)
     }
 
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, typeStates: states ?? [], capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, typeStates: typeStates, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
 
   }
 
@@ -890,10 +890,10 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let cases = try parseEnumCases(enumIdentifier: identifier, hiddenType: typeAnnotation.type)
     try consume(.punctuation(.closeBrace))
-    
+
     return EnumDeclaration(enumToken: enumToken, identifier: identifier, type: typeAnnotation.type, cases: cases)
   }
-  
+
   func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumCase] {
     var cases = [EnumCase]()
     while let enumCase = attempt(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType)) {
@@ -902,7 +902,7 @@ extension Parser {
 
     return cases
   }
-  
+
   func parseEnumCase(enumIdentifier: Identifier, hiddenType: Type) throws -> EnumCase {
     let caseToken = try consume(.case)
     var identifier = try parseIdentifier()
@@ -913,7 +913,7 @@ extension Parser {
     }
     return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
   }
-  
+
 }
 
 extension Parser {
