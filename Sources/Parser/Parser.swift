@@ -477,6 +477,7 @@ extension Parser {
     }
 
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, typeStates: states ?? [], capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
+
   }
 
   func parseCapabilityBinding() throws -> Identifier {

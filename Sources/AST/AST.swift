@@ -94,6 +94,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
+
   public var typeStates: [TypeState]
   public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
