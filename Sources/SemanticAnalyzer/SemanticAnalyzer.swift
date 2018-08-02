@@ -41,7 +41,7 @@ public struct SemanticAnalyzer: ASTPass {
     if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
-    } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier) != (contractBehaviorDeclaration.typeStates != []) {
+    } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier.name) != (contractBehaviorDeclaration.typeStates != []) {
       // The statefullness of the contract declaration and contract behavior declaration do not match.
       diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
     }
@@ -671,6 +671,8 @@ public struct SemanticAnalyzer: ASTPass {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let stateCapabilities = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+
 
     var diagnostics = [Diagnostic]()
 
@@ -701,7 +703,7 @@ public struct SemanticAnalyzer: ASTPass {
     case .failure(let candidates):
       // A matching function declaration couldn't be found. Try to match an event call.
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: stateCapabilities, candidates: candidates))
       }
 
     }

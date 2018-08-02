@@ -23,10 +23,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
   }
 
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate -> Diagnostic in
-      let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
+      let callerCapabilities = renderGroup(candidate.callerCapabilities)
       let messageTail: String
 
       if candidate.callerCapabilities.count > 1 {
@@ -38,8 +38,9 @@ extension Diagnostic {
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
 
-    let plural = contextCallerCapabilities.count > 1
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
+    let callerPlural = contextCallerCapabilities.count > 1
+    let statesPlural = stateCapabilities.count > 1
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))' at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'", notes: candidateNotes)
   }
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
@@ -47,8 +48,9 @@ extension Diagnostic {
   }
 
   static func contractBehaviorDeclarationMismatchedStatefulness(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
-    let statefulMessage = contractBehaviorDeclaration.typeStates == [] ? "" : "not "
-    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has mismatched statefulness. Expected behavior declaration \(statefulMessage)to have type state specifier")
+    let isContractStateful = contractBehaviorDeclaration.typeStates == []
+
+    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract '\(contractBehaviorDeclaration.contractIdentifier.name)' is \(isContractStateful ? "" : "not ")stateful but behavior declaration is\(!isContractStateful ? "" : " not")")
   }
 
   static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
@@ -163,8 +165,12 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Early returns are not supported yet")
   }
 
-  static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
+  static func renderGroup(_ capabilities: [CallerCapability]) -> String {
     return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
+  }
+
+  static func renderGroup(_ states: [TypeState]) -> String {
+    return "\(states.map({ $0.name }).joined(separator: ", "))"
   }
 }
 

@@ -13,7 +13,7 @@ extension Diagnostic {
   }
 
   static func invalidState(falseState: Expression, contract: RawTypeIdentifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: falseState.sourceLocation, message: "Invalid state for contract '\(contract)' to become")
+    return Diagnostic(severity: .error, sourceLocation: falseState.sourceLocation, message: "State not defined for contract '\(contract)'")
   }
 
   static func incompatibleForIterableType(iterableType: Type.RawType, statement: Statement) -> Diagnostic {
