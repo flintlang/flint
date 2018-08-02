@@ -19,7 +19,7 @@ MultiDimArray :: (any) {
   }
   public func value3(i: Int, j: String) -> Int {
     return dict[j][i] // expected-error {{Cannot convert expression of type 'Bool' to expected return type 'Int'}}
-                      // expected-error@21 {{Cannot convert expression of type 'String' to expected subscript type 'Int'}}
-                      // expected-error@21 {{Cannot convert expression of type 'Int' to expected subscript type 'String'}}
+                      // expected-error@-1 {{Cannot convert expression of type 'String' to expected subscript type 'Int'}}
+                      // expected-error@-2 {{Cannot convert expression of type 'Int' to expected subscript type 'String'}}
   }
 }

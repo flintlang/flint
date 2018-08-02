@@ -54,6 +54,18 @@ extension ASTPassContext {
     get { return self[AsLValueContextEntry.self] }
     set { self[AsLValueContextEntry.self] = newValue }
   }
+  
+  /// Whether the node currently being visited is being the enclosing variable i.e. 'a' in 'a.foo'
+  public var isEnclosing: Bool {
+    get { return self[isEnclosingEntry.self] ?? false }
+    set { self[isEnclosingEntry.self] = newValue }
+  }
+
+  /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
+  public var isInBecome: Bool {
+    get { return self[isInBecomeEntry.self] ?? false }
+    set { self[isInBecomeEntry.self] = newValue }
+  }
 
   /// Contextual information used when visiting the state properties declared in a contract declaration.
   public var contractStateDeclarationContext: ContractStateDeclarationContext? {
@@ -75,6 +87,13 @@ extension ASTPassContext {
     set { self[StructDeclarationContextEntry.self] = newValue }
   }
 
+  /// Contextual information used when visiting declarations in a enum, such as the name of the enum the cases
+  /// are declared for.
+  public var enumDeclarationContext: EnumDeclarationContext? {
+    get { return self[EnumDeclarationContextEntry.self] }
+    set { self[EnumDeclarationContextEntry.self] = newValue }
+  }
+  
   /// Contextual information used when visiting statements in a function, such as if the function is mutating or note.
   public var functionDeclarationContext: FunctionDeclarationContext? {
     get { return self[FunctionDeclarationContextEntry.self] }
@@ -100,11 +119,12 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
-  /// The identifier of the enclosing type (a contract or a struct).
+  /// The identifier of the enclosing type (a contract or a struct or an enum).
   public var enclosingTypeIdentifier: Identifier? {
     return contractBehaviorDeclarationContext?.contractIdentifier ??
       structDeclarationContext?.structIdentifier ??
-      contractStateDeclarationContext?.contractIdentifier
+      contractStateDeclarationContext?.contractIdentifier ??
+      enumDeclarationContext?.enumIdentifier
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.
@@ -138,6 +158,14 @@ private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
+private struct isEnclosingEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct isInBecomeEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
 private struct ContractStateDeclarationContextEntry: PassContextEntry {
   typealias Value = ContractStateDeclarationContext
 }
@@ -148,6 +176,10 @@ private struct ContractBehaviorDeclarationContextEntry: PassContextEntry {
 
 private struct StructDeclarationContextEntry: PassContextEntry {
   typealias Value = StructDeclarationContext
+}
+
+private struct EnumDeclarationContextEntry: PassContextEntry {
+  typealias Value = EnumDeclarationContext
 }
 
 private struct FunctionDeclarationContextEntry: PassContextEntry {

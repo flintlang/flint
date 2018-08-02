@@ -20,6 +20,10 @@ public struct Environment {
   /// A list of the names of the structs which have been declared in the program.
   var declaredStructs = [Identifier]()
 
+  /// A list of the names of the enums which have been declared in the program.
+  var declaredEnums = [Identifier]()
+
+  
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
 
@@ -37,7 +41,7 @@ public struct Environment {
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
     declaredContracts.append(contractDeclaration.identifier)
     types[contractDeclaration.identifier.name] = TypeInformation()
-    setProperties(contractDeclaration.variableDeclarations, enclosingType: contractDeclaration.identifier.name)
+    setProperties(contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contractDeclaration.identifier.name)
   }
 
   /// Add a struct declaration to the environment.
@@ -46,12 +50,21 @@ public struct Environment {
     if types[structDeclaration.identifier.name] == nil {
       types[structDeclaration.identifier.name] = TypeInformation()
     }
-    setProperties(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier.name)
+    setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
       addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name)
     }
   }
 
+  /// Add an enum declaration to the environment.
+  public mutating func addEnum(_ enumDeclaration: EnumDeclaration) {
+    declaredEnums.append(enumDeclaration.identifier)
+    if types[enumDeclaration.identifier.name] == nil {
+      types[enumDeclaration.identifier.name] = TypeInformation()
+    }
+    setProperties(enumDeclaration.cases.map{ .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
+  }
+  
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
@@ -69,23 +82,24 @@ public struct Environment {
   }
 
   /// Add a list of properties to a type.
-  mutating func setProperties(_ variableDeclarations: [VariableDeclaration], enclosingType: RawTypeIdentifier) {
-    types[enclosingType]!.orderedProperties = variableDeclarations.map { $0.identifier.name }
-    for variableDeclaration in variableDeclarations {
-      addProperty(variableDeclaration, enclosingType: enclosingType)
+  mutating func setProperties(_ properties: [Property], enclosingType: RawTypeIdentifier) {
+    types[enclosingType]!.orderedProperties = properties.map { $0.identifier.name }
+    for property in properties {
+      addProperty(property, enclosingType: enclosingType)
     }
   }
 
   /// Add a property to a type.
-  mutating func addProperty(_ variableDeclaration: VariableDeclaration, enclosingType: RawTypeIdentifier) {
-    if types[enclosingType]!.properties[variableDeclaration.identifier.name] == nil {
-      types[enclosingType]!.properties[variableDeclaration.identifier.name] = PropertyInformation(variableDeclaration: variableDeclaration)
+  mutating func addProperty(_ property: Property, enclosingType: RawTypeIdentifier) {
+    if types[enclosingType]!.properties[property.identifier.name] == nil {
+      types[enclosingType]!.properties[property.identifier.name] = PropertyInformation(property: property)
     }
   }
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    addProperty(VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable)), enclosingType: enclosingType)
+    let declaration = VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
+    addProperty(.variableDeclaration(declaration), enclosingType: enclosingType)
   }
 
   /// Whether a contract has been declared in the program.
@@ -103,6 +117,11 @@ public struct Environment {
     return declaredStructs.contains { $0.name == type }
   }
 
+  /// Whether an enum has been declared in the program.
+  public func isEnumDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredEnums.contains { $0.name == type }
+  }
+  
   /// Whether a type has been declared in the program.
   public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
       return types[type] != nil
@@ -113,7 +132,7 @@ public struct Environment {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }
 
     for member in enclosingMemberTypes.orderedProperties {
-      guard let memberType = enclosingMemberTypes.properties[member]?.variableDeclaration.type.name else { return nil }
+      guard let memberType = enclosingMemberTypes.properties[member]?.rawType.name else { return nil }
       if memberType == type {
         return enclosingMemberTypes.properties[member]
       }
@@ -130,22 +149,26 @@ public struct Environment {
   }
 
   /// Whether a property is defined in a type.
-  public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties.keys.contains(property)
+  public func isPropertyDefined(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType) != nil
   }
 
-  /// Whether is property is declared as a constnat.
-  public func isPropertyConstant(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties[property]!.isConstant
+  public func property(_ identifier: String, _ enclosingType: RawTypeIdentifier) -> PropertyInformation? {
+    return types[enclosingType]?.properties[identifier]
   }
 
-  public func isPropertyAssignedDefaultValue(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties[property]!.isAssignedDefaultValue
+  /// Whether is property is declared as a constant.
+  public func isPropertyConstant(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isConstant
+  }
+
+  public func isPropertyAssignedDefaultValue(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isAssignedDefaultValue
   }
 
   /// The source location of a property declaration.
-  public func propertyDeclarationSourceLocation(_ property: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
-    return types[enclosingType]!.properties[property]!.sourceLocation
+  public func propertyDeclarationSourceLocation(_ identifier: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
+    return property(identifier, enclosingType)!.sourceLocation
   }
 
   /// The names of the properties declared in a type.
@@ -154,8 +177,8 @@ public struct Environment {
   }
 
   /// The list of property declarations in a type.
-  public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [VariableDeclaration] {
-    return types[enclosingType]!.properties.values.map { $0.variableDeclaration }
+  public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [Property] {
+    return types[enclosingType]!.properties.values.map { $0.property }
   }
 
   private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
@@ -172,7 +195,7 @@ public struct Environment {
 
   /// Attempts to find a conflicting declaration of the given type.
   public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
-    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts)
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
   }
 
   /// Attempts to find a conflicting declaration of the given function declaration
@@ -516,6 +539,10 @@ public struct Environment {
         return acc + size(of: element.value.rawType)
       }
     case .userDefinedType(let identifier):
+      if isEnumDeclared(identifier),
+        case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property{
+        return size(of: enumCase.hiddenType.rawType)
+      }
       return types[identifier]!.properties.reduce(0) { acc, element in
         return acc + size(of: element.value.rawType)
       }
@@ -528,11 +555,11 @@ public struct Environment {
     var offsetMap = [String: Int]()
     var offset = 0
 
-    let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
+    let rootType = types[enclosingType]!
 
-    for p in properties {
+    for p in rootType.orderedProperties.prefix(while: { $0 != property }) {
       offsetMap[p] = offset
-      let propertyType = types[enclosingType]!.properties[p]!.rawType
+      let propertyType = rootType.properties[p]!.rawType
       let propertySize = size(of: propertyType)
 
       offset += propertySize
@@ -564,32 +591,87 @@ public struct TypeInformation {
   var publicInitializer: InitializerDeclaration? = nil
 }
 
+public enum Property {
+  case variableDeclaration(VariableDeclaration)
+  case enumCase(EnumCase)
+  
+  public var identifier: Identifier {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.identifier
+    case .enumCase(let enumCase):
+      return enumCase.identifier
+    }
+  }
+  
+  public var value: Expression? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.assignedExpression
+    case .enumCase(let enumCase):
+      return enumCase.hiddenValue
+    }
+  }
+  
+  public var type: Type? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type
+    case .enumCase(let enumCase):
+      return enumCase.type
+    }
+  }
+  
+  public var sourceLocation: SourceLocation {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.sourceLocation
+    case .enumCase(let enumCase):
+      return enumCase.sourceLocation
+    }
+  }
+}
+
 /// Information about a property defined in a type, such as its type and generic arguments.
 public struct PropertyInformation {
-  public var variableDeclaration: VariableDeclaration
+  public var property: Property
 
   public var isConstant: Bool {
-    return variableDeclaration.isConstant
+    switch property {
+      case .variableDeclaration(let variableDeclaration): return variableDeclaration.isConstant
+      case .enumCase(_): return true
+    }
   }
 
   public var isAssignedDefaultValue: Bool {
-    return variableDeclaration.assignedExpression != nil
+    switch property {
+      case .variableDeclaration(let variableDeclaration):
+        return variableDeclaration.assignedExpression != nil
+      case .enumCase(let enumCase):
+        return enumCase.hiddenValue != nil
+    }
   }
 
   public var sourceLocation: SourceLocation? {
-    return variableDeclaration.sourceLocation
+    switch property {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.sourceLocation
+    case .enumCase(let enumCase):
+      return enumCase.sourceLocation
+    }
   }
-
-  init(variableDeclaration: VariableDeclaration) {
-    self.variableDeclaration = variableDeclaration
-  }
-
+  
   public var rawType: Type.RawType {
-    return variableDeclaration.type.rawType
+    return property.type!.rawType
   }
 
   public var typeGenericArguments: [Type.RawType] {
-    return variableDeclaration.type.genericArguments.map { $0.rawType }
+    switch property {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type.genericArguments.map { $0.rawType }
+    case .enumCase(_):
+      return []
+    }
   }
 }
 

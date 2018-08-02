@@ -140,6 +140,8 @@ extension Token {
 
     // Keywords
     case contract
+    case `enum`
+    case `case`
     case `struct`
     case `var`
     case `let`
@@ -147,6 +149,7 @@ extension Token {
     case `init`
     case `mutating`
     case `return`
+    case become
     case `public`
     case `if`
     case `else`
@@ -176,6 +179,8 @@ extension Token.Kind: CustomStringConvertible {
     case .newline: return "\\\n"
     case .contract: return "contract"
     case .struct: return "struct"
+    case .enum: return "enum"
+    case .case: return "case"
     case .var: return "var"
     case .let: return "let"
     case .func: return "func"
@@ -185,6 +190,7 @@ extension Token.Kind: CustomStringConvertible {
     case .inout: return "inout"
     case .mutating: return "mutating"
     case .return: return "return"
+    case .become: return "become"
     case .public: return "public"
     case .if: return "if"
     case .else: return "else"

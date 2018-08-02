@@ -9,6 +9,7 @@ import AST
 
 /// The optimizer pass for the AST.
 public struct Optimizer: ASTPass {
+
   public init() {}
 
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -39,6 +40,14 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+  
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -123,6 +132,10 @@ public struct Optimizer: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -157,6 +170,14 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -241,6 +262,10 @@ public struct Optimizer: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

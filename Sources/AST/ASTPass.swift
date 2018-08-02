@@ -14,7 +14,9 @@ public protocol ASTPass {
   func process(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration>
   func process(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration>
   func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
+  func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration>
   func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
+  func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase>
   func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
   func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
   func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
@@ -38,6 +40,7 @@ public protocol ASTPass {
   func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
+  func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement>
   func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
   func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 
@@ -45,9 +48,11 @@ public protocol ASTPass {
   func postProcess(topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration>
   func postProcess(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration>
   func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
+  func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase>
   func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
   func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
   func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
+  func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration>
   func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
   func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
   func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration>
@@ -69,11 +74,13 @@ public protocol ASTPass {
   func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
   func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement>
+  func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement>
   func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement>
   func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement>
 }
 
 public struct AnyASTPass: ASTPass {
+
   var base: ASTPass
 
   public init(_ base: ASTPass) {
@@ -188,9 +195,12 @@ public struct AnyASTPass: ASTPass {
     return base.process(subscriptExpression: subscriptExpression, passContext: passContext)
   }
 
-
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return base.process(returnStatement: returnStatement, passContext: passContext)
+  }
+
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return base.process(becomeStatement: becomeStatement, passContext: passContext)
   }
 
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
@@ -199,6 +209,16 @@ public struct AnyASTPass: ASTPass {
 
   public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return base.process(forStatement: forStatement, passContext: passContext)
+  }
+
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return base.process(enumCase: enumCase, passContext: passContext)
+
+  }
+  
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return base.process(enumDeclaration: enumDeclaration, passContext: passContext)
+
   }
 
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -313,11 +333,24 @@ public struct AnyASTPass: ASTPass {
     return base.postProcess(returnStatement: returnStatement, passContext: passContext)
   }
 
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return base.postProcess(becomeStatement: becomeStatement, passContext: passContext)
+  }
+
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return base.postProcess(ifStatement: ifStatement, passContext: passContext)
   }
 
   public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return base.postProcess(forStatement: forStatement, passContext: passContext)
+  }
+  
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return base.postProcess(enumCase: enumCase, passContext: passContext)
+    
+  }
+  
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return base.postProcess(enumDeclaration: enumDeclaration, passContext: passContext)
   }
 }
