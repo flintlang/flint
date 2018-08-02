@@ -58,7 +58,7 @@ func runBehaviorTests() -> Bool {
                                pathExtensions: ["js"],
                                testDirPath: "Tests/BehaviorTests",
                                testLinePrefix: "//",
-                               parallelismLevel: .automatic,
+                               parallelismLevel: .none,
                                successMessage: "Behavior tests passed.")
   return allPassed
 }
