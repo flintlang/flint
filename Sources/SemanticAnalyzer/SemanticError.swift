@@ -40,7 +40,8 @@ extension Diagnostic {
 
     let callerPlural = contextCallerCapabilities.count > 1
     let statesPlural = stateCapabilities.count > 1
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))' at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'", notes: candidateNotes)
+    let statesSpecified = " at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'"
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {

@@ -11,11 +11,13 @@
 // CHECK-AST:      "State3"
 contract C2 (State1, State2, State3) {}
 
-C2 :: (any) {
-  public init() {}
+C2 @(any) :: (any) {
+  public init() {
+    become State1
+  }
 }
 
-contract CapabilityBinding {}
+contract CapabilityBinding (stated){}
 
 // CHECK-AST: ContractBehaviorDeclaration
 // CHECK-AST:   identifier "CapabilityBinding"
@@ -27,5 +29,7 @@ CapabilityBinding @(stated) :: (any) {
 
 // CHECK-AST: InitializerDeclaration
 // CHECK-AST:   public
-  public init() {}
+  public init() {
+    become stated
+  }
 }
