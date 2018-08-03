@@ -161,8 +161,12 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reference enum '\(identifier.name)' alone")
   }
 
-  static func multipleReturns(_ statement: Statement) -> Diagnostic {
+  static func multipleReturns(_ statement: ReturnStatement) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Early returns are not supported yet")
+  }
+
+  static func becomeBeforeReturn(_ statement: BecomeStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Cannot become before a return")
   }
 
   static func renderGroup(_ capabilities: [CallerCapability]) -> String {
@@ -181,7 +185,7 @@ extension Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return/become will never be executed")
   }
 
-  static func multipleBecomes(_ statement: Statement) -> Diagnostic {
+  static func multipleBecomes(_ statement: BecomeStatement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Only final become will change state")
   }
 

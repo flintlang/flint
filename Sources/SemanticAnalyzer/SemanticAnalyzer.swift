@@ -205,11 +205,11 @@ public struct SemanticAnalyzer: ASTPass {
     // Find a statement after the first return/become in the function.
 
     let remaining = statements.drop(while: { !$0.isEnding })
-    let returns = statements.filter { statement in
-      if case .returnStatement(_) = statement { return true } else { return false }
+    let returns: [ReturnStatement] = statements.compactMap { statement in
+      if case .returnStatement(let returnStatement) = statement { return returnStatement } else { return nil }
     }
-    let becomes = statements.filter { statement in
-      if case .becomeStatement(_) = statement { return true } else { return false }
+    let becomes: [BecomeStatement] = statements.compactMap { statement in
+      if case .becomeStatement(let becomeStatement) = statement { return becomeStatement } else { return nil }
     }
 
     let remaingNonEndingStatements = remaining.filter({!$0.isEnding})
@@ -225,9 +225,24 @@ public struct SemanticAnalyzer: ASTPass {
       diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
     }
 
+    // Check becomes are after returns
+    let becomesBeforeAReturn = becomes.filter { become in
+      returns.contains(where: { (returnStatement) -> Bool in
+        return returnStatement.sourceLocation > become.sourceLocation
+      })
+    }
+
+    if !becomesBeforeAReturn.isEmpty {
+      becomesBeforeAReturn.forEach { (stmt) in
+        diagnostics.append(.becomeBeforeReturn(stmt))
+      }
+    }
+
+    // Add error for each return apart from the last
     returns.dropLast().forEach { statement in
       diagnostics.append(.multipleReturns(statement))
     }
+    // Add warning for each become apart from the last
     becomes.dropLast().forEach { statement in
       diagnostics.append(.multipleBecomes(statement))
     }
@@ -360,6 +375,16 @@ public struct SemanticAnalyzer: ASTPass {
             addMutatingExpression(.identifier(identifier), passContext: &passContext)
           }
         }
+      }
+    } else if passContext.isInBecome {
+      if let functionDeclarationContext = passContext.functionDeclarationContext {
+        // The variable is being mutated in a function.
+        if !functionDeclarationContext.isMutating {
+          // The function is declared non-mutating.
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+        }
+        // Record the mutating expression in the context.
+        addMutatingExpression(.identifier(identifier), passContext: &passContext)
       }
     }
 

@@ -3,7 +3,7 @@
 contract C2 (State1, State2, State3) {
 }
 
-C2 :: (any) {
+C2 @(any) :: (any) {
   public init() {
     // CHECK-AST: BecomeStatement
     // CHECK-AST:   identifier "State3"
