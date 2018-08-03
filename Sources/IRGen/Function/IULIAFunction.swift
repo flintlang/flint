@@ -15,6 +15,7 @@ struct IULIAFunction {
   var functionDeclaration: FunctionDeclaration
   var typeIdentifier: Identifier
 
+  var typeStates: [TypeState]
   var capabilityBinding: Identifier?
   var callerCapabilities: [CallerCapability]
 
@@ -26,9 +27,10 @@ struct IULIAFunction {
     return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
   }
 
-  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], environment: Environment) {
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, typeStates: [TypeState] = [], capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], environment: Environment) {
     self.functionDeclaration = functionDeclaration
     self.typeIdentifier = typeIdentifier
+    self.typeStates = typeStates
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
     self.environment = environment

@@ -17,6 +17,7 @@ enum IULIARuntimeFunction {
     case load
     case computeOffset
     case allocateMemory
+    case isMatchingTypeState
     case isValidCallerCapability
     case isCallerCapabilityInArray
     case return32Bytes
@@ -77,6 +78,10 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.allocateMemory.mangled)(\(size))"
   }
 
+  static func isMatchingTypeState(_ stateValue: String) -> String {
+    return "\(Identifiers.isMatchingTypeState.mangled)(\(stateValue))"
+  }
+
   static func isValidCallerCapability(address: String) -> String {
     return "\(Identifiers.isValidCallerCapability.mangled)(\(address))"
   }
@@ -130,7 +135,7 @@ enum IULIARuntimeFunction {
   }
 
 
-  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send, IULIARuntimeFunctionDeclaration.fatalError, IULIARuntimeFunctionDeclaration.add, IULIARuntimeFunctionDeclaration.sub, IULIARuntimeFunctionDeclaration.mul, IULIARuntimeFunctionDeclaration.div, IULIARuntimeFunctionDeclaration.power]
+  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isMatchingTypeState, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send, IULIARuntimeFunctionDeclaration.fatalError, IULIARuntimeFunctionDeclaration.add, IULIARuntimeFunctionDeclaration.sub, IULIARuntimeFunctionDeclaration.mul, IULIARuntimeFunctionDeclaration.div, IULIARuntimeFunctionDeclaration.power]
 }
 
 struct IULIARuntimeFunctionDeclaration {
@@ -199,6 +204,13 @@ struct IULIARuntimeFunctionDeclaration {
   function flint$allocateMemory(size) -> ret {
     ret := mload(0x40)
     mstore(0x40, add(ret, size))
+  }
+  """
+
+  static let isMatchingTypeState =
+  """
+  function flint$isMatchingTypeState(_state) -> ret {
+    ret := eq(flint$..., _state)
   }
   """
 
