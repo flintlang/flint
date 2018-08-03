@@ -41,11 +41,14 @@ public struct SemanticAnalyzer: ASTPass {
     if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
+    } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier.name) != (contractBehaviorDeclaration.typeStates != []) {
+      // The statefullness of the contract declaration and contract behavior declaration do not match.
+      diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
     }
 
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
     // within it are scoped by.
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.typeStates, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -70,10 +73,10 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     var diagnostics = [Diagnostic]()
-    
+
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
     }
@@ -85,26 +88,26 @@ public struct SemanticAnalyzer: ASTPass {
     }
     return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
-    
+
     if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier, in: enumCase.type.rawType.name) {
       diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
     }
-    
+
     if enumCase.hiddenValue == nil {
       diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
     }
     else if case .literal(_)? = enumCase.hiddenValue {} else {
       diagnostics.append(.invalidHiddenValue(enumCase))
     }
-    
+
     return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -199,25 +202,36 @@ public struct SemanticAnalyzer: ASTPass {
 
     let statements = functionDeclaration.body
 
-    // Find a return statement in the function.
-    let returnStatementIndex = statements.index(where: { statement in
-      if case .returnStatement(_) = statement { return true }
-      return false
-    })
+    // Find a statement after the first return/become in the function.
 
-    if let returnStatementIndex = returnStatementIndex {
-      if returnStatementIndex != statements.count - 1 {
-        let nextStatement = statements[returnStatementIndex + 1]
-
-        // Emit a warning if there is code after a return statement.
-        diagnostics.append(.codeAfterReturn(nextStatement))
-      }
-    } else {
-      if let resultType = functionDeclaration.resultType {
-        // Emit an error if a non-void function doesn't have a return statement.
-        diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
-      }
+    let remaining = statements.drop(while: { !$0.isEnding })
+    let returns = statements.filter { statement in
+      if case .returnStatement(_) = statement { return true } else { return false }
     }
+    let becomes = statements.filter { statement in
+      if case .becomeStatement(_) = statement { return true } else { return false }
+    }
+
+    let remaingNonEndingStatements = remaining.filter({!$0.isEnding})
+
+    remaingNonEndingStatements.forEach { statement in
+      // Emit a warning if there is code after an ending statement.
+      diagnostics.append(.codeAfterReturn(statement))
+    }
+
+    if returns.isEmpty,
+      let resultType = functionDeclaration.resultType {
+      // Emit an error if a non-void function doesn't have a return statement.
+      diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
+    }
+
+    returns.dropLast().forEach { statement in
+      diagnostics.append(.multipleReturns(statement))
+    }
+    becomes.dropLast().forEach { statement in
+      diagnostics.append(.multipleBecomes(statement))
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -265,7 +279,7 @@ public struct SemanticAnalyzer: ASTPass {
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
-
+    
     // Only allow stdlib files to include special characters, such as '$'.
     if !identifier.sourceLocation.isFromStdlib,
       let char = identifier.name.first(where: { return stdlibReservedCharacters.contains($0.unicodeScalars.first!) }) {
@@ -511,11 +525,11 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -562,6 +576,15 @@ public struct SemanticAnalyzer: ASTPass {
           // This is the first public initializer we encounter in this contract.
           passContext.environment!.setPublicInitializer(initializerDeclaration, forContract: contractName)
         }
+      }
+
+      // Check that stateful contracts have initial state set
+      let containsBecome = initializerDeclaration.body.contains(where: { statement in
+        if case .becomeStatement(_) = statement { return true } else { return false }
+      })
+
+      if passContext.environment!.isStateful(contractName), !containsBecome {
+        diagnostics.append(.returnFromInitializerWithoutInitializingState(initializerDeclaration))
       }
     }
 
@@ -646,14 +669,17 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let stateCapabilities = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+
 
     var diagnostics = [Diagnostic]()
 
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
     // Find the function declaration associated with this function call.
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .matchedFunction(let matchingFunction):
       // The function declaration is found.
 
@@ -677,7 +703,7 @@ public struct SemanticAnalyzer: ASTPass {
     case .failure(let candidates):
       // A matching function declaration couldn't be found. Try to match an event call.
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: stateCapabilities, candidates: candidates))
       }
 
     }

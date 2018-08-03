@@ -32,7 +32,7 @@ struct IULIAContract {
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }
-        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
+        return IULIAFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, typeStates: contractBehaviorDeclaration.typeStates, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
       }
     }
 
@@ -55,7 +55,7 @@ struct IULIAContract {
     // Main contract body.
     return """
     pragma solidity ^0.4.21;
-    
+
     contract \(contractDeclaration.identifier.name) {
 
       \(initializerBody.indented(by: 2))
@@ -72,7 +72,7 @@ struct IULIAContract {
           \(functionsCode)
 
           // Struct functions
-    
+
           \(structFunctions)
 
           // Flint runtime
@@ -83,13 +83,13 @@ struct IULIAContract {
     }
     """
   }
-  
+
   func renderStructFunctions() -> String {
     return structDeclarations.map { structDeclaration in
       return IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered()
     }.joined(separator: "\n\n")
   }
-  
+
   func renderRuntimeFunctions() -> String {
     return IULIARuntimeFunction.allDeclarations.joined(separator: "\n\n")
   }
@@ -112,7 +112,7 @@ struct IULIAContract {
       assembly {
         // Memory address 0x40 holds the next available memory location.
         mstore(0x40, 0x60)
-    
+
         \(initializer.indented(by: 4))
         \(renderStructFunctions().indented(by: 4))
         \(renderRuntimeFunctions().indented(by: 4))

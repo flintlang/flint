@@ -59,6 +59,10 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
+    processResult.element.states = processResult.element.states.map { typeState in
+      return processResult.combining(visit(typeState, passContext: processResult.passContext))
+    }
+
     processResult.passContext.contractStateDeclarationContext = ContractStateDeclarationContext(contractIdentifier: contractDeclaration.identifier)
 
     processResult.element.variableDeclarations = processResult.element.variableDeclarations.map { variableDeclaration in
@@ -72,7 +76,7 @@ public struct ASTVisitor<Pass: ASTPass> {
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.typeStates, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     var localVariables = [VariableDeclaration]()
     if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
@@ -158,36 +162,36 @@ public struct ASTVisitor<Pass: ASTPass> {
 
   func visit(_ enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     var processResult = pass.process(enumDeclaration: enumDeclaration, passContext: passContext)
-    
+
     let declarationContext = EnumDeclarationContext(enumIdentifier: enumDeclaration.identifier)
-    
+
     processResult.passContext = processResult.passContext.withUpdates {
       $0.enumDeclarationContext = declarationContext
     }
-    
+
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
-    
+
     processResult.element.cases = processResult.element.cases.map { enumCase in
       processResult.passContext.scopeContext = ScopeContext()
       return processResult.combining(visit(enumCase, passContext: processResult.passContext))
     }
-    
-    
+
+
     processResult.passContext.enumDeclarationContext = nil
-    
+
     let postProcessResult = pass.postProcess(enumDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
-  
+
   func visit(_ enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     var processResult = pass.process(enumCase: enumCase, passContext: passContext)
-    
+
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
-    
+
     let postProcessResult = pass.postProcess(enumCase: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
-  
+
   func visit(_ contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
     var processResult = pass.process(contractBehaviorMember: contractBehaviorMember, passContext: passContext)
 

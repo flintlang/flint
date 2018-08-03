@@ -24,7 +24,19 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    contractBehaviorDeclaration.typeStates.forEach { typeState in
+      if environment.isStateDeclared(typeState.identifier, in: contractBehaviorDeclaration.contractIdentifier.name) || typeState.isAny {
+        // Become has an identifier of a state declared in the contract
+      } else {
+        diagnostics.append(.invalidState(falseState: .identifier(typeState.identifier), contract: contractBehaviorDeclaration.contractIdentifier.name))
+      }
+    }
+
+
+    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
@@ -46,12 +58,12 @@ public struct TypeChecker: ASTPass {
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
-    let enviroment = passContext.environment!
+    let environment = passContext.environment!
     
     let hiddenType = enumDeclaration.type.rawType
     for enumCase in enumDeclaration.cases {
       if let hiddenValue = enumCase.hiddenValue {
-        let valueType = enviroment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
+        let valueType = environment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
         if !hiddenType.isCompatible(with: valueType), ![hiddenType, valueType].contains(.errorType) {
           diagnostics.append(.incompatibleCaseValueType(actualType: valueType, expectedType: hiddenType, expression: hiddenValue))
         }
@@ -246,18 +258,15 @@ public struct TypeChecker: ASTPass {
 
   public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     var diagnostics = [Diagnostic]()
-    let typeIdentifier = passContext.enclosingTypeIdentifier!
+    let contractIdentifier = passContext.enclosingTypeIdentifier!
     let environment = passContext.environment!
 
-    let actualType = environment.type(of: becomeStatement.expression, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-    // TODO: Check become has this contracts state types
-    //    let expectedType = functionDeclarationContext.declaration.rawType
-    //
-    //    // Ensure the type of the returned value in a function matches the function's return type.
-    //
-    //    if actualType != expectedType {
-    //      diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
-    //    }
+    if case .identifier(let identifier) = becomeStatement.expression,
+      environment.isStateDeclared(identifier, in: contractIdentifier.name) {
+      // Become has an identifier of a state declared in the contract
+    } else {
+      diagnostics.append(.invalidState(falseState: becomeStatement.expression, contract: contractIdentifier.name))
+    }
 
     return ASTPassResult(element: becomeStatement, diagnostics: diagnostics, passContext: passContext)
   }
