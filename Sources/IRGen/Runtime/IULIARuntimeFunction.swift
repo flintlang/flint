@@ -117,12 +117,12 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
   }
 
-  static func storageDictionaryKeysArrayOffset(dictionaryOffset: Int) -> String {
+  static func storageDictionaryKeysArrayOffset(dictionaryOffset: String) -> String {
     return "\(Identifiers.storageDictionaryKeysArrayOffset.mangled)(\(dictionaryOffset))"
   }
 
-  static func storageOffsetForKey(dictionaryOffset: String, key: String, rhs: String) -> String {
-    return "\(Identifiers.storageOffsetForKey.mangled)(\(dictionaryOffset), \(key), \(rhs))"
+  static func storageOffsetForKey(baseOffset: String, key: String) -> String {
+    return "\(Identifiers.storageOffsetForKey.mangled)(\(baseOffset), \(key))"
   }
 
   static func callvalue() -> String {

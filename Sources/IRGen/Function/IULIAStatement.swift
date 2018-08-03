@@ -10,7 +10,7 @@ import AST
 /// Generates code for a statement.
 struct IULIAStatement {
   var statement: Statement
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     switch statement {
     case .expression(let expression): return IULIAExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext)
@@ -71,14 +71,14 @@ struct IULIAForStatement {
   func rendered(functionContext: FunctionContext) -> String {
     var functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
-    
+
     let setup: String
 
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      setup = generateArrayFor(prefix: "flint$\(forStatement.variable.identifier.name)$", iterable: arrayIdentifier, functionContext: functionContext)
+      setup = generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$", iterable: arrayIdentifier, functionContext: functionContext)
     case .range(let rangeExpression):
-      setup = generateRangeFor(iterable: rangeExpression, functionContext: functionContext)
+      setup = generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext)
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
@@ -86,15 +86,15 @@ struct IULIAForStatement {
     let body = forStatement.body.map { statement in
       return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
       }.joined(separator: "\n")
-    
+
     return """
     for \(setup)
       \(body.indented(by: 2))
     }
     """
   }
-  
-  func generateArrayFor(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
+
+  func generateArraySetupCode(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
     let offset: String
@@ -109,34 +109,42 @@ struct IULIAForStatement {
     else {
       fatalError("Couldn't find offset for iterable")
     }
-    
-    let storageArrayOffset: String
+
     let loadArrLen: String
     let toAssign: String
 
     let type = functionContext.environment.type(of: iterable.name, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
     switch type {
     case .arrayType(_):
-      storageArrayOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
+      let arrayElementOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
       loadArrLen = IULIARuntimeFunction.load(address: offset, inMemory: false)
       switch forStatement.variable.type.rawType {
         case .arrayType(_), .fixedSizeArrayType(_):
-          toAssign = String(storageArrayOffset)
+          toAssign = String(arrayElementOffset)
         default:
-          toAssign = IULIARuntimeFunction.load(address: storageArrayOffset, inMemory: false)
+          toAssign = IULIARuntimeFunction.load(address: arrayElementOffset, inMemory: false)
       }
 
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
       loadArrLen = String(typeSize)
-      storageArrayOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
-      toAssign = IULIARuntimeFunction.load(address: storageArrayOffset, inMemory: false)
+      let arrayElementOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      toAssign = IULIARuntimeFunction.load(address: arrayElementOffset, inMemory: false)
+
+    case .dictionaryType(_):
+      loadArrLen = IULIARuntimeFunction.load(address: offset, inMemory: false)
+      let keysArrayOffset = IULIARuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
+      let keyOffset = IULIARuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
+      let key = IULIARuntimeFunction.load(address: keyOffset, inMemory: false)
+      let dictionaryElementOffset = IULIARuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
+      toAssign = IULIARuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
+
     default:
       fatalError()
     }
-    
+
     let variableUse = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: .rawAssembly(toAssign, resultType: nil)).rendered(functionContext: functionContext, asTypeProperty: false)
-    
+
     return """
     {
     let \(prefix)i := 0
@@ -145,10 +153,10 @@ struct IULIAForStatement {
       let \(variableUse)
     """
   }
-  
-  func generateRangeFor(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
+
+  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
     // Iterating over a range
-    
+
     // Check valid range
     guard case .literal(let rangeStart) = iterable.initial,
       case .literal(let rangeEnd) = iterable.bound else {
@@ -158,16 +166,16 @@ struct IULIAForStatement {
       case .literal(.decimal(.integer(let end))) = rangeEnd.kind else {
         fatalError("Only integer decimal ranges supported")
     }
-    
+
     let ascending = start < end
-    
+
     var comparisonToken: Token.Kind = ascending ? .punctuation(.lessThanOrEqual) : .punctuation(.greaterThanOrEqual)
     if case .punctuation(.halfOpenRange) = iterable.op.kind {
       comparisonToken = ascending ? .punctuation(.openAngledBracket) : .punctuation(.closeAngledBracket)
     }
-    
+
     let changeToken: Token.Kind = ascending ? .punctuation(.plus) : .punctuation(.minus)
-    
+
     // Create IULIA statements for loop sub-statements
     let initialisation = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: iterable.initial).rendered(functionContext: functionContext, asTypeProperty: false)
     var condition = BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
@@ -177,24 +185,24 @@ struct IULIAForStatement {
                                                                 op: Token(kind: changeToken, sourceLocation: forStatement.sourceLocation),
                                                                 rhs: .literal(Token(kind: .literal(.decimal(.integer(1))), sourceLocation: forStatement.sourceLocation))))
     let update = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change).rendered(functionContext: functionContext, asTypeProperty: false)
-    
+
     // Change <= into (< || ==)
     if [.lessThanOrEqual, .greaterThanOrEqual].contains(condition.opToken) {
       let strictOperator: Token.Kind.Punctuation = condition.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
-      
+
       var lhsExpression = condition
       lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
-      
+
       var rhsExpression = condition
       rhsExpression.op = Token(kind: .punctuation(.doubleEqual), sourceLocation: rhsExpression.op.sourceLocation)
-      
+
       condition.lhs = .binaryExpression(lhsExpression)
       condition.rhs = .binaryExpression(rhsExpression)
-      
+
       let sourceLocation = condition.op.sourceLocation
       condition.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
     }
-    
+
     return """
     {
     let \(initialisation)
@@ -207,7 +215,7 @@ struct IULIAForStatement {
 /// Generates code for a return statement.
 struct IULIAReturnStatement {
   var returnStatement: ReturnStatement
-  
+
   func rendered(functionContext: FunctionContext) -> String {
     guard let expression = returnStatement.expression else {
       return ""
