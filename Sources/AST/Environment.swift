@@ -138,6 +138,11 @@ public struct Environment {
     return types[enumName]?.properties[state.name] != nil
   }
 
+  public func getStateValue(_ state: Identifier, in contract: RawTypeIdentifier) -> Expression {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return types[enumName]!.properties[state.name]!.property.value!
+  }
+
   /// Whether a struct is self referencing.
   public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }
@@ -715,7 +720,7 @@ public struct FunctionInformation {
   }
 }
 
-/// Informatino about an initializer.
+/// Information about an initializer.
 public struct InitializerInformation {
   public var declaration: InitializerDeclaration
   public var callerCapabilities: [CallerCapability]
