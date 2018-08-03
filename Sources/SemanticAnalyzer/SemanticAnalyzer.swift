@@ -212,9 +212,9 @@ public struct SemanticAnalyzer: ASTPass {
       if case .becomeStatement(let becomeStatement) = statement { return becomeStatement } else { return nil }
     }
 
-    let remaingNonEndingStatements = remaining.filter({!$0.isEnding})
+    let remainingNonEndingStatements = remaining.filter({!$0.isEnding})
 
-    remaingNonEndingStatements.forEach { statement in
+    remainingNonEndingStatements.forEach { statement in
       // Emit a warning if there is code after an ending statement.
       diagnostics.append(.codeAfterReturn(statement))
     }
