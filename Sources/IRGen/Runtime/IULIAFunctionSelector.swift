@@ -78,7 +78,13 @@ struct IULIATypeStateChecks {
       guard !typeState.isAny else { return nil }
 
       let stateValue = IULIAExpression(expression: environment.getStateValue(typeState.identifier, in: enclosingType), asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
-      let check = IULIARuntimeFunction.isMatchingTypeState(stateValue)
+
+      let dummySourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))
+      let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + enclosingType))
+      let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: dummySourceLocation)), op: Token(kind: .punctuation(.dot), sourceLocation: dummySourceLocation), rhs: stateVariable))
+      let stateVariableRendered = IULIAExpression(expression: selfState, asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
+
+      let check = IULIARuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)
       return "_flintStateCheck := add(_flintStateCheck, \(check))"
     }
 
