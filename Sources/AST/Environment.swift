@@ -40,7 +40,7 @@ public struct Environment {
   /// Add a contract declaration to the environment.
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
     declaredContracts.append(contractDeclaration.identifier)
-    types[contractDeclaration.identifier.name] = TypeInformation()
+    types[contractDeclaration.identifier.name] = TypeInformation(declaration: contractDeclaration)
     setProperties(contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contractDeclaration.identifier.name)
   }
 
@@ -48,7 +48,7 @@ public struct Environment {
   public mutating func addStruct(_ structDeclaration: StructDeclaration) {
     declaredStructs.append(structDeclaration.identifier)
     if types[structDeclaration.identifier.name] == nil {
-      types[structDeclaration.identifier.name] = TypeInformation()
+      types[structDeclaration.identifier.name] = TypeInformation(declaration: structDeclaration)
     }
     setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
@@ -60,7 +60,7 @@ public struct Environment {
   public mutating func addEnum(_ enumDeclaration: EnumDeclaration) {
     declaredEnums.append(enumDeclaration.identifier)
     if types[enumDeclaration.identifier.name] == nil {
-      types[enumDeclaration.identifier.name] = TypeInformation()
+      types[enumDeclaration.identifier.name] = TypeInformation(declaration: enumDeclaration)
     }
     setProperties(enumDeclaration.cases.map{ .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
   }
@@ -636,9 +636,9 @@ public struct Environment {
         return acc + size(of: element.value.rawType)
       }
     case .userDefinedType(let identifier):
-      if isEnumDeclared(identifier),
-        case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property{
-        return size(of: enumCase.hiddenType.rawType)
+      if isEnumDeclared(identifier){
+        let enumDeclaration = types[identifier]!.declaration as! EnumDeclaration
+        return size(of: enumDeclaration.type.rawType)
       }
       return types[identifier]!.properties.reduce(0) { acc, element in
         return acc + size(of: element.value.rawType)
@@ -664,6 +664,10 @@ public struct Environment {
 
     return offset
   }
+
+  public func declaration(of name: String) -> Any? {
+    return types[name]?.declaration
+  }
 }
 
 /// A table representing the memory offset of each property in a type.
@@ -681,6 +685,7 @@ struct OffsetTable {
 
 /// A list of properties and functions declared in a type.
 public struct TypeInformation {
+  var declaration: Any? = nil
   var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
@@ -688,46 +693,19 @@ public struct TypeInformation {
   var fallbacks = [SpecialInformation]()
   var publicInitializer: SpecialDeclaration? = nil
   var publicFallback: SpecialDeclaration? = nil
-}
 
-public enum Property {
-  case variableDeclaration(VariableDeclaration)
-  case enumCase(EnumCase)
+  public init(){}
 
-  public var identifier: Identifier {
-    switch self {
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.identifier
-    case .enumCase(let enumCase):
-      return enumCase.identifier
-    }
+  public init(declaration: ContractDeclaration){
+    self.declaration = declaration
   }
 
-  public var value: Expression? {
-    switch self {
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.assignedExpression
-    case .enumCase(let enumCase):
-      return enumCase.hiddenValue
-    }
+  public init(declaration: EnumDeclaration){
+    self.declaration = declaration
   }
 
-  public var type: Type? {
-    switch self {
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.type
-    case .enumCase(let enumCase):
-      return enumCase.type
-    }
-  }
-
-  public var sourceLocation: SourceLocation {
-    switch self {
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.sourceLocation
-    case .enumCase(let enumCase):
-      return enumCase.sourceLocation
-    }
+  public init(declaration: StructDeclaration){
+    self.declaration = declaration
   }
 }
 

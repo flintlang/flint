@@ -171,10 +171,6 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: invalidFallback.sourceLocation, message: "Contract fallback shouldn't have any arguments")
   }
 
-  static func cannotInferHiddenValue(_ identifier: Identifier, _ type: Type) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot infer hidden values in case '\(identifier.name)' for hidden type '\(type.name)'")
-  }
-
   static func invalidHiddenValue(_ enumCase: EnumCase) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: enumCase.hiddenValue!.sourceLocation, message: "Invalid hidden value for enum case '\(enumCase.identifier.name)'")
   }

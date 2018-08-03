@@ -10,101 +10,70 @@ enum B: Int { // expected-error {{Invalid redeclaration of 'B'}}
   case beta
 }
 
-enum C: Int {
-  case a = "string" // expected-error {{Cannot convert expression of type 'String' to expected hidden type 'Int'}}
-  case b = 2
-}
-
-enum D: Int {
-  case a = 1
-  case b
-  case c
-}
-
-enum E: Int {
-  case a = 0
-  case b = 32
-  case c = 42
-}
-
-enum F: E { // expected-error {{Invalid hidden type 'E' for enum 'F'}}
- case a = E // expected-error {{Invalid hidden value for enum case 'a'}}
-}
-
-enum G: G { // expected-error {{Invalid hidden type 'G' for enum 'G'}}
-  case a = G.a // expected-error {{Invalid hidden value for enum case 'a'}}
-}
-
-enum H: Int {
-  case a = 6 * 7 // expected-error {{Invalid hidden value for enum case 'a'}}
-}
-
-enum I: String {
-  case a = "alpha"
-  case b = "beta"
-}
-
 enum J: String {
   case a // expected-error {{Cannot infer hidden values in case 'a' for hidden type 'String'}}
 }
 
-enum K: String {
-case a = "alpha"
-case b // expected-error {{Cannot infer hidden values in case 'b' for hidden type 'String'}}
+enum K: Int {
+  case a
+  case b
+  case c
+}
+
+enum L: Int {
+  case a
 }
 
 contract Test {
-  var phonetic: I
-  var ints: D
+  var ints: K
 }
 
 Test :: (any) {
   public init() {
-    phonetic = I.a
-    ints = D.c
+    ints = K.a
   }
 
   public func type1() -> Int {
-    return D.a + D.c // expected-error {{Cannot convert expression of type 'D' to expected return type 'Int'}}
-    // expected-error@-1 {{Incompatible use of operator '+' on values of types 'D' and 'D'}}
+    return K.a + K.c // expected-error {{Cannot convert expression of type 'K' to expected return type 'Int'}}
+    // expected-error@-1 {{Incompatible use of operator '+' on values of types 'K' and 'K'}}
   }
 
   public func type1a() -> Int {
-    return D.a + E.a // expected-error {{Cannot convert expression of type 'E' to expected return type 'Int'}}
-    // expected-error@-1 {{Incompatible use of operator '+' on values of types 'D' and 'E'}}
+    return K.a + L.a // expected-error {{Cannot convert expression of type 'L' to expected return type 'Int'}}
+    // expected-error@-1 {{Incompatible use of operator '+' on values of types 'K' and 'L'}}
   }
 
 
   public func type1b() -> Int {
-    return D.a + 1 // expected-error {{Incompatible use of operator '+' on values of types 'D' and 'Int'}}
+    return K.a + 1 // expected-error {{Incompatible use of operator '+' on values of types 'K' and 'Int'}}
   }
 
   public func type2() -> Int {
-    return I.a // expected-error {{Cannot convert expression of type 'I' to expected return type 'Int'}}
+    return K.a // expected-error {{Cannot convert expression of type 'K' to expected return type 'Int'}}
   }
 
   public func type3() {
-    var phone: I
+    var phone: K
 
-    phone = I.a
-    phone = I.b
-    phone = I // expected-error {{Cannot reference enum 'I' alone}}
-    phone = I.c // expected-error {{Use of undeclared identifier 'c'}}
+    phone = K.a
+    phone = K.b
+    phone = K // expected-error {{Cannot reference enum 'K' alone}}
+    phone = K.d // expected-error {{Use of undeclared identifier 'd'}}
   }
 
   public func type4() {
-    var integer: D
+    var integer: K
 
-    integer = D.a
-    integer = I.b // expected-error {{Incompatible assignment between values of type 'D' and 'I'}}
-    integer = D.c
+    integer = K.a
+    integer = L.a // expected-error {{Incompatible assignment between values of type 'K' and 'L'}}
+    integer = K.c
   }
 
-  public func type5() -> D { // expected-error {{Type 'D' not valid as return type in function 'type5'}}
+  public func type5() -> K { // expected-error {{Type 'K' not valid as return type in function 'type5'}}
     var integer: Int
 
     integer = 1
 
-    return integer // expected-error {{Cannot convert expression of type 'Int' to expected return type 'D'}}
+    return integer // expected-error {{Cannot convert expression of type 'Int' to expected return type 'K'}}
   }
 }

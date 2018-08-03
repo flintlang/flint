@@ -58,27 +58,6 @@ public struct TypeChecker: ASTPass {
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
-    let enviroment = passContext.environment!
-
-    let hiddenType = enumDeclaration.typeAnnotation.type.rawType
-    for enumCase in enumDeclaration.cases {
-      if let hiddenValue = enumCase.hiddenValue {
-        let valueType = enviroment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
-        if !hiddenType.isCompatible(with: valueType), ![hiddenType, valueType].contains(.errorType) {
-          diagnostics.append(.incompatibleCaseValueType(actualType: valueType, expectedType: hiddenType, expression: hiddenValue))
-        }
-      }
-    }
-    return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
-  }
-
-  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
-    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
-  }
-
-  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
-    var passContext = passContext
-    var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
     let hiddenType = enumDeclaration.type.rawType

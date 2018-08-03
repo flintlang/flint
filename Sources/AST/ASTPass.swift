@@ -213,7 +213,6 @@ public struct AnyASTPass: ASTPass {
 
   public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
     return base.process(enumCase: enumCase, passContext: passContext)
-
   }
 
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {

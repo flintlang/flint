@@ -1,32 +1,18 @@
 enum A: Int {
-  case a = 1
+  case a
   case b
   case c
 }
 
-enum B: Int {
-  case a = 0
-  case b = 32
-  case c = 42
-}
-
-enum C: String {
-  case a = "alpha"
-  case b = "beta"
-  case c = "charlie"
-}
-
 contract Test {
   var enumA: A
-  var enumB: B
-  var enumC: C
 }
 
 Test :: (any) {
   public init() {
     self.enumA = A.a
-    self.enumB = B.a
-    self.enumC = C.a
+    //self.enumB = B.a
+    //self.enumC = C.a
   }
 
   public mutating func assignA(i: Int) {
@@ -41,30 +27,6 @@ Test :: (any) {
     }
   }
 
-  public mutating func assignB(i: Int) {
-    if i == 0 {
-    enumB = B.a
-    }
-    if i == 1 {
-    enumB = B.b
-    }
-    if i == 2 {
-    enumB = B.c
-    }
-  }
-
-  public mutating func assignC(i: Int) {
-    if i == 0 {
-      enumC = C.a
-    }
-    if i == 1 {
-      enumC = C.b
-    }
-    if i == 2 {
-      enumC = C.c
-    }
-  }
-
   public func AaCheck() -> Bool {
     return enumA == A.a
   }
@@ -75,29 +37,5 @@ Test :: (any) {
 
   public func AcCheck() -> Bool {
     return enumA == A.c
-  }
-
-  public func BaCheck() -> Bool {
-    return enumB == B.a
-  }
-
-  public func BbCheck() -> Bool {
-    return enumB == B.b
-  }
-
-  public func BcCheck() -> Bool {
-    return enumB == B.c
-  }
-
-  public func CaCheck() -> Bool {
-    return enumC == C.a
-  }
-
-  public func CbCheck() -> Bool {
-    return enumC == C.b
-  }
-
-  public func CcCheck() -> Bool {
-    return enumC == C.c
   }
 }

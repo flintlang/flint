@@ -912,11 +912,7 @@ extension Parser {
     let caseToken = try consume(.case)
     var identifier = try parseIdentifier()
     identifier.enclosingType = enumIdentifier.name
-    var hiddenValue: Expression? = nil
-    if attempt(try consume(.punctuation(.equal))) != nil {
-      hiddenValue = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
-    }
-    return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
+    return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: nil)
   }
 
 }

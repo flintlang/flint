@@ -102,25 +102,8 @@ public struct SemanticAnalyzer: ASTPass {
     }
 
     if enumCase.hiddenValue == nil {
-      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
-    }
-    else if case .literal(_)? = enumCase.hiddenValue {} else {
-      diagnostics.append(.invalidHiddenValue(enumCase))
-    }
-
-    return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
-  }
-
-  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
-    var diagnostics = [Diagnostic]()
-    let environment = passContext.environment!
-
-    if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier, in: enumCase.type.rawType.name) {
-      diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
-    }
-
-    if enumCase.hiddenValue == nil {
-      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
+      let enumDeclaration = environment.declaration(of: enumCase.type.name) as! EnumDeclaration
+      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumDeclaration.type))
     }
     else if case .literal(_)? = enumCase.hiddenValue {} else {
       diagnostics.append(.invalidHiddenValue(enumCase))
@@ -645,14 +628,6 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
-  }
-
-  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
-    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
-  }
-
-  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
-    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
