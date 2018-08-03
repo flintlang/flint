@@ -78,7 +78,7 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.allocateMemory.mangled)(\(size))"
   }
 
-  static func isMatchingTypeState(_ stateValue: String) -> String {
+  static func isMatchingTypeState(_ stateValue: String, _ stateVariable: String) -> String {
     return "\(Identifiers.isMatchingTypeState.mangled)(\(stateValue))"
   }
 
@@ -209,8 +209,8 @@ struct IULIARuntimeFunctionDeclaration {
 
   static let isMatchingTypeState =
   """
-  function flint$isMatchingTypeState(_state) -> ret {
-    ret := eq(flint$..., _state)
+  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
+    ret := eq(_stateVariable, _state)
   }
   """
 
