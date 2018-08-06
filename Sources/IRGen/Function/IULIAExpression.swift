@@ -132,7 +132,7 @@ struct IULIAPropertyAccess {
       }
     case .dictionaryType(_):
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
-        rhsOffset = "0" // TODO: check!
+        rhsOffset = "0"
       } else {
         fatalError()
       }
