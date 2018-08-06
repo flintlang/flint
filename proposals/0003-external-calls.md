@@ -184,13 +184,32 @@ We propose a method to both declare this interface within Flint, use the Ignite 
 
 ```swift
 // Uneducated Call methods
-
-0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4
+0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4.call()
 
 var contractAddress: Address = 0x000...
 contractAddress.call()
 contractAddress.callWithArguments()
 var boundReturn = contractAddress.call()
+
+// Transaction Call
+var transaction: Call = Call()
+transaction.value = Wei(200000)
+
+transaction.run(contractAddress)
+
+// Educated Call methods
+contract Alpha {
+  func withdraw() -> Int
+  func deposit() -> Bool
+}
+
+// <=>
+contract Alpha = "0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000"
+
+import ERC.Token
+
+var alphaInstance: Contract<Alpha> = Alpha(0x000...)
+var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 
 
 ```
