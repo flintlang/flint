@@ -86,7 +86,6 @@ The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.
 	[120](KotET_source_code/KingOfTheEtherThrone.sol#L120),
 	[161](KotET_source_code/KingOfTheEtherThrone.sol#L161))
 
-
 #### Favor pull over push for external calls
 To minimize the damage caused by such failures, it is often better to isolate each external call into its own transaction that can be initiated by the recipient of the call. This is especially relevant for payments, where it is better to let users withdraw funds rather than push funds to them automatically. Avoid combining multiple send() calls in a single transaction. [push-pull mechainism](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls) using the send()/transfer() for push component and call.value()() for the pull component.
 
@@ -178,6 +177,23 @@ import ERC.Token
 var alphaInstance: Contract<Alpha> = Alpha(0x000...)
 var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 
+There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
+
+We propose a method to both declare this interface within Flint, use the Ignite (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+
+
+```swift
+// Uneducated Call methods
+
+0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4
+
+var contractAddress: Address = 0x000...
+contractAddress.call()
+contractAddress.callWithArguments()
+var boundReturn = contractAddress.call()
+
+
+```
 
 ```
 
