@@ -291,16 +291,16 @@ public struct Environment {
   public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
     let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
-    
+
     if elementType != boundType {
       // The bounds have different types.
       return .errorType
     }
-    
+
     return .rangeType(elementType)
   }
 
-  
+
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -352,8 +352,8 @@ public struct Environment {
       }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
-    case .bracketedExpression(let expression):
-      return type(of: expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    case .bracketedExpression(let bracketedExpression):
+      return type(of: bracketedExpression.expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
       return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType

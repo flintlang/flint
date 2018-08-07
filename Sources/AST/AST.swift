@@ -606,7 +606,7 @@ public indirect enum Expression: SourceEntity {
   case dictionaryLiteral(DictionaryLiteral)
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
-  case bracketedExpression(Expression)
+  case bracketedExpression(BracketedExpression)
   case subscriptExpression(SubscriptExpression)
   case sequence([Expression])
   case range(RangeExpression)
@@ -639,8 +639,9 @@ public indirect enum Expression: SourceEntity {
     case .binaryExpression(var binaryExpression):
       binaryExpression.lhs = binaryExpression.lhs.assigningEnclosingType(type: type)
       return .binaryExpression(binaryExpression)
-    case .bracketedExpression(var expression):
-      return .bracketedExpression(expression.assigningEnclosingType(type: type))
+    case .bracketedExpression(var bracketedExpression):
+      bracketedExpression.expression = bracketedExpression.expression.assigningEnclosingType(type: type)
+      return .bracketedExpression(bracketedExpression)
     case .subscriptExpression(var subscriptExpression):
       subscriptExpression.baseExpression = subscriptExpression.baseExpression.assigningEnclosingType(type: type)
       return .subscriptExpression(subscriptExpression)
@@ -657,7 +658,7 @@ public indirect enum Expression: SourceEntity {
     case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
     case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingType
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
-    case .bracketedExpression(let expression): return expression.enclosingType
+    case .bracketedExpression(let bracketedExpression): return bracketedExpression.expression.enclosingType
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
     case .subscriptExpression(let subscriptExpression):
       if case .identifier(let identifier) = subscriptExpression.baseExpression {
@@ -674,7 +675,7 @@ public indirect enum Expression: SourceEntity {
     case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingIdentifier
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingIdentifier
-    case .bracketedExpression(let expression): return expression.enclosingIdentifier
+    case .bracketedExpression(let bracketedExpression): return bracketedExpression.expression.enclosingIdentifier
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseExpression.enclosingIdentifier
     default : return nil
     }
@@ -753,6 +754,32 @@ public struct BinaryExpression: SourceEntity {
 
     self.op = op
     self.rhs = rhs
+  }
+}
+
+/// A bracketed expression.
+public struct BracketedExpression: SourceEntity {
+  public var expression: Expression
+
+  public var openBracketToken: Token
+  public var closeBracketToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(openBracketToken, to: closeBracketToken)
+  }
+
+  public init(expression: Expression, openBracketToken: Token, closeBracketToken: Token) {
+    guard case .punctuation(.openBracket) = openBracketToken.kind else {
+      fatalError("Unexpected token kind \(openBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    guard case .punctuation(.closeBracket) = closeBracketToken.kind else {
+      fatalError("Unexpected token kind \(closeBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    self.expression = expression
+    self.openBracketToken = openBracketToken
+    self.closeBracketToken = closeBracketToken
   }
 }
 

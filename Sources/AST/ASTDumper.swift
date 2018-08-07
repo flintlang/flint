@@ -269,7 +269,7 @@ public class ASTDumper {
       switch expression {
       case .inoutExpression(let inoutExpression): self.dump(inoutExpression)
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
-      case .bracketedExpression(let expression): self.dump(expression)
+      case .bracketedExpression(let bracketedExpression): self.dump(bracketedExpression)
       case .functionCall(let functionCall): self.dump(functionCall)
       case .identifier(let identifier): self.dump(identifier)
       case .literal(let token): self.dump(token)
@@ -295,7 +295,7 @@ public class ASTDumper {
       }
     }
   }
-  
+
   func dump(_ inoutExpression: InoutExpression) {
     writeNode("InoutExpression") {
       self.dump(inoutExpression.expression)
@@ -307,6 +307,12 @@ public class ASTDumper {
       self.dump(binaryExpression.lhs)
       self.dump(binaryExpression.op)
       self.dump(binaryExpression.rhs)
+    }
+  }
+
+  func dump(_ bracketedExpression: BracketedExpression) {
+    writeNode("BracketedExpression") {
+      self.dump(bracketedExpression.expression)
     }
   }
 
@@ -367,7 +373,7 @@ public class ASTDumper {
       }
     }
   }
-  
+
   func dump(_ token: Token) {
     writeLine("token: \(token.kind.description)")
   }
@@ -387,7 +393,7 @@ public class ASTDumper {
       self.dump(rangeExpression.bound)
     }
   }
-  
+
   func dump(_ dictionaryLiteral: DictionaryLiteral) {
     writeNode("DictionaryLiteral") {
       for element in dictionaryLiteral.elements {
