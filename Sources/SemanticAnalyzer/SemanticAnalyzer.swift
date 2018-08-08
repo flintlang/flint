@@ -233,6 +233,7 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
+    let environment = passContext.environment!
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
@@ -252,8 +253,12 @@ public struct SemanticAnalyzer: ASTPass {
     let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
     let inFunctionOrInitializer = inFunctionDeclaration || inInitializerDeclaration
 
-    if passContext.isPropertyDefaultAssignment, !passContext.environment!.isStructDeclared(identifier.name) {
-      diagnostics.append(.statePropertyUsedWithinPropertyInitializer(identifier))
+    if passContext.isPropertyDefaultAssignment, !environment.isStructDeclared(identifier.name) {
+      if environment.isPropertyDefined(identifier.name, enclosingType: passContext.enclosingTypeIdentifier!.name) {
+        diagnostics.append(.statePropertyUsedWithinPropertyInitializer(identifier))
+      } else {
+        diagnostics.append(.useOfUndeclaredIdentifier(identifier))
+      }
     }
 
     if passContext.isFunctionCall {
