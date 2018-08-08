@@ -38,8 +38,9 @@ Test :: caller <- (any) {
   }
 
   mutating func foo() {
-    x = B(1, true) 
+    x = B(1, true)
     x = C(1) // expected-error {{Incompatible assignment between values of type 'B' and 'C'}}
+    D() // expected-error {{Cannot call struct initializer 'D' without receiver assignment}}
   }
 }
 

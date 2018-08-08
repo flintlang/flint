@@ -355,13 +355,14 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+    let environment = passContext.environment!
     var binaryExpression = binaryExpression
 
     if case .dot = binaryExpression.opToken {
       // The identifier explicitly refers to a state property, such as in `self.foo`.
       // We set its enclosing type to the type it is declared in.
       let enclosingType = passContext.enclosingTypeIdentifier!
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
+      let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     }
 
@@ -369,7 +370,18 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
+
+    if environment.isInitializerCall(functionCall),
+      !passContext.inAssignment,
+      !passContext.isPropertyDefaultAssignment,
+      functionCall.arguments.isEmpty
+    {
+      diagnostics.append(.noReceiverForStructInitializer(functionCall))
+    }
+
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
