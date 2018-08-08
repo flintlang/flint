@@ -28,6 +28,17 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Incompatible assignment between values of type '\(lhsType.name)' and '\(rhsType.name)'")
   }
 
+  static func incompatibleOperandTypes(operatorKind: Token.Kind.Punctuation, lhsType: Type.RawType, rhsType: Type.RawType, expectedTypes: [Type.RawType], expression: Expression) -> Diagnostic {
+    let notes = expectedTypes.map { expectedType in
+      return Diagnostic(severity: .note, sourceLocation: expression.sourceLocation, message: "Expected operands to be of type \(expectedType.name)")
+    }
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Incompatible use of operator '\(operatorKind.rawValue)' on values of types '\(lhsType.name)' and '\(rhsType.name)'", notes: notes)
+  }
+
+  static func unmatchedOperandTypes(operatorKind: Token.Kind.Punctuation, lhsType: Type.RawType, rhsType: Type.RawType, expression: Expression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Incompatible use of operator '\(operatorKind.rawValue)' on values of unmatched types '\(lhsType.name)' and '\(rhsType.name)'")
+  }
+
   static func incompatibleArgumentType(actualType: Type.RawType, expectedType: Type.RawType, expression: Expression) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Cannot convert expression of type '\(actualType.name)' to expected argument type '\(expectedType.name)'")
   }

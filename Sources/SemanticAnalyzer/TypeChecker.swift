@@ -156,19 +156,44 @@ public struct TypeChecker: ASTPass {
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var diagnostics = [Diagnostic]()
-
     let environment = passContext.environment!
+    var binaryExpression = binaryExpression
 
-    // In an assignment, ensure the LHS and RHS have the same type.
-    if case .punctuation(.equal) = binaryExpression.op.kind {
-      let typeIdentifier = passContext.enclosingTypeIdentifier!
+    // Check operand types match those required by the operators.
+    let typeIdentifier = passContext.enclosingTypeIdentifier!
+    let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
+    let rhsType = environment.type(of: binaryExpression.rhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
 
-      let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-      let rhsType = environment.type(of: binaryExpression.rhs, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-
-      if !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
+    switch binaryExpression.opToken {
+    case .dot:
+      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+    case .equal:
+      // Both sides must have the same type.
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
       }
+    case .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .openAngledBracket, .closeAngledBracket, .lessThanOrEqual, .greaterThanOrEqual:
+      // Both sides must have type Int.
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: .basicType(.int)) || !rhsType.isCompatible(with: .basicType(.int)) {
+        diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: [.basicType(.int)], expression: .binaryExpression(binaryExpression)))
+      }
+    case .and, .or:
+      // Both sides must have type Bool.
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: .basicType(.bool)) || !rhsType.isCompatible(with: .basicType(.bool)) {
+        diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: [.basicType(.bool)], expression: .binaryExpression(binaryExpression)))
+      }
+    case .doubleEqual, .notEqual:
+      // Both sides must have the same type, and one of either Address, Bool, Int or String.
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType) {
+        diagnostics.append(.unmatchedOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
+      }
+      let acceptedTypes: [Type.RawType] = [.basicType(.address), .basicType(.bool), .basicType(.int), .basicType(.string), .userDefinedType("Enum")]
+      if ![lhsType, rhsType].contains(.errorType), !acceptedTypes.contains(lhsType) && !environment.isEnumDeclared(lhsType.name) {
+        diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: acceptedTypes, expression: .binaryExpression(binaryExpression)))
+      }
+    case .at, .openBrace, .closeBrace, .openSquareBracket, .closeSquareBracket, .colon, .doubleColon, .openBracket, .closeBracket, .arrow, .leftArrow, .comma, .semicolon, .doubleSlash, .dotdot, .ampersand, .halfOpenRange, .closedRange:
+      // These are not valid binary operators.
+      fatalError()
     }
 
     return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)

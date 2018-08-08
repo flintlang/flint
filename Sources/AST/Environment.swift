@@ -385,7 +385,7 @@ public struct Environment {
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
-      
+
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
@@ -401,8 +401,9 @@ public struct Environment {
           break
         }
       }
+
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-      
+
      case .bracketedExpression(let bracketedExpression):
       return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
