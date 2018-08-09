@@ -712,7 +712,7 @@ public struct InoutExpression: SourceEntity {
   public var expression: Expression
 
   public var sourceLocation: SourceLocation {
-    return ampersandToken.sourceLocation
+    return .spanning(ampersandToken, to: expression)
   }
 
   public init(ampersandToken: Token, expression: Expression) {
