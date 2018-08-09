@@ -1,0 +1,136 @@
+; TOP LEVEL
+<topLevelModule> = 1*(<topLevelDeclaration>);
+
+<topLevelDeclaration> = <contractDeclaration>
+                        / <contractBehaviourDeclaration>
+                        / <structDeclaration>
+                        / <enumDeclaration>;
+
+; CONTRACTS
+<contractDeclaration> = "contract" <identifer> [<identiferGroup>] "{" *(<variableDeclaration>) "}";
+
+; VARIABLES
+<variableDeclaration> = [*(<modifier>)] ("var" / "let") <identifer> <typeAnnotation> ["=" <expression>];
+
+; TYPES
+<typeAnnotation> = ":" <type>;
+
+<type> = <identifer> ["<" <type> *("," <type>) ">"]
+       / <basicType>
+       / <arrayType>
+       / <fixedArrayType>
+       / <dictType>;
+
+<basicType> = "Bool"
+             / "Int"
+             / "Address";
+
+<arrayType>        = "[" <type> "]";
+<fixedArrayType>  = <type> "[" <numericLiteral> "]";
+<dictType>         = "[" <type> ":" <type> "]";
+
+; ENUMS
+<enumDeclaration> = "enum" <identifer> [<typeAnnotation>] "{" <enumCase> "}";
+<enumCase>        = "case" <identifer>
+                   / "case" <identifer> "=" <expression>;
+; STRUCTS
+
+<structDeclaration> = "struct" <identifer> "{" 1*(<structMember>) "}";
+
+<structMember> = <variableDeclaration>
+                / <functionDeclaration>
+                / <initializerDeclaration>;
+
+; BEHAVIOUR
+
+<contractBehaviourDeclaration> = <identifer> [<stateGroup>] "::" [<callerCapabilityBinding>] <callerCapabilityGroup> "{" <contractBehaviourMember> {<contractBehaviourMember>} "}";
+
+<contractBehaviourMember> = <functionDeclaration>
+                            / <initializerDeclaration>
+                            / <fallbackDeclaration>;
+
+; ACCESS GROUPS
+
+<stateGroup>               = "@" <identiferGroup>;
+<callerCapabilityBinding> = <identifer> "<-";
+<callerCapabilityGroup>   = <identiferGroup>;
+<identiferGroup>           = "(" <identifer> *("," <identifer>) ")";
+
+; FUNCTIONS + INITIALIZER + FALLBACK
+
+<functionDeclaration>    = <functionHead> <identifer> <parameterList> [<return>] <codeBlock>;
+<initializerDeclaration> = <initializerHead> <parameterList> <codeBlock>;
+<fallbackDeclaration>    = <fallbackHead> <parameterList> <codeBlock>;
+
+<functionHead>     = [*(<attribute>)] [*(<modifier>)] "func";
+<initializerHead>  = [*(<attribute>)] [*(<modifier>)] "init";
+<fallbackHead>     = [*(<modifier>)] "fallback";
+
+<attribute> = "@" <identifer>;
+<modifier>  = "public"
+            / "mutating"
+            / "visible";
+
+<return> = "->" <type>;
+
+<parameterList>  = "(" *(<parameter>) ")";
+<parameter>       = <identifer> <typeAnnotation>;
+
+; STATEMENTS
+
+<codeBlock>   = "{" *(<statement>) "}";
+<statement>   = <expression>
+              / <returnStatement>
+              / <forStatement>
+              / <ifStatement>;
+
+<returnStatement> = "return" <expression>
+<forStatement> = "for" <variableDeclaration> "in" <expression> <codeBlock>
+
+; EXPRESSIONS
+<expression> = <identifier>
+             / <inOutExpression>
+             / <binaryExpression>
+             / <functionCall>
+             / <literal>
+             / <bracketedExpression>
+             / <subscriptExpression>;
+
+<inOutExpression> = "&" <expression>;
+
+<binaryOp> = "+" / "-" / "*" / "/" / "**"
+            / "&+" / "&-" / "&/" / "&*"
+            / "="
+            / "==" / "!="
+            / "//" / "&&";
+
+<binaryExpression>     = <expression> <binaryOp> <expression>;
+<bracketedExpression>  = "(" <expression> ")";
+<subscriptExpression>  = <subscriptExpression> "[" <expression> "]";
+                        / <identifer> "[" <expression> "]";
+
+; FUNCTION CALLS
+<functionCall> = <identifer> "(" [<expression>] *( "," <expression> ) ")";
+
+; CONDITIONALS
+<ifStatement>  = "if" <expression> <codeBlock> [<elseClause>];
+<elseClause>   = "else" <codeBlock>;
+
+; LITERALS
+<identifer> = ( ALPHA / "_" ) *( ALPHA / DIGIT / "$" / "_" );
+<literal>   = <numericLiteral>
+            / <stringLiteral>
+            / <booleanLiteral>
+            / <addressLiteral>
+            / <arrayLiteral>
+            / <dictionaryLiteral>;
+
+<numericLiteral> = <decimalLiteral>;
+<decimalLiteral> = <number>
+                  / <number> "." <number>;
+<addressLiteral> = "0x" 40( DIGIT / ALPHA );
+<arrayLiteral> = "[]";
+<dictionaryLiteral> = "[:]";
+<booleanLiteral> = "true" / "false";
+<stringLiteral> = """ <identifer> """;
+<number> = 1*DIGIT;
