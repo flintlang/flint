@@ -24,6 +24,7 @@
 
 <basicType> = "Bool"
              / "Int"
+             / "String"
              / "Address";
 
 <arrayType>        = "[" <type> "]";
