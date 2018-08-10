@@ -179,7 +179,7 @@ var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 
 There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
 
-We propose a method to both declare this interface within Flint, use the Ignite (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
 
 
 ```swift
