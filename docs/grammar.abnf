@@ -45,7 +45,7 @@
 
 ; BEHAVIOUR
 
-<contractBehaviourDeclaration> = <identifer> [<stateGroup>] "::" [<callerCapabilityBinding>] <callerCapabilityGroup> "{" <contractBehaviourMember> {<contractBehaviourMember>} "}";
+<contractBehaviourDeclaration> = <identifer> [<stateGroup>] "::" [<callerCapabilityBinding>] <callerCapabilityGroup> "{" *(<contractBehaviourMember>) "}";
 
 <contractBehaviourMember> = <functionDeclaration>
                             / <initializerDeclaration>
