@@ -99,8 +99,13 @@
              / <binaryExpression>
              / <functionCall>
              / <literal>
+             / <arrayLiteral>
+             / <dictionaryLiteral>
+             / <self>
+             / <variableDeclaration>
              / <bracketedExpression>
-             / <subscriptExpression>;
+             / <subscriptExpression>
+             / <rangeExpression>;
 
 <inOutExpression> = "&" <expression>;
 
@@ -136,9 +141,7 @@
 <literal>   = <numericLiteral>
             / <stringLiteral>
             / <booleanLiteral>
-            / <addressLiteral>
-            / <arrayLiteral>
-            / <dictionaryLiteral>;
+            / <addressLiteral>;
 
 <numericLiteral> = <decimalLiteral>;
 <decimalLiteral> = <number>
