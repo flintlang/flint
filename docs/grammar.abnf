@@ -105,13 +105,22 @@
 <inOutExpression> = "&" <expression>;
 
 <binaryOp> = "+" / "-" / "*" / "/" / "**"
-            / "&+" / "&-" / "&/" / "&*"
+            / "&+" / "&-" / "&*"
             / "="
             / "==" / "!="
-            / "//" / "&&";
+            / "+=" / "-=" / "*=" / "/="
+            / "||" / "&&"
+            / ">" / "<" / "<=" / ">="
+            / ".";
 
-<binaryExpression>     = <expression> <binaryOp> <expression>;
+<binaryExpression> = <expression> <binaryOp> <expression>;
+
+<self> = "self"
+
+<rangeExpression> = "(" <expression> ( "..<" | "..." ) <expression> ")"
+
 <bracketedExpression>  = "(" <expression> ")";
+
 <subscriptExpression>  = <subscriptExpression> "[" <expression> "]";
                         / <identifer> "[" <expression> "]";
 
