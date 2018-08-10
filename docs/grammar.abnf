@@ -143,7 +143,7 @@
 <numericLiteral> = <decimalLiteral>;
 <decimalLiteral> = <number>
                   / <number> "." <number>;
-<addressLiteral> = "0x" 40( DIGIT / ALPHA );
+<addressLiteral> = "0x" 40HEXDIG;
 <arrayLiteral> = "[]";
 <dictionaryLiteral> = "[:]";
 <booleanLiteral> = "true" / "false";
