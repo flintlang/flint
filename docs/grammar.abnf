@@ -74,10 +74,12 @@
             / "mutating"
             / "visible";
 
-<parameterList>  = "(" *(<parameter>) ")";
-<parameter>       = <identifer> <typeAnnotation>;
 <returnType> = "->" <type>;
 
+<parameterList>       = "()"
+                      / "(" <parameter> *("," <parameter>) ")";
+<parameter>           = *(<parameterModifiers>) <identifer> <typeAnnotation>;
+<parameterModifiers>  = "inout" / "implicit"
 ; STATEMENTS
 
 <codeBlock>   = "{" *(<statement>) "}";
