@@ -83,10 +83,12 @@
 <codeBlock>   = "{" *(<statement>) "}";
 <statement>   = <expression>
               / <returnStatement>
+              / <becomeStatement>
               / <forStatement>
               / <ifStatement>;
 
 <returnStatement> = "return" <expression>
+<becomeStatement> = "become" <expression>
 <forStatement> = "for" <variableDeclaration> "in" <expression> <codeBlock>
 
 ; EXPRESSIONS
