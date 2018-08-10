@@ -1,6 +1,6 @@
 # Introduce External Calls
 
-* Proposal: [FIP-0001](0003-external-calls.md)
+* Proposal: [FIP-0003](0003-external-calls.md)
 * Author: [Alexander Harkness](https://github.com/bearbin) & [Daniel Hails](https://github.com/djrhails)
 * Review Manager: TBD
 * Status: **Awaiting review**
