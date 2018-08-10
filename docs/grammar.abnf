@@ -61,6 +61,7 @@
 ; FUNCTIONS + INITIALIZER + FALLBACK
 
 <functionDeclaration>    = <functionHead> <identifer> <parameterList> [<return>] <codeBlock>;
+<functionDeclaration>    = <functionHead> <identifer> <parameterList> [<returnType>] <codeBlock>;
 <initializerDeclaration> = <initializerHead> <parameterList> <codeBlock>;
 <fallbackDeclaration>    = <fallbackHead> <parameterList> <codeBlock>;
 
@@ -73,10 +74,9 @@
             / "mutating"
             / "visible";
 
-<return> = "->" <type>;
-
 <parameterList>  = "(" *(<parameter>) ")";
 <parameter>       = <identifer> <typeAnnotation>;
+<returnType> = "->" <type>;
 
 ; STATEMENTS
 
