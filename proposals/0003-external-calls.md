@@ -15,11 +15,11 @@ Calls to untrusted contracts can introduce several unexpected risks or errors. E
 
 However external calls are necessary to accomplish key features of smart contracts, including:
 - Paying other users
-- Interacting with other Contracts e.g. Tokens
+- Interacting with other Contracts e.g. Tokens or Wallets
 
-There have been pre-existing attempts to defined best practices for programming with respect for external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/)). This proposal will try and integrate these best practices into the language design itself.
+There have been pre-existing attempts to defined best practices for programming with respect for external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)). This proposal will try and integrate these best practices into the language design itself.
 
-#### 1. Contracts are untrustworthy
+#### 1. Contracts should be labelled as untrustworthy
 ```javascript
 // bad
 Bank.withdraw(100); // Unclear whether trusted or untrusted
@@ -135,10 +135,18 @@ contract auction {
 ```
 
 ## Proposed solution
+- We shouldn't support call.value() directly only send
+- Any call which has a value has payable modifier
+- Return value from an external call *must* be checked [Unchecked Return Value](https://consensys.github.io/smart-contract-best-practices/recommendations/#handle-errors-in-external-calls)
+- Explicitly mark all external contracts as trusted or untrusted
+- Avoid multiple external calls in single transaction. External calls can fail accidentally or deliberately.
+- Critical functions such as sends with non-zero values or suicide() are callable by anyone or sender is compared to address that can be written to by anyone
+- Contract state shouldn't be relied on if untrusted contracts are called. State changes after external calls should be avoided
+- Payable transaction does not revert in case of failure
 
 There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
 
-We propose a method to both declare this interface within Flint, use the Ignite (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
 
 
 ```swift
@@ -172,7 +180,6 @@ var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 
 
 ```
-
 
 ## Semantics
 
