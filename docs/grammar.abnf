@@ -37,7 +37,7 @@
                    / "case" <identifer> "=" <expression>;
 ; STRUCTS
 
-<structDeclaration> = "struct" <identifer> "{" 1*(<structMember>) "}";
+<structDeclaration> = "struct" <identifer> "{" *(<structMember>) "}";
 
 <structMember> = <variableDeclaration>
                 / <functionDeclaration>
