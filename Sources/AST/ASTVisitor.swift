@@ -352,8 +352,12 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.element = .inoutExpression(processResult.combining(visit(inoutExpression, passContext: processResult.passContext)))
     case .binaryExpression(let binaryExpression):
       processResult.element = .binaryExpression(processResult.combining(visit(binaryExpression, passContext: processResult.passContext)))
-    case .bracketedExpression(let expression):
-      processResult.element = .bracketedExpression(processResult.combining(visit(expression, passContext: processResult.passContext)))
+    case .bracketedExpression(let bracketedExpression):
+      processResult.element = .bracketedExpression(BracketedExpression(
+        expression: processResult.combining(visit(bracketedExpression.expression, passContext: processResult.passContext)),
+        openBracketToken: bracketedExpression.openBracketToken,
+        closeBracketToken: bracketedExpression.closeBracketToken
+      ))
     case .functionCall(let functionCall):
       processResult.element = .functionCall(processResult.combining(visit(functionCall, passContext: processResult.passContext)))
     case .arrayLiteral(let arrayLiteral):

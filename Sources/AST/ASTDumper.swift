@@ -310,7 +310,7 @@ public class ASTDumper {
       switch expression {
       case .inoutExpression(let inoutExpression): self.dump(inoutExpression)
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
-      case .bracketedExpression(let expression): self.dump(expression)
+      case .bracketedExpression(let bracketedExpression): self.dump(bracketedExpression)
       case .functionCall(let functionCall): self.dump(functionCall)
       case .identifier(let identifier): self.dump(identifier)
       case .literal(let token): self.dump(token)
@@ -349,6 +349,12 @@ public class ASTDumper {
       self.dump(binaryExpression.lhs)
       self.dump(binaryExpression.op)
       self.dump(binaryExpression.rhs)
+    }
+  }
+
+  func dump(_ bracketedExpression: BracketedExpression) {
+    writeNode("BracketedExpression") {
+      self.dump(bracketedExpression.expression)
     }
   }
 

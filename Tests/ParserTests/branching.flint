@@ -13,10 +13,11 @@ Wallet :: (any) {
   public func factorial(n: Int) -> Int {
 
 // CHECK-AST: IfStatement
-// CHECK-AST:  BinaryExpression
-// CHECK-AST:    identifier "n"
-// CHECK-AST:    <
-// CHECK-AST:    literal 2
+// CHECK-AST:   BracketedExpression
+// CHECK-AST:    BinaryExpression
+// CHECK-AST:      identifier "n"
+// CHECK-AST:      <
+// CHECK-AST:      literal 2
 // CHECK-AST:  ReturnStatement
 // CHECK-AST:    literal 1
     if (n < 2) { return 1 }

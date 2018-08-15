@@ -485,11 +485,12 @@ extension Parser {
     return identifier
   }
 
+
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket))
     let identifiers = try parseIdentifierList()
     let closeBracketToken = try consume(.punctuation(.closeBracket))
-
+    
     return (identifiers, closeBracketToken)
   }
 
@@ -749,15 +750,15 @@ extension Parser {
     return .identifier(identifier)
   }
 
-  func parseBracketedExpression() throws -> Expression {
-    try consume(.punctuation(.openBracket))
+  func parseBracketedExpression() throws -> BracketedExpression {
+    let openBracketToken = try consume(.punctuation(.openBracket))
     guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
       throw ParserError.expectedToken(.punctuation(.closeBracket), sourceLocation: currentToken?.sourceLocation)
     }
     let expression = try parseExpression(upTo: closeBracketIndex)
-    try consume(.punctuation(.closeBracket))
+    let closeBracketToken = try consume(.punctuation(.closeBracket))
 
-    return expression
+    return BracketedExpression(expression: expression, openBracketToken: openBracketToken, closeBracketToken: closeBracketToken)
   }
 
   func parseFunctionCall() throws -> FunctionCall {

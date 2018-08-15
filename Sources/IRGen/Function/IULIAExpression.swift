@@ -23,8 +23,8 @@ struct IULIAExpression {
       return IULIAExpression(expression: inoutExpression.expression, asLValue: true).rendered(functionContext: functionContext)
     case .binaryExpression(let binaryExpression):
       return IULIABinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
-    case .bracketedExpression(let expression):
-      return IULIAExpression(expression: expression, asLValue: asLValue).rendered(functionContext: functionContext)
+    case .bracketedExpression(let bracketedExpression):
+      return IULIAExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
       return IULIAFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):

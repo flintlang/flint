@@ -390,6 +390,7 @@ public struct Environment {
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
+
       if binaryExpression.opToken == .dot {
         switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
         case .arrayType(_):
@@ -402,8 +403,8 @@ public struct Environment {
       }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
       
-    case .bracketedExpression(let expression):
-      return type(of: expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+     case .bracketedExpression(let bracketedExpression):
+      return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
       return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
