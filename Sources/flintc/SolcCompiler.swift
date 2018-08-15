@@ -19,15 +19,11 @@ struct SolcCompiler {
 
     let process = Process()
 
-    #if os(Linux)
-      process.launchPath = "/usr/bin/solc"
-    #else
-      process.launchPath = "/usr/local/bin/solc"
-    #endif
+    process.launchPath = "/usr/bin/env"
 
     verifySolc(launchPath: process.launchPath!)
     process.standardError = Pipe()
-    process.arguments = [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
+    process.arguments = ["solc", temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
 
     process.launch()
     process.waitUntilExit()

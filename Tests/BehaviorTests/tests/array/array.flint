@@ -13,9 +13,9 @@ contract Array {
 
 Array :: (any) {
   public init() {}
-  
+
   mutating func increaseNumWrites() {
-    self.numWrites += 1 
+    self.numWrites += 1
   }
 
   public mutating func write(index: Int, val: Int) {
@@ -29,6 +29,19 @@ Array :: (any) {
 
   public func value2(index: Int) -> Int {
     return arr2[index]
+  }
+
+  public func sizeUp() -> Int {
+    let i: Int = arr.size
+    return i
+  }
+
+  public func sizeUp2() -> Int {
+    return arr2.size
+  }
+
+  public func sizeUp3() -> Int {
+    return arr3.size
   }
 
   public mutating func write2(index: Int, val: Int) {
