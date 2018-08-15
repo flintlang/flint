@@ -10,10 +10,10 @@ contract(config.contractName, function(accounts) {
   it("should be possible to perform <", async function() {
     const instance = await Contract.deployed();
 
-    let t = await instance.lessThan(5, 4);
+    let t = await instance.lt(5, 4);
     assert.equal(t.valueOf(), 0);
 
-    t = await instance.lessThan(1, 2);
+    t = await instance.lt(1, 2);
     assert.equal(t.valueOf(), 1);
   });
 
@@ -30,10 +30,10 @@ contract(config.contractName, function(accounts) {
   it("should be possible to perform >", async function() {
     const instance = await Contract.deployed();
 
-    let t = await instance.greaterThan(5, 5);
+    let t = await instance.gt(5, 5);
     assert.equal(t.valueOf(), 0);
 
-    t = await instance.greaterThan(2, 1);
+    t = await instance.gt(2, 1);
     assert.equal(t.valueOf(), 1);
   });
 

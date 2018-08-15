@@ -228,10 +228,19 @@ public struct SemanticAnalyzer: ASTPass {
     return CharacterSet(charactersIn: "$")
   }
 
+  var identifierReservedCharacters: CharacterSet {
+    return CharacterSet(charactersIn: "@")
+  }
+
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
+
+    // Disallow identifiers from containing special characters.
+    if let char = identifier.name.first(where: { return identifierReservedCharacters.contains($0.unicodeScalars.first!) }) {
+      diagnostics.append(.invalidCharacter(identifier, character: char))
+    }
 
     // Only allow stdlib files to include special characters, such as '$'.
     if !identifier.sourceLocation.isFromStdlib,
@@ -368,7 +377,7 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     var diagnostics = [Diagnostic]()
-    
+
     if case .literal(let startToken) = rangeExpression.initial,
        case .literal(let endToken) = rangeExpression.bound {
       if startToken.kind == endToken.kind, rangeExpression.op.kind == .punctuation(.halfOpenRange) {
@@ -380,7 +389,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     return ASTPassResult(element: rangeExpression, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -627,7 +636,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -647,7 +656,7 @@ public struct SemanticAnalyzer: ASTPass {
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }

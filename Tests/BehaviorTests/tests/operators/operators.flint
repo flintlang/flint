@@ -3,11 +3,11 @@ contract Operators {}
 Operators :: (any) {
   public init() {}
 
-  public func lessThan(a: Int, b: Int) -> Bool {
+  public func lt(a: Int, b: Int) -> Bool {
     return a < b
   }
 
-  public func greaterThan(a: Int, b: Int) -> Bool {
+  public func gt(a: Int, b: Int) -> Bool {
     return a > b
   }
 

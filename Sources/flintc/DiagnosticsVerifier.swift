@@ -14,7 +14,8 @@ import AST
 /// The expected diagnostics are specified inline in the source file.
 struct DiagnosticsVerifier {
   private let diagnosticRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
-  private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-?\\d+)\\s+\\{\\{(.*)\\}\\}")
+  private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
+  private let diagnosticOffsetRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
 
   func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
     var success = true
@@ -91,20 +92,36 @@ struct DiagnosticsVerifier {
       let message = String(sourceLine[messageRange])
 
       return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
+    } else if let match = diagnosticLineRegex.matches(in: sourceLine, range: NSRange(sourceLine.startIndex..., in: sourceLine)).first {
+      let severityRange = Range(match.range(at: 1), in: sourceLine)!
+      let severity = String(sourceLine[severityRange])
+
+      let lineRange = Range(match.range(at: 2), in: sourceLine)!
+      let line = Int(sourceLine[lineRange])!
+
+      let messageRange = Range(match.range(at: 3), in: sourceLine)!
+      let message = String(sourceLine[messageRange])
+
+      return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
+    } else if let match = diagnosticOffsetRegex.matches(in: sourceLine, range: NSRange(sourceLine.startIndex..., in: sourceLine)).first {
+      let severityRange = Range(match.range(at: 1), in: sourceLine)!
+      let severity = String(sourceLine[severityRange])
+
+      let biasRange = Range(match.range(at: 2), in: sourceLine)
+      let biasString = String(sourceLine[biasRange!])
+      let biasFunc: (Int, Int) -> Int = biasString == "+" ? {$0 + $1} : {$0 - $1}
+
+      let expectedLineRange = Range(match.range(at: 3), in: sourceLine)!
+      let expectedLine = Int(sourceLine[expectedLineRange])!
+
+      let messageRange = Range(match.range(at: 4), in: sourceLine)!
+      let message = String(sourceLine[messageRange])
+
+      let line = biasFunc(line, expectedLine)
+
+      return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
     }
-
-    guard let match = diagnosticLineRegex.matches(in: sourceLine, range: NSRange(sourceLine.startIndex..., in: sourceLine)).first else { return nil }
-
-    let severityRange = Range(match.range(at: 1), in: sourceLine)!
-    let severity = String(sourceLine[severityRange])
-
-    let lineRange = Range(match.range(at: 2), in: sourceLine)!
-    let line = Int(sourceLine[lineRange])!
-
-    let messageRange = Range(match.range(at: 3), in: sourceLine)!
-    let message = String(sourceLine[messageRange])
-
-    return Expectation(severity: Diagnostic.Severity(rawValue: severity)!, message: message, line: line)
+    return nil
   }
 }
 

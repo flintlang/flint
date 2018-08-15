@@ -255,7 +255,8 @@ struct IULIAFunctionCall {
     let args: String = functionCall.arguments.map({ argument in
       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
-    return "\(functionCall.identifier.name)(\(args))"
+    let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
+    return "\(identifier)(\(args))"
   }
 
 }

@@ -39,7 +39,7 @@ struct IULIAFunction {
   }
 
   var name: String {
-    return functionDeclaration.identifier.name
+    return functionDeclaration.mangledIdentifier!
   }
 
   var parameterNames: [String] {

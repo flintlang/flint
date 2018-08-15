@@ -433,7 +433,6 @@ public struct Environment {
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
-
         guard candidate.parameterTypes == argumentTypes,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(candidate)
@@ -535,10 +534,10 @@ public struct Environment {
 
   /// The memory offset of a property in a type.
   public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
-    
+
     var offsetMap = [String: Int]()
     var offset = 0
-    
+
     let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
 
     for p in properties {
