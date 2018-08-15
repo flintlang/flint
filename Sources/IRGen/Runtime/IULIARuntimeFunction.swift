@@ -23,6 +23,7 @@ enum IULIARuntimeFunction {
     case return32Bytes
     case isInvalidSubscriptExpression
     case storageArrayOffset
+    case storageArraySize
     case storageFixedSizeArrayOffset
     case storageDictionaryOffsetForKey
     case callvalue
@@ -98,12 +99,16 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, arraySize: Int) -> String {
-    return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
-  }
-
   static func storageArrayOffset(arrayOffset: String, index: String) -> String {
     return "\(Identifiers.storageArrayOffset.mangled)(\(arrayOffset), \(index))"
+  }
+
+  static func storageArraySize(arrayOffset: String) -> String {
+    return "\(Identifiers.storageArraySize.mangled)(\(arrayOffset))"
+  }
+
+  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, arraySize: Int) -> String {
+    return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
   }
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: String, key: String) -> String {

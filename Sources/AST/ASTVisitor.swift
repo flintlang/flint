@@ -428,7 +428,14 @@ public struct ASTVisitor<Pass: ASTPass> {
     }
     processResult.passContext.isEnclosing = false
 
-    processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
+    switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
+    case .arrayType(_):
+      break
+    case .fixedSizeArrayType(_):
+      break
+    default:
+      processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
+    }
 
     let postProcessResult = pass.postProcess(binaryExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)

@@ -173,7 +173,7 @@ public struct Environment {
     return types[enclosingType]?.properties[identifier]
   }
 
-  /// Whether is property is declared as a constant.
+  /// Whether property is declared as a constant.
   public func isPropertyConstant(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
     return property(identifier, enclosingType)!.isConstant
   }
@@ -385,12 +385,23 @@ public struct Environment {
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
+      
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
+      if binaryExpression.opToken == .dot {
+        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
+        case .arrayType(_):
+          return .basicType(.int)
+        case .fixedSizeArrayType(_):
+          return .basicType(.int)
+        default:
+          break
+        }
+      }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-
+      
     case .bracketedExpression(let expression):
       return type(of: expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
