@@ -112,6 +112,12 @@ extension ASTPassContext {
     return functionDeclarationContext != nil || initializerDeclarationContext != nil
   }
 
+  // Whether we are visiting a node inside the rhs of an assignment.
+  public var inAssignment: Bool {
+    get { return self[IsAssignment.self] ?? false }
+    set { self[IsAssignment.self] = newValue }
+  }
+
   /// Whether we are visiting a property's default assignment.
   public var isPropertyDefaultAssignment: Bool {
     get { return self[IsPropertyDefaultAssignment.self] ?? false }
@@ -163,6 +169,10 @@ private struct ScopeContextContextEntry: PassContextEntry {
 }
 
 private struct IsFunctionCallContextEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsAssignment: PassContextEntry {
   typealias Value = Bool
 }
 
