@@ -431,6 +431,7 @@ public struct Environment {
       type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
     }
 
+    // Check if it can be a regular function.
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
         guard candidate.parameterTypes == argumentTypes,
@@ -443,6 +444,7 @@ public struct Environment {
       }
     }
 
+    // Check if it can be an initializer.
     if let initializers = types[functionCall.identifier.name]?.initializers {
       for candidate in initializers {
         guard candidate.parameterTypes == argumentTypes,
@@ -460,8 +462,7 @@ public struct Environment {
       }
     }
 
-    // Check if it's a global function.
-
+    // Check if it can be a global function.
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
