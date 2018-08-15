@@ -115,6 +115,13 @@ struct IULIAPropertyAccess {
 
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
 
+    if case .identifier(let enumIdentifier) = lhs,
+      case .identifier(let propertyIdentifier) = rhs,
+      environment.isEnumDeclared(enumIdentifier.name),
+      let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
+      return IULIAExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
+    }
+
     let rhsOffset: String
     // Special cases.
     switch lhsType {
