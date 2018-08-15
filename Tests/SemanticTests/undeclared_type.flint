@@ -7,7 +7,7 @@ contract Test {
 
 Test :: (any) {
   public init() {
-    self.owner = T() // expected-error {{Function 'T' is not in scope or cannot be called using the caller capability 'any'}}
+    self.owner = T() // expected-error {{Function 'T' is not in scope or cannot be called using the capability 'any'}}
     self.userType = UDT()
   }
 }

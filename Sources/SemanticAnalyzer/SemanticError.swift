@@ -23,10 +23,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
   }
 
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], candidates: [FunctionInformation]) -> Diagnostic {
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [FunctionInformation]) -> Diagnostic {
 
     let candidateNotes = candidates.map { candidate -> Diagnostic in
-      let callerCapabilities = renderCapabilityGroup(candidate.callerCapabilities)
+      let callerCapabilities = renderGroup(candidate.callerCapabilities)
       let messageTail: String
 
       if candidate.callerCapabilities.count > 1 {
@@ -38,8 +38,10 @@ extension Diagnostic {
       return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
     }
 
-    let plural = contextCallerCapabilities.count > 1
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the caller \(plural ? "capabilities" : "capability") '\(renderCapabilityGroup(contextCallerCapabilities))'", notes: candidateNotes)
+    let callerPlural = contextCallerCapabilities.count > 1
+    let statesPlural = stateCapabilities.count > 1
+    let statesSpecified = " at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'"
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
 
   static func noReceiverForStructInitializer(_ functionCall: FunctionCall) -> Diagnostic {
@@ -48,6 +50,12 @@ extension Diagnostic {
 
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has no associated contract declaration")
+  }
+
+  static func contractBehaviorDeclarationMismatchedStatefulness(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
+    let isContractStateful = contractBehaviorDeclaration.states == []
+
+    return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract '\(contractBehaviorDeclaration.contractIdentifier.name)' is \(isContractStateful ? "" : "not ")stateful but behavior declaration is\(!isContractStateful ? "" : " not")")
   }
 
   static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
@@ -113,16 +121,20 @@ extension Diagnostic {
   }
 
   static func recursiveStruct(_ structIdentifier: Identifier, _ enclosingType: PropertyInformation) -> Diagnostic {
-    let note = Diagnostic(severity: .note, sourceLocation: enclosingType.sourceLocation, message: "State property '\(enclosingType.variableDeclaration.identifier.name)' of type '\(enclosingType.rawType.name)' refers to enclosing type of '\(structIdentifier.name)'")
+    let note = Diagnostic(severity: .note, sourceLocation: enclosingType.sourceLocation, message: "State property '\(enclosingType.property.identifier.name)' of type '\(enclosingType.rawType.name)' refers to enclosing type of '\(structIdentifier.name)'")
     return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Declaration of recursive struct '\(structIdentifier.name)'", notes: [note])
   }
 
-  static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [VariableDeclaration]) -> Diagnostic {
+  static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [Property]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
       return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")
     }
 
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
+  }
+
+  static func returnFromInitializerWithoutInitializingState(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Return from initializer without initializing state in stateful contract")
   }
 
   static func contractDoesNotHaveAPublicInitializer(contractIdentifier: Identifier) -> Diagnostic {
@@ -138,8 +150,36 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
   }
 
-  static func renderCapabilityGroup(_ capabilities: [CallerCapability]) -> String {
+  static func cannotInferHiddenValue(_ identifier: Identifier, _ type: Type) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot infer hidden values in case '\(identifier.name)' for hidden type '\(type.name)'")
+  }
+
+  static func invalidHiddenValue(_ enumCase: EnumCase) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: enumCase.hiddenValue!.sourceLocation, message: "Invalid hidden value for enum case '\(enumCase.identifier.name)'")
+  }
+
+  static func invalidHiddenType(_ enumDeclaration: EnumDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: enumDeclaration.type.sourceLocation, message: "Invalid hidden type '\(enumDeclaration.type.name)' for enum '\(enumDeclaration.identifier.name)'")
+  }
+
+  static func invalidReference(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot reference enum '\(identifier.name)' alone")
+  }
+
+  static func multipleReturns(_ statement: ReturnStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Early returns are not supported yet")
+  }
+
+  static func becomeBeforeReturn(_ statement: BecomeStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Cannot become before a return")
+  }
+
+  static func renderGroup(_ capabilities: [CallerCapability]) -> String {
     return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
+  }
+
+  static func renderGroup(_ states: [TypeState]) -> String {
+    return "\(states.map({ $0.name }).joined(separator: ", "))"
   }
 }
 
@@ -147,7 +187,11 @@ extension Diagnostic {
 
 extension Diagnostic {
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
-    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return will never be executed")
+    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Code after return/become will never be executed")
+  }
+
+  static func multipleBecomes(_ statement: BecomeStatement) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation, message: "Only final become will change state")
   }
 
   static func emptyRange(_ rangeExpression: AST.RangeExpression) -> Diagnostic {

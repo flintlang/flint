@@ -1,0 +1,12 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+contract C2 (State1, State2, State3) {
+}
+
+C2 @(any) :: (any) {
+  public init() {
+    // CHECK-AST: BecomeStatement
+    // CHECK-AST:   identifier "State3"
+    become State3
+  }
+}
