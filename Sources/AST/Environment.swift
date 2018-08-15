@@ -134,7 +134,7 @@ public struct Environment {
     return types[enclosingType]!.properties.keys.contains(property)
   }
 
-  /// Whether is property is declared as a constnat.
+  /// Whether property is declared as a constant.
   public func isPropertyConstant(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
     return types[enclosingType]!.properties[property]!.isConstant
   }
