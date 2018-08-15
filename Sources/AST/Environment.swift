@@ -134,7 +134,7 @@ public struct Environment {
     return types[enclosingType]!.properties.keys.contains(property)
   }
 
-  /// Whether is property is declared as a constnat.
+  /// Whether property is declared as a constant.
   public func isPropertyConstant(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
     return types[enclosingType]!.properties[property]!.isConstant
   }
@@ -291,16 +291,16 @@ public struct Environment {
   public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
     let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
-    
+
     if elementType != boundType {
       // The bounds have different types.
       return .errorType
     }
-    
+
     return .rangeType(elementType)
   }
 
-  
+
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -349,6 +349,16 @@ public struct Environment {
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
+      }
+      if binaryExpression.opToken == .dot {
+        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
+        case .arrayType(_):
+          return .basicType(.int)
+        case .fixedSizeArrayType(_):
+          return .basicType(.int)
+        default:
+          break
+        }
       }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 

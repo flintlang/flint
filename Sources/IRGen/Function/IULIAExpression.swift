@@ -114,7 +114,25 @@ struct IULIAPropertyAccess {
     var isMemoryAccess: Bool = false
 
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
-    let rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
+
+    let rhsOffset: String
+    // Special cases.
+    switch lhsType {
+    case .fixedSizeArrayType(_, let size):
+      if case .identifier(let identifier) = rhs, identifier.name == "size" {
+        return "\(size)"
+      } else {
+        fatalError()
+      }
+    case .arrayType(_):
+      if case .identifier(let identifier) = rhs, identifier.name == "size" {
+        rhsOffset = "0"
+      } else {
+        fatalError()
+      }
+    default:
+      rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
+    }
 
     let offset: String
     if isInStructFunction {
