@@ -44,6 +44,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
 
+  static func noReceiverForStructInitializer(_ functionCall: FunctionCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Cannot call struct initializer '\(functionCall.identifier.name)' without receiver assignment")
+  }
+
   static func contractBehaviorDeclarationNoMatchingContract(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract behavior declaration for '\(contractBehaviorDeclaration.contractIdentifier.name)' has no associated contract declaration")
   }

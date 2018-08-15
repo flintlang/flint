@@ -274,10 +274,11 @@ public struct IULIAPreprocessor: ASTPass {
     }
 
     // Mangle initializer call.
-    if environment.isStructDeclared(functionCall.identifier.name) {
+    if environment.isInitializerCall(functionCall) {
       // Remove the receiver as the first argument to find the original initializer declaration.
       var initializerWithoutReceiver = functionCall
-      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil {
+      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil,
+        !initializerWithoutReceiver.arguments.isEmpty {
         initializerWithoutReceiver.arguments.remove(at: 0)
       }
 
@@ -308,7 +309,6 @@ public struct IULIAPreprocessor: ASTPass {
     guard environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
-
     // For each non-implicit dynamic type, add an isMem parameter.
     var offset = 0
     for (index, argument) in functionCall.arguments.enumerated() {

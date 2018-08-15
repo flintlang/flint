@@ -459,7 +459,18 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
+
+    if environment.isInitializerCall(functionCall),
+      !passContext.inAssignment,
+      !passContext.isPropertyDefaultAssignment,
+      functionCall.arguments.isEmpty
+    {
+      diagnostics.append(.noReceiverForStructInitializer(functionCall))
+    }
+
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
