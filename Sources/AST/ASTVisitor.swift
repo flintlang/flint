@@ -374,11 +374,18 @@ public struct ASTVisitor<Pass: ASTPass> {
       processResult.passContext.asLValue = false
     }
 
-    if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
-      processResult.passContext.inAssignment = true
+    switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
+    case .arrayType(_):
+      break
+    case .fixedSizeArrayType(_):
+      break
+    default:
+      if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
+        processResult.passContext.inAssignment = true
+      }
+      processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
+      processResult.passContext.inAssignment = false // Allowed as nested assignments do not exist.
     }
-    processResult.element.rhs = processResult.combining(visit(processResult.element.rhs, passContext: processResult.passContext))
-    processResult.passContext.inAssignment = false // Allowed as nested assignments do not exist.
 
     let postProcessResult = pass.postProcess(binaryExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
