@@ -8,7 +8,8 @@
 import Foundation
 
 /// A location in a source file.
-public struct SourceLocation: Equatable {
+public struct SourceLocation: Comparable {
+
   public var line: Int
   public var column: Int
   public var length: Int
@@ -28,5 +29,9 @@ public struct SourceLocation: Equatable {
     let upperBound = upperBoundEntity.sourceLocation
     guard lowerBound.line == upperBound.line else { return lowerBound }
     return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: upperBound.column + upperBound.length - lowerBound.column, file: lowerBound.file)
+  }
+
+  public static func < (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
+    return [lhs.line, lhs.column, lhs.length].lexicographicallyPrecedes([rhs.line, rhs.column, rhs.length])
   }
 }

@@ -17,6 +17,6 @@ EventTest :: (any) {
     eventA(true, 3, c) // expected-error {{Cannot convert expression of type 'Bool' to expected argument type 'Int'}}
                        // expected-error@-1 {{Cannot convert expression of type 'Int' to expected argument type 'Bool'}}
 
-eventA(true) // expected-error {{Function 'eventA' is not in scope or cannot be called using the caller capability 'any'}}
+    eventA(true) // expected-error {{Function 'eventA' is not in scope or cannot be called using the capability 'any'}}
   }
 }

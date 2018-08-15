@@ -24,7 +24,19 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    contractBehaviorDeclaration.states.forEach { typeState in
+      if environment.isStateDeclared(typeState.identifier, in: contractBehaviorDeclaration.contractIdentifier.name) || typeState.isAny {
+        // Become has an identifier of a state declared in the contract
+      } else {
+        diagnostics.append(.invalidState(falseState: .identifier(typeState.identifier), contract: contractBehaviorDeclaration.contractIdentifier.name))
+      }
+    }
+
+
+    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
@@ -37,6 +49,27 @@ public struct TypeChecker: ASTPass {
 
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    var passContext = passContext
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    let hiddenType = enumDeclaration.type.rawType
+    for enumCase in enumDeclaration.cases {
+      if let hiddenValue = enumCase.hiddenValue {
+        let valueType = environment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
+        if !hiddenType.isCompatible(with: valueType), ![hiddenType, valueType].contains(.errorType) {
+          diagnostics.append(.incompatibleCaseValueType(actualType: valueType, expectedType: hiddenType, expression: hiddenValue))
+        }
+      }
+    }
+    return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -76,7 +109,7 @@ public struct TypeChecker: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
     return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -105,6 +138,10 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -118,18 +155,9 @@ public struct TypeChecker: ASTPass {
   }
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
     var diagnostics = [Diagnostic]()
 
     let environment = passContext.environment!
-
-    if case .dot = binaryExpression.opToken {
-      // The identifier explicitly refers to a state property, such as in `self.foo`.
-      // We set its enclosing type to the type it is declared in.
-      let enclosingType = passContext.enclosingTypeIdentifier!
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
-      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
-    }
 
     // In an assignment, ensure the LHS and RHS have the same type.
     if case .punctuation(.equal) = binaryExpression.op.kind {
@@ -175,7 +203,7 @@ public struct TypeChecker: ASTPass {
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -189,19 +217,19 @@ public struct TypeChecker: ASTPass {
     let environment = passContext.environment!
     let typeIdentifier = passContext.enclosingTypeIdentifier!
     let scopeContext = passContext.scopeContext!
-    
+
     let identifierType = environment.type(of: subscriptExpression.baseExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
-    
+
     let actualType = environment.type(of: subscriptExpression.indexExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
     var expectedType: Type.RawType = .errorType
-    
+
     switch identifierType {
     case .arrayType (_), .fixedSizeArrayType(_): expectedType = .basicType(.int)
     case .dictionaryType(let keyType, _): expectedType = keyType
     default:
       diagnostics.append(.incompatibleSubscript(actualType: identifierType, expression: subscriptExpression.baseExpression))
     }
-    
+
     if !actualType.isCompatible(with: expectedType), ![actualType, expectedType].contains(.errorType) {
       diagnostics.append(.incompatibleSubscriptIndex(actualType: actualType, expectedType: expectedType, expression: .subscriptExpression(subscriptExpression)))
     }
@@ -228,6 +256,21 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    var diagnostics = [Diagnostic]()
+    let contractIdentifier = passContext.enclosingTypeIdentifier!
+    let environment = passContext.environment!
+
+    if case .identifier(let identifier) = becomeStatement.expression,
+      environment.isStateDeclared(identifier, in: contractIdentifier.name) {
+      // Become has an identifier of a state declared in the contract
+    } else {
+      diagnostics.append(.invalidState(falseState: becomeStatement.expression, contract: contractIdentifier.name))
+    }
+
+    return ASTPassResult(element: becomeStatement, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -236,10 +279,10 @@ public struct TypeChecker: ASTPass {
     var diagnostics = [Diagnostic]()
     let typeIdentifier = passContext.enclosingTypeIdentifier!
     let environment = passContext.environment!
-    
+
     let varType = environment.type(of: .variableDeclaration(forStatement.variable), enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
     let iterableType = environment.type(of: forStatement.iterable, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-    
+
     let valueType: Type.RawType;
     switch iterableType {
       case .arrayType(let v): valueType = v
@@ -250,18 +293,18 @@ public struct TypeChecker: ASTPass {
         diagnostics.append(.incompatibleForIterableType(iterableType: iterableType, statement: .forStatement(forStatement)))
         valueType = .errorType
     }
-    
+
     if case .range(_) = forStatement.iterable, valueType != .basicType(.int) {
       diagnostics.append(.incompatibleForIterableType(iterableType: iterableType, statement: .forStatement(forStatement)))
     }
-    
+
     if !varType.isCompatible(with: valueType), ![varType, valueType].contains(.errorType){
       diagnostics.append(.incompatibleForVariableType(varType: varType, valueType: valueType, statement: .forStatement(forStatement)))
     }
-    
+
     return ASTPassResult(element: forStatement, diagnostics: diagnostics, passContext: passContext)
   }
-  
+
   public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     return ASTPassResult(element: topLevelModule, diagnostics: [], passContext: passContext)
   }
@@ -294,10 +337,18 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
     return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -326,6 +377,10 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -333,7 +388,7 @@ public struct TypeChecker: ASTPass {
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(inoutExpression: InoutExpression, passContext: ASTPassContext) -> ASTPassResult<InoutExpression> {
     return ASTPassResult(element: inoutExpression, diagnostics: [], passContext: passContext)
   }
@@ -349,7 +404,7 @@ public struct TypeChecker: ASTPass {
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
@@ -370,10 +425,14 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }

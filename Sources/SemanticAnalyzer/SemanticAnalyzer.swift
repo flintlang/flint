@@ -41,11 +41,14 @@ public struct SemanticAnalyzer: ASTPass {
     if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
+    } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier.name) != (contractBehaviorDeclaration.states != []) {
+      // The statefullness of the contract declaration and contract behavior declaration do not match.
+      diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
     }
 
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
     // within it are scoped by.
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -71,8 +74,41 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    var diagnostics = [Diagnostic]()
+
+    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
+    }
+
+    if case .basicType(_) = enumDeclaration.type.rawType {
+      // Basic types are supported as hidden types
+    } else {
+      diagnostics.append(.invalidHiddenType(enumDeclaration))
+    }
+    return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier, in: enumCase.type.rawType.name) {
+      diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
+    }
+
+    if enumCase.hiddenValue == nil {
+      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
+    }
+    else if case .literal(_)? = enumCase.hiddenValue {} else {
+      diagnostics.append(.invalidHiddenValue(enumCase))
+    }
+
+    return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -166,25 +202,51 @@ public struct SemanticAnalyzer: ASTPass {
 
     let statements = functionDeclaration.body
 
-    // Find a return statement in the function.
-    let returnStatementIndex = statements.index(where: { statement in
-      if case .returnStatement(_) = statement { return true }
-      return false
-    })
+    // Find a statement after the first return/become in the function.
 
-    if let returnStatementIndex = returnStatementIndex {
-      if returnStatementIndex != statements.count - 1 {
-        let nextStatement = statements[returnStatementIndex + 1]
+    let remaining = statements.drop(while: { !$0.isEnding })
+    let returns: [ReturnStatement] = statements.compactMap { statement in
+      if case .returnStatement(let returnStatement) = statement { return returnStatement } else { return nil }
+    }
+    let becomes: [BecomeStatement] = statements.compactMap { statement in
+      if case .becomeStatement(let becomeStatement) = statement { return becomeStatement } else { return nil }
+    }
 
-        // Emit a warning if there is code after a return statement.
-        diagnostics.append(.codeAfterReturn(nextStatement))
-      }
-    } else {
-      if let resultType = functionDeclaration.resultType {
-        // Emit an error if a non-void function doesn't have a return statement.
-        diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
+    let remainingNonEndingStatements = remaining.filter({!$0.isEnding})
+
+    remainingNonEndingStatements.forEach { statement in
+      // Emit a warning if there is code after an ending statement.
+      diagnostics.append(.codeAfterReturn(statement))
+    }
+
+    if returns.isEmpty,
+      let resultType = functionDeclaration.resultType {
+      // Emit an error if a non-void function doesn't have a return statement.
+      diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
+    }
+
+    // Check becomes are after returns
+    let becomesBeforeAReturn = becomes.filter { become in
+      returns.contains(where: { (returnStatement) -> Bool in
+        return returnStatement.sourceLocation > become.sourceLocation
+      })
+    }
+
+    if !becomesBeforeAReturn.isEmpty {
+      becomesBeforeAReturn.forEach { (stmt) in
+        diagnostics.append(.becomeBeforeReturn(stmt))
       }
     }
+
+    // Add error for each return apart from the last
+    returns.dropLast().forEach { statement in
+      diagnostics.append(.multipleReturns(statement))
+    }
+    // Add warning for each become apart from the last
+    becomes.dropLast().forEach { statement in
+      diagnostics.append(.multipleBecomes(statement))
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -194,7 +256,7 @@ public struct SemanticAnalyzer: ASTPass {
 
     // Gather properties of the enclosing type which haven't been assigned a default value.
     let properties = environment.propertyDeclarations(in: enclosingType).filter { propertyDeclaration in
-      return propertyDeclaration.assignedExpression == nil
+      return propertyDeclaration.value == nil
     }
 
     let passContext = passContext.withUpdates {
@@ -233,6 +295,7 @@ public struct SemanticAnalyzer: ASTPass {
   }
 
   public func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier> {
+    let environment = passContext.environment!
     var identifier = identifier
     var passContext = passContext
     var diagnostics = [Diagnostic]()
@@ -252,14 +315,18 @@ public struct SemanticAnalyzer: ASTPass {
     let inInitializerDeclaration = passContext.initializerDeclarationContext != nil
     let inFunctionOrInitializer = inFunctionDeclaration || inInitializerDeclaration
 
-    if passContext.isPropertyDefaultAssignment, !passContext.environment!.isStructDeclared(identifier.name) {
-      diagnostics.append(.statePropertyUsedWithinPropertyInitializer(identifier))
+    if passContext.isPropertyDefaultAssignment, !environment.isStructDeclared(identifier.name) {
+      if environment.isPropertyDefined(identifier.name, enclosingType: passContext.enclosingTypeIdentifier!.name) {
+        diagnostics.append(.statePropertyUsedWithinPropertyInitializer(identifier))
+      } else {
+        diagnostics.append(.useOfUndeclaredIdentifier(identifier))
+      }
     }
 
     if passContext.isFunctionCall {
       // If the identifier is the name of a function call, do nothing. The function call will be matched in
       // `process(functionCall:passContext:)`.
-    } else if inFunctionOrInitializer {
+    } else if inFunctionOrInitializer, !passContext.isInBecome {
       // The identifier is used within the body of a function or an initializer
 
       // The identifier is used an l-value (the left-hand side of an assignment).
@@ -274,16 +341,17 @@ public struct SemanticAnalyzer: ASTPass {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
-        } else {
-          // If the variable is not declared locally, assign its enclosing type to the struct or contract behavior
+        } else if !passContext.environment!.isEnumDeclared(identifier.name){
+          // If the variable is not declared locally and doesn't refer to an enum, assign its enclosing type to the struct or contract behavior
           // declaration in which the function appears.
           identifier.enclosingType = passContext.enclosingTypeIdentifier!.name
+        } else if !(passContext.isEnclosing) {
+          // Checking if we are refering to 'foo' in 'a.foo'
+          diagnostics.append(.invalidReference(identifier))
         }
       }
 
-      if let enclosingType = identifier.enclosingType {
-        // The identifier has an explicit enclosing type, such as `a` in the expression `a.foo`.
-
+      if let enclosingType = identifier.enclosingType, enclosingType != Type.RawType.errorType.name {
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
@@ -320,6 +388,16 @@ public struct SemanticAnalyzer: ASTPass {
           }
         }
       }
+    } else if passContext.isInBecome {
+      if let functionDeclarationContext = passContext.functionDeclarationContext {
+        // The variable is being mutated in a function.
+        if !functionDeclarationContext.isMutating {
+          // The function is declared non-mutating.
+          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier), functionDeclaration: functionDeclarationContext.declaration))
+        }
+        // Record the mutating expression in the context.
+        addMutatingExpression(.identifier(identifier), passContext: &passContext)
+      }
     }
 
     return ASTPassResult(element: identifier, diagnostics: diagnostics, passContext: passContext)
@@ -342,6 +420,12 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    // TODO: Check that type state exists, etc.
+
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -356,20 +440,37 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
+    let environment = passContext.environment!
 
     if case .dot = binaryExpression.opToken {
       // The identifier explicitly refers to a state property, such as in `self.foo`.
       // We set its enclosing type to the type it is declared in.
       let enclosingType = passContext.enclosingTypeIdentifier!
-      let lhsType = passContext.environment!.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
-      binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      let lhsType = environment.type(of: binaryExpression.lhs, enclosingType: enclosingType.name, scopeContext: passContext.scopeContext!)
+      if case .identifier(let enumIdentifier) = binaryExpression.lhs,
+         environment.isEnumDeclared(enumIdentifier.name) {
+        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
+      } else {
+        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      }
     }
 
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
+
+    if environment.isInitializerCall(functionCall),
+      !passContext.inAssignment,
+      !passContext.isPropertyDefaultAssignment,
+      functionCall.arguments.isEmpty
+    {
+      diagnostics.append(.noReceiverForStructInitializer(functionCall))
+    }
+
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
@@ -427,6 +528,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -467,6 +572,14 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -512,11 +625,20 @@ public struct SemanticAnalyzer: ASTPass {
           passContext.environment!.setPublicInitializer(initializerDeclaration, forContract: contractName)
         }
       }
+
+      // Check that stateful contracts have initial state set
+      let containsBecome = initializerDeclaration.body.contains(where: { statement in
+        if case .becomeStatement(_) = statement { return true } else { return false }
+      })
+
+      if passContext.environment!.isStateful(contractName), !containsBecome {
+        diagnostics.append(.returnFromInitializerWithoutInitializingState(initializerDeclaration))
+      }
     }
 
     // Check all the properties in the type have been assigned.
     if let unassignedProperties = passContext.unassignedProperties {
-      let nonEventProperties = unassignedProperties.filter { !$0.type.rawType.isEventType }
+      let nonEventProperties = unassignedProperties.filter { !($0.type!.rawType.isEventType) } // TODO: Rework in events patch
 
       if nonEventProperties.count > 0 {
         diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(initializerDeclaration, unassignedProperties: nonEventProperties))
@@ -550,6 +672,10 @@ public struct SemanticAnalyzer: ASTPass {
 
   public func postProcess(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
@@ -591,14 +717,17 @@ public struct SemanticAnalyzer: ASTPass {
     var passContext = passContext
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let stateCapabilities = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+
 
     var diagnostics = [Diagnostic]()
 
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
     // Find the function declaration associated with this function call.
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
     case .matchedFunction(let matchingFunction):
       // The function declaration is found.
 
@@ -622,7 +751,7 @@ public struct SemanticAnalyzer: ASTPass {
     case .failure(let candidates):
       // A matching function declaration couldn't be found. Try to match an event call.
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, candidates: candidates))
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: stateCapabilities, candidates: candidates))
       }
 
     }
@@ -654,6 +783,10 @@ public struct SemanticAnalyzer: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
@@ -676,7 +809,7 @@ extension ASTPassContext {
   }
 
   /// The list of unassigned properties in a type.
-  var unassignedProperties: [VariableDeclaration]? {
+  var unassignedProperties: [Property]? {
     get { return self[UnassignedPropertiesContextEntry.self] }
     set { self[UnassignedPropertiesContextEntry.self] = newValue }
   }
@@ -687,5 +820,5 @@ struct MutatingExpressionContextEntry: PassContextEntry {
 }
 
 struct UnassignedPropertiesContextEntry: PassContextEntry {
-  typealias Value = [VariableDeclaration]
+  typealias Value = [Property]
 }
