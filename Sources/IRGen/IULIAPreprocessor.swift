@@ -42,10 +42,11 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     var structMember = structMember
 
-    if case .initializerDeclaration(var initializerDeclaration) = structMember {
-      initializerDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
+    if case .specialDeclaration(var specialDeclaration) = structMember,
+      specialDeclaration.isInit {
+      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
-      structMember = .functionDeclaration(initializerDeclaration.asFunctionDeclaration)
+      structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
     }
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
@@ -131,10 +132,12 @@ public struct IULIAPreprocessor: ASTPass {
     return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
   }
 
-  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    var initializerDeclaration = initializerDeclaration
-    initializerDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+  public func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    var specialDeclaration = specialDeclaration
+    if specialDeclaration.isInit {
+      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
+    }
+    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -277,7 +280,7 @@ public struct IULIAPreprocessor: ASTPass {
     if environment.isInitializerCall(functionCall) {
       // Remove the receiver as the first argument to find the original initializer declaration.
       var initializerWithoutReceiver = functionCall
-      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil,
+      if passContext.functionDeclarationContext != nil || passContext.specialDeclarationContext != nil,
         !initializerWithoutReceiver.arguments.isEmpty {
         initializerWithoutReceiver.arguments.remove(at: 0)
       }
@@ -373,6 +376,8 @@ public struct IULIAPreprocessor: ASTPass {
       let declaration = initializerInformation.declaration
       let parameterTypes = declaration.parameters.map { $0.type.rawType }
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
+    case .matchedFallback(_):
+      return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: [])
     case .matchedGlobalFunction(let functionInformation):
       let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
@@ -488,8 +493,8 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+  public func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {

@@ -101,7 +101,7 @@ extension ASTPassContext {
   }
 
   /// Contextual information used when visiting statements in an initializer.
-  public var initializerDeclarationContext: InitializerDeclarationContext? {
+  public var specialDeclarationContext: SpecialDeclarationContext? {
     get { return self[InitializerDeclarationContextEntry.self] }
     set { self[InitializerDeclarationContextEntry.self] = newValue }
   }
@@ -129,7 +129,7 @@ extension ASTPassContext {
 
   /// Whether we are visiting a node in a function declaration or initializer.
   public var inFunctionOrInitializer: Bool {
-    return functionDeclarationContext != nil || initializerDeclarationContext != nil
+    return functionDeclarationContext != nil || specialDeclarationContext != nil
   }
 
   // Whether we are visiting a node inside the rhs of an assignment.
@@ -193,7 +193,7 @@ private struct FunctionDeclarationContextEntry: PassContextEntry {
 }
 
 private struct InitializerDeclarationContextEntry: PassContextEntry {
-  typealias Value = InitializerDeclarationContext
+  typealias Value = SpecialDeclarationContext
 }
 
 private struct ScopeContextContextEntry: PassContextEntry {

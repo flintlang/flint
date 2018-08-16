@@ -82,6 +82,7 @@ public struct Tokenizer {
     "let": .let,
     "func": .func,
     "init": .init,
+    "fallback": .fallback,
     "mutating": .mutating,
     "return": .return,
     "become": .become,

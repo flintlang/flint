@@ -3,7 +3,7 @@
 contract Payable {}
 
 Payable :: (any) {
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {}
   
