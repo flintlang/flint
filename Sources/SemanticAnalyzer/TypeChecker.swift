@@ -110,8 +110,8 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func process(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+  public func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {
@@ -349,8 +349,8 @@ public struct TypeChecker: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(initializerDeclaration: InitializerDeclaration, passContext: ASTPassContext) -> ASTPassResult<InitializerDeclaration> {
-    return ASTPassResult(element: initializerDeclaration, diagnostics: [], passContext: passContext)
+  public func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(attribute: Attribute, passContext: ASTPassContext) -> ASTPassResult<Attribute> {

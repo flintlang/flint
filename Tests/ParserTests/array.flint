@@ -60,8 +60,7 @@ contract Test {
 // CHECK-AST:   CallerCapability
 // CHECK-AST:     identifier "any"
 Test :: caller <- (any) {
-
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {
     self.owner = caller

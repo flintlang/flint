@@ -27,7 +27,7 @@ contract CapabilityBinding (stated){}
 // CHECK-AST:     identifier "any"
 CapabilityBinding @(stated) :: (any) {
 
-// CHECK-AST: InitializerDeclaration
+// CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {
     become stated

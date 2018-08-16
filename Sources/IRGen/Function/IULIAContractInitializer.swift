@@ -9,7 +9,7 @@ import AST
 
 /// Generates code for a contract initializer.
 struct IULIAContractInitializer {
-  var initializerDeclaration: InitializerDeclaration
+  var initializerDeclaration: SpecialDeclaration
   var typeIdentifier: Identifier
 
   /// The properties defined in the enclosing type. The default values of each property will be set in the initializer.

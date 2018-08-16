@@ -90,7 +90,7 @@ public class Parser {
 
     return first
   }
-
+  
   /// Consume newlines tokens up to the first non-newline token.
   func consumeNewLines() {
     while currentIndex < tokens.count, tokens[currentIndex].kind == .newline {
@@ -527,13 +527,17 @@ extension Parser {
     while true {
       if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
         members.append(.functionDeclaration(functionDeclaration))
-      } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
-        members.append(.initializerDeclaration(initializerDeclaration))
-
-        if initializerDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
-          // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
-          // contract's state properties.
-          environment.setPublicInitializer(initializerDeclaration, forContract: contractIdentifier)
+      } else if let specialDeclaration = attempt(task: parseSpecialDeclaration) {
+        members.append(.specialDeclaration(specialDeclaration))
+        if specialDeclaration.isInit {
+          environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
+          if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
+            // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+            // contract's state properties.
+            environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
+          }
+        } else if specialDeclaration.isFallback {
+          environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
         }
       } else {
         break
@@ -553,12 +557,11 @@ extension Parser {
     return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
   }
 
-  func parseInitializerDeclaration() throws -> InitializerDeclaration {
-    let (attributes, modifiers, initToken) = try parseInitializerHead()
+  func parseSpecialDeclaration() throws -> SpecialDeclaration {
+    let (attributes, modifiers, specialToken) = try parseSpecialHead()
     let (parameters, closeBracketToken) = try parseParameters()
     let (body, closeBraceToken) = try parseCodeBlock()
-
-    return InitializerDeclaration(initToken: initToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
+    return SpecialDeclaration(specialToken: specialToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
   }
 
   func parseAttributesAndModifiers() throws -> (attributes: [Attribute], modifiers: [Token]) {
@@ -591,11 +594,11 @@ extension Parser {
     return (attributes, modifiers, funcToken)
   }
 
-  func parseInitializerHead() throws -> (attributes: [Attribute], modifiers: [Token], initToken: Token) {
+  func parseSpecialHead() throws -> (attributes: [Attribute], modifiers: [Token], initToken: Token) {
     let (attributes, modifiers) = try parseAttributesAndModifiers()
 
-    let initToken = try consume(.init)
-    return (attributes, modifiers, initToken)
+    let specialToken: Token = try consume(anyOf: [.init, .fallback])
+    return (attributes, modifiers, specialToken)
   }
 
   func parseParameters() throws -> ([Parameter], closeBracketToken: Token) {
@@ -854,8 +857,10 @@ extension Parser {
       switch member {
       case .functionDeclaration(let functionDeclaration):
         environment.addFunction(functionDeclaration, enclosingType: identifier.name)
-      case .initializerDeclaration(let initializerDeclaration):
-        environment.addInitializer(initializerDeclaration, enclosingType: identifier.name)
+      case .specialDeclaration(let specialDeclaration):
+        if specialDeclaration.isInit {
+          environment.addInitializer(specialDeclaration, enclosingType: identifier.name)
+        }
       case .variableDeclaration(_): break
       }
     }
@@ -870,8 +875,8 @@ extension Parser {
         members.append(.variableDeclaration(variableDeclaration))
       } else if let functionDeclaration = attempt(task: parseFunctionDeclaration) {
         members.append(.functionDeclaration(functionDeclaration))
-      } else if let initializerDeclaration = attempt(task: parseInitializerDeclaration) {
-        members.append(.initializerDeclaration(initializerDeclaration))
+      } else if let specialDeclaration = attempt(task: parseSpecialDeclaration) {
+        members.append(.specialDeclaration(specialDeclaration))
       } else {
         break
       }

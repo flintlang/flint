@@ -18,9 +18,9 @@ struct IULIAInterface {
         switch member {
         case .functionDeclaration(let functionDeclaration):
           return render(functionDeclaration)
-        case .initializerDeclaration(_):
+        case .specialDeclaration(_):
           return ""
-          // Rendering initializers is not supported yet.
+          // Rendering initializers/fallback is not supported yet.
         }
       }
     }.joined(separator: "\n")

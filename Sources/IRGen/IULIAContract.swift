@@ -41,7 +41,7 @@ struct IULIAContract {
     let publicFunctions = functions.filter { $0.functionDeclaration.isPublic }
 
     // Create a function selector, to determine which function is called in the Ethereum transaction.
-    let functionSelector = IULIAFunctionSelector(functions: publicFunctions, enclosingType: contractDeclaration.identifier.name, environment: environment)
+    let functionSelector = IULIAFunctionSelector(fallback: findContractPublicFallback(), functions: publicFunctions, enclosingType: contractDeclaration.identifier, environment: environment)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     // Generate code for each function in the structs.
@@ -122,18 +122,36 @@ struct IULIAContract {
   }
 
   /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.
-  func findContractPublicInitializer() -> (InitializerDeclaration, ContractBehaviorDeclaration)? {
+  func findContractPublicInitializer() -> (SpecialDeclaration, ContractBehaviorDeclaration)? {
     let result = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.members.compactMap { member -> (InitializerDeclaration, ContractBehaviorDeclaration)? in
-        guard case .initializerDeclaration(let initializerDeclaration) = member, initializerDeclaration.isPublic else {
+      return contractBehaviorDeclaration.members.compactMap { member -> (SpecialDeclaration, ContractBehaviorDeclaration)? in
+        guard case .specialDeclaration(let specialDeclaration) = member, specialDeclaration.isInit, specialDeclaration.isPublic else {
           return nil
         }
-        return (initializerDeclaration, contractBehaviorDeclaration)
+        return (specialDeclaration, contractBehaviorDeclaration)
       }
     }
 
     guard result.count < 2 else {
       fatalError("Too many initializers")
+    }
+
+    return result.first
+  }
+
+  /// Finds the contract's public fallback, if any is declared.
+  func findContractPublicFallback() -> SpecialDeclaration? {
+    let result = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
+      return contractBehaviorDeclaration.members.compactMap { member -> SpecialDeclaration? in
+        guard case .specialDeclaration(let specialDeclaration) = member, specialDeclaration.isFallback, specialDeclaration.isPublic else {
+          return nil
+        }
+        return specialDeclaration
+      }
+    }
+
+    guard result.count < 2 else {
+      fatalError("Too many fallbacks")
     }
 
     return result.first

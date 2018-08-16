@@ -125,7 +125,9 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Declaration of recursive struct '\(structIdentifier.name)'", notes: [note])
   }
 
-  static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: InitializerDeclaration, unassignedProperties: [Property]) -> Diagnostic {
+  // INITALISER ERRORS //
+
+  static func returnFromInitializerWithoutInitializingAllProperties(_ initializerDeclaration: SpecialDeclaration, unassignedProperties: [Property]) -> Diagnostic {
     let notes = unassignedProperties.map { property in
       return Diagnostic(severity: .note, sourceLocation: property.sourceLocation, message: "'\(property.identifier.name)' is uninitialized")
     }
@@ -133,7 +135,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.closeBraceToken.sourceLocation, message: "Return from initializer without initializing all properties", notes: notes)
   }
 
-  static func returnFromInitializerWithoutInitializingState(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+  static func returnFromInitializerWithoutInitializingState(_ initializerDeclaration: SpecialDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Return from initializer without initializing state in stateful contract")
   }
 
@@ -141,13 +143,28 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability 'any'")
   }
 
-  static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: InitializerDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
+  static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: SpecialDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
     let note = Diagnostic(severity: .note, sourceLocation: originalInitializerLocation, message: "A public initializer is already declared here")
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
 
-  static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: InitializerDeclaration) -> Diagnostic {
+  static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: SpecialDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
+  }
+
+  // FALLBACK ERRORS //
+
+  static func multiplePublicFallbacksDefined(_ invalidAdditionalFallback: SpecialDeclaration, originalFallbackLocation: SourceLocation) -> Diagnostic {
+    let note = Diagnostic(severity: .note, sourceLocation: originalFallbackLocation, message: "A public fallback is already declared here")
+    return Diagnostic(severity: .error, sourceLocation: invalidAdditionalFallback.sourceLocation, message: "A public fallback has already been defined", notes: [note])
+  }
+
+  static func contractFallbackNotDeclaredInAnyCallerCapabilityBlock(_ invalidFallback: SpecialDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: invalidFallback.sourceLocation, message: "Public contract fallback should be callable using caller capability 'any'")
+  }
+
+  static func fallbackDeclaredWithArguments(_ invalidFallback: SpecialDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: invalidFallback.sourceLocation, message: "Contract fallback shouldn't have any arguments")
   }
 
   static func cannotInferHiddenValue(_ identifier: Identifier, _ type: Type) -> Diagnostic {
@@ -204,5 +221,20 @@ extension Diagnostic {
 
   static func contractNotDeclaredInModule() -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: nil, message: "No contract declaration in top level module")
+  }
+
+  static func contractOnlyHasPrivateFallbacks(contractIdentifier: Identifier, _ privateFallbacks: [SpecialDeclaration]) -> Diagnostic {
+    var notes = [Diagnostic]()
+    for fallback in privateFallbacks {
+      notes.append(Diagnostic(severity: .note, sourceLocation: fallback.sourceLocation, message: "A fallback is declared here"))
+    }
+    let reference = privateFallbacks.count == 1 ? "a private fallback" : "private fallbacks"
+    return Diagnostic(severity: .warning, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' doesn't have a public fallback but does have \(reference)", notes: notes)
+  }
+
+  static func fallbackShouldBeSimple(_ complex: SpecialDeclaration, complexStatements: [Statement]) -> Diagnostic {
+    var notes = [Diagnostic]()
+    complexStatements.forEach({ notes.append(Diagnostic(severity: .note, sourceLocation: $0.sourceLocation, message: "This statement was flagged as 'complex'")) })
+    return Diagnostic(severity: .warning, sourceLocation: complex.sourceLocation, message: "This fallback is likely to use over 2 300 gas which is the limit for calls sending ETH directly", notes: notes)
   }
 }
