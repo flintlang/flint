@@ -77,8 +77,14 @@ public struct Environment {
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
-  public mutating func addInitializer(_ initializerDeclaration: InitializerDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
-    types[enclosingType, default: TypeInformation()].initializers.append(InitializerInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
+  public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
+    types[enclosingType, default: TypeInformation()].initializers.append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
+  }
+
+  /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
+  /// capabilities is expected.
+  public mutating func addFallback(_ fallbackDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
+    types[enclosingType, default: TypeInformation()].fallbacks.append(SpecialInformation(declaration: fallbackDeclaration, callerCapabilities: callerCapabilities))
   }
 
   /// Add a list of properties to a type.
@@ -247,8 +253,13 @@ public struct Environment {
   }
 
   /// The list of initializers in a type.
-  public func initializers(in enclosingType: RawTypeIdentifier) -> [InitializerInformation] {
+  public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
     return types[enclosingType]!.initializers
+  }
+
+  /// The list of initializers in a type.
+  public func fallbacks(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
+    return types[enclosingType]!.fallbacks
   }
 
   /// The list of properties declared in a type which can be used as caller capabilities.
@@ -385,7 +396,7 @@ public struct Environment {
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
-      
+
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
@@ -402,7 +413,7 @@ public struct Environment {
         }
       }
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
-      
+
      case .bracketedExpression(let bracketedExpression):
       return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
@@ -450,7 +461,8 @@ public struct Environment {
   /// - failure: The function declaration could not be found.
   public enum FunctionCallMatchResult {
     case matchedFunction(FunctionInformation)
-    case matchedInitializer(InitializerInformation)
+    case matchedInitializer(SpecialInformation)
+    case matchedFallback(SpecialInformation)
     case matchedGlobalFunction(FunctionInformation)
     case failure(candidates: [FunctionInformation])
   }
@@ -504,6 +516,23 @@ public struct Environment {
       }
     }
 
+    // Check if it can be a fallback function.
+    if let fallbacks = types[functionCall.identifier.name]?.fallbacks {
+      for candidate in fallbacks {
+        guard areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
+            // TODO: Add fallback candidates.
+            continue
+        }
+
+        if match != nil {
+          // This is an ambiguous call. There are too many matches.
+          return .failure(candidates: [])
+        }
+
+        match = .matchedFallback(candidate)
+      }
+    }
+
     // Check if it can be a global function.
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
@@ -522,13 +551,23 @@ public struct Environment {
   }
 
   /// Set the public initializer for the given contract. A contract should have at most one public initializer.
-  public mutating func setPublicInitializer(_ publicInitializer: InitializerDeclaration, forContract contract: RawTypeIdentifier) {
+  public mutating func setPublicInitializer(_ publicInitializer: SpecialDeclaration, forContract contract: RawTypeIdentifier) {
     types[contract]!.publicInitializer = publicInitializer
   }
 
+  /// Set the public fallback for the given contract. A contract should have at most one public fallback.
+  public mutating func setPublicFallback(_ publicFallback: SpecialDeclaration, forContract contract: RawTypeIdentifier) {
+    types[contract]!.publicFallback = publicFallback
+  }
+
   /// The public initializer for the given contract. A contract should have at most one public initializer.
-  public func publicInitializer(forContract contract: RawTypeIdentifier) -> InitializerDeclaration? {
+  public func publicInitializer(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
     return types[contract]!.publicInitializer
+  }
+
+  /// The public fallback for the given contract. A contract should have at most one public fallback.
+  public func publicFallback(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
+    return types[contract]!.publicFallback
   }
 
   /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
@@ -629,8 +668,10 @@ public struct TypeInformation {
   var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
   var functions = [String: [FunctionInformation]]()
-  var initializers = [InitializerInformation]()
-  var publicInitializer: InitializerDeclaration? = nil
+  var initializers = [SpecialInformation]()
+  var fallbacks = [SpecialInformation]()
+  var publicInitializer: SpecialDeclaration? = nil
+  var publicFallback: SpecialDeclaration? = nil
 }
 
 public enum Property {
@@ -733,9 +774,9 @@ public struct FunctionInformation {
   }
 }
 
-/// Information about an initializer.
-public struct InitializerInformation {
-  public var declaration: InitializerDeclaration
+/// Information about an initializer/fallback.
+public struct SpecialInformation {
+  public var declaration: SpecialDeclaration
   public var callerCapabilities: [CallerCapability]
 
   var parameterTypes: [Type.RawType] {

@@ -158,6 +158,7 @@ extension Token {
     case `self`
     case implicit
     case `inout`
+    case fallback
 
     // Punctuation
     case punctuation(Punctuation)
@@ -185,6 +186,7 @@ extension Token.Kind: CustomStringConvertible {
     case .let: return "let"
     case .func: return "func"
     case .init: return "init"
+    case .fallback: return "fallback"
     case .self: return "self"
     case .implicit: return "implicit"
     case .inout: return "inout"

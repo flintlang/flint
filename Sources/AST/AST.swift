@@ -75,15 +75,15 @@ public struct ContractDeclaration: SourceEntity {
 /// A member in a contract behavior declaration.
 ///
 /// - functionDeclaration: The declaration of a function.
-/// - initializerDeclaration: The declaration of an initializer.
+/// - initializerDeclaration: The declaration of an initializer or fallback
 public enum ContractBehaviorMember: Equatable, SourceEntity {
   case functionDeclaration(FunctionDeclaration)
-  case initializerDeclaration(InitializerDeclaration)
+  case specialDeclaration(SpecialDeclaration)
 
   public var sourceLocation: SourceLocation {
     switch self {
     case .functionDeclaration(let functionDeclaration): return functionDeclaration.sourceLocation
-    case .initializerDeclaration(let initializerDeclaration): return initializerDeclaration.sourceLocation
+    case .specialDeclaration(let specialDeclaration): return specialDeclaration.sourceLocation
     }
   }
 
@@ -121,7 +121,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
 public enum StructMember: Equatable {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
-  case initializerDeclaration(InitializerDeclaration)
+  case specialDeclaration(SpecialDeclaration)
 }
 
 /// The declaration of a struct.
@@ -155,7 +155,7 @@ public struct StructDeclaration: SourceEntity {
     }
 
     let containsInitializer = members.contains { member in
-      if case .initializerDeclaration(_) = member { return true }
+      if case .specialDeclaration(let specialDeclaration) = member, specialDeclaration.isInit { return true }
       return false
     }
 
@@ -179,16 +179,16 @@ public struct StructDeclaration: SourceEntity {
 
     // Synthesize an initializer if none was defined.
     if shouldInitializerBeSynthesized {
-      self.members.append(.initializerDeclaration(synthesizeInitializer()))
+      self.members.append(.specialDeclaration(synthesizeInitializer()))
     }
   }
 
-  mutating func synthesizeInitializer() -> InitializerDeclaration {
+  mutating func synthesizeInitializer() -> SpecialDeclaration {
     // Synthesize the initializer.
     let dummySourceLocation = sourceLocation
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
-    return InitializerDeclaration(initToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+    return SpecialDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
   }
 }
 
@@ -359,9 +359,9 @@ public struct FunctionDeclaration: SourceEntity {
   }
 }
 
-/// The declaration of an initializer.
-public struct InitializerDeclaration: SourceEntity {
-  public var initToken: Token
+/// The declaration of an initializer or fallback
+public struct SpecialDeclaration: SourceEntity {
+  public var specialToken: Token
 
   /// The attributes associated with the function, such as `@payable`.
   public var attributes: [Attribute]
@@ -374,11 +374,18 @@ public struct InitializerDeclaration: SourceEntity {
   public var closeBraceToken: Token
 
   public var sourceLocation: SourceLocation {
-    return initToken.sourceLocation
+    return specialToken.sourceLocation
+  }
+  
+  public var isInit: Bool {
+    return specialToken.kind == .init
+  }
+  public var isFallback: Bool {
+    return specialToken.kind == .fallback
   }
 
   // Contextual information for the scope defined by the function.
-  public var scopeContext: ScopeContext? = nil
+  public var scopeContext: ScopeContext
 
   /// The non-implicit parameters of the initializer.
   public var explicitParameters: [Parameter] {
@@ -387,16 +394,16 @@ public struct InitializerDeclaration: SourceEntity {
 
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
-    let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier("init"), sourceLocation: initToken.sourceLocation))
-    return FunctionDeclaration(funcToken: initToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
+    let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier(specialToken.kind.description), sourceLocation: specialToken.sourceLocation))
+    return FunctionDeclaration(funcToken: specialToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
   }
 
   public var isPublic: Bool {
     return asFunctionDeclaration.isPublic
   }
 
-  public init(initToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
-    self.initToken = initToken
+  public init(specialToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext = ScopeContext()) {
+    self.specialToken = specialToken
     self.attributes = attributes
     self.modifiers = modifiers
     self.parameters = parameters
@@ -404,6 +411,17 @@ public struct InitializerDeclaration: SourceEntity {
     self.body = body
     self.closeBraceToken = closeBraceToken
     self.scopeContext = scopeContext
+  }
+  
+  public init(_ functionDeclaration: FunctionDeclaration) {
+    self.specialToken = functionDeclaration.funcToken
+    self.attributes = functionDeclaration.attributes
+    self.modifiers = functionDeclaration.modifiers
+    self.parameters = functionDeclaration.parameters
+    self.closeBracketToken = functionDeclaration.closeBracketToken
+    self.body = functionDeclaration.body
+    self.closeBraceToken = functionDeclaration.closeBracketToken
+    self.scopeContext = functionDeclaration.scopeContext ?? ScopeContext()
   }
 }
 
