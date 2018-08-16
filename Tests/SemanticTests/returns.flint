@@ -7,7 +7,7 @@ Returns :: (any) {
 
   func foo() -> Int {
     return 3
-    var a: Int = 2 // expected-warning {{Code after return will never be executed}}
+    var a: Int = 2 // expected-warning {{Code after return/become will never be executed}}
   }
 
   func bar() -> Int {}  // expected-error {{Missing return in function expected to return 'Int'}}

@@ -23,6 +23,7 @@ public enum TopLevelDeclaration: Equatable {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
   case structDeclaration(StructDeclaration)
+  case enumDeclaration(EnumDeclaration)
 }
 
 /// The raw representation of an `Identifier`.
@@ -30,17 +31,43 @@ public typealias RawTypeIdentifier = String
 
 /// The declaration of a Flint contract.
 public struct ContractDeclaration: SourceEntity {
+  public static var contractEnumPrefix = "flintStateEnum$"
+
   public var contractToken: Token
   public var identifier: Identifier
+  public var states: [TypeState]
   public var variableDeclarations: [VariableDeclaration]
 
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)
   }
 
-  public init(contractToken: Token, identifier: Identifier, variableDeclarations: [VariableDeclaration]) {
+  public var isStateful: Bool {
+    return !states.isEmpty
+  }
+
+  public var stateEnumIdentifier: Identifier {
+    return Identifier(identifierToken: Token(kind: .identifier(ContractDeclaration.contractEnumPrefix+identifier.name), sourceLocation: sourceLocation))
+  }
+
+  private var stateType: Type {
+    return Type(identifier: stateEnumIdentifier)
+  }
+
+  public var stateEnum: EnumDeclaration {
+    let enumToken = Token(kind: .enum, sourceLocation: sourceLocation)
+    let caseToken = Token(kind: .case, sourceLocation: sourceLocation)
+    let intType = Type(inferredType: .basicType(.int), identifier: stateEnumIdentifier)
+    let cases: [EnumCase] = states.map{ typeState in
+      return EnumCase(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil, hiddenType: intType)
+    }
+    return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
+  }
+
+  public init(contractToken: Token, identifier: Identifier, states: [TypeState], variableDeclarations: [VariableDeclaration]) {
     self.identifier = identifier
     self.variableDeclarations = variableDeclarations
+    self.states = states
     self.contractToken = contractToken
   }
 }
@@ -67,6 +94,9 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
+
+  public var states: [TypeState]
+
   public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
 
@@ -74,8 +104,9 @@ public struct ContractBehaviorDeclaration: SourceEntity {
     return .spanning(contractIdentifier, to: closeBracketToken)
   }
 
-  public init(contractIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
+  public init(contractIdentifier: Identifier, states: [TypeState], capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier
+    self.states = states
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
     self.closeBracketToken = closeBracketToken
@@ -158,6 +189,72 @@ public struct StructDeclaration: SourceEntity {
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
     return SpecialDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+  }
+}
+
+public struct EnumCase: SourceEntity {
+  public var caseToken: Token
+  public var identifier: Identifier
+  public var type: Type
+
+  public var hiddenValue: Expression?
+  public var hiddenType: Type
+
+  public var sourceLocation: SourceLocation {
+    return caseToken.sourceLocation
+  }
+
+  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?, hiddenType: Type){
+    self.caseToken = caseToken
+    self.identifier = identifier
+    self.hiddenValue = hiddenValue
+    self.type = type
+    self.hiddenType = hiddenType
+  }
+}
+
+public struct EnumDeclaration: SourceEntity {
+  public var enumToken: Token
+  public var identifier: Identifier
+  public var type: Type
+  public var cases: [EnumCase]
+
+  public var sourceLocation: SourceLocation {
+    return enumToken.sourceLocation
+  }
+
+  public init(enumToken: Token, identifier: Identifier, type: Type, cases: [EnumCase]) {
+    self.enumToken = enumToken
+    self.identifier = identifier
+    self.cases = cases
+    self.type = type
+
+    synthesizeRawValues()
+  }
+
+  mutating func synthesizeRawValues(){
+    let dummySourceLocation = sourceLocation
+    var lastRawValue: Expression?
+    var newCases = [EnumCase]()
+
+    for var enumCase in cases {
+      if enumCase.hiddenValue == nil, type.rawType == .basicType(.int) {
+          if lastRawValue == nil {
+            enumCase.hiddenValue = .literal(.init(kind: .literal(.decimal(.integer(0))), sourceLocation: dummySourceLocation))
+          }
+          else if case .literal(let token)? = lastRawValue,
+            case .literal(.decimal(.integer(let i))) = token.kind {
+            enumCase.hiddenValue = .literal(.init(kind: .literal(.decimal(.integer(i + 1))), sourceLocation: dummySourceLocation))
+          }
+
+      }
+
+      if enumCase.hiddenValue != nil {
+        lastRawValue = enumCase.hiddenValue
+      }
+      newCases.append(enumCase)
+    }
+    cases = newCases
   }
 }
 
@@ -424,6 +521,10 @@ public struct Identifier: Hashable, SourceEntity {
     self.identifierToken = identifierToken
   }
 
+  public init(name: String, sourceLocation: SourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))) {
+    self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
+  }
+
   public var hashValue: Int {
     return "\(name)_\(sourceLocation)".hashValue
   }
@@ -608,8 +709,32 @@ public struct CallerCapability: SourceEntity {
     self.identifier = identifier
   }
 
-  public func isSubcapability(callerCapability: CallerCapability) -> Bool {
-    return name == callerCapability.name || callerCapability.isAny
+  public func isSubCapability(of parent: CallerCapability) -> Bool {
+    return parent.isAny || name == parent.name
+  }
+}
+
+public struct TypeState: SourceEntity {
+  public var identifier: Identifier
+
+  public var sourceLocation: SourceLocation {
+    return identifier.sourceLocation
+  }
+
+  public var name: String {
+    return identifier.name
+  }
+
+  public var isAny: Bool {
+    return name == "any"
+  }
+
+  public init(identifier: Identifier) {
+    self.identifier = identifier
+  }
+
+  public func isSubState(of parent: TypeState) -> Bool {
+    return parent.isAny || name == parent.name
   }
 }
 
@@ -624,7 +749,7 @@ public indirect enum Expression: SourceEntity {
   case dictionaryLiteral(DictionaryLiteral)
   case `self`(Token)
   case variableDeclaration(VariableDeclaration)
-  case bracketedExpression(Expression)
+  case bracketedExpression(BracketedExpression)
   case subscriptExpression(SubscriptExpression)
   case sequence([Expression])
   case range(RangeExpression)
@@ -657,8 +782,9 @@ public indirect enum Expression: SourceEntity {
     case .binaryExpression(var binaryExpression):
       binaryExpression.lhs = binaryExpression.lhs.assigningEnclosingType(type: type)
       return .binaryExpression(binaryExpression)
-    case .bracketedExpression(var expression):
-      return .bracketedExpression(expression.assigningEnclosingType(type: type))
+    case .bracketedExpression(var bracketedExpression):
+      bracketedExpression.expression = bracketedExpression.expression.assigningEnclosingType(type: type)
+      return .bracketedExpression(bracketedExpression)
     case .subscriptExpression(var subscriptExpression):
       subscriptExpression.baseExpression = subscriptExpression.baseExpression.assigningEnclosingType(type: type)
       return .subscriptExpression(subscriptExpression)
@@ -675,7 +801,7 @@ public indirect enum Expression: SourceEntity {
     case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
     case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingType
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
-    case .bracketedExpression(let expression): return expression.enclosingType
+    case .bracketedExpression(let bracketedExpression): return bracketedExpression.expression.enclosingType
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier.name
     case .subscriptExpression(let subscriptExpression):
       if case .identifier(let identifier) = subscriptExpression.baseExpression {
@@ -692,7 +818,7 @@ public indirect enum Expression: SourceEntity {
     case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingIdentifier
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.identifier
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingIdentifier
-    case .bracketedExpression(let expression): return expression.enclosingIdentifier
+    case .bracketedExpression(let bracketedExpression): return bracketedExpression.expression.enclosingIdentifier
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseExpression.enclosingIdentifier
     default : return nil
     }
@@ -710,6 +836,7 @@ public indirect enum Expression: SourceEntity {
 public indirect enum Statement: SourceEntity {
   case expression(Expression)
   case returnStatement(ReturnStatement)
+  case becomeStatement(BecomeStatement)
   case ifStatement(IfStatement)
   case forStatement(ForStatement)
 
@@ -717,8 +844,16 @@ public indirect enum Statement: SourceEntity {
     switch self {
     case .expression(let expression): return expression.sourceLocation
     case .returnStatement(let returnStatement): return returnStatement.sourceLocation
+    case .becomeStatement(let becomeStatement): return becomeStatement.sourceLocation
     case .ifStatement(let ifStatement): return ifStatement.sourceLocation
     case .forStatement(let forStatement): return forStatement.sourceLocation
+    }
+  }
+
+  public var isEnding: Bool {
+    switch self {
+    case .returnStatement(_), .becomeStatement(_): return true
+    default: return false
     }
   }
 }
@@ -729,7 +864,7 @@ public struct InoutExpression: SourceEntity {
   public var expression: Expression
 
   public var sourceLocation: SourceLocation {
-    return ampersandToken.sourceLocation
+    return .spanning(ampersandToken, to: expression)
   }
 
   public init(ampersandToken: Token, expression: Expression) {
@@ -771,6 +906,32 @@ public struct BinaryExpression: SourceEntity {
 
     self.op = op
     self.rhs = rhs
+  }
+}
+
+/// A bracketed expression.
+public struct BracketedExpression: SourceEntity {
+  public var expression: Expression
+
+  public var openBracketToken: Token
+  public var closeBracketToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(openBracketToken, to: closeBracketToken)
+  }
+
+  public init(expression: Expression, openBracketToken: Token, closeBracketToken: Token) {
+    guard case .punctuation(.openBracket) = openBracketToken.kind else {
+      fatalError("Unexpected token kind \(openBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    guard case .punctuation(.closeBracket) = closeBracketToken.kind else {
+      fatalError("Unexpected token kind \(closeBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    self.expression = expression
+    self.openBracketToken = openBracketToken
+    self.closeBracketToken = closeBracketToken
   }
 }
 
@@ -894,6 +1055,21 @@ public struct ReturnStatement: SourceEntity {
 
   public init(returnToken: Token, expression: Expression?) {
     self.returnToken = returnToken
+    self.expression = expression
+  }
+}
+
+/// A become statement.
+public struct BecomeStatement: SourceEntity {
+  public var becomeToken: Token
+  public var expression: Expression
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(becomeToken, to: expression)
+  }
+
+  public init(becomeToken: Token, expression: Expression) {
+    self.becomeToken = becomeToken
     self.expression = expression
   }
 }

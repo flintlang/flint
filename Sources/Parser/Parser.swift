@@ -23,12 +23,12 @@ public class Parser {
 
   /// Semantic information about the source program.
   var environment = Environment()
-  
+
   public init(tokens: [Token]) {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
   }
-  
+
   /// Parses the token list.
   ///
   /// - Returns:  A triple containing the top-level Flint module (the root of the AST), the generated environment,
@@ -67,7 +67,7 @@ public class Parser {
 
     return first
   }
-  
+
   /// Consumes one of the given tokens from the given list, i.e. discard it and move on to the next one. Throws if the current
   /// token being processed isn't equal to any of the given tokens.
   ///
@@ -81,13 +81,13 @@ public class Parser {
     guard let first = currentToken, anyOf.contains(first.kind) else {
       throw ParserError.expectedTokens(anyOf, sourceLocation: currentToken?.sourceLocation)
     }
-    
+
     currentIndex += 1
-    
+
     if consumingTrailingNewlines {
       consumeNewLines()
     }
-    
+
     return first
   }
   
@@ -141,7 +141,7 @@ extension Parser {
 
   func parseTopLevelDeclarations() throws -> [TopLevelDeclaration] {
     var declarations = [TopLevelDeclaration]()
-    
+
     while true {
       guard let first = currentToken else { break }
 
@@ -150,17 +150,24 @@ extension Parser {
       case .contract:
         let contractDeclaration = try parseContractDeclaration()
         environment.addContract(contractDeclaration)
+        if contractDeclaration.isStateful {
+          environment.addEnum(contractDeclaration.stateEnum)
+        }
         declarations.append(.contractDeclaration(contractDeclaration))
       case .struct:
         let structDeclaration = try parseStructDeclaration()
         environment.addStruct(structDeclaration)
         declarations.append(.structDeclaration(structDeclaration))
+      case .enum:
+        let enumDeclaration = try parseEnumDeclaration()
+        environment.addEnum(enumDeclaration)
+        declarations.append(.enumDeclaration(enumDeclaration))
       default:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       }
     }
-    
+
     return declarations
   }
 }
@@ -216,14 +223,14 @@ extension Parser {
 
     return ArrayLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
   }
-  
+
   func parseRangeExpression() throws -> AST.RangeExpression {
     let startToken = try consume(.punctuation(.openBracket))
     let start = try parseLiteral()
     let op = try consume(anyOf: [.punctuation(.halfOpenRange), .punctuation(.closedRange)])
     let end = try parseLiteral()
     let endToken = try consume(.punctuation(.closeBracket))
-    
+
     return AST.RangeExpression(startToken: startToken, endToken: endToken, initial: .literal(start), bound: .literal(end), op: op)
   }
 
@@ -236,7 +243,7 @@ extension Parser {
 
     if let _ = try? consume(.punctuation(.colon)) {
       /// The dictionary literal doesn't contain any elements.
-      
+
       closeSquareBracket = try consume(.punctuation(.closeSquareBracket))
       return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
     }
@@ -269,14 +276,14 @@ extension Parser {
 
     return (key, value)
   }
-  
+
   func parseInoutExpression() throws -> InoutExpression {
     let ampersandToken = try consume(.punctuation(.ampersand))
-    
+
     guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)], maxIndex: tokens.count) else {
       throw ParserError.expectedToken(.punctuation(.comma), sourceLocation: currentToken?.sourceLocation)
     }
-    
+
     let expression = try parseExpression(upTo: statementEndIndex)
     return InoutExpression(ampersandToken: ampersandToken, expression: expression)
   }
@@ -292,7 +299,7 @@ extension Parser {
 
   func parseSubscriptExpression() throws -> SubscriptExpression {
     var base: SubscriptExpression
-    
+
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openSquareBracket))
     guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
@@ -309,10 +316,10 @@ extension Parser {
       let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
       base = SubscriptExpression(baseExpression: .subscriptExpression(base), indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
     }
-    
+
     return base
   }
-  
+
   func parseType() throws -> Type {
     if let openSquareBracketToken = attempt(try consume(.punctuation(.openSquareBracket))) {
       // The type is an array type or a dictionary type.
@@ -327,7 +334,7 @@ extension Parser {
       let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket))
       return Type(openSquareBracketToken: openSquareBracketToken, arrayWithElementType: keyType, closeSquareBracketToken: closeSquareBracketToken)
     }
-    
+
     if let inoutToken = attempt(try consume(.inout)) {
       // The type is declared inout (valid only for function parameters).
       let type = try parseType()
@@ -370,7 +377,7 @@ extension Parser {
 
     return type
   }
-  
+
   func parseTypeAnnotation() throws -> TypeAnnotation {
     let colonToken = try consume(.punctuation(.colon))
     let type = try parseType()
@@ -382,20 +389,21 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract)
     let identifier = try parseIdentifier()
+    let states = try? parseTypeStateGroup()
     try consume(.punctuation(.openBrace))
     let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, variableDeclarations: variableDeclarations)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], variableDeclarations: variableDeclarations)
   }
-  
+
   func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
-    
+
     while let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: enclosingType)) {
       variableDeclarations.append(variableDeclaration)
     }
-    
+
     return variableDeclarations
   }
 
@@ -449,6 +457,10 @@ extension Parser {
 extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
+
+    let _ = attempt(try consume(.punctuation(.at)))
+    let states = (try? parseTypeStateGroup()) ?? []
+
     try consume(.punctuation(.doubleColon))
 
     let capabilityBinding = attempt(task: parseCapabilityBinding)
@@ -461,10 +473,10 @@ extension Parser {
 
     for case .functionDeclaration(let functionDeclaration) in members {
       // Record all the function declarations.
-      environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, callerCapabilities: callerCapabilities)
+      environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, states: states, callerCapabilities: callerCapabilities)
     }
 
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, states: states, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
   }
 
   func parseCapabilityBinding() throws -> Identifier {
@@ -472,23 +484,41 @@ extension Parser {
     try consume(.punctuation(.leftArrow))
     return identifier
   }
-  
-  func parseCallerCapabilityGroup() throws -> ([CallerCapability], closeBracketToken: Token) {
+
+
+  func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket))
-    let callerCapabilities = try parseCallerCapabilityList()
+    let identifiers = try parseIdentifierList()
     let closeBracketToken = try consume(.punctuation(.closeBracket))
     
+    return (identifiers, closeBracketToken)
+  }
+
+  func parseIdentifierList() throws -> [Identifier] {
+    var identifiers = [Identifier]()
+    repeat {
+      identifiers.append(try parseIdentifier())
+    } while attempt(try consume(.punctuation(.comma))) != nil
+
+    return identifiers
+  }
+
+  func parseCallerCapabilityGroup() throws -> (callerCapabilities: [CallerCapability], closeBracketToken: Token) {
+    let (identifiers, closeBracketToken) = try parseIdentifierGroup()
+    let callerCapabilities = identifiers.map {
+      return CallerCapability(identifier: $0)
+    }
+
     return (callerCapabilities, closeBracketToken)
   }
-  
-  func parseCallerCapabilityList() throws -> [CallerCapability] {
-    var callerCapabilities = [CallerCapability]()
-    repeat {
-      let identifier = try parseIdentifier()
-      callerCapabilities.append(CallerCapability(identifier: identifier))
-    } while attempt(try consume(.punctuation(.comma))) != nil
-    
-    return callerCapabilities
+
+  func parseTypeStateGroup() throws -> [TypeState] {
+    let (identifiers, _) = try parseIdentifierGroup()
+    let typeStates = identifiers.map {
+      return TypeState(identifier: $0)
+    }
+
+    return typeStates
   }
 
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
@@ -556,10 +586,10 @@ extension Parser {
 
     return (attributes, modifiers)
   }
-  
+
   func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
     let (attributes, modifiers) = try parseAttributesAndModifiers()
-    
+
     let funcToken = try consume(.func)
     return (attributes, modifiers, funcToken)
   }
@@ -570,11 +600,11 @@ extension Parser {
     let specialToken: Token = try consume(anyOf: [.init, .fallback])
     return (attributes, modifiers, specialToken)
   }
-  
+
   func parseParameters() throws -> ([Parameter], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket))
     var parameters = [Parameter]()
-    
+
     if let closeBracketToken = attempt(try consume(.punctuation(.closeBracket))) {
       return ([], closeBracketToken)
     }
@@ -586,17 +616,17 @@ extension Parser {
       let typeAnnotation = try parseTypeAnnotation()
       parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken))
     } while attempt(try consume(.punctuation(.comma))) != nil
-    
+
     let closeBracketToken = try consume(.punctuation(.closeBracket))
     return (parameters, closeBracketToken)
   }
-  
+
   func parseResult() throws -> Type {
     try consume(.punctuation(.arrow))
     let identifier = try parseIdentifier()
     return Type(identifier: identifier)
   }
-  
+
   func parseCodeBlock() throws -> ([Statement], closeBraceToken: Token) {
     try consume(.punctuation(.openBrace))
     let statements = try parseStatements()
@@ -618,6 +648,8 @@ extension Parser {
         statements.append(.expression(expression))
       } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
         statements.append(.returnStatement(returnStatement))
+      } else if let becomeStatement = attempt (try parseBecomeStatement(statementEndIndex: statementEndIndex)) {
+        statements.append(.becomeStatement(becomeStatement))
       } else if let forStatement = attempt(try parseForStatement()) {
         statements.append(.forStatement(forStatement))
       } else if let ifStatement = attempt(try parseIfStatement()) {
@@ -628,10 +660,10 @@ extension Parser {
       _ = try? consume(.punctuation(.semicolon))
       while (try? consume(.newline)) != nil {}
     }
-    
+
     return statements
   }
-  
+
   /// Parse an expression which ends one token before the one at `limitTokenIndex`.
   /// For instance in the expression `a + 2)`, and `limitTokenIndex` refers to the token `)`, the function will return
   /// the expression `a + 2`.
@@ -680,7 +712,7 @@ extension Parser {
     if let rangeExpression = attempt(task: parseRangeExpression) {
       return .range(rangeExpression)
     }
-    
+
     // Try to parse an array literal.
     if let arrayLiteral = attempt(task: parseArrayLiteral) {
       return .arrayLiteral(arrayLiteral)
@@ -721,15 +753,15 @@ extension Parser {
     return .identifier(identifier)
   }
 
-  func parseBracketedExpression() throws -> Expression {
-    try consume(.punctuation(.openBracket))
+  func parseBracketedExpression() throws -> BracketedExpression {
+    let openBracketToken = try consume(.punctuation(.openBracket))
     guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
       throw ParserError.expectedToken(.punctuation(.closeBracket), sourceLocation: currentToken?.sourceLocation)
     }
     let expression = try parseExpression(upTo: closeBracketIndex)
-    try consume(.punctuation(.closeBracket))
+    let closeBracketToken = try consume(.punctuation(.closeBracket))
 
-    return expression
+    return BracketedExpression(expression: expression, openBracketToken: openBracketToken, closeBracketToken: closeBracketToken)
   }
 
   func parseFunctionCall() throws -> FunctionCall {
@@ -765,11 +797,17 @@ extension Parser {
 
     return (arguments, closeBracketToken)
   }
-  
+
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     let returnToken = try consume(.return)
     let expression = attempt(try parseExpression(upTo: statementEndIndex))
     return ReturnStatement(returnToken: returnToken, expression: expression)
+  }
+
+  func parseBecomeStatement(statementEndIndex: Int) throws -> BecomeStatement {
+    let becomeToken = try consume(.become)
+    let expression = try parseExpression(upTo: statementEndIndex)
+    return BecomeStatement(becomeToken: becomeToken, expression: expression)
   }
 
   func parseIfStatement() throws -> IfStatement {
@@ -788,16 +826,16 @@ extension Parser {
     let forToken = try consume(.for)
     let variable = try parseVariableDeclaration()
     try consume(.in)
-    
+
     guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
       throw ParserError.expectedToken(.punctuation(.openBrace), sourceLocation: currentToken?.sourceLocation)
     }
     let iterable = try parseExpression(upTo: nextOpenBraceIndex)
     let (statements, _) = try parseCodeBlock()
-    
+
     return ForStatement(forToken: forToken, variable: variable, iterable: iterable, statements: statements)
   }
-  
+
   func parseElseClause() throws -> [Statement] {
     try consume(.else)
     return try parseCodeBlock().0
@@ -845,6 +883,40 @@ extension Parser {
     }
 
     return members
+  }
+
+}
+
+extension Parser {
+  func parseEnumDeclaration() throws -> EnumDeclaration {
+    let enumToken = try consume(.enum)
+    let identifier = try parseIdentifier()
+    let typeAnnotation = try parseTypeAnnotation()
+    try consume(.punctuation(.openBrace))
+    let cases = try parseEnumCases(enumIdentifier: identifier, hiddenType: typeAnnotation.type)
+    try consume(.punctuation(.closeBrace))
+
+    return EnumDeclaration(enumToken: enumToken, identifier: identifier, type: typeAnnotation.type, cases: cases)
+  }
+
+  func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumCase] {
+    var cases = [EnumCase]()
+    while let enumCase = attempt(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType)) {
+      cases.append(enumCase)
+    }
+
+    return cases
+  }
+
+  func parseEnumCase(enumIdentifier: Identifier, hiddenType: Type) throws -> EnumCase {
+    let caseToken = try consume(.case)
+    var identifier = try parseIdentifier()
+    identifier.enclosingType = enumIdentifier.name
+    var hiddenValue: Expression? = nil
+    if attempt(try consume(.punctuation(.equal))) != nil {
+      hiddenValue = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
+    }
+    return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
   }
 
 }

@@ -1,0 +1,65 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST:   ContractDeclaration
+// CHECK-AST:     identifier "Test"
+contract Test {}
+
+Test :: (any) {
+// CHECK-AST: SpecialDeclaration
+// CHECK-AST:   public
+  public init() {}
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: EnumDeclaration
+// CHECK-AST:   identifier "MyEnum"
+// CHECK-AST:   built-in type Int
+enum MyEnum: Int {
+// CHECK-AST: Cases
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Alpha"
+// CHECK-AST: literal 0
+  case Alpha
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Beta"
+// CHECK-AST: literal 1
+  case Beta
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Gamma"
+// CHECK-AST: literal 2
+  case Gamma
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: EnumDeclaration
+// CHECK-AST:   identifier "MySecondEnum"
+// CHECK-AST:   built-in type Int
+enum MySecondEnum: Int {
+// CHECK-AST: Cases
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Alpha"
+// CHECK-AST: literal 2
+case Alpha = 2
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Beta"
+// CHECK-AST: literal 3
+case Beta = 3
+
+// CHECK-AST: EnumCase
+// CHECK-AST: identifier "Gamma"
+// CHECK-AST: literal 42
+case Gamma = 42
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: EnumDeclaration
+// CHECK-AST:   identifier "MyEmptyEnum"
+enum MyEmptyEnum: Int {}

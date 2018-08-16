@@ -20,6 +20,10 @@ public struct Environment {
   /// A list of the names of the structs which have been declared in the program.
   var declaredStructs = [Identifier]()
 
+  /// A list of the names of the enums which have been declared in the program.
+  var declaredEnums = [Identifier]()
+
+
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
 
@@ -37,7 +41,7 @@ public struct Environment {
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
     declaredContracts.append(contractDeclaration.identifier)
     types[contractDeclaration.identifier.name] = TypeInformation()
-    setProperties(contractDeclaration.variableDeclarations, enclosingType: contractDeclaration.identifier.name)
+    setProperties(contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contractDeclaration.identifier.name)
   }
 
   /// Add a struct declaration to the environment.
@@ -46,20 +50,29 @@ public struct Environment {
     if types[structDeclaration.identifier.name] == nil {
       types[structDeclaration.identifier.name] = TypeInformation()
     }
-    setProperties(structDeclaration.variableDeclarations, enclosingType: structDeclaration.identifier.name)
+    setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
       addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name)
     }
   }
 
+  /// Add an enum declaration to the environment.
+  public mutating func addEnum(_ enumDeclaration: EnumDeclaration) {
+    declaredEnums.append(enumDeclaration.identifier)
+    if types[enumDeclaration.identifier.name] == nil {
+      types[enumDeclaration.identifier.name] = TypeInformation()
+    }
+    setProperties(enumDeclaration.cases.map{ .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
+  }
+
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
-  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState] = [], callerCapabilities: [CallerCapability] = []) {
     let functionName = functionDeclaration.identifier.name
 
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
-      .append(FunctionInformation(declaration: functionDeclaration, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating))
+      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
@@ -67,7 +80,7 @@ public struct Environment {
   public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
     types[enclosingType, default: TypeInformation()].initializers.append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
   }
-  
+
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addFallback(_ fallbackDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
@@ -75,23 +88,24 @@ public struct Environment {
   }
 
   /// Add a list of properties to a type.
-  mutating func setProperties(_ variableDeclarations: [VariableDeclaration], enclosingType: RawTypeIdentifier) {
-    types[enclosingType]!.orderedProperties = variableDeclarations.map { $0.identifier.name }
-    for variableDeclaration in variableDeclarations {
-      addProperty(variableDeclaration, enclosingType: enclosingType)
+  mutating func setProperties(_ properties: [Property], enclosingType: RawTypeIdentifier) {
+    types[enclosingType]!.orderedProperties = properties.map { $0.identifier.name }
+    for property in properties {
+      addProperty(property, enclosingType: enclosingType)
     }
   }
 
   /// Add a property to a type.
-  mutating func addProperty(_ variableDeclaration: VariableDeclaration, enclosingType: RawTypeIdentifier) {
-    if types[enclosingType]!.properties[variableDeclaration.identifier.name] == nil {
-      types[enclosingType]!.properties[variableDeclaration.identifier.name] = PropertyInformation(variableDeclaration: variableDeclaration)
+  mutating func addProperty(_ property: Property, enclosingType: RawTypeIdentifier) {
+    if types[enclosingType]!.properties[property.identifier.name] == nil {
+      types[enclosingType]!.properties[property.identifier.name] = PropertyInformation(property: property)
     }
   }
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    addProperty(VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable)), enclosingType: enclosingType)
+    let declaration = VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
+    addProperty(.variableDeclaration(declaration), enclosingType: enclosingType)
   }
 
   /// Whether a contract has been declared in the program.
@@ -109,9 +123,30 @@ public struct Environment {
     return declaredStructs.contains { $0.name == type }
   }
 
+  /// Whether an enum has been declared in the program.
+  public func isEnumDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredEnums.contains { $0.name == type }
+  }
+
   /// Whether a type has been declared in the program.
   public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
       return types[type] != nil
+  }
+
+  public func isStateful(_ contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return declaredEnums.contains(where: { $0.name == enumName })
+  }
+
+  /// Whether a state has been declared in this contract.
+  public func isStateDeclared(_ state: Identifier, in contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return types[enumName]?.properties[state.name] != nil
+  }
+
+  public func getStateValue(_ state: Identifier, in contract: RawTypeIdentifier) -> Expression {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return types[enumName]!.properties[state.name]!.property.value!
   }
 
   /// Whether a struct is self referencing.
@@ -119,7 +154,7 @@ public struct Environment {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }
 
     for member in enclosingMemberTypes.orderedProperties {
-      guard let memberType = enclosingMemberTypes.properties[member]?.variableDeclaration.type.name else { return nil }
+      guard let memberType = enclosingMemberTypes.properties[member]?.rawType.name else { return nil }
       if memberType == type {
         return enclosingMemberTypes.properties[member]
       }
@@ -136,22 +171,26 @@ public struct Environment {
   }
 
   /// Whether a property is defined in a type.
-  public func isPropertyDefined(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties.keys.contains(property)
+  public func isPropertyDefined(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType) != nil
   }
 
-  /// Whether is property is declared as a constnat.
-  public func isPropertyConstant(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties[property]!.isConstant
+  public func property(_ identifier: String, _ enclosingType: RawTypeIdentifier) -> PropertyInformation? {
+    return types[enclosingType]?.properties[identifier]
   }
 
-  public func isPropertyAssignedDefaultValue(_ property: String, enclosingType: RawTypeIdentifier) -> Bool {
-    return types[enclosingType]!.properties[property]!.isAssignedDefaultValue
+  /// Whether property is declared as a constant.
+  public func isPropertyConstant(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isConstant
+  }
+
+  public func isPropertyAssignedDefaultValue(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isAssignedDefaultValue
   }
 
   /// The source location of a property declaration.
-  public func propertyDeclarationSourceLocation(_ property: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
-    return types[enclosingType]!.properties[property]!.sourceLocation
+  public func propertyDeclarationSourceLocation(_ identifier: String, enclosingType: RawTypeIdentifier) -> SourceLocation? {
+    return property(identifier, enclosingType)!.sourceLocation
   }
 
   /// The names of the properties declared in a type.
@@ -160,8 +199,8 @@ public struct Environment {
   }
 
   /// The list of property declarations in a type.
-  public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [VariableDeclaration] {
-    return types[enclosingType]!.properties.values.map { $0.variableDeclaration }
+  public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [Property] {
+    return types[enclosingType]!.properties.values.map { $0.property }
   }
 
   private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
@@ -178,7 +217,7 @@ public struct Environment {
 
   /// Attempts to find a conflicting declaration of the given type.
   public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
-    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts)
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
   }
 
   /// Attempts to find a conflicting declaration of the given function declaration
@@ -222,7 +261,7 @@ public struct Environment {
   public func fallbacks(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
     return types[enclosingType]!.fallbacks
   }
-  
+
   /// The list of properties declared in a type which can be used as caller capabilities.
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
     return types[enclosingType]!.properties.compactMap { key, value in
@@ -251,8 +290,8 @@ public struct Environment {
   }
 
   /// The type return type of a function call, determined by looking up the function's declaration.
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
-    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
+    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
@@ -302,16 +341,16 @@ public struct Environment {
   public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
     let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
-    
+
     if elementType != boundType {
       // The bounds have different types.
       return .errorType
     }
-    
+
     return .rangeType(elementType)
   }
 
-  
+
   // The type of a dictionary literal.
   public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
     var keyType: Type.RawType?
@@ -352,22 +391,34 @@ public struct Environment {
   ///   - callerCapabilities: The caller capabilities associated with the expression, if the expression is a function call.
   ///   - scopeContext: Contextual information about the scope in which the expression resides.
   /// - Returns: The `Type.RawType` of the expression.
-  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
+  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, typeStates: [TypeState] = [], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
 
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
+      return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
+
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
-      return type(of: binaryExpression.rhs, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
-    case .bracketedExpression(let expression):
-      return type(of: expression, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      if binaryExpression.opToken == .dot {
+        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
+        case .arrayType(_):
+          return .basicType(.int)
+        case .fixedSizeArrayType(_):
+          return .basicType(.int)
+        default:
+          break
+        }
+      }
+      return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+
+     case .bracketedExpression(let bracketedExpression):
+      return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
-      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
+      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
@@ -424,7 +475,7 @@ public struct Environment {
   ///   - callerCapabilities: The caller capabilities associated with the function call.
   ///   - scopeContext: Contextual information about the scope in which the function call appears.
   /// - Returns: A `FunctionCallMatchResult`, either `success` or `failure`.
-  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
+  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
 
     var match: FunctionCallMatchResult? = nil
@@ -433,10 +484,12 @@ public struct Environment {
       type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
     }
 
+    // Check if it can be a regular function.
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
         guard candidate.parameterTypes == argumentTypes,
-          areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
+          areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities),
+          areTypeStatesCompatible(source: typeStates, target: candidate.typeStates) else {
             candidates.append(candidate)
             continue
         }
@@ -445,6 +498,7 @@ public struct Environment {
       }
     }
 
+    // Check if it can be an initializer.
     if let initializers = types[functionCall.identifier.name]?.initializers {
       for candidate in initializers {
         guard candidate.parameterTypes == argumentTypes,
@@ -462,25 +516,24 @@ public struct Environment {
       }
     }
 
+    // Check if it can be a fallback function.
     if let fallbacks = types[functionCall.identifier.name]?.fallbacks {
       for candidate in fallbacks {
         guard areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             // TODO: Add fallback candidates.
             continue
         }
-        
+
         if match != nil {
           // This is an ambiguous call. There are too many matches.
           return .failure(candidates: [])
         }
-        
+
         match = .matchedFallback(candidate)
       }
     }
 
-    
-    // Check if it's a global function.
-
+    // Check if it can be a global function.
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
@@ -506,12 +559,12 @@ public struct Environment {
   public mutating func setPublicFallback(_ publicFallback: SpecialDeclaration, forContract contract: RawTypeIdentifier) {
     types[contract]!.publicFallback = publicFallback
   }
-  
+
   /// The public initializer for the given contract. A contract should have at most one public initializer.
   public func publicInitializer(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
     return types[contract]!.publicInitializer
   }
-  
+
   /// The public fallback for the given contract. A contract should have at most one public fallback.
   public func publicFallback(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
     return types[contract]!.publicFallback
@@ -522,7 +575,19 @@ public struct Environment {
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
     guard !target.isEmpty else { return true }
     for callCallerCapability in source {
-      if !target.contains(where: { return callCallerCapability.isSubcapability(callerCapability: $0) }) {
+      if !target.contains(where: { return callCallerCapability.isSubCapability(of: $0) }) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /// Whether two type state groups are compatible, i.e. whether a function with
+  /// type states `source` is able to call a function requiring 'target' states.
+  func areTypeStatesCompatible(source: [TypeState], target: [TypeState]) -> Bool {
+    guard !target.isEmpty else { return true }
+    for callTypeState in source {
+      if !target.contains(where: { return callTypeState.isSubState(of: $0) }) {
         return false
       }
     }
@@ -555,6 +620,10 @@ public struct Environment {
         return acc + size(of: element.value.rawType)
       }
     case .userDefinedType(let identifier):
+      if isEnumDeclared(identifier),
+        case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property{
+        return size(of: enumCase.hiddenType.rawType)
+      }
       return types[identifier]!.properties.reduce(0) { acc, element in
         return acc + size(of: element.value.rawType)
       }
@@ -567,11 +636,11 @@ public struct Environment {
     var offsetMap = [String: Int]()
     var offset = 0
 
-    let properties = types[enclosingType]!.orderedProperties.prefix(while: { $0 != property })
+    let rootType = types[enclosingType]!
 
-    for p in properties {
+    for p in rootType.orderedProperties.prefix(while: { $0 != property }) {
       offsetMap[p] = offset
-      let propertyType = types[enclosingType]!.properties[p]!.rawType
+      let propertyType = rootType.properties[p]!.rawType
       let propertySize = size(of: propertyType)
 
       offset += propertySize
@@ -605,38 +674,94 @@ public struct TypeInformation {
   var publicFallback: SpecialDeclaration? = nil
 }
 
+public enum Property {
+  case variableDeclaration(VariableDeclaration)
+  case enumCase(EnumCase)
+
+  public var identifier: Identifier {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.identifier
+    case .enumCase(let enumCase):
+      return enumCase.identifier
+    }
+  }
+
+  public var value: Expression? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.assignedExpression
+    case .enumCase(let enumCase):
+      return enumCase.hiddenValue
+    }
+  }
+
+  public var type: Type? {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type
+    case .enumCase(let enumCase):
+      return enumCase.type
+    }
+  }
+
+  public var sourceLocation: SourceLocation {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.sourceLocation
+    case .enumCase(let enumCase):
+      return enumCase.sourceLocation
+    }
+  }
+}
+
 /// Information about a property defined in a type, such as its type and generic arguments.
 public struct PropertyInformation {
-  public var variableDeclaration: VariableDeclaration
+  public var property: Property
 
   public var isConstant: Bool {
-    return variableDeclaration.isConstant
+    switch property {
+      case .variableDeclaration(let variableDeclaration): return variableDeclaration.isConstant
+      case .enumCase(_): return true
+    }
   }
 
   public var isAssignedDefaultValue: Bool {
-    return variableDeclaration.assignedExpression != nil
+    switch property {
+      case .variableDeclaration(let variableDeclaration):
+        return variableDeclaration.assignedExpression != nil
+      case .enumCase(let enumCase):
+        return enumCase.hiddenValue != nil
+    }
   }
 
   public var sourceLocation: SourceLocation? {
-    return variableDeclaration.sourceLocation
-  }
-
-  init(variableDeclaration: VariableDeclaration) {
-    self.variableDeclaration = variableDeclaration
+    switch property {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.sourceLocation
+    case .enumCase(let enumCase):
+      return enumCase.sourceLocation
+    }
   }
 
   public var rawType: Type.RawType {
-    return variableDeclaration.type.rawType
+    return property.type!.rawType
   }
 
   public var typeGenericArguments: [Type.RawType] {
-    return variableDeclaration.type.genericArguments.map { $0.rawType }
+    switch property {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.type.genericArguments.map { $0.rawType }
+    case .enumCase(_):
+      return []
+    }
   }
 }
 
 /// Information about a function, such as which caller capabilities it requires and if it is mutating.
 public struct FunctionInformation {
   public var declaration: FunctionDeclaration
+  public var typeStates: [TypeState]
   public var callerCapabilities: [CallerCapability]
   public var isMutating: Bool
 

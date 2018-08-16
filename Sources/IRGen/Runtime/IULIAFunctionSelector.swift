@@ -46,12 +46,16 @@ struct IULIAFunctionSelector {
       case \(functionHash) /* \(function.mangledSignature()) */ {
         \(renderCaseBody(function: function).indented(by: 2))
       }
-      
+
       """
     }.joined()
   }
 
   func renderCaseBody(function: IULIAFunction) -> String {
+    // Dynamically check that the state is correct for the function to be called.
+    let typeStates = function.typeStates
+    let typeStateChecks = IULIATypeStateChecks(typeStates: typeStates).rendered(enclosingType: enclosingType.name, environment: environment)
+
     // Dynamically check the caller has appropriate caller capabilities.
     let callerCapabilities = function.callerCapabilities
     let callerCapabilityChecks = IULIACallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType.name, environment: environment)
@@ -68,11 +72,42 @@ struct IULIAFunctionSelector {
 
     if let resultType = function.resultCanonicalType {
       switch resultType {
-      case .address, .uint256, .bytes32: return callerCapabilityChecks + "\n" + IULIARuntimeFunction.return32Bytes(value: call)
+      case .address, .uint256, .bytes32: return typeStateChecks + "\n" + callerCapabilityChecks + "\n" + IULIARuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    return callerCapabilityChecks + "\n" + call
+    return "\(typeStateChecks)\n\(callerCapabilityChecks)\n\(call)"
+  }
+}
+
+/// Checks if the state is correct for a function to be called.
+struct IULIATypeStateChecks {
+  var typeStates: [TypeState]
+
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> String {
+    let checks = typeStates.compactMap { typeState -> String? in
+      guard !typeState.isAny else { return nil }
+
+      let stateValue = IULIAExpression(expression: environment.getStateValue(typeState.identifier, in: enclosingType), asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
+
+      let dummySourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))
+      let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + enclosingType))
+      let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: dummySourceLocation)), op: Token(kind: .punctuation(.dot), sourceLocation: dummySourceLocation), rhs: stateVariable))
+      let stateVariableRendered = IULIAExpression(expression: selfState, asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
+
+      let check = IULIARuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)
+      return "_flintStateCheck := add(_flintStateCheck, \(check))"
+    }
+
+    if !checks.isEmpty {
+      return """
+      let _flintStateCheck := 0
+      \(checks.joined(separator: "\n"))
+      if eq(_flintStateCheck, 0) { revert(0, 0) }
+      """ + "\n"
+    }
+
+    return ""
   }
 }
 
@@ -97,8 +132,8 @@ struct IULIACallerCapabilityChecks {
         let check = IULIARuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
         return "_flintCallerCheck := add(_flintCallerCheck, \(check))"
       default:
-        let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(\(offset)))")
-        return "_flintCallerCheck := add(_flintCallerCheck, \(check)"
+        let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(\(offset))")
+        return "_flintCallerCheck := add(_flintCallerCheck, \(check))"
       }
     }
 
@@ -113,4 +148,3 @@ struct IULIACallerCapabilityChecks {
     return ""
   }
 }
-
