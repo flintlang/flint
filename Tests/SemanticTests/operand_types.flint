@@ -1,0 +1,27 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var a: Int = 0
+  var b: Bool = false
+  var c: Address = 0x0000000000000000000000000000000000000000
+  var d: D = D()
+}
+
+Test :: (any) {
+  public init() {
+    a = 1
+    a = false // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
+    a = b // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
+    a = c // expected-error {{Incompatible assignment between values of type 'Int' and 'Address'}}
+    a = d // expected-error {{Incompatible assignment between values of type 'Int' and 'D'}}
+    d = 0 // expected-error {{Incompatible assignment between values of type 'D' and 'Int'}}
+    a < 1
+    a < b // expected-error {{Incompatible use of operator '<' on values of types 'Int' and 'Bool'}}
+    a > c // expected-error {{Incompatible use of operator '>' on values of types 'Int' and 'Address'}}
+    a == d // expected-error {{Incompatible use of operator '==' on values of unmatched types 'Int' and 'D'}}
+    a == b // expected-error {{Incompatible use of operator '==' on values of unmatched types 'Int' and 'Bool'}}
+    d != d // expected-error {{Incompatible use of operator '!=' on values of types 'D' and 'D'}}
+  }
+}
+
+struct D { }

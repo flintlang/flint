@@ -1,24 +1,24 @@
 // RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
 contract Foo {
-  var arr: [Address] = []
+  var arr: [Int] = []
 }
 
 Foo :: (any) {
   public init() {}
 
-  func foo() -> Address {
-    var largest: Address
+  func foo() -> Int {
+    var largest: Int
     var max: Int
     // CHECK-AST: ForStatement
 
     // CHECK-AST:   token: var
     // CHECK-AST:   identifier "x"
-    // CHECK-AST:   type Address
+    // CHECK-AST:   type Int
 
     // CHECK-AST:   identifier "arr"
 
-    for var x: Address in arr {
+    for var x: Int in arr {
       if(x > largest){
         largest = x
       }

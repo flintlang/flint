@@ -427,6 +427,7 @@ public struct Environment {
           break
         }
       }
+
       return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
      case .bracketedExpression(let bracketedExpression):
