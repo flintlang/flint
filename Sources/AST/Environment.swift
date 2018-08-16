@@ -269,6 +269,7 @@ public struct Environment {
       case .basicType(.address): return key
       case .fixedSizeArrayType(.basicType(.address), _): return key
       case .arrayType(.basicType(.address)): return key
+      case .dictionaryType(_, .basicType(.address)): return key
       default: return nil
       }
     }
@@ -405,9 +406,23 @@ public struct Environment {
       if binaryExpression.opToken == .dot {
         switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
         case .arrayType(_):
-          return .basicType(.int)
+          if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
+            return .basicType(.int)
+          } else {
+            fatalError()
+          }
         case .fixedSizeArrayType(_):
-          return .basicType(.int)
+          if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
+            return .basicType(.int)
+          } else {
+            fatalError()
+          }
+        case .dictionaryType(_):
+          if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
+            return .basicType(.int)
+          } else {
+            fatalError()
+          }
         default:
           break
         }
