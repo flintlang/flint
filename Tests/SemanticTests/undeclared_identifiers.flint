@@ -9,6 +9,6 @@ Test :: caller <- (any) {
     var a: Int = 0
     a += 1
     b.foo() // expected-error {{Use of undeclared identifier 'b'}}
-    // expected-error@11 {{Function 'foo' is not in scope or cannot be called using the caller capability 'any'}}
+            // expected-error@-1 {{Function 'foo' is not in scope or cannot be called using the capability 'any'}}
   }
 }

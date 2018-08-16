@@ -1,0 +1,109 @@
+// RUN: %flintc %s --verify
+
+enum A: Int {}
+
+enum B: Bool {
+  case alpha // expected-error {{Cannot infer hidden values in case 'alpha' for hidden type 'Bool'}}
+}
+
+enum B: Int { // expected-error {{Invalid redeclaration of 'B'}}
+  case beta
+}
+
+enum C: Int {
+  case a = "string" // expected-error {{Cannot convert expression of type 'String' to expected hidden type 'Int'}}
+  case b = 2
+}
+
+enum D: Int {
+  case a = 1
+  case b
+  case c
+}
+
+enum E: Int {
+  case a = 0
+  case b = 32
+  case c = 42
+}
+
+enum F: E { // expected-error {{Invalid hidden type 'E' for enum 'F'}}
+ case a = E // expected-error {{Invalid hidden value for enum case 'a'}}
+}
+
+enum G: G { // expected-error {{Invalid hidden type 'G' for enum 'G'}}
+  case a = G.a // expected-error {{Invalid hidden value for enum case 'a'}}
+}
+
+enum H: Int {
+  case a = 6 * 7 // expected-error {{Invalid hidden value for enum case 'a'}}
+}
+
+enum I: String {
+  case a = "alpha"
+  case b = "beta"
+}
+
+enum J: String {
+  case a // expected-error {{Cannot infer hidden values in case 'a' for hidden type 'String'}}
+}
+
+enum K: String {
+case a = "alpha"
+case b // expected-error {{Cannot infer hidden values in case 'b' for hidden type 'String'}}
+}
+
+contract Test {
+  var phonetic: I
+  var ints: D
+}
+
+Test :: (any) {
+  public init() {
+    phonetic = I.a
+    ints = D.c
+  }
+
+  public func type1() -> Int {
+    return D.a + D.c // expected-error {{Cannot convert expression of type 'D' to expected return type 'Int'}}
+  }
+
+  public func type1a() -> Int {
+    return D.a + E.a // expected-error {{Cannot convert expression of type 'E' to expected return type 'Int'}}
+  }
+
+// Binary operations aren't type checked...
+//  public func type1b() -> Int {
+//    return D.a + 1
+//  }
+
+  public func type2() -> Int {
+    return I.a // expected-error {{Cannot convert expression of type 'I' to expected return type 'Int'}}
+  }
+
+  public func type3() {
+    var phone: I
+
+    phone = I.a
+    phone = I.b
+    phone = I // expected-error {{Cannot reference enum 'I' alone}}
+    phone = I.c // expected-error {{Use of undeclared identifier 'c'}}
+  }
+
+  public func type4() {
+    var integer: D
+
+    integer = D.a
+    integer = I.b // expected-error {{Incompatible assignment between values of type 'D' and 'I'}}
+    integer = D.c
+  }
+
+  public func type5() -> D { // expected-error {{Type 'D' not valid as return type in function 'type5'}}
+    var integer: Int
+
+    integer = 1
+
+    return integer // expected-error {{Cannot convert expression of type 'Int' to expected return type 'D'}}
+  }
+}
+

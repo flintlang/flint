@@ -16,6 +16,7 @@ struct IULIAStatement {
     case .expression(let expression): return IULIAExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext)
     case .ifStatement(let ifStatement): return IULIAIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
     case .returnStatement(let returnStatement): return IULIAReturnStatement(returnStatement: returnStatement).rendered(functionContext: functionContext)
+    case .becomeStatement(let becomeStatement): return IULIABecomeStatement(becomeStatement: becomeStatement).rendered(functionContext: functionContext)
     case .forStatement(let forStatement): return IULIAForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     }
   }
@@ -225,3 +226,19 @@ struct IULIAReturnStatement {
     return "\(IULIAFunction.returnVariableName) := \(renderedExpression)"
   }
 }
+
+/// Generates code for a become statement.
+struct IULIABecomeStatement {
+  var becomeStatement: BecomeStatement
+
+  func rendered(functionContext: FunctionContext) -> String {
+    let sl = becomeStatement.sourceLocation
+    let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + functionContext.enclosingTypeName))
+    let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: sl)), op: Token(kind: .punctuation(.dot), sourceLocation: sl), rhs: stateVariable))
+
+    let assignState: Expression = .binaryExpression(BinaryExpression(lhs: selfState, op: Token(kind: .punctuation(.equal), sourceLocation: sl), rhs: becomeStatement.expression))
+
+    return IULIAExpression(expression: assignState).rendered(functionContext: functionContext)
+  }
+}
+

@@ -22,9 +22,8 @@ InvalidTypes :: (any) {
     var a: Bool = true
     a = b // expected-error {{Use of undeclared identifier 'b'}}
 
-    // expected-error@27 {{Incompatible assignment between values of type 'Address' and 'Bool'}}
-    // expected-error@27 {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
-    arr[a] = a
+    arr[a] = a // expected-error {{Incompatible assignment between values of type 'Address' and 'Bool'}}
+               // expected-error@-1 {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
 
     dict[3] // expected-error {{Cannot convert expression of type 'Int' to expected subscript type 'Address'}}
     dict[a] // expected-error {{Cannot convert expression of type 'Bool' to expected subscript type 'Address'}}
@@ -33,7 +32,7 @@ InvalidTypes :: (any) {
 
     int = true // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
 
-    f(a) // expected-error {{Function 'f' is not in scope or cannot be called using the caller capability 'any'}}
+    f(a) // expected-error {{Function 'f' is not in scope or cannot be called using the capability 'any'}}
 
     f(self.int)
   }

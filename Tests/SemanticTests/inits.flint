@@ -8,10 +8,10 @@ contract Test {
   var e: Bool
   var f: Int
   let g: Bool
+  let h: Int = completelyinvalid // expected-error {{Use of undeclared identifier 'completelyinvalid'}}
   var x: B
-  var y: B = B(f, g) 
-  // expected-error@12 {{Cannot use state property 'f' within the initialization of another property}}
-  // expected-error@12 {{Cannot use state property 'g' within the initialization of another property}}
+  var y: B = B(f, g) // expected-error {{Cannot use state property 'f' within the initialization of another property}}
+                     // expected-error@-1 {{Cannot use state property 'g' within the initialization of another property}}
 }
 
 Test :: caller <- (any) {
@@ -19,8 +19,8 @@ Test :: caller <- (any) {
     self.a = a
     self.f = f
   } // expected-error {{Return from initializer without initializing all properties}}
-  // expected-note@8 {{'e' is uninitialized}}
-  // expected-note@11 {{'x' is uninitialized}}
+    // expected-note@8 {{'e' is uninitialized}}
+    // expected-note@12 {{'x' is uninitialized}}
 
   public init() { // expected-error {{A public initializer has already been defined}}
     self.a = caller
@@ -39,8 +39,9 @@ Test :: caller <- (any) {
   }
 
   mutating func foo() {
-    x = B(1, true) 
+    x = B(1, true)
     x = C(1) // expected-error {{Incompatible assignment between values of type 'B' and 'C'}}
+    D() // expected-error {{Cannot call struct initializer 'D' without receiver assignment}}
   }
 }
 

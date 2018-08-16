@@ -12,6 +12,7 @@ import AST
 
 /// A prepocessing step to update the program's AST before code generation.
 public struct IULIAPreprocessor: ASTPass {
+
   public init() {}
 
   public func process(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
@@ -50,13 +51,21 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
+  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   /// Returns assignment statements for all the properties which have been assigned default values.
   func defaultValueAssignments(in passContext: ASTPassContext) -> [Statement] {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let propertiesInEnclosingType = passContext.environment!.propertyDeclarations(in: enclosingType)
 
     return propertiesInEnclosingType.compactMap { declaration -> Statement? in
-      guard let assignedExpression = declaration.assignedExpression else { return nil }
+      guard let assignedExpression = declaration.value else { return nil }
 
       var identifier = declaration.identifier
       identifier.enclosingType = enclosingType
@@ -79,6 +88,11 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
+    // Mangle the function name in the declaration.
+    let parameters = functionDeclaration.parameters.map { $0.type.rawType }
+    let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
+    functionDeclaration.mangledIdentifier = name
+
     // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable, let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"), sourceLocation: payableParameterIdentifier.sourceLocation))
@@ -91,10 +105,6 @@ public struct IULIAPreprocessor: ASTPass {
     }
 
     if let structDeclarationContext = passContext.structDeclarationContext {
-      let parameters = functionDeclaration.parameters.map { $0.type.rawType }
-      let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
-      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
-
       if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
         let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
@@ -151,25 +161,40 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     var expression = expression
     let environment = passContext.environment!
 
-    if case .binaryExpression(let binaryExpression) = expression,
-      case .equal = binaryExpression.opToken,
-      case .functionCall(var functionCall) = binaryExpression.rhs {
-      let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
-      if environment.isInitializerCall(functionCall) {
-        // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
-        let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
-        functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+    if case .binaryExpression(let binaryExpression) = expression {
 
-        expression = .functionCall(functionCall)
+      if case .dot = binaryExpression.opToken,
+         case .identifier(let lhsId) = binaryExpression.lhs,
+         case .identifier(let rhsId) = binaryExpression.rhs,
+         environment.isEnumDeclared(lhsId.name),
+         let matchingProperty = environment.propertyDeclarations(in: lhsId.name).filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
+         matchingProperty.type!.rawType != .errorType {
+          expression = matchingProperty.value!
+      } else if case .equal = binaryExpression.opToken,
+                case .functionCall(var functionCall) = binaryExpression.rhs {
 
-        if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
-          variableDeclaration.type.rawType.isDynamicType {
-          functionCall.arguments[0] = .inoutExpression(InoutExpression(ampersandToken: ampersandToken, expression: .identifier(variableDeclaration.identifier)))
-          expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
+        let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
+
+        if environment.isInitializerCall(functionCall) {
+          // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
+          let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
+          functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
+
+          expression = .functionCall(functionCall)
+
+          if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
+            variableDeclaration.type.rawType.isDynamicType {
+            functionCall.arguments[0] = .inoutExpression(InoutExpression(ampersandToken: ampersandToken, expression: .identifier(variableDeclaration.identifier)))
+            expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
+          }
         }
       }
     }
@@ -233,13 +258,14 @@ public struct IULIAPreprocessor: ASTPass {
     let environment = passContext.environment!
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
     let scopeContext = passContext.scopeContext!
 
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
-      // Don't mangle runtime functions.
+      // Don't further process runtime functions.
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
@@ -248,17 +274,16 @@ public struct IULIAPreprocessor: ASTPass {
     }
 
     // Mangle initializer call.
-    if environment.isStructDeclared(functionCall.identifier.name) {
+    if environment.isInitializerCall(functionCall) {
       // Remove the receiver as the first argument to find the original initializer declaration.
       var initializerWithoutReceiver = functionCall
-      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil {
+      if passContext.functionDeclarationContext != nil || passContext.initializerDeclarationContext != nil,
+        !initializerWithoutReceiver.arguments.isEmpty {
         initializerWithoutReceiver.arguments.remove(at: 0)
       }
 
-      let mangledName = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
-      functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
+      functionCall.mangledIdentifier = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
     } else {
-
       // Get the result type of the call.
       let declarationEnclosingType: RawTypeIdentifier
 
@@ -268,25 +293,22 @@ public struct IULIAPreprocessor: ASTPass {
         declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext).name
       }
 
+      // Set the mangled identifier for the function.
+      functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
+
       // If it returns a dynamic type, pass the receiver as the first parameter.
       if passContext.environment!.isStructDeclared(declarationEnclosingType) {
-        let mangledName = mangledFunctionName(for: functionCall, in: passContext)
-
         if !isGlobalFunctionCall {
           let receiver = constructExpression(from: receiverTrail)
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
           functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
         }
-
-        // Replace the name of a function call by its mangled name.
-        functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(mangledName), sourceLocation: functionCall.sourceLocation))
       }
     }
 
     guard environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
-
     // For each non-implicit dynamic type, add an isMem parameter.
     var offset = 0
     for (index, argument) in functionCall.arguments.enumerated() {
@@ -296,7 +318,7 @@ public struct IULIAPreprocessor: ASTPass {
         scopeContext.isParameterImplicit(parameterName) {
         isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
       } else {
-        let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+        let type = passContext.environment!.type(of: argument, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
         guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
@@ -323,8 +345,8 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
-  func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String {
-    // Don't mangle runtime functions.
+  func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String? {
+    // Don't mangle runtime functions
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
       return functionCall.identifier.name
     }
@@ -332,8 +354,15 @@ public struct IULIAPreprocessor: ASTPass {
     let environment = passContext.environment!
 
     let enclosingType: String = functionCall.identifier.enclosingType ?? passContext.enclosingTypeIdentifier!.name
+
+    // Don't mangle event calls
+    if environment.matchEventCall(functionCall, enclosingType: enclosingType) != nil {
+      return functionCall.identifier.name
+    }
+
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
 
     switch matchResult {
     case .matchedFunction(let functionInformation):
@@ -348,17 +377,18 @@ public struct IULIAPreprocessor: ASTPass {
       let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
     case .failure(_):
-      fatalError("Unable to find declaration of \(functionCall)")
+      return nil
     }
   }
 
   func isGlobalFunctionCall(_ functionCall: FunctionCall, in passContext: ASTPassContext) -> Bool {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
     let scopeContext = passContext.scopeContext!
     let environment = passContext.environment!
 
-    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     // Mangle global function
     if case .matchedGlobalFunction(_) = match {
@@ -375,7 +405,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral> {
     return ASTPassResult(element: dictionaryLiteral, diagnostics: [], passContext: passContext)
   }
@@ -392,10 +422,24 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    var becomeStatement = becomeStatement
+
+    let enumName = ContractDeclaration.contractEnumPrefix + passContext.enclosingTypeIdentifier!.name
+    let enumReference: Expression = .identifier(Identifier(identifierToken: Token(kind: .identifier(enumName), sourceLocation: becomeStatement.sourceLocation)))
+    let state = becomeStatement.expression.assigningEnclosingType(type: enumName)
+
+    let dot = Token(kind: .punctuation(.dot), sourceLocation: becomeStatement.sourceLocation)
+
+    becomeStatement.expression = .binaryExpression(BinaryExpression(lhs: enumReference, op: dot, rhs: state))
+
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     return ASTPassResult(element: ifStatement, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     return ASTPassResult(element: forStatement, diagnostics: [], passContext: passContext)
   }
@@ -426,6 +470,14 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+    return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
+    return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -464,6 +516,10 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
+    return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
@@ -484,7 +540,7 @@ public struct IULIAPreprocessor: ASTPass {
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
-  
+
   public func postProcess(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     return ASTPassResult(element: rangeExpression, diagnostics: [], passContext: passContext)
   }
@@ -507,6 +563,10 @@ public struct IULIAPreprocessor: ASTPass {
 
   public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+    return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
   public func postProcess(ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {

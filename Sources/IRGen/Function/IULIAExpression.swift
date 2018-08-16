@@ -23,8 +23,8 @@ struct IULIAExpression {
       return IULIAExpression(expression: inoutExpression.expression, asLValue: true).rendered(functionContext: functionContext)
     case .binaryExpression(let binaryExpression):
       return IULIABinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
-    case .bracketedExpression(let expression):
-      return IULIAExpression(expression: expression, asLValue: asLValue).rendered(functionContext: functionContext)
+    case .bracketedExpression(let bracketedExpression):
+      return IULIAExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
       return IULIAFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):
@@ -114,6 +114,13 @@ struct IULIAPropertyAccess {
     var isMemoryAccess: Bool = false
 
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
+
+    if case .identifier(let enumIdentifier) = lhs,
+      case .identifier(let propertyIdentifier) = rhs,
+      environment.isEnumDeclared(enumIdentifier.name),
+      let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
+      return IULIAExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
+    }
 
     let rhsOffset: String
     // Special cases.
@@ -256,7 +263,8 @@ struct IULIAFunctionCall {
     let args: String = functionCall.arguments.map({ argument in
       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
-    return "\(functionCall.identifier.name)(\(args))"
+    let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
+    return "\(identifier)(\(args))"
   }
 
 }
