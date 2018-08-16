@@ -20,12 +20,15 @@ enum IULIARuntimeFunction {
     case isMatchingTypeState
     case isValidCallerCapability
     case isCallerCapabilityInArray
+    case isCallerCapabilityInDictionary
     case return32Bytes
     case isInvalidSubscriptExpression
     case storageArrayOffset
     case storageArraySize
     case storageFixedSizeArrayOffset
     case storageDictionaryOffsetForKey
+    case storageDictionaryKeysArrayOffset
+    case storageOffsetForKey
     case callvalue
     case send
     case add
@@ -91,6 +94,10 @@ enum IULIARuntimeFunction {
     return "\(Identifiers.isCallerCapabilityInArray.mangled)(\(arrayOffset))"
   }
 
+  static func isCallerCapabilityInDictionary(dictionaryOffset: Int) -> String {
+    return "\(Identifiers.isCallerCapabilityInDictionary.mangled)(\(dictionaryOffset))"
+  }
+
   static func return32Bytes(value: String) -> String {
     return "\(Identifiers.return32Bytes.mangled)(\(value))"
   }
@@ -113,6 +120,14 @@ enum IULIARuntimeFunction {
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: String, key: String) -> String {
     return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
+  }
+
+  static func storageDictionaryKeysArrayOffset(dictionaryOffset: String) -> String {
+    return "\(Identifiers.storageDictionaryKeysArrayOffset.mangled)(\(dictionaryOffset))"
+  }
+
+  static func storageOffsetForKey(baseOffset: String, key: String) -> String {
+    return "\(Identifiers.storageOffsetForKey.mangled)(\(baseOffset), \(key))"
   }
 
   static func callvalue() -> String {
@@ -140,7 +155,33 @@ enum IULIARuntimeFunction {
   }
 
 
-  static let allDeclarations: [String] = [IULIARuntimeFunctionDeclaration.selector, IULIARuntimeFunctionDeclaration.decodeAsAddress, IULIARuntimeFunctionDeclaration.decodeAsUInt, IULIARuntimeFunctionDeclaration.store, IULIARuntimeFunctionDeclaration.load, IULIARuntimeFunctionDeclaration.computeOffset, IULIARuntimeFunctionDeclaration.allocateMemory, IULIARuntimeFunctionDeclaration.isMatchingTypeState, IULIARuntimeFunctionDeclaration.isValidCallerCapability, IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray, IULIARuntimeFunctionDeclaration.return32Bytes, IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression, IULIARuntimeFunctionDeclaration.storageArrayOffset, IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset, IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey, IULIARuntimeFunctionDeclaration.send, IULIARuntimeFunctionDeclaration.fatalError, IULIARuntimeFunctionDeclaration.add, IULIARuntimeFunctionDeclaration.sub, IULIARuntimeFunctionDeclaration.mul, IULIARuntimeFunctionDeclaration.div, IULIARuntimeFunctionDeclaration.power]
+  static let allDeclarations: [String] = [
+    IULIARuntimeFunctionDeclaration.selector,
+    IULIARuntimeFunctionDeclaration.decodeAsAddress,
+    IULIARuntimeFunctionDeclaration.decodeAsUInt,
+    IULIARuntimeFunctionDeclaration.store,
+    IULIARuntimeFunctionDeclaration.load,
+    IULIARuntimeFunctionDeclaration.computeOffset,
+    IULIARuntimeFunctionDeclaration.allocateMemory,
+    IULIARuntimeFunctionDeclaration.isMatchingTypeState,
+    IULIARuntimeFunctionDeclaration.isValidCallerCapability,
+    IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray,
+    IULIARuntimeFunctionDeclaration.isCallerCapabilityInDictionary,
+    IULIARuntimeFunctionDeclaration.return32Bytes,
+    IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression,
+    IULIARuntimeFunctionDeclaration.storageArrayOffset,
+    IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset,
+    IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey,
+    IULIARuntimeFunctionDeclaration.storageDictionaryKeysArrayOffset,
+    IULIARuntimeFunctionDeclaration.storageOffsetForKey,
+    IULIARuntimeFunctionDeclaration.send,
+    IULIARuntimeFunctionDeclaration.fatalError,
+    IULIARuntimeFunctionDeclaration.add,
+    IULIARuntimeFunctionDeclaration.sub,
+    IULIARuntimeFunctionDeclaration.mul,
+    IULIARuntimeFunctionDeclaration.div,
+    IULIARuntimeFunctionDeclaration.power
+  ]
 }
 
 struct IULIARuntimeFunctionDeclaration {
@@ -232,9 +273,25 @@ struct IULIARuntimeFunctionDeclaration {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
-    let arrayStart := flint$add(arrayOffset, 1)
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
-      if eq(sload(flint$storageArrayOffset(arrayOffset, i)), _caller) {
+      if eq(sload(flint$storageOffsetForKey(arrayOffset, i)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  """
+
+  static let isCallerCapabilityInDictionary =
+  """
+  function flint$isCallerCapabilityInDictionary(dictionaryOffset) -> ret {
+    let size := sload(dictionaryOffset)
+    let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+    let found := 0
+    let _caller := caller()
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, i) } {
+      let key := sload(flint$storageOffsetForKey(arrayOffset, i))
+      if eq(sload(flint$storageOffsetForKey(dictionaryOffset, key)), _caller) {
         found := 1
       }
     }
@@ -278,16 +335,42 @@ struct IULIARuntimeFunctionDeclaration {
       sstore(arrayOffset, flint$add(arraySize, 1))
     }
 
-    ret := flint$storageDictionaryOffsetForKey(arrayOffset, index)
+    ret := flint$storageOffsetForKey(arrayOffset, index)
   }
   """
 
   static let storageDictionaryOffsetForKey =
   """
   function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
+    let offsetForKey := flint$storageOffsetForKey(dictionaryOffset, key)
+    mstore(0, offsetForKey)
+    let indexOffset := sha3(0, 32)
+    switch eq(sload(indexOffset), 0)
+    case 1 {
+      let keysArrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+      let index := add(sload(dictionaryOffset), 1)
+      sstore(indexOffset, index)
+      sstore(flint$storageOffsetForKey(keysArrayOffset, index), key)
+      sstore(dictionaryOffset, index)
+    }
+    ret := offsetForKey
+  }
+  """
+
+  static let storageOffsetForKey =
+  """
+  function flint$storageOffsetForKey(offset, key) -> ret {
     mstore(0, key)
-    mstore(32, dictionaryOffset)
+    mstore(32, offset)
     ret := sha3(0, 64)
+  }
+  """
+
+  static let storageDictionaryKeysArrayOffset =
+  """
+  function flint$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
+    mstore(0, dictionaryOffset)
+    ret := sha3(0, 32)
   }
   """
 

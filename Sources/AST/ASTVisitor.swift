@@ -436,9 +436,7 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.passContext.isEnclosing = false
 
     switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
-    case .arrayType(_):
-      break
-    case .fixedSizeArrayType(_):
+    case .arrayType(_), .fixedSizeArrayType(_), .dictionaryType(_):
       break
     default:
       if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {

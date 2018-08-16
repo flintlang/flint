@@ -182,17 +182,17 @@ contract(config.contractName, function(accounts) {
     t = await instance.nestedValue3.call(1, 0, 0)
     assert.equal(t.valueOf(), 3);
 
-   await instance.nestedSetDict(0x50, 0, 100);
-   await instance.nestedSetDict(0x50, 1, 500);
-   await instance.nestedSetDict(0x08, 0, 400);
+    await instance.nestedSetDict(0x50, 0, 100);
+    await instance.nestedSetDict(0x50, 1, 500);
+    await instance.nestedSetDict(0x08, 0, 400);
 
-   t = await instance.nestedValueDict.call(0x50, 0)
-   assert.equal(t.valueOf(), 100);
-   t = await instance.nestedValueDict.call(0x50, 1)
-   assert.equal(t.valueOf(), 500);
-   t = await instance.nestedValueDict.call(0x08, 0)
-   assert.equal(t.valueOf(), 400);
-   });
+    t = await instance.nestedValueDict.call(0x50, 0)
+    assert.equal(t.valueOf(), 100);
+    t = await instance.nestedValueDict.call(0x50, 1)
+    assert.equal(t.valueOf(), 500);
+    t = await instance.nestedValueDict.call(0x08, 0)
+    assert.equal(t.valueOf(), 400);
+  });
 });
 
 contract(config.contractName, function(accounts) {

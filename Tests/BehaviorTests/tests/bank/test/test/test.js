@@ -147,8 +147,7 @@ contract(config.contractName, function(accounts) {
       const newBalance = web3.eth.getBalance(accounts[4]);
 
       // Estimate
-      const withdrawGasCost = registerGasCost / 2
-
+      const withdrawGasCost = 0
       assert.isTrue(newBalance.lessThan(oldBalance.sub(web3.toWei(10, 'ether')).sub(registerGasCost).sub(depositGasCost).sub(withdrawGasCost)));
       return
     }

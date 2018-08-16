@@ -4,6 +4,7 @@ contract Loop {
   var arr2: Int[10] = []
   var arr3: [Int] = []
   var nested: [[Int]] = [[]]
+  var dict: [Int: Int] = [:]
   var numWrites: Int = 0
 }
 
@@ -11,9 +12,9 @@ Loop :: caller <- (any) {
   public init() {
     self.owner = caller
   }
-  
+
   mutating func increaseNumWrites() {
-    self.numWrites += 1 
+    self.numWrites += 1
   }
 
   public mutating func write(index: Int, val: Int) {
@@ -35,6 +36,10 @@ Loop :: caller <- (any) {
     nested[i][j] = val
   }
 
+  public mutating func writeDict(key: Int, value: Int) {
+    dict[key] = value
+  }
+
   public func value(index: Int) -> Int {
     return arr[index]
   }
@@ -49,6 +54,10 @@ Loop :: caller <- (any) {
 
   public func valueNested(i: Int, j: Int) -> Int {
     return nested[i][j]
+  }
+
+  public func valueDict(key: Int) -> Int {
+    return dict[key]
   }
 
   public func sum() -> Int {
@@ -122,6 +131,22 @@ Loop :: caller <- (any) {
       for let num: Int in sub {
         sum += num
       }
+    }
+    return sum
+  }
+
+  public func sum10() -> Int {
+    var sum: Int = 0
+    for let num: Int in dict {
+      sum += num
+    }
+    return sum
+  }
+
+  public func sum11() -> Int {
+    var sum: Int = 0
+    for let num: Int in dict {
+      sum += 1
     }
     return sum
   }

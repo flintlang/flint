@@ -127,9 +127,12 @@ struct IULIACallerCapabilityChecks {
         return (0..<size).map { index in
           let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset), \(index)))")
           return "_flintCallerCheck := add(_flintCallerCheck, \(check)"
-          }.joined(separator: "\n")
+        }.joined(separator: "\n")
       case .arrayType(_):
         let check = IULIARuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
+        return "_flintCallerCheck := add(_flintCallerCheck, \(check))"
+      case .dictionaryType(_, _):
+        let check = IULIARuntimeFunction.isCallerCapabilityInDictionary(dictionaryOffset: offset)
         return "_flintCallerCheck := add(_flintCallerCheck, \(check))"
       default:
         let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(\(offset))")
