@@ -122,86 +122,124 @@ contract auction {
 ```
 
 ## Proposed solution
-- We shouldn't support call.value() directly only send
-- Any call which has a value has payable modifier
-- Return value from an external call *must* be checked [Unchecked Return Value](https://consensys.github.io/smart-contract-best-practices/recommendations/#handle-errors-in-external-calls)
-- Explicitly mark all external contracts as trusted or untrusted
-- Avoid multiple external calls in single transaction. External calls can fail accidentally or deliberately.
-- Critical functions such as sends with non-zero values or suicide() are callable by anyone or sender is compared to address that can be written to by anyone
-- Contract state shouldn't be relied on if untrusted contracts are called. State changes after external calls should be avoided
-- Payable transaction does not revert in case of failure
+Considering our motivations below:
+1. Contracts are untrustworthy by default
+1. Arbitrary code execution
+1. Silent Failure
+1. Interfaces incorrectly specified
 
-There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
+We broadly separate external calls into two types: _Educated Calls_ and _Uneducated Calls_. Educated calls are those accessed through Nodule (The Flint Package Manager) (or those which Flint has the source files for and deploys internally to the contract i.e. Hub and Spoke Topology). Uneducated calls are those with an ABI interface or Trait interface.
+
+Uneducated calls should be treated untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information.
+
+Educated calls meanwhile are not guaranteed to not introduce errors, but they have certain guarantees attached. These means that it combats (1), (2), (4):
+1. That there is a defined function at the end of the call
+2. That function obeys the modifiers given
+3. That function has the same return types and parameter types as defined
+4. The contract you call matches the source code given
+
+In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
+
+Calls with value have payable modifier
+
+Return values must be checked
+
+Avoid multiple external calls in single transaction. External calls can fail accidentally or deliberately
+
+Critical functions such as sends with non-zero values or suicide() are callable by anyone or sender is compared to address that can be writtent to by anyone
+
+State changes after external calls should be avoided
+
+Payable transaction doesn't revert in the case of failure
+
 
 We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
 
+Uneducated Calls are based upon the Command Design Pattern, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
+The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests. It also promotes an invocation of a method on an object to full object status.
+
+It also gives us more control over checks for external calls dependent on the trait and how many checks we want to introduce.
+
+### Uneducated Calls
 
 ```swift
-// Uneducated Call methods
-0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4.call()
-
-var contractAddress: Address = 0x000...
-contractAddress.call()
-contractAddress.callWithArguments()
-var boundReturn = contractAddress.call()
-
-// Transaction Call
-var transaction: Call = Call()
-transaction.value = Wei(200000)
-
-transaction.run(contractAddress)
-
-// Educated Call methods
-contract Alpha {
+trait Alpha {
+  func doesNothing()
+  func doesNothingWithArgs(Int, Int, Int)
   func withdraw() -> Int
-  func deposit() -> Bool
+  func deposit(Int) -> Bool
+  @payable
+  func expensiveFunction()
 }
 
-// <=>
-contract Alpha = "0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000"
+let alpha: Director<Alpha> = Alpha(0x000...)
 
-import ERC.Token
+alpha!.doesNothing()
+alpha!.doesNothingWithArgs(x, y, z)
+alpha!.withdraw()
 
-var alphaInstance: Contract<Alpha> = Alpha(0x000...)
-var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
+var boundReturn: Int = alpha!.getReturn()
 
-There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
-
-We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
-
-
-```swift
-// Uneducated Call methods
-0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4.call()
-
-var contractAddress: Address = 0x000...
-contractAddress.call()
-contractAddress.callWithArguments()
-var boundReturn = contractAddress.call()
-
-// Transaction Call
-var transaction: Call = Call()
-transaction.value = Wei(200000)
-
-transaction.run(contractAddress)
-
-// Educated Call methods
-contract Alpha {
-  func withdraw() -> Int
-  func deposit() -> Bool
-}
-
-// <=>
-contract Alpha = "0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000"
-
-import ERC.Token
-
-var alphaInstance: Contract<Alpha> = Alpha(0x000...)
-var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
-
-
+// Setting contract instance properties
+alpha.value = Wei(200)
+alpha.gas = Gas(2000)
+alpha.trust() // Removes the need for a bang
+alpha.expensiveFunction()
 ```
 
+```swift
+// <=>
+let alpha: Director<Any> = Director("0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000")
+
+alpha!.doesNothing() // etc..
+```
+
+### Educated Calls
+
+```swift
+import ERC.Token
+
+var tokenInstance: Director<ERC.Token> = ERC.Token(0x000...)
+```
+
+There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
+
+We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+
+
+```swift
+// Uneducated Call methods
+0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4.call()
+
+var contractAddress: Address = 0x000...
+contractAddress.call()
+contractAddress.callWithArguments()
+var boundReturn = contractAddress.call()
+
+// Transaction Call
+var transaction: Call = Call()
+transaction.value = Wei(200000)
+
+transaction.run(contractAddress)
+
+// Educated Call methods
+contract Alpha {
+  func withdraw() -> Int
+  func deposit() -> Bool
+}
+
+// <=>
+contract Alpha = "0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000"
+
+import ERC.Token
+
+var alphaInstance: Contract<Alpha> = Alpha(0x000...)
+var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
+
+
+```swift
+
+var tokenInstance: Director = Nodule.chip(0x000...)
 ```
 
 ## Semantics
