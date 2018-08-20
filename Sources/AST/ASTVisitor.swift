@@ -173,7 +173,6 @@ public struct ASTVisitor<Pass: ASTPass> {
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
     processResult.element.cases = processResult.element.cases.map { enumCase in
-      processResult.passContext.scopeContext = ScopeContext()
       return processResult.combining(visit(enumCase, passContext: processResult.passContext))
     }
 
@@ -273,7 +272,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
     processResult.passContext.specialDeclarationContext = specialDeclarationContext
-    
+
     let functionDeclaration = specialDeclaration.asFunctionDeclaration
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 

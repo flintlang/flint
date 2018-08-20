@@ -59,7 +59,7 @@ public struct ContractDeclaration: SourceEntity {
     let caseToken = Token(kind: .case, sourceLocation: sourceLocation)
     let intType = Type(inferredType: .basicType(.int), identifier: stateEnumIdentifier)
     let cases: [EnumCase] = states.map{ typeState in
-      return EnumCase(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil, hiddenType: intType)
+      return EnumCase(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil)
     }
     return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
   }
@@ -198,18 +198,16 @@ public struct EnumCase: SourceEntity {
   public var type: Type
 
   public var hiddenValue: Expression?
-  public var hiddenType: Type
 
   public var sourceLocation: SourceLocation {
     return caseToken.sourceLocation
   }
 
-  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?, hiddenType: Type){
+  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?){
     self.caseToken = caseToken
     self.identifier = identifier
     self.hiddenValue = hiddenValue
     self.type = type
-    self.hiddenType = hiddenType
   }
 }
 

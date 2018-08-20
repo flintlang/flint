@@ -102,7 +102,8 @@ public struct SemanticAnalyzer: ASTPass {
     }
 
     if enumCase.hiddenValue == nil {
-      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
+      let enumDeclaration = environment.declaration(of: enumCase.type.name) as! EnumDeclaration
+      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumDeclaration.type))
     }
     else if case .literal(_)? = enumCase.hiddenValue {} else {
       diagnostics.append(.invalidHiddenValue(enumCase))

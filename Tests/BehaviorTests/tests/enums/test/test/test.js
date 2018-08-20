@@ -12,29 +12,13 @@ contract(config.contractName, function(accounts) {
     let t;
 
     await instance.assignA(1);
-    await instance.assignB(2);
-    await instance.assignC(1);
 
     t = await instance.AbCheck();
     assert.equal(t.valueOf(), 1);
 
-    t = await instance.BcCheck();
-    assert.equal(t.valueOf(), 1);
-
-    t = await instance.CbCheck();
-    assert.equal(t.valueOf(), 1);
-
     await instance.assignA(0);
-    await instance.assignB(1);
-    await instance.assignC(2);
      
     t = await instance.AaCheck();
-    assert.equal(t.valueOf(), 1);
-
-    t = await instance.BbCheck();
-    assert.equal(t.valueOf(), 1);
-
-    t = await instance.CcCheck();
     assert.equal(t.valueOf(), 1);
      
   });
@@ -49,12 +33,6 @@ contract(config.contractName, function(accounts) {
     t = await instance.AcCheck();
     assert.equal(t.valueOf(), 0);
     t = await instance.AaCheck();
-    assert.equal(t.valueOf(), 1);
-     
-    t = await instance.BaCheck();
-    assert.equal(t.valueOf(), 1);
-     
-    t = await instance.CaCheck();
     assert.equal(t.valueOf(), 1);
   });
 });
