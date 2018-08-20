@@ -19,7 +19,7 @@ However external calls are necessary to accomplish key features of smart contrac
 
 There have been pre-existing attempts to defined best practices for programming with respect for external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)). This proposal will try and integrate these best practices into the language design itself. Below are the following causes for concern with regard to external calls.
 
-#### 1. Contracts should be labelled as untrustworthy
+#### 1. Contracts are untrustworthy by default
 ```javascript
 // bad
 Bank.withdraw(100); // Unclear whether trusted or untrusted
@@ -37,17 +37,18 @@ function makeUntrustedWithdrawal(uint amount) {
 }
 ```
 
-#### 2. Arbitrary code execution can lead to race conditions
+#### 2. External calls have arbitrary code execution
+##### Race Conditions
 Whether using raw calls (of the form `someAddress.call()`) or contract calls (of the form `ExternalContract.someMethod()`), assume that malicious code might execute. Even if ExternalContract is not malicious, malicious code can be executed by any contracts it calls.
 One particular danger is malicious code may hijack the control flow, leading to race conditions.
 
-If you are making a call to an untrusted external contract, avoid state changes after the call. This pattern is also sometimes known as the `checks-effects-interactions` pattern.
-
-#### 3. External calls can re-enter contracts
+##### Re-entrancy
 - `someAddress.send()` and `someAddress.transfer()` are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2,300 gas which is currently only enough to log an event.
   - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2 300 gas or more
 
-#### 4. External calls can silently fail
+If you are making a call to an untrusted external contract, avoid state changes after the call. This pattern is also sometimes known as the `checks-effects-interactions` pattern.
+
+#### 3. External calls can silently fail
 Solidity offers low-level call methods that work on rawAddress: `address.call()`, `address.callcode()`, `address.delegatecall()`, `address.send()`. These low-level methods never throw an exception.
 
 ```javascript
@@ -64,20 +65,7 @@ if(!someAddress.send(55)) {
 ExternalContract(someAddress).deposit.value(100);
 ```
 
-#### 6. Money can be left unextractable due to external calls
-Should also _always_ able to clear or extract funds from contract. Many bugs have lost significant sums due to this ability e.g. with the above:
-
-```
-function clear() public onlyOwner onlyEnded {
-  require(now > endedAt + coolingPeriod)
-  require(ended)
-  var leftOver = totalBalance()
-  owner.transfer(leftOver)
-  ClearEvent(owner, leftOver)
-}
-```
-
-#### 7. Interfaces can easily be incorrectly specified
+#### 4. Interfaces can easily be incorrectly specified
 The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.sol` but `Alice.set(int)` a `int` in `Alice.sol`. The two interfaces will produce two differents method IDs. As a result, Bob will call the fallback function of Alice rather than of `set`.
 
 - [King of the Ether](https://www.kingoftheether.com/postmortem.html) (line numbers:
