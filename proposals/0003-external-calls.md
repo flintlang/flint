@@ -178,7 +178,9 @@ alpha!.doesNothing()
 alpha!.doesNothingWithArgs(x, y, z)
 alpha!.withdraw()
 
-var boundReturn: Int = alpha!.getReturn()
+if alpha!.successful {
+  var boundReturn: Int = alpha!.getReturn()
+}
 
 // Setting contract instance properties
 alpha.value = Wei(200)
@@ -199,7 +201,8 @@ alpha!.doesNothing() // etc..
 ```swift
 import ERC.Token
 
-var tokenInstance: Director<ERC.Token> = ERC.Token(0x000...)
+let contract: Contract<ERC.Token> = deploy(ERC.Token)
+contract.argumentName() // Value and Gas are automatically set based upon properties
 ```
 
 There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
@@ -238,8 +241,7 @@ var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 
 
 ```swift
-
-var tokenInstance: Director = Nodule.chip(0x000...)
+var tokenInstance: Contract<ERC.Token> = Nodule.knap(0x000...) // Creates a contract from the data stored in Nodule
 ```
 
 ## Semantics
