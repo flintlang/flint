@@ -78,7 +78,7 @@ The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.
 To minimize the damage caused by such failures, it is often better to isolate each external call into its own transaction that can be initiated by the recipient of the call. This is especially relevant for payments, where it is better to let users withdraw funds rather than push funds to them automatically. Avoid combining multiple send() calls in a single transaction. [push-pull mechainism](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls) using the send()/transfer() for push component and call.value()() for the pull component.
 
 
-```
+```javascript
 // bad
 contract auction {
     address highestBidder;
