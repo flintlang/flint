@@ -140,8 +140,8 @@ if alpha!.successful {
 }
 
 // Setting contract instance properties
-alpha.value = Wei(200)
-alpha.gas = Gas(2000)
+alpha!.value = Wei(200)
+alpha!.gas = Gas(2000)
 alpha.trust() // Removes the need for a bang
 alpha.expensiveFunction()
 ```
@@ -157,7 +157,7 @@ contract Foo {}
 
 Foo :: (any) {
   func foo(address: Address) -> Int {
-    return (address as ForeignContract).getValue()
+    return (address as ForeignContract)!.getValue()
   }
 }
 ```
