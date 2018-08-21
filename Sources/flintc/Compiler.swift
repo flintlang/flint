@@ -9,6 +9,7 @@ import Foundation
 import AST
 import Parser
 import SemanticAnalyzer
+import TypeChecker
 import Optimizer
 import IRGen
 

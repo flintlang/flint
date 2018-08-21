@@ -5,8 +5,9 @@
 //  Created by Franklin Schrans on 2/1/18.
 //
 
-import Foundation
 import AST
+
+import Foundation
 
 /// A prepocessing step to update the program's AST before code generation.
 public struct IULIAPreprocessor: ASTPass {
@@ -41,7 +42,7 @@ public struct IULIAPreprocessor: ASTPass {
     }
   }
 
-  // MARK: Declarations
+  // MARK: Declaration
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
 
@@ -107,7 +108,7 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  // MARK: Statements
+  // MARK: Statement
   public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     var becomeStatement = becomeStatement
 
@@ -120,6 +121,11 @@ public struct IULIAPreprocessor: ASTPass {
     becomeStatement.expression = .binaryExpression(BinaryExpression(lhs: enumReference, op: dot, rhs: state))
 
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
+    return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }
 }
 
