@@ -281,7 +281,7 @@ public struct Environment {
   }
 
   /// The type of a property in the given enclosing type or in a scope if it is a local variable.
-  public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> Type.RawType {
+  public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> RawType {
     if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
@@ -291,14 +291,14 @@ public struct Environment {
   }
 
   /// The type return type of a function call, determined by looking up the function's declaration.
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> Type.RawType? {
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> RawType? {
     let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
     case .matchedInitializer(_):
       let name = functionCall.identifier.name
-      if let stdlibType = Type.StdlibType(rawValue: name) {
+      if let stdlibType = RawType.StdlibType(rawValue: name) {
         return .stdlibType(stdlibType)
       }
       return .userDefinedType(name)
@@ -307,7 +307,7 @@ public struct Environment {
   }
 
   /// The types a literal token can be.
-  public func type(ofLiteralToken literalToken: Token) -> Type.RawType {
+  public func type(ofLiteralToken literalToken: Token) -> RawType {
     guard case .literal(let literal) = literalToken.kind else { fatalError() }
     switch literal {
     case .boolean(_): return .basicType(.bool)
@@ -319,8 +319,8 @@ public struct Environment {
   }
 
   // The type of an array literal.
-  public func type(ofArrayLiteral arrayLiteral: ArrayLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
-    var elementType: Type.RawType?
+  public func type(ofArrayLiteral arrayLiteral: ArrayLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> RawType {
+    var elementType: RawType?
 
     for element in arrayLiteral.elements {
       let _type = type(of: element, enclosingType: enclosingType, scopeContext: scopeContext)
@@ -339,7 +339,7 @@ public struct Environment {
   }
 
   // The type of a range.
-  public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
+  public func type(ofRangeExpression rangeExpression: RangeExpression, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
     let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
 
@@ -353,9 +353,9 @@ public struct Environment {
 
 
   // The type of a dictionary literal.
-  public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> Type.RawType {
-    var keyType: Type.RawType?
-    var valueType: Type.RawType?
+  public func type(ofDictionaryLiteral dictionaryLiteral: DictionaryLiteral, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> RawType {
+    var keyType: RawType?
+    var valueType: RawType?
 
     for element in dictionaryLiteral.elements {
       let _keyType = type(of: element.key, enclosingType: enclosingType, scopeContext: scopeContext)
@@ -391,8 +391,8 @@ public struct Environment {
   ///   - enclosingType: The enclosing type of the expression, if any.
   ///   - callerCapabilities: The caller capabilities associated with the expression, if the expression is a function call.
   ///   - scopeContext: Contextual information about the scope in which the expression resides.
-  /// - Returns: The `Type.RawType` of the expression.
-  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, typeStates: [TypeState] = [], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> Type.RawType {
+  /// - Returns: The `RawType` of the expression.
+  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, typeStates: [TypeState] = [], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> RawType {
 
     switch expression {
     case .inoutExpression(let inoutExpression):
@@ -619,7 +619,7 @@ public struct Environment {
 
 
   /// The memory size of a type, in terms of number of memory slots it occupies.
-  public func size(of type: Type.RawType) -> Int {
+  public func size(of type: RawType) -> Int {
     switch type {
     case .basicType(.event): return 0 // Events do not use memory.
     case .basicType(_): return 1
@@ -760,11 +760,11 @@ public struct PropertyInformation {
     }
   }
 
-  public var rawType: Type.RawType {
+  public var rawType: RawType {
     return property.type!.rawType
   }
 
-  public var typeGenericArguments: [Type.RawType] {
+  public var typeGenericArguments: [RawType] {
     switch property {
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.genericArguments.map { $0.rawType }
@@ -781,11 +781,11 @@ public struct FunctionInformation {
   public var callerCapabilities: [CallerCapability]
   public var isMutating: Bool
 
-  var parameterTypes: [Type.RawType] {
+  var parameterTypes: [RawType] {
     return declaration.parameters.map { $0.type.rawType }
   }
 
-  var resultType: Type.RawType? {
+  var resultType: RawType? {
     return declaration.resultType?.rawType
   }
 }
@@ -795,7 +795,7 @@ public struct SpecialInformation {
   public var declaration: SpecialDeclaration
   public var callerCapabilities: [CallerCapability]
 
-  var parameterTypes: [Type.RawType] {
+  var parameterTypes: [RawType] {
     return declaration.parameters.map { $0.type.rawType }
   }
 }

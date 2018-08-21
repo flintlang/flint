@@ -74,7 +74,7 @@ extension SemanticAnalyzer {
         }
       }
 
-      if let enclosingType = identifier.enclosingType, enclosingType != Type.RawType.errorType.name {
+      if let enclosingType = identifier.enclosingType, enclosingType != RawType.errorType.name {
         if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))

@@ -59,13 +59,13 @@ public class TypeChecker: ASTPass {
       // The variable declaration is a state property.
 
       let lhsType = variableDeclaration.type.rawType
-      let rhsType: Type.RawType?
+      let rhsType: RawType?
 
       switch assignedExpression {
       case .arrayLiteral(_):
-        rhsType = Type.RawType.arrayType(.any)
+        rhsType = RawType.arrayType(.any)
       case .dictionaryLiteral(_):
-        rhsType = Type.RawType.dictionaryType(key: .any, value: .any)
+        rhsType = RawType.dictionaryType(key: .any, value: .any)
       default:
         rhsType = environment.type(of: assignedExpression, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: ScopeContext())
       }

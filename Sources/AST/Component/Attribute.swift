@@ -6,10 +6,14 @@
 //
 
 /// A function attribute, such as `@payable`.
-public struct Attribute: SourceEntity {
+public struct Attribute: ASTNode {
+
   var kind: Kind
   var token: Token
 
+  public var description: String {
+    return token.kind.description
+  }
   public var sourceLocation: SourceLocation {
     return token.sourceLocation
   }

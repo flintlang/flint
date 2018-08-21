@@ -41,7 +41,7 @@ extension TypeChecker {
       if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType) {
         diagnostics.append(.unmatchedOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
       }
-      let acceptedTypes: [Type.RawType] = [.basicType(.address), .basicType(.bool), .basicType(.int), .basicType(.string), .userDefinedType("Enum")]
+      let acceptedTypes: [RawType] = [.basicType(.address), .basicType(.bool), .basicType(.int), .basicType(.string), .userDefinedType("Enum")]
       if ![lhsType, rhsType].contains(.errorType), !acceptedTypes.contains(lhsType) && !environment.isEnumDeclared(lhsType.name) {
         diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: acceptedTypes, expression: .binaryExpression(binaryExpression)))
       }
@@ -84,7 +84,7 @@ extension TypeChecker {
     let identifierType = environment.type(of: subscriptExpression.baseExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
 
     let actualType = environment.type(of: subscriptExpression.indexExpression, enclosingType: typeIdentifier.name, scopeContext: scopeContext)
-    var expectedType: Type.RawType = .errorType
+    var expectedType: RawType = .errorType
 
     switch identifierType {
     case .arrayType (_), .fixedSizeArrayType(_): expectedType = .basicType(.int)

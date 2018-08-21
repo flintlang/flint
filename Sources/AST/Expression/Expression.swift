@@ -20,7 +20,7 @@ public indirect enum Expression: SourceEntity {
   case subscriptExpression(SubscriptExpression)
   case sequence([Expression])
   case range(RangeExpression)
-  case rawAssembly(String, resultType: Type.RawType?)
+  case rawAssembly(String, resultType: RawType?)
 
   public var sourceLocation: SourceLocation {
     switch self {

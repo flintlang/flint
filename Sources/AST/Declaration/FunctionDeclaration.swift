@@ -24,7 +24,7 @@ public struct FunctionDeclaration: SourceEntity {
   public var mangledIdentifier: String? = nil
 
   /// The raw type of the function's return type.
-  public var rawType: Type.RawType {
+  public var rawType: RawType {
     return resultType?.rawType ?? .basicType(.void)
   }
 

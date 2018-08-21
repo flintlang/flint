@@ -250,7 +250,7 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ rawType: Type.RawType) {
+  func dump(_ rawType: RawType) {
     switch rawType {
     case .fixedSizeArrayType(let rawType, size: let size):
       writeNode("FixedSizeArrayType") {
@@ -289,7 +289,7 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ builtInType: Type.BasicType) {
+  func dump(_ builtInType: RawType.BasicType) {
     writeLine("built-in type \(builtInType.rawValue)")
   }
 

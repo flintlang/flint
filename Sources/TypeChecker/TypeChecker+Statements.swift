@@ -51,7 +51,7 @@ extension TypeChecker {
     let varType = environment.type(of: .variableDeclaration(forStatement.variable), enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
     let iterableType = environment.type(of: forStatement.iterable, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
 
-    let valueType: Type.RawType;
+    let valueType: RawType;
     switch iterableType {
     case .arrayType(let v): valueType = v
     case .rangeType(let v): valueType = v

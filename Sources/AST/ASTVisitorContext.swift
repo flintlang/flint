@@ -94,7 +94,7 @@ public struct ScopeContext: Equatable {
     return all.first(where: { $0.identifier.name == name })
   }
 
-  public func type(for variable: String) -> Type.RawType? {
+  public func type(for variable: String) -> RawType? {
     let all = localVariables + parameters.map { $0.asVariableDeclaration }
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }

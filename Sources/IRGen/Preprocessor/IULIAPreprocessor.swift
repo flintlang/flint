@@ -95,7 +95,7 @@ public struct IULIAPreprocessor: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  func constructParameter(name: String, type: Type.RawType, sourceLocation: SourceLocation) -> Parameter {
+  func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
     return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
   }
