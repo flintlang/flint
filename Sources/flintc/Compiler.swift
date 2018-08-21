@@ -43,11 +43,11 @@ struct Compiler {
     }
 
     // The AST passes to run sequentially.
-    let astPasses: [AnyASTPass] = [
-      AnyASTPass(SemanticAnalyzer()),
-      AnyASTPass(TypeChecker()),
-      AnyASTPass(Optimizer()),
-      AnyASTPass(IULIAPreprocessor())
+    let astPasses: [ASTPass] = [
+      SemanticAnalyzer(),
+      TypeChecker(),
+      Optimizer(),
+      IULIAPreprocessor()
     ]
 
     // Run all of the passes.

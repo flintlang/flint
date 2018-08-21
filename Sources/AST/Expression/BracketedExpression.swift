@@ -1,0 +1,32 @@
+//
+//  BracketedExpression.swift
+//  AST
+//
+//  Created by Hails, Daniel J R on 21/08/2018.
+//
+
+/// A bracketed expression.
+public struct BracketedExpression: SourceEntity {
+  public var expression: Expression
+
+  public var openBracketToken: Token
+  public var closeBracketToken: Token
+
+  public var sourceLocation: SourceLocation {
+    return .spanning(openBracketToken, to: closeBracketToken)
+  }
+
+  public init(expression: Expression, openBracketToken: Token, closeBracketToken: Token) {
+    guard case .punctuation(.openBracket) = openBracketToken.kind else {
+      fatalError("Unexpected token kind \(openBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    guard case .punctuation(.closeBracket) = closeBracketToken.kind else {
+      fatalError("Unexpected token kind \(closeBracketToken.kind) when trying to form a bracketed expression.")
+    }
+
+    self.expression = expression
+    self.openBracketToken = openBracketToken
+    self.closeBracketToken = closeBracketToken
+  }
+}

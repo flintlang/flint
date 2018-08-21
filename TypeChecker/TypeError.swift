@@ -1,6 +1,6 @@
 //
 //  TypeError.swift
-//  SemanticAnalyzer
+//  TypeChecker
 //
 //  Created by Franklin Schrans on 1/11/18.
 //

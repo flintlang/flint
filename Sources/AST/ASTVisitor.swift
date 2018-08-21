@@ -13,10 +13,10 @@
 ///
 /// In each of the `visit` functions, the given `ASTPass`'s `process` function is called on the node, then the node's
 /// children are visited, then `postProcess` is called on the node.
-public struct ASTVisitor<Pass: ASTPass> {
-  var pass: Pass
+public struct ASTVisitor {
+  var pass: ASTPass
 
-  public init(pass: Pass) {
+  public init(pass: ASTPass) {
     self.pass = pass
   }
 
@@ -273,7 +273,7 @@ public struct ASTVisitor<Pass: ASTPass> {
 
     let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
     processResult.passContext.specialDeclarationContext = specialDeclarationContext
-    
+
     let functionDeclaration = specialDeclaration.asFunctionDeclaration
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
 

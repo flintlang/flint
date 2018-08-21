@@ -12,7 +12,7 @@ import SemanticAnalyzer
 struct ASTPassRunner {
   var ast: TopLevelModule
 
-  func run(passes: [AnyASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
+  func run(passes: [ASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
     var environment = environment
     var ast = self.ast
     var diagnostics = [Diagnostic]()
