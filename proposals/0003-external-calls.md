@@ -114,11 +114,17 @@ It also gives us more control over checks for external calls dependent on the tr
 ### Uneducated Calls
 #### Interface specified
 ```swift
-interface Alpha {
-  func doesNothing()
-  func doesNothingWithArgs(Int, Int, Int)
-  func withdraw() -> Int
-  func deposit(Int) -> Bool
+interface Alpha(State1, State2) {
+  var owner: Address
+
+  Alpha @(State1) :: (any) {
+    func doesNothing()
+  }
+  Alpha @(any) :: (owner) {
+    func doesNothingWithArgs(Int, Int, Int)
+    func withdraw() -> Int
+    func deposit(Int) -> Bool
+  }
   @payable
   func expensiveFunction()
 }
