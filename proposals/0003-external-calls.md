@@ -46,8 +46,6 @@ One particular danger is malicious code may hijack the control flow, leading to 
 - `someAddress.send()` and `someAddress.transfer()` are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2,300 gas which is currently only enough to log an event.
   - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2 300 gas or more
 
-If you are making a call to an untrusted external contract, avoid state changes after the call. This pattern is also sometimes known as the `checks-effects-interactions` pattern.
-
 #### 3. External calls can silently fail
 Solidity offers low-level call methods that work on rawAddress: `address.call()`, `address.callcode()`, `address.delegatecall()`, `address.send()`. These low-level methods never throw an exception.
 
@@ -73,53 +71,6 @@ The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.
 	[107](KotET_source_code/KingOfTheEtherThrone.sol#L107),
 	[120](KotET_source_code/KingOfTheEtherThrone.sol#L120),
 	[161](KotET_source_code/KingOfTheEtherThrone.sol#L161))
-
-#### Favor pull over push for external calls
-To minimize the damage caused by such failures, it is often better to isolate each external call into its own transaction that can be initiated by the recipient of the call. This is especially relevant for payments, where it is better to let users withdraw funds rather than push funds to them automatically. Avoid combining multiple send() calls in a single transaction. [push-pull mechainism](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls) using the send()/transfer() for push component and call.value()() for the pull component.
-
-
-```javascript
-// bad
-contract auction {
-    address highestBidder;
-    uint highestBid;
-
-    function bid() payable {
-        require(msg.value >= highestBid);
-
-        if (highestBidder != 0) {
-            highestBidder.transfer(highestBid); // if this call consistently fails, no one else can bid
-        }
-
-       highestBidder = msg.sender;
-       highestBid = msg.value;
-    }
-}
-
-// good
-contract auction {
-    address highestBidder;
-    uint highestBid;
-    mapping(address => uint) refunds;
-
-    function bid() payable external {
-        require(msg.value >= highestBid);
-
-        if (highestBidder != 0) {
-            refunds[highestBidder] += highestBid; // record the refund that this user can claim
-        }
-
-        highestBidder = msg.sender;
-        highestBid = msg.value;
-    }
-
-    function withdrawRefund() external {
-        uint refund = refunds[msg.sender];
-        refunds[msg.sender] = 0;
-        msg.sender.transfer(refund);
-    }
-}
-```
 
 ## Proposed solution
 Considering our motivations below:
@@ -161,9 +112,9 @@ The aim is to encapsulate a request as an object, thereby letting Flint parametr
 It also gives us more control over checks for external calls dependent on the trait and how many checks we want to introduce.
 
 ### Uneducated Calls
-
+#### Interface specified
 ```swift
-trait Alpha {
+interface Alpha {
   func doesNothing()
   func doesNothingWithArgs(Int, Int, Int)
   func withdraw() -> Int
@@ -172,11 +123,11 @@ trait Alpha {
   func expensiveFunction()
 }
 
-let alpha: Director<Alpha> = Alpha(0x000...)
+let alpha: Director<Alpha> = 0x000... with Alpha
 
 alpha!.doesNothing()
-alpha!.doesNothingWithArgs(x, y, z)
-alpha!.withdraw()
+alpha!.doesNothingWithArgs(x, y, z) // If an error occurs the whole function is reverted
+alpha!.withdraw() // This flags an error as the return value is not dealt with
 
 if alpha!.successful {
   var boundReturn: Int = alpha!.getReturn()
@@ -188,20 +139,43 @@ alpha.gas = Gas(2000)
 alpha.trust() // Removes the need for a bang
 alpha.expensiveFunction()
 ```
+#### Foreign Function Interface
+Flint smart contract can call functions from Solidity smart contracts and vice-versa, thanks to the Flint Foreign Function Interface (FFI).
+
+The Flint FFI allows smart contracts to import a Solidity contract, in order to statically check the validity of external function calls.
 
 ```swift
-// <=>
-let alpha: Director<Any> = Director("0xab55044d00000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000880000000000000000000000000000000")
+@foreign import ForeignContract // A Solidity contract
 
-alpha!.doesNothing() // etc..
+contract Foo {}
+
+Foo :: (any) {
+  func foo(address: Address) -> Int {
+    return (address as ForeignContract).getValue()
+  }
+}
 ```
+
 
 ### Educated Calls
 
+#### Nodule: Flint Package Manager
 ```swift
-import ERC.Token
+// Creates a contract from the data stored in Nodule
+var tokenInstance: Contract<ERC.Token> = Nodule.knap(0x000...)
+```
+#### Source Code
+A contract's source code can be imported by:
+- Directly downloading its source files
+- Providing a web URL
+- Finding the Flint contract in the (future) Flint Package Manager
 
-let contract: Contract<ERC.Token> = deploy(ERC.Token)
+```swift
+import http://dsadsadas.com/contract.flint as URLContract
+import FileContract
+import Directory.Contract
+
+let contract: Contract<URLContract> = deploy(URLContract)
 contract.argumentName() // Value and Gas are automatically set based upon properties
 ```
 
@@ -244,11 +218,66 @@ var tokenInstance: Contract<ERC.Token> = ERC.Token(0x000...)
 var tokenInstance: Contract<ERC.Token> = Nodule.knap(0x000...) // Creates a contract from the data stored in Nodule
 ```
 
+### ABI
+Behind the scenes all of these interfaces are decoded into ABI function calls. [ABI Specification](https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html)
+```
+"dave", true and [1,2,3]
+
+0:    a5643bf2                                                         <-- method ID
+4:    0000000000000000000000000000000000000000000000000000000000000060 <-- arg1 offset
+32:   0000000000000000000000000000000000000000000000000000000000000001 <-- true
+64:   00000000000000000000000000000000000000000000000000000000000000a0 <-- offset 2
+96:   0000000000000000000000000000000000000000000000000000000000000004 <-- length of arg1
+128:  6461766500000000000000000000000000000000000000000000000000000000 <-- "dave"
+160:  0000000000000000000000000000000000000000000000000000000000000003 <-- length of arg2
+192:  0000000000000000000000000000000000000000000000000000000000000001 <-- arg2
+224:  0000000000000000000000000000000000000000000000000000000000000002 <-- arg2
+256:  0000000000000000000000000000000000000000000000000000000000000003 <-- arg2
+```
+
 ## Semantics
 
 
 ### Warnings
+#### Warn on "effects" after "interactions"
+If the contract storage is changed after an external call then a warning should be emitted. This should encourage two things:
+1. `checks-effects-interactions` pattern
+2. `Pull over push` for external calls. This is considered a [best practice](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls) as it helps isolate each external call into its own transaction that can be initiated by the recipient of the call.
 
+
+```javascript
+// Without push-pull
+function bid() payable {
+    if (highestBidder != 0) {
+        highestBidder.transfer(highestBid); // if this call consistently fails, no one else can bid
+    }
+
+   highestBidder = msg.sender;
+   highestBid = msg.value;
+}
+
+// With push-pull
+mapping(address => uint) refunds;
+
+function bid() payable external {
+    require(msg.value >= highestBid);
+
+    if (highestBidder != 0) {
+      // Push: record the refund that this user can claim
+      refunds[highestBidder] += highestBid;
+      // Could also emit an event as an Asynchronous trigger for the previous bidder to withdrawRefund
+    }
+
+    highestBidder = msg.sender;
+    highestBid = msg.value;
+}
+
+function withdrawRefund() external {
+    uint refund = refunds[msg.sender];
+    refunds[msg.sender] = 0;
+    msg.sender.transfer(refund);
+}
+```
 
 ### Unsafe operations
 
