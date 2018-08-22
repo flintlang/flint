@@ -47,7 +47,7 @@ Bank :: (any) {
 ```
 
 ### Type States
-[Type States](docs/language/type_states.md) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+[**Type States**](docs/language/type_states.md) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
 
 Example:
 ```swift
