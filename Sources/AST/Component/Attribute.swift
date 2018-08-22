@@ -11,13 +11,6 @@ public struct Attribute: ASTNode {
   var kind: Kind
   var token: Token
 
-  public var description: String {
-    return token.kind.description
-  }
-  public var sourceLocation: SourceLocation {
-    return token.sourceLocation
-  }
-
   public init?(token: Token) {
     guard case .attribute(let attribute) = token.kind, let kind = Kind(rawValue: attribute) else { return nil }
     self.kind = kind
@@ -26,5 +19,13 @@ public struct Attribute: ASTNode {
 
   enum Kind: String {
     case payable
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return token.kind.description
+  }
+  public var sourceLocation: SourceLocation {
+    return token.sourceLocation
   }
 }

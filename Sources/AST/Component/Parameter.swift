@@ -6,7 +6,7 @@
 //
 
 /// The parameter of a function.
-public struct Parameter: SourceEntity {
+public struct Parameter: ASTNode {
   public var identifier: Identifier
   public var type: Type
 
@@ -32,10 +32,6 @@ public struct Parameter: SourceEntity {
     return false
   }
 
-  public var sourceLocation: SourceLocation {
-    return .spanning(identifier, to: type)
-  }
-
   public var asVariableDeclaration: VariableDeclaration {
     return VariableDeclaration(declarationToken: nil, identifier: identifier, type: type)
   }
@@ -44,5 +40,13 @@ public struct Parameter: SourceEntity {
     self.identifier = identifier
     self.type = type
     self.implicitToken = implicitToken
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return "\(implicitToken?.description ?? "")\(identifier): \(type)"
+  }
+  public var sourceLocation: SourceLocation {
+    return .spanning(identifier, to: type)
   }
 }

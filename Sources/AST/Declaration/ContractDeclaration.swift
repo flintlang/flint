@@ -6,17 +6,13 @@
 //
 
 /// The declaration of a Flint contract.
-public struct ContractDeclaration: SourceEntity {
+public struct ContractDeclaration: ASTNode {
   public static var contractEnumPrefix = "flintStateEnum$"
 
   public var contractToken: Token
   public var identifier: Identifier
   public var states: [TypeState]
   public var variableDeclarations: [VariableDeclaration]
-
-  public var sourceLocation: SourceLocation {
-    return .spanning(contractToken, to: identifier)
-  }
 
   public var isStateful: Bool {
     return !states.isEmpty
@@ -46,4 +42,16 @@ public struct ContractDeclaration: SourceEntity {
     self.states = states
     self.contractToken = contractToken
   }
+
+  // MARK: - ASTNode
+  public var description: String {
+    let stateText = states.map({ $0.description }).joined(separator: " ")
+    let headText = "contract \(identifier) \(stateText)"
+    let variablesText = variableDeclarations.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(variablesText)}"
+  }
+  public var sourceLocation: SourceLocation {
+    return .spanning(contractToken, to: identifier)
+  }
+
 }

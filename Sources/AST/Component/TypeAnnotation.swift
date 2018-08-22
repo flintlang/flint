@@ -6,17 +6,21 @@
 //
 
 /// A type annotation for a variable.
-public struct TypeAnnotation: SourceEntity {
+public struct TypeAnnotation: ASTNode {
   public var colonToken: Token
 
   public var type: Type
 
-  public var sourceLocation: SourceLocation {
-    return .spanning(colonToken, to: type)
-  }
-
   public init(colonToken: Token, type: Type) {
     self.colonToken = colonToken
     self.type = type
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return "\(colonToken)\(type)"
+  }
+  public var sourceLocation: SourceLocation {
+    return .spanning(colonToken, to: type)
   }
 }

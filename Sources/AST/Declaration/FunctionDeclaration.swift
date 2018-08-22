@@ -28,13 +28,6 @@ public struct FunctionDeclaration: SourceEntity {
     return resultType?.rawType ?? .basicType(.void)
   }
 
-  public var sourceLocation: SourceLocation {
-    if let resultType = resultType {
-      return .spanning(funcToken, to: resultType)
-    }
-    return .spanning(funcToken, to: closeBracketToken)
-  }
-
   public var isMutating: Bool {
     return hasModifier(kind: .mutating)
   }
@@ -79,5 +72,21 @@ public struct FunctionDeclaration: SourceEntity {
 
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind }
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    let modifierText = modifiers.map({ $0.description }).joined(separator: " ")
+    let paramText = parameters.map({ $0.description }).joined(separator: ", ")
+    let headText = "\(modifierText) func \(identifier)(\(paramText)) \(resultType == nil ? "" : "-> \(resultType!)")"
+    let bodyText = body.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(bodyText)}"
+  }
+
+  public var sourceLocation: SourceLocation {
+    if let resultType = resultType {
+      return .spanning(funcToken, to: resultType)
+    }
+    return .spanning(funcToken, to: closeBracketToken)
   }
 }

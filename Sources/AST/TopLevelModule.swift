@@ -8,15 +8,22 @@
 /// A Flint top-level module. Includes top-level declarations, such as contract, struct, and contract behavior
 /// declarations.
 public struct TopLevelModule: ASTNode {
-  public var sourceLocation: SourceLocation = .DUMMY //TODO: Spanning
-
   public var declarations: [TopLevelDeclaration]
-
-  public var description: String {
-    return "" // TODO: Descriptions
-  }
 
   public init(declarations: [TopLevelDeclaration]) {
     self.declarations = declarations
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    guard let firstTLD = declarations.first,
+      let lastTLD = declarations.last else {
+        return .INVALID
+    }
+    return .spanning(firstTLD, to: lastTLD)
+  }
+
+  public var description: String {
+    return declarations.map({ $0.description }).joined(separator: "\n")
   }
 }

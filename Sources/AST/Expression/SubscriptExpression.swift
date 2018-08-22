@@ -6,18 +6,23 @@
 //
 
 /// A subscript expression such as `a[2]`.
-public struct SubscriptExpression: SourceEntity {
+public struct SubscriptExpression: ASTNode {
   public var baseExpression: Expression
   public var indexExpression: Expression
   public var closeSquareBracketToken: Token
-
-  public var sourceLocation: SourceLocation {
-    return .spanning(baseExpression, to: closeSquareBracketToken)
-  }
 
   public init(baseExpression: Expression, indexExpression: Expression, closeSquareBracketToken: Token) {
     self.baseExpression = baseExpression
     self.indexExpression = indexExpression
     self.closeSquareBracketToken = closeSquareBracketToken
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(baseExpression, to: closeSquareBracketToken)
+  }
+
+  public var description: String {
+    return "\(baseExpression)[\(indexExpression)]"
   }
 }

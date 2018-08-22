@@ -11,15 +11,21 @@ public struct FunctionCall: SourceEntity {
   public var arguments: [Expression]
   public var closeBracketToken: Token
 
-  public var sourceLocation: SourceLocation {
-    return .spanning(identifier, to: closeBracketToken)
-  }
-
   public var mangledIdentifier: String? = nil
 
   public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token) {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(identifier, to: closeBracketToken)
+  }
+
+  public var description: String {
+    let argumentText = arguments.map({ $0.description }).joined(separator: ", ")
+    return "\(identifier)(\(argumentText))"
   }
 }

@@ -9,21 +9,40 @@
 ///
 /// - variableDeclaration: The declaration of a variable.
 /// - functionDeclaration: The declaration of a function.
-public enum StructMember: Equatable {
+public enum StructMember: ASTNode {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
   case specialDeclaration(SpecialDeclaration)
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    switch self {
+      case .variableDeclaration(let variableDeclaration):
+        return variableDeclaration.sourceLocation
+      case .functionDeclaration(let functionDeclaration):
+        return functionDeclaration.sourceLocation
+      case .specialDeclaration(let specialDeclaration):
+        return specialDeclaration.sourceLocation
+    }
+  }
+
+  public var description: String {
+    switch self {
+    case .variableDeclaration(let variableDeclaration):
+      return variableDeclaration.description
+    case .functionDeclaration(let functionDeclaration):
+      return functionDeclaration.description
+    case .specialDeclaration(let specialDeclaration):
+      return specialDeclaration.description
+    }
+  }
 }
 
 /// The declaration of a struct.
-public struct StructDeclaration: SourceEntity {
+public struct StructDeclaration: ASTNode {
   public var structToken: Token
   public var identifier: Identifier
   public var members: [StructMember]
-
-  public var sourceLocation: SourceLocation {
-    return structToken.sourceLocation
-  }
 
   public var variableDeclarations: [VariableDeclaration] {
     return members.compactMap { member in
@@ -80,5 +99,14 @@ public struct StructDeclaration: SourceEntity {
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
     return SpecialDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    let memberText = members.map({ $0.description }).joined(separator: "\n")
+    return "\(structToken) \(identifier) {\(memberText)}"
+  }
+  public var sourceLocation: SourceLocation {
+    return .spanning(structToken, to: identifier)
   }
 }

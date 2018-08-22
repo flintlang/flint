@@ -6,19 +6,12 @@
 //
 
 /// The declaration of a variable or constant, either as a state property of a local variable.
-public struct VariableDeclaration: SourceEntity {
+public struct VariableDeclaration: ASTNode {
   public var declarationToken: Token?
   public var identifier: Identifier
   public var type: Type
   public var isConstant: Bool
   public var assignedExpression: Expression?
-
-  public var sourceLocation: SourceLocation {
-    if let declarationToken = declarationToken {
-      return .spanning(declarationToken, to: type)
-    }
-    return .spanning(identifier, to: type)
-  }
 
   public init(declarationToken: Token?, identifier: Identifier, type: Type, isConstant: Bool = false, assignedExpression: Expression? = nil) {
     self.declarationToken = declarationToken
@@ -26,5 +19,16 @@ public struct VariableDeclaration: SourceEntity {
     self.type = type
     self.isConstant = isConstant
     self.assignedExpression = assignedExpression
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return "\(declarationToken?.description ?? "") \(identifier): \(type)"
+  }
+  public var sourceLocation: SourceLocation {
+    if let declarationToken = declarationToken {
+      return .spanning(declarationToken, to: type)
+    }
+    return .spanning(identifier, to: type)
   }
 }

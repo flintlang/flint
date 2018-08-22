@@ -90,9 +90,8 @@ struct IULIATypeStateChecks {
 
       let stateValue = IULIAExpression(expression: environment.getStateValue(typeState.identifier, in: enclosingType), asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
 
-      let dummySourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))
-      let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + enclosingType))
-      let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: dummySourceLocation)), op: Token(kind: .punctuation(.dot), sourceLocation: dummySourceLocation), rhs: stateVariable))
+      let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + enclosingType, sourceLocation: .DUMMY))
+      let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)), op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY), rhs: stateVariable))
       let stateVariableRendered = IULIAExpression(expression: selfState, asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
 
       let check = IULIARuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)

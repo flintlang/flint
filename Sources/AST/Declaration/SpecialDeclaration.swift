@@ -6,7 +6,7 @@
 //
 
 /// The declaration of an initializer or fallback
-public struct SpecialDeclaration: SourceEntity {
+public struct SpecialDeclaration: ASTNode {
   public var specialToken: Token
 
   /// The attributes associated with the function, such as `@payable`.
@@ -18,10 +18,6 @@ public struct SpecialDeclaration: SourceEntity {
   public var closeBracketToken: Token
   public var body: [Statement]
   public var closeBraceToken: Token
-
-  public var sourceLocation: SourceLocation {
-    return specialToken.sourceLocation
-  }
 
   public var isInit: Bool {
     return specialToken.kind == .init
@@ -68,5 +64,17 @@ public struct SpecialDeclaration: SourceEntity {
     self.body = functionDeclaration.body
     self.closeBraceToken = functionDeclaration.closeBracketToken
     self.scopeContext = functionDeclaration.scopeContext ?? ScopeContext()
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    let modifierText = modifiers.map({ $0.description }).joined(separator: " ")
+    let paramText = parameters.map({ $0.description }).joined(separator: ", ")
+    let headText = "\(modifierText) \(specialToken)(\(paramText))"
+    let bodyText = body.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(bodyText)}"
+  }
+  public var sourceLocation: SourceLocation {
+    return specialToken.sourceLocation
   }
 }

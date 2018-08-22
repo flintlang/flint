@@ -6,10 +6,16 @@
 //
 
 /// A return statement.
-public struct ReturnStatement: SourceEntity {
+public struct ReturnStatement: ASTNode {
   public var returnToken: Token
   public var expression: Expression?
 
+  public init(returnToken: Token, expression: Expression?) {
+    self.returnToken = returnToken
+    self.expression = expression
+  }
+
+  // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
     if let expression = expression {
       return .spanning(returnToken, to: expression)
@@ -18,8 +24,10 @@ public struct ReturnStatement: SourceEntity {
     return returnToken.sourceLocation
   }
 
-  public init(returnToken: Token, expression: Expression?) {
-    self.returnToken = returnToken
-    self.expression = expression
+  public var description: String {
+    if let expression = expression {
+      return "\(returnToken) \(expression)"
+    }
+    return "\(returnToken)"
   }
 }

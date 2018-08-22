@@ -5,12 +5,8 @@
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
 
-public struct CallerCapability: SourceEntity {
+public struct CallerCapability: ASTNode {
   public var identifier: Identifier
-
-  public var sourceLocation: SourceLocation {
-    return identifier.sourceLocation
-  }
 
   public var name: String {
     return identifier.name
@@ -26,5 +22,13 @@ public struct CallerCapability: SourceEntity {
 
   public func isSubCapability(of parent: CallerCapability) -> Bool {
     return parent.isAny || name == parent.name
+  }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return "\(identifier)"
+  }
+  public var sourceLocation: SourceLocation {
+    return identifier.sourceLocation
   }
 }

@@ -13,10 +13,6 @@ public struct RangeExpression: SourceEntity {
   public var bound: Expression
   public var op: Token
 
-  public var sourceLocation: SourceLocation {
-    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
-  }
-
   public var isClosed: Bool {
     return op.kind == .punctuation(.closedRange)
   }
@@ -27,5 +23,14 @@ public struct RangeExpression: SourceEntity {
     self.initial = initial
     self.bound = bound
     self.op = op
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+  }
+
+  public var description: String {
+    return "\(openSquareBracketToken)\(initial)\(op)\(bound)\(closeSquareBracketToken)"
   }
 }

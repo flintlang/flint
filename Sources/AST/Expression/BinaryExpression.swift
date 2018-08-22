@@ -6,7 +6,7 @@
 //
 
 /// A binary expression.
-public struct BinaryExpression: SourceEntity {
+public struct BinaryExpression: ASTNode {
   public var lhs: Expression
 
   public var op: Token
@@ -25,10 +25,6 @@ public struct BinaryExpression: SourceEntity {
     return false
   }
 
-  public var sourceLocation: SourceLocation {
-    return .spanning(lhs, to: rhs)
-  }
-
   public init(lhs: Expression, op: Token, rhs: Expression) {
     self.lhs = lhs
 
@@ -38,5 +34,13 @@ public struct BinaryExpression: SourceEntity {
 
     self.op = op
     self.rhs = rhs
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(lhs, to: rhs)
+  }
+  public var description: String {
+    return "\(lhs) \(op) \(rhs)"
   }
 }

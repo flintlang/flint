@@ -6,19 +6,23 @@
 //
 
 /// A lexical token valid in Flint.
-public struct Token: Equatable, SourceEntity {
+public struct Token: Equatable, ASTNode {
   /// The kind of token.
   public var kind: Kind
-
-  /// The source location of the token.
-  public var sourceLocation: SourceLocation
 
   public init(kind: Kind, sourceLocation: SourceLocation) {
     self.kind = kind
     self.sourceLocation = sourceLocation
   }
+
+  // MARK: - ASTNode
+  public var description: String {
+    return kind.description
+  }
+  public var sourceLocation: SourceLocation
 }
 
+// MARK: - Token Kind
 extension Token {
   public enum Kind: Equatable {
     public enum Punctuation: String {

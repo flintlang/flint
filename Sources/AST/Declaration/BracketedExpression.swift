@@ -6,15 +6,11 @@
 //
 
 /// A bracketed expression.
-public struct BracketedExpression: SourceEntity {
+public struct BracketedExpression: ASTNode {
   public var expression: Expression
 
   public var openBracketToken: Token
   public var closeBracketToken: Token
-
-  public var sourceLocation: SourceLocation {
-    return .spanning(openBracketToken, to: closeBracketToken)
-  }
 
   public init(expression: Expression, openBracketToken: Token, closeBracketToken: Token) {
     guard case .punctuation(.openBracket) = openBracketToken.kind else {
@@ -28,5 +24,14 @@ public struct BracketedExpression: SourceEntity {
     self.expression = expression
     self.openBracketToken = openBracketToken
     self.closeBracketToken = closeBracketToken
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(openBracketToken, to: closeBracketToken)
+  }
+
+  public var description: String {
+    return "\(openBracketToken)\(expression)\(closeBracketToken)"
   }
 }

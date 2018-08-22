@@ -9,7 +9,7 @@
 public typealias RawTypeIdentifier = String
 
 /// An identifier for a contract, struct, variable, or function.
-public struct Identifier: Hashable, SourceEntity {
+public struct Identifier: Hashable, ASTNode {
   public var identifierToken: Token
   public var enclosingType: String? = nil
 
@@ -18,19 +18,24 @@ public struct Identifier: Hashable, SourceEntity {
     return name
   }
 
-  public var sourceLocation: SourceLocation {
-    return identifierToken.sourceLocation
-  }
-
   public init(identifierToken: Token) {
     self.identifierToken = identifierToken
   }
 
-  public init(name: String, sourceLocation: SourceLocation = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))) {
+  public init(name: String, sourceLocation: SourceLocation) {
     self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
   }
 
   public var hashValue: Int {
     return "\(name)_\(sourceLocation)".hashValue
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return identifierToken.sourceLocation
+  }
+
+  public var description: String {
+    return "\(identifierToken)"
   }
 }

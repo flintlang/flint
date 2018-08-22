@@ -6,16 +6,21 @@
 //
 
 /// A become statement.
-public struct BecomeStatement: SourceEntity {
+public struct BecomeStatement: ASTNode {
   public var becomeToken: Token
   public var expression: Expression
-
-  public var sourceLocation: SourceLocation {
-    return .spanning(becomeToken, to: expression)
-  }
 
   public init(becomeToken: Token, expression: Expression) {
     self.becomeToken = becomeToken
     self.expression = expression
   }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(becomeToken, to: expression)
+  }
+  public var description: String {
+    return "\(becomeToken) \(expression)"
+  }
+
 }

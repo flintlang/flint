@@ -105,16 +105,11 @@ public indirect enum RawType: Equatable {
 
 /// A Flint type.
 public struct Type: ASTNode {
-
   public var rawType: RawType
   public var genericArguments = [Type]()
-  public var sourceLocation: SourceLocation
-  
+
   public var name: String {
     return rawType.name
-  }
-  public var description: String {
-    return name
   }
 
   var isCurrencyType: Bool {
@@ -167,5 +162,12 @@ public struct Type: ASTNode {
   public init(inferredType: RawType, identifier: Identifier) {
     rawType = inferredType
     sourceLocation = identifier.sourceLocation
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation
+  
+  public var description: String {
+    return name
   }
 }

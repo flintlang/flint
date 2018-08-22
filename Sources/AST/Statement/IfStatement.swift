@@ -6,7 +6,7 @@
 //
 
 /// An if statement.
-public struct IfStatement: SourceEntity {
+public struct IfStatement: ASTNode {
   public var ifToken: Token
   public var condition: Expression
 
@@ -15,10 +15,6 @@ public struct IfStatement: SourceEntity {
 
   /// the statements in the body of the else block.
   public var elseBody: [Statement]
-
-  public var sourceLocation: SourceLocation {
-    return .spanning(ifToken, to: condition)
-  }
 
   // Contextual information for the scope defined by the if body.
   public var ifBodyScopeContext: ScopeContext? = nil
@@ -38,6 +34,20 @@ public struct IfStatement: SourceEntity {
     self.condition = condition
     self.body = statements
     self.elseBody = elseClauseStatements
+  }
+
+  // MARK: - ASTNode
+  public var sourceLocation: SourceLocation {
+    return .spanning(ifToken, to: condition)
+  }
+
+  public var description: String {
+    var elseText = ""
+    if !elseBody.isEmpty {
+      elseText = "\(elseBody.map({ $0.description }).joined(separator: "\n"))"
+    }
+    let bodyText = body.map({ $0.description }).joined(separator: "\n")
+    return "\(ifToken) \(condition) {\(bodyText)} else {\(elseText)}"
   }
 }
 

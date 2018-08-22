@@ -233,7 +233,7 @@ struct IULIABecomeStatement {
 
   func rendered(functionContext: FunctionContext) -> String {
     let sl = becomeStatement.sourceLocation
-    let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + functionContext.enclosingTypeName))
+    let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + functionContext.enclosingTypeName, sourceLocation: .DUMMY))
     let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: sl)), op: Token(kind: .punctuation(.dot), sourceLocation: sl), rhs: stateVariable))
 
     let assignState: Expression = .binaryExpression(BinaryExpression(lhs: selfState, op: Token(kind: .punctuation(.equal), sourceLocation: sl), rhs: becomeStatement.expression))
