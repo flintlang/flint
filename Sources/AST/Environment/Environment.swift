@@ -30,11 +30,6 @@ public struct Environment {
 
   public init() {}
 
-  public func getStateValue(_ state: Identifier, in contract: RawTypeIdentifier) -> Expression {
-    let enumName = ContractDeclaration.contractEnumPrefix + contract
-    return types[enumName]!.properties[state.name]!.property.value!
-  }
-
   // MARK: - Property
   public func property(_ identifier: String, _ enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     return types[enclosingType]?.properties[identifier]
@@ -55,7 +50,7 @@ public struct Environment {
     return types[enclosingType]!.properties.values.map { $0.property }
   }
 
-  // MARK: - List in types
+  // MARK: - Accessors of type properties
 
   /// The list of initializers in a type.
   public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
@@ -80,7 +75,10 @@ public struct Environment {
     }
   }
 
-  // MARK: Public
+  public func getStateValue(_ state: Identifier, in contract: RawTypeIdentifier) -> Expression {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return types[enumName]!.properties[state.name]!.property.value!
+  }
 
   /// The public initializer for the given contract. A contract should have at most one public initializer.
   public func publicInitializer(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
