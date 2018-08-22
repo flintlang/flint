@@ -1,0 +1,147 @@
+//
+//  Environment+Checks.swift
+//  AST
+//
+//  Created by Hails, Daniel R on 22/08/2018.
+//
+import Source
+
+extension Environment {
+  /// The prefix for Flint runtime functions.
+  public static var runtimeFunctionPrefix = "flint$"
+
+  /// Whether the given function call is a runtime function.
+  public static func isRuntimeFunctionCall(_ functionCall: FunctionCall) -> Bool {
+    return functionCall.identifier.name.starts(with: runtimeFunctionPrefix)
+  }
+
+  /// Whether a contract has been declared in the program.
+  public func isContractDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredContracts.contains { $0.name == type }
+  }
+
+  // Whether any contract has been declared in the program.
+  public func hasDeclaredContract() -> Bool {
+    return !declaredContracts.isEmpty
+  }
+
+  /// Whether a struct has been declared in the program.
+  public func isStructDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredStructs.contains { $0.name == type }
+  }
+
+  /// Whether an enum has been declared in the program.
+  public func isEnumDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredEnums.contains { $0.name == type }
+  }
+
+  /// Whether a type has been declared in the program.
+  public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return types[type] != nil
+  }
+
+  // Whether a contract is stateful.
+  public func isStateful(_ contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return declaredEnums.contains(where: { $0.name == enumName })
+  }
+
+  /// Whether a state has been declared in this contract.
+  public func isStateDeclared(_ state: Identifier, in contract: RawTypeIdentifier) -> Bool {
+    let enumName = ContractDeclaration.contractEnumPrefix + contract
+    return types[enumName]?.properties[state.name] != nil
+  }
+
+  /// Whether a struct is self referencing.
+  public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
+    guard let enclosingMemberTypes = types[enclosingType] else { return nil }
+
+    for member in enclosingMemberTypes.orderedProperties {
+      guard let memberType = enclosingMemberTypes.properties[member]?.rawType.name else { return nil }
+      if memberType == type {
+        return enclosingMemberTypes.properties[member]
+      }
+      if let member = selfReferentialProperty(in: type, enclosingType: memberType) {
+        return member
+      }
+    }
+    return nil
+  }
+
+  /// Whether a function call refers to an initializer.
+  public func isInitializerCall(_ functionCall: FunctionCall) -> Bool {
+    return isStructDeclared(functionCall.identifier.name)
+  }
+
+  /// Whether a property is defined in a type.
+  public func isPropertyDefined(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType) != nil
+  }
+
+  /// Whether property is declared as a constant.
+  public func isPropertyConstant(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isConstant
+  }
+
+  // Whether a property is assigned a default value
+  public func isPropertyAssignedDefaultValue(_ identifier: String, enclosingType: RawTypeIdentifier) -> Bool {
+    return property(identifier, enclosingType)!.isAssignedDefaultValue
+  }
+
+  // Whether an identifier is redeclared
+  private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
+    return identifier1 != identifier2 &&
+      identifier1.name == identifier2.name &&
+      identifier1.sourceLocation.line < identifier2.sourceLocation.line
+  }
+
+  // Whether declarations conflict
+  private func conflictingDeclaration(of identifier: Identifier, in identifiers: [Identifier]) -> Identifier? {
+    return identifiers
+      .filter({ isRedeclaration($0, identifier) })
+      .lazy.sorted(by: { $0.sourceLocation.line < $1.sourceLocation.line }).first
+  }
+
+  /// Attempts to find a conflicting declaration of the given type.
+  public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
+  }
+
+  /// Attempts to find a conflicting declaration of the given function declaration
+  public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
+    var contractFunctions = [Identifier]()
+
+    if isContractDeclared(type) {
+      // Contract functions do not support overloading.
+      contractFunctions = types[type]!.functions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
+    }
+
+    if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
+      return conflict
+    }
+
+    let functions = types[type]!.functions[function.identifier.name]?.filter { functionInformation in
+      let identifier1 = function.identifier
+      let identifier2 = functionInformation.declaration.identifier
+      let parameterList1 = function.parameters.map { $0.type.rawType.name }
+      let parameterList2 = functionInformation.declaration.parameters.map { $0.type.rawType.name }
+
+      return identifier1.name == identifier2.name &&
+        parameterList1 == parameterList2 &&
+        identifier1.sourceLocation.line < identifier2.sourceLocation.line
+    }
+
+    return functions?.first?.declaration.identifier
+  }
+
+  /// Attempts to find a conflicting declaration of the given property declaration.
+  public func conflictingPropertyDeclaration(for identifier: Identifier, in type: RawTypeIdentifier) -> Identifier? {
+    return conflictingDeclaration(of: identifier, in: propertyDeclarations(in: type).map { $0.identifier })
+  }
+
+  /// Whether the given caller capability is declared in the given type.
+  public func containsCallerCapability(_ callerCapability: CallerCapability, enclosingType: RawTypeIdentifier) -> Bool {
+    return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
+  }
+}
+
