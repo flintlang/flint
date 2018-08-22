@@ -56,10 +56,10 @@ extension Environment {
     // Check if it can be a global function.
     let globalMatch = matchGlobalFunction(functionCall: functionCall, argumentTypes: argumentTypes, callerCapabilities: callerCapabilities)
 
-    return match.merge(with: regularMatch)
-                .merge(with: initaliserMatch)
+    return match.merge(with: globalMatch)
                 .merge(with: fallbackMatch)
-                .merge(with: globalMatch)
+                .merge(with: initaliserMatch)
+                .merge(with: regularMatch)
   }
 
   private func matchRegularFunction(functionCall: FunctionCall, enclosingType: RawTypeIdentifier, argumentTypes: [RawType], typeStates: [TypeState], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
