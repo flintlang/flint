@@ -1,0 +1,86 @@
+# Examples
+
+## Bank Smart Contract
+The following code declares the Bank contract and its functions. More examples are available on GitHub.
+
+```swift
+// Contract declarations contain only their state properties.
+contract Bank {
+  var manager: Address
+  var balances: [Address: Wei] = [:]
+  var accounts: [Address] = []
+  var lastIndex: Int = 0
+
+  var totalDonations: Wei = Wei(0)
+  var didCompleteTransfer: Event<Address, Address, Int>
+}
+
+// The functions in this block can be called by any user.
+Bank :: account <- (any) {
+  public init(manager: Address) {
+    self.manager = manager
+  }
+
+  // Returns the manager's address.
+  public mutating func register() {
+    accounts[lastIndex] = account
+    lastIndex += 1
+  }
+
+  public func getManager() -> Address {
+    return manager
+  }
+
+  @payable
+  public mutating func donate(implicit value: Wei) {
+    // This will transfer the funds into totalDonations.
+    totalDonations.transfer(&value)
+  }
+}
+
+// Only the manager can call these functions.
+Bank :: (manager) {
+
+  // This function needs to be declared "mutating" as its body mutates
+  // the contract's state.
+  public mutating func freeDeposit(account: Address, amount: Int) {
+    var w: Wei = Wei(amount)
+    balances[account].transfer(&w)
+  }
+
+  public mutating func clear(account: Int) {
+    balances[account] = Wei(0)
+  }
+
+  // This function is non-mutating.
+  public func getDonations() -> Int {
+    return totalDonations.getRawValue()
+  }
+}
+
+// Any user in accounts can call these functions.
+// The matching user's address is bound to the variable account.
+Bank :: account <- (accounts) {
+  public func getBalance() -> Int {
+    return balances[account].getRawValue()
+  }
+
+  public mutating func transfer(amount: Int, destination: Address) {
+    // Transfer Wei from one account to another. The balances of the
+    // originator and the destination are updated atomically.
+    // Crashes if balances[account] doesn't have enough Wei.
+    balances[destination].transfer(&balances[account], amount)
+
+    // Emit the Ethereum event.
+    didCompleteTransfer(account, destination, amount)
+  }
+
+  public mutating func withdraw(amount: Int) {
+    // Transfer some Wei from balances[account] into a local variable.
+    let w: Wei = Wei(&balances[account], amount)
+
+    // Send the amount back to the Ethereum user.
+    send(account, &w)
+  }
+}
+```

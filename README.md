@@ -46,6 +46,33 @@ Bank :: (any) {
 }
 ```
 
+### Type States
+[Type States](docs/language/type_states.md) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+
+Example:
+```swift
+// Enumeration of states.
+contract Auction (Preparing, InProgress) {}
+
+Auction @(Preparing, InProgress) :: caller <- (any) {
+  public init() {
+    // ...
+    become Preparing
+  }
+}
+
+Auction @(Preparing) :: (beneficiary) {
+  public mutating func setBeneficiary(beneficiary: Address) {
+    self.beneficiary = beneficiary
+  }
+
+  mutating func openAuction() -> Bool {
+    // ...
+    become InProgress
+  }
+}
+```
+
 ### Immutability by default
 
 **Restricting writes to state** in functions helps programmers more easily reason about the smart contract. A function which writes to the contract’s state needs to be annotated with the `mutating` keyword.
@@ -58,11 +85,11 @@ Bank :: (any) {
     // count is a state property
     count += 1
   }
-  
+
   func getCount() -> Int {
     return count
   }
-  
+
   func decrementCount() {
     // error: Use of mutating statement in a nonmutating function
     // count -= 1

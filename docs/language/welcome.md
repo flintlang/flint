@@ -1,0 +1,118 @@
+# Welcome
+
+Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
+
+Medium: [Flint: A New Language for Safe Smart Contracts on Ethereum](https://medium.com/@fschrans/flint-a-new-language-for-safe-smart-contracts-on-ethereum-a5672137a5c7)
+
+Academic Paper: [Writing Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf)
+
+## Overview
+
+Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
+
+### Caller capabilities
+​[Caller capabilities](caller_capabilities.md) require programmers to think about who should be able to call the contract’s sensitive functions. Capabilities are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+
+Example:
+
+```swift
+// State declaration
+contract Bank {
+  var manager: Address
+}
+​
+// Functions are declared in caller capability blocks,
+// which specify which users are allowed to call them.
+Bank :: (manager) { // manager is a state property.
+  // Only the manager of the Bank can call "clear".
+  func clear(address: Address) {
+    // body
+  }
+}
+​
+// Anyone can initialize the contract.
+Bank :: (any) {
+  public init(manager: Address) {
+    self.manager = manager
+  }
+}
+```
+
+### Type States
+[Type States](type_states.md) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+
+Example:
+```swift
+// Enumeration of states.
+contract Auction (Preparing, InProgress) {}
+
+Auction @(Preparing, InProgress) :: caller <- (any) {
+  public init() {
+    // ...
+    become Preparing
+  }
+}
+
+Auction @(Preparing) :: (beneficiary) {
+  public mutating func setBeneficiary(beneficiary: Address) {
+    self.beneficiary = beneficiary
+  }
+
+  mutating func openAuction() -> Bool {
+    // ...
+    become InProgress
+  }
+}
+```
+
+### Immutability by default
+**Restricting writes to state** in functions helps programmers more easily reason about the smart contract. A function which writes to the contract’s state needs to be annotated with the `mutating` keyword.
+
+Example:
+
+```swift
+Bank :: (any) {
+  mutating func incrementCount() {
+    // count is a state property
+    count += 1
+  }
+
+  func getCount() -> Int {
+    return count
+  }
+
+  func decrementCount() {
+    // error: Use of mutating statement in a nonmutating function
+    // count -= 1
+  }
+}
+```
+### Asset Types
+​[Assets](assets.md), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special Asset trait.
+
+Flint’s Asset type ensure a contract’s state always truthfully represents its Ether value, preventing attacks such as TheDAO.
+
+A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets (such as Ether) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy.
+
+Example use:
+
+```
+Bank :: account <- (balances.keys) {
+  @payable
+  mutating func deposit(implicit value: inout Wei) {
+    // Omitting the next line would cause a compiler warning:
+    // the value received should be recorded.
+
+    balances[address].transfer(&value)
+  }
+
+  mutating func withdraw() {
+    // balances[account] is automatically
+    // set to 0 before transferring.
+    send(account, &balances[account])
+  }
+}
+```
+
+### Safer Semantics
+In the spirit of reducing vulnerabilities relating to unexpected language semantics, such as wrap-arounds due to integer overflows, Flint aims to provide safer operations. For instance, arithmetic operations on `Int` are safe by default: an overflow/underflow causes the Ethereum transaction to be reverted.
