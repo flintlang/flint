@@ -17,6 +17,16 @@ extension Environment {
     case matchedFallback(SpecialInformation)
     case matchedGlobalFunction(FunctionInformation)
     case failure(candidates: [FunctionInformation])
+
+    func merge(with match: FunctionCallMatchResult) -> FunctionCallMatchResult {
+      if case .failure(let candidates1) = self {
+        if case .failure(let candidates2) = match {
+          return .failure(candidates: candidates1 + candidates2)
+        }
+        return match
+      }
+      return self
+    }
   }
 
   /// Attempts to match a function call to its function declaration.
@@ -28,15 +38,32 @@ extension Environment {
   ///   - scopeContext: Contextual information about the scope in which the function call appears.
   /// - Returns: A `FunctionCallMatchResult`, either `success` or `failure`.
   public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
-    var candidates = [FunctionInformation]()
-
-    var match: FunctionCallMatchResult? = nil
+    let match: FunctionCallMatchResult = .failure(candidates: [])
 
     let argumentTypes = functionCall.arguments.map {
       type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
     }
 
     // Check if it can be a regular function.
+    let regularMatch = matchRegularFunction(functionCall: functionCall, enclosingType: enclosingType, argumentTypes: argumentTypes, typeStates: typeStates, callerCapabilities: callerCapabilities)
+
+    // Check if it can be an initializer.
+    let initaliserMatch = matchInitaliserFunction(functionCall: functionCall, argumentTypes: argumentTypes, callerCapabilities: callerCapabilities)
+
+    // Check if it can be a fallback function.
+    let fallbackMatch = matchFallbackFunction(functionCall: functionCall, callerCapabilities: callerCapabilities)
+
+    // Check if it can be a global function.
+    let globalMatch = matchGlobalFunction(functionCall: functionCall, argumentTypes: argumentTypes, callerCapabilities: callerCapabilities)
+
+    return match.merge(with: regularMatch)
+                .merge(with: initaliserMatch)
+                .merge(with: fallbackMatch)
+                .merge(with: globalMatch)
+  }
+
+  private func matchRegularFunction(functionCall: FunctionCall, enclosingType: RawTypeIdentifier, argumentTypes: [RawType], typeStates: [TypeState], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
+    var candidates = [FunctionInformation]()
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
         guard candidate.parameterTypes == argumentTypes,
@@ -46,11 +73,13 @@ extension Environment {
             continue
         }
 
-        match = .matchedFunction(candidate)
+        return .matchedFunction(candidate)
       }
     }
+    return .failure(candidates: candidates)
+  }
 
-    // Check if it can be an initializer.
+  private func matchInitaliserFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     if let initializers = types[functionCall.identifier.name]?.initializers {
       for candidate in initializers {
         guard candidate.parameterTypes == argumentTypes,
@@ -59,16 +88,13 @@ extension Environment {
             continue
         }
 
-        if match != nil {
-          // This is an ambiguous call. There are too many matches.
-          return .failure(candidates: [])
-        }
-
-        match = .matchedInitializer(candidate)
+        return .matchedInitializer(candidate)
       }
     }
+    return .failure(candidates: [])
+  }
 
-    // Check if it can be a fallback function.
+  private func matchFallbackFunction(functionCall: FunctionCall, callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     if let fallbacks = types[functionCall.identifier.name]?.fallbacks {
       for candidate in fallbacks {
         guard areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
@@ -76,16 +102,16 @@ extension Environment {
           continue
         }
 
-        if match != nil {
-          // This is an ambiguous call. There are too many matches.
-          return .failure(candidates: [])
-        }
-
-        match = .matchedFallback(candidate)
+        return .matchedFallback(candidate)
       }
     }
 
-    // Check if it can be a global function.
+    return .failure(candidates: [])
+  }
+
+  private func matchGlobalFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
+    var candidates = [FunctionInformation]()
+
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
@@ -95,11 +121,10 @@ extension Environment {
             continue
         }
 
-        match = .matchedGlobalFunction(candidate)
+        return .matchedGlobalFunction(candidate)
       }
     }
-
-    return match ?? .failure(candidates: candidates)
+    return .failure(candidates: candidates)
   }
 
   /// Associates a function call to an event call. Events are declared as properties in the contract's declaration.
