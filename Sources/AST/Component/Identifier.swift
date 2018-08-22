@@ -4,6 +4,8 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// The raw representation of an `Identifier`.
 public typealias RawTypeIdentifier = String

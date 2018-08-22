@@ -6,6 +6,7 @@
 //
 
 import AST
+import Lexer
 
 /// A prepocessing step to update the program's AST before code generation.
 extension IULIAPreprocessor {

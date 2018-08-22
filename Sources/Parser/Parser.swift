@@ -1,12 +1,15 @@
 //
-//  Compiler.swift
-//  flintcPackageDescription
+//  Parser.swift
+//  Parser
 //
-//  Created by Franklin Schrans on 12/19/17.
+//  Created by Hails, Daniel J R on 21/08/2018.
 //
 
 import Foundation
 import AST
+import Source
+import Lexer
+import Diagnostic
 
 /// The parser, which creates an Abstract Syntax Tree (AST) from a list of tokens.
 public class Parser {

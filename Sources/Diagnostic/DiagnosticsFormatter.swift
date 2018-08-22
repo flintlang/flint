@@ -7,12 +7,17 @@
 
 import Foundation
 import Rainbow
-import AST
+import Source
 
 /// Formats error and warning messages.
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
   var compilationContext: CompilationContext?
+
+  public init(diagnostics: [Diagnostic], compilationContext: CompilationContext?){
+    self.diagnostics = diagnostics
+    self.compilationContext = compilationContext
+  }
 
   public func rendered() -> String {
     return diagnostics.map({ renderDiagnostic($0) }).joined(separator: "\n")

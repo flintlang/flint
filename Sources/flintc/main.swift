@@ -1,6 +1,7 @@
 import Foundation
 import Commander
 import AST
+import Diagnostic
 
 /// The main function for the compiler.
 func main() {

@@ -6,6 +6,7 @@
 //
 
 import AST
+import Diagnostic
 
 /// The `ASTPass` performing semantic analysis.
 public struct SemanticAnalyzer: ASTPass {

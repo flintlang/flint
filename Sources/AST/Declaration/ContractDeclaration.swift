@@ -4,6 +4,8 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// The declaration of a Flint contract.
 public struct ContractDeclaration: ASTNode {

@@ -1,11 +1,12 @@
 //
 //  ASTDumper.swift
-//  flintc
+//  AST
 //
 //  Created by Franklin Schrans on 1/8/18.
 //
 
 import Foundation
+import Lexer
 
 /// Prints an AST.
 public class ASTDumper {

@@ -4,6 +4,7 @@
 //
 //  Created by Franklin Schrans on 1/16/18.
 //
+import Diagnostic
 
 /// The result of processing an AST node during a pass. The generic type `T` represents the type of the AST node which
 /// should be inserted back in the AST.

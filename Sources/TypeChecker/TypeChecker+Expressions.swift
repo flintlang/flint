@@ -6,6 +6,7 @@
 //
 
 import AST
+import Diagnostic
 
 extension TypeChecker {
   public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {

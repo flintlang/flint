@@ -15,25 +15,73 @@ let package = Package(
   targets: [
     .target(
       name: "flintc",
-      dependencies: ["Parser", "SemanticAnalyzer", "TypeChecker","Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
+    .target(
+      name: "Source",
+      dependencies: []
+    ),
+    .target(
+      name: "Diagnostic",
+      dependencies: [
+        "Source",
+        ]
+    ),
+    .target(
+      name: "Lexer",
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        ]
+    ),
     .target(
       name: "AST",
-      dependencies: []),
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "Lexer",
+      ]
+    ),
     .target(
       name: "Parser",
-      dependencies: ["AST"]),
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST",
+        "Lexer"
+      ]),
     .target(
       name: "SemanticAnalyzer",
-      dependencies: ["AST"]),
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST"
+      ]
+    ),
     .target(
       name: "TypeChecker",
-      dependencies: ["AST"]),
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST"
+      ]
+    ),
     .target(
       name: "Optimizer",
-      dependencies: ["AST"]),
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST"
+      ]
+    ),
     .target(
         name: "IRGen",
-        dependencies: ["AST", "CryptoSwift"]),
+        dependencies: [
+          "Source",
+          "Diagnostic",
+          "AST",
+          "CryptoSwift"
+      ]
+    ),
     .target(
         name: "lite",
         dependencies: ["LiteSupport", "Rainbow", "Symbolic"]),

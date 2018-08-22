@@ -6,6 +6,7 @@
 //
 
 import AST
+import Diagnostic
 
 /// The `ASTPass` performing type checking.
 public class TypeChecker: ASTPass {

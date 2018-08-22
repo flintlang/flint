@@ -6,6 +6,8 @@
 //
 import Foundation
 import AST
+import Lexer
+import Diagnostic
 
 extension SemanticAnalyzer {
   /// The set of characters for identifiers which can only be used in the stdlib.

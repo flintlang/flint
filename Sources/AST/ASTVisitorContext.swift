@@ -1,6 +1,6 @@
 //
 //  ASTVisitorContext.swift
-//  SemanticAnalyzer
+//  AST
 //
 //  Created by Franklin Schrans on 1/11/18.
 //

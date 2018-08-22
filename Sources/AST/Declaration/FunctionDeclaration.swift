@@ -4,9 +4,11 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// The declaration of a function.
-public struct FunctionDeclaration: SourceEntity {
+public struct FunctionDeclaration: ASTNode {
   public var funcToken: Token
 
   /// The attributes associated with the function, such as `@payable`.

@@ -1,9 +1,11 @@
 //
-//  Literal.swift
+//  LiteralExpression.swift
 //  AST
 //
-//  Created by Hails, Daniel J R on 21/08/2018.
+//  Created by Hails, Daniel R on 22/08/2018.
 //
+import Source
+import Lexer
 
 /// An array literal, such as "[1,2,3]"
 public struct ArrayLiteral: ASTNode {

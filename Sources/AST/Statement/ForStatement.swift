@@ -4,9 +4,11 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// A for statement.
-public struct ForStatement: SourceEntity {
+public struct ForStatement: ASTNode {
   public var forToken: Token
   public var variable: VariableDeclaration
   public var iterable: Expression

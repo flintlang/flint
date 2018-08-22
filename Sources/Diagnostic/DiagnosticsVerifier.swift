@@ -8,16 +8,18 @@
 // This is inspired by https://github.com/silt-lang/silt/blob/master/Sources/Drill/DiagnosticVerifier.swift
 
 import Foundation
-import AST
+import Source
 
 /// Verifies the diagnostics emitted by a program matches exactly what was expected.
 /// The expected diagnostics are specified inline in the source file.
-struct DiagnosticsVerifier {
+public struct DiagnosticsVerifier {
   private let diagnosticRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticOffsetRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
 
-  func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
+  public init(){}
+
+  public func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
     var success = true
 
     for file in compilationContext.sourceFiles {
@@ -29,7 +31,7 @@ struct DiagnosticsVerifier {
     return success
   }
 
-  func verify(producedDiagnostics: [Diagnostic], sourceFile: URL, sourceCode: String, compilationContext: CompilationContext) -> Bool {
+  public func verify(producedDiagnostics: [Diagnostic], sourceFile: URL, sourceCode: String, compilationContext: CompilationContext) -> Bool {
     let expectations = parseExpectations(sourceCode: sourceCode)
     var producedDiagnostics = flatten(producedDiagnostics)
     var verifyDiagnostics = [Diagnostic]()

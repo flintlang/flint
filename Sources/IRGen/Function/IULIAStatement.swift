@@ -6,6 +6,7 @@
 //
 
 import AST
+import Lexer
 
 /// Generates code for a statement.
 struct IULIAStatement {

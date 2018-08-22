@@ -6,6 +6,8 @@
 //
 
 import AST
+import Diagnostic
+import Lexer
 
 extension Diagnostic {
   static func incompatibleReturnType(actualType: RawType, expectedType: RawType, expression: Expression) -> Diagnostic {

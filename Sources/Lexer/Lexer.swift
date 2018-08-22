@@ -1,15 +1,15 @@
 //
-//  Tokenizer
-//  Parser
+//  Lexer.swift
+//  Lexer
 //
-//  Created by Franklin Schrans on 12/19/17.
+//  Created by Hails, Daniel J R on 21/08/2018.
 //
 
 import Foundation
-import AST
+import Source
 
-/// The tokenizer, which turns the source code into a list of tokens.
-public struct Tokenizer {
+/// The lexer, which turns the source code into a list of tokens.
+public struct Lexer {
   /// The URL of the source file of the Flint program.
   var sourceFile: URL
 
@@ -25,11 +25,11 @@ public struct Tokenizer {
   }
 
   /// Converts the source code into a list of tokens.
-  public func tokenize() -> [Token] {
-    return tokenize(string: sourceCode)
+  public func lex() -> [Token] {
+    return lex(string: sourceCode)
   }
 
-  func tokenize(string: String) -> [Token] {
+  func lex(string: String) -> [Token] {
     // Split the source code string based on whitespace and other punctuation.
     let components = splitOnPunctuation(string: string)
 

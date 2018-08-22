@@ -4,6 +4,8 @@
 //
 //  Created by Franklin Schrans on 12/26/17.
 //
+import Source
+import Lexer
 
 /// Information about the source program.
 public struct Environment {

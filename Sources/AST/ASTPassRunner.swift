@@ -1,18 +1,20 @@
 //
 //  ASTPassRunner.swift
-//  flintc
+//  AST
 //
 //  Created by Franklin Schrans on 1/11/18.
 //
-
-import AST
-import SemanticAnalyzer
+import Diagnostic
 
 /// Visits an AST using multiple AST passes.
-struct ASTPassRunner {
+public struct ASTPassRunner {
   var ast: TopLevelModule
 
-  func run(passes: [ASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
+  public init(ast: TopLevelModule){
+    self.ast = ast
+  }
+
+  public func run(passes: [ASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
     var environment = environment
     var ast = self.ast
     var diagnostics = [Diagnostic]()
@@ -34,8 +36,8 @@ struct ASTPassRunner {
 }
 
 /// The result after running a sequence of AST passes.
-struct ASTPassRunResult {
-  var element: TopLevelModule
-  var diagnostics: [Diagnostic]
-  var environment: Environment
+public struct ASTPassRunResult {
+  public var element: TopLevelModule
+  public var diagnostics: [Diagnostic]
+  public var environment: Environment
 }

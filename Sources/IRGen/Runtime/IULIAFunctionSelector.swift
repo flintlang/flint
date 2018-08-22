@@ -7,6 +7,7 @@
 
 import CryptoSwift
 import AST
+import Lexer
 
 /// Runtime code in IULIA which determines which function to call based on the Ethereum's transaction payload.
 struct IULIAFunctionSelector {

@@ -6,6 +6,7 @@
 //
 
 import AST
+import Diagnostic
 
 extension TypeChecker {
   public func process(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {

@@ -1,9 +1,11 @@
 //
 //  Type.swift
-//  flintc
+//  AST
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Lexer
+import Source
 
 // A Flint raw type, without a source location.
 public indirect enum RawType: Equatable {

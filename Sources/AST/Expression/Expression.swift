@@ -4,6 +4,8 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// A Flint expression.
 public indirect enum Expression: ASTNode {

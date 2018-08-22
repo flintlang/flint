@@ -8,6 +8,8 @@
 import AST
 
 import Foundation
+import Source
+import Lexer
 
 /// A prepocessing step to update the program's AST before code generation.
 public struct IULIAPreprocessor: ASTPass {

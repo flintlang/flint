@@ -4,6 +4,7 @@
 //
 //  Created by Franklin Schrans on 1/16/18.
 //
+import Lexer
 
 /// Visits an AST using an `ASTPass`.
 ///

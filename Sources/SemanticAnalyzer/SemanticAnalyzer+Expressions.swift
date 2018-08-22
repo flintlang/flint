@@ -6,6 +6,7 @@
 //
 
 import AST
+import Diagnostic
 
 extension SemanticAnalyzer {
 

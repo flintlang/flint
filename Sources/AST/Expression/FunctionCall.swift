@@ -4,9 +4,11 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
 
 /// A call to a function.
-public struct FunctionCall: SourceEntity {
+public struct FunctionCall: ASTNode {
   public var identifier: Identifier
   public var arguments: [Expression]
   public var closeBracketToken: Token

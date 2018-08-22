@@ -4,6 +4,9 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+import Source
+import Lexer
+
 public struct EnumCase: ASTNode {
   public var caseToken: Token
   public var identifier: Identifier

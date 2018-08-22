@@ -4,6 +4,7 @@
 //
 //  Created by Franklin Schrans on 1/4/18.
 //
+import Source
 
 /// An error or warning encountered when compiling the source program.
 public struct Diagnostic {

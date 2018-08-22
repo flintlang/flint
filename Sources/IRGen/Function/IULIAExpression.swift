@@ -6,6 +6,7 @@
 //
 
 import AST
+import Lexer
 
 /// Generates code for an expression.
 struct IULIAExpression {
