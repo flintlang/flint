@@ -12,7 +12,7 @@ Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk
 
 ## Language Overview
 
-The [Flint Programming Language Guide](https://docs.flintlang.org/) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), [Local](docs/language/language_guide.md) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
 Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
 
@@ -99,7 +99,7 @@ Bank :: (any) {
 
 ### Asset types
 
-[**Assets**](https://docs.flintlang.org/assets), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
+[**Assets**](docs/language/assets.md), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
 
 Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
 
@@ -143,7 +143,7 @@ Instructions for installing using a binary package or from source are available 
 
 ## Contributing
 
-Contributions to Flint are highly welcomed!
+Contributions to Flint are highly welcomed! [Contribution Guide](CONTRIBUTING.md)
 The Issues page tracks the tasks which have yet to be completed.
 
 Flint Improvement Proposals (FIPs) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).

@@ -26,3 +26,5 @@ Uses cases for the following types is described into more detail in `Payable Fun
 |----------|-------------------------|
 | `Wei` | A Wei value (the smallest denomination of Ether) |
 | `Event<T...>` | An Ethereum event. Takes an arbitrary number of type arguments |
+
+## Arrays
