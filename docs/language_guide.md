@@ -19,7 +19,7 @@ Flint's language design was influenced by Swift, if you are familiar with that l
   - [Control Flow](#control-flow)
   - [Functions](#functions)
   - [Types](#types)
-  - [Ranges](#ranges)
+  - [Range](#range)
 - **Flint Specific Features**
   - [Assets](#assets)
   - [Caller Capabilities](#caller-capabilities)

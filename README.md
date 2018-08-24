@@ -12,7 +12,7 @@ Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk
 
 ## Language Overview
 
-The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), [Local](docs/language/language_guide.md) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), [Local](docs/language_guide.md) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
 Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
 
@@ -47,7 +47,7 @@ Bank :: (any) {
 ```
 
 ### Type States
-[**Type States**](docs/language/type_states.md) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+[**Type States**](docs/language_guide.md#type-states) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities ([Parity Multi-Sig wallet]()) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
 
 Example:
 ```swift
@@ -99,7 +99,7 @@ Bank :: (any) {
 
 ### Asset types
 
-[**Assets**](docs/language/assets.md), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
+[**Assets**](docs/language_guide.md#assets), such as Ether, are often at the center of smart contracts. Flint puts assets at the forefront through the special _Asset_ trait.
 
 Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
 
