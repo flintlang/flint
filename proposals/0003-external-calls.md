@@ -1,7 +1,7 @@
 # Introduce External Calls
 
 * Proposal: [FIP-0003](0003-external-calls.md)
-* Author: [Alexander Harkness](https://github.com/bearbin) & [Daniel Hails](https://github.com/djrhails)
+* Author: [Daniel Hails](https://github.com/djrhails) & [Alexander Harkness](https://github.com/bearbin)
 * Review Manager: TBD
 * Status: **Awaiting review**
 * Issue label: [0003-external-calls](https://github.com/franklinsch/flint/issues?q=is%3Aopen+is%3Aissue+label%3A0003-external-calls)
@@ -73,6 +73,13 @@ The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.
 	[161](KotET_source_code/KingOfTheEtherThrone.sol#L161))
 
 ## Proposed solution
+The following solution is partially based upon the [Command Design Pattern]() and the [Oraclize Engine](https://docs.oraclize.it/). They allow for execution of the argument if other given conditions are met (as specified by the compiler). A valid external call should specify the following, some of these can be auto-filled by the compiler:
+- The contract address
+- The function name
+- The parameters
+- The gas allocation
+- The ether allocation
+
 Considering our motivations below:
 1. Contracts are untrustworthy by default
 1. Arbitrary code execution
@@ -81,35 +88,21 @@ Considering our motivations below:
 
 We broadly separate external calls into two types: _Educated Calls_ and _Uneducated Calls_. Educated calls are those accessed through Nodule (The Flint Package Manager) (or those which Flint has the source files for and deploys internally to the contract i.e. Hub and Spoke Topology). Uneducated calls are those with an ABI interface or Trait interface.
 
-Uneducated calls should be treated untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information.
+Uneducated calls should be treated untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
 
 Educated calls meanwhile are not guaranteed to not introduce errors, but they have certain guarantees attached. These means that it combats (1), (2), (4):
 1. That there is a defined function at the end of the call
 2. That function obeys the modifiers given
 3. That function has the same return types and parameter types as defined
 4. The contract you call matches the source code given
-
-In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
-
-Calls with value have payable modifier
-
-Return values must be checked
-
-Avoid multiple external calls in single transaction. External calls can fail accidentally or deliberately
-
-Critical functions such as sends with non-zero values or suicide() are callable by anyone or sender is compared to address that can be writtent to by anyone
-
-State changes after external calls should be avoided
-
-Payable transaction doesn't revert in the case of failure
-
+5. The gas provided should be inferred by gas estimation over flint
 
 We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
 
-Uneducated Calls are based upon the Command Design Pattern, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
-The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests. It also promotes an invocation of a method on an object to full object status.
+In _Uneducated Calls_, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
+The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests.
 
-It also gives us more control over checks for external calls dependent on the trait and how many checks we want to introduce.
+(3) is combated by having necessary catching of all external calls - or prefixing with `try!` and `try?` to revert and nullify respectively.
 
 ### Uneducated Calls
 #### Interface specified
@@ -131,19 +124,26 @@ interface Alpha(State1, State2) {
 
 let alpha: Director<Alpha> = 0x000... with Alpha
 
-alpha!.doesNothing()
-alpha!.doesNothingWithArgs(x, y, z) // If an error occurs the whole function is reverted
-alpha!.withdraw() // This flags an error as the return value is not dealt with
+try alpha!.doesNothing() {
+  // Successful Call
+}
+catch {
+  // If it fails
+}
+try! alpha!.doesNothingWithArgs(x, y, z)
+// If catch can not be provided if try! is used and then the transaction reverts on failure
 
-if alpha!.successful {
-  var boundReturn: Int = alpha!.getReturn()
+try! alpha!.withdraw() // This flags an error as the return value is not dealt with
+
+try! boundReturn <- alpha!.getReturn() {
+  // Optionally does something with boundReturn
 }
 
 // Setting contract instance properties
 alpha!.value = Wei(200)
 alpha!.gas = Gas(2000)
 alpha.trust() // Removes the need for a bang
-alpha.expensiveFunction()
+try! alpha.expensiveFunction()
 ```
 #### Foreign Function Interface
 Flint smart contract can call functions from Solidity smart contracts and vice-versa, thanks to the Flint Foreign Function Interface (FFI).
@@ -242,7 +242,11 @@ Behind the scenes all of these interfaces are decoded into ABI function calls. [
 ```
 
 ## Semantics
-
+- Calls with value have payable modifier
+- Return values must be checked
+- Avoid multiple external calls in single transaction. External calls can fail accidentally or deliberately
+- Critical functions such as sends with non-zero values or suicide() are callable by anyone or sender is compared to address that can be writtent to by anyone
+- Payable transaction doesn't revert in the case of failure
 
 ### Warnings
 #### Warn on "effects" after "interactions"
