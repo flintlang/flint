@@ -4,7 +4,7 @@
 
 The following details the language, it's unique features, and provides an overview of all the features currently implemented.
 
-Flint's language design was influenced by Swift, if you are familiar with that language you should find the common language features similar.
+Flint's language design was influenced by Swift, if you are familiar with that language you should find the common features similar.
 
 - **Setup**
   - [Installation](#installation)
@@ -20,6 +20,8 @@ Flint's language design was influenced by Swift, if you are familiar with that l
   - [Functions](#functions)
   - [Types](#types)
   - [Range](#range)
+  - [Structures](#structures)
+  - [Enumerations](#enumerations)
 - **Flint Specific Features**
   - [Assets](#assets)
   - [Caller Capabilities](#caller-capabilities)
@@ -468,7 +470,112 @@ for let i: Int in (0..<count) {
 }
 ```
 
+
 ---
+
+## Structures
+_Structures_ in Flint are general-purpose constructs that define properties and functions that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties.
+
+### Defintion
+You introduce structures with the `struct` keyword and their definition is contained within a pair of braces:
+```swift
+struct SomeStructure {
+  // Structure definition goes here
+}
+```
+
+Here is an example of a structure definition:
+```swift
+struct Rectangle {
+  var width: Int = 0
+  var height: Int = 0
+
+  func area() -> Int {
+    return width * height
+  }
+}
+```
+
+### Instances
+The `Rectangle` structure definition describes only what a `Rectangle` would look like and what functionality they contain. They don't descibe specific rectangles. To do that you create an instance of that structure.
+
+```swift
+let someRectangle: Rectangle = Rectangle()
+```
+
+When you create an instance, you initialize that structure with it's initial values - in this case a width and height of 0. This process can also be done manually using the `init` special declaration. You can access the properties of the current structure with the special keyword `self`
+
+```swift
+struct Rectangle {
+  // Same definition as above with:
+  public init(width: Int, height: Int){
+    self.width = width
+    self.height = height
+  }
+}
+```
+### Accessing Properties/Functions
+You can access properties/functions of an instance using _dot syntax_. In dot syntax, you write the property name immediately after the instance name, separated by a period (.), without any spaces.
+
+```
+someRectangle.width // evaluates to 0
+someRectangle.area() // evaluates to 0 by calling the function area on the Rectangle instance someRectangle
+```
+
+In Flint, you can also access the functions of a struct using this syntax without creating an instance - as long as they don't contain instance properties. (In the future we will support the `static` keyword to do this)
+
+```swift
+struct Square {
+  public shapeName() -> String {
+    return "Square"
+  }
+}
+```
+
+```swift
+Square.shapeName() // Evaluates to "Square"
+```
+
+### Reference Types in Contracts
+When structures are used as variables/constants in contracts they are passed by reference. This means that the structures are not copied when assigned to a variable or constant, or when they are passed to a function. Rather than a copy, a reference to the same existing instance is used.
+
+---
+
+## Enumerations
+An _enumeration_ defines a common group of values with the same type and enables working with those values in a type-safe way within Flint code.
+
+### Syntax
+```swift
+enum CompassPoint: Int {
+  case north
+  case south
+  case east
+  case west
+}
+```
+The values defined in an enumeration (such as `north`, `south`, `east` and `west`) are its _enumeration cases_. They are declared using the `case` keyword.
+
+Each enumeration defines a new type:
+```swift
+var direction: CompassPoint
+direction = CompassPoint.north
+```
+
+### Associated Values
+```swift
+enum Numbers: Int {
+  case one = 1
+  case two = 2
+  case three
+  case four
+}
+```
+You can assign so called _raw values_ to enumeration cases.
+
+Flint will infer the raw value of cases by default based upon the last declared enumeration cases raw value. `Numbers.three` will equal 3 due to this.
+
+---
+
 # Flint Specific Features
 ---
 
@@ -796,7 +903,21 @@ Auction @(InProgress) :: (any) {
 ---
 # Standard Library
 ---
-## Assertions
+## Assertion
+Assertions are checks that happen at runtime. They are used to ensure an essential condition is satisfied before executing any further code. If the Boolean condition evaluates to true then the execution continues as usual. Otherwise the transaction is reverted.
+It is a global function accessible from any contract or contract group:
+```
+assert(x == 2)
+```
+
+In essence an assertion is a shorthand for the longer:
+```
+if x == 2 {
+  fatalError()
+}
+```
+## Fatal Error
+`fatalError()` is a function exposed that reverts a transaction when called. This means that any contract storage changes are rolledback and no values are returned.
 
 ---
 # Examples
