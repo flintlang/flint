@@ -273,7 +273,7 @@ true && false // false because one of true and false is false
 ---
 
 ## Contracts
-All Flint programs are centered around Contracts, these are the core building blocks of your program's code. Inside of contracts you define constants and variables to be stored on the Chain.
+Contracts lie at the heart of Flint. These are the core building blocks of your program's code. Inside of contracts you define constants and variables to be stored on the Chain.
 
 Contracts are declared using the keyword `contract` followed by the contract name that will be used as the identifier.
 
@@ -322,14 +322,14 @@ for var i: Int in fixedLen {}
 for let value: String in dictionary {}
 ```
 ### If Statements
-The `if` statement has a single condition  i.e. `x == 2`. It executes a set of statments only if that condition evaluates to `true`
+The `if` statement has a single condition  i.e. `x == 2`. It executes a set of statements only if that condition evaluates to `true`
 ```swift
 if x == 2 {
   // ...
 }
 ```
 #### Else Clauses
-The `if` statement can also provide an alternative set of statments known as an `else` _clause_ which gets executed when the condition gets evaluated to `false`.
+The `if` statement can also provide an alternative set of statements known as an `else` _clause_ which gets executed when the condition gets evaluated to `false`.
 ```swift
 if x == 2 {
   // ...
@@ -390,7 +390,7 @@ AddressBook :: caller <- (any) {
 Attributes annotate functions as having special properties, currently the only example of this is `@payable`. For more information, see [Payable](#payable).
 
 ### Function Modifiers
-Functions can have any number of modifiers in front of their declaration - although conflicting modifiers will raise a compile-error and duplicated modifers will be ignored.
+Functions can have any number of modifiers in front of their declaration - although conflicting modifiers will raise a compile-error and duplicated modifiers will be ignored.
 #### Access Modifiers
 - `public` access enables functions to be used within their contract and exposes the function to the interface of the contract as a whole when compiled.
 - private access (default and not a keyword that is explicitly set) only enables functions to be used within their contract
