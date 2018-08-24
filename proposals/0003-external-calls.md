@@ -177,7 +177,7 @@ A contract's source code can be imported by:
 - Finding the Flint contract in the (future) Flint Package Manager
 
 ```swift
-import http://dsadsadas.com/contract.flint as URLContract
+import https://flint.org/examples/contract.flint as URLContract
 import FileContract
 import Directory.Contract
 
@@ -289,15 +289,52 @@ function withdrawRefund() external {
 }
 ```
 
-### Unsafe operations
-
-
-### Unsupported operations
-
-
 
 ## Possible future extensions
 
+### Named Arguments
+```swift
+func func2() {
+  func1({key: 3, value: 2})
+}
+```
+
+### Automatic event emission
+```
+var newExternalCall: Event<to: Address, description: String>
+```
 
 
 ## Alternatives considered
+### Blind Calls
+This acts as a direct translation to the ABI that gets called behind the scene. This gives a low-level interface to the contract but is also highly prone to error.
+```swift
+func callFoo(contractAddress: Address) {
+  contractAddress.call(bytes4(sha3("foo(uint256)")), a)
+}
+```
+### Parameters of the call are appended
+Calls need information such as the amount of gas to allocate or the Ether value to transfer. This contradicts the return type as: `address.foo` is of type `Void` and so must `address.foo.value(10)` be but `.value()` is not a property of the `Void` type. This means special cases would be needed for the type checker, and is just generally confusing.
+```swift
+contract A {
+  @payable
+  public func foo(i: Int){
+    // ...
+  }
+}
+
+func callData(address: Address) {
+  address.foo.value(10).gas(800)(5)
+}
+```
+
+### Call Specification
+This was rejected because it confuses both the function name, the arguments and the hyper parameters for the call. They are all assigned together.
+```swift
+call Name {
+  let name: String = "foo"
+  let arg1: Int = 5
+  let value: Wei = 10
+  let gas: Gas = 800
+}
+```
