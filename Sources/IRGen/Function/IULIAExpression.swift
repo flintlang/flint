@@ -6,6 +6,7 @@
 //
 
 import AST
+import Lexer
 
 /// Generates code for an expression.
 struct IULIAExpression {
@@ -192,7 +193,7 @@ struct IULIAPropertyAccess {
 /// Generates code for a property offset.
 struct IULIAPropertyOffset {
   var expression: Expression
-  var enclosingType: Type.RawType
+  var enclosingType: RawType
 
   func rendered(functionContext: FunctionContext) -> String {
     if case .binaryExpression(let binaryExpression) = expression {

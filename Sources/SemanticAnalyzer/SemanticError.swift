@@ -6,6 +6,9 @@
 //
 
 import AST
+import Source
+import Diagnostic
+import Lexer
 
 // MARK: Errors
 
