@@ -590,12 +590,12 @@ contract Wallet {
   var owner: Address
   var contents: Wei = Wei(0)
 }
-&#8203;
+
 Wallet :: caller <- (any) {
   public init() {
     owner = caller
   }
-&#8203;
+
   @payable
   public mutating func deposit(implicit value: Wei) {
     // Record the Wei received into the contents state property.
@@ -603,7 +603,7 @@ Wallet :: caller <- (any) {
     contents.transfer(&value)
   }
 }
-&#8203;
+
 Wallet :: (owner) {
   public mutating func withdraw(value: Int) {
     // Transfer an amount of Wei into a local variable. This
@@ -613,7 +613,7 @@ Wallet :: (owner) {
     // Send Wei to the owner's Ethereum address.
     send(owner, &w)
   }
-&#8203;
+
   public func getContents() -> Int {
     return contents.getRawValue()
   }
@@ -627,18 +627,18 @@ contract Wallet {
   var beneficiaries: [Address: Wei]
   var weights: [Address: Int]
   var bonus: Wei
-&#8203;
+
   var owner: Address
 }
-&#8203;
-&#8203;
+
+
 Wallet :: (any) {
   @payable
   mutating func receiveBonus(implicit newBonus: inout Wei) {
     bonus.transfer(&newBonus)
   }
 }
-&#8203;
+
 // Future syntax.
 Wallet :: (owner) {
   mutating func distribute(amount: Int) {
@@ -646,7 +646,7 @@ Wallet :: (owner) {
     for i in (0..<beneficiaries.count) {
       var allocation = Wei(from: &balance, amount: amount * weights[i])
       allocation.transfer(from: &bonus, amount: beneficiaryBonus)
-&#8203;
+
       send(beneficiaries[i], &allocation)
     }
   }
@@ -689,7 +689,7 @@ Bank :: (any) {
     bar()
   }
 }
-&#8203;
+
 Bank :: (manager) {
   func bar() {}
 }
@@ -736,7 +736,7 @@ Bank :: (manager, accounts) {
     forManager()
   }
 }
-&#8203;
+
 Bank :: (manager) {
   func forManager() {}
 }
@@ -750,7 +750,7 @@ Bank :: (manager, accounts) {
     forManagerOrCustomers2()
   }
 }
-&#8203;
+
 Bank :: (accounts, manager) {
   func forManagerOrCustomers2() {}
 }
@@ -764,7 +764,7 @@ Bank :: (manager, accounts) {
     forManagerOrCustomers2()
   }
 }
-&#8203;
+
 // The caller capability "manager" has no effect: "any" is compatible with any capability
 Bank :: (manager, any) {
   func forManagerOrCustomers2() {}
@@ -783,7 +783,7 @@ Bank :: account <- (accounts) {
   public func getBalance() -> Int {
     return balances[account]
   }
-&#8203;
+
   public mutating func transfer(amount: Int, destination: Address) {
     balances[account] -= amount
     balances[destination] += amount
@@ -818,12 +818,12 @@ contract Bank {
   var balances: [Address: Int]
   var didCompleteTransfer: Event<Address, Address, Int> // (origin, destination, amount)
 }
-&#8203;
+
 Bank :: caller <- (any) {
   mutating func transfer(destination: Address, amount: Int) {
     balances[caller] -= amount
     balances[destination] += amount
-&#8203;
+
     // A JavaScript client could listen for this event
     didCompleteTransfer(caller, destination, amount)
   }
