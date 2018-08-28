@@ -1,5 +1,5 @@
 //
-//  IULIACodeGenerator.swift
+//  IRCodeGenerator.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 12/28/17.
@@ -8,7 +8,7 @@
 import AST
 
 /// Generates code for a Flint AST.
-public struct IULIACodeGenerator {
+public struct IRCodeGenerator {
   var topLevelModule: TopLevelModule
   var environment: Environment
 
@@ -18,8 +18,8 @@ public struct IULIACodeGenerator {
   }
 
   public func generateCode() -> String {
-    var contracts = [IULIAContract]()
-    var interfaces = [IULIAInterface]()
+    var contracts = [IRContract]()
+    var interfaces = [IRInterface]()
 
     // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
@@ -41,12 +41,12 @@ public struct IULIACodeGenerator {
         return structDeclaration
       }
 
-      let contract = IULIAContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, structDeclarations: structDeclarations, environment: environment)
+      let contract = IRContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, structDeclarations: structDeclarations, environment: environment)
       contracts.append(contract)
-      interfaces.append(IULIAInterface(contract: contract, environment: environment))
+      interfaces.append(IRInterface(contract: contract, environment: environment))
     }
 
-    // Generate a IULIA contract and a IULIA interface.
+    // Generate a IR contract and a IR interface.
     // The interface is used for exisiting Solidity tools such as Truffle and Remix to interpret Flint code as
     // Solidity code.
 

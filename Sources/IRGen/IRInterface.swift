@@ -7,9 +7,9 @@
 
 import AST
 
-/// A IULIA interface for Flint contracts, to help tools such as Remix and Truffle interpret Flint code as Solidity.
-struct IULIAInterface {
-  var contract: IULIAContract
+/// A IR interface for Flint contracts, to help tools such as Remix and Truffle interpret Flint code as Solidity.
+struct IRInterface {
+  var contract: IRContract
   var environment: Environment
 
   func rendered() -> String {

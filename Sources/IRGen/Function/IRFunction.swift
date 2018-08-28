@@ -1,5 +1,5 @@
 //
-//  IULIAFunction.swift
+//  IRFunction.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 12/28/17.
@@ -9,7 +9,7 @@ import AST
 import CryptoSwift
 
 /// Generates code for a function.
-struct IULIAFunction {
+struct IRFunction {
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
@@ -46,7 +46,7 @@ struct IULIAFunction {
 
   var parameterNames: [String] {
     let fc = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
-    return functionDeclaration.explicitParameters.map {IULIAIdentifier(identifier: $0.identifier).rendered(functionContext: fc)}
+    return functionDeclaration.explicitParameters.map {IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc)}
   }
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
@@ -63,7 +63,7 @@ struct IULIAFunction {
   }
 
   func rendered() -> String {
-    let body = IULIAFunctionBody(functionDeclaration: functionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
+    let body = IRFunctionBody(functionDeclaration: functionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
     return """
     function \(signature()) {
@@ -75,10 +75,10 @@ struct IULIAFunction {
   func signature(withReturn: Bool = true) -> String {
     let doesReturn = functionDeclaration.resultType != nil && withReturn
      let parametersString = parameterNames.joined(separator: ", ")
-     return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
+     return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IRFunction.returnVariableName)" : "")"
   }
 
-  /// The string representation of this function's signature, used for generating a IULIA interface.
+  /// The string representation of this function's signature, used for generating a IR interface.
   func mangledSignature() -> String {
     let name = functionDeclaration.identifier.name
     let parametersString = parameterCanonicalTypes.map({ $0.rawValue }).joined(separator: ",")
@@ -87,7 +87,7 @@ struct IULIAFunction {
   }
 }
 
-struct IULIAFunctionBody {
+struct IRFunctionBody {
   var functionDeclaration: FunctionDeclaration
   var typeIdentifier: Identifier
 
@@ -132,7 +132,7 @@ struct IULIAFunctionBody {
     guard !statements.isEmpty else { return "" }
     var statements = statements
     let first = statements.removeFirst()
-    let firstCode = IULIAStatement(statement: first).rendered(functionContext: functionContext)
+    let firstCode = IRStatement(statement: first).rendered(functionContext: functionContext)
     let restCode = renderBody(statements, functionContext: functionContext)
 
     if case .ifStatement(let ifStatement) = first, ifStatement.endsWithReturnStatement {

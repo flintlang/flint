@@ -1,5 +1,5 @@
 //
- //  IULIACallerCapabilityChecks.swift
+ //  IRCallerCapabilityChecks.swift
  //  IRGen
  //
  //  Created by Hails, Daniel R on 11/07/2018.
@@ -8,7 +8,7 @@
  import AST
 
  /// Checks whether the caller of a function has appropriate caller capabilities.
- struct IULIACallerCapabilityChecks {
+ struct IRCallerCapabilityChecks {
    static let postfix: String = "CallerCheck"
    static let varName: String = "_flint" + postfix
 
@@ -32,14 +32,14 @@
        switch type {
        case .fixedSizeArrayType(_, let size):
          return (0..<size).map { index in
-           let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset), \(index)))")
+           let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset), \(index)))")
            return "\(variableName) := add(\(variableName), \(check)"
            }.joined(separator: "\n")
        case .arrayType(_):
-         let check = IULIARuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
+         let check = IRRuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
          return "\(variableName) := add(\(variableName), \(check))"
        default:
-         let check = IULIARuntimeFunction.isValidCallerCapability(address: "sload(\(offset)))")
+         let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(\(offset)))")
          return "\(variableName) := add(\(variableName), \(check)"
        }
      }
