@@ -1,0 +1,14 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+contract VariableModifiers {
+  // CHECK-AST: token: visible
+  visible let x: Int = 0
+  // CHECK-AST: token: public
+  public var z: Address = 0xF480c6298525d6f255849519274722Ef297518C8
+  // CHECK-AST: token: visible
+  visible var a: Int = 0
+}
+
+VariableModifiers :: (any) {
+  public init() {}
+}

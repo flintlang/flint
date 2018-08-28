@@ -8,7 +8,7 @@
 import Foundation
 
 /// A location in a source file.
-public struct SourceLocation: Comparable {
+public struct SourceLocation: Comparable, CustomStringConvertible {
 
   public var line: Int
   public var column: Int
@@ -31,6 +31,10 @@ public struct SourceLocation: Comparable {
     return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: upperBound.column + upperBound.length - lowerBound.column, file: lowerBound.file)
   }
 
+  // MARK: - CustomStringConvertible
+  public var description: String { return "\(file.lastPathComponent)@\(line):\(column):\(length)"}
+
+  // MARK: - Comparable
   public static func < (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
     return [lhs.line, lhs.column, lhs.length].lexicographicallyPrecedes([rhs.line, rhs.column, rhs.length])
   }

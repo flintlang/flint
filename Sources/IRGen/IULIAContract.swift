@@ -50,13 +50,7 @@ struct IULIAContract {
     let functionSelector = IULIAFunctionSelector(fallback: findContractPublicFallback(), functions: publicFunctions, enclosingType: contractDeclaration.identifier, environment: environment)
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
-    // Generate code for each function in the structs.
-    let structFunctions = renderStructFunctions().indented(by: 6)
-
     let initializerBody = renderPublicInitializer()
-
-    // Generate runtime functions.
-    let runtimeFunctionsDeclarations = renderRuntimeFunctions().indented(by: 6)
 
     // Main contract body.
     return """
@@ -73,23 +67,19 @@ struct IULIAContract {
 
           \(selectorCode)
 
-          // User-defined functions
+          //////////////////////////////////////
+          //// -- User-defined functions -- ////
+          //////////////////////////////////////
 
           \(functionsCode)
 
-          ///////////////////////
-          // Wrapper Functions //
-          ///////////////////////
+          //////////////////////////////////////
+          //// --   Wrapper functions    -- ////
+          //////////////////////////////////////
 
           \(wrapperCode)
 
-          // Struct functions
-
-          \(structFunctions)
-
-          // Flint runtime
-
-          \(runtimeFunctionsDeclarations)
+          \(renderCommon(indentedBy: 6))
         }
       }
     }
@@ -98,7 +88,7 @@ struct IULIAContract {
 
   func renderStructFunctions() -> String {
     return structDeclarations.map { structDeclaration in
-      return IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered()
+      return "//// \(structDeclaration.identifier.name)::\(structDeclaration.sourceLocation)  ////\n\n\(IULIAStruct(structDeclaration: structDeclaration, environment: environment).rendered())"
     }.joined(separator: "\n\n")
   }
 
@@ -125,13 +115,50 @@ struct IULIAContract {
         // Memory address 0x40 holds the next available memory location.
         mstore(0x40, 0x60)
 
+        //////////////////////////////////////
+        //// --      Initializer       -- ////
+        //////////////////////////////////////
+
         \(initializer.indented(by: 4))
-        \(renderStructFunctions().indented(by: 4))
-        \(renderRuntimeFunctions().indented(by: 4))
+
+        \(renderCommon(indentedBy: 4))
       }
     }
     """
   }
+
+  func renderCommon(indentedBy: Int) -> String {
+
+     let structHeader = """
+     //////////////////////////////////////
+     //// --    Struct functions    -- ////
+     //////////////////////////////////////
+     """
+     let runtimeHeader = """
+     //////////////////////////////////////
+     //// --     Flint Runtime      -- ////
+     //////////////////////////////////////
+     """
+
+     // Generate code for each function in the structs.
+     let structFunctions = renderStructFunctions()
+
+     // Generate runtime functions.
+     let runtimeFunctionsDeclarations = renderRuntimeFunctions()
+
+
+
+     return """
+     \(structHeader.indented(by: indentedBy))
+
+     \(structFunctions.indented(by: indentedBy, andFirst: true))
+
+
+     \(runtimeHeader.indented(by: indentedBy, andFirst: true))
+
+     \(runtimeFunctionsDeclarations.indented(by: indentedBy, andFirst: true))
+     """
+   }
 
   /// Finds the contract's public initializer, if any is declared, and returns the enclosing contract behavior declaration.
   func findContractPublicInitializer() -> (SpecialDeclaration, ContractBehaviorDeclaration)? {

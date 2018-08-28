@@ -67,7 +67,7 @@ public struct IULIAPreprocessor: ASTPass {
     // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable, let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"), sourceLocation: payableParameterIdentifier.sourceLocation))
-      let variableDeclaration = VariableDeclaration(declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
+      let variableDeclaration = VariableDeclaration(modifiers: [], declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
       let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: payableParameterIdentifier.sourceLocation)
       let wei = FunctionCall(identifier: weiType, arguments: [.rawAssembly(IULIARuntimeFunction.callvalue(), resultType: .basicType(.int))], closeBracketToken: closeBracketToken, isAttempted: false)
       let equal = Token(kind: .punctuation(.equal), sourceLocation: payableParameterIdentifier.sourceLocation)

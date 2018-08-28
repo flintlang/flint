@@ -60,6 +60,13 @@ public struct StructDeclaration: ASTNode {
     }
   }
 
+  public var specialDeclarations: [SpecialDeclaration] {
+      return members.compactMap { member in
+        guard case .specialDeclaration(let specialDeclaration) = member else { return nil }
+        return specialDeclaration
+      }
+    }
+
   private var shouldInitializerBeSynthesized: Bool {
     // Don't synthesize an initializer for the special stdlib Flint$Global struct.
     guard identifier.name != Environment.globalFunctionStructName else {
