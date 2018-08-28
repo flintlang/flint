@@ -1,8 +1,8 @@
 # Introduce External Calls
 
 * Proposal: [FIP-0003](0003-external-calls.md)
-* Author: [Daniel Hails](https://github.com/djrhails) & [Alexander Harkness](https://github.com/bearbin)
-* Review Manager: TBD
+* Author: [Daniel Hails](https://github.com/djrhails) & [Alexander Harkness](https://github.com/bearbin) 
+* Review Manager:  [Susan Eisenbach](https://github.com/SusanEisenbach)
 * Status: **Awaiting review**
 * Issue label: [0003-external-calls](https://github.com/franklinsch/flint/issues?q=is%3Aopen+is%3Aissue+label%3A0003-external-calls)
 
