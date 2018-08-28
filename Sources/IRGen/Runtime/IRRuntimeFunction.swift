@@ -1,5 +1,5 @@
 //
-//  IULIARuntimeFunction.swift
+//  IRRuntimeFunction.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 12/29/17.
@@ -8,7 +8,7 @@
 import AST
 
 /// The runtime functions used by Flint.
-enum IULIARuntimeFunction {
+enum IRRuntimeFunction {
   enum Identifiers {
     case selector
     case decodeAsAddress
@@ -156,35 +156,35 @@ enum IULIARuntimeFunction {
 
 
   static let allDeclarations: [String] = [
-    IULIARuntimeFunctionDeclaration.selector,
-    IULIARuntimeFunctionDeclaration.decodeAsAddress,
-    IULIARuntimeFunctionDeclaration.decodeAsUInt,
-    IULIARuntimeFunctionDeclaration.store,
-    IULIARuntimeFunctionDeclaration.load,
-    IULIARuntimeFunctionDeclaration.computeOffset,
-    IULIARuntimeFunctionDeclaration.allocateMemory,
-    IULIARuntimeFunctionDeclaration.isMatchingTypeState,
-    IULIARuntimeFunctionDeclaration.isValidCallerCapability,
-    IULIARuntimeFunctionDeclaration.isCallerCapabilityInArray,
-    IULIARuntimeFunctionDeclaration.isCallerCapabilityInDictionary,
-    IULIARuntimeFunctionDeclaration.return32Bytes,
-    IULIARuntimeFunctionDeclaration.isInvalidSubscriptExpression,
-    IULIARuntimeFunctionDeclaration.storageArrayOffset,
-    IULIARuntimeFunctionDeclaration.storageFixedSizeArrayOffset,
-    IULIARuntimeFunctionDeclaration.storageDictionaryOffsetForKey,
-    IULIARuntimeFunctionDeclaration.storageDictionaryKeysArrayOffset,
-    IULIARuntimeFunctionDeclaration.storageOffsetForKey,
-    IULIARuntimeFunctionDeclaration.send,
-    IULIARuntimeFunctionDeclaration.fatalError,
-    IULIARuntimeFunctionDeclaration.add,
-    IULIARuntimeFunctionDeclaration.sub,
-    IULIARuntimeFunctionDeclaration.mul,
-    IULIARuntimeFunctionDeclaration.div,
-    IULIARuntimeFunctionDeclaration.power
+    IRRuntimeFunctionDeclaration.selector,
+    IRRuntimeFunctionDeclaration.decodeAsAddress,
+    IRRuntimeFunctionDeclaration.decodeAsUInt,
+    IRRuntimeFunctionDeclaration.store,
+    IRRuntimeFunctionDeclaration.load,
+    IRRuntimeFunctionDeclaration.computeOffset,
+    IRRuntimeFunctionDeclaration.allocateMemory,
+    IRRuntimeFunctionDeclaration.isMatchingTypeState,
+    IRRuntimeFunctionDeclaration.isValidCallerCapability,
+    IRRuntimeFunctionDeclaration.isCallerCapabilityInArray,
+    IRRuntimeFunctionDeclaration.isCallerCapabilityInDictionary,
+    IRRuntimeFunctionDeclaration.return32Bytes,
+    IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression,
+    IRRuntimeFunctionDeclaration.storageArrayOffset,
+    IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset,
+    IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey,
+    IRRuntimeFunctionDeclaration.storageDictionaryKeysArrayOffset,
+    IRRuntimeFunctionDeclaration.storageOffsetForKey,
+    IRRuntimeFunctionDeclaration.send,
+    IRRuntimeFunctionDeclaration.fatalError,
+    IRRuntimeFunctionDeclaration.add,
+    IRRuntimeFunctionDeclaration.sub,
+    IRRuntimeFunctionDeclaration.mul,
+    IRRuntimeFunctionDeclaration.div,
+    IRRuntimeFunctionDeclaration.power
   ]
 }
 
-struct IULIARuntimeFunctionDeclaration {
+struct IRRuntimeFunctionDeclaration {
   static let selector =
   """
   function flint$selector() -> ret {

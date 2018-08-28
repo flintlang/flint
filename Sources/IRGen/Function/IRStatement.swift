@@ -1,5 +1,5 @@
 //
-//  IULIAStatement.swift
+//  IRStatement.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 27/04/2018.
@@ -9,32 +9,32 @@ import AST
 import Lexer
 
 /// Generates code for a statement.
-struct IULIAStatement {
+struct IRStatement {
   var statement: Statement
 
   func rendered(functionContext: FunctionContext) -> String {
     switch statement {
-    case .expression(let expression): return IULIAExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext)
-    case .ifStatement(let ifStatement): return IULIAIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
-    case .returnStatement(let returnStatement): return IULIAReturnStatement(returnStatement: returnStatement).rendered(functionContext: functionContext)
-    case .becomeStatement(let becomeStatement): return IULIABecomeStatement(becomeStatement: becomeStatement).rendered(functionContext: functionContext)
-    case .forStatement(let forStatement): return IULIAForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
+    case .expression(let expression): return IRExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext)
+    case .ifStatement(let ifStatement): return IRIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
+    case .returnStatement(let returnStatement): return IRReturnStatement(returnStatement: returnStatement).rendered(functionContext: functionContext)
+    case .becomeStatement(let becomeStatement): return IRBecomeStatement(becomeStatement: becomeStatement).rendered(functionContext: functionContext)
+    case .forStatement(let forStatement): return IRForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     }
   }
 }
 
 /// Generates code for an if statement.
-struct IULIAIfStatement {
+struct IRIfStatement {
   var ifStatement: IfStatement
 
   func rendered(functionContext: FunctionContext) -> String {
-    let condition = IULIAExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
+    let condition = IRExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
 
     var functionContext = functionContext
     functionContext.scopeContext = ifStatement.ifBodyScopeContext!
 
     let body = ifStatement.body.map { statement in
-      return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
+      return IRStatement(statement: statement).rendered(functionContext: functionContext)
       }.joined(separator: "\n")
     let ifCode: String
 
@@ -53,7 +53,7 @@ struct IULIAIfStatement {
         if case .returnStatement(_) = statement {
           fatalError("Return statements in else blocks are not supported yet")
         }
-        return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
+        return IRStatement(statement: statement).rendered(functionContext: functionContext)
         }.joined(separator: "\n")
       elseCode = """
       default {
@@ -67,7 +67,7 @@ struct IULIAIfStatement {
 }
 
 /// Generates code for a for statement.
-struct IULIAForStatement {
+struct IRForStatement {
   var forStatement: ForStatement
 
   func rendered(functionContext: FunctionContext) -> String {
@@ -86,7 +86,7 @@ struct IULIAForStatement {
     }
 
     let body = forStatement.body.map { statement in
-      return IULIAStatement(statement: statement).rendered(functionContext: functionContext)
+      return IRStatement(statement: statement).rendered(functionContext: functionContext)
       }.joined(separator: "\n")
 
     return """
@@ -118,34 +118,34 @@ struct IULIAForStatement {
     let type = functionContext.environment.type(of: iterable.name, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
     switch type {
     case .arrayType(_):
-      let arrayElementOffset = IULIARuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
-      loadArrLen = IULIARuntimeFunction.load(address: offset, inMemory: false)
+      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
+      loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       switch forStatement.variable.type.rawType {
         case .arrayType(_), .fixedSizeArrayType(_):
           toAssign = String(arrayElementOffset)
         default:
-          toAssign = IULIARuntimeFunction.load(address: arrayElementOffset, inMemory: false)
+          toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
       }
 
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
       loadArrLen = String(typeSize)
-      let arrayElementOffset = IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
-      toAssign = IULIARuntimeFunction.load(address: arrayElementOffset, inMemory: false)
+      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType(_):
-      loadArrLen = IULIARuntimeFunction.load(address: offset, inMemory: false)
-      let keysArrayOffset = IULIARuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
-      let keyOffset = IULIARuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
-      let key = IULIARuntimeFunction.load(address: keyOffset, inMemory: false)
-      let dictionaryElementOffset = IULIARuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
-      toAssign = IULIARuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
+      loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
+      let keysArrayOffset = IRRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
+      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
+      let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
+      let dictionaryElementOffset = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
+      toAssign = IRRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
 
     default:
       fatalError()
     }
 
-    let variableUse = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: .rawAssembly(toAssign, resultType: nil)).rendered(functionContext: functionContext, asTypeProperty: false)
+    let variableUse = IRAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: .rawAssembly(toAssign, resultType: nil)).rendered(functionContext: functionContext, asTypeProperty: false)
 
     return """
     {
@@ -178,15 +178,15 @@ struct IULIAForStatement {
 
     let changeToken: Token.Kind = ascending ? .punctuation(.plus) : .punctuation(.minus)
 
-    // Create IULIA statements for loop sub-statements
-    let initialisation = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: iterable.initial).rendered(functionContext: functionContext, asTypeProperty: false)
+    // Create IR statements for loop sub-statements
+    let initialisation = IRAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: iterable.initial).rendered(functionContext: functionContext, asTypeProperty: false)
     var condition = BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
                                      op: Token(kind: comparisonToken, sourceLocation: forStatement.sourceLocation),
                                      rhs: .identifier(Identifier(identifierToken: Token(kind: .identifier("bound"), sourceLocation: forStatement.sourceLocation))))
     let change: Expression = .binaryExpression(BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
                                                                 op: Token(kind: changeToken, sourceLocation: forStatement.sourceLocation),
                                                                 rhs: .literal(Token(kind: .literal(.decimal(.integer(1))), sourceLocation: forStatement.sourceLocation))))
-    let update = IULIAAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change).rendered(functionContext: functionContext, asTypeProperty: false)
+    let update = IRAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change).rendered(functionContext: functionContext, asTypeProperty: false)
 
     // Change <= into (< || ==)
     if [.lessThanOrEqual, .greaterThanOrEqual].contains(condition.opToken) {
@@ -208,14 +208,14 @@ struct IULIAForStatement {
     return """
     {
     let \(initialisation)
-    let _bound := \(IULIAExpression(expression: iterable.bound).rendered(functionContext: functionContext))
-    } \(IULIAExpression(expression: .binaryExpression(condition)).rendered(functionContext: functionContext)) { \(update) } {
+    let _bound := \(IRExpression(expression: iterable.bound).rendered(functionContext: functionContext))
+    } \(IRExpression(expression: .binaryExpression(condition)).rendered(functionContext: functionContext)) { \(update) } {
     """
   }
 }
 
 /// Generates code for a return statement.
-struct IULIAReturnStatement {
+struct IRReturnStatement {
   var returnStatement: ReturnStatement
 
   func rendered(functionContext: FunctionContext) -> String {
@@ -223,23 +223,23 @@ struct IULIAReturnStatement {
       return ""
     }
 
-    let renderedExpression = IULIAExpression(expression: expression).rendered(functionContext: functionContext)
-    return "\(IULIAFunction.returnVariableName) := \(renderedExpression)"
+    let renderedExpression = IRExpression(expression: expression).rendered(functionContext: functionContext)
+    return "\(IRFunction.returnVariableName) := \(renderedExpression)"
   }
 }
 
 /// Generates code for a become statement.
-struct IULIABecomeStatement {
+struct IRBecomeStatement {
   var becomeStatement: BecomeStatement
 
   func rendered(functionContext: FunctionContext) -> String {
     let sl = becomeStatement.sourceLocation
-    let stateVariable: Expression = .identifier(Identifier(name: IULIAContract.stateVariablePrefix + functionContext.enclosingTypeName, sourceLocation: .DUMMY))
+    let stateVariable: Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + functionContext.enclosingTypeName, sourceLocation: .DUMMY))
     let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: sl)), op: Token(kind: .punctuation(.dot), sourceLocation: sl), rhs: stateVariable))
 
     let assignState: Expression = .binaryExpression(BinaryExpression(lhs: selfState, op: Token(kind: .punctuation(.equal), sourceLocation: sl), rhs: becomeStatement.expression))
 
-    return IULIAExpression(expression: assignState).rendered(functionContext: functionContext)
+    return IRExpression(expression: assignState).rendered(functionContext: functionContext)
   }
 }
 
