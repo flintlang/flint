@@ -16,7 +16,7 @@ public struct FunctionInformation {
     return declaration.parameters.map { $0.type.rawType }
   }
 
-  var resultType: RawType? {
-    return declaration.resultType?.rawType
+  var resultType: RawType {
+    return declaration.rawType
   }
 }

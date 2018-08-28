@@ -49,6 +49,7 @@ public protocol ASTPass {
   func process(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression>
   func process(dictionaryLiteral: AST.DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.DictionaryLiteral>
   func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
+  func process(attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression>
 
   // MARK: Components
   func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
@@ -98,6 +99,7 @@ public protocol ASTPass {
   func postProcess(rangeExpression: RangeExpression, passContext: ASTPassContext) -> ASTPassResult<RangeExpression>
   func postProcess(dictionaryLiteral: DictionaryLiteral, passContext: ASTPassContext) -> ASTPassResult<DictionaryLiteral>
   func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression>
+  func postProcess(attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression>
 
   // MARK: Components
   func postProcess(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token>
@@ -190,6 +192,9 @@ extension ASTPass {
   }
   public func process(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     return ASTPassResult(element: subscriptExpression, diagnostics: [], passContext: passContext)
+  }
+  public func process(attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression> {
+    return ASTPassResult(element: attemptExpression, diagnostics: [], passContext: passContext)
   }
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
@@ -305,6 +310,9 @@ extension ASTPass {
   }
   public func postProcess(subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     return ASTPassResult(element: subscriptExpression, diagnostics: [], passContext: passContext)
+  }
+  public func postProcess(attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression> {
+    return ASTPassResult(element: attemptExpression, diagnostics: [], passContext: passContext)
   }
   public func postProcess(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)

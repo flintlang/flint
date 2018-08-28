@@ -46,7 +46,7 @@ extension TypeChecker {
       if ![lhsType, rhsType].contains(.errorType), !acceptedTypes.contains(lhsType) && !environment.isEnumDeclared(lhsType.name) {
         diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: acceptedTypes, expression: .binaryExpression(binaryExpression)))
       }
-    case .at, .openBrace, .closeBrace, .openSquareBracket, .closeSquareBracket, .colon, .doubleColon, .openBracket, .closeBracket, .arrow, .leftArrow, .comma, .semicolon, .doubleSlash, .dotdot, .ampersand, .halfOpenRange, .closedRange:
+    case .at, .openBrace, .closeBrace, .openSquareBracket, .closeSquareBracket, .colon, .doubleColon, .openBracket, .closeBracket, .arrow, .leftArrow, .comma, .semicolon, .doubleSlash, .dotdot, .ampersand, .halfOpenRange, .closedRange, .bang, .question:
       // These are not valid binary operators.
       fatalError()
     }

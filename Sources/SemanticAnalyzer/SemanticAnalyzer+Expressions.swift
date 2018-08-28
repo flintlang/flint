@@ -30,6 +30,20 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  public func process(attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+
+    if attemptExpression.isSoft,
+      case .matchedFunction(let function) = environment.matchFunctionCall(attemptExpression.functionCall, enclosingType: passContext.enclosingTypeIdentifier!.name, typeStates: typeStates, callerCapabilities: [], scopeContext: ScopeContext()),
+      !function.declaration.isVoid {
+      diagnostics.append(.nonVoidAttemptCall(attemptExpression))
+    }
+
+    return ASTPassResult(element: attemptExpression, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
@@ -75,8 +89,6 @@ extension SemanticAnalyzer {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let stateCapabilities = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-
 
     var diagnostics = [Diagnostic]()
 
@@ -107,10 +119,16 @@ extension SemanticAnalyzer {
     case .matchedGlobalFunction(_):
       break
 
-    case .failure(let candidates):
+    case .matchedFunctionWithoutCaller(let matchingFunctions):
+      // The function declaration is found, but caller is incorrect
+      if !functionCall.isAttempted || matchingFunctions.count > 1 {
+        // If function call is not attempted, or there are multiple matching functions
+        diagnostics.append(.noTryForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: typeStates, candidates: matchingFunctions))
+      }
+    case .failure(_):
       // A matching function declaration couldn't be found. Try to match an event call.
       if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
-        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: stateCapabilities, candidates: candidates))
+        diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall))
       }
 
     }

@@ -379,6 +379,8 @@ public struct ASTVisitor {
       processResult.element = .variableDeclaration(processResult.combining(visit(variableDeclaration, passContext: processResult.passContext)))
     case .subscriptExpression(let subscriptExpression):
       processResult.element = .subscriptExpression(processResult.combining(visit(subscriptExpression, passContext: processResult.passContext)))
+    case .attemptExpression(let attemptExpression):
+      processResult.element = .attemptExpression(processResult.combining(visit(attemptExpression, passContext: processResult.passContext)))
     case .sequence(let elements):
       processResult.element = .sequence(elements.map { element in
         return processResult.combining(visit(element, passContext: processResult.passContext))
@@ -518,6 +520,15 @@ public struct ASTVisitor {
     processResult.element.indexExpression = processResult.combining(visit(processResult.element.indexExpression, passContext: processResult.passContext))
 
     let postProcessResult = pass.postProcess(subscriptExpression: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ attemptExpression: AttemptExpression, passContext: ASTPassContext) -> ASTPassResult<AttemptExpression> {
+    var processResult = pass.process(attemptExpression: attemptExpression, passContext: passContext)
+
+    processResult.element.functionCall = processResult.combining(visit(processResult.element.functionCall, passContext: processResult.passContext))
+
+    let postProcessResult = pass.postProcess(attemptExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

@@ -35,7 +35,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
 
     // Keywords
     case contract, `enum`, `case`, `struct`, `func`, `init`, `mutating`
-    case `return`, become, `public`, `if`, `else`, `for`, `in`, `self`
+    case `return`, become, `public`, `if`, `else`, `for`, `in`, `self`, `try`
     case implicit, `inout`, fallback
     case `var`, `let`
 
@@ -62,6 +62,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .else: return "else"
       case .for: return "for"
       case .in: return "in"
+      case .try: return "try"
       case .punctuation(let punctuation): return punctuation.rawValue
       case .attribute(let attribute): return "@\(attribute)"
       case .identifier(let identifier): return "identifier \"\(identifier)\""
@@ -75,7 +76,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
   public var description: String {
     return kind.description
   }
-  
+
   // MARK: - SourceEntity
   public var sourceLocation: SourceLocation
 }

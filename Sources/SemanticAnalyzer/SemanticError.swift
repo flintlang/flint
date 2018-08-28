@@ -26,8 +26,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
   }
 
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [FunctionInformation]) -> Diagnostic {
-
+  static func noTryForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [FunctionInformation]) -> Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
       let callerCapabilities = renderGroup(candidate.callerCapabilities)
       let messageTail: String
@@ -44,8 +43,12 @@ extension Diagnostic {
     let callerPlural = contextCallerCapabilities.count > 1
     let statesPlural = stateCapabilities.count > 1
     let statesSpecified = " at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'"
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope or cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
+
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall) -> Diagnostic {
+     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope")
+   }
 
   static func noReceiverForStructInitializer(_ functionCall: FunctionCall) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Cannot call struct initializer '\(functionCall.identifier.name)' without receiver assignment")
@@ -239,5 +242,9 @@ extension Diagnostic {
     var notes = [Diagnostic]()
     complexStatements.forEach({ notes.append(Diagnostic(severity: .note, sourceLocation: $0.sourceLocation, message: "This statement was flagged as 'complex'")) })
     return Diagnostic(severity: .warning, sourceLocation: complex.sourceLocation, message: "This fallback is likely to use over 2 300 gas which is the limit for calls sending ETH directly", notes: notes)
+  }
+
+  static func nonVoidAttemptCall(_ attempt: AttemptExpression) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: attempt.sourceLocation, message: "Calling a function returning a non-Void value with try? is not supported yet")
   }
 }

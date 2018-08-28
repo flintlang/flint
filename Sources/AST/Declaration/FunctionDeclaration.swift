@@ -38,6 +38,10 @@ public struct FunctionDeclaration: ASTNode {
     return attributes.contains { $0.kind == .payable }
   }
 
+  public var isVoid: Bool {
+    return resultType == nil || resultType?.rawType == .basicType(.void)
+  }
+
   /// The first parameter which is both `implicit` and has a currency type.
   public var firstPayableValueParameter: Parameter? {
     return parameters.first { $0.isPayableValueParameter }

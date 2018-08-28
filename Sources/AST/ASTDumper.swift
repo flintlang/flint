@@ -320,6 +320,7 @@ public class ASTDumper {
       case .self(let token): self.dump(token)
       case .variableDeclaration(let variableDeclaration): self.dump(variableDeclaration)
       case .subscriptExpression(let subscriptExpression): self.dump(subscriptExpression)
+      case .attemptExpression(let attemptExpression): self.dump(attemptExpression)
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
       case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly(_): fatalError()
@@ -362,7 +363,6 @@ public class ASTDumper {
   func dump(_ functionCall: FunctionCall) {
     writeNode("FunctionCall") {
       self.dump(functionCall.identifier)
-
       for argument in functionCall.arguments {
         self.dump(argument)
       }
@@ -377,6 +377,14 @@ public class ASTDumper {
       self.dump(subscriptExpression.indexExpression)
       self.dump(subscriptExpression.closeSquareBracketToken)
     }
+  }
+
+  func dump(_ attemptExpression: AttemptExpression) {
+    writeNode("AttemptExpression") {
+       self.dump(attemptExpression.tryToken)
+       self.writeLine("kind: " + attemptExpression.kind.rawValue)
+       self.dump(attemptExpression.functionCall)
+     }
   }
 
   func dump(_ returnStatement: ReturnStatement) {

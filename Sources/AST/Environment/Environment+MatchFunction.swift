@@ -9,10 +9,14 @@ extension Environment {
   /// The result of attempting to match a function call to its function declaration.
   ///
   /// - matchedFunction: A matching function declaration has been found.
+  /// - matchedFunctionsWithoutCaller: The matching function declarations without caller capabilities
   /// - matchedInitializer: A matching initializer declaration has been found
+  /// - matchedFallback: A matching fallback declaration has been found
+  /// - matchedGlobalFunction: A matching global function has been found
   /// - failure: The function declaration could not be found.
   public enum FunctionCallMatchResult {
     case matchedFunction(FunctionInformation)
+    case matchedFunctionWithoutCaller([FunctionInformation])
     case matchedInitializer(SpecialInformation)
     case matchedFallback(SpecialInformation)
     case matchedGlobalFunction(FunctionInformation)
@@ -75,6 +79,11 @@ extension Environment {
 
         return .matchedFunction(candidate)
       }
+      let matchedCandidates = candidates.filter{ $0.parameterTypes == argumentTypes }
+      if matchedCandidates.count > 0 {
+       return .matchedFunctionWithoutCaller(matchedCandidates)
+      }
+
     }
     return .failure(candidates: candidates)
   }

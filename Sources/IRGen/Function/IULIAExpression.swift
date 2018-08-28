@@ -26,6 +26,8 @@ struct IULIAExpression {
       return IULIABinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .bracketedExpression(let bracketedExpression):
       return IULIAExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
+    case .attemptExpression(let attemptExpression):
+      return IULIAAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
       return IULIAFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):
@@ -351,6 +353,30 @@ struct IULIALiteralToken {
     }
   }
 }
+
+// Generates code for an attempt expression
+struct IULIAAttemptExpression {
+   var attemptExpression: AttemptExpression
+
+   func rendered(functionContext: FunctionContext) -> String {
+     let functionCall = attemptExpression.functionCall
+     let functionName = functionCall.mangledIdentifier ?? functionCall.identifier.name
+
+     let callName: String
+     if case .hard = attemptExpression.kind {
+       callName = IULIAWrapperFunction.prefixHard + functionName
+     } else {
+       callName = IULIAWrapperFunction.prefixSoft + functionName
+     }
+
+     let args: String = functionCall.arguments.map({ argument in
+       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
+     }).joined(separator: ", ")
+
+     return "\(callName)(\(args))"
+
+   }
+ }
 
 /// Generates code for a "self" expression.
 struct IULIASelf {

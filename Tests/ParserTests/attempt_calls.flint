@@ -1,0 +1,41 @@
+contract Wallet {
+  var owner: Address
+  var contents: Int = 20
+}
+
+Wallet :: (any) {
+  public init(owner: Address) {
+    self.owner = owner
+  }
+}
+
+Wallet :: (owner) {
+  public mutating func remove(amount: Int){
+    self.contents -= amount
+  }
+
+  public mutating func withdraw(){
+    self.contents = 0
+  }
+}
+
+Wallet :: (any) {
+  public mutating func add(amount: Int){
+    self.contents += amount
+  }
+
+  public func withdrawIfYouCan() -> Bool{
+    // CHECK-AST: AttemptStatement
+    // CHECK-AST:   token: try
+    // CHECK-AST:   kind: !
+    try! withdraw()
+    return true
+  }
+
+  public func withdrawCheck() -> Bool {
+    // CHECK-AST: AttemptStatement
+    // CHECK-AST:   token: try
+    // CHECK-AST:   kind: ?
+    return try? withdraw()
+  }
+}

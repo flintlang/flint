@@ -22,14 +22,9 @@ struct IULIAContractInitializer {
 
   var isContractFunction = false
 
-  var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
-  }
-
   var parameterNames: [String] {
-    return initializerDeclaration.explicitParameters.map { parameter in
-      return IULIAIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext)
-    }
+    let fc = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
+    return initializerDeclaration.explicitParameters.map {IULIAIdentifier(identifier: $0.identifier).rendered(functionContext: fc)}
   }
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.

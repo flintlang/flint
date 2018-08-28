@@ -30,7 +30,7 @@ Foo :: (any) {
     // CHECK-AST:   token: literal 1
     // CHECK-AST:   token: ...
     // CHECK-AST:   token: literal 4
-    for var x: Int in (1...4) {}
+    for let x: Int in (1...4) {}
 
     // CHECK-AST: ForStatement
 
@@ -38,7 +38,7 @@ Foo :: (any) {
     // CHECK-AST:   token: literal 10
     // CHECK-AST:   token: ..<
     // CHECK-AST:   token: literal 2
-    for var x: Int in (10..<2) {}
+    for let x: Int in (10..<2) {}
 
     return largest;
   }
