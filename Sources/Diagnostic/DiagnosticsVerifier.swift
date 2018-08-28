@@ -17,7 +17,7 @@ public struct DiagnosticsVerifier {
   private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticOffsetRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
 
-  public init(){}
+  public init() {}
 
   public func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
     var success = true

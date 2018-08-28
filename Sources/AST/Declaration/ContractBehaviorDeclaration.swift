@@ -35,13 +35,11 @@ public enum ContractBehaviorMember: ASTNode {
 /// A Flint contract behavior declaration, i.e. the functions of a contract for a given caller capability group.
 public struct ContractBehaviorDeclaration: SourceEntity {
   public var contractIdentifier: Identifier
+  public var states: [TypeState]
   public var capabilityBinding: Identifier?
   public var callerCapabilities: [CallerCapability]
-
-  public var states: [TypeState]
-
-  public var members: [ContractBehaviorMember]
   public var closeBracketToken: Token
+  public var members: [ContractBehaviorMember]
 
   public init(contractIdentifier: Identifier, states: [TypeState], capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], closeBracketToken: Token, members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier

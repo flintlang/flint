@@ -10,7 +10,7 @@ import Diagnostic
 public struct ASTPassRunner {
   var ast: TopLevelModule
 
-  public init(ast: TopLevelModule){
+  public init(ast: TopLevelModule) {
     self.ast = ast
   }
 

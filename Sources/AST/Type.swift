@@ -6,6 +6,8 @@
 //
 import Lexer
 import Source
+/// The raw representation of an RawType.
+public typealias RawTypeIdentifier = String
 
 // A Flint raw type, without a source location.
 public indirect enum RawType: Equatable {
@@ -20,7 +22,7 @@ public indirect enum RawType: Equatable {
   case any
   case errorType
 
-  public enum BasicType: String {
+  public enum BasicType: RawTypeIdentifier {
     case address = "Address"
     case int = "Int"
     case string = "String"
@@ -36,7 +38,7 @@ public indirect enum RawType: Equatable {
     }
   }
 
-  public enum StdlibType: String {
+  public enum StdlibType: RawTypeIdentifier {
     case wei = "Wei"
   }
 
@@ -168,7 +170,7 @@ public struct Type: ASTNode {
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation
-  
+
   public var description: String {
     return name
   }

@@ -7,9 +7,6 @@
 import Source
 import Lexer
 
-/// The raw representation of an `Identifier`.
-public typealias RawTypeIdentifier = String
-
 /// An identifier for a contract, struct, variable, or function.
 public struct Identifier: Hashable, ASTNode {
   public var identifierToken: Token
