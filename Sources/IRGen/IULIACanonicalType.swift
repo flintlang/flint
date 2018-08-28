@@ -13,7 +13,7 @@ enum CanonicalType: String {
   case address
   case bytes32
 
-  init?(from rawType: Type.RawType) {
+  init?(from rawType: RawType) {
     switch rawType {
     case .basicType(let builtInType):
       switch builtInType {

@@ -2,20 +2,52 @@
 
 contract Test {
   var owner: Address
+  var owners: [Address]
+  var lastIndex: Int = 0
 }
 
 Test :: caller <- (any) {
   public init() {
     self.owner = caller
+    self.owners[lastIndex] = caller
+    lastIndex += 1
   }
 
   public func foo() {
-
-    bar() // expected-error {{Function 'bar' is not in scope or cannot be called using the capability 'any'}}
+    restrictedFunc() // expected-error {{Function 'restrictedFunc' cannot be called using the capability 'any'}}
   }
 }
 
-Test :: (owner) {
-  func bar() {
+Test :: (owners) {
+  func restrictedFunc() {}
+
+  func restrictedCheck() -> Bool{
+    return true
+  }
+  func restrictedInt() -> Int{
+    return 0
+  }
+}
+
+Test :: (any) {
+  public func ifYouCan() {
+    try? restrictedFunc()
+  }
+
+  public func check() -> Bool {
+    return try! restrictedFunc() // expected-error {{Cannot convert expression of type 'Void' to expected return type 'Bool'}}
+  }
+
+  public func check2() -> Bool {
+    return try! restrictedCheck()
+  }
+
+  public func check3() -> Int {
+    return try! restrictedInt()
+  }
+
+  public func check4() -> Int {
+    return try? restrictedInt() // expected-error {{Cannot convert expression of type 'Bool' to expected return type 'Int'}}
+                                // expected-warning@-1 {{Calling a function returning a non-Void value with try? is not supported yet}}
   }
 }

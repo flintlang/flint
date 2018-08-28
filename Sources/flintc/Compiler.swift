@@ -7,8 +7,11 @@
 
 import Foundation
 import AST
+import Diagnostic
+import Lexer
 import Parser
 import SemanticAnalyzer
+import TypeChecker
 import Optimizer
 import IRGen
 
@@ -21,8 +24,8 @@ struct Compiler {
   var shouldVerify: Bool
 
   func tokenizeFiles() -> [Token] {
-    let stdlibTokens = StandardLibrary.default.files.flatMap { Tokenizer(sourceFile: $0, isFromStdlib: true).tokenize() }
-    let userTokens = inputFiles.flatMap { Tokenizer(sourceFile: $0).tokenize() }
+    let stdlibTokens = StandardLibrary.default.files.flatMap { Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+    let userTokens = inputFiles.flatMap { Lexer(sourceFile: $0).lex() }
 
     return stdlibTokens + userTokens
   }
@@ -43,11 +46,11 @@ struct Compiler {
     }
 
     // The AST passes to run sequentially.
-    let astPasses: [AnyASTPass] = [
-      AnyASTPass(SemanticAnalyzer()),
-      AnyASTPass(TypeChecker()),
-      AnyASTPass(Optimizer()),
-      AnyASTPass(IULIAPreprocessor())
+    let astPasses: [ASTPass] = [
+      SemanticAnalyzer(),
+      TypeChecker(),
+      Optimizer(),
+      IULIAPreprocessor()
     ]
 
     // Run all of the passes.
@@ -85,14 +88,6 @@ struct Compiler {
   func exitWithFailure() -> Never {
     print("Failed to compile.")
     exit(1)
-  }
-}
-
-struct CompilationContext {
-  var sourceFiles: [URL]
-
-  func sourceCode(in sourceFile: URL) -> String {
-    return try! String(contentsOf: sourceFile)
   }
 }
 
