@@ -8,16 +8,16 @@
 
 ## Introduction
 
-Contracts can be created "from outside" via Ethereum transactions or from within Flint Contracts. They contain persistent data in state variables and functions that can modify these variables. Calling a function on a different contract (instance) will perform an EVM Function call and thus switch the context such that state variables are inaccessible.
+Contracts can be created "from outside" via Ethereum transactions or from within Flint Contracts. They contain persistent data in state variables and functions that can modify these variables. Calling a function on a different contract (instance) will perform an EVM Function call and thus switch the context such that state variables in the old context are inaccessible.
 
 ## Motivation
-Calls to untrusted contracts can introduce several unexpected risks or errors. External call may execute malicious code in that contract _or any other contract_ that it depends upon. As such, **every** external call should be treated as a security risk.
+Calls to untrusted contracts can introduce several unexpected risks and errors. External calls may execute malicious code in that contract _or any other contract_ that it depends upon. As such, **every** external call should be treated as a security risk.
 
 However external calls are necessary to accomplish key features of smart contracts, including:
 - Paying other users
 - Interacting with other Contracts e.g. Tokens or Wallets
 
-There have been pre-existing attempts to defined best practices for programming with respect for external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)). This proposal will try and integrate these best practices into the language design itself. Below are the following causes for concern with regard to external calls.
+There have been several published best practice guidelines for programming with external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)). This proposal will integrate best practice into the language design. Below are causes for concern with external calls.
 
 #### 1. Contracts are untrustworthy by default
 ```javascript
@@ -38,22 +38,26 @@ function makeUntrustedWithdrawal(uint amount) {
 ```
 
 #### 2. External calls have arbitrary code execution
+Examples of problems that can arise in Solidity code include:
 ##### Race Conditions
-Whether using raw calls (of the form `someAddress.call()`) or contract calls (of the form `ExternalContract.someMethod()`), assume that malicious code might execute. Even if ExternalContract is not malicious, malicious code can be executed by any contracts it calls.
+Whether using raw calls (of the form `someAddress.call()`) or contract calls (of the form `ExternalContract.someMethod()`), malicious code might execute. Even if ExternalContract is not malicious, malicious code can be executed by any contracts it calls.
 One particular danger is malicious code may hijack the control flow, leading to race conditions.
 
 ##### Re-entrancy
-- `someAddress.send()` and `someAddress.transfer()` are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2,300 gas which is currently only enough to log an event.
-  - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2 300 gas or more
+- `someAddress.send()` and `someAddress.transfer()` in Solidity are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2,300 gas which is currently only enough to log an event.
+  - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2,300 gas or more.
+  - Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
 
 #### 3. External calls can silently fail
-Solidity offers low-level call methods that work on rawAddress: `address.call()`, `address.callcode()`, `address.delegatecall()`, `address.send()`. These low-level methods never throw an exception.
+Solidity offers low-level call methods that work on rawAddress: `address.call()`, `address.callcode()`, `address.delegatecall()`, `address.send()`. These low-level methods never throw an exception so they fail silently.
 
 ```javascript
 // bad
 someAddress.send(55);
-someAddress.call.value(55)(); // this is doubly dangerous, as it will forward all remaining gas and doesn't check for result
-someAddress.call.value(100)(bytes4(sha3("deposit()"))); // if deposit throws an exception, the raw call() will only return false and transaction will NOT be reverted
+// this is doubly dangerous, as it will forward all remaining gas and doesn't check for result
+someAddress.call.value(55)(); 
+// if deposit throws an exception, the raw call() will only return false and transaction will NOT be reverted
+someAddress.call.value(100)(bytes4(sha3("deposit()"))); 
 
 // good
 if(!someAddress.send(55)) {
@@ -64,7 +68,7 @@ ExternalContract(someAddress).deposit.value(100);
 ```
 
 #### 4. Interfaces can easily be incorrectly specified
-The interface is incorrectly defined. `Alice.set(uint)` takes an `uint` in `Bob.sol` but `Alice.set(int)` a `int` in `Alice.sol`. The two interfaces will produce two differents method IDs. As a result, Bob will call the fallback function of Alice rather than of `set`.
+Minor errors in Solidity interfaces may lead to wrong code being executed. `Alice.set(uint)` takes an `uint` in `Bob.sol` but `Alice.set(int)` takes an `int` in `Alice.sol`. The two interfaces will produce two differents method IDs. As a result, Bob will call the fallback function of Alice rather than of `set`. This type of error is responsible for the King of the Ether bug.
 
 - [King of the Ether](https://www.kingoftheether.com/postmortem.html) (line numbers:
 	[100](KotET_source_code/KingOfTheEtherThrone.sol#L100),
@@ -80,15 +84,15 @@ The following solution is partially based upon the [Command Design Pattern]() an
 - The gas allocation
 - The ether allocation
 
-Considering our motivations below:
-1. Contracts are untrustworthy by default
-1. Arbitrary code execution
-1. Silent Failure
-1. Interfaces incorrectly specified
+Our motivations are:
+1. Contracts are untrustworthy by default;
+1. Arbitrary code may get executed;
+1. Failures may be silent;
+1. Interfaces may be incorrectly specified.
 
-We broadly separate external calls into two types: _Educated Calls_ and _Uneducated Calls_. Educated calls are those accessed through Nodule (The Flint Package Manager) (or those which Flint has the source files for and deploys internally to the contract i.e. Hub and Spoke Topology). Uneducated calls are those with an ABI interface or Trait interface.
+We separate external calls into two types: _Educated Calls_ and _Uneducated Calls_. Educated calls are those accessed through the Flint Package Manager  or those which Flint has the source files for and deploys internally to the contract, i.e. Hub and Spoke Topology. Uneducated calls are those with an ABI interface or Trait interface.
 
-Uneducated calls should be treated untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
+Uneducated calls should be treated as untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
 
 Educated calls meanwhile are not guaranteed to not introduce errors, but they have certain guarantees attached. These means that it combats (1), (2), (4):
 1. That there is a defined function at the end of the call
