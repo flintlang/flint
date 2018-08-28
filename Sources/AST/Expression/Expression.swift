@@ -20,6 +20,7 @@ public indirect enum Expression: ASTNode {
   case variableDeclaration(VariableDeclaration)
   case bracketedExpression(BracketedExpression)
   case subscriptExpression(SubscriptExpression)
+  case attemptExpression(AttemptExpression)
   case sequence([Expression])
   case range(RangeExpression)
   case rawAssembly(String, resultType: RawType?)
@@ -95,6 +96,7 @@ public indirect enum Expression: ASTNode {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
+    case .attemptExpression(let attemptExpression): return attemptExpression.sourceLocation
     case .range(let rangeExpression): return rangeExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
     case .rawAssembly(_): fatalError()
@@ -113,6 +115,7 @@ public indirect enum Expression: ASTNode {
       case .variableDeclaration(let variableDeclaration): return variableDeclaration.description
       case .bracketedExpression(let bracketedExpression): return bracketedExpression.description
       case .subscriptExpression(let subscriptExpression): return subscriptExpression.description
+      case .attemptExpression(let attemptExpression): return attemptExpression.description
       case .range(let rangeExpression): return rangeExpression.description
       case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
       case .rawAssembly(_): fatalError()

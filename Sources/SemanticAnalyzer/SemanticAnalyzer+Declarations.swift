@@ -310,6 +310,8 @@ extension SemanticAnalyzer {
         return false
       case .rawAssembly(_), .sequence(_):
         return true
+      case .attemptExpression(_):
+        return true
       }
     case .ifStatement(_):
       return false

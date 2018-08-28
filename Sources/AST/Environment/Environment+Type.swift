@@ -23,6 +23,11 @@ extension Environment {
 
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
+    case .matchedFunctionWithoutCaller(let matchingFunctions):
+      guard matchingFunctions.count == 1 else {
+         return .errorType
+       }
+       return matchingFunctions.first!.resultType
     case .matchedInitializer(_):
       let name = functionCall.identifier.name
       if let stdlibType = RawType.StdlibType(rawValue: name) {
@@ -110,6 +115,14 @@ extension Environment {
     return .dictionaryType(key: keyType ?? .any, value: valueType ?? .any)
   }
 
+  public func type(of attemptExpression: AttemptExpression, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> RawType {
+    if attemptExpression.isSoft {
+     return .basicType(.bool)
+    }
+    let functionCall = attemptExpression.functionCall
+    return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities , scopeContext: scopeContext) ?? .errorType
+  }
+
   /// The type of an expression.
   ///
   /// - Parameters:
@@ -190,6 +203,8 @@ extension Environment {
       return type(ofArrayLiteral: arrayLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .range(let rangeExpression):
       return type(ofRangeExpression: rangeExpression, enclosingType: enclosingType, scopeContext: scopeContext)
+    case .attemptExpression(let attemptExpression):
+       return type(of: attemptExpression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence(_): fatalError()

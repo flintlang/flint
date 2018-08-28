@@ -35,6 +35,8 @@ extension Token.Kind {
     case dot        = "."
     case dotdot     = ".."
     case ampersand  = "&"
+    case bang       = "!"
+    case question   = "?"
 
     // Assignments
     case equal  = "="

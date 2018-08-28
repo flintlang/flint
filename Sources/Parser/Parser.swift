@@ -93,7 +93,7 @@ public class Parser {
 
     return first
   }
-  
+
   /// Consume newlines tokens up to the first non-newline token.
   func consumeNewLines() {
     while currentIndex < tokens.count, tokens[currentIndex].kind == .newline {
@@ -493,7 +493,7 @@ extension Parser {
     try consume(.punctuation(.openBracket))
     let identifiers = try parseIdentifierList()
     let closeBracketToken = try consume(.punctuation(.closeBracket))
-    
+
     return (identifiers, closeBracketToken)
   }
 
@@ -639,32 +639,34 @@ extension Parser {
 
   func parseStatements() throws -> [Statement] {
     var statements = [Statement]()
-
-    while true {
-      guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline, .punctuation(.closeBrace)], maxIndex: tokens.count) else {
-        break
-      }
-
-      // A statement is either an expression, return statement, or if statement.
-
-      if let expression = attempt(try parseExpression(upTo: statementEndIndex)) {
-        statements.append(.expression(expression))
-      } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
-        statements.append(.returnStatement(returnStatement))
-      } else if let becomeStatement = attempt (try parseBecomeStatement(statementEndIndex: statementEndIndex)) {
-        statements.append(.becomeStatement(becomeStatement))
-      } else if let forStatement = attempt(try parseForStatement()) {
-        statements.append(.forStatement(forStatement))
-      } else if let ifStatement = attempt(try parseIfStatement()) {
-        statements.append(.ifStatement(ifStatement))
-      } else {
-        break
-      }
-      _ = try? consume(.punctuation(.semicolon))
-      while (try? consume(.newline)) != nil {}
+    while let statement = try? parseStatement() {
+      statements.append(statement)
     }
-
     return statements
+  }
+
+   func parseStatement() throws -> Statement {
+    guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline, .punctuation(.closeBrace)], maxIndex: tokens.count) else {
+     throw ParserError.expectedToken(.punctuation(.semicolon), sourceLocation: currentToken?.sourceLocation)
+    }
+    // A statement is either an expression, return, become, for or if statement.
+    let statement: Statement
+    if let expression = attempt(try parseExpression(upTo: statementEndIndex)) {
+      statement = .expression(expression)
+    } else if let returnStatement = attempt (try parseReturnStatement(statementEndIndex: statementEndIndex)) {
+      statement = .returnStatement(returnStatement)
+    } else if let becomeStatement = attempt (try parseBecomeStatement(statementEndIndex: statementEndIndex)) {
+      statement = .becomeStatement(becomeStatement)
+    } else if let forStatement = attempt(try parseForStatement()) {
+      statement = .forStatement(forStatement)
+    } else if let ifStatement = attempt(try parseIfStatement()) {
+      statement = .ifStatement(ifStatement)
+    } else {
+      throw ParserError.expectedToken(.newline, sourceLocation: currentToken?.sourceLocation)
+    }
+    _ = try? consume(.punctuation(.semicolon))
+    while (try? consume(.newline)) != nil {}
+    return statement
   }
 
   /// Parse an expression which ends one token before the one at `limitTokenIndex`.
@@ -704,6 +706,11 @@ extension Parser {
     // Return the binary expression if a valid one could be constructed.
     if let binExp = binaryExpression {
       return .binaryExpression(binExp)
+    }
+
+    // Try to parse an attempted function call
+    if let attemptExpression = attempt(try parseAttemptExpression()){
+      return .attemptExpression(attemptExpression)
     }
 
     // Try to parse a function call.
@@ -767,11 +774,19 @@ extension Parser {
     return BracketedExpression(expression: expression, openBracketToken: openBracketToken, closeBracketToken: closeBracketToken)
   }
 
+  func parseAttemptExpression() throws -> AttemptExpression {
+    let tryToken = try consume(.try)
+    let sort = try consume(anyOf: [.punctuation(.bang), .punctuation(.question)])
+    var functionCall = try parseFunctionCall()
+    functionCall.isAttempted = true
+    return AttemptExpression(token: tryToken, sort: sort, functionCall: functionCall)
+  }
+
   func parseFunctionCall() throws -> FunctionCall {
     let identifier = try parseIdentifier()
     let (arguments, closeBracketToken) = try parseFunctionCallArgumentList()
 
-    return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken)
+    return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken, isAttempted: false)
   }
 
   func parseFunctionCallArgumentList() throws -> ([Expression], closeBracketToken: Token) {

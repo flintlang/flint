@@ -12,13 +12,15 @@ public struct FunctionCall: ASTNode {
   public var identifier: Identifier
   public var arguments: [Expression]
   public var closeBracketToken: Token
+  public var isAttempted: Bool
 
   public var mangledIdentifier: String? = nil
 
-  public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token) {
+  public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token, isAttempted: Bool) {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken
+    self.isAttempted = isAttempted
   }
 
   // MARK: - ASTNode

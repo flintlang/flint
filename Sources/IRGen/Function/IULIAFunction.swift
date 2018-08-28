@@ -23,8 +23,8 @@ struct IULIAFunction {
 
   var isContractFunction = false
 
-  var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
+  var containsAnyCaller: Bool {
+    return callerCapabilities.contains(where: { $0.isAny })
   }
 
   init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, typeStates: [TypeState] = [], capabilityBinding: Identifier? = nil, callerCapabilities: [CallerCapability] = [], environment: Environment) {
@@ -45,9 +45,8 @@ struct IULIAFunction {
   }
 
   var parameterNames: [String] {
-    return functionDeclaration.explicitParameters.map { parameter in
-      return IULIAIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext)
-    }
+    let fc = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
+    return functionDeclaration.explicitParameters.map {IULIAIdentifier(identifier: $0.identifier).rendered(functionContext: fc)}
   }
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
@@ -64,17 +63,19 @@ struct IULIAFunction {
   }
 
   func rendered() -> String {
-    let doesReturn = functionDeclaration.resultType != nil
-    let parametersString = parameterNames.joined(separator: ", ")
-    let signature = "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
-
     let body = IULIAFunctionBody(functionDeclaration: functionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
     return """
-    function \(signature) {
+    function \(signature()) {
       \(body.indented(by: 2))
     }
     """
+  }
+
+  func signature(withReturn: Bool = true) -> String {
+    let doesReturn = functionDeclaration.resultType != nil && withReturn
+     let parametersString = parameterNames.joined(separator: ", ")
+     return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IULIAFunction.returnVariableName)" : "")"
   }
 
   /// The string representation of this function's signature, used for generating a IULIA interface.
@@ -102,12 +103,17 @@ struct IULIAFunctionBody {
     return functionDeclaration.scopeContext!
   }
 
-  var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
-  }
+  init(functionDeclaration: FunctionDeclaration, typeIdentifier: Identifier, capabilityBinding: Identifier?, callerCapabilities: [CallerCapability], environment: Environment, isContractFunction: Bool) {
+     self.functionDeclaration = functionDeclaration
+     self.typeIdentifier = typeIdentifier
+     self.callerCapabilities = callerCapabilities
+     self.capabilityBinding = capabilityBinding
+     self.environment = environment
+     self.isContractFunction = isContractFunction
+   }
 
   func rendered() -> String {
-    let body = renderBody(functionDeclaration.body, functionContext: functionContext)
+    let functionContext: FunctionContext = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
 
     // Assign a caller capaiblity binding to a local variable.
     let capabilityBindingDeclaration: String
@@ -116,6 +122,8 @@ struct IULIAFunctionBody {
     } else {
       capabilityBindingDeclaration = ""
     }
+
+    let body = renderBody(functionDeclaration.body, functionContext: functionContext)
 
     return "\(capabilityBindingDeclaration)\(body)"
   }

@@ -38,6 +38,12 @@ struct IULIAContract {
 
     let functionsCode = functions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
 
+    // Generate wrapper functions
+    let wrapperCode = functions.filter({ !$0.containsAnyCaller })
+     .map({ IULIAWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) })
+     .joined(separator: "\n\n")
+     .indented(by: 6)
+
     let publicFunctions = functions.filter { $0.functionDeclaration.isPublic }
 
     // Create a function selector, to determine which function is called in the Ethereum transaction.
@@ -70,6 +76,12 @@ struct IULIAContract {
           // User-defined functions
 
           \(functionsCode)
+
+          ///////////////////////
+          // Wrapper Functions //
+          ///////////////////////
+
+          \(wrapperCode)
 
           // Struct functions
 
