@@ -101,14 +101,14 @@ Educated calls meanwhile are not guaranteed to not introduce errors, but they ha
 4. The contract you call matches the source code given
 5. The gas provided should be inferred by gas estimation over flint
 
-We propose a method to both declare this interface within Flint, use the The Flint Package Manager to extract an interface, or call contracts uneducated.
+We propose a method to both declare this interface within Flint, use the The Flint Package Manager to extract an interface, or call contracts distrusted.
 
-In _Uneducated Calls_, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
+In _Distrusted Calls_, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
 The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests.
 
 (3) is combated by having necessary catching of all external calls - or prefixing with `try!` and `try?` to revert and nullify respectively.
 
-### Uneducated Calls
+### Distrusted Calls
 #### Interface specified
 ```swift
 interface Alpha(State1, State2) {
@@ -167,7 +167,7 @@ Foo :: (any) {
 ```
 
 
-### Educated Calls
+### Trusted Calls
 
 #### Flint Package Manager
 ```swift
@@ -189,9 +189,9 @@ let contract: Contract<URLContract> = deploy(URLContract)
 contract.argumentName() // Value and Gas are automatically set based upon properties
 ```
 
-There are two types of external calls: Educated Calls and Uneducated calls. Educated calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while uneducated calls are those without this interface.
+There are two types of external calls: Trusted Calls and Distrusted calls. Trusted calls are those that utilise an ABI interface (or those which Flint has the source files for i.e. other Flint contracts) while distrusted calls are those without this interface.
 
-We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+We propose a method to both declare this interface within Flint, use the Flint Package Manager to extract an interface, or call contracts distrusted.
 
 
 ```swift
