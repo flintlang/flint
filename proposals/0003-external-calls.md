@@ -44,8 +44,8 @@ Whether using raw calls (of the form `someAddress.call()`) or contract calls (of
 One particular danger is malicious code may hijack the control flow, leading to race conditions.
 
 ##### Re-entrancy
-- `someAddress.send()` and `someAddress.transfer()` in Solidity are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2,300 gas which is currently only enough to log an event.
-  - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2,300 gas or more.
+- `someAddress.send()` and `someAddress.transfer()` in Solidity are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2300 gas which is currently only enough to log an event.
+  - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2300 gas or more.
   - Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
 
 #### 3. External calls can silently fail
@@ -90,9 +90,9 @@ Our motivations are:
 1. Failures may be silent;
 1. Interfaces may be incorrectly specified.
 
-We separate external calls into two types: _Educated Calls_ and _Uneducated Calls_. Educated calls are those accessed through the Flint Package Manager  or those which Flint has the source files for and deploys internally to the contract, i.e. Hub and Spoke Topology. Uneducated calls are those with an ABI interface or Trait interface.
+We separate external calls into two types: _Trusted Calls_ and _Distrusted Calls_. Trusted calls are those accessed through the Flint Package Manager  or those which Flint has the source files for and deploys internally to the contract, i.e. Hub and Spoke Topology. Distrusted calls are those with an ABI interface or Trait interface.
 
-Uneducated calls should be treated as untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
+Distrusted calls should be treated as untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
 
 Educated calls meanwhile are not guaranteed to not introduce errors, but they have certain guarantees attached. These means that it combats (1), (2), (4):
 1. That there is a defined function at the end of the call
