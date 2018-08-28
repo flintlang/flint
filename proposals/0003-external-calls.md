@@ -101,7 +101,7 @@ Educated calls meanwhile are not guaranteed to not introduce errors, but they ha
 4. The contract you call matches the source code given
 5. The gas provided should be inferred by gas estimation over flint
 
-We propose a method to both declare this interface within Flint, use the Nodule (The Flint Package Manager) to extract an interface, or call contracts uneducated.
+We propose a method to both declare this interface within Flint, use the The Flint Package Manager to extract an interface, or call contracts uneducated.
 
 In _Uneducated Calls_, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
 The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests.
@@ -169,10 +169,10 @@ Foo :: (any) {
 
 ### Educated Calls
 
-#### Nodule: Flint Package Manager
+#### Flint Package Manager
 ```swift
-// Creates a contract from the data stored in Nodule
-var tokenInstance: Contract<ERC.Token> = Nodule.knap(0x000...)
+// Creates a contract from the data stored in Flint Package Manager
+var tokenInstance: Contract<ERC.Token> = Flint.new(0x000...)
 ```
 #### Source Code
 A contract's source code can be imported by:
