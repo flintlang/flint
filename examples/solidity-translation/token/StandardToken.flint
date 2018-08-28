@@ -1,0 +1,88 @@
+// ----------------------------------------------------------------------------
+// Standard ERC20 Token
+//
+// Implementation of the basic standard token:
+//   https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
+// Based on openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol
+// ----------------------------------------------------------------------------
+
+contract StandardToken {
+    var balances: [Address: Int] = [:]
+    var allowed: [Address: [Address: Int]] = [:]
+    var totalSupply: Int = 0
+
+    var Transfer: Event<Address, Address, Int>
+    var Approval: Event<Address, Address, Int>
+}
+
+StandardToken :: (any) {
+  public init() {}
+
+  // Total number of tokens in existence
+  public func totalSupply() -> Int {
+    return totalSupply
+  }
+
+  // Gets the balance of the specified address.
+  // - param owner: The address to query the the balance of.
+  // - return: An Int representing the amount owned by the passed address
+  public func balanceOf(owner: Address) -> Int {
+    return balances[owner]
+  }
+
+  // Function to check the amount of tokens that an owner allowed to a spender.
+  // - param owner: The address which owns the funds.
+  // - param spender: The address which will spend the funds.
+  // - return: An Int specifying the amount of tokens still available for the spender.
+  public func allowance(owner: Address, spender: Address) -> Int {
+    return allowed[owner][spender]
+  }
+}
+StandardToken :: caller <- (any) {
+
+  // Transfer token for a specified address
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public mutating func transfer(to: Address, value: Int) -> Bool {
+    assert(balances[caller] >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[caller] -= value
+    balances[to] += value
+
+    Transfer(caller, to, value)
+
+    return true;
+  }
+
+  // Approve the passed address to spend the specified amount of tokens on behalf of caller.
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public mutating func approve(spender: Address, value: Int) -> Bool {
+    allowed[caller][spender] = value
+
+    Approval(caller, spender, value)
+    return true
+  }
+
+  // Transfer tokens from one address to another
+  // - param from: The address which you want to send tokens from.
+  // - param to: The address which you want to transfer to
+  // - param value: The amount of tokens to be transferred.
+  // - return: true or is reverted
+
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool {
+    let allowance: Int = allowed[from][caller]
+    assert(balances[from] >= value && allowance >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[from] -= value
+    balances[to] += value
+    allowed[from][caller] -= value
+
+    Transfer(from, to, value)
+    return true
+  }
+}

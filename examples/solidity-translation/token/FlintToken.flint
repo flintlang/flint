@@ -1,0 +1,129 @@
+// ----------------------------------------------------------------------------
+// Token using Flint features to add Minting
+// ----------------------------------------------------------------------------
+
+contract FlintToken (Minting, MintingFinished) {
+    var balances: [Address: Int] = [:]
+    var allowed: [Address: [Address: Int]] = [:]
+    var totalSupply: Int = 0
+    var owner: Address
+
+    var Transfer: Event<Address, Address, Int>
+    var Approval: Event<Address, Address, Int>
+
+    var Mint: Event<Address, Int>
+    var MintFinished: Event<Bool>
+}
+
+FlintToken @(any) :: caller <- (any) {
+  public init() {
+    self.owner = caller
+    become Minting
+  }
+
+  // Transfer token for a specified address
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public mutating func transfer(to: Address, value: Int) -> Bool {
+    assert(balances[caller] >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[caller] -= value
+    balances[to] += value
+
+    Transfer(caller, to, value)
+
+    return true;
+  }
+
+  // Approve the passed address to spend the specified amount of tokens on behalf of caller.
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public mutating func approve(spender: Address, value: Int) -> Bool {
+    allowed[caller][spender] = value
+
+    Approval(caller, spender, value)
+    return true
+  }
+
+  // Transfer tokens from one address to another
+  // - param from: The address which you want to send tokens from.
+  // - param to: The address which you want to transfer to
+  // - param value: The amount of tokens to be transferred.
+  // - return: true or is reverted
+
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool {
+    let allowance: Int = allowed[from][caller]
+    assert(balances[from] >= value && allowance >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[from] -= value
+    balances[to] += value
+    allowed[from][caller] -= value
+
+    Transfer(from, to, value)
+    return true
+  }
+
+  // Increase the amount of tokens that an owner allowed to a spender.
+  // approve should be called when allowed[_spender] == 0. To increment
+  // allowed value is better to use this function to avoid 2 calls (and wait until
+  // the first transaction is mined)
+  // From MonolithDAO Token.sol
+  // - param _spender The address which will spend the funds.
+  // - param _addedValue The amount of tokens to increase the allowance by.
+  mutating func increaseApproval(spender: Address, addedValue: Int) -> Bool {
+    allowed[caller][spender] += addedValue
+
+    Approval(caller, spender, allowed[caller][spender])
+    return true;
+  }
+
+  // Decrease the amount of tokens that an owner allowed to a spender.
+  // approve should be called when allowed[_spender] == 0. To decrement
+  // allowed value is better to use this func to avoid 2 calls (and wait until
+  // the first transaction is mined)
+  // From MonolithDAO Token.sol
+  // - param _spender The address which will spend the funds.
+  // - param _subtractedValue The amount of tokens to decrease the allowance by.
+  mutating func decreaseApproval(spender: Address, subtractedValue: Int) -> Bool {
+    let oldValue: Int = allowed[caller][spender]
+    if subtractedValue >= oldValue {
+      allowed[caller][spender] = 0
+    }
+    else {
+      allowed[caller][spender] = oldValue - subtractedValue
+    }
+
+    Approval(caller, spender, allowed[caller][spender])
+    return true;
+  }
+}
+
+FlintToken @(Minting) :: (owner) {
+  // Internal func that mints an amount of the token and assigns it to
+  // an account. This encapsulates the modification of balances such that the
+  // proper events are emitted.
+  // - param account The account that will receive the created tokens.
+  // - param amount The amount that will be created.
+  public mutating func mint(account: Address, amount: Int) -> Bool{
+    assert(account != 0x00000_00000_00000_00000_00000_00000_00000_00000);
+
+    totalSupply += amount
+    balances[account] += amount
+
+    Transfer(0x00000_00000_00000_00000_00000_00000_00000_00000, account, amount)
+    Mint(account, amount)
+    return true
+  }
+
+  // Stop minting new tokens
+  // Return true if successful
+  public mutating func finishMinting() -> Bool {
+    MintFinished(true)
+    return true
+    become MintingFinished
+  }
+}
