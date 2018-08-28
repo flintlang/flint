@@ -92,7 +92,7 @@ Our motivations are:
 
 We separate external calls into two types: _Trusted Calls_ and _Distrusted Calls_. Trusted calls are those accessed through the Flint Package Manager  or those which Flint has the source files for and deploys internally to the contract, i.e. Hub and Spoke Topology. Distrusted calls are those with an ABI interface or Trait interface.
 
-Distrusted calls should be treated as untrustworthy (1) and as such visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
+Distrusted calls (1) should be visually flagged in the source language as dangerous. Using a bang (!) would be consistent with the attempt call syntax for forcing a call without all information. In order to make a call we should specify the parameters for the call and to provide flexibility the default parameters should be at their minimum values. For instance the default gas provided should be 2300 (the amount given for just sending ether) with an option to send all gas.
 
 Educated calls meanwhile are not guaranteed to not introduce errors, but they have certain guarantees attached. These means that it combats (1), (2), (4):
 1. That there is a defined function at the end of the call
