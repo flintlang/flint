@@ -103,6 +103,25 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
+    // Check valid modifiers
+     if variableDeclaration.isMutating {
+       if variableDeclaration.isConstant {
+          diagnostics.append(.mutatingConstant(variableDeclaration))
+       }
+       else if variableDeclaration.isVariable {
+          diagnostics.append(.mutatingVariable(variableDeclaration))
+       }
+     }
+
+     if variableDeclaration.isPublic {
+       if variableDeclaration.isConstant {
+        diagnostics.append(.publicLet(variableDeclaration))
+       }
+       if variableDeclaration.isVisible {
+         diagnostics.append(.publicAndVisible(variableDeclaration))
+       }
+     }
+
     // Ensure that the type is declared.
     if case .userDefinedType(let typeIdentifier) = variableDeclaration.type.rawType, !environment.isTypeDeclared(typeIdentifier) {
       diagnostics.append(.useOfUndeclaredType(variableDeclaration.type))

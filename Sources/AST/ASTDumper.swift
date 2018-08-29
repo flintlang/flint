@@ -156,6 +156,9 @@ public class ASTDumper {
       if let declarationToken = variableDeclaration.declarationToken {
         self.dump(declarationToken)
       }
+      for modifier in variableDeclaration.modifiers {
+        self.dump(modifier)
+      }
       self.dump(variableDeclaration.identifier)
       self.dump(variableDeclaration.type)
 

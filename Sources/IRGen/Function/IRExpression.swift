@@ -1,5 +1,5 @@
 //
-//  IULIAExpression.swift
+//  IRExpression.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 27/04/2018.
@@ -9,7 +9,7 @@ import AST
 import Lexer
 
 /// Generates code for an expression.
-struct IULIAExpression {
+struct IRExpression {
   var expression: Expression
   var asLValue: Bool
 
@@ -21,21 +21,21 @@ struct IULIAExpression {
   func rendered(functionContext: FunctionContext) -> String {
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return IULIAExpression(expression: inoutExpression.expression, asLValue: true).rendered(functionContext: functionContext)
+      return IRExpression(expression: inoutExpression.expression, asLValue: true).rendered(functionContext: functionContext)
     case .binaryExpression(let binaryExpression):
-      return IULIABinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .bracketedExpression(let bracketedExpression):
-      return IULIAExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .attemptExpression(let attemptExpression):
-      return IULIAAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
+      return IRAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
-      return IULIAFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
+      return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):
-      return IULIAIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
-      return IULIAVariableDeclaration(variableDeclaration: variableDeclaration).rendered(functionContext: functionContext)
+      return IRVariableDeclaration(variableDeclaration: variableDeclaration).rendered(functionContext: functionContext)
     case .literal(let literal):
-      return IULIALiteralToken(literalToken: literal).rendered()
+      return IRLiteralToken(literalToken: literal).rendered()
     case .arrayLiteral(let arrayLiteral):
       for e in arrayLiteral.elements {
         guard case .arrayLiteral(_) = e else {
@@ -47,11 +47,11 @@ struct IULIAExpression {
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
       return "0"
     case .self(let `self`):
-      return IULIASelf(selfToken: self, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRSelf(selfToken: self, asLValue: asLValue).rendered(functionContext: functionContext)
     case .subscriptExpression(let subscriptExpression):
-      return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
     case .sequence(let expressions):
-      return expressions.map { IULIAExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
+      return expressions.map { IRExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
     case .rawAssembly(let assembly, _): return assembly
     case .range(_): fatalError("Range shouldn't be rendered directly")
     }
@@ -59,7 +59,7 @@ struct IULIAExpression {
 }
 
 /// Generates code for a binary expression.
-struct IULIABinaryExpression {
+struct IRBinaryExpression {
   var binaryExpression: BinaryExpression
   var asLValue: Bool
 
@@ -71,39 +71,39 @@ struct IULIABinaryExpression {
   func rendered(functionContext: FunctionContext) -> String {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
-        return IULIAFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
+        return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
       }
-      return IULIAPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
     }
 
-    let lhs = IULIAExpression(expression: binaryExpression.lhs, asLValue: asLValue).rendered(functionContext: functionContext)
-    let rhs = IULIAExpression(expression: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
+    let lhs = IRExpression(expression: binaryExpression.lhs, asLValue: asLValue).rendered(functionContext: functionContext)
+    let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
 
     switch binaryExpression.opToken {
     case .equal:
-      return IULIAAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs).rendered(functionContext: functionContext)
+      return IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs).rendered(functionContext: functionContext)
 
-    case .plus: return IULIARuntimeFunction.add(a: lhs, b: rhs)
+    case .plus: return IRRuntimeFunction.add(a: lhs, b: rhs)
     case .overflowingPlus: return "add(\(lhs), \(rhs))"
-    case .minus: return IULIARuntimeFunction.sub(a: lhs, b: rhs)
+    case .minus: return IRRuntimeFunction.sub(a: lhs, b: rhs)
     case .overflowingMinus: return "sub(\(lhs), \(rhs))"
-    case .times: return IULIARuntimeFunction.mul(a: lhs, b: rhs)
+    case .times: return IRRuntimeFunction.mul(a: lhs, b: rhs)
     case .overflowingTimes: return "mul(\(lhs), \(rhs))"
-    case .divide: return IULIARuntimeFunction.div(a: lhs, b: rhs)
+    case .divide: return IRRuntimeFunction.div(a: lhs, b: rhs)
     case .closeAngledBracket: return "gt(\(lhs), \(rhs))"
     case .openAngledBracket: return "lt(\(lhs), \(rhs))"
     case .doubleEqual: return "eq(\(lhs), \(rhs))"
     case .notEqual: return "iszero(eq(\(lhs), \(rhs)))"
     case .or: return "or(\(lhs), \(rhs))"
     case .and: return "and(\(lhs), \(rhs))"
-    case .power: return IULIARuntimeFunction.power(b: lhs, e: rhs)
+    case .power: return IRRuntimeFunction.power(b: lhs, e: rhs)
     default: fatalError("opToken not supported")
     }
   }
 }
 
 /// Generates code for a property access.
-struct IULIAPropertyAccess {
+struct IRPropertyAccess {
   var lhs: Expression
   var rhs: Expression
   var asLValue: Bool
@@ -122,7 +122,7 @@ struct IULIAPropertyAccess {
       case .identifier(let propertyIdentifier) = rhs,
       environment.isEnumDeclared(enumIdentifier.name),
       let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
-      return IULIAExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
+      return IRExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
     }
 
     let rhsOffset: String
@@ -147,7 +147,7 @@ struct IULIAPropertyAccess {
         fatalError()
       }
     default:
-      rhsOffset = IULIAPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
+      rhsOffset = IRPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     }
 
     let offset: String
@@ -160,7 +160,7 @@ struct IULIAPropertyAccess {
       }
 
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = IULIARuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
+      offset = IRRuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
       let lhsOffset: String
       if case .identifier(let lhsIdentifier) = lhs {
@@ -173,10 +173,10 @@ struct IULIAPropertyAccess {
           lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
         }
       } else {
-        lhsOffset = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+        lhsOffset = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
       }
 
-      offset = IULIARuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
+      offset = IRRuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
 
     if asLValue {
@@ -185,23 +185,23 @@ struct IULIAPropertyAccess {
 
     if isInStructFunction, !isMemoryAccess {
       let lhsEnclosingIdentifier = lhs.enclosingIdentifier?.name.mangled ?? "flintSelf".mangled
-      return IULIARuntimeFunction.load(address: offset, inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
+      return IRRuntimeFunction.load(address: offset, inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
     }
 
-    return IULIARuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
+    return IRRuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
   }
 }
 
 /// Generates code for a property offset.
-struct IULIAPropertyOffset {
+struct IRPropertyOffset {
   var expression: Expression
   var enclosingType: RawType
 
   func rendered(functionContext: FunctionContext) -> String {
     if case .binaryExpression(let binaryExpression) = expression {
-      return IULIAPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true).rendered(functionContext: functionContext)
+      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true).rendered(functionContext: functionContext)
     } else if case .subscriptExpression(let subscriptExpression) = expression {
-      return IULIASubscriptExpression(subscriptExpression: subscriptExpression, asLValue: true).rendered(functionContext: functionContext)
+      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: true).rendered(functionContext: functionContext)
     }
     guard case .identifier(let identifier) = expression else { fatalError() }
 
@@ -218,12 +218,12 @@ struct IULIAPropertyOffset {
 }
 
 /// Generates code for an assignment.
-struct IULIAAssignment {
+struct IRAssignment {
   var lhs: Expression
   var rhs: Expression
 
   func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> String {
-    let rhsCode = IULIAExpression(expression: rhs).rendered(functionContext: functionContext)
+    let rhsCode = IRExpression(expression: rhs).rendered(functionContext: functionContext)
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
@@ -232,7 +232,7 @@ struct IULIAAssignment {
       return "\(identifier.name.mangled) := \(rhsCode)"
     default:
       // LHS refers to a property in storage or memory.
-      let lhsCode = IULIAExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+      let lhsCode = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
 
       if functionContext.isInStructFunction {
         let enclosingName: String
@@ -241,30 +241,30 @@ struct IULIAAssignment {
         } else {
           enclosingName = "flintSelf"
         }
-        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
+        return IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true)
+        return IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true)
       } else {
-        return IULIARuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
+        return IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false)
       }
     }
   }
 }
 
 /// Generates code for a function call.
-struct IULIAFunctionCall {
+struct IRFunctionCall {
   var functionCall: FunctionCall
 
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
 
     if let eventInformation = environment.matchEventCall(functionCall, enclosingType: functionContext.enclosingTypeName) {
-      return IULIAEventCall(eventCall: functionCall, eventInformation: eventInformation).rendered(functionContext: functionContext)
+      return IREventCall(eventCall: functionCall, eventInformation: eventInformation).rendered(functionContext: functionContext)
     }
 
     let args: String = functionCall.arguments.map({ argument in
-      return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
+      return IRExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")
     let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
     return "\(identifier)(\(args))"
@@ -273,7 +273,7 @@ struct IULIAFunctionCall {
 }
 
 /// Generates code for an event call.
-struct IULIAEventCall {
+struct IREventCall {
   var eventCall: FunctionCall
   var eventInformation: PropertyInformation
 
@@ -283,7 +283,7 @@ struct IULIAEventCall {
     var stores = [String]()
     var memoryOffset = 0
     for (i, argument) in eventCall.arguments.enumerated() {
-      let argument = IULIAExpression(expression: argument).rendered(functionContext: functionContext)
+      let argument = IRExpression(expression: argument).rendered(functionContext: functionContext)
       stores.append("mstore(\(memoryOffset), \(argument))")
       memoryOffset += functionContext.environment.size(of: types[i]) * EVM.wordSize
     }
@@ -304,7 +304,7 @@ struct IULIAEventCall {
 }
 
 /// Generates code for an identifier.
-struct IULIAIdentifier {
+struct IRIdentifier {
   var identifier: Identifier
   var asLValue: Bool
 
@@ -315,7 +315,7 @@ struct IULIAIdentifier {
 
   func rendered(functionContext: FunctionContext) -> String {
     if let _ = identifier.enclosingType {
-      return IULIAPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
     }
     return identifier.name.mangled
   }
@@ -326,17 +326,17 @@ struct IULIAIdentifier {
 }
 
 /// Generates code for a variable declaration.
-struct IULIAVariableDeclaration {
+struct IRVariableDeclaration {
   var variableDeclaration: VariableDeclaration
 
   func rendered(functionContext: FunctionContext) -> String {
-    let allocate = IULIARuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
+    let allocate = IRRuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
     return "let \(variableDeclaration.identifier.name.mangled) := \(allocate)"
   }
 }
 
 /// Generates code for a literal token.
-struct IULIALiteralToken {
+struct IRLiteralToken {
   var literalToken: Token
 
   func rendered() -> String {
@@ -355,7 +355,7 @@ struct IULIALiteralToken {
 }
 
 // Generates code for an attempt expression
-struct IULIAAttemptExpression {
+struct IRAttemptExpression {
    var attemptExpression: AttemptExpression
 
    func rendered(functionContext: FunctionContext) -> String {
@@ -364,13 +364,13 @@ struct IULIAAttemptExpression {
 
      let callName: String
      if case .hard = attemptExpression.kind {
-       callName = IULIAWrapperFunction.prefixHard + functionName
+       callName = IRWrapperFunction.prefixHard + functionName
      } else {
-       callName = IULIAWrapperFunction.prefixSoft + functionName
+       callName = IRWrapperFunction.prefixSoft + functionName
      }
 
      let args: String = functionCall.arguments.map({ argument in
-       return IULIAExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
+       return IRExpression(expression: argument, asLValue: false).rendered(functionContext: functionContext)
      }).joined(separator: ", ")
 
      return "\(callName)(\(args))"
@@ -379,7 +379,7 @@ struct IULIAAttemptExpression {
  }
 
 /// Generates code for a "self" expression.
-struct IULIASelf {
+struct IRSelf {
   var selfToken: Token
   var asLValue: Bool
 
@@ -393,7 +393,7 @@ struct IULIASelf {
 }
 
 /// Generates code for a subscript expression.
-struct IULIASubscriptExpression {
+struct IRSubscriptExpression {
   var subscriptExpression: SubscriptExpression
   var asLValue: Bool
 
@@ -408,19 +408,19 @@ struct IULIASubscriptExpression {
   }
 
   func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int, functionContext: FunctionContext) -> String {
-    let indexExpressionCode = IULIAExpression(expression: subExpr.indexExpression).rendered(functionContext: functionContext)
+    let indexExpressionCode = IRExpression(expression: subExpr.indexExpression).rendered(functionContext: functionContext)
 
     let type = functionContext.environment.type(of: subExpr.baseExpression, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext)
     let runtimeFunc: (String, String) -> String
 
     switch type {
     case .arrayType(_):
-      runtimeFunc = IULIARuntimeFunction.storageArrayOffset
+      runtimeFunc = IRRuntimeFunction.storageArrayOffset
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
-      runtimeFunc = {IULIARuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, arraySize: typeSize)}
+      runtimeFunc = {IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, arraySize: typeSize)}
     case .dictionaryType(_):
-      runtimeFunc = IULIARuntimeFunction.storageDictionaryOffsetForKey
+      runtimeFunc = IRRuntimeFunction.storageDictionaryOffsetForKey
     default: fatalError("Invalid type")
     }
 

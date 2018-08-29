@@ -197,6 +197,18 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: statement.sourceLocation, message: "Cannot become before a return")
   }
 
+  static func mutatingConstant(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The variable '\(variableDeclaration.identifier.name)' is both declared constant and mutating")
+  }
+
+  static func publicLet(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+   return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "The variable '\(variableDeclaration.identifier.name)' is declared public (and a setter will be synthesised) but let variables cannot be set")
+  }
+
+  static func publicAndVisible(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+   return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "Cannot declare variable '\(variableDeclaration.identifier.name)' both public and visible")
+  }
+
   static func renderGroup(_ capabilities: [CallerCapability]) -> String {
     return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
   }
@@ -246,5 +258,9 @@ extension Diagnostic {
 
   static func nonVoidAttemptCall(_ attempt: AttemptExpression) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: attempt.sourceLocation, message: "Calling a function returning a non-Void value with try? is not supported yet")
+  }
+
+  static func mutatingVariable(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: variableDeclaration.sourceLocation, message: "Variables are already implicitly mutating")
   }
 }

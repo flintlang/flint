@@ -1,5 +1,5 @@
 //
-//  IULIAPreprocessor+Expressions.swift
+//  IRPreprocessor+Expressions.swift
 //  IRGen
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
@@ -9,7 +9,7 @@ import AST
 import Lexer
 
 /// A prepocessing step to update the program's AST before code generation.
-extension IULIAPreprocessor {
+extension IRPreprocessor {
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     var expression = expression
     let environment = passContext.environment!

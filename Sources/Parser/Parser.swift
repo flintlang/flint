@@ -139,7 +139,40 @@ extension Parser {
   func parseTopLevelModule() throws -> TopLevelModule {
     consumeNewLines()
     let topLevelDeclarations = try parseTopLevelDeclarations()
-    return TopLevelModule(declarations: topLevelDeclarations)
+    let topLevelModule = TopLevelModule(declarations: topLevelDeclarations)
+     topLevelModule.declarations.forEach { (tld) in
+       switch tld {
+         case .contractDeclaration(let contract):
+           environment.addContract(contract)
+           if contract.isStateful {
+             environment.addEnum(contract.stateEnum)
+           }
+         case .contractBehaviorDeclaration(let behaviour):
+           let contractIdentifier = behaviour.contractIdentifier.name
+           for case .functionDeclaration(let functionDeclaration) in behaviour.members {
+             // Record all the function declarations.
+             environment.addFunction(functionDeclaration, enclosingType: contractIdentifier, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
+           }
+           for case .specialDeclaration(let specialDeclaration) in behaviour.members {
+             if specialDeclaration.isInit {
+               environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
+               if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
+                 // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+                 // contract's state properties.
+                 environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
+               }
+             } else if specialDeclaration.isFallback {
+               environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
+             }
+           }
+         case .structDeclaration(let structDeclaration):
+           environment.addStruct(structDeclaration)
+
+         case .enumDeclaration(let enumDeclaration):
+           environment.addEnum(enumDeclaration)
+       }
+     }
+     return topLevelModule
   }
 
   func parseTopLevelDeclarations() throws -> [TopLevelDeclaration] {
@@ -152,18 +185,12 @@ extension Parser {
       switch first.kind {
       case .contract:
         let contractDeclaration = try parseContractDeclaration()
-        environment.addContract(contractDeclaration)
-        if contractDeclaration.isStateful {
-          environment.addEnum(contractDeclaration.stateEnum)
-        }
         declarations.append(.contractDeclaration(contractDeclaration))
       case .struct:
         let structDeclaration = try parseStructDeclaration()
-        environment.addStruct(structDeclaration)
         declarations.append(.structDeclaration(structDeclaration))
       case .enum:
         let enumDeclaration = try parseEnumDeclaration()
-        environment.addEnum(enumDeclaration)
         declarations.append(.enumDeclaration(enumDeclaration))
       default:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
@@ -419,18 +446,11 @@ extension Parser {
   /// - Returns: The parsed `VariableDeclaration`.
   /// - Throws: If the token streams cannot be parsed as a `VariableDeclaration`.
   func parseVariableDeclaration(enclosingType: RawTypeIdentifier? = nil) throws -> VariableDeclaration {
-    let isConstant: Bool
 
-    let declarationToken: Token
+    let modifiers = try? parseModifiers()
 
-    if let varToken = attempt(try consume(.var)) {
-      declarationToken = varToken
-      isConstant = false
-    } else {
-      let letToken = try consume(.let)
-      declarationToken = letToken
-      isConstant = true
-    }
+    let declarationToken = try consume(anyOf: [.var, .let])
+
 
     var name = try parseIdentifier()
     let typeAnnotation = try parseTypeAnnotation()
@@ -453,7 +473,7 @@ extension Parser {
       name.enclosingType = enclosingType
     }
 
-    return VariableDeclaration(declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, isConstant: isConstant, assignedExpression: assignedExpression)
+    return VariableDeclaration(modifiers: modifiers ?? [], declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, assignedExpression: assignedExpression)
   }
 }
 
@@ -473,11 +493,6 @@ extension Parser {
     let members = try parseContractBehaviorMembers(contractIdentifier: contractIdentifier.name)
 
     try consume(.punctuation(.closeBrace))
-
-    for case .functionDeclaration(let functionDeclaration) in members {
-      // Record all the function declarations.
-      environment.addFunction(functionDeclaration, enclosingType: contractIdentifier.name, states: states, callerCapabilities: callerCapabilities)
-    }
 
     return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, states: states, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
   }
@@ -532,16 +547,6 @@ extension Parser {
         members.append(.functionDeclaration(functionDeclaration))
       } else if let specialDeclaration = attempt(task: parseSpecialDeclaration) {
         members.append(.specialDeclaration(specialDeclaration))
-        if specialDeclaration.isInit {
-          environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
-          if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
-            // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
-            // contract's state properties.
-            environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
-          }
-        } else if specialDeclaration.isFallback {
-          environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
-        }
       } else {
         break
       }
@@ -567,27 +572,26 @@ extension Parser {
     return SpecialDeclaration(specialToken: specialToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
   }
 
-  func parseAttributesAndModifiers() throws -> (attributes: [Attribute], modifiers: [Token]) {
+  func parseAttributes() throws -> [Attribute] {
     var attributes = [Attribute]()
-    var modifiers = [Token]()
-
     // Parse function attributes such as @payable.
     while let attribute = attempt(task: parseAttribute) {
       attributes.append(attribute)
     }
+    return attributes
+  }
 
+  func parseModifiers() throws -> [Token] {
+    var modifiers = [Token]()
     // Parse function modifiers.
-    while true {
-      if let token = attempt(try consume(.public)) {
-        modifiers.append(token)
-      } else if let token = attempt(try consume(.mutating)) {
-        modifiers.append(token)
-      } else {
-        break
-      }
+    while let token = attempt(try consume(anyOf: [.public, .mutating, .visible])) {
+      modifiers.append(token)
     }
+    return modifiers
+  }
 
-    return (attributes, modifiers)
+  func parseAttributesAndModifiers() throws -> (attributes: [Attribute], modifiers: [Token]) {
+    return (try parseAttributes(), try parseModifiers())
   }
 
   func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
@@ -868,22 +872,8 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace))
-
-    let structDeclaration = StructDeclaration(structToken: structToken, identifier: identifier, members: members)
-
-    for member in structDeclaration.members {
-      switch member {
-      case .functionDeclaration(let functionDeclaration):
-        environment.addFunction(functionDeclaration, enclosingType: identifier.name)
-      case .specialDeclaration(let specialDeclaration):
-        if specialDeclaration.isInit {
-          environment.addInitializer(specialDeclaration, enclosingType: identifier.name)
-        }
-      case .variableDeclaration(_): break
-      }
-    }
-
-    return structDeclaration
+    
+    return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
   }
 
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {

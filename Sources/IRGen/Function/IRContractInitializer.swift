@@ -8,7 +8,7 @@
 import AST
 
 /// Generates code for a contract initializer.
-struct IULIAContractInitializer {
+struct IRContractInitializer {
   var initializerDeclaration: SpecialDeclaration
   var typeIdentifier: Identifier
 
@@ -24,14 +24,14 @@ struct IULIAContractInitializer {
 
   var parameterNames: [String] {
     let fc = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
-    return initializerDeclaration.explicitParameters.map {IULIAIdentifier(identifier: $0.identifier).rendered(functionContext: fc)}
+    return initializerDeclaration.explicitParameters.map { IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc) }
   }
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     var localVariables = [VariableDeclaration]()
     if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
+      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
     }
     return ScopeContext(parameters: initializerDeclaration.parameters, localVariables: localVariables)
   }
@@ -52,7 +52,7 @@ struct IULIAContractInitializer {
       """
     }.joined(separator: "\n")
 
-    let body = IULIAFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
+    let body = IRFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
 
     return """
     init()
