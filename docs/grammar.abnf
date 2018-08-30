@@ -37,6 +37,9 @@ enumDeclaration = %s"enum" SP identifier SP [typeAnnotation] SP "{" *(WSP enumCa
 enumCase        = %s"case" SP identifier
                    / %s"case" SP identifier WSP "=" WSP expression;
 
+; EVENTS
+eventDeclaration = "event" identifer "{" *(variableDeclaration) "}"
+
 ; STRUCTS
 structDeclaration = %s"struct" SP identifier SP "{" *(WSP structMember CRLF) "}";
 
@@ -83,11 +86,13 @@ codeBlock   = "{" [CRLF] *(WSP statement CRLF) WSP statement [CRLF]"}";
 statement   = expression
               / returnStatement
               / becomeStatement
+              / emitStatement
               / forStatement
               / ifStatement;
 
 returnStatement = %s"return" SP expression
 becomeStatement = %s"become" SP expression
+emitStatement   = %s"emit" SP expression
 forStatement = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
 
 ; EXPRESSIONS
