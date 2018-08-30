@@ -11,8 +11,16 @@ contract StandardToken {
     var allowed: [Address: [Address: Int]] = [:]
     var totalSupply: Int = 0
 
-    var Transfer: Event<Address, Address, Int>
-    var Approval: Event<Address, Address, Int>
+    event Transfer {
+      let from: Address
+      let to: Address
+      let value: Int
+    }
+    event Approval {
+      let from: Address
+      let to: Address
+      let value: Int
+    }
 }
 
 StandardToken :: (any) {
@@ -51,7 +59,7 @@ StandardToken :: caller <- (any) {
     balances[caller] -= value
     balances[to] += value
 
-    Transfer(caller, to, value)
+    emit Transfer(from: caller, to: to, value: value)
 
     return true;
   }
@@ -63,7 +71,7 @@ StandardToken :: caller <- (any) {
   public mutating func approve(spender: Address, value: Int) -> Bool {
     allowed[caller][spender] = value
 
-    Approval(caller, spender, value)
+    emit Approval(from: caller, to: spender, value: value)
     return true
   }
 
@@ -82,7 +90,7 @@ StandardToken :: caller <- (any) {
     balances[to] += value
     allowed[from][caller] -= value
 
-    Transfer(from, to, value)
+    emit Transfer(from: from, to: to, value: value)
     return true
   }
 }

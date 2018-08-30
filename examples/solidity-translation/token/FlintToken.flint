@@ -8,11 +8,23 @@ contract FlintToken (Minting, MintingFinished) {
     var totalSupply: Int = 0
     var owner: Address
 
-    var Transfer: Event<Address, Address, Int>
-    var Approval: Event<Address, Address, Int>
+    event Transfer {
+      let from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000
+      let to: Address
+      let value: Int
+    }
+    event Approval {
+      let from: Address
+      let to: Address
+      let value: Int
+    }
 
-    var Mint: Event<Address, Int>
-    var MintFinished: Event<Bool>
+    event Mint {
+      let to: Address
+      let value: Int
+    }
+
+    event MintFinished {}
 }
 
 FlintToken @(any) :: caller <- (any) {
@@ -32,7 +44,7 @@ FlintToken @(any) :: caller <- (any) {
     balances[caller] -= value
     balances[to] += value
 
-    Transfer(caller, to, value)
+    emit Transfer(from: caller, to: to, value: value)
 
     return true;
   }
@@ -44,7 +56,7 @@ FlintToken @(any) :: caller <- (any) {
   public mutating func approve(spender: Address, value: Int) -> Bool {
     allowed[caller][spender] = value
 
-    Approval(caller, spender, value)
+    emit Approval(from: caller, to: spender, value: value)
     return true
   }
 
@@ -63,7 +75,7 @@ FlintToken @(any) :: caller <- (any) {
     balances[to] += value
     allowed[from][caller] -= value
 
-    Transfer(from, to, value)
+    emit Transfer(from: from, to: to, value: value)
     return true
   }
 
@@ -77,7 +89,7 @@ FlintToken @(any) :: caller <- (any) {
   mutating func increaseApproval(spender: Address, addedValue: Int) -> Bool {
     allowed[caller][spender] += addedValue
 
-    Approval(caller, spender, allowed[caller][spender])
+    emit Approval(from: caller, to: spender, value: allowed[caller][spender])
     return true;
   }
 
@@ -97,7 +109,7 @@ FlintToken @(any) :: caller <- (any) {
       allowed[caller][spender] = oldValue - subtractedValue
     }
 
-    Approval(caller, spender, allowed[caller][spender])
+    emit Approval(from: caller, to: spender, value: allowed[caller][spender])
     return true;
   }
 }
@@ -114,15 +126,15 @@ FlintToken @(Minting) :: (owner) {
     totalSupply += amount
     balances[account] += amount
 
-    Transfer(0x00000_00000_00000_00000_00000_00000_00000_00000, account, amount)
-    Mint(account, amount)
+    emit Transfer(to: account, value: amount)
+    emit Mint(to: account, value: amount)
     return true
   }
 
   // Stop minting new tokens
   // Return true if successful
   public mutating func finishMinting() -> Bool {
-    MintFinished(true)
+    emit MintFinished
     return true
     become MintingFinished
   }
