@@ -1,0 +1,23 @@
+contract Events {
+  event eventA {
+    let addr: Address
+    let x: Int
+  }
+
+  event eventB {
+    let addr: Address
+    let y: Int
+  }
+}
+
+Events :: caller <- (any) {
+  public init() {}
+
+  public func A() {
+    emit eventA(addr: caller, x: 1)
+  }
+
+  public func B() {
+    emit eventB(addr: caller, y: 2)
+  }
+}

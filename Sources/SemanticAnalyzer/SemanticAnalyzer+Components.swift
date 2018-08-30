@@ -51,7 +51,7 @@ extension SemanticAnalyzer {
     if passContext.isFunctionCall {
       // If the identifier is the name of a function call, do nothing. The function call will be matched in
       // `process(functionCall:passContext:)`.
-    } else if inFunctionOrInitializer, !passContext.isInBecome {
+    } else if inFunctionOrInitializer, !passContext.isInBecome, !passContext.isInEmit {
       // The identifier is used within the body of a function or an initializer
 
       // The identifier is used an l-value (the left-hand side of an assignment).

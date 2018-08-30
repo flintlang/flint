@@ -1,44 +1,19 @@
 //
 //  EnumDeclaration.swift
-//  flintc
+//  AST
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
 import Source
 import Lexer
 
-public struct EnumCase: ASTNode {
-  public var caseToken: Token
-  public var identifier: Identifier
-  public var type: Type
-
-  public var hiddenValue: Expression?
-  public var hiddenType: Type
-
-  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?, hiddenType: Type){
-    self.caseToken = caseToken
-    self.identifier = identifier
-    self.hiddenValue = hiddenValue
-    self.type = type
-    self.hiddenType = hiddenType
-  }
-
-  // MARK: - ASTNode
-  public var description: String {
-    return "case \(identifier)"
-  }
-  public var sourceLocation: SourceLocation {
-    return .spanning(caseToken, to: identifier)
-  }
-}
-
 public struct EnumDeclaration: ASTNode {
   public var enumToken: Token
   public var identifier: Identifier
   public var type: Type
-  public var cases: [EnumCase]
+  public var cases: [EnumMember]
 
-  public init(enumToken: Token, identifier: Identifier, type: Type, cases: [EnumCase]) {
+  public init(enumToken: Token, identifier: Identifier, type: Type, cases: [EnumMember]) {
     self.enumToken = enumToken
     self.identifier = identifier
     self.cases = cases
@@ -49,7 +24,7 @@ public struct EnumDeclaration: ASTNode {
 
   mutating func synthesizeRawValues(){
     var lastRawValue: Expression?
-    var newCases = [EnumCase]()
+    var newCases = [EnumMember]()
 
     for var enumCase in cases {
       if enumCase.hiddenValue == nil, type.rawType == .basicType(.int) {

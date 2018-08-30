@@ -67,6 +67,12 @@ extension ASTPassContext {
     set { self[isInBecomeEntry.self] = newValue }
   }
 
+  /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
+  public var isInEmit: Bool {
+    get { return self[isInEmitEntry.self] ?? false }
+    set { self[isInEmitEntry.self] = newValue }
+  }
+
   /// Contextual information used when visiting the state properties declared in a contract declaration.
   public var contractStateDeclarationContext: ContractStateDeclarationContext? {
     get { return self[ContractStateDeclarationContextEntry.self] }
@@ -92,6 +98,12 @@ extension ASTPassContext {
   public var enumDeclarationContext: EnumDeclarationContext? {
     get { return self[EnumDeclarationContextEntry.self] }
     set { self[EnumDeclarationContextEntry.self] = newValue }
+  }
+
+  /// Contextual information used when visiting declarations in an event, such as the name of the event
+  public var eventDeclarationContext: EventDeclarationContext? {
+    get { return self[EventDeclarationContextEntry.self] }
+    set { self[EventDeclarationContextEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting statements in a function, such as if the function is mutating or note.
@@ -124,7 +136,8 @@ extension ASTPassContext {
     return contractBehaviorDeclarationContext?.contractIdentifier ??
       structDeclarationContext?.structIdentifier ??
       contractStateDeclarationContext?.contractIdentifier ??
-      enumDeclarationContext?.enumIdentifier
+      enumDeclarationContext?.enumIdentifier ??
+      eventDeclarationContext?.eventIdentifier
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.
@@ -172,6 +185,10 @@ private struct isInBecomeEntry: PassContextEntry {
   typealias Value = Bool
 }
 
+private struct isInEmitEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
 private struct ContractStateDeclarationContextEntry: PassContextEntry {
   typealias Value = ContractStateDeclarationContext
 }
@@ -186,6 +203,10 @@ private struct StructDeclarationContextEntry: PassContextEntry {
 
 private struct EnumDeclarationContextEntry: PassContextEntry {
   typealias Value = EnumDeclarationContext
+}
+
+private struct EventDeclarationContextEntry: PassContextEntry {
+  typealias Value = EventDeclarationContext
 }
 
 private struct FunctionDeclarationContextEntry: PassContextEntry {

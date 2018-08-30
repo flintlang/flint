@@ -25,13 +25,13 @@ struct IRInterface {
       }
     }.joined(separator: "\n")
 
-    let events = contract.contractDeclaration.variableDeclarations.filter { $0.type.rawType.isEventType }
+    let events = environment.events(in: contract.contractDeclaration.identifier.name)
     let eventDeclarations = events.map { event -> String in
-      let parameters = event.type.genericArguments.map { type in
-        return CanonicalType(from: type.rawType)!.rawValue
+      let parameters = event.declaration.variableDeclarations.map { variable in
+        return "\(CanonicalType(from: variable.type.rawType)!.rawValue) \(variable.identifier.name)"
       }.joined(separator: ",")
 
-      return "event \(event.identifier.name)(\(parameters));"
+      return "event \(event.declaration.identifier.name)(\(parameters));"
     }.joined(separator: "\n")
 
     return """
@@ -75,10 +75,7 @@ struct IRInterface {
 fileprivate extension FunctionDeclaration {
   func containsEventCall(environment: Environment, contractIdentifier: Identifier) -> Bool {
     for statement in body {
-      guard case .expression(.functionCall(let functionCall)) = statement else {
-        continue
-      }
-      if environment.matchEventCall(functionCall, enclosingType: contractIdentifier.name) != nil {
+      if case .emitStatement(_) = statement {
         return true
       }
     }

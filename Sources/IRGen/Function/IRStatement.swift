@@ -18,6 +18,7 @@ struct IRStatement {
     case .ifStatement(let ifStatement): return IRIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
     case .returnStatement(let returnStatement): return IRReturnStatement(returnStatement: returnStatement).rendered(functionContext: functionContext)
     case .becomeStatement(let becomeStatement): return IRBecomeStatement(becomeStatement: becomeStatement).rendered(functionContext: functionContext)
+    case .emitStatement(let emitStatement): return IREmitStatement(emitStatement: emitStatement).rendered(functionContext: functionContext)
     case .forStatement(let forStatement): return IRForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     }
   }
@@ -243,3 +244,11 @@ struct IRBecomeStatement {
   }
 }
 
+/// Generates code for an emit statement.
+struct IREmitStatement {
+  var emitStatement: EmitStatement
+
+  func rendered(functionContext: FunctionContext) -> String {
+    return IRExpression(expression: emitStatement.expression).rendered(functionContext: functionContext)
+  }
+}

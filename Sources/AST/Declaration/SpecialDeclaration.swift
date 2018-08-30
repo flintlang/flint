@@ -1,6 +1,6 @@
 //
 //  SpecialDeclaration.swift
-//  flintc
+//  AST
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //

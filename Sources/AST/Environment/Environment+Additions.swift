@@ -40,6 +40,16 @@ extension Environment {
     setProperties(enumDeclaration.cases.map{ .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
   }
 
+  /// Add an event declaration to the environment.
+  public mutating func addEvent(_ eventDeclaration: EventDeclaration, enclosingType: RawTypeIdentifier) {
+    //EventInformation
+    let eventName = eventDeclaration.identifier.name
+
+    types[enclosingType, default: TypeInformation()]
+      .events[eventName, default: [EventInformation]()]
+      .append(EventInformation(declaration: eventDeclaration))
+  }
+
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerCapabilities: [CallerCapability]) {
