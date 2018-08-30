@@ -812,20 +812,27 @@ Payable functions may have an arbitrary amount of parameters, but exactly one ne
 ## Events
 JavaScript applications can listen to events emitted by an Ethereum smart contract.
 
-In Flint, events are declared in contract declarations. The `Event` type takes generic arguments, corresponding to the types of values attached to the event.
+In Flint, events are declared in contract declarations. They use a similar syntax to structs except using the keyword `event` and only allowing _constants_. It can be assigned a default value if desired.
+
+Events can then be emitted using the keyword `emit` followed by an event call. An event call is the identifier followed by the arguments to the event which should be labelled with the correct variable name followed a colon and the value it should take.  
 ```swift
 contract Bank {
   var balances: [Address: Int]
-  var didCompleteTransfer: Event<Address, Address, Int> // (origin, destination, amount)
+
+  event didCompleteTransfer {
+    let origin: Address
+    let destination: Address
+    let amount: Int
+  }
 }
 
 Bank :: caller <- (any) {
-  mutating func transfer(destination: Address, amount: Int) {
-    balances[caller] -= amount
-    balances[destination] += amount
+  mutating func transfer(to: Address, value: Int) {
+    balances[caller] -= value
+    balances[to] += value
 
     // A JavaScript client could listen for this event
-    didCompleteTransfer(caller, destination, amount)
+    emit didCompleteTransfer(origin: caller, destination: to, amount: value)
   }
 }
 ```
