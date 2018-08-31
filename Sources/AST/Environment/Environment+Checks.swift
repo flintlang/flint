@@ -92,7 +92,7 @@ extension Environment {
   private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
     return identifier1 != identifier2 &&
       identifier1.name == identifier2.name &&
-      identifier1.sourceLocation.line < identifier2.sourceLocation.line
+      identifier1.sourceLocation < identifier2.sourceLocation
   }
 
   // Whether declarations conflict
