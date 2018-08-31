@@ -9,20 +9,44 @@ import Lexer
 
 /// The declaration of a variable or constant, either as a state property of a local variable.
 public struct VariableDeclaration: ASTNode {
+  public var modifiers: [Token]
   public var declarationToken: Token?
   public var identifier: Identifier
   public var type: Type
-  public var isConstant: Bool
   public var assignedExpression: Expression?
 
-  public init(declarationToken: Token?, identifier: Identifier, type: Type, isConstant: Bool = false, assignedExpression: Expression? = nil) {
+  public init(modifiers: [Token], declarationToken: Token?, identifier: Identifier, type: Type, assignedExpression: Expression? = nil) {
+    self.modifiers = modifiers
     self.declarationToken = declarationToken
     self.identifier = identifier
     self.type = type
-    self.isConstant = isConstant
     self.assignedExpression = assignedExpression
   }
 
+  public var isConstant: Bool {
+    return declarationToken?.kind == .let
+  }
+
+  public var isVariable: Bool {
+    return declarationToken?.kind == .var
+  }
+
+  // MARK: - Modifier Checks
+  public var isMutating: Bool {
+    return hasModifier(kind: .mutating)
+  }
+
+  public var isVisible: Bool {
+    return hasModifier(kind: .visible)
+  }
+
+  public var isPublic: Bool {
+    return hasModifier(kind: .public)
+  }
+
+  private func hasModifier(kind: Token.Kind) -> Bool {
+    return modifiers.contains { $0.kind == kind }
+  }
   // MARK: - ASTNode
   public var description: String {
     return "\(declarationToken?.description ?? "") \(identifier): \(type)"

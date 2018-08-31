@@ -1,5 +1,5 @@
 //
-//  IULIAFallback.swift
+//  IRFallback.swift
 //  AST
 //
 //  Created by Hails, Daniel J R on 10/08/2018.
@@ -8,7 +8,7 @@
 import AST
 
 /// Generates code for a contract fallback.
-struct IULIAContractFallback {
+struct IRContractFallback {
   var fallbackDeclaration: SpecialDeclaration
   var typeIdentifier: Identifier
 
@@ -20,12 +20,12 @@ struct IULIAContractFallback {
 
   var parameterNames: [String] {
     return fallbackDeclaration.explicitParameters.map { parameter in
-      return IULIAIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext)
+      return IRIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext)
     }
   }
 
   func rendered() -> String {
-    return IULIAFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: nil, callerCapabilities: [], environment: environment, isContractFunction: true).rendered()
+    return IRFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: nil, callerCapabilities: [], environment: environment, isContractFunction: true).rendered()
   }
 }
 

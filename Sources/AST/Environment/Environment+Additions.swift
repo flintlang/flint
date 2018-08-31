@@ -22,7 +22,12 @@ extension Environment {
     }
     setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
     for functionDeclaration in structDeclaration.functionDeclarations {
-      addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name)
+      addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name, states: [], callerCapabilities: [])
+    }
+    for specialDeclaration in structDeclaration.specialDeclarations {
+      if specialDeclaration.isInit {
+        addInitializer(specialDeclaration, enclosingType: structDeclaration.identifier.name)
+      }
     }
   }
 
@@ -37,7 +42,7 @@ extension Environment {
 
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
-  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState] = [], callerCapabilities: [CallerCapability] = []) {
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerCapabilities: [CallerCapability]) {
     let functionName = functionDeclaration.identifier.name
 
     types[enclosingType, default: TypeInformation()]
@@ -74,7 +79,7 @@ extension Environment {
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    let declaration = VariableDeclaration(declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
+    let declaration = VariableDeclaration(modifiers: [], declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
     addProperty(.variableDeclaration(declaration), enclosingType: enclosingType)
   }
 

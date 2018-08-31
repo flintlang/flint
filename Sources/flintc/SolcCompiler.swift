@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// The solc compiler, used to compile IULIA IR.
+/// The solc compiler, used to compile YUL IR.
 struct SolcCompiler {
   var inputSource: String
   var outputDirectory: URL

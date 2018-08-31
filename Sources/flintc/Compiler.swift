@@ -50,7 +50,7 @@ struct Compiler {
       SemanticAnalyzer(),
       TypeChecker(),
       Optimizer(),
-      IULIAPreprocessor()
+      IRPreprocessor()
     ]
 
     // Run all of the passes.
@@ -75,10 +75,10 @@ struct Compiler {
       exitWithFailure()
     }
 
-    // Generate IULIA IR code.
-    let irCode = IULIACodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment).generateCode()
+    // Generate YUL IR code.
+    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment).generateCode()
 
-    // Compile the IULIA IR code using solc.
+    // Compile the YUL IR code using solc.
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
     print("Produced binary in \(outputDirectory.path.bold).")

@@ -1,5 +1,5 @@
 //
-//  IULIAPreprocessor.swift
+//  IRPreprocessor.swift
 //  IRGen
 //
 //  Created by Franklin Schrans on 2/1/18.
@@ -12,7 +12,7 @@ import Source
 import Lexer
 
 /// A prepocessing step to update the program's AST before code generation.
-public struct IULIAPreprocessor: ASTPass {
+public struct IRPreprocessor: ASTPass {
 
   public init() {}
 
@@ -67,9 +67,9 @@ public struct IULIAPreprocessor: ASTPass {
     // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable, let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"), sourceLocation: payableParameterIdentifier.sourceLocation))
-      let variableDeclaration = VariableDeclaration(declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
+      let variableDeclaration = VariableDeclaration(modifiers: [], declarationToken: nil, identifier: payableParameterIdentifier, type: Type(identifier: weiType))
       let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: payableParameterIdentifier.sourceLocation)
-      let wei = FunctionCall(identifier: weiType, arguments: [.rawAssembly(IULIARuntimeFunction.callvalue(), resultType: .basicType(.int))], closeBracketToken: closeBracketToken, isAttempted: false)
+      let wei = FunctionCall(identifier: weiType, arguments: [.rawAssembly(IRRuntimeFunction.callvalue(), resultType: .basicType(.int))], closeBracketToken: closeBracketToken, isAttempted: false)
       let equal = Token(kind: .punctuation(.equal), sourceLocation: payableParameterIdentifier.sourceLocation)
       let assignment: Expression = .binaryExpression(BinaryExpression(lhs: .variableDeclaration(variableDeclaration), op: equal, rhs: .functionCall(wei)))
       functionDeclaration.body.insert(.expression(assignment), at: 0)

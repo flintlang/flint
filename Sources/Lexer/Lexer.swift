@@ -88,6 +88,7 @@ public struct Lexer {
     "return": .return,
     "become": .become,
     "public": .public,
+    "visible": .visible,
     "if": .if,
     "else": .else,
     "for": .for,
