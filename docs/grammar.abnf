@@ -1,5 +1,7 @@
+; FLINT GRAMMAR (RFC 7405)
+
 ; TOP LEVEL
-topLevelModule = 1*(topLevelDeclaration);
+topLevelModule = 1*(topLevelDeclaration CRLF);
 
 topLevelDeclaration = contractDeclaration
                         / contractBehaviourDeclaration
@@ -7,88 +9,86 @@ topLevelDeclaration = contractDeclaration
                         / enumDeclaration;
 
 ; CONTRACTS
-contractDeclaration = "contract" identifer [stateGroup] "{" *(variableDeclaration) "}";
-stateGroup = identiferGroup;
+contractDeclaration = %s"contract" SP identifier SP [identifierGroup] SP "{" *(WSP variableDeclaration CRLF) "}";
 
 ; VARIABLES
-variableDeclaration = [*(modifier)] ("var" / "let") identifer typeAnnotation ["=" expression];
+variableDeclaration = [*(modifier SP)] SP (%s"var" / %s"let") SP identifier typeAnnotation [WSP "=" WSP expression];
 
 ; TYPES
-typeAnnotation = ":" type;
+typeAnnotation = ":" WSP type;
 
-type = identifer ["<" type *("," type) ">"]
+type = identifier ["<" type *("," WSP type) ">"]
        / basicType
        / arrayType
        / fixedArrayType
        / dictType;
 
-basicType = "Bool"
-             / "Int"
-             / "String"
-             / "Address";
+basicType = %s"Bool"
+             / %s"Int"
+             / %s"String"
+             / %s"Address";
 
 arrayType        = "[" type "]";
 fixedArrayType  = type "[" numericLiteral "]";
-dictType         = "[" type ":" type "]";
+dictType         = "[" type ":" WSP type "]";
 
 ; ENUMS
-enumDeclaration = "enum" identifer [typeAnnotation] "{" enumCase "}";
-enumCase        = "case" identifer
-                   / "case" identifer "=" expression;
+enumDeclaration = %s"enum" SP identifier SP [typeAnnotation] SP "{" *(WSP enumCase CRLF) "}";
+enumCase        = %s"case" SP identifier
+                   / %s"case" SP identifier WSP "=" WSP expression;
 
 ; STRUCTS
-structDeclaration = "struct" identifer "{" *(structMember) "}";
+structDeclaration = %s"struct" SP identifier SP "{" *(WSP structMember CRLF) "}";
 
 structMember = variableDeclaration
                 / functionDeclaration
                 / initializerDeclaration;
 
 ; BEHAVIOUR
-contractBehaviourDeclaration = identifer [stateGroup] "::" [callerCapabilityBinding] callerCapabilityGroup "{" *(contractBehaviourMember) "}";
+contractBehaviourDeclaration = identifier SP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
 
 contractBehaviourMember = functionDeclaration
                             / initializerDeclaration
                             / fallbackDeclaration;
 
 ; ACCESS GROUPS
-stateGroup               = "@" identiferGroup;
-callerCapabilityBinding = identifer "<-";
-callerCapabilityGroup   = identiferGroup;
-identiferGroup           = "(" identifer *("," identifer) ")";
+stateGroup               = "@" identifierGroup;
+callerCapabilityBinding = identifier WSP "<-";
+callerCapabilityGroup   = identifierGroup;
+identifierGroup           = "(" identifier *("," WSP identifier) ")";
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
-functionDeclaration    = functionHead identifer parameterList [return] codeBlock;
-functionDeclaration    = functionHead identifer parameterList [returnType] codeBlock;
+functionDeclaration    = functionHead SP identifier parameterList [returnType] codeBlock;
 initializerDeclaration = initializerHead parameterList codeBlock;
 fallbackDeclaration    = fallbackHead parameterList codeBlock;
 
-functionHead     = [*(attribute)] [*(modifier)] "func";
-initializerHead  = [*(attribute)] [*(modifier)] "init";
-fallbackHead     = [*(modifier)] "fallback";
+functionHead     = [*(attribute SP)] [*(modifier SP)] %s"func";
+initializerHead  = [*(attribute SP)] [*(modifier SP)] %s"init";
+fallbackHead     = [*(modifier SP)] %s"fallback";
 
-attribute = "@" identifer;
-modifier  = "public"
-            / "mutating"
-            / "visible";
+attribute = "@" identifier;
+modifier  = %s"public"
+            / %s"mutating"
+            / %s"visible";
 
 returnType = "->" type;
 
 parameterList       = "()"
                       / "(" parameter *("," parameter) ")";
-parameter           = *(parameterModifiers) identifer typeAnnotation;
-parameterModifiers  = "inout" / "implicit"
+parameter           = *(parameterModifiers SP) identifier typeAnnotation;
+parameterModifiers  = %s"inout" / %s"implicit"
 
 ; STATEMENTS
-codeBlock   = "{" *(statement) "}";
+codeBlock   = "{" [CRLF] *(WSP statement CRLF) WSP statement [CRLF]"}";
 statement   = expression
               / returnStatement
               / becomeStatement
               / forStatement
               / ifStatement;
 
-returnStatement = "return" expression
-becomeStatement = "become" expression
-forStatement = "for" variableDeclaration "in" expression codeBlock
+returnStatement = %s"return" SP expression
+becomeStatement = %s"become" SP expression
+forStatement = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
 
 ; EXPRESSIONS
 expression = identifier
@@ -116,29 +116,29 @@ binaryOp = "+" / "-" / "*" / "/" / "**"
             / ">" / "<" / "<=" / ">="
             / ".";
 
-binaryExpression = expression binaryOp expression;
+binaryExpression = expression WSP binaryOp WSP expression;
 
-self = "self"
+self = %s"self"
 
-rangeExpression = "(" expression ( "..<" | "..." ) expression ")"
+rangeExpression = "(" expression ( "..<" / "..." ) expression ")"
 
 bracketedExpression  = "(" expression ")";
 
 subscriptExpression  = subscriptExpression "[" expression "]";
-                        / identifer "[" expression "]";
+                        / identifier "[" expression "]";
 
 attemptExpression = try expression
-try = "try" ( "!" | "?" )
+try = %s"try" ( "!" / "?" )
 
 ; FUNCTION CALLS
-functionCall = identifer "(" [expression] *( "," expression ) ")";
+functionCall = identifier "(" [expression] *( "," WSP expression ) ")";
 
 ; CONDITIONALS
-ifStatement  = "if" expression codeBlock [elseClause];
-elseClause   = "else" codeBlock;
+ifStatement  = %s"if" SP expression SP codeBlock [elseClause];
+elseClause   = %s"else" SP codeBlock;
 
 ; LITERALS
-identifer = ( ALPHA / "_" ) *( ALPHA / DIGIT / "$" / "_" );
+identifier = ( ALPHA / "_" ) *( ALPHA / DIGIT / "$" / "_" );
 literal   = numericLiteral
             / stringLiteral
             / booleanLiteral
@@ -146,10 +146,10 @@ literal   = numericLiteral
 
 numericLiteral = decimalLiteral;
 decimalLiteral = number
-                  / number "." number;
-addressLiteral = "0x" 40HEXDIG;
+               / number "." number;
+addressLiteral = %s"0x" 40HEXDIG;
 arrayLiteral = "[]";
 dictionaryLiteral = "[:]";
-booleanLiteral = "true" / "false";
-stringLiteral = """ identifer """;
+booleanLiteral = %s"true" / %s"false";
+stringLiteral = """ identifier """;
 number = 1*DIGIT;
