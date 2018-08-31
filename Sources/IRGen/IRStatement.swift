@@ -78,9 +78,9 @@ struct IRForStatement {
 
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      setup = generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$", iterable: arrayIdentifier, functionContext: functionContext)
+      setup = generateArrayFor(prefix: "flint$\(forStatement.variable.identifier.name)$", iterable: arrayIdentifier, functionContext: functionContext)
     case .range(let rangeExpression):
-      setup = generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext)
+      setup = generateRangeFor(iterable: rangeExpression, functionContext: functionContext)
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
@@ -96,7 +96,7 @@ struct IRForStatement {
     """
   }
 
-  func generateArraySetupCode(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
+  func generateArrayFor(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
     let offset: String
@@ -130,7 +130,7 @@ struct IRForStatement {
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
       loadArrLen = String(typeSize)
-      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", size: typeSize)
       toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType(_):
@@ -156,20 +156,30 @@ struct IRForStatement {
     """
   }
 
-  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
-    // Iterating over a range
+  func generateRangeFor(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
+    let ascending: Bool
 
-    // Check valid range
-    guard case .literal(let rangeStart) = iterable.initial,
-      case .literal(let rangeEnd) = iterable.bound else {
-        fatalError("Non-literal ranges are not supported")
+    // (0..x) Ranges
+    if case .literal(let rangeStart) = iterable.initial,
+      case .identifier(_) = iterable.bound {
+      guard case .literal(.decimal(.integer(0))) = rangeStart.kind else {
+        fatalError("Range start must be 0")
+      }
+      ascending = true
     }
-    guard case .literal(.decimal(.integer(let start))) = rangeStart.kind,
-      case .literal(.decimal(.integer(let end))) = rangeEnd.kind else {
-        fatalError("Only integer decimal ranges supported")
-    }
+      // Literal Range
+    else if case .literal(let rangeStart) = iterable.initial,
+      case .literal(let rangeEnd) = iterable.bound {
+      guard case .literal(.decimal(.integer(let start))) = rangeStart.kind,
+        case .literal(.decimal(.integer(let end))) = rangeEnd.kind else {
+          fatalError("Only integer decimal ranges supported")
+      }
 
-    let ascending = start < end
+      ascending = start < end
+    }
+    else {
+      fatalError("Non determined ranges are not supported")
+    }
 
     var comparisonToken: Token.Kind = ascending ? .punctuation(.lessThanOrEqual) : .punctuation(.greaterThanOrEqual)
     if case .punctuation(.halfOpenRange) = iterable.op.kind {

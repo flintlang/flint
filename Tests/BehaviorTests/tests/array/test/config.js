@@ -1,1 +1,1 @@
-exports.contractName = "Array"
+exports.contractName = "Arrays"

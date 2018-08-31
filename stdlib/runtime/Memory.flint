@@ -1,0 +1,59 @@
+struct Memory {
+
+  public func storageOffsetForKey(offset: Any, key: Int) -> Int {
+    store(0, key, true)
+    store(32, offset, true)
+    return ir$sha3(0, 64)
+  }
+
+  public func return32Bytes(value: Any) {
+    store(0, value, true)
+    ir$return(0, 32)
+  }
+
+  public func allocateMemory(size: Int) -> Int{
+    let ret: Int = load(64, true)
+    store(64, ret + size, true)
+    return ret
+  }
+
+  public func computeOffset(base: Int, offset: Int, mem: Int) -> Int {
+
+    var ret: Int = 0
+    if mem != 0 {
+      ret = base + offset * 32
+    }
+    else {
+      ret = base + offset
+    }
+    return ret
+  }
+
+  public func load(ptr: Any, mem: Bool) -> Int {
+    var value: Int = 0
+    if mem == false {
+      value = ir$sload(ptr)
+    }
+    else {
+      value = ir$mload(ptr)
+    }
+    return value
+  }
+
+  public func store(ptr: Any, val: Any, mem: Bool) {
+    if mem == false {
+      ir$sstore(ptr, val)
+    }
+    else {
+      ir$mstore(ptr, val)
+    }
+  }
+
+  public func decodeAsAddress(offset: Any) -> Int {
+    return decodeAsUInt(offset)
+  }
+
+  public func decodeAsUInt(offset: Int) -> Int {
+    return ir$calldataload(4 + offset * 32)
+  }
+}

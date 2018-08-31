@@ -9,6 +9,11 @@ import Lexer
 extension Environment {
   /// The type of a property in the given enclosing type or in a scope if it is a local variable.
   public func type(of property: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> RawType {
+    // Type of struct/contracts are userdefined types
+    if isStructDeclared(property) || isContractDeclared(property) {
+      return .userDefinedType(property)
+    }
+
     if let type = types[enclosingType]?.properties[property]?.rawType {
       return type
     }
@@ -18,8 +23,13 @@ extension Environment {
   }
 
   /// The type return type of a function call, determined by looking up the function's declaration.
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> RawType? {
-    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, containerType: RawTypeIdentifier? = nil, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> RawType? {
+    // Don't typecheck runtime functions
+    if Environment.isRuntimeFunctionCall(functionCall){
+      return .any
+    }
+
+    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, containerType: containerType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     switch match {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
@@ -174,7 +184,7 @@ extension Environment {
       return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
-      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
+      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, containerType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,

@@ -81,6 +81,8 @@ public indirect enum RawType: Equatable {
   public var isDynamicType: Bool {
     if case .basicType(_) = self {
       return false
+    } else if case .any = self {
+      return false
     }
 
     return true
@@ -131,6 +133,8 @@ public struct Type: ASTNode {
       rawType = .basicType(builtInType)
     } else if let stdlibType = RawType.StdlibType(rawValue: name) {
       rawType = .stdlibType(stdlibType)
+    } else if name == "Any" {
+      rawType = .any
     } else {
       rawType = .userDefinedType(name)
     }

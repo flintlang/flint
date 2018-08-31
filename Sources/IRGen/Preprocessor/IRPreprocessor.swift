@@ -76,8 +76,14 @@ public struct IRPreprocessor: ASTPass {
     }
 
     if let structDeclarationContext = passContext.structDeclarationContext {
-      if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-        // For struct functions, add `flintSelf` to the beginning of the parameters list.
+      let parameters = functionDeclaration.parameters.map { $0.type.rawType }
+      let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
+      functionDeclaration.identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: functionDeclaration.identifier.sourceLocation))
+
+      if let structName = passContext.enclosingTypeIdentifier?.name,
+        Environment.globalFunctionStructName != structName,
+        !passContext.environment!.initializers(in: structName).isEmpty {
+        // For struct functions, add `flintSelf` to the beginning of the parameters list if it has an initaliser
         let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
         functionDeclaration.parameters.insert(parameter, at: 0)
       }

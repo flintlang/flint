@@ -8,8 +8,8 @@ import Source
 import Lexer
 
 public struct RangeExpression: ASTNode {
-  public var openSquareBracketToken: Token
-  public var closeSquareBracketToken: Token
+  public var openToken: Token
+  public var closeToken: Token
 
   public var initial: Expression
   public var bound: Expression
@@ -19,9 +19,9 @@ public struct RangeExpression: ASTNode {
     return op.kind == .punctuation(.closedRange)
   }
 
-  public init(startToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token){
-    self.openSquareBracketToken = startToken
-    self.closeSquareBracketToken = endToken
+  public init(openToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token){
+    self.openToken = openToken
+    self.closeToken = endToken
     self.initial = initial
     self.bound = bound
     self.op = op
@@ -29,10 +29,10 @@ public struct RangeExpression: ASTNode {
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
-    return .spanning(openSquareBracketToken, to: closeSquareBracketToken)
+    return .spanning(openToken, to: closeToken)
   }
 
   public var description: String {
-    return "\(openSquareBracketToken)\(initial)\(op)\(bound)\(closeSquareBracketToken)"
+    return "\(openToken)\(initial)\(op)\(bound)\(closeToken)"
   }
 }

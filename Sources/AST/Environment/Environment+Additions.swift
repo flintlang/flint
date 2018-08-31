@@ -10,8 +10,11 @@ extension Environment {
   /// Add a contract declaration to the environment.
   public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
     declaredContracts.append(contractDeclaration.identifier)
-    types[contractDeclaration.identifier.name] = TypeInformation()
-    setProperties(contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contractDeclaration.identifier.name)
+    if types[contractDeclaration.identifier.name] == nil {
+      types[contractDeclaration.identifier.name] = TypeInformation()
+    }
+    let properties: [Property] = contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }
+    setProperties(properties, enclosingType: contractDeclaration.identifier.name)
   }
 
   /// Add a struct declaration to the environment.

@@ -1,0 +1,22 @@
+struct FixedSizeArray {
+
+  func getElement(offset: Int, index: Int, size: Int) -> Int {
+    return Memory.load(storageOffset(offset, index, size), false)
+  }
+
+  func storageOffset(offset: Int, index: Int, size: Int) -> Int {
+    revertInvalidSubscript(offset, index, size)
+
+    return offset + index
+  }
+
+  func isInvalidSubscript(offset: Int, index: Int, size: Int) -> Bool {
+    return size == 0 || index < 0 || index > (size - 1)
+  }
+
+  func revertInvalidSubscript(offset: Int, index: Int, size: Int) {
+    if isInvalidSubscript(offset, index, size) {
+      fatalError()
+    }
+  }
+}

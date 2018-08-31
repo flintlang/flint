@@ -51,7 +51,7 @@ public struct DiagnosticsVerifier {
       if let index = index {
         producedDiagnostics.remove(at: index)
       } else {
-        let sourceLocation = expectation.line == 0 ? nil : SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile)
+        let sourceLocation = expectation.line == 0 ? nil : SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile, isFromStdlib: false)
         verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Verify: Should have produced \(expectation.severity) \"\(expectation.message)\""))
       }
     }

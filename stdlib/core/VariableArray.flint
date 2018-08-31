@@ -1,0 +1,45 @@
+struct VariableArray {
+
+  public func size() -> Int {
+    return Memory.load(self, false)
+  }
+
+  public func isEmpty() -> Bool {
+    return size() == 0
+  }
+
+  func setElement(index: Int, value: Int) {
+    Memory.store(storageOffset(index), value, false)
+  }
+
+  func getElement(index: Int) -> Int {
+    return Memory.load(storageOffset(index), false)
+  }
+
+  func incrementSize() {
+    Memory.store(self, size() + 1, false)
+  }
+
+  func storageOffset(index: Int) -> Int {
+    let size: Int = size()
+    if index != size {
+      revertInvalidSubscript(index)
+    }
+    else {
+      incrementSize()
+    }
+
+    return Memory.storageOffsetForKey(self, index)
+  }
+
+  func isInvalidSubscript(index: Int) -> Bool {
+    let size: Int = size()
+    return size == 0 || index < 0 || index > (size - 1)
+  }
+
+  func revertInvalidSubscript(index: Int) {
+    if isInvalidSubscript(index) {
+      fatalError()
+    }
+  }
+}

@@ -256,12 +256,18 @@ extension Parser {
 
   func parseRangeExpression() throws -> AST.RangeExpression {
     let startToken = try consume(.punctuation(.openBracket))
-    let start = try parseLiteral()
+    guard let opIndex = indexOfFirstAtCurrentDepth([.punctuation(.halfOpenRange), .punctuation(.closedRange)]) else {
+      throw ParserError.expectedToken(.punctuation(.halfOpenRange), sourceLocation: currentToken?.sourceLocation)
+    }
+    guard let endTokenIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw ParserError.expectedToken(.punctuation(.closeBracket), sourceLocation: currentToken?.sourceLocation)
+    }
+    let start = try parseExpression(upTo: opIndex)
     let op = try consume(anyOf: [.punctuation(.halfOpenRange), .punctuation(.closedRange)])
-    let end = try parseLiteral()
+    let end = try parseExpression(upTo: endTokenIndex)
     let endToken = try consume(.punctuation(.closeBracket))
 
-    return AST.RangeExpression(startToken: startToken, endToken: endToken, initial: .literal(start), bound: .literal(end), op: op)
+    return AST.RangeExpression(openToken: startToken, endToken: endToken, initial: start, bound: end, op: op)
   }
 
   func parseDictionaryLiteral() throws -> AST.DictionaryLiteral {

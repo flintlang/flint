@@ -41,11 +41,11 @@ extension Environment {
   ///   - callerCapabilities: The caller capabilities associated with the function call.
   ///   - scopeContext: Contextual information about the scope in which the function call appears.
   /// - Returns: A `FunctionCallMatchResult`, either `success` or `failure`.
-  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
+  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, containerType: RawTypeIdentifier?, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> FunctionCallMatchResult {
     let match: FunctionCallMatchResult = .failure(candidates: [])
 
     let argumentTypes = functionCall.arguments.map {
-      type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
+      type(of: $0, enclosingType: containerType ?? enclosingType, scopeContext: scopeContext)
     }
 
     // Check if it can be a regular function.
@@ -70,7 +70,7 @@ extension Environment {
     var candidates = [FunctionInformation]()
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities),
           areTypeStatesCompatible(source: typeStates, target: candidate.typeStates) else {
             candidates.append(candidate)
@@ -91,7 +91,7 @@ extension Environment {
   private func matchInitaliserFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     if let initializers = types[functionCall.identifier.name]?.initializers {
       for candidate in initializers {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             // TODO: Add initializer candidates.
             continue
@@ -124,7 +124,7 @@ extension Environment {
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(candidate)
             continue

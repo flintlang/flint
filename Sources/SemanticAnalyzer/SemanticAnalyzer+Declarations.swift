@@ -314,7 +314,7 @@ extension SemanticAnalyzer {
           return true
         }
       case .functionCall(let function):
-        let match = environment.matchFunctionCall(function, enclosingType: enclosingType, typeStates: [], callerCapabilities: [], scopeContext: ScopeContext())
+        let match = environment.matchFunctionCall(function, enclosingType: enclosingType, containerType: nil, typeStates: [], callerCapabilities: [], scopeContext: ScopeContext())
         if case .matchedFunction(let functionInformation) = match,
           !functionInformation.isMutating {
           return false
