@@ -316,6 +316,17 @@ func callFoo(contractAddress: Address) {
   contractAddress.call(bytes4(sha3("foo(uint256)")), a)
 }
 ```
+
+### Variable binding
+Results could also be bound to variables instead of an identifier
+```swift
+let boundReturn: Int = try! alpha!.withdraw()
+
+try let boundReturn: Int = alpha!.withdraw then {
+  // Use bound return
+}
+```
+
 ### Parameters of the call are appended
 Calls need information such as the amount of gas to allocate or the Ether value to transfer. This contradicts the return type as: `address.foo` is of type `Void` and so must `address.foo.value(10)` be but `.value()` is not a property of the `Void` type. This means special cases would be needed for the type checker, and is just generally confusing.
 ```swift
