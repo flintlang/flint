@@ -208,7 +208,9 @@ try! alpha.expensiveFunction()
 #### Flint Package Manager
 ```swift
 // Creates a contract from the data stored in Flint Package Manager
-var tokenInstance: Contract<ERC.Token> = Flint.new(0x000...)
+import flint://0x000... as ERCToken
+
+ERCToken.transfer(...)
 ```
 #### Source Code
 A contract's source code can be imported by:
