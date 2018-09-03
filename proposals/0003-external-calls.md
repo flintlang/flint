@@ -327,6 +327,21 @@ try let boundReturn: Int = alpha!.withdraw then {
 }
 ```
 
+### Guard-like syntax
+We could flip the catching of the call so you only specify the catch statement after it then continue code execution as normal. This would reduce the indentation of the language, but would then not match the if statement syntax.
+
+```swift
+let alpha: Director<Alpha> = 0x000... with Alpha
+
+try alpha!.doesNothing() else {
+  // If it fails
+}
+// If it succeeds execution will continue
+
+try! boundReturn <- alpha!.withdraw()
+// Optionally does something with boundReturn
+```
+
 ### Parameters of the call are appended
 Calls need information such as the amount of gas to allocate or the Ether value to transfer. This contradicts the return type as: `address.foo` is of type `Void` and so must `address.foo.value(10)` be but `.value()` is not a property of the `Void` type. This means special cases would be needed for the type checker, and is just generally confusing.
 ```swift
