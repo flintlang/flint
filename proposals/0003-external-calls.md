@@ -145,8 +145,17 @@ Trusted calls meanwhile are not guaranteed to not introduce errors, but they hav
 
 We propose a method to both declare this interface within Flint, use the The Flint Package Manager to extract an interface, or call contracts distrusted.
 
-In _Distrusted Calls_, the contract (Client), sets the properties of the director which then sets up the command which is finally sent to the contract.
-The aim is to encapsulate a request as an object, thereby letting Flint parametrize clients with different requests.
+In _Distrusted Calls_, the contract, sets the properties of the director which then sets up the command which is finally sent to the contract.
+```          
+                                   | |   +----------+
++----------+        +----------+   |C|   |          |
+| Contract |------->| Director |-->|O|==>| External |
++----------+        +----------+   |D|   | Contract |
+                                   |E|   |          |
+                                   | |   +----------+
+```
+
+By encapsulating the request within an object - `Director`, thereby letting Flint make external calls to arbitrary contracts, with arbitrary structures and hyper-parameters generic.
 
 (3) is combated by having necessary catching of all external calls - or prefixing with `try!` and `try?` to revert and nullify respectively.
 
