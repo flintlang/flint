@@ -38,8 +38,23 @@ public struct SpecialDeclaration: ASTNode {
 
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
-    let dummyIdentifier = Identifier(identifierToken: Token(kind: .identifier(specialToken.kind.description), sourceLocation: specialToken.sourceLocation))
-    return FunctionDeclaration(funcToken: specialToken, attributes: attributes, modifiers: modifiers, identifier: dummyIdentifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: nil, body: body, closeBraceToken: closeBracketToken, scopeContext: scopeContext)
+    let dummyIdentifier = Identifier(
+      identifierToken: Token(kind: .identifier(specialToken.kind.description),
+      sourceLocation: specialToken.sourceLocation)
+    )
+
+    return FunctionDeclaration(
+      funcToken: specialToken,
+      attributes: attributes,
+      modifiers: modifiers,
+      identifier: dummyIdentifier,
+      parameters: parameters,
+      closeBracketToken: closeBracketToken,
+      resultType: nil,
+      body: body,
+      closeBraceToken: closeBracketToken,
+      scopeContext: scopeContext
+    )
   }
 
   public var isPublic: Bool {
