@@ -115,7 +115,11 @@ The two will produce different method IDs. As a result, `Bob` will call the fall
 	[161](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L161))
 
 ## Proposed solution
-The following solution is partially based upon the [Command Design Pattern]() and the [Oraclize Engine](https://docs.oraclize.it/). They allow for execution of the argument if other given conditions are met (as specified by the compiler). A valid external call should specify the following, some of these can be auto-filled by the compiler:
+The following solution is partially based upon the [Command Design Pattern](https://sourcemaking.com/design_patterns/command) and the [Oraclize Engine's](https://docs.oraclize.it/) implementation of calls to the internet.
+
+The solution is designed to allow for execution of the argument if and only if other given conditions are met. For instance that the gas provided is sufficient for the call, or the function accepts ether.
+
+A valid external call should specify the following, some of these can be auto-filled by the compiler:
 - The contract address
 - The function name
 - The parameters
