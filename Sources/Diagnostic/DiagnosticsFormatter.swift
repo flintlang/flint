@@ -68,13 +68,17 @@ public struct DiagnosticsFormatter {
     let sourceLines = sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
 
-    let spaceOffset = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
+    // TODO: rewrite this so that indentation is copied from the source line to the indicator, rather
+    // than tabs being replaced by single spaces.
+    let sourceLine = sourceLines[sourceLocation.line - 1].replacingOccurrences(of: "\t", with: " ")
+    let spaceOffsetLength = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
+    let spaceOffset = String(repeating: " ", count: spaceOffsetLength)
 
-    let sourceLine = renderSourceLine(sourceLines[sourceLocation.line - 1], rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length), highlightColor: highlightColor, style: style)
-    let indicator = String(repeating: " ", count: spaceOffset) + String(repeating: "^", count: sourceLocation.length).applyingCodes(highlightColor, style)
+    let renderedSourceLine = renderSourceLine(sourceLine, rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length), highlightColor: highlightColor, style: style)
+    let indicator = spaceOffset + String(repeating: "^", count: sourceLocation.length).applyingCodes(highlightColor, style)
 
     return """
-    \(sourceLine)
+    \(renderedSourceLine)
     \(indicator)
     """
   }
