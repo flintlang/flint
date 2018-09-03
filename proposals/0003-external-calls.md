@@ -128,9 +128,9 @@ A valid external call should specify the following, some of these can be auto-fi
 
 Our motivations are:
 1. Contracts are untrustworthy by default;
-1. Arbitrary code may get executed;
-1. Failures may be silent;
-1. Interfaces may be incorrectly specified.
+2. Arbitrary code may get executed;
+3. Failures may be silent;
+4. Interfaces may be incorrectly specified.
 
 We separate external calls into two types: _Trusted Calls_ and _Distrusted Calls_. Trusted calls are those accessed through the Flint Package Manager  or those which Flint has the source files for and deploys internally to the contract, i.e. Hub and Spoke Topology. Distrusted calls are those with an ABI interface or Trait interface.
 
