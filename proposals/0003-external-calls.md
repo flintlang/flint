@@ -43,26 +43,58 @@ function makeUntrustedWithdrawal(uint amount) {
 ```
 
 #### 2. External calls have arbitrary code execution
-Examples of problems that can arise in Solidity code include:
-##### Race Conditions
-Whether using raw calls (of the form `someAddress.call()`) or contract calls (of the form `ExternalContract.someMethod()`), malicious code might execute. Even if ExternalContract is not malicious, malicious code can be executed by any contracts it calls.
-One particular danger is malicious code may hijack the control flow, leading to race conditions.
-
+Examples of problems that can arise in Solidity code due to this code execution include:
 ##### Re-entrancy
-- `someAddress.send()` and `someAddress.transfer()` in Solidity are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of 2300 gas which is currently only enough to log an event.
-  - Prevents reentrancy but is incompatible with any contract whose fallback function requires 2300 gas or more.
-  - Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
+
+```swift
+contract HoneyPot {
+  var balances: [Address: Int]
+}
+HoneyPot :: caller <- (any) {
+  @payable
+  public init() {
+    put()
+  }
+
+  @payable
+  public put(implicit value: Wei) {
+    balances[caller] = value.rawValue
+  }
+
+  public func get() {
+    // START OF SOLIDITY SYNTAX
+    if (!caller.call.value(balances[caller])()) {
+      throw;
+    }
+    // END OF SOLIDITY SYNTAX
+    balances[caller] = 0
+  }
+}
+```
+
+`HoneyPot` contract sets the value of the address balance to zero only after checking if sending ether to `caller` goes through.
+
+What if there is an `AttackContract` that tricks `HoneyPot` into thinking that it still has ether to withdraw before `AttackContract` balance is set to zero. This can be done in a recursive manner and the name for this is called reentrancy attack. It does this by calling `get()` inside of the `fallback` function. This unnamed function is called whenever the `AttackContract` receives ether.
+
+This illustrates how easily control flow can be hijacked due to external calls.
+
+**Solidity Workaround**
+
+`someAddress.send()` and `someAddress.transfer()` in Solidity are considered safe against reentrancy. While these methods still trigger code execution, the called contract is only given a stipend of `2300 gas` which is currently only enough to log an event.
+- Prevents reentrancy but is incompatible with any contract whose fallback function requires 2300 gas or more.
+- Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
 
 #### 3. External calls can silently fail
 Solidity offers low-level call methods that work on rawAddress: `address.call()`, `address.callcode()`, `address.delegatecall()`, `address.send()`. These low-level methods never throw an exception so they fail silently.
 
+The following are examples of pre-exisiting solutions for external calls in solidity.
 ```javascript
-// bad
+// fails silently
 someAddress.send(55);
 // this is doubly dangerous, as it will forward all remaining gas and doesn't check for result
-someAddress.call.value(55)(); 
+someAddress.call.value(55)();
 // if deposit throws an exception, the raw call() will only return false and transaction will NOT be reverted
-someAddress.call.value(100)(bytes4(sha3("deposit()"))); 
+someAddress.call.value(100)(bytes4(sha3("deposit()")));
 
 // good
 if(!someAddress.send(55)) {
