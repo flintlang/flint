@@ -179,18 +179,17 @@ interface Alpha(State1, State2) {
 
 let alpha: Director<Alpha> = 0x000... with Alpha
 
-try alpha!.doesNothing() {
+try alpha!.doesNothing() then {
   // Successful Call
-}
-catch {
+} catch {
   // If it fails
 }
 try! alpha!.doesNothingWithArgs(x, y, z)
-// If catch can not be provided if try! is used and then the transaction reverts on failure
+// Catch can not be provided by using try!, then if the call fails then transaction reverts.
 
 try! alpha!.withdraw() // This flags an error as the return value is not dealt with
 
-try! boundReturn <- alpha!.getReturn() {
+try! boundReturn <- alpha!.withdraw() then {
   // Optionally does something with boundReturn
 }
 
