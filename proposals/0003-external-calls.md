@@ -11,7 +11,12 @@
 Contracts can be created "from outside" via Ethereum transactions or from within Flint Contracts. They contain persistent data in state variables and functions that can modify these variables. Calling a function on a different contract (instance) will perform an EVM Function call and thus switch the context such that state variables in the old context are inaccessible.
 
 ## Motivation
-Calls to untrusted contracts can introduce several unexpected risks and errors. External calls may execute malicious code in that contract _or any other contract_ that it depends upon. As such, **every** external call should be treated as a security risk.
+Calls to untrusted contracts can introduce several unexpected risks and errors.
+
+When the internal contract calls to an external contract (i.e. the callee contract) the callee  may execute, potentially malicious, but always arbitrary code.
+This code can itself include external calls to any other contract. Which themselves allow arbitrary code execution and so on.
+
+As such, **every** external call should be treated as a security risk because it requires the integrity of every contract in this chain.
 
 However external calls are necessary to accomplish key features of smart contracts, including:
 - Paying other users
