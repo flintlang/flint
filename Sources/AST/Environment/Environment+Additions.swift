@@ -42,7 +42,6 @@ extension Environment {
 
   /// Add an event declaration to the environment.
   public mutating func addEvent(_ eventDeclaration: EventDeclaration, enclosingType: RawTypeIdentifier) {
-    //EventInformation
     let eventName = eventDeclaration.identifier.name
 
     types[enclosingType, default: TypeInformation()]

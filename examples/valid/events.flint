@@ -8,6 +8,11 @@ contract Events {
     let addr: Address
     let y: Int
   }
+
+  event eventWithDefault {
+    let addr: Address
+    let value: Int = 40
+  }
 }
 
 Events :: caller <- (any) {
@@ -19,5 +24,9 @@ Events :: caller <- (any) {
 
   public func B() {
     emit eventB(addr: caller, y: 2)
+  }
+
+  public func C() {
+    emit eventWithDefault(addr: caller)
   }
 }

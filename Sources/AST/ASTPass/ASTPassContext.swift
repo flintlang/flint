@@ -67,7 +67,7 @@ extension ASTPassContext {
     set { self[isInBecomeEntry.self] = newValue }
   }
 
-  /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
+  /// Whether the node currently being visited is within a emit statement i.e. 'a' in 'emit a'
   public var isInEmit: Bool {
     get { return self[isInEmitEntry.self] ?? false }
     set { self[isInEmitEntry.self] = newValue }
