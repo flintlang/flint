@@ -173,8 +173,10 @@ interface Alpha(State1, State2) {
     func withdraw() -> Int
     func deposit(Int) -> Bool
   }
-  @payable
-  func expensiveFunction()
+  Alpha @(any) :: (any) {
+    @payable
+    func expensiveFunction()
+  }
 }
 
 let alpha: Director<Alpha> = 0x000... with Alpha
