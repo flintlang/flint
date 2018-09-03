@@ -310,7 +310,7 @@ var newExternalCall: Event<to: Address, description: String>
 
 ## Alternatives considered
 ### Blind Calls
-This acts as a direct translation to the ABI that gets called behind the scene. This gives a low-level interface to the contract but is also highly prone to error.
+This acts as a direct translation to the ABI that gets called behind the scenes. This gives a low-level interface to the contract but is also highly prone to error.
 ```swift
 func callFoo(contractAddress: Address) {
   contractAddress.call(bytes4(sha3("foo(uint256)")), a)
