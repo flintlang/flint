@@ -194,9 +194,10 @@ try! boundReturn <- alpha!.getReturn() {
   // Optionally does something with boundReturn
 }
 
-// Setting contract instance properties
-alpha!.value = Wei(200)
-alpha!.gas = Gas(2000)
+// Setting hyper parameters //
+// Asset types are atomically transferred to preserve special properties.
+alpha!.transfer(Wei(200))
+alpha!.allocate(Gas(2000))
 alpha.trust() // Removes the need for a bang
 try! alpha.expensiveFunction()
 ```
