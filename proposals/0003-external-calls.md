@@ -105,13 +105,14 @@ ExternalContract(someAddress).deposit.value(100);
 ```
 
 #### 4. Interfaces can easily be incorrectly specified
-Minor errors in Solidity interfaces may lead to wrong code being executed. `Alice.set(uint)` takes an `uint` in `Bob.sol` but `Alice.set(int)` takes an `int` in `Alice.sol`. The two interfaces will produce two differents method IDs. As a result, Bob will call the fallback function of Alice rather than of `set`. This type of error is responsible for the King of the Ether bug.
+Minor errors in interfaces may lead to wrong code being executed. For instance, if you specified a function `set(uint)` in the contract `Alice` that takes an `uint` in the contract `Bob` but in the actual contract `Alice` the function is `set(int)`.
+The two will produce different method IDs. As a result, `Bob` will call the fallback function of `Alice` rather than of `set`. As when Alice's function is called it can't find a matching function.
 
-- [King of the Ether](https://www.kingoftheether.com/postmortem.html) (line numbers:
-	[100](KotET_source_code/KingOfTheEtherThrone.sol#L100),
-	[107](KotET_source_code/KingOfTheEtherThrone.sol#L107),
-	[120](KotET_source_code/KingOfTheEtherThrone.sol#L120),
-	[161](KotET_source_code/KingOfTheEtherThrone.sol#L161))
+ This type of error is responsible for the bug in [King of the Ether](https://www.kingoftheether.com/postmortem.html) (line numbers:
+	[100](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L100),
+	[107](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L107),
+	[120](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L120),
+	[161](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L161))
 
 ## Proposed solution
 The following solution is partially based upon the [Command Design Pattern]() and the [Oraclize Engine](https://docs.oraclize.it/). They allow for execution of the argument if other given conditions are met (as specified by the compiler). A valid external call should specify the following, some of these can be auto-filled by the compiler:
