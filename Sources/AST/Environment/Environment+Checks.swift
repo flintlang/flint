@@ -7,10 +7,16 @@
 import Source
 
 extension Environment {
-  /// The prefix for Flint runtime functions.
-  public static var runtimeFunctionPrefix = "flint$"
+  /// The prefix for IR function calls.
+  public static var irFunctionPrefix = "ir$"
+  // The prefix for runtime calls.
+  public static var runtimeFunctionPrefix = "runtime$"
 
   /// Whether the given function call is a runtime function.
+  public static func isIRFunctionCall(_ functionCall: FunctionCall) -> Bool {
+    return functionCall.identifier.name.starts(with: irFunctionPrefix)
+  }
+
   public static func isRuntimeFunctionCall(_ functionCall: FunctionCall) -> Bool {
     return functionCall.identifier.name.starts(with: runtimeFunctionPrefix)
   }

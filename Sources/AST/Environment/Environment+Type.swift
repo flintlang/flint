@@ -23,6 +23,12 @@ extension Environment {
 
   /// The type return type of a function call, determined by looking up the function's declaration.
   public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> RawType? {
+
+    // IR functions should be compatible with all types
+    guard !Environment.isIRFunctionCall(functionCall) else {
+      return .any
+    }
+
     let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     switch match {

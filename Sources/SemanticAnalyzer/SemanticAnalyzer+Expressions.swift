@@ -79,7 +79,7 @@ extension SemanticAnalyzer {
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    guard !Environment.isRuntimeFunctionCall(functionCall) else {
+    guard !Environment.isIRFunctionCall(functionCall), !Environment.isRuntimeFunctionCall(functionCall) else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 

@@ -198,28 +198,28 @@ enum IRRuntimeFunction {
 struct IRRuntimeFunctionDeclaration {
   static let selector =
   """
-  function flint$selector() -> ret {
+  function runtime$selector() -> ret {
     ret := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
   }
   """
 
   static let decodeAsAddress =
   """
-  function flint$decodeAsAddress(offset) -> ret {
-    ret := flint$decodeAsUInt(offset)
+  function runtime$decodeAsAddress(offset) -> ret {
+    ret := runtime$decodeAsUInt(offset)
   }
   """
 
   static let decodeAsUInt =
   """
-  function flint$decodeAsUInt(offset) -> ret {
+  function runtime$decodeAsUInt(offset) -> ret {
     ret := calldataload(add(4, mul(offset, 0x20)))
   }
   """
 
   static let store =
   """
-  function flint$store(ptr, val, mem) {
+  function runtime$store(ptr, val, mem) {
     switch iszero(mem)
     case 0 {
       mstore(ptr, val)
@@ -232,7 +232,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let load =
   """
-  function flint$load(ptr, mem) -> ret {
+  function runtime$load(ptr, mem) -> ret {
     switch iszero(mem)
     case 0 {
       ret := mload(ptr)
@@ -245,7 +245,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let computeOffset =
   """
-  function flint$computeOffset(base, offset, mem) -> ret {
+  function runtime$computeOffset(base, offset, mem) -> ret {
     switch iszero(mem)
     case 0 {
       ret := add(base, mul(offset, \(EVM.wordSize)))
@@ -258,7 +258,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let allocateMemory =
   """
-  function flint$allocateMemory(size) -> ret {
+  function runtime$allocateMemory(size) -> ret {
     ret := mload(0x40)
     mstore(0x40, add(ret, size))
   }
@@ -275,26 +275,26 @@ struct IRRuntimeFunctionDeclaration {
 
   static let isMatchingTypeState =
   """
-  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
+  function runtime$isMatchingTypeState(_state, _stateVariable) -> ret {
     ret := eq(_stateVariable, _state)
   }
   """
 
   static let isValidCallerCapability =
   """
-  function flint$isValidCallerCapability(_address) -> ret {
+  function runtime$isValidCallerCapability(_address) -> ret {
     ret := eq(_address, caller())
   }
   """
 
   static let isCallerCapabilityInArray =
   """
-  function flint$isCallerCapabilityInArray(arrayOffset) -> ret {
+  function runtime$isCallerCapabilityInArray(arrayOffset) -> ret {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
-      if eq(sload(flint$storageOffsetForKey(arrayOffset, i)), _caller) {
+      if eq(sload(runtime$storageOffsetForKey(arrayOffset, i)), _caller) {
         found := 1
       }
     }
@@ -304,14 +304,14 @@ struct IRRuntimeFunctionDeclaration {
 
   static let isCallerCapabilityInDictionary =
   """
-  function flint$isCallerCapabilityInDictionary(dictionaryOffset) -> ret {
+  function runtime$isCallerCapabilityInDictionary(dictionaryOffset) -> ret {
     let size := sload(dictionaryOffset)
-    let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+    let arrayOffset := runtime$storageDictionaryKeysArrayOffset(dictionaryOffset)
     let found := 0
     let _caller := caller()
     for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, i) } {
-      let key := sload(flint$storageOffsetForKey(arrayOffset, i))
-      if eq(sload(flint$storageOffsetForKey(dictionaryOffset, key)), _caller) {
+      let key := sload(runtime$storageOffsetForKey(arrayOffset, i))
+      if eq(sload(runtime$storageOffsetForKey(dictionaryOffset, key)), _caller) {
         found := 1
       }
     }
@@ -321,7 +321,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let return32Bytes =
   """
-  function flint$return32Bytes(v) {
+  function runtime$return32Bytes(v) {
     mstore(0, v)
     return(0, 0x20)
   }
@@ -329,48 +329,48 @@ struct IRRuntimeFunctionDeclaration {
 
   static let isInvalidSubscriptExpression =
   """
-  function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
-    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, flint$sub(arraySize, 1))))
+  function runtime$isInvalidSubscriptExpression(index, arraySize) -> ret {
+    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, runtime$sub(arraySize, 1))))
   }
   """
 
   static let storageFixedSizeArrayOffset =
   """
-  function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
-    if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
-    ret := flint$add(arrayOffset, index)
+  function runtime$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
+    if runtime$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    ret := runtime$add(arrayOffset, index)
   }
   """
 
   static let storageArrayOffset =
   """
-  function flint$storageArrayOffset(arrayOffset, index) -> ret {
+  function runtime$storageArrayOffset(arrayOffset, index) -> ret {
     let arraySize := sload(arrayOffset)
 
     switch eq(arraySize, index)
     case 0 {
-      if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+      if runtime$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
     }
     default {
-      sstore(arrayOffset, flint$add(arraySize, 1))
+      sstore(arrayOffset, runtime$add(arraySize, 1))
     }
 
-    ret := flint$storageOffsetForKey(arrayOffset, index)
+    ret := runtime$storageOffsetForKey(arrayOffset, index)
   }
   """
 
   static let storageDictionaryOffsetForKey =
   """
-  function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
-    let offsetForKey := flint$storageOffsetForKey(dictionaryOffset, key)
+  function runtime$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
+    let offsetForKey := runtime$storageOffsetForKey(dictionaryOffset, key)
     mstore(0, offsetForKey)
     let indexOffset := sha3(0, 32)
     switch eq(sload(indexOffset), 0)
     case 1 {
-      let keysArrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+      let keysArrayOffset := runtime$storageDictionaryKeysArrayOffset(dictionaryOffset)
       let index := add(sload(dictionaryOffset), 1)
       sstore(indexOffset, index)
-      sstore(flint$storageOffsetForKey(keysArrayOffset, index), key)
+      sstore(runtime$storageOffsetForKey(keysArrayOffset, index), key)
       sstore(dictionaryOffset, index)
     }
     ret := offsetForKey
@@ -379,7 +379,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let storageOffsetForKey =
   """
-  function flint$storageOffsetForKey(offset, key) -> ret {
+  function runtime$storageOffsetForKey(offset, key) -> ret {
     mstore(0, key)
     mstore(32, offset)
     ret := sha3(0, 64)
@@ -388,7 +388,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let storageDictionaryKeysArrayOffset =
   """
-  function flint$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
+  function runtime$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
     mstore(0, dictionaryOffset)
     ret := sha3(0, 32)
   }
@@ -396,7 +396,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let send =
   """
-  function flint$send(_value, _address) {
+  function runtime$send(_value, _address) {
     let ret := call(gas(), _address, _value, 0, 0, 0, 0)
 
     if iszero(ret) {
@@ -407,14 +407,14 @@ struct IRRuntimeFunctionDeclaration {
 
   static let fatalError =
   """
-  function flint$fatalError() {
+  function runtime$fatalError() {
     revert(0, 0)
   }
   """
 
   static let add =
   """
-  function flint$add(a, b) -> ret {
+  function runtime$add(a, b) -> ret {
     let c := add(a, b)
 
     if lt(c, a) { revert(0, 0) }
@@ -424,7 +424,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let sub =
   """
-  function flint$sub(a, b) -> ret {
+  function runtime$sub(a, b) -> ret {
     if gt(b, a) { revert(0, 0) }
 
     ret := sub(a, b)
@@ -433,7 +433,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let mul =
   """
-  function flint$mul(a, b) -> ret {
+  function runtime$mul(a, b) -> ret {
     switch iszero(a)
     case 1 {
       ret := 0
@@ -448,7 +448,7 @@ struct IRRuntimeFunctionDeclaration {
 
   static let div =
   """
-  function flint$div(a, b) -> ret {
+  function runtime$div(a, b) -> ret {
     if eq(b, 0) { revert(0, 0) }
     ret := div(a, b)
   }
@@ -456,11 +456,11 @@ struct IRRuntimeFunctionDeclaration {
 
   static let power =
   """
-  function flint$power(b, e) -> ret {
+  function runtime$power(b, e) -> ret {
     ret := 1
     for { let i := 0 } lt(i, e) { i := add(i, 1) }
     {
-        ret := flint$mul(ret, b)
+        ret := runtime$mul(ret, b)
     }
   }
   """

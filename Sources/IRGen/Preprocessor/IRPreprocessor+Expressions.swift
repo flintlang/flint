@@ -102,7 +102,13 @@ extension IRPreprocessor {
     let scopeContext = passContext.scopeContext!
 
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
+      // Don't process runtime functions.
+      return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+    }
+
+    guard !Environment.isIRFunctionCall(functionCall) else {
       // Don't further process runtime functions.
+      functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
@@ -183,9 +189,13 @@ extension IRPreprocessor {
   }
 
   func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String? {
-    // Don't mangle runtime functions
+    // Don't mangle runtime calls
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
       return functionCall.identifier.name
+    }
+    // Only strip function prefix from ir calls
+    guard !Environment.isIRFunctionCall(functionCall) else {
+      return functionCall.identifier.name.replacingOccurrences(of: Environment.irFunctionPrefix, with: "")
     }
 
     let environment = passContext.environment!
