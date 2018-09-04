@@ -59,14 +59,14 @@ extension SemanticAnalyzer {
 
       if identifier.enclosingType == nil {
         // The identifier has no explicit enclosing type, such as in the expression `foo` instead of `a.foo`.
-
         let scopeContext = passContext.scopeContext!
         if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
           if variableDeclaration.isConstant, asLValue {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
-        } else if !passContext.environment!.isEnumDeclared(identifier.name){
+        } else if !passContext.environment!.isEnumDeclared(identifier.name),
+          !passContext.environment!.isStructDeclared(identifier.name){
           // If the variable is not declared locally and doesn't refer to an enum, assign its enclosing type to the struct or contract behavior
           // declaration in which the function appears.
           identifier.enclosingType = passContext.enclosingTypeIdentifier!.name
