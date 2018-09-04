@@ -1,4 +1,4 @@
-contract Array {
+contract Arrays {
   var arr: Int[4] = []
   var arr2: Int[10] = []
   var numWrites: Int = 0
@@ -9,13 +9,23 @@ contract Array {
   var nested2: [Int[4]] = [[]]
   var nested3: [[[Address]]] = [[[]]]
   var nestedDict: [Address: [Int]] = [:]
+
+  var varArray: VariableArray = VariableArray()
 }
 
-Array :: (any) {
+Arrays :: (any) {
   public init() {}
 
   mutating func increaseNumWrites() {
     self.numWrites += 1
+  }
+
+  public func writeVar(index: Int, val: Int) {
+    varArray.setElement(index, val)
+  }
+
+  public func readVar(index: Int) -> Int {
+    return varArray.getElement(index)
   }
 
   public mutating func write(index: Int, val: Int) {

@@ -91,7 +91,13 @@ public struct Environment {
   }
 
   // MARK: - Compatibility
-
+  /// Whether two sets of types are compatible, i.e. whether parameters match arguments
+  func areTypesCompatible(parameters: [RawType], arguments: [RawType]) -> Bool {
+    return !zip(parameters, arguments).contains(where: { types in
+      let (parameterType, argumentType) = types
+      return !parameterType.isCompatible(with: argumentType)
+    })
+  }
   /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
   /// able to call a function which require caller capabilities `target`.
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {

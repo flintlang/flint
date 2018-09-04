@@ -1,0 +1,9 @@
+struct External {
+  func send(value: Int, address: Address) {
+    let ret: Int = ir$call(ir$gas(), address, value, 0, 0, 0, 0)
+
+    if ret == 0 {
+      fatalError()
+    }
+  }
+}

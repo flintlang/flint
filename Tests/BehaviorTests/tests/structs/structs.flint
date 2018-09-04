@@ -34,7 +34,7 @@ struct B {
 
 contract C {
   var a: A = A()
-  var arr: Array = Array()
+  var arr: ArrayWithExplicitSize = ArrayWithExplicitSize()
   var b: B = B()
   var c: B = B()
   let d: Int = 5
@@ -137,7 +137,7 @@ C :: (any) {
   }
 }
 
-struct Array {
+struct ArrayWithExplicitSize {
   var elements: [Int] = []
   var size: Int = 0
 

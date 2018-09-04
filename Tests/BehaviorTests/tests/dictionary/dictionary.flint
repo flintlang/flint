@@ -1,4 +1,4 @@
-contract Dictionary {
+contract Dictionaries {
   var storage: [Address: Int] = [:]
   var foo: Int = 0
   var storage2: [Address: Int] = [:]
@@ -11,13 +11,13 @@ struct S {
   var a: Int = 0
   var b: Bool = false
   var c: T = T()
-} 
+}
 
 struct T {
   var a: Int = 0
 }
 
-Dictionary :: (any) {
+Dictionaries :: (any) {
   public init() {}
 
   public mutating func write(addr: Address, value: Int) {

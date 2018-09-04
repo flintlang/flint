@@ -102,7 +102,10 @@ extension IRPreprocessor {
     let scopeContext = passContext.scopeContext!
 
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
-      // Don't further process runtime functions.
+      // Don't mangle references to runtime functions, but strip ir$ from identifiers
+      if functionCall.identifier.name.hasPrefix("ir$") {
+        functionCall.identifier = Identifier(identifierToken: Token(kind: .identifier(String(functionCall.identifier.name.dropFirst(3))), sourceLocation: functionCall.sourceLocation))
+      }
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
@@ -135,7 +138,7 @@ extension IRPreprocessor {
 
       // If it returns a dynamic type, pass the receiver as the first parameter.
       if passContext.environment!.isStructDeclared(declarationEnclosingType) {
-        if !isGlobalFunctionCall {
+        if !isGlobalFunctionCall, !passContext.environment!.initializers(in: declarationEnclosingType).isEmpty {
           let receiver = constructExpression(from: receiverTrail)
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
           functionCall.arguments.insert(.inoutExpression(inoutExpression), at: 0)
@@ -199,7 +202,7 @@ extension IRPreprocessor {
 
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, containerType: passContext.enclosingTypeIdentifier!.name, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
 
     switch matchResult {
     case .matchedFunction(let functionInformation):
@@ -234,7 +237,7 @@ extension IRPreprocessor {
     let scopeContext = passContext.scopeContext!
     let environment = passContext.environment!
 
-    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, containerType: nil, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     // Mangle global function
     if case .matchedGlobalFunction(_) = match {

@@ -1,0 +1,5 @@
+struct Exception {
+  public func fatalError() {
+    ir$revert(0,0)
+  }
+}

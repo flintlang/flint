@@ -36,7 +36,7 @@ extension SemanticAnalyzer {
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
 
     if attemptExpression.isSoft,
-      case .matchedFunction(let function) = environment.matchFunctionCall(attemptExpression.functionCall, enclosingType: passContext.enclosingTypeIdentifier!.name, typeStates: typeStates, callerCapabilities: [], scopeContext: ScopeContext()),
+      case .matchedFunction(let function) = environment.matchFunctionCall(attemptExpression.functionCall, enclosingType: passContext.enclosingTypeIdentifier!.name, containerType: passContext.contractBehaviorDeclarationContext?.contractIdentifier.name, typeStates: typeStates, callerCapabilities: [], scopeContext: ScopeContext()),
       !function.declaration.isVoid {
       diagnostics.append(.nonVoidAttemptCall(attemptExpression))
     }
@@ -66,12 +66,22 @@ extension SemanticAnalyzer {
   public func process(rangeExpression: AST.RangeExpression, passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     var diagnostics = [Diagnostic]()
 
-    if case .literal(let startToken) = rangeExpression.initial,
-      case .literal(let endToken) = rangeExpression.bound {
-      if startToken.kind == endToken.kind, rangeExpression.op.kind == .punctuation(.halfOpenRange) {
-        diagnostics.append(.emptyRange(rangeExpression))
+    if case .literal(let startToken) = rangeExpression.initial {
+      if case .literal(let endToken) = rangeExpression.bound {
+        if startToken.kind == endToken.kind,
+          rangeExpression.op.kind == .punctuation(.halfOpenRange) {
+          diagnostics.append(.emptyRange(rangeExpression))
+        }
       }
-    } else {
+      else if case .identifier(_) = rangeExpression.bound,
+        case .literal(.decimal(.integer(0))) = startToken.kind {
+        // End token identifiers are allowed iff the start token is 0 otherwise there is a possibility of an infinite loop
+      }
+      else {
+        diagnostics.append(.invalidRangeDeclaration(rangeExpression.bound))
+      }
+    }
+    else {
       diagnostics.append(.invalidRangeDeclaration(rangeExpression.initial))
     }
 

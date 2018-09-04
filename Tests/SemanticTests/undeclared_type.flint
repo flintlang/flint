@@ -12,4 +12,6 @@ Test :: (any) {
   }
 }
 
-struct UDT {}
+struct UDT {
+  var x: Int = 1
+}

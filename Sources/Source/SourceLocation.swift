@@ -16,7 +16,7 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
   public var file: URL
   public var isFromStdlib: Bool
 
-  public init(line: Int, column: Int, length: Int, file: URL, isFromStdlib: Bool = false) {
+  public init(line: Int, column: Int, length: Int, file: URL, isFromStdlib: Bool) {
     self.line = line
     self.column = column
     self.length = length
@@ -28,7 +28,7 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
     let lowerBound = lowerBoundEntity.sourceLocation
     let upperBound = upperBoundEntity.sourceLocation
     guard lowerBound.line == upperBound.line else { return lowerBound }
-    return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: upperBound.column + upperBound.length - lowerBound.column, file: lowerBound.file)
+    return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: upperBound.column + upperBound.length - lowerBound.column, file: lowerBound.file, isFromStdlib: lowerBound.isFromStdlib && upperBound.isFromStdlib)
   }
 
   // MARK: - CustomStringConvertible
@@ -36,13 +36,13 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
 
   // MARK: - Comparable
   public static func < (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
-    return [lhs.line, lhs.column, lhs.length].lexicographicallyPrecedes([rhs.line, rhs.column, rhs.length])
+    return (lhs.isFromStdlib && !rhs.isFromStdlib) || (lhs.isFromStdlib == rhs.isFromStdlib && [lhs.line, lhs.column, lhs.length].lexicographicallyPrecedes([rhs.line, rhs.column, rhs.length]))
   }
 }
 
 extension SourceLocation {
-  public static let DUMMY = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))
-  public static let INVALID = SourceLocation(line: -1, column: -1, length: -1, file: .init(fileURLWithPath: ""))
+  public static let DUMMY = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""), isFromStdlib: false)
+  public static let INVALID = SourceLocation(line: -1, column: -1, length: -1, file: .init(fileURLWithPath: ""), isFromStdlib: false)
 
   public var isValid: Bool {
     return line > 0 && column > 0 && length > 0 && file.path != ""

@@ -57,7 +57,8 @@ extension SemanticAnalyzer {
       // The identifier is used an l-value (the left-hand side of an assignment).
       let asLValue = passContext.asLValue ?? false
 
-      if identifier.enclosingType == nil {
+      if identifier.enclosingType == nil,
+        !environment.isStructDeclared(identifier.name) {
         // The identifier has no explicit enclosing type, such as in the expression `foo` instead of `a.foo`.
 
         let scopeContext = passContext.scopeContext!
@@ -76,18 +77,19 @@ extension SemanticAnalyzer {
         }
       }
 
-      if let enclosingType = identifier.enclosingType, enclosingType != RawType.errorType.name {
-        if !passContext.environment!.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
+      if let enclosingType = identifier.enclosingType {
+        // The identifier has an explicit enclosing type, such as `a` in the expression `a.foo`.
+        if !environment.isPropertyDefined(identifier.name, enclosingType: enclosingType) {
           // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
         } else if asLValue {
 
-          if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
+          if environment.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
             // Retrieve the source location of that property's declaration.
-            let declarationSourceLocation = passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
+            let declarationSourceLocation = environment.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
 
-            if !inInitializerDeclaration || passContext.environment!.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType) {
+            if !inInitializerDeclaration || environment.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType) {
               // The state property is a constant but is attempted to be reassigned.
               diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
             }

@@ -1,1 +1,1 @@
-exports.contractName = "Dictionary"
+exports.contractName = "Dictionaries"

@@ -1,0 +1,21 @@
+struct CallerCapability {
+  public func isValid(address: Int) -> Bool {
+    return address == ir$caller()
+  }
+
+  public func isInArray(arrayOffset: Int) -> Int {
+    let size: Int = Memory.load(arrayOffset, false)
+    var found: Int = 0
+    let _caller: Int = ir$caller()
+    let arrayStart: Int = arrayOffset + 1
+
+    for let i: Int in (0..<size) { 
+      if Memory.load(Memory.storageOffsetForKey(arrayOffset, i), false) == _caller {
+        found = 1
+        // TODO: Should break here
+      }
+    }
+
+    return found
+  }
+}

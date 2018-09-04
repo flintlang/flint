@@ -438,7 +438,7 @@ public struct ASTVisitor {
     }
     processResult.passContext.isEnclosing = false
 
-    switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
+    switch passContext.environment!.type(of: processResult.element.lhs, enclosingType: processResult.passContext.enclosingTypeIdentifier!.name, scopeContext: passContext.scopeContext!) {
     case .arrayType(_), .fixedSizeArrayType(_), .dictionaryType(_):
       break
     default:

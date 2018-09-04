@@ -13,9 +13,20 @@ struct StandardLibrary {
   /// Path to the stdlib directory.
   var url: URL
 
+  var runtimeFiles: [URL] {
+    return flintFiles(at: url.appendingPathComponent("runtime"))
+  }
+
+  var coreFiles: [URL] {
+    return flintFiles(at: url.appendingPathComponent("core"))
+  }
+
+  var globalFiles: [URL] {
+    return flintFiles(at: url)
+  }
+
   var files: [URL] {
-    return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
-      .filter { $0.pathExtension == "flint" }
+    return runtimeFiles + coreFiles + globalFiles
   }
 
   static var `default`: StandardLibrary {
@@ -29,5 +40,9 @@ struct StandardLibrary {
     }
 
     return StandardLibrary(url: url)
+  }
+
+  private func flintFiles(at url: URL) -> [URL] {
+    return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: []).filter { $0.pathExtension == "flint"}
   }
 }

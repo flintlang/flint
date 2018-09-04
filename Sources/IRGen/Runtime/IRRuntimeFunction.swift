@@ -9,49 +9,45 @@ import AST
 
 /// The runtime functions used by Flint.
 enum IRRuntimeFunction {
-  enum Identifiers {
-    case selector
-    case decodeAsAddress
-    case decodeAsUInt
-    case store
-    case load
-    case computeOffset
-    case allocateMemory
-    case isMatchingTypeState
-    case isValidCallerCapability
-    case isCallerCapabilityInArray
-    case isCallerCapabilityInDictionary
-    case return32Bytes
-    case isInvalidSubscriptExpression
-    case storageArrayOffset
-    case storageArraySize
-    case storageFixedSizeArrayOffset
-    case storageDictionaryOffsetForKey
-    case storageDictionaryKeysArrayOffset
-    case storageOffsetForKey
-    case callvalue
-    case send
-    case add
-    case sub
-    case mul
-    case div
-    case power
-
-    var mangled: String {
-      return "\(Environment.runtimeFunctionPrefix)\(self)"
-    }
+  enum Identifiers: String {
+    case selector = "Memory$selector"
+    case decodeAsAddress = "Memory$decodeAsAddress$Int"
+    case decodeAsUInt = "Memory$decodeAsUInt$Int"
+    case store = "Memory$store$Int_Int_Int"
+    case load = "Memory$load$Int_Int"
+    case computeOffset = "Memory$computeOffset$Int_Int_Int"
+    case allocateMemory = "Memory$allocateMemory$Int"
+    case storageDictionaryKeysArrayOffset = "Dictionary$keysArrayOffset$Int"
+    case storageOffsetForKey = "Dictionary$keyOffset$Int_Int"
+    case isMatchingTypeState = "TypeState$isMatching$Int"
+    case isValidCallerCapability = "CallerCapability$isValid$Int"
+    case isCallerCapabilityInArray = "CallerCapability$isInArray$Int"
+    case isCallerCapabilityInDictionary = "CallerCapability$isInDictionary$Int"
+    case return32Bytes = "Memory$return32Bytes$Int"
+    case isInvalidSubscriptExpression = "Array$isInvalidSubscript$Int"
+    case storageArrayOffset = "Array$storageOffset$Int_Int"
+    case storageArraySize = "Array$size"
+    case storageFixedSizeArrayOffset = "FixedSizeArray$storageOffset$Int_Int_Int"
+    case storageDictionaryOffsetForKey = "Memory$storageOffsetForKey$Int_Int"
+    case callvalue = "External$callvalue$Int"
+    case send = "External$send$Int_Int"
+    case add = "Math$add$Int_Int"
+    case sub = "Math$sub$Int_Int"
+    case mul = "Math$mul$Int_Int"
+    case div = "Math$div$Int_Int"
+    case power = "Math$power$Int_Int"
   }
 
   static func selector() -> String {
-    return "\(Identifiers.selector.mangled)()"
+    return "\(Identifiers.selector.rawValue)()"
   }
 
   static func decodeAsAddress(offset: Int) -> String {
-    return "\(Identifiers.decodeAsAddress.mangled)(\(offset))"
+    return "\(Identifiers.decodeAsAddress.rawValue)(\(offset))"
   }
 
   static func decodeAsUInt(offset: Int) -> String {
-    return "\(Identifiers.decodeAsUInt.mangled)(\(offset))"
+    return "\(Identifiers.decodeAsUInt.rawValue)(\(offset))"
   }
 
   static func store(address: String, value: String, inMemory: Bool) -> String {
@@ -59,7 +55,7 @@ enum IRRuntimeFunction {
   }
 
   static func store(address: String, value: String, inMemory: String) -> String {
-    return "\(Identifiers.store.mangled)(\(address), \(value), \(inMemory))"
+    return "\(Identifiers.store.rawValue)(\(address), \(value), \(inMemory))"
   }
 
   static func addOffset(base: String, offset: String, inMemory: Bool) -> String {
@@ -67,7 +63,7 @@ enum IRRuntimeFunction {
   }
 
   static func addOffset(base: String, offset: String, inMemory: String) -> String {
-    return "\(Identifiers.computeOffset.mangled)(\(base), \(offset), \(inMemory))"
+    return "\(Identifiers.computeOffset.rawValue)(\(base), \(offset), \(inMemory))"
   }
 
   static func load(address: String, inMemory: Bool) -> String {
@@ -75,59 +71,59 @@ enum IRRuntimeFunction {
   }
 
   static func load(address: String, inMemory: String) -> String {
-    return "\(Identifiers.load.mangled)(\(address), \(inMemory))"
+    return "\(Identifiers.load.rawValue)(\(address), \(inMemory))"
   }
 
   static func allocateMemory(size: Int) -> String {
-    return "\(Identifiers.allocateMemory.mangled)(\(size))"
+    return "\(Identifiers.allocateMemory.rawValue)(\(size))"
   }
 
   static func isMatchingTypeState(_ stateValue: String, _ stateVariable: String) -> String {
-    return "\(Identifiers.isMatchingTypeState.mangled)(\(stateValue), \(stateVariable))"
+    return "\(Identifiers.isMatchingTypeState.rawValue)(\(stateValue), \(stateVariable))"
   }
 
   static func isValidCallerCapability(address: String) -> String {
-    return "\(Identifiers.isValidCallerCapability.mangled)(\(address))"
+    return "\(Identifiers.isValidCallerCapability.rawValue)(\(address))"
   }
 
   static func isCallerCapabilityInArray(arrayOffset: Int) -> String {
-    return "\(Identifiers.isCallerCapabilityInArray.mangled)(\(arrayOffset))"
+    return "\(Identifiers.isCallerCapabilityInArray.rawValue)(\(arrayOffset))"
   }
 
   static func isCallerCapabilityInDictionary(dictionaryOffset: Int) -> String {
-    return "\(Identifiers.isCallerCapabilityInDictionary.mangled)(\(dictionaryOffset))"
+    return "\(Identifiers.isCallerCapabilityInDictionary.rawValue)(\(dictionaryOffset))"
   }
 
   static func return32Bytes(value: String) -> String {
-    return "\(Identifiers.return32Bytes.mangled)(\(value))"
+    return "\(Identifiers.return32Bytes.rawValue)(\(value))"
   }
 
   static func isInvalidSubscriptExpression(index: Int, arraySize: Int) -> String {
-    return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
+    return "\(Identifiers.isInvalidSubscriptExpression.rawValue)(\(index), \(arraySize))"
   }
 
   static func storageArrayOffset(arrayOffset: String, index: String) -> String {
-    return "\(Identifiers.storageArrayOffset.mangled)(\(arrayOffset), \(index))"
+    return "\(Identifiers.storageArrayOffset.rawValue)(\(arrayOffset), \(index))"
   }
 
   static func storageArraySize(arrayOffset: String) -> String {
-    return "\(Identifiers.storageArraySize.mangled)(\(arrayOffset))"
+    return "\(Identifiers.storageArraySize.rawValue)(\(arrayOffset))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, arraySize: Int) -> String {
-    return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
+  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, size: Int) -> String {
+    return "\(Identifiers.storageFixedSizeArrayOffset.rawValue)(\(arrayOffset), \(index), \(size))"
   }
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: String, key: String) -> String {
-    return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
+    return "\(Identifiers.storageDictionaryOffsetForKey.rawValue)(\(dictionaryOffset), \(key))"
   }
 
   static func storageDictionaryKeysArrayOffset(dictionaryOffset: String) -> String {
-    return "\(Identifiers.storageDictionaryKeysArrayOffset.mangled)(\(dictionaryOffset))"
+    return "\(Identifiers.storageDictionaryKeysArrayOffset.rawValue)(\(dictionaryOffset))"
   }
 
   static func storageOffsetForKey(baseOffset: String, key: String) -> String {
-    return "\(Identifiers.storageOffsetForKey.mangled)(\(baseOffset), \(key))"
+    return "\(Identifiers.storageOffsetForKey.rawValue)(\(baseOffset), \(key))"
   }
 
   static func callvalue() -> String {
@@ -135,313 +131,22 @@ enum IRRuntimeFunction {
   }
 
   static func add(a: String, b: String) -> String {
-    return "\(Identifiers.add.mangled)(\(a), \(b))"
+    return "\(Identifiers.add.rawValue)(\(a), \(b))"
   }
 
   static func sub(a: String, b: String) -> String {
-    return "\(Identifiers.sub.mangled)(\(a), \(b))"
+    return "\(Identifiers.sub.rawValue)(\(a), \(b))"
   }
 
   static func mul(a: String, b: String) -> String {
-    return "\(Identifiers.mul.mangled)(\(a), \(b))"
+    return "\(Identifiers.mul.rawValue)(\(a), \(b))"
   }
 
   static func div(a: String, b: String) -> String {
-    return "\(Identifiers.div.mangled)(\(a), \(b))"
+    return "\(Identifiers.div.rawValue)(\(a), \(b))"
   }
 
   static func power(b: String, e: String) -> String {
-    return "\(Identifiers.power.mangled)(\(b), \(e))"
+    return "\(Identifiers.power.rawValue)(\(b), \(e))"
   }
-
-
-  static let allDeclarations: [String] = [
-    IRRuntimeFunctionDeclaration.selector,
-    IRRuntimeFunctionDeclaration.decodeAsAddress,
-    IRRuntimeFunctionDeclaration.decodeAsUInt,
-    IRRuntimeFunctionDeclaration.store,
-    IRRuntimeFunctionDeclaration.load,
-    IRRuntimeFunctionDeclaration.computeOffset,
-    IRRuntimeFunctionDeclaration.allocateMemory,
-    IRRuntimeFunctionDeclaration.isMatchingTypeState,
-    IRRuntimeFunctionDeclaration.isValidCallerCapability,
-    IRRuntimeFunctionDeclaration.isCallerCapabilityInArray,
-    IRRuntimeFunctionDeclaration.isCallerCapabilityInDictionary,
-    IRRuntimeFunctionDeclaration.return32Bytes,
-    IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression,
-    IRRuntimeFunctionDeclaration.storageArrayOffset,
-    IRRuntimeFunctionDeclaration.storageFixedSizeArrayOffset,
-    IRRuntimeFunctionDeclaration.storageDictionaryOffsetForKey,
-    IRRuntimeFunctionDeclaration.storageDictionaryKeysArrayOffset,
-    IRRuntimeFunctionDeclaration.storageOffsetForKey,
-    IRRuntimeFunctionDeclaration.send,
-    IRRuntimeFunctionDeclaration.fatalError,
-    IRRuntimeFunctionDeclaration.add,
-    IRRuntimeFunctionDeclaration.sub,
-    IRRuntimeFunctionDeclaration.mul,
-    IRRuntimeFunctionDeclaration.div,
-    IRRuntimeFunctionDeclaration.power
-  ]
-}
-
-struct IRRuntimeFunctionDeclaration {
-  static let selector =
-  """
-  function flint$selector() -> ret {
-    ret := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
-  }
-  """
-
-  static let decodeAsAddress =
-  """
-  function flint$decodeAsAddress(offset) -> ret {
-    ret := flint$decodeAsUInt(offset)
-  }
-  """
-
-  static let decodeAsUInt =
-  """
-  function flint$decodeAsUInt(offset) -> ret {
-    ret := calldataload(add(4, mul(offset, 0x20)))
-  }
-  """
-
-  static let store =
-  """
-  function flint$store(ptr, val, mem) {
-    switch iszero(mem)
-    case 0 {
-      mstore(ptr, val)
-    }
-    default {
-      sstore(ptr, val)
-    }
-  }
-  """
-
-  static let load =
-  """
-  function flint$load(ptr, mem) -> ret {
-    switch iszero(mem)
-    case 0 {
-      ret := mload(ptr)
-    }
-    default {
-      ret := sload(ptr)
-    }
-  }
-  """
-
-  static let computeOffset =
-  """
-  function flint$computeOffset(base, offset, mem) -> ret {
-    switch iszero(mem)
-    case 0 {
-      ret := add(base, mul(offset, \(EVM.wordSize)))
-    }
-    default {
-      ret := add(base, offset)
-    }
-  }
-  """
-
-  static let allocateMemory =
-  """
-  function flint$allocateMemory(size) -> ret {
-    ret := mload(0x40)
-    mstore(0x40, add(ret, size))
-  }
-  """
-
-  static let isMatchingTypeState =
-  """
-  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
-    ret := eq(_stateVariable, _state)
-  }
-  """
-
-  static let isValidCallerCapability =
-  """
-  function flint$isValidCallerCapability(_address) -> ret {
-    ret := eq(_address, caller())
-  }
-  """
-
-  static let isCallerCapabilityInArray =
-  """
-  function flint$isCallerCapabilityInArray(arrayOffset) -> ret {
-    let size := sload(arrayOffset)
-    let found := 0
-    let _caller := caller()
-    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
-      if eq(sload(flint$storageOffsetForKey(arrayOffset, i)), _caller) {
-        found := 1
-      }
-    }
-    ret := found
-  }
-  """
-
-  static let isCallerCapabilityInDictionary =
-  """
-  function flint$isCallerCapabilityInDictionary(dictionaryOffset) -> ret {
-    let size := sload(dictionaryOffset)
-    let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
-    let found := 0
-    let _caller := caller()
-    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, i) } {
-      let key := sload(flint$storageOffsetForKey(arrayOffset, i))
-      if eq(sload(flint$storageOffsetForKey(dictionaryOffset, key)), _caller) {
-        found := 1
-      }
-    }
-    ret := found
-  }
-  """
-
-  static let return32Bytes =
-  """
-  function flint$return32Bytes(v) {
-    mstore(0, v)
-    return(0, 0x20)
-  }
-  """
-
-  static let isInvalidSubscriptExpression =
-  """
-  function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
-    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, flint$sub(arraySize, 1))))
-  }
-  """
-
-  static let storageFixedSizeArrayOffset =
-  """
-  function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
-    if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
-    ret := flint$add(arrayOffset, index)
-  }
-  """
-
-  static let storageArrayOffset =
-  """
-  function flint$storageArrayOffset(arrayOffset, index) -> ret {
-    let arraySize := sload(arrayOffset)
-
-    switch eq(arraySize, index)
-    case 0 {
-      if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
-    }
-    default {
-      sstore(arrayOffset, flint$add(arraySize, 1))
-    }
-
-    ret := flint$storageOffsetForKey(arrayOffset, index)
-  }
-  """
-
-  static let storageDictionaryOffsetForKey =
-  """
-  function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
-    let offsetForKey := flint$storageOffsetForKey(dictionaryOffset, key)
-    mstore(0, offsetForKey)
-    let indexOffset := sha3(0, 32)
-    switch eq(sload(indexOffset), 0)
-    case 1 {
-      let keysArrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
-      let index := add(sload(dictionaryOffset), 1)
-      sstore(indexOffset, index)
-      sstore(flint$storageOffsetForKey(keysArrayOffset, index), key)
-      sstore(dictionaryOffset, index)
-    }
-    ret := offsetForKey
-  }
-  """
-
-  static let storageOffsetForKey =
-  """
-  function flint$storageOffsetForKey(offset, key) -> ret {
-    mstore(0, key)
-    mstore(32, offset)
-    ret := sha3(0, 64)
-  }
-  """
-
-  static let storageDictionaryKeysArrayOffset =
-  """
-  function flint$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
-    mstore(0, dictionaryOffset)
-    ret := sha3(0, 32)
-  }
-  """
-
-  static let send =
-  """
-  function flint$send(_value, _address) {
-    let ret := call(gas(), _address, _value, 0, 0, 0, 0)
-
-    if iszero(ret) {
-      revert(0, 0)
-    }
-  }
-  """
-
-  static let fatalError =
-  """
-  function flint$fatalError() {
-    revert(0, 0)
-  }
-  """
-
-  static let add =
-  """
-  function flint$add(a, b) -> ret {
-    let c := add(a, b)
-
-    if lt(c, a) { revert(0, 0) }
-    ret := c
-  }
-  """
-
-  static let sub =
-  """
-  function flint$sub(a, b) -> ret {
-    if gt(b, a) { revert(0, 0) }
-
-    ret := sub(a, b)
-  }
-  """
-
-  static let mul =
-  """
-  function flint$mul(a, b) -> ret {
-    switch iszero(a)
-    case 1 {
-      ret := 0
-    }
-    default {
-      let c := mul(a, b)
-      if iszero(eq(div(c, a), b)) { revert(0, 0) }
-      ret := c
-    }
-  }
-  """
-
-  static let div =
-  """
-  function flint$div(a, b) -> ret {
-    if eq(b, 0) { revert(0, 0) }
-    ret := div(a, b)
-  }
-  """
-
-  static let power =
-  """
-  function flint$power(b, e) -> ret {
-    ret := 1
-    for { let i := 0 } lt(i, e) { i := add(i, 1) }
-    {
-        ret := flint$mul(ret, b)
-    }
-  }
-  """
 }
