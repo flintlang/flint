@@ -420,6 +420,9 @@ Wallet :: (owner) {
 ### Special syntax
 
 In the future, we should consider using syntactic sugar for the `Asset` operations.
+**********
+SUSAN: WHAT SHOULD THIS LOOK LIKE?
+**********
 
 ### @autodestroying attribute
 
