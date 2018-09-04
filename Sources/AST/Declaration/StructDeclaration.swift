@@ -44,8 +44,13 @@ public struct StructDeclaration: ASTNode {
       if case .specialDeclaration(let specialDeclaration) = member, specialDeclaration.isInit { return true }
       return false
     }
+    let containsVariables = members.contains { member in
+      if case .variableDeclaration(_) = member { return true }
+      return false
+    }
 
     guard !containsInitializer else { return false }
+    guard containsVariables else { return false }
 
     let unassignedProperties = members.compactMap { member -> VariableDeclaration? in
       guard case .variableDeclaration(let variableDeclaration) = member,

@@ -24,4 +24,6 @@ Test :: (any) {
   }
 }
 
-struct D { }
+struct D {
+  public init() {}
+}
