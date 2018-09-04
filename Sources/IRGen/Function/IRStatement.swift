@@ -131,13 +131,13 @@ struct IRForStatement {
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
       loadArrLen = String(typeSize)
-      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", size: typeSize)
       toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType(_):
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       let keysArrayOffset = IRRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
-      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
+      let keyOffset = IRRuntimeFunction.storageOffsetForKey(offset: keysArrayOffset, key: "add(\(prefix)i, 1)")
       let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
       let dictionaryElementOffset = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
       toAssign = IRRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)

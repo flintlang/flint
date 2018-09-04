@@ -21,7 +21,7 @@ struct IRFunctionSelector {
     let fallback = renderFallback()
 
     return """
-    switch \(IRRuntimeFunction.selector())
+    switch div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
     \(cases)
     default {
       \(fallback)

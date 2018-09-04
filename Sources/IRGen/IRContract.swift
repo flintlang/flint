@@ -92,10 +92,6 @@ struct IRContract {
     }.joined(separator: "\n\n")
   }
 
-  func renderRuntimeFunctions() -> String {
-    return IRRuntimeFunction.allDeclarations.joined(separator: "\n\n")
-  }
-
   func renderPublicInitializer() -> String {
     let (initializerDeclaration, contractBehaviorDeclaration) = findContractPublicInitializer()!
 
@@ -134,18 +130,9 @@ struct IRContract {
      //// --    Struct functions    -- ////
      //////////////////////////////////////
      """
-     let runtimeHeader = """
-     //////////////////////////////////////
-     //// --     Flint Runtime      -- ////
-     //////////////////////////////////////
-     """
 
      // Generate code for each function in the structs.
      let structFunctions = renderStructFunctions()
-
-     // Generate runtime functions.
-     let runtimeFunctionsDeclarations = renderRuntimeFunctions()
-
 
 
      return """
@@ -153,10 +140,6 @@ struct IRContract {
 
      \(structFunctions.indented(by: indentedBy, andFirst: true))
 
-
-     \(runtimeHeader.indented(by: indentedBy, andFirst: true))
-
-     \(runtimeFunctionsDeclarations.indented(by: indentedBy, andFirst: true))
      """
    }
 

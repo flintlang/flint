@@ -1,0 +1,21 @@
+struct Runtime$CallerCapability {
+  public func isValid(address: Int) -> Bool {
+    return address == ir$caller()
+  }
+
+  public func isInArray(arrayOffset: Int) -> Bool {
+    let size: Int = Runtime$Memory.load(arrayOffset, false)
+    let caller: Int = ir$caller()
+    return searchArray(arrayOffset, size, caller)
+  }
+
+  func searchArray(arrayOffset: Int, i: Int, caller: Int) -> Bool {
+    let offset: Int = Runtime$Memory.storageOffsetForKey(arrayOffset, i)
+    //TODO: Embedding leads to errorType
+    var found: Bool = Runtime$Memory.load(offset, false) == caller
+    if found == false && i > 0 {
+        found = searchArray(arrayOffset, i - 1, caller)
+    }
+    return found
+  }
+}

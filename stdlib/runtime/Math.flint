@@ -1,0 +1,39 @@
+struct Runtime$Math {
+  func add(a: Int, b: Int) -> Int{
+    let c: Int = ir$add(a, b)
+
+    if c < a { fatalError() }
+
+    return c
+  }
+
+  func sub(a: Int, b: Int) -> Int {
+    if b > a { fatalError() }
+
+    return ir$sub(a, b)
+  }
+
+  func mul(a: Int, b: Int) -> Int {
+    var c: Int = 0
+    if a != 0 {
+      c = ir$mul(a, b)
+      if (c / a) != b { fatalError() }
+    }
+
+    return c
+  }
+
+  func div(a: Int, b: Int) -> Int {
+    if b == 0 { fatalError() }
+
+    return ir$div(a, b)
+  }
+
+  func power(b: Int, e: Int) -> Int {
+    var res: Int = 1
+    if e != 0 {
+      res = b * power(b, e - 1)
+    }
+    return res
+  }
+}

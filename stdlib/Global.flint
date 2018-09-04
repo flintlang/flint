@@ -3,12 +3,12 @@ struct Flint$Global {
   // Send Wei to an Ethereum address
   func send(address: Address, value: inout Wei) {
     let w: Wei = Wei(&value)
-    runtime$send(w.getRawValue(), address)
+    Runtime$External.send(w.getRawValue(), address)
   }
 
   // Aborts the Ethereum transaction with an error.
   func fatalError() {
-    runtime$fatalError()
+    Runtime$Exception.fatalError()
   }
 
   // Ensure the given condition holds, otherwise crash.

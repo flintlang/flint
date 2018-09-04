@@ -1,0 +1,41 @@
+struct $Array {
+  public func size(offset: Int) -> Int {
+    return Runtime$Memory.load(offset, false)
+  }
+
+  public func isEmpty(offset: Int) -> Bool {
+    return size(offset) == 0
+  }
+
+  func getElement(offset: Int, index: Int) -> Int {
+    let elementOffset: Int = storageOffset(offset, index)
+    return Runtime$Memory.load(elementOffset, false)
+  }
+
+  func incrementSize(offset: Int) {
+    Runtime$Memory.store(offset, size(offset) + 1, false)
+  }
+
+  func storageOffset(offset: Int, index: Int) -> Int {
+    let size: Int = size(offset)
+    if index != size {
+      revertInvalidSubscript(offset, index)
+    }
+    else {
+      incrementSize(offset)
+    }
+
+    return Runtime$Memory.storageOffsetForKey(offset, index)
+  }
+
+  func isInvalidSubscript(offset: Int, index: Int) -> Bool {
+    let size: Int = size(offset)
+    return size == 0 || index < 0 || index > (size - 1)
+  }
+
+  func revertInvalidSubscript(offset: Int, index: Int) {
+    if isInvalidSubscript(offset, index) {
+      fatalError()
+    }
+  }
+}

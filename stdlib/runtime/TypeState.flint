@@ -1,0 +1,6 @@
+struct Runtime$TypeState {
+  public func isMatchingTypeState(state: Int, stateVariable: Int) -> Bool {
+    return state == stateVariable
+  }
+}
+

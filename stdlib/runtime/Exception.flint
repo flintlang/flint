@@ -1,0 +1,11 @@
+struct Runtime$Exception {
+  public func fatalError() {
+    ir$revert(0,0)
+  }
+
+  public func checkNoValue(value: Int) {
+    if value != 0 {
+      fatalError()
+    }
+  }
+}

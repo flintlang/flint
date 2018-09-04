@@ -43,7 +43,9 @@ extension TypeChecker {
         diagnostics.append(.unmatchedOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expression: .binaryExpression(binaryExpression)))
       }
       let acceptedTypes: [RawType] = [.basicType(.address), .basicType(.bool), .basicType(.int), .basicType(.string), .userDefinedType("Enum")]
-      if ![lhsType, rhsType].contains(.errorType), !acceptedTypes.contains(lhsType) && !environment.isEnumDeclared(lhsType.name) {
+      if ![lhsType, rhsType].contains(.errorType),
+        !acceptedTypes.contains(where: {lhsType.isCompatible(with: $0)}),
+        !environment.isEnumDeclared(lhsType.name) {
         diagnostics.append(.incompatibleOperandTypes(operatorKind: binaryExpression.opToken, lhsType: lhsType, rhsType: rhsType, expectedTypes: acceptedTypes, expression: .binaryExpression(binaryExpression)))
       }
     case .at, .openBrace, .closeBrace, .openSquareBracket, .closeSquareBracket, .colon, .doubleColon, .openBracket, .closeBracket, .arrow, .leftArrow, .comma, .semicolon, .doubleSlash, .dotdot, .ampersand, .halfOpenRange, .closedRange, .bang, .question:

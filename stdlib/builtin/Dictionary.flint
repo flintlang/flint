@@ -1,0 +1,23 @@
+struct $Dictionary {
+
+
+  func keysArrayOffset(offset: Int) -> Int {
+    ir$mstore(0, offset)
+    return ir$sha3(0, 32)
+  }
+
+  func keyOffset(offset: Int, key: Int) -> Int {
+    let offsetForKey: Int = Runtime$Memory.storageOffsetForKey(offset, key)
+    ir$mstore(0, offsetForKey)
+    let indexOffset: Int = ir$sha3(0, 32)
+
+    if ir$sload(indexOffset) == 0 {
+      let keysArrayOffset: Int = keysArrayOffset(offset)
+      let index: Int = ir$sload(offset) + 1
+      ir$sstore(indexOffset, index)
+      ir$sstore(Runtime$Memory.storageOffsetForKey(keysArrayOffset, index), key)
+      ir$sstore(offset, index)
+    }
+    return offsetForKey
+  }
+}

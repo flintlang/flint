@@ -149,7 +149,6 @@ extension IRPreprocessor {
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
           functionCall.arguments.insert(FunctionArgument(.inoutExpression(inoutExpression)), at: 0)
         }
-      }
     }
 
     guard case .failure(let candidates) = environment.matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: passContext.scopeContext ?? ScopeContext()), candidates.isEmpty else {

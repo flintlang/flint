@@ -32,7 +32,7 @@ struct IRSubscriptExpression {
       runtimeFunc = IRRuntimeFunction.storageArrayOffset
     case .fixedSizeArrayType(_):
       let typeSize = functionContext.environment.size(of: type)
-      runtimeFunc = {IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, arraySize: typeSize)}
+      runtimeFunc = {IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, size: typeSize)}
     case .dictionaryType(_):
       runtimeFunc = IRRuntimeFunction.storageDictionaryOffsetForKey
     default: fatalError("Invalid type")
