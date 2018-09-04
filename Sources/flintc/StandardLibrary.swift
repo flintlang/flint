@@ -14,8 +14,21 @@ struct StandardLibrary {
   var url: URL
 
   var files: [URL] {
-    return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
-      .filter { $0.pathExtension == "flint" }
+    var files = [URL]()
+    let fileManager = FileManager.default
+    let enumerator = fileManager.enumerator(at: url,
+                                            includingPropertiesForKeys: nil,
+                                            options: [.skipsHiddenFiles], errorHandler: { (url, error) -> Bool in
+                                              print("directoryEnumerator error at \(url): ", error)
+                                              return true
+    })!
+
+    for case let fileURL as URL in enumerator {
+      if fileURL.pathExtension == "flint" {
+        files.append(fileURL)
+      }
+    }
+    return files
   }
 
   static var `default`: StandardLibrary {
