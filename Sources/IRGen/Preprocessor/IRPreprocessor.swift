@@ -75,12 +75,14 @@ public struct IRPreprocessor: ASTPass {
       functionDeclaration.body.insert(.expression(assignment), at: 0)
     }
 
-    if let structDeclarationContext = passContext.structDeclarationContext {
-      if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+    // If it operates on a dynamic type (a non-global initalised struct), pass the receiver as the first parameter.
+    if let structDeclarationContext = passContext.structDeclarationContext,
+      let enclosingName = passContext.enclosingTypeIdentifier?.name,
+      Environment.globalFunctionStructName != enclosingName,
+      !passContext.environment!.initializers(in: enclosingName).isEmpty {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
         let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
         functionDeclaration.parameters.insert(parameter, at: 0)
-      }
     }
 
     // Add an isMem parameter for each struct parameter.

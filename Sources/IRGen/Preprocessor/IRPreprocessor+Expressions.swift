@@ -139,9 +139,12 @@ extension IRPreprocessor {
       // Set the mangled identifier for the function.
       functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
 
-      // If it returns a dynamic type, pass the receiver as the first parameter.
-      if passContext.environment!.isStructDeclared(declarationEnclosingType) {
-        if !isGlobalFunctionCall {
+
+
+      // If it returns a dynamic type (a non-global initalised struct), pass the receiver as the first parameter.
+      if passContext.environment!.isStructDeclared(declarationEnclosingType),
+        !isGlobalFunctionCall,
+        !environment.initializers(in: declarationEnclosingType).isEmpty {
           let receiver = constructExpression(from: receiverTrail)
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
           functionCall.arguments.insert(FunctionArgument(.inoutExpression(inoutExpression)), at: 0)
