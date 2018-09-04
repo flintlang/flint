@@ -225,6 +225,9 @@ struct Wei: Asset, Currency {
 ## Semantics
 
 Compiler warnings are triggered when asset local variables or parameters are not consumed exactly once in the scope of the function.
+*****************
+SUSAN: WHY IS THIS ONLY A WARNING RATHER THAN AN  ERROR?
+*****************
 
 ### Transferring an asset
 
