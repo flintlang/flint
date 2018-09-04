@@ -21,7 +21,7 @@ extension TypeChecker {
 
       // Ensure the type of the returned value in a function matches the function's return type.
 
-      if actualType != expectedType {
+      if !actualType.isCompatible(with: expectedType) {
         diagnostics.append(.incompatibleReturnType(actualType: actualType, expectedType: expectedType, expression: expression))
       }
     }

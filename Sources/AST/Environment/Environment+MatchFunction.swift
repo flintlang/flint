@@ -71,7 +71,7 @@ extension Environment {
 
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities),
           areTypeStatesCompatible(source: typeStates, target: candidate.typeStates) else {
             candidates.append(.functionInformation(candidate))
@@ -94,7 +94,7 @@ extension Environment {
 
     if let initializers = types[functionCall.identifier.name]?.initializers {
       for candidate in initializers {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(.specialInformation(candidate))
             continue
@@ -129,7 +129,7 @@ extension Environment {
     if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
       for candidate in functions {
 
-        guard candidate.parameterTypes == argumentTypes,
+        guard areTypesCompatible(parameters: candidate.parameterTypes, arguments: argumentTypes),
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
             candidates.append(.functionInformation(candidate))
             continue

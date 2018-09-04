@@ -141,6 +141,17 @@ public struct Environment {
     return true
   }
 
+  /// Whether two sets of types are compatible, i.e. whether parameters types match arguments types
+  func areTypesCompatible(parameters: [RawType], arguments: [RawType]) -> Bool {
+    guard parameters.count == arguments.count else {
+      return false
+    }
+     return !zip(parameters, arguments).contains(where: { types in
+       let (parameterType, argumentType) = types
+       return !parameterType.isCompatible(with: argumentType)
+     })
+   }
+
   /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
   /// able to call a function which require caller capabilities `target`.
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
@@ -165,5 +176,3 @@ public struct Environment {
     return true
   }
 }
-
-
