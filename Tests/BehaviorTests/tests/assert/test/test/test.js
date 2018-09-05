@@ -11,7 +11,7 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
 
     try {
-      await instance.shouldCrash();
+      await instance.shouldCrash.call();
     } catch (e) {
       return
     }
@@ -22,8 +22,6 @@ contract(config.contractName, function(accounts) {
   it("should not crash on assertion success", async function() {
     const instance = await Contract.deployed();
 
-    await instance.shouldNotCrash();
+    await instance.shouldNotCrash.call();
   });
 });
-
-
