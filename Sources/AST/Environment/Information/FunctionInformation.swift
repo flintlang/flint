@@ -16,6 +16,10 @@ public struct FunctionInformation {
     return declaration.parameters.map { $0.type.rawType }
   }
 
+  var parameterIdentifiers: [Identifier] {
+    return declaration.parameters.map { $0.identifier }
+  }
+
   var resultType: RawType {
     return declaration.rawType
   }

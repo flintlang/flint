@@ -1,6 +1,6 @@
 //
 //  ContractDeclaration.swift
-//  flintc
+//  AST
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
@@ -14,7 +14,15 @@ public struct ContractDeclaration: ASTNode {
   public var contractToken: Token
   public var identifier: Identifier
   public var states: [TypeState]
-  public var variableDeclarations: [VariableDeclaration]
+  public var members: [ContractMember]
+
+  public var variableDeclarations: [VariableDeclaration] {
+    return members.compactMap({ if case .variableDeclaration(let variableDeclaration) = $0 {
+        return variableDeclaration
+      }
+      return nil
+    })
+  }
 
   public var isStateful: Bool {
     return !states.isEmpty
@@ -32,15 +40,15 @@ public struct ContractDeclaration: ASTNode {
     let enumToken = Token(kind: .enum, sourceLocation: sourceLocation)
     let caseToken = Token(kind: .case, sourceLocation: sourceLocation)
     let intType = Type(inferredType: .basicType(.int), identifier: stateEnumIdentifier)
-    let cases: [EnumCase] = states.map{ typeState in
-      return EnumCase(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil, hiddenType: intType)
+    let cases: [EnumMember] = states.map{ typeState in
+      return EnumMember(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil, hiddenType: intType)
     }
     return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
   }
 
-  public init(contractToken: Token, identifier: Identifier, states: [TypeState], variableDeclarations: [VariableDeclaration]) {
+  public init(contractToken: Token, identifier: Identifier, states: [TypeState], members: [ContractMember]) {
     self.identifier = identifier
-    self.variableDeclarations = variableDeclarations
+    self.members = members
     self.states = states
     self.contractToken = contractToken
   }
@@ -49,8 +57,8 @@ public struct ContractDeclaration: ASTNode {
   public var description: String {
     let stateText = states.map({ $0.description }).joined(separator: " ")
     let headText = "contract \(identifier) \(stateText)"
-    let variablesText = variableDeclarations.map({ $0.description }).joined(separator: "\n")
-    return "\(headText) {\(variablesText)}"
+    let memberText = members.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(memberText)}"
   }
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)

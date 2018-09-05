@@ -62,6 +62,11 @@ public struct Environment {
     return types[enclosingType]!.fallbacks
   }
 
+  /// The list of events in a type.
+  public func events(in enclosingType: RawTypeIdentifier) -> [EventInformation] {
+    return types[enclosingType]!.events.flatMap({ $1 })
+  }
+
   /// The list of properties declared in a type which can be used as caller capabilities.
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
     return types[enclosingType]!.properties.compactMap { key, value in
@@ -92,6 +97,41 @@ public struct Environment {
 
   // MARK: - Compatibility
 
+  func areArgumentsCompatible(source: [FunctionArgument], target: EventInformation, enclosingType: String, scopeContext: ScopeContext) -> Bool {
+    let targetVariables = target.declaration.variableDeclarations
+    let targetTypes = target.eventTypes
+
+    guard source.count <= target.parameterIdentifiers.count else {
+      return false
+    }
+    guard source.count >= target.requiredParameterIdentifiers.count else {
+      return false
+    }
+
+    var sourceIndex = 0
+    var targetIndex = 0
+    while sourceIndex < source.count && targetIndex < targetVariables.count {
+      if let identifier = source[sourceIndex].identifier,
+        identifier.name != targetVariables[targetIndex].identifier.name {
+        if targetVariables[targetIndex].assignedExpression == nil {
+          return false
+        }
+        else {
+          targetIndex+=1
+          continue
+        }
+      }
+      if targetTypes[targetIndex] == type(of: source[sourceIndex].expression, enclosingType: enclosingType, scopeContext: scopeContext){
+        sourceIndex+=1
+        targetIndex+=1
+      }
+      else {
+        return false
+      }
+    }
+    return true
+  }
+
   /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
   /// able to call a function which require caller capabilities `target`.
   func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
@@ -116,3 +156,5 @@ public struct Environment {
     return true
   }
 }
+
+

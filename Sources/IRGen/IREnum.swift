@@ -9,7 +9,7 @@ import AST
 
 /// Generates code for an enum.
 public struct IREnum {
-  var structDeclaration: StructDeclaration
+  var enumDeclaration: EnumDeclaration
   var environment: Environment
 
   // Enum declarations never reach IR - references are removed in IRPreprocessing

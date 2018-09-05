@@ -94,47 +94,56 @@ extension SemanticAnalyzer {
 
     let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
 
-    // Find the function declaration associated with this function call.
-    switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
-    case .matchedFunction(let matchingFunction):
-      // The function declaration is found.
 
-      if matchingFunction.isMutating {
-        // The function is mutating.
-        addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
+    if !passContext.isInEmit {
+      // Find the function declaration associated with this function call.
+      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+      case .matchedFunction(let matchingFunction):
+        // The function declaration is found.
 
-        if !isMutating {
-          // The function in which the function call appears in is not mutating.
-          diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
+        if matchingFunction.isMutating {
+          // The function is mutating.
+          addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
+
+          if !isMutating {
+            // The function in which the function call appears in is not mutating.
+            diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))
+          }
         }
-      }
-      checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
+        checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
 
-    case .matchedInitializer(let matchingInitializer):
-      checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
+      case .matchedInitializer(let matchingInitializer):
+        checkFunctionArguments(functionCall, matchingInitializer.declaration.asFunctionDeclaration, &passContext, isMutating, &diagnostics)
 
-    case .matchedFallback(_):
-      break
+      case .matchedFallback(_):
+        break
 
-    case .matchedGlobalFunction(_):
-      break
+      case .matchedGlobalFunction(_):
+        break
 
-    case .matchedFunctionWithoutCaller(let matchingFunctions):
-      // The function declaration is found, but caller is incorrect
-      if !functionCall.isAttempted || matchingFunctions.count > 1 {
-        // If function call is not attempted, or there are multiple matching functions
-        diagnostics.append(.noTryForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: typeStates, candidates: matchingFunctions))
-      }
-    case .failure(_):
-      // A matching function declaration couldn't be found. Try to match an event call.
-      if environment.matchEventCall(functionCall, enclosingType: enclosingType) == nil {
+      case .matchedFunctionWithoutCaller(let matchingFunctions):
+        // The function declaration is found, but caller is incorrect
+        if !functionCall.isAttempted || matchingFunctions.count > 1 {
+          // If function call is not attempted, or there are multiple matching functions
+          diagnostics.append(.noTryForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: typeStates, candidates: matchingFunctions))
+        }
+      case .failure(_):
         diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall))
+      }
+    }
+    else if case .failure(let candidates) = environment.matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: passContext.scopeContext ?? ScopeContext()) {
+      // Event call has failed to match but has candidates
+      if !candidates.isEmpty {
+        diagnostics.append(.partialMatchingEvents(functionCall, candidates: candidates))
+      }
+      else {
+        diagnostics.append(.noMatchingEvents(functionCall))
       }
 
     }
-
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
+
 
   /// Whether an expression refers to a state property.
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
@@ -154,8 +163,8 @@ extension SemanticAnalyzer {
   fileprivate func checkFunctionArguments(_ functionCall: FunctionCall, _ declaration: (FunctionDeclaration), _ passContext: inout ASTPassContext, _ isMutating: Bool, _ diagnostics: inout [Diagnostic]) {
     // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
     for (argument, parameter) in zip(functionCall.arguments, declaration.parameters) where parameter.isInout {
-      if isStorageReference(expression: argument, scopeContext: passContext.scopeContext!) {
-        addMutatingExpression(argument, passContext: &passContext)
+      if isStorageReference(expression: argument.expression, scopeContext: passContext.scopeContext!) {
+        addMutatingExpression(argument.expression, passContext: &passContext)
 
         if !isMutating {
           diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(.functionCall(functionCall), functionDeclaration: passContext.functionDeclarationContext!.declaration))

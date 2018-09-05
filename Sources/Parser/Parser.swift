@@ -142,35 +142,41 @@ extension Parser {
     let topLevelModule = TopLevelModule(declarations: topLevelDeclarations)
      topLevelModule.declarations.forEach { (tld) in
        switch tld {
-         case .contractDeclaration(let contract):
-           environment.addContract(contract)
-           if contract.isStateful {
-             environment.addEnum(contract.stateEnum)
-           }
+       case .contractDeclaration(let contract):
+        environment.addContract(contract)
+        if contract.isStateful {
+          environment.addEnum(contract.stateEnum)
+        }
+        for member in contract.members {
+          if case .eventDeclaration(let eventDeclaration) = member {
+            environment.addEvent(eventDeclaration, enclosingType: contract.identifier.name)
+          }
+         }
          case .contractBehaviorDeclaration(let behaviour):
            let contractIdentifier = behaviour.contractIdentifier.name
-           for case .functionDeclaration(let functionDeclaration) in behaviour.members {
-             // Record all the function declarations.
-             environment.addFunction(functionDeclaration, enclosingType: contractIdentifier, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
-           }
-           for case .specialDeclaration(let specialDeclaration) in behaviour.members {
-             if specialDeclaration.isInit {
-               environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
-               if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
-                 // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
-                 // contract's state properties.
-                 environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
-               }
-             } else if specialDeclaration.isFallback {
-               environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
-             }
+           for member in behaviour.members {
+            switch member {
+              case .functionDeclaration(let functionDeclaration):
+                // Record all the function declarations.
+                environment.addFunction(functionDeclaration, enclosingType: contractIdentifier, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
+              case .specialDeclaration(let specialDeclaration):
+                if specialDeclaration.isInit {
+                  environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
+                  if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
+                    // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+                    // contract's state properties.
+                    environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
+                  }
+                } else if specialDeclaration.isFallback {
+                  environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
+                }
+            }
            }
          case .structDeclaration(let structDeclaration):
            environment.addStruct(structDeclaration)
-
          case .enumDeclaration(let enumDeclaration):
            environment.addEnum(enumDeclaration)
-       }
+      }
      }
      return topLevelModule
   }
@@ -422,19 +428,34 @@ extension Parser {
     let identifier = try parseIdentifier()
     let states = try? parseTypeStateGroup()
     try consume(.punctuation(.openBrace))
-    let variableDeclarations = try parseVariableDeclarations(enclosingType: identifier.name)
+    let members = try parserContractMembers(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], variableDeclarations: variableDeclarations)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], members: members)
+  }
+
+  func parserContractMembers(enclosingType: RawTypeIdentifier) throws -> [ContractMember] {
+    var members = [ContractMember]()
+
+    while let member = attempt(try parseContractMember(enclosingType: enclosingType)) {
+      members.append(member)
+    }
+
+    return members
+  }
+
+  func parseContractMember(enclosingType: RawTypeIdentifier) throws -> ContractMember {
+    if let variableDeclaration = try? parseVariableDeclaration(enclosingType: enclosingType){
+      return .variableDeclaration(variableDeclaration)
+    }
+    return .eventDeclaration(try parseEventDeclaration())
   }
 
   func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
-
-    while let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: enclosingType)) {
+    while let variableDeclaration = try? parseVariableDeclaration(enclosingType: enclosingType) {
       variableDeclarations.append(variableDeclaration)
     }
-
     return variableDeclarations
   }
 
@@ -662,6 +683,8 @@ extension Parser {
       statement = .returnStatement(returnStatement)
     } else if let becomeStatement = attempt (try parseBecomeStatement(statementEndIndex: statementEndIndex)) {
       statement = .becomeStatement(becomeStatement)
+    } else if let emitStatement = attempt (try parseEmitStatement(statementEndIndex: statementEndIndex)) {
+      statement = .emitStatement(emitStatement)
     } else if let forStatement = attempt(try parseForStatement()) {
       statement = .forStatement(forStatement)
     } else if let ifStatement = attempt(try parseIfStatement()) {
@@ -794,15 +817,15 @@ extension Parser {
     return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken, isAttempted: false)
   }
 
-  func parseFunctionCallArgumentList() throws -> ([Expression], closeBracketToken: Token) {
-    var arguments = [Expression]()
+  func parseFunctionCallArgumentList() throws -> ([FunctionArgument], closeBracketToken: Token) {
+    var arguments = [FunctionArgument]()
 
     try consume(.punctuation(.openBracket))
 
     var closeBracketToken: Token!
 
     while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
-      if let argument = try? parseExpression(upTo: argumentEnd) {
+      if let argument = try? parseFunctionCallArgument(upTo: argumentEnd) {
         let token = try consume(tokens[argumentEnd].kind)
         arguments.append(argument)
         if token.kind == .punctuation(.closeBracket) {
@@ -821,6 +844,19 @@ extension Parser {
     return (arguments, closeBracketToken)
   }
 
+  func parseFunctionCallArgument(upTo: Int) throws -> FunctionArgument {
+    // Find next colon
+    if let firstPartEnd = indexOfFirstAtCurrentDepth([.punctuation(.colon)]),
+      firstPartEnd < upTo {
+      let identifier = try parseIdentifier()
+      try consume(.punctuation(.colon))
+      let expression = try parseExpression(upTo: upTo)
+      return FunctionArgument(identifier: identifier, expression: expression)
+    }
+    let expression = try parseExpression(upTo: upTo)
+    return FunctionArgument(identifier: nil, expression: expression)
+  }
+
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     let returnToken = try consume(.return)
     let expression = attempt(try parseExpression(upTo: statementEndIndex))
@@ -831,6 +867,12 @@ extension Parser {
     let becomeToken = try consume(.become)
     let expression = try parseExpression(upTo: statementEndIndex)
     return BecomeStatement(becomeToken: becomeToken, expression: expression)
+  }
+
+  func parseEmitStatement(statementEndIndex: Int) throws -> EmitStatement {
+    let token = try consume(.emit)
+    let expression = try parseExpression(upTo: statementEndIndex)
+    return EmitStatement(emitToken: token, expression: expression)
   }
 
   func parseIfStatement() throws -> IfStatement {
@@ -893,7 +935,18 @@ extension Parser {
 
     return members
   }
+}
 
+extension Parser {
+  func parseEventDeclaration() throws -> EventDeclaration {
+    let eventToken = try consume(.event)
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.openBrace))
+    let variables = try parseVariableDeclarations(enclosingType: identifier.name)
+    try consume(.punctuation(.closeBrace))
+
+    return EventDeclaration(eventToken: eventToken, identifier: identifier, variables: variables)
+  }
 }
 
 extension Parser {
@@ -908,8 +961,8 @@ extension Parser {
     return EnumDeclaration(enumToken: enumToken, identifier: identifier, type: typeAnnotation.type, cases: cases)
   }
 
-  func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumCase] {
-    var cases = [EnumCase]()
+  func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumMember] {
+    var cases = [EnumMember]()
     while let enumCase = attempt(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType)) {
       cases.append(enumCase)
     }
@@ -917,7 +970,7 @@ extension Parser {
     return cases
   }
 
-  func parseEnumCase(enumIdentifier: Identifier, hiddenType: Type) throws -> EnumCase {
+  func parseEnumCase(enumIdentifier: Identifier, hiddenType: Type) throws -> EnumMember {
     let caseToken = try consume(.case)
     var identifier = try parseIdentifier()
     identifier.enclosingType = enumIdentifier.name
@@ -925,7 +978,7 @@ extension Parser {
     if attempt(try consume(.punctuation(.equal))) != nil {
       hiddenValue = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
     }
-    return EnumCase(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
+    return EnumMember(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
   }
 
 }

@@ -1,0 +1,16 @@
+contract Events {
+  var eventA: Event<Address, Int>
+  var eventB: Event<Address, Int>
+}
+
+Events :: caller <- (any) {
+  public init() {}
+    
+  public func A() {
+    eventA(caller, 1)
+  }
+
+  public func B() {
+    eventB(caller, 2)
+  }
+}

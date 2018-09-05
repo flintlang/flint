@@ -50,6 +50,18 @@ extension Diagnostic {
      return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope")
    }
 
+  static func partialMatchingEvents(_ functionCall: FunctionCall, candidates: [EventInformation]) -> Diagnostic {
+    let candidateNotes = candidates.map { candidate -> Diagnostic in
+      return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this event '\(candidate.declaration.identifier.name)(\(candidate.declaration.variableDeclarations.map({ "\($0.identifier.name): \($0.type)" }).joined(separator: ", ")))'")
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Event '\(functionCall.identifier.name)' cannot be called using the given parameters", notes: candidateNotes)
+  }
+
+  static func noMatchingEvents(_ functionCall: FunctionCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionCall.identifier.sourceLocation, message: "Event '\(functionCall.identifier.name)' is not in scope")
+  }
+
   static func noReceiverForStructInitializer(_ functionCall: FunctionCall) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Cannot call struct initializer '\(functionCall.identifier.name)' without receiver assignment")
   }
@@ -177,7 +189,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation, message: "Cannot infer hidden values in case '\(identifier.name)' for hidden type '\(type.name)'")
   }
 
-  static func invalidHiddenValue(_ enumCase: EnumCase) -> Diagnostic {
+  static func invalidHiddenValue(_ enumCase: EnumMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: enumCase.hiddenValue!.sourceLocation, message: "Invalid hidden value for enum case '\(enumCase.identifier.name)'")
   }
 

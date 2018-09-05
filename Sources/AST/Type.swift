@@ -73,10 +73,6 @@ public indirect enum RawType: Equatable {
     return !isBuiltInType
   }
 
-  public var isEventType: Bool {
-    return self == .basicType(.event)
-  }
-
   /// Whether the type is a dynamic type.
   public var isDynamicType: Bool {
     if case .basicType(_) = self {

@@ -1,7 +1,7 @@
 // SimpleAuction.flint
 //
 // Allows a user to launch an auction and collect the highest bid.
-// When the previous highest bidder is outbid, their bid is refunded 
+// When the previous highest bidder is outbid, their bid is refunded
 // immediately.
 
 contract SimpleAuction {
@@ -11,8 +11,14 @@ contract SimpleAuction {
   var highestBidder: Address
   var highestBid: Wei = Wei(0)
 
-  var highestBidDidIncrease: Event<Address, Int>
-  var auctionDidEnd: Event<Address, Int>
+  event highestBidDidIncrease {
+    let bidder: Address
+    let amount: Int
+  }
+  event auctionDidEnd {
+    let winner: Address
+    let bid: Int
+  }
 }
 
 SimpleAuction :: caller <- (any) {
@@ -37,7 +43,7 @@ SimpleAuction :: caller <- (any) {
     // Record the new highest bid.
     highestBid.transfer(&value)
 
-    highestBidDidIncrease(caller, value.getRawValue())
+    emit highestBidDidIncrease(bidder: caller, amount: value.getRawValue())
   }
 
   public func getHighestBid() -> Int {
@@ -54,8 +60,8 @@ SimpleAuction :: (beneficiary) {
     if hasAuctionEnded { fatalError() }
 
     hasAuctionEnded = true
-    auctionDidEnd(highestBidder, highestBid.getRawValue())
 
     send(beneficiary, &highestBid)
+    emit auctionDidEnd(winner: highestBidder, bid: highestBid.getRawValue())
   }
 }
