@@ -59,9 +59,6 @@ public struct Lexer {
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
         // The token is a string literal.
         tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
-      } else if component.first == "@" {
-        // The token is a function attribute.
-        tokens.append(Token(kind: .attribute(String(component.dropFirst())), sourceLocation: sourceLocation))
       } else {
         // The token is an identifier.
         tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
@@ -177,7 +174,7 @@ public struct Lexer {
         acc += String(char)
       } else if inStringLiteral {
         acc += String(char)
-      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "@" || char == "_" {
+      } else if identifierChars.contains(char.unicodeScalars.first!) || char == "_" {
         acc += String(char)
       } else {
         if !acc.isEmpty {

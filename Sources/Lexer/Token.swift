@@ -24,9 +24,6 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
     // Punctuation
     case punctuation(Punctuation)
 
-    // Declaration attribute
-    case attribute(String)
-
     // Identifiers
     case identifier(String)
 
@@ -66,7 +63,6 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .in: return "in"
       case .try: return "try"
       case .punctuation(let punctuation): return punctuation.rawValue
-      case .attribute(let attribute): return "@\(attribute)"
       case .identifier(let identifier): return "identifier \"\(identifier)\""
       case .literal(let literal): return literal.description
       }
