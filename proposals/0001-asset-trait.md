@@ -225,6 +225,9 @@ struct Wei: Asset, Currency {
 ## Semantics
 
 Compiler warnings are triggered when asset local variables or parameters are not consumed exactly once in the scope of the function.
+*****************
+SUSAN: WHY IS THIS ONLY A WARNING RATHER THAN AN  ERROR?
+*****************
 
 ### Transferring an asset
 
@@ -244,7 +247,7 @@ a.transfer(from: &b, amount: 50)
 
 ### Warnings
 
-#### Assignment between assets trigger warnings.
+#### Assignment between assets trigger warnings
 
 ```swift
 var a = Wei(from: &b)
@@ -263,7 +266,7 @@ let c = Wei(from: &b) // Warning: The contents of b have already been transferre
 ```swift
 {
   let a = Wei(from: &b)
-  // Warning: The contents of a will be lost as a has not been transferred in this scope.
+  // Warning: The contents will be lost as a has not been transferred in this scope.
 }
 ```
 
@@ -417,6 +420,9 @@ Wallet :: (owner) {
 ### Special syntax
 
 In the future, we should consider using syntactic sugar for the `Asset` operations.
+**********
+SUSAN: WHAT SHOULD THIS LOOK LIKE?
+**********
 
 ### @autodestroying attribute
 
