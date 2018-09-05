@@ -45,7 +45,7 @@ structMember = variableDeclaration
                 / initializerDeclaration;
 
 ; BEHAVIOUR
-contractBehaviourDeclaration = identifier SP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
+contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
 
 contractBehaviourMember = functionDeclaration
                             / initializerDeclaration

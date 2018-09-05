@@ -2,7 +2,7 @@
 
 contract Normal {}
 
-Normal @(any) :: (any) { // expected-error {{Contract 'Normal' is not stateful but behavior declaration is}}
+Normal@(any) :: (any) { // expected-error {{Contract 'Normal' is not stateful but behavior declaration is}}
   public init() {}
 }
 
