@@ -1,5 +1,5 @@
 //
-//  ContractMemberDeclaration.swift
+//  ContractMember.swift
 //  AST
 //
 //  Created by Hails, Daniel J R on 28/08/2018.
@@ -9,7 +9,7 @@ import Source
 /// A member in a contract declaration.
 ///
 /// - variableDeclaration: The declaration of a variable.
-/// - functionDeclaration: The declaration of an event.
+/// - eventDeclaration: The declaration of an event.
 public enum ContractMember: ASTNode {
   case variableDeclaration(VariableDeclaration)
   case eventDeclaration(EventDeclaration)
