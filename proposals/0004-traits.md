@@ -9,6 +9,17 @@
 
 A trait is a collection of functions and events. They can access other methods declared in the same trait. Traits can be implemented for Contracts or Structures.
 
+We introduce the concept of ‘Traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures declared to have them. For Contracts traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
+
+Multiple traits can be declared for each Contract/Structure. When declared the Flint compiler enforces the implementation of function stubs in the trait and allows usage of functions declared in them.
+
+
+## Motivation
+Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MutiSig, Pausable, ERC20, ERC721 etc) and Structures (Transferable, RawValued, Describable etc).
+
+It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](0001-asset-trait.md) and Numerics.
+
+## Proposed Solution
 In the example below, we define `ERC20`, which declares a contract to follow the Ethereum token specifications. The `ERC20` `trait` is then specified by the `ToyToken` `contract` allowing use of functions and events in `ERC20`.
 ```swift
 trait ERC20 {
