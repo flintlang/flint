@@ -17,6 +17,7 @@ enum IRRuntimeFunction {
     case load
     case computeOffset
     case allocateMemory
+    case checkNoValue
     case isMatchingTypeState
     case isValidCallerCapability
     case isCallerCapabilityInArray
@@ -31,6 +32,7 @@ enum IRRuntimeFunction {
     case storageOffsetForKey
     case callvalue
     case send
+    case fatalError
     case add
     case sub
     case mul
@@ -40,6 +42,10 @@ enum IRRuntimeFunction {
     var mangled: String {
       return "\(Environment.runtimeFunctionPrefix)\(self)"
     }
+  }
+
+  static func fatalError() -> String {
+    return "\(Identifiers.fatalError.mangled)()"
   }
 
   static func selector() -> String {
@@ -80,6 +86,10 @@ enum IRRuntimeFunction {
 
   static func allocateMemory(size: Int) -> String {
     return "\(Identifiers.allocateMemory.mangled)(\(size))"
+  }
+
+  static func checkNoValue(_ value: String) -> String {
+    return "\(Identifiers.checkNoValue.mangled)(\(value))"
   }
 
   static func isMatchingTypeState(_ stateValue: String, _ stateVariable: String) -> String {
@@ -163,6 +173,7 @@ enum IRRuntimeFunction {
     IRRuntimeFunctionDeclaration.load,
     IRRuntimeFunctionDeclaration.computeOffset,
     IRRuntimeFunctionDeclaration.allocateMemory,
+    IRRuntimeFunctionDeclaration.checkNoValue,
     IRRuntimeFunctionDeclaration.isMatchingTypeState,
     IRRuntimeFunctionDeclaration.isValidCallerCapability,
     IRRuntimeFunctionDeclaration.isCallerCapabilityInArray,
@@ -250,6 +261,15 @@ struct IRRuntimeFunctionDeclaration {
   function flint$allocateMemory(size) -> ret {
     ret := mload(0x40)
     mstore(0x40, add(ret, size))
+  }
+  """
+
+  static let checkNoValue =
+  """
+  function flint$checkNoValue(_value) {
+    if iszero(iszero(_value)) {
+      flint$fatalError()
+    }
   }
   """
 
