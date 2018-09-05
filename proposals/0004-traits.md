@@ -130,43 +130,56 @@ ToyWallet :: (getOwner) {
 
 ```
 
+In the example below, we define `Pausable`, which declares a contract as something that can be owned and transfered. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
 
-## Motivation
-
-### ERC20
 ```swift
-trait ERC20 {
-  event transfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
-  event approval {
-    let from: Address
-    let to: Address
-    let value: Int
+trait Pausable @(Inactive, Active) {
+  event Paused {}
+
+  self @(any) :: (any) {
+    public canCallerPause() -> Bool
   }
 
-  self :: caller <- (any) {
-    public func totalSupply() -> Int
-    public func balanceOf(owner: Address) -> Int
-    public func allowance(owner: Address, spender: Address) -> Int
+  self  @(Active) :: (canCallerPause) {
+    public func pause(newOwner: Address) {
+      become InActive
+    }
 
-    public mutating func transfer(to: Address, value: Int) -> Bool
-    public mutating func approve(spender: Address, value: Int) -> Bool
-    public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool
+  }
+
+  self @(InActive) :: (canCallerPause) {
+    public func unpause() {
+      become Active
+    }
   }
 }
+
+contract ToyDAO: Ownable @(Inactive, Active) {
+  var owner: Address
+}
+
+ToyDAO @(any) :: caller <- (any) {
+  public canCallerPause() -> Bool {
+    return caller == owner
+  }
+}
+
+ToyDAO @(Active) :: (any) {
+  // Normal Functions
+}
 ```
-
-### Contract Types
-```swift
-
-```
-## Proposed Solution
-
 ## Semantics
 
 ## Alternatives considered
 
-##
+### Interfaces
+
+### Inheritance of Contracts / Structures
+
+### Public by default
+
+### Stub only
+
+### Property Declaration
+
+### State Declaration
