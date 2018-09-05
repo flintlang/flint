@@ -1,6 +1,6 @@
 # Traits
 
-* Proposal: [FIP-0001](0004-traits.md)
+* Proposal: [FIP-0004](0004-traits.md)
 * Author: [Daniel Hails](https://github.com/djhrhails)
 * Review Manager: [Susan Eisenbach](https://github.com/SusanEisenbach)
 * Status: **Awaiting review**
