@@ -22,6 +22,7 @@ struct Compiler {
   var outputDirectory: URL
   var emitBytecode: Bool
   var shouldVerify: Bool
+  var quiet: Bool
 
   func tokenizeFiles() -> [Token] {
     let stdlibTokens = StandardLibrary.default.files.flatMap { Lexer(sourceFile: $0, isFromStdlib: true).lex() }
@@ -56,21 +57,28 @@ struct Compiler {
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, compilationContext: compilationContext)
 
-    if !passRunnerOutcome.diagnostics.isEmpty, !shouldVerify {
+    let diagnostics = passRunnerOutcome.diagnostics.filter {
+      if case .warning = $0.severity {
+        return !quiet
+      }
+      return true
+    }
+
+    if !diagnostics.isEmpty, !shouldVerify {
       // Print the errors and warnings emitted during the passes.
-      print(DiagnosticsFormatter(diagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext).rendered())
+      print(DiagnosticsFormatter(diagnostics: diagnostics, compilationContext: compilationContext).rendered())
     }
 
     if shouldVerify {
       // Used during development of the compiler: verify that the diagnostics emitted matches what we expected.
-      if DiagnosticsVerifier().verify(producedDiagnostics: passRunnerOutcome.diagnostics, compilationContext: compilationContext) {
+      if DiagnosticsVerifier().verify(producedDiagnostics: diagnostics, compilationContext: compilationContext) {
         exit(0)
       } else {
         exitWithFailure()
       }
     }
 
-    guard !passRunnerOutcome.diagnostics.contains(where: { $0.isError }) else {
+    guard !diagnostics.contains(where: { $0.isError }) else {
       // If there is at least one error, abort.
       exitWithFailure()
     }

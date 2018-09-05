@@ -11,12 +11,14 @@ import Lexer
 public struct Attribute: ASTNode {
 
   var kind: Kind
-  var token: Token
+  var atToken: Token
+  var identifierToken: Token
 
-  public init?(token: Token) {
-    guard case .attribute(let attribute) = token.kind, let kind = Kind(rawValue: attribute) else { return nil }
+  public init?(atToken: Token, identifierToken: Token) {
+    guard case .identifier(let attribute) = identifierToken.kind, let kind = Kind(rawValue: attribute) else { return nil }
     self.kind = kind
-    self.token = token
+    self.atToken = atToken
+    self.identifierToken = identifierToken
   }
 
   enum Kind: String {
@@ -25,9 +27,12 @@ public struct Attribute: ASTNode {
 
   // MARK: - ASTNode
   public var description: String {
-    return token.kind.description
+    guard case .identifier(let identifier) = identifierToken.kind else {
+      fatalError()
+    }
+    return "@\(identifier)"
   }
   public var sourceLocation: SourceLocation {
-    return token.sourceLocation
+    return .spanning(atToken, to: identifierToken)
   }
 }

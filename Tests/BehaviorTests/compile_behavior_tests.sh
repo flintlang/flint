@@ -5,7 +5,7 @@ for t in tests/*; do
   mkdir $t/test/contracts
 
   echo "Compile $t"
-  ../../.build/release/flintc $t/*.flint --emit-ir --ir-output $t/test/contracts/
+  ../../.build/release/flintc $t/*.flint --emit-ir --ir-output $t/test/contracts/ --quiet
 
   #for f in $t/*.flint; do
     #[ -f "$f" ] || break
@@ -14,4 +14,3 @@ for t in tests/*; do
 
   echo "pragma solidity ^0.4.2; contract Migrations {}" > $t/test/contracts/Migrations.sol
 done
-

@@ -213,8 +213,9 @@ extension Parser {
   }
 
   func parseAttribute() throws -> Attribute {
-    guard let token = currentToken, let attribute = Attribute(token: token) else {
-      throw ParserError.expectedToken(.attribute(""), sourceLocation: currentToken?.sourceLocation)
+    let at = try consume(.punctuation(.at))
+    guard let token = currentToken, let attribute = Attribute(atToken: at, identifierToken: token) else {
+      throw ParserError.expectedToken(.identifier(""), sourceLocation: currentToken?.sourceLocation)
     }
     currentIndex += 1
     consumeNewLines()
@@ -872,7 +873,7 @@ extension Parser {
     try consume(.punctuation(.openBrace))
     let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace))
-    
+
     return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
   }
 
