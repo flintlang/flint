@@ -29,9 +29,15 @@ extension Parser {
 
   func parseIdentifierList() throws -> [Identifier] {
     var identifiers = [Identifier]()
-    repeat {
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      return []
+    }
+    while currentIndex < closingIndex {
       identifiers.append(try parseIdentifier())
-    } while attempt(try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))) != nil
+      if currentIndex < closingIndex {
+        try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
+      }
+    }
 
     return identifiers
   }
@@ -40,7 +46,7 @@ extension Parser {
   func parseAttribute() throws -> Attribute {
     let at = try consume(.punctuation(.at), or: .expectedAttribute(at: latestSource))
     guard let token = currentToken, let attribute = Attribute(atToken: at, identifierToken: token) else {
-     throw raise(.expectedIdentifier(at: latestSource))
+     throw raise(.missingAttributeName(at: latestSource))
     }
     currentIndex += 1
     consumeNewLines()
@@ -50,8 +56,8 @@ extension Parser {
   func parseAttributes() throws -> [Attribute] {
     var attributes = [Attribute]()
     // Parse function attributes such as @payable.
-    while let attribute = attempt(parseAttribute) {
-      attributes.append(attribute)
+    while currentToken?.kind == .punctuation(.at) {
+      attributes.append(try parseAttribute())
     }
     return attributes
   }
@@ -59,9 +65,15 @@ extension Parser {
   // MARK: Modifiers
   func parseModifiers() throws -> [Token] {
     var modifiers = [Token]()
+    let modifierTokens: [Token.Kind] = [.public, .mutating, .visible]
     // Parse function modifiers.
-    while let token = attempt(try consume(anyOf: [.public, .mutating, .visible], or: .dummy())) {
-      modifiers.append(token)
+    while let first = currentToken?.kind {
+      if modifierTokens.contains(first) {
+        modifiers.append(try consume(anyOf: modifierTokens, or: .expectedModifier(at: latestSource)))
+      }
+      else {
+        break
+      }
     }
     return modifiers
   }
@@ -81,23 +93,23 @@ extension Parser {
 
     var elements = [Expression]()
 
-    var closeSquareBracket: Token?
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
+      throw raise(.expectedCloseSquareArrayLiteral(at: latestSource))
+    }
 
-    while let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) {
-      if let element = attempt(try parseExpression(upTo: elementEnd)) {
-        let token = try consume(tokens[elementEnd].kind, or: .expectedSeparator(at: latestSource))
-        if token.kind == .punctuation(.closeSquareBracket) { closeSquareBracket = token }
-        elements.append(element)
-      } else {
-        break
+    while currentIndex < closingIndex {
+      guard let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) else {
+        throw raise(.expectedSeparator(at: latestSource))
+      }
+      let element = try parseExpression(upTo: elementEnd)
+      elements.append(element)
+      if currentIndex < closingIndex {
+        try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
       }
     }
+    let closeSquareBracket = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareArrayLiteral(at: latestSource))
 
-    if elements.isEmpty {
-      closeSquareBracket = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareArrayLiteral(at: latestSource))
-    }
-
-    return ArrayLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+    return ArrayLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket)
   }
 
   // MARK: Parameters
@@ -105,19 +117,27 @@ extension Parser {
     try consume(.punctuation(.openBracket), or: .expectedParameterOpenParenthesis(at: latestSource))
     var parameters = [Parameter]()
 
-    if let closeBracketToken = attempt(try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))) {
-      return ([], closeBracketToken)
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw raise(.expectedCloseParen(at: latestSource))
     }
 
-    // Parse parameter declarations while the next token is a comma.
-    repeat {
-      let implicitToken = attempt(try consume(.implicit, or: .dummy()))
+    while currentIndex < closingIndex {
+      var implicitToken: Token? = nil
+      if currentToken?.kind == .implicit {
+        implicitToken = try consume(.implicit, or: .dummy())
+      }
+
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
-      parameters.append(Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken))
-    } while attempt(try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))) != nil
 
-    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
+      let parameter = Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken)
+      parameters.append(parameter)
+      if currentIndex < closingIndex {
+        try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
+      }
+    }
+    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
+
     return (parameters, closeBracketToken)
   }
 

@@ -16,96 +16,100 @@ extension Parser {
   /// - Parameter limitTokenIndex: The index of the token to parse up to.
   /// - Throws: If an expression couldn't be parsed.
   func parseExpression(upTo limitTokenIndex: Int) throws -> Expression {
-    var binaryExpression: BinaryExpression? = nil
-
     guard limitTokenIndex >= currentIndex else {
       fatalError("Limit Token Index should be smaller than the current token's index")
     }
 
-    // Try to parse the expression as the different types of Flint expressions.
+    guard let first = currentToken?.kind else {
+      throw raise(.unexpectedEOF())
+    }
 
     // Try to parse an expression passed by inout (e.g., '&a').
-    if let inoutExpression = attempt(parseInoutExpression) {
-      return .inoutExpression(inoutExpression)
+    if case .punctuation(.ampersand) = first {
+      return .inoutExpression(try parseInoutExpression())
     }
 
     // Try to parse a binary expression.
     // For each Flint binary operator, try to find it in the tokens ahead, and parse the tokens before and after as
     // the LHS and RHS expressions.
+    if let expr = try parseBinaryExpression(upTo: limitTokenIndex) {
+      return .binaryExpression(expr)
+    }
+
+    if case .try = first {
+      // Try to parse an attempted function call
+      return .attemptExpression(try parseAttemptExpression())
+    }
+
+    if case .self = first {
+      // Try to parse a self expression.
+      return .self(Token(kind: .self, sourceLocation: (try parseSelf()).sourceLocation))
+    }
+
+    if case .identifier(_) = first {
+      // Try to parse a functon call.
+      if case .punctuation(.openBracket) = tokens[currentIndex + 1].kind {
+        return .functionCall(try parseFunctionCall())
+      }
+
+      // Try to parse a subscript expression.
+      if indexOfFirstAtCurrentDepth([.punctuation(.openSquareBracket)], maxIndex: limitTokenIndex) != nil {
+        return .subscriptExpression(try parseSubscriptExpression())
+      }
+
+      // If none of the previous expressions could be constructed, the expression is an identifier.
+      return .identifier(try parseIdentifier())
+    }
+    if case .punctuation(.openBracket) = first {
+      // Check for a range by descending into the open bracket and looking for a range operator
+      currentIndex+=1
+      let isRange = indexOfFirstAtCurrentDepth([.punctuation(.halfOpenRange), .punctuation(.closedRange)], maxIndex: limitTokenIndex) != nil
+      currentIndex-=1
+
+      if isRange {
+        return .range(try parseRangeExpression())
+      }
+
+      // Try to parse a bracketed expression.
+      return .bracketedExpression(try parseBracketedExpression())
+    }
+    if case .punctuation(.openSquareBracket) = first {
+      // Check for a dictionary by descending into the open bracket and looking for a colon
+      currentIndex+=1
+      let isDict = indexOfFirstAtCurrentDepth([.punctuation(.colon)], maxIndex: limitTokenIndex) != nil
+      currentIndex-=1
+      if isDict {
+        return .dictionaryLiteral(try parseDictionaryLiteral())
+      }
+
+      // Try to parse an array literal.
+      return .arrayLiteral(try parseArrayLiteral())
+    }
+    if case .literal(_) = first {
+      // Try to parse a literal.
+      return .literal(try parseLiteral())
+    }
+    switch first {
+    case .public, .visible, .var, .let:
+      // Try to parse a variable declaration.
+      let modifiers = try parseModifiers()
+      return .variableDeclaration(try parseVariableDeclaration(modifiers: modifiers, upTo: limitTokenIndex))
+    default:
+      // Invalid expression
+      throw raise(.expectedExpr(at: latestSource))
+    }
+  }
+
+  // MARK: Binary
+  func parseBinaryExpression(upTo limitTokenIndex: Int) throws -> BinaryExpression? {
     for op in Token.Kind.Punctuation.allBinaryOperatorsByIncreasingPrecedence {
       guard let index = indexOfFirstAtCurrentDepth([.punctuation(op)], maxIndex: limitTokenIndex) else { continue }
-      let lhs = attempt(try parseExpression(upTo: index))
-      let operatorToken = attempt(try consume(.punctuation(op), or: .expectedValidOperator(at: latestSource)))
-      let rhs = attempt(try parseExpression(upTo: limitTokenIndex))
-
-      if let lhs = lhs, let opToken = operatorToken, let rhs = rhs {
-        binaryExpression = BinaryExpression(lhs: lhs, op: opToken, rhs: rhs)
-        break
-      }
+      let lhs = try parseExpression(upTo: index)
+      let operatorToken = try consume(.punctuation(op), or: .expectedValidOperator(at: latestSource))
+      let rhs = try parseExpression(upTo: limitTokenIndex)
+      return BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
     }
-
-    // Return the binary expression if a valid one could be constructed.
-    if let binExp = binaryExpression {
-      return .binaryExpression(binExp)
-    }
-
-    // Try to parse an attempted function call
-    if let attemptExpression = attempt(try parseAttemptExpression()){
-      return .attemptExpression(attemptExpression)
-    }
-
-    // Try to parse a function call.
-    if let functionCall = attempt(try parseFunctionCall()) {
-      return .functionCall(functionCall)
-    }
-
-    // Try to parse an range.
-    if let rangeExpression = attempt(parseRangeExpression) {
-      return .range(rangeExpression)
-    }
-
-    // Try to parse an array literal.
-    if let arrayLiteral = attempt(parseArrayLiteral) {
-      return .arrayLiteral(arrayLiteral)
-    }
-
-    // Try to parse a dictionary literal.
-    if let dictionaryLiteral = attempt(parseDictionaryLiteral) {
-      return .dictionaryLiteral(dictionaryLiteral)
-    }
-
-    // Try to parse a literal.
-    if let literal = attempt(parseLiteral) {
-      return .literal(literal)
-    }
-
-    // Try to parse a variable declaration.
-    if let variableDeclaration = attempt(try parseVariableDeclaration()) {
-      return .variableDeclaration(variableDeclaration)
-    }
-
-    // Try to parse a bracketed expression.
-    if let bracketedExpression = attempt(try parseBracketedExpression()) {
-      return .bracketedExpression(bracketedExpression)
-    }
-
-    // Try to parse a self expression.
-    if let `self` = attempt(parseSelf) {
-      return .self(Token(kind: .self, sourceLocation: self.sourceLocation))
-    }
-
-    // Try to parse a subscript expression.
-    if let subscriptExpression = attempt(try parseSubscriptExpression()) {
-      return .subscriptExpression(subscriptExpression)
-    }
-
-    // If none of the previous expressions could be constructed, the expression is an identifier.
-    if let identifier = attempt(try parseIdentifier()) {
-      return .identifier(identifier)
-    }
-
-    // Emit error
-    throw raise(.expectedExpr(at: latestSource))
+    return nil
   }
 
   // MARK: Bracked
@@ -135,10 +139,8 @@ extension Parser {
     guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)], maxIndex: tokens.count) else {
       throw raise(.expectedEndAfterInout(at: latestSource))
     }
-    guard let identifier = attempt(try parseExpression(upTo: statementEndIndex)) else {
-      throw raise(.expectedIdentifierForInOutExpr(at: latestSource))
-    }
-    return InoutExpression(ampersandToken: ampersandToken, expression: identifier)
+    let expression = try parseExpression(upTo: statementEndIndex)
+    return InoutExpression(ampersandToken: ampersandToken, expression: expression)
   }
 
   // MARK: Function Call
@@ -154,24 +156,22 @@ extension Parser {
 
     try consume(.punctuation(.openBracket), or: .expectedParameterOpenParenthesis(at: latestSource))
 
-    var closeBracketToken: Token!
+    var closeBracketToken: Token
 
-    while let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
-      if let argument = attempt(try parseFunctionCallArgument(upTo: argumentEnd)) {
-        let token = try consume(tokens[argumentEnd].kind, or: .expectedParameterType(at: latestSource))
-        arguments.append(argument)
-        if token.kind == .punctuation(.closeBracket) {
-          closeBracketToken = token
-          break
-        }
-      } else {
-        break
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw raise(.expectedCloseParen(at: latestSource))
+    }
+
+    while currentIndex < closingIndex {
+      guard let argumentEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) else {
+        throw raise(.expectedSeparator(at: latestSource))
+      }
+      arguments.append(try parseFunctionCallArgument(upTo: argumentEnd))
+      if currentIndex < closingIndex {
+        try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
       }
     }
-
-    if arguments.isEmpty {
-      closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
-    }
+    closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
 
     return (arguments, closeBracketToken)
   }
@@ -206,30 +206,32 @@ extension Parser {
 
     var elements = [AST.DictionaryLiteral.Entry]()
 
-    var closeSquareBracket: Token?
+    var closeSquareBracket: Token
 
-    if let _ = attempt(try consume(.punctuation(.colon), or: .expectedColonDictionaryLiteral(at: latestSource))) {
+    if currentToken?.kind == .punctuation(.colon) {
       /// The dictionary literal doesn't contain any elements.
-
+      let _ = try consume(.punctuation(.colon), or: .dummy())
       closeSquareBracket = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
-      return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+      return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket)
     }
 
-    while let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) {
-      if let element = attempt(try parseDictionaryElement(upTo: elementEnd)) {
-        let token = try consume(tokens[elementEnd].kind, or: .expectedSeparator(at: latestSource))
-        if token.kind == .punctuation(.closeSquareBracket) { closeSquareBracket = token }
-        elements.append(.init(key: element.0, value: element.1))
-      } else {
-        break
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
+      throw raise(.expectedCloseParen(at: latestSource))
+    }
+
+    while currentIndex < closingIndex {
+      guard let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) else {
+        throw raise(.expectedSeparator(at: latestSource))
+      }
+      let element = try parseDictionaryElement(upTo: elementEnd)
+      elements.append(.init(key: element.0, value: element.1))
+      if currentIndex < closingIndex {
+        try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
       }
     }
+    closeSquareBracket = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
 
-    if elements.isEmpty {
-      closeSquareBracket = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
-    }
-
-    return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket!)
+    return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket)
   }
 
   func parseDictionaryElement(upTo commaIndex: Int) throws -> (Expression, Expression) {
@@ -246,28 +248,24 @@ extension Parser {
 
   // MARK: Subscript
   func parseSubscriptExpression() throws -> SubscriptExpression {
-    var base: SubscriptExpression
+    var base: Expression
 
-    guard let identifier = attempt(try parseIdentifier()) else {
-      throw raise(.expectedExpr(at: latestSource))
-    }
-    try consume(.punctuation(.openSquareBracket), or: .expectedExpr(at: latestSource))
-    guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
-      throw raise(.expectedCloseSquareSubscript(at: latestSource))
-    }
-    let indexExpression = try parseExpression(upTo: index)
-    let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareSubscript(at: latestSource))
-    base = SubscriptExpression(baseExpression: .identifier(identifier), indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
-    while let _ = attempt(try consume(.punctuation(.openSquareBracket), or: .expectedCloseSquareSubscript(at: latestSource))) {
+    let identifier = try parseIdentifier()
+    base = .identifier(identifier)
+
+    while true {
+      try consume(.punctuation(.openSquareBracket), or: .expectedExpr(at: latestSource))
       guard let index = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
         throw raise(.expectedCloseSquareSubscript(at: latestSource))
       }
       let indexExpression = try parseExpression(upTo: index)
       let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareSubscript(at: latestSource))
-      base = SubscriptExpression(baseExpression: .subscriptExpression(base), indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken)
+      base = .subscriptExpression(SubscriptExpression(baseExpression: base, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken))
+      if currentToken?.kind != .punctuation(.openSquareBracket),
+        case .subscriptExpression(let expr) = base {
+        return expr
+      }
     }
-
-    return base
   }
 
   // MARK: Self

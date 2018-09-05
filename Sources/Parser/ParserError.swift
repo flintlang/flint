@@ -29,6 +29,11 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected an attribute name")
   }
 
+  // MARK: Modifiers
+  static func expectedModifier(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected a modifier")
+  }
+
   // MARK: Declarations
   static func badTopLevelDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected top level declaration")
@@ -36,10 +41,16 @@ extension Diagnostic {
   static func badDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected declaration")
   }
+  static func badMember(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected valid member of \(node)")
+  }
+  static func nonTypePropertyAssignment(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Default values can only be given to type properties")
+  }
 
   // MARK: Operators
   static func expectedValidOperator(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected operator in an operator declaration")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected operator in binary expression")
   }
 
   // MARK: Contract

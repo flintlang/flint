@@ -47,29 +47,17 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    let states = attempt(try parseTypeStateGroup())
+    let states: [TypeState]
+    if currentToken?.kind == .punctuation(.openBracket) {
+      states = try parseTypeStateGroup()
+    } else {
+      states = []
+    }
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "contract declaration", at: latestSource))
-    let members = try parserContractMembers(enclosingType: identifier.name)
+    let members = try parseContractMembers(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "contract declaration", at: latestSource))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states ?? [], members: members)
-  }
-
-  func parserContractMembers(enclosingType: RawTypeIdentifier) throws -> [ContractMember] {
-    var members = [ContractMember]()
-
-    while let member = attempt(try parseContractMember(enclosingType: enclosingType)) {
-      members.append(member)
-    }
-
-    return members
-  }
-
-  func parseContractMember(enclosingType: RawTypeIdentifier) throws -> ContractMember {
-    if let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: enclosingType)){
-      return .variableDeclaration(variableDeclaration)
-    }
-    return .eventDeclaration(try parseEventDeclaration())
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, members: members)
   }
 
   func parseStructDeclaration() throws -> StructDeclaration {
@@ -108,15 +96,19 @@ extension Parser {
 
 
     var states: [TypeState] = []
+    var capabilityBinding: Identifier? = nil
+
     if currentToken?.kind == .punctuation(.at) {
-      let _ = attempt(try consume(.punctuation(.at), or: .dummy()))
+      let _ = try consume(.punctuation(.at), or: .dummy())
       states = try parseTypeStateGroup()
     }
 
 
     try consume(.punctuation(.doubleColon), or: .expectedBehaviourSeparator(at: latestSource))
 
-    let capabilityBinding = attempt(parseCapabilityBinding)
+    if case .identifier(_)? = currentToken?.kind {
+      capabilityBinding = try parseCapabilityBinding()
+    }
     let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "contract behavior", at: latestSource))
 
@@ -131,26 +123,43 @@ extension Parser {
   func parseStructMembers(structIdentifier: Identifier) throws -> [StructMember] {
     var members = [StructMember]()
     while true {
-      if let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: structIdentifier.name)) {
-        members.append(.variableDeclaration(variableDeclaration))
-      } else if let functionDeclaration = attempt(parseFunctionDeclaration) {
-        members.append(.functionDeclaration(functionDeclaration))
-      } else if let specialDeclaration = attempt(parseSpecialDeclaration) {
-        members.append(.specialDeclaration(specialDeclaration))
+      let attrs = try parseAttributes()
+      let modifiers = try parseModifiers()
+
+      let first = currentToken?.kind
+
+      if first == .func {
+        let decl = try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers)
+        members.append(.functionDeclaration(decl))
+      } else if first == .init || first == .fallback {
+        let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
+        members.append(.specialDeclaration(decl))
+      } else if first == .var || first == .let,
+        attrs.isEmpty {
+        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+          throw raise(.statementSameLine(at: latestSource))
+        }
+        let decl = try parseVariableDeclaration(modifiers: modifiers, enclosingType: structIdentifier.name, upTo: newLine)
+        members.append(.variableDeclaration(decl))
+      } else if first == .punctuation(.closeBrace) {
+        return members
       } else {
-        break
+        throw raise(.badMember(in: "struct", at: latestSource))
       }
     }
-
-    return members
   }
   
   func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumMember] {
     var cases = [EnumMember]()
-    while let enumCase = attempt(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType)) {
-      cases.append(enumCase)
+    while let first = currentToken?.kind {
+      if first == .case {
+        cases.append(try parseEnumCase(enumIdentifier: enumIdentifier, hiddenType: hiddenType))
+      } else if first == .punctuation(.closeBrace) {
+        return cases
+      } else {
+        throw raise(.badMember(in: "enum", at: latestSource))
+      }
     }
-
     return cases
   }
 
@@ -159,7 +168,8 @@ extension Parser {
     var identifier = try parseIdentifier()
     identifier.enclosingType = enumIdentifier.name
     var hiddenValue: Expression? = nil
-    if attempt(try consume(.punctuation(.equal), or: .dummy())) != nil {
+    if currentToken?.kind == .punctuation(.equal) {
+      let _ = try consume(.punctuation(.equal), or: .dummy())
       hiddenValue = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
     }
     return EnumMember(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
@@ -169,25 +179,73 @@ extension Parser {
     var members = [ContractBehaviorMember]()
 
     while true {
-      if let functionDeclaration = attempt(parseFunctionDeclaration) {
-        members.append(.functionDeclaration(functionDeclaration))
-      } else if let specialDeclaration = attempt(parseSpecialDeclaration) {
-        members.append(.specialDeclaration(specialDeclaration))
+      let attrs = try parseAttributes()
+      let modifiers = try parseModifiers()
+
+      let first = currentToken?.kind
+
+      if first == .func {
+        let decl = try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers)
+        members.append(.functionDeclaration(decl))
+      } else if first == .init || first == .fallback {
+        let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
+        members.append(.specialDeclaration(decl))
+      } else if first == .punctuation(.closeBrace) {
+        return members
       } else {
-        break
+        throw raise(.badMember(in: "contract behaviour", at: latestSource))
       }
     }
-
-    return members
   }
 
+  func parseContractMembers(enclosingType: RawTypeIdentifier) throws -> [ContractMember] {
+    var members = [ContractMember]()
+
+    while let first = currentToken?.kind {
+      switch first {
+      case .event, .public, .visible, .mutating, .var, .let:
+        members.append(try parseContractMember(enclosingType: enclosingType))
+      case .punctuation(.closeBrace):
+        return members
+      default:
+        throw raise(.badMember(in: "contract", at: latestSource))
+      }
+    }
+    throw raise(.unexpectedEOF())
+  }
+
+  func parseContractMember(enclosingType: RawTypeIdentifier) throws -> ContractMember {
+
+    let first = currentToken?.kind
+
+    if first == .event {
+      return .eventDeclaration(try parseEventDeclaration())
+    }
+
+    let modifiers = try parseModifiers()
+    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+      throw raise(.statementSameLine(at: latestSource))
+    }
+    let variableDeclaration = try parseVariableDeclaration(modifiers: modifiers, enclosingType: enclosingType, upTo: newLine)
+    return .variableDeclaration(variableDeclaration)
+
+  }
 
   // MARK: Declarations
   func parseVariableDeclarations(enclosingType: RawTypeIdentifier) throws -> [VariableDeclaration] {
     var variableDeclarations = [VariableDeclaration]()
-
-    while let variableDeclaration = attempt(try parseVariableDeclaration(enclosingType: enclosingType)) {
-      variableDeclarations.append(variableDeclaration)
+    while true {
+      let modifiers = try parseModifiers()
+      if currentToken?.kind == .var || currentToken?.kind == .let {
+        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+          throw raise(.statementSameLine(at: latestSource))
+        }
+        let decl = try parseVariableDeclaration(modifiers: modifiers, enclosingType: enclosingType, upTo: newLine)
+        variableDeclarations.append(decl)
+      }
+      else {
+        break
+      }
     }
 
     return variableDeclarations
@@ -201,35 +259,36 @@ extension Parser {
   /// - Parameter enclosingType: The name of the type in which the variable is declared, if it is a state property.
   /// - Returns: The parsed `VariableDeclaration`.
   /// - Throws: If the token streams cannot be parsed as a `VariableDeclaration`.
-  func parseVariableDeclaration(enclosingType: RawTypeIdentifier? = nil) throws -> VariableDeclaration {
-
-    let modifiers = attempt(try parseModifiers())
+  func parseVariableDeclaration(modifiers: [Token], enclosingType: RawTypeIdentifier? = nil, upTo: Int) throws -> VariableDeclaration {
 
     let declarationToken = try consume(anyOf: [.var, .let], or: .badDeclaration(at: latestSource))
 
-
     var name = try parseIdentifier()
+    if let enclosingType = enclosingType {
+      name.enclosingType = enclosingType
+    }
+
     let typeAnnotation = try parseTypeAnnotation()
 
     let assignedExpression: Expression?
 
     let asTypeProperty = enclosingType != nil
 
-    // If we are parsing a state property defined in a type, and it has been assigned a default value, parse it.
-    if asTypeProperty, let _ = attempt(try consume(.punctuation(.equal), or: .expectedValidOperator(at: latestSource))) {
-      guard let newLineIndex = indexOfFirstAtCurrentDepth([.newline]) else {
-        throw raise(.statementSameLine(at: latestSource))
-      }
-      assignedExpression = try parseExpression(upTo: newLineIndex)
-    } else {
+    if currentIndex >= upTo {
       assignedExpression = nil
+    } else if currentToken?.kind == .punctuation(.equal) {
+      // If we are parsing a state property defined in a type, and it has been assigned a default value, parse it otherwise leave it to binary expression
+      if asTypeProperty {
+        let _ = try consume(.punctuation(.equal), or: .expectedValidOperator(at: latestSource))
+        assignedExpression = try parseExpression(upTo: upTo)
+      } else {
+        assignedExpression = nil
+      }
+    } else {
+      throw raise(.expectedValidOperator(at: latestSource))
     }
 
-    if let enclosingType = enclosingType {
-      name.enclosingType = enclosingType
-    }
-
-    return VariableDeclaration(modifiers: modifiers ?? [], declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, assignedExpression: assignedExpression)
+    return VariableDeclaration(modifiers: modifiers, declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, assignedExpression: assignedExpression)
   }
   
   func parseResult() throws -> Type {
@@ -238,35 +297,23 @@ extension Parser {
     return Type(identifier: identifier)
   }
 
-  func parseFunctionHead() throws -> (attributes: [Attribute], modifiers: [Token], funcToken: Token) {
-    let attributes = try parseAttributes()
-    let modifiers = try parseModifiers()
-
+  func parseFunctionDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionDeclaration {
     let funcToken = try consume(.func, or: .badDeclaration(at: latestSource))
-    return (attributes, modifiers, funcToken)
-  }
-
-
-  func parseFunctionDeclaration() throws -> FunctionDeclaration {
-    let (attributes, modifiers, funcToken) = try parseFunctionHead()
     let identifier = try parseIdentifier()
     let (parameters, closeBracketToken) = try parseParameters()
-    let resultType = attempt(parseResult)
+    let resultType: Type?
+    if currentToken?.kind == .punctuation(.arrow) {
+      resultType = try parseResult()
+    } else {
+      resultType = nil
+    }
     let (body, closeBraceToken) = try parseCodeBlock()
 
     return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
   }
 
-  func parseSpecialHead() throws -> (attributes: [Attribute], modifiers: [Token], initToken: Token) {
-    let attributes = try parseAttributes()
-    let modifiers = try parseModifiers()
-
+  func parseSpecialDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> SpecialDeclaration {
     let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
-    return (attributes, modifiers, specialToken)
-  }
-
-  func parseSpecialDeclaration() throws -> SpecialDeclaration {
-    let (attributes, modifiers, specialToken) = try parseSpecialHead()
     let (parameters, closeBracketToken) = try parseParameters()
     let (body, closeBraceToken) = try parseCodeBlock()
     return SpecialDeclaration(specialToken: specialToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)

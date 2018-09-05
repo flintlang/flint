@@ -16,7 +16,7 @@ extension Parser {
       switch first.kind {
       case .punctuation(.semicolon), .newline:
         currentIndex+=1
-     // Valid Statements starts
+     // Valid starting tokens for statements
       case .return, .become, .emit, .for, .if, .identifier(_), .punctuation(.ampersand), .punctuation(.openSquareBracket),
            .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
         statements.append(try parseStatement())
@@ -53,7 +53,7 @@ extension Parser {
     case .if:
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)
-    // Valid expresssion starting tokens
+    // Valid starting tokens for expressions
     case .identifier(_), .punctuation(.ampersand), .punctuation(.openSquareBracket),
          .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
       let expression = try parseExpression(upTo: statementEndIndex)
@@ -67,15 +67,18 @@ extension Parser {
 
   func parseCodeBlock() throws -> ([Statement], closeBraceToken: Token) {
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "code block", at: latestSource))
-    let statements = attempt(try parseStatements())
+    let statements = try parseStatements()
     let closeBraceToken = try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "code block", at: latestSource))
-    return (statements ?? [], closeBraceToken)
+    return (statements, closeBraceToken)
   }
 
 
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     let returnToken = try consume(.return, or: .expectedStatement(at: latestSource))
-    let expression = attempt(try parseExpression(upTo: statementEndIndex))
+    var expression: Expression? = nil
+    if currentToken?.kind != .newline {
+      expression = try parseExpression(upTo: statementEndIndex)
+    }
     return ReturnStatement(returnToken: returnToken, expression: expression)
   }
 
@@ -98,24 +101,30 @@ extension Parser {
     }
     let condition = try parseExpression(upTo: nextOpenBraceIndex)
     let (statements, _) = try parseCodeBlock()
-    let elseClauseStatements = (attempt(try parseElseClause())) ?? []
+    var elseClauseStatements = [Statement]()
+    if currentToken?.kind == .else {
+      elseClauseStatements = try parseElseClause()
+    }
 
     return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
   }
 
   func parseElseClause() throws -> [Statement] {
-    try consume(.else, or: .dummy())
+    try consume(.else, or: .expectedStatement(at: latestSource))
     return try parseCodeBlock().0
   }
 
   func parseForStatement() throws -> ForStatement {
     let forToken = try consume(.for, or: .expectedStatement(at: latestSource))
-    let variable = try parseVariableDeclaration()
-    try consume(.in, or: .expectedForInStatement(at: latestSource))
-
     guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
       throw raise(.leftBraceExpected(in: "For Statement", at: latestSource))
     }
+    guard let inIndex = indexOfFirstAtCurrentDepth([.in], maxIndex: nextOpenBraceIndex) else {
+      throw raise(.expectedForInStatement(at: latestSource))
+    }
+    let variable = try parseVariableDeclaration(modifiers: [], upTo: inIndex)
+    try consume(.in, or: .expectedForInStatement(at: latestSource))
+
     let iterable = try parseExpression(upTo: nextOpenBraceIndex)
     let (statements, _) = try parseCodeBlock()
 
