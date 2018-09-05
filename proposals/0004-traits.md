@@ -1,4 +1,4 @@
-# Introduce traits
+# Traits
 
 * Proposal: [FIP-0001](0004-traits.md)
 * Author: [Daniel Hails](https://github.com/djhrhails)
