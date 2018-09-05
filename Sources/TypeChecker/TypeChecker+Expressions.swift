@@ -59,16 +59,15 @@ extension TypeChecker {
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
 
-    if let eventCall = environment.matchEventCall(functionCall, enclosingType: enclosingType) {
-      let expectedTypes = eventCall.typeGenericArguments
+    if case .matchedEvent(let eventInformation) = environment.matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: passContext.scopeContext ?? ScopeContext()) {
 
       // Ensure an event call's arguments match the expected types.
 
-      for (i, argument) in functionCall.arguments.enumerated() {
-        let argumentType = environment.type(of: argument, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
-        let expectedType = expectedTypes[i]
+      for argument in functionCall.arguments {
+        let argumentType = environment.type(of: argument.expression, enclosingType: enclosingType, scopeContext: passContext.scopeContext!)
+        let expectedType = eventInformation.declaration.variableDeclarations.filter({ $0.identifier.name == argument.identifier?.name }).first?.type.rawType
         if argumentType != expectedType {
-          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType, expression: argument))
+          diagnostics.append(.incompatibleArgumentType(actualType: argumentType, expectedType: expectedType!, expression: argument.expression))
         }
       }
     }

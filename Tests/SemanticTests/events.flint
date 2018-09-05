@@ -1,22 +1,49 @@
 // RUN: %flintc %s --verify
-
 contract EventTest {
-  var eventA: Event<Int, Bool, Address>
+  event Finished {}
+
+  event A {}
+  event A {} // expected-error {{Invalid redeclaration of 'A'}}
+
+  event B {
+    let a: Int = 3
+    let b: Int = 3
+  }
+
+  event Approve {
+    let from: Address = 0x0000000000000000000000000000000000000000
+    let to: Address
+    let value: Int
+  }
+
+  event Transfer {
+    let from: Address
+    let to: Address
+    let value: Int
+  }
 }
 
 EventTest :: (any) {
-  public init() {}
+  public init(owner: Address, receiver: Address) {
+    emit Finished()
+    emit Finished(to: owner) // expected-error {{Event 'Finished' cannot be called using the given parameters}}
+    emit Approve(to: owner, value: 20)
+    emit Approve(value: 20, to: owner) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Approve(to: owner, from: owner, value: 100) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Approve(from: owner, value: 30) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Approve(from: owner, to: receiver, value: 100)
+    emit Approve() // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Transfer(from: owner, to: receiver, value: 100)
 
-  func foo(c: Address) {
-    eventA(3, true, c)
 
-    eventA(true, false, c) // expected-error {{Cannot convert expression of type 'Bool' to expected argument type 'Int'}}
+    emit Approve(to: 20, value: owner) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Approve(from: owner, to: 100, value: receiver) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
+    emit Transfer(from: 1, to: xxx, value: 100) // expected-error {{Event 'Transfer' cannot be called using the given parameters}}
 
+    emit EventA(true) // expected-error {{Event 'EventA' is not in scope}}
 
-
-    eventA(true, 3, c) // expected-error {{Cannot convert expression of type 'Bool' to expected argument type 'Int'}}
-                       // expected-error@-1 {{Cannot convert expression of type 'Int' to expected argument type 'Bool'}}
-
-    eventA(true) // expected-error {{Function 'eventA' is not in scope}}
+    emit B()
+    emit B(a: 1)
+    emit B(b: 4)
   }
 }

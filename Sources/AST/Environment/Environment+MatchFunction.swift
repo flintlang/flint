@@ -45,7 +45,7 @@ extension Environment {
     let match: FunctionCallMatchResult = .failure(candidates: [])
 
     let argumentTypes = functionCall.arguments.map {
-      type(of: $0, enclosingType: enclosingType, scopeContext: scopeContext)
+      type(of: $0.expression, enclosingType: enclosingType, scopeContext: scopeContext)
     }
 
     // Check if it can be a regular function.
@@ -68,6 +68,7 @@ extension Environment {
 
   private func matchRegularFunction(functionCall: FunctionCall, enclosingType: RawTypeIdentifier, argumentTypes: [RawType], typeStates: [TypeState], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     var candidates = [FunctionInformation]()
+
     if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
       for candidate in functions {
         guard candidate.parameterTypes == argumentTypes,
@@ -134,12 +135,5 @@ extension Environment {
       }
     }
     return .failure(candidates: candidates)
-  }
-
-  /// Associates a function call to an event call. Events are declared as properties in the contract's declaration.
-  public func matchEventCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
-    let property = types[enclosingType]?.properties[functionCall.identifier.name]
-    guard property?.rawType.isEventType ?? false, functionCall.arguments.count == property?.typeGenericArguments.count else { return nil }
-    return property
   }
 }

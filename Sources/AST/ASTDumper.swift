@@ -65,10 +65,11 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
-      self.dump(contractDeclaration.states)
-
-      for variableDeclaration in contractDeclaration.variableDeclarations {
-        self.dump(variableDeclaration)
+      if !contractDeclaration.states.isEmpty {
+        self.dump(contractDeclaration.states)
+      }
+      for member in contractDeclaration.members {
+        self.dump(member)
       }
     }
   }
@@ -110,6 +111,16 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ eventDeclaration: EventDeclaration) {
+    writeNode("EventDeclaration") {
+      self.dump(eventDeclaration.identifier)
+
+      for variable in eventDeclaration.variableDeclarations {
+        self.dump(variable)
+      }
+    }
+  }
+
   func dump(_ enumDeclaration: EnumDeclaration) {
     writeNode("EnumDeclaration") {
       self.dump(enumDeclaration.identifier)
@@ -122,7 +133,7 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ enumCase: EnumCase) {
+  func dump(_ enumCase: EnumMember) {
     writeNode("EnumCase") {
       self.dump(enumCase.identifier)
       if let rawValue = enumCase.hiddenValue {
@@ -139,6 +150,15 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .specialDeclaration(let specialDeclaration):
       self.dump(specialDeclaration)
+    }
+  }
+
+  func dump(_ contractMember: ContractMember) {
+    switch contractMember {
+    case .variableDeclaration(let variableDeclaration):
+      self.dump(variableDeclaration)
+    case .eventDeclaration(let eventDeclaration):
+      self.dump(eventDeclaration)
     }
   }
 
@@ -338,7 +358,8 @@ public class ASTDumper {
       case .returnStatement(let returnStatement): self.dump(returnStatement)
       case .becomeStatement(let becomeStatement): self.dump(becomeStatement)
       case .ifStatement(let ifStatement): self.dump(ifStatement)
-      case .forStatement(let forStatment): self.dump(forStatment)
+      case .forStatement(let forStatement): self.dump(forStatement)
+      case .emitStatement(let emitStatement): self.dump(emitStatement)
       }
     }
   }
@@ -360,6 +381,15 @@ public class ASTDumper {
   func dump(_ bracketedExpression: BracketedExpression) {
     writeNode("BracketedExpression") {
       self.dump(bracketedExpression.expression)
+    }
+  }
+
+  func dump(_ functionArgument: FunctionArgument) {
+    writeNode("FunctionArgument") {
+      if let identifier = functionArgument.identifier {
+           self.dump(identifier)
+       }
+       self.dump(functionArgument.expression)
     }
   }
 
@@ -404,6 +434,13 @@ public class ASTDumper {
     writeNode("BecomeStatement") {
       self.dump(becomeStatement.becomeToken)
       self.dump(becomeStatement.expression)
+    }
+  }
+
+  func dump(_ emitStatement: EmitStatement) {
+    writeNode("EmitStatement") {
+      self.dump(emitStatement.emitToken)
+      self.dump(emitStatement.expression)
     }
   }
 

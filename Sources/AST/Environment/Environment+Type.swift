@@ -22,19 +22,26 @@ extension Environment {
     let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
 
     switch match {
-    case .matchedFunction(let matchingFunction): return matchingFunction.resultType
-    case .matchedFunctionWithoutCaller(let matchingFunctions):
-      guard matchingFunctions.count == 1 else {
-         return .errorType
-       }
-       return matchingFunctions.first!.resultType
-    case .matchedInitializer(_):
-      let name = functionCall.identifier.name
-      if let stdlibType = RawType.StdlibType(rawValue: name) {
-        return .stdlibType(stdlibType)
-      }
-      return .userDefinedType(name)
-    default: return .errorType
+      case .matchedFunction(let matchingFunction): return matchingFunction.resultType
+      case .matchedFunctionWithoutCaller(let matchingFunctions):
+        guard matchingFunctions.count == 1 else {
+           return .errorType
+         }
+         return matchingFunctions.first!.resultType
+      case .matchedInitializer(_):
+        let name = functionCall.identifier.name
+        if let stdlibType = RawType.StdlibType(rawValue: name) {
+          return .stdlibType(stdlibType)
+        }
+        return .userDefinedType(name)
+      default:
+        let eventMatch = matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: scopeContext)
+        switch eventMatch {
+          case .matchedEvent(let event):
+            return .userDefinedType(event.declaration.identifier.name)
+          case .failure(_):
+            return .errorType
+        }
     }
   }
 

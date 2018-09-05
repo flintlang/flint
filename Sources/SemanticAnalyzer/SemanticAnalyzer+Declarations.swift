@@ -47,6 +47,17 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
+  // MARK: Events
+  public func process(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration> {
+    var diagnostics = [Diagnostic]()
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+
+    if let conflict = passContext.environment!.conflictingEventDeclaration(for: eventDeclaration.identifier, in: enclosingType) {
+      diagnostics.append(.invalidRedeclaration(eventDeclaration.identifier, originalSource: conflict))
+    }
+    return ASTPassResult(element: eventDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
   // MARK: Struct
   public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     var diagnostics = [Diagnostic]()
@@ -79,7 +90,7 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(enumCase: EnumCase, passContext: ASTPassContext) -> ASTPassResult<EnumCase> {
+  public func process(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
@@ -134,10 +145,8 @@ extension SemanticAnalyzer {
 
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
-    } else {
+    } else if let enclosingType = passContext.enclosingTypeIdentifier?.name {
       // It's a property declaration.
-
-      let enclosingType = passContext.enclosingTypeIdentifier!.name
       if let conflict = environment.conflictingPropertyDeclaration(for: variableDeclaration.identifier, in: enclosingType) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict))
       }
@@ -147,15 +156,17 @@ extension SemanticAnalyzer {
 
       if let contractStateDeclarationContext = passContext.contractStateDeclarationContext {
         isInitializerDeclared = environment.publicInitializer(forContract: contractStateDeclarationContext.contractIdentifier.name) != nil
+      } else if let structName = passContext.structDeclarationContext?.structIdentifier.name{
+        isInitializerDeclared = environment.initializers(in: structName).count > 0
       } else {
-        isInitializerDeclared = environment.initializers(in: passContext.structDeclarationContext!.structIdentifier.name).count > 0
+        isInitializerDeclared = false
       }
 
       // This is a state property declaration.
 
       // If a default value is assigned, it should not refer to another property.
 
-      if variableDeclaration.assignedExpression == nil, !variableDeclaration.type.rawType.isEventType, !isInitializerDeclared {
+      if variableDeclaration.assignedExpression == nil, !isInitializerDeclared, passContext.eventDeclarationContext == nil {
         // The contract has no public initializer, so a default value must be provided.
 
         diagnostics.append(.statePropertyIsNotAssignedAValue(variableDeclaration))
@@ -319,7 +330,7 @@ extension SemanticAnalyzer {
           !functionInformation.isMutating {
           return false
         }
-        if environment.matchEventCall(function, enclosingType: enclosingType) != nil {
+        if case .matchedEvent(_) = environment.matchEventCall(function, enclosingType: enclosingType, scopeContext: ScopeContext()) {
           return false
         }
         return true
@@ -334,9 +345,9 @@ extension SemanticAnalyzer {
       }
     case .ifStatement(_):
       return false
-    case .returnStatement(_), .forStatement(_):
+    case .returnStatement(_), .forStatement(_), .becomeStatement(_):
       return true
-    case .becomeStatement(_):
+    case .emitStatement(_):
       return false
     }
     return true
@@ -392,10 +403,9 @@ extension SemanticAnalyzer {
 
     // Check all the properties in the type have been assigned.
     if specialDeclaration.isInit, let unassignedProperties = passContext.unassignedProperties {
-      let nonEventProperties = unassignedProperties.filter { !($0.type!.rawType.isEventType) } // TODO: Rework in events patch
 
-      if nonEventProperties.count > 0 {
-        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(specialDeclaration, unassignedProperties: nonEventProperties))
+      if unassignedProperties.count > 0 {
+        diagnostics.append(.returnFromInitializerWithoutInitializingAllProperties(specialDeclaration, unassignedProperties: unassignedProperties))
       }
     }
 

@@ -8,7 +8,7 @@ import Source
 
 public enum Property {
   case variableDeclaration(VariableDeclaration)
-  case enumCase(EnumCase)
+  case enumCase(EnumMember)
 
   public var identifier: Identifier {
     switch self {

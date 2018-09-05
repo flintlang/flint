@@ -107,6 +107,13 @@ extension Environment {
     return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
   }
 
+  /// Attempts to find a conflicting event declaration in given contract.
+  public func conflictingEventDeclaration(for event: Identifier, in type: RawTypeIdentifier) -> Identifier? {
+    let declaredEvents = types[type]!.events[event.name]?.map {$0.declaration.identifier } ?? []
+    return conflictingDeclaration(of: event, in: declaredEvents + declaredStructs + declaredContracts + declaredEnums)
+  }
+
+  
   /// Attempts to find a conflicting declaration of the given function declaration
   public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
     var contractFunctions = [Identifier]()

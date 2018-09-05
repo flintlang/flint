@@ -34,6 +34,15 @@ public struct StructDeclarationContext {
   }
 }
 
+/// Contextual information used when visiting variables in an event, such as the name of the event
+public struct EventDeclarationContext {
+  public var eventIdentifier: Identifier
+
+  public init(eventIdentifier: Identifier){
+    self.eventIdentifier = eventIdentifier
+  }
+}
+
 /// Contextual information used when visiting declarations in a enum, such as the name of the enum the cases
 /// are declared for.
 public struct EnumDeclarationContext {

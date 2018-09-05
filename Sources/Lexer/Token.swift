@@ -31,10 +31,13 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
     case literal(Literal)
 
     // Keywords
-    case contract, `enum`, `case`, `struct`, `func`, `init`, `mutating`
-    case `public`, `visible`
-    case `return`, become, `if`, `else`, `for`, `in`, `self`, `try`
-    case implicit, `inout`, fallback
+    case contract, `enum`, `case`, `struct`, `func`, `event`
+    case `init`, fallback
+    case `public`, visible, `mutating`
+    case `return`, become, `try`, `emit`
+    case `if`, `else`, `for`, `in`
+    case `self`
+    case implicit, `inout`
     case `var`, `let`
 
     public var description: String {
@@ -44,6 +47,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .struct: return "struct"
       case .enum: return "enum"
       case .case: return "case"
+      case .event: return "event"
       case .var: return "var"
       case .let: return "let"
       case .func: return "func"
@@ -55,6 +59,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .mutating: return "mutating"
       case .return: return "return"
       case .become: return "become"
+      case .emit: return "emit"
       case .public: return "public"
       case .visible: return "visible"
       case .if: return "if"

@@ -6,7 +6,12 @@ contract Bank {
   var lastIndex: Int = 0
 
   var totalDonations: Wei = Wei(0)
-  var didCompleteTransfer: Event<Address, Address, Int>
+
+  event didCompleteTransfer {
+    let from: Address
+    let to: Address
+    let value: Int
+  }
 }
 
 // The functions in this block can be called by any user.
@@ -34,7 +39,7 @@ Bank :: account <- (any) {
 
 // Only the manager can call these functions.
 Bank :: (manager) {
-  
+
   // This function needs to be declared "mutating" as its body mutates
   // the contract's state.
   public mutating func freeDeposit(account: Address, amount: Int) {
@@ -60,24 +65,24 @@ Bank :: account <- (accounts) {
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    // Transfer Wei from one account to another. The balances of the 
-    // originator and the destination are updated atomically. 
+    // Transfer Wei from one account to another. The balances of the
+    // originator and the destination are updated atomically.
     // Crashes if balances[account] doesn't have enough Wei.
     balances[destination].transfer(&balances[account], amount)
-    
+
     // Emit the Ethereum event.
-    didCompleteTransfer(account, destination, amount)
+    emit didCompleteTransfer(from: account, to: destination, value: amount)
   }
 
   @payable
   public mutating func deposit(implicit value: Wei) {
     balances[account].transfer(&value)
   }
-  
+
   public mutating func withdraw(amount: Int) {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
-    
+
     // Send the amount back to the Ethereum user.
     send(account, &w)
   }

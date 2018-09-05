@@ -10,13 +10,13 @@ import Lexer
 /// A call to a function.
 public struct FunctionCall: ASTNode {
   public var identifier: Identifier
-  public var arguments: [Expression]
+  public var arguments: [FunctionArgument]
   public var closeBracketToken: Token
   public var isAttempted: Bool
 
   public var mangledIdentifier: String? = nil
 
-  public init(identifier: Identifier, arguments: [Expression], closeBracketToken: Token, isAttempted: Bool) {
+  public init(identifier: Identifier, arguments: [FunctionArgument], closeBracketToken: Token, isAttempted: Bool) {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken
