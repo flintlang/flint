@@ -61,6 +61,14 @@ struct IRFunctionSelector {
     let callerCapabilities = function.callerCapabilities
     let callerCapabilityChecks = IRCallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType.name, environment: environment)
 
+    // Dynamically check the function is not being called with value, if it is not payable.
+    let valueChecks: String
+    if !function.functionDeclaration.isPayable {
+      valueChecks = IRRuntimeFunction.checkNoValue(IRRuntimeFunction.callvalue()) + "\n"
+    } else {
+      valueChecks = ""
+    }
+
     let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
       let (index, type) = arg
       switch type {
@@ -77,7 +85,7 @@ struct IRFunctionSelector {
       }
     }
 
-    return "\(typeStateChecks)\n\(callerCapabilityChecks)\n\(call)"
+    return "\(typeStateChecks)\n\(callerCapabilityChecks)\n\(valueChecks)\(call)"
   }
 }
 

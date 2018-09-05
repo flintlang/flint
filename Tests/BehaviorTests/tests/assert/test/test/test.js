@@ -11,19 +11,29 @@ contract(config.contractName, function(accounts) {
     const instance = await Contract.deployed();
 
     try {
-      await instance.shouldCrash();
+      await instance.shouldCrash.call();
     } catch (e) {
       return
     }
 
-    assert.fail()
+    assert.fail();
   });
 
   it("should not crash on assertion success", async function() {
     const instance = await Contract.deployed();
 
-    await instance.shouldNotCrash();
+    await instance.shouldNotCrash.call();
+  });
+
+  it("should crash if value is sent to non-payable function", async function() {
+      const instance = await Contract.deployed();
+
+      try {
+        await instance.shouldNotCrash({from: accounts[0], value: 10});
+      } catch (e) {
+        return
+      }
+
+      assert.fail();
   });
 });
-
-
