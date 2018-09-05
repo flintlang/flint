@@ -18,7 +18,7 @@ struct StandardLibrary {
     let fileManager = FileManager.default
     let enumerator = fileManager.enumerator(at: url,
                                             includingPropertiesForKeys: nil,
-                                            options: [.skipsHiddenFiles], errorHandler: { (url, error) -> Bool in
+                                            options: [], errorHandler: { (url, error) -> Bool in
                                               print("directoryEnumerator error at \(url): ", error)
                                               return true
     })!
