@@ -11,8 +11,9 @@ func main() {
     Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code."),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
+    Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify, quiet, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -23,13 +24,14 @@ func main() {
 
     let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin")
     try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
-    
+
     let compilationOutcome = Compiler(
       inputFiles: inputFiles,
       stdlibFiles: StandardLibrary.default.files,
       outputDirectory: outputDirectory,
       emitBytecode: emitBytecode,
-      shouldVerify: shouldVerify
+      shouldVerify: shouldVerify,
+      quiet: quiet
     ).compile()
 
     if emitIR {
