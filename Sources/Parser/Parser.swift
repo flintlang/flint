@@ -27,6 +27,9 @@ public class Parser {
   /// Semantic information about the source program.
   var environment = Environment()
 
+  // Diagnostics
+  var diagnostics = [Diagnostic]()
+
   public init(tokens: [Token]) {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
@@ -38,10 +41,7 @@ public class Parser {
   ///             and the list of diagnostics emitted.
   public func parse() -> (TopLevelModule?, Environment, [Diagnostic]) {
     do {
-      return (try parseTopLevelModule(), environment, [])
-    } catch ParserError.expectedToken(let tokenKind, sourceLocation: let sourceLocation) {
-      // A unhandled parsing error was thrown when parsing the program.
-      return (nil, environment, [Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected token '\(tokenKind)'")])
+      return (try parseTopLevelModule(), environment, diagnostics)
     } catch {
       // An invalid error was thrown.
       fatalError()

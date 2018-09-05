@@ -17,21 +17,25 @@ public struct DiagnosticsVerifier {
   private let diagnosticLineRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticOffsetRegex = try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
 
-  public init() {}
+  private let sourceContext: SourceContext
 
-  public func verify(producedDiagnostics: [Diagnostic], compilationContext: CompilationContext) -> Bool {
+  public init(_ sourceContext: SourceContext) {
+    self.sourceContext = sourceContext
+  }
+
+  public func verify(producedDiagnostics: [Diagnostic]) -> Bool {
     var success = true
 
-    for file in compilationContext.sourceFiles {
-      let sourceCode = compilationContext.sourceCode(in: file)
+    for file in sourceContext.sourceFiles {
+      let sourceCode = sourceContext.sourceCode(in: file)
       let diagnostics = producedDiagnostics.filter { $0.sourceLocation == nil || $0.sourceLocation?.file == file }
-      success = success && verify(producedDiagnostics: diagnostics, sourceFile: file, sourceCode: sourceCode, compilationContext: compilationContext)
+      success = success && verify(producedDiagnostics: diagnostics, sourceFile: file, sourceCode: sourceCode)
     }
 
     return success
   }
 
-  public func verify(producedDiagnostics: [Diagnostic], sourceFile: URL, sourceCode: String, compilationContext: CompilationContext) -> Bool {
+  public func verify(producedDiagnostics: [Diagnostic], sourceFile: URL, sourceCode: String) -> Bool {
     let expectations = parseExpectations(sourceCode: sourceCode)
     var producedDiagnostics = flatten(producedDiagnostics)
     var verifyDiagnostics = [Diagnostic]()
@@ -60,7 +64,7 @@ public struct DiagnosticsVerifier {
       verifyDiagnostics.append(Diagnostic(severity: .error, sourceLocation: producedDiagnostic.sourceLocation, message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\""))
     }
 
-    let output = DiagnosticsFormatter(diagnostics: verifyDiagnostics, compilationContext: compilationContext).rendered()
+    let output = DiagnosticsFormatter(diagnostics: verifyDiagnostics, sourceContext: sourceContext).rendered()
     if !output.isEmpty {
       print(output)
     }

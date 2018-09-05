@@ -8,25 +8,45 @@
 import Source
 
 public class DiagnosticPool {
-  private var diagnostics: [Diagnostic] = []
-  private var checkpoints: [[Diagnostic]] = []
+  private var diagnostics: [Diagnostic]
+  private let shouldVerify: Bool
+  private let quiet: Bool
+  private let sourceContext: SourceContext
 
-  private func append(_ diagnostic: Diagnostic) {
+  public var hasError: Bool {
+    return diagnostics.contains(where: { $0.isError })
+  }
+
+  public init(shouldVerify: Bool, quiet: Bool, sourceContext: SourceContext) {
+    self.diagnostics = []
+    self.sourceContext = sourceContext
+    self.quiet = quiet
+    self.shouldVerify = shouldVerify
+  }
+
+  public func append(_ diagnostic: Diagnostic) {
     diagnostics.append(diagnostic)
   }
 
-  public func retrieve() -> [Diagnostic] {
-    let latest = diagnostics
+  public func empty() {
     diagnostics = []
-    return latest
   }
 
-  public func checkPoint() {
-    checkpoints.append(diagnostics)
-  }
+  public func checkpoint(_ additions: [Diagnostic]) -> Bool? {
+    diagnostics.append(contentsOf: additions)
 
-  public func restore() {
-    let last = checkpoints.removeLast()
-    diagnostics = last
+    if hasError {
+      if shouldVerify, DiagnosticsVerifier(sourceContext).verify(producedDiagnostics: diagnostics) {
+        return false
+      }
+      else if !shouldVerify, !quiet {
+        print(DiagnosticsFormatter(diagnostics: diagnostics, sourceContext: sourceContext).rendered())
+        return true
+      }
+      else {
+        return true
+      }
+    }
+    return nil
   }
 }

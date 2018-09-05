@@ -14,7 +14,7 @@ public struct ASTPassRunner {
     self.ast = ast
   }
 
-  public func run(passes: [ASTPass], in environment: Environment, compilationContext: CompilationContext) -> ASTPassRunResult {
+  public func run(passes: [ASTPass], in environment: Environment, sourceContext: SourceContext) -> ASTPassRunResult {
     var environment = environment
     var ast = self.ast
     var diagnostics = [Diagnostic]()

@@ -12,11 +12,11 @@ import Source
 /// Formats error and warning messages.
 public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
-  var compilationContext: CompilationContext?
+  var sourceContext: SourceContext?
 
-  public init(diagnostics: [Diagnostic], compilationContext: CompilationContext?){
+  public init(diagnostics: [Diagnostic], sourceContext: SourceContext?){
     self.diagnostics = diagnostics
-    self.compilationContext = compilationContext
+    self.sourceContext = sourceContext
   }
 
   public func rendered() -> String {
@@ -41,8 +41,8 @@ public struct DiagnosticsFormatter {
     let infoLine = "\(infoTopic)\(sourceFileText):"
     let body: String
 
-    if let compilationContext = compilationContext, let file = diagnosticFile {
-      let sourceCode = compilationContext.sourceCode(in: file)
+    if let sourceContext = sourceContext, let file = diagnosticFile {
+      let sourceCode = sourceContext.sourceCode(in: file)
       body = """
       \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
       \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: sourceCode, highlightColor: highlightColor, style: style))
