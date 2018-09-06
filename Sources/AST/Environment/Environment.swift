@@ -9,7 +9,7 @@ import Lexer
 
 /// Information about the source program.
 public struct Environment {
-  /// Information about each type (contracts and structs) which the program define, such as its properties and
+  /// Information about each type (contracts, structs and traits) which the program define, such as its properties and
   /// functions.
   var types = [RawTypeIdentifier: TypeInformation]()
 

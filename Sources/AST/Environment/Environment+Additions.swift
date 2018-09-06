@@ -88,6 +88,16 @@ extension Environment {
     }
   }
 
+  /// Add a conformance to a type.
+  public mutating func addConformance(_ type: RawTypeIdentifier, conformsTo trait: RawTypeIdentifier) {
+    types[type]!.conformances.append(types[trait]!)
+  }
+
+  /// Add a trait to the environment.
+  public mutating func addTrait(_ traitDeclaration: ContractDeclaration) { //TODO: Use Trait Declaration
+    types[traitDeclaration.identifier.name] = TypeInformation()
+  }
+
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
     let declaration = VariableDeclaration(modifiers: [], declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
