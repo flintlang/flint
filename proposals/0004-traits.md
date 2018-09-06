@@ -7,11 +7,11 @@
 
 ## Introduction
 
-A trait is a collection of functions and events. They can access other methods declared in the same trait. Traits can be implemented for Contracts or Structures.
+A trait is a collection of functions and events. They can access other methods declared in the same trait. Contracts or Structures can then conform to a particular Traits by declaring any function stubs necessary.
 
-We introduce the concept of ‘Traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures declared to have them. For Contracts traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
+We introduce the concept of ‘Traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
 
-Multiple traits can be declared for each Contract/Structure. When declared the Flint compiler enforces the implementation of function stubs in the trait and allows usage of functions declared in them.
+Contract or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of functions declared in them.
 
 
 ## Motivation
@@ -154,7 +154,8 @@ trait Pausable @(Inactive, Active) {
   }
 }
 
-contract ToyDAO: Ownable @(Inactive, Active) {
+// Contracts need to conform to Pausable and include those states in its state declaration
+contract ToyDAO: Pausable @(Inactive, Active) {
   var owner: Address
 }
 
