@@ -39,8 +39,8 @@ public class DiagnosticPool {
       if shouldVerify, DiagnosticsVerifier(sourceContext).verify(producedDiagnostics: diagnostics) {
         return false
       }
-      else if !shouldVerify, !quiet {
-        print(DiagnosticsFormatter(diagnostics: diagnostics, sourceContext: sourceContext).rendered())
+      else if !shouldVerify {
+        display()
         return true
       }
       else {
@@ -48,5 +48,13 @@ public class DiagnosticPool {
       }
     }
     return nil
+  }
+
+  public func display() {
+    var printableDiagnostics: [Diagnostic] = diagnostics
+    if quiet {
+      printableDiagnostics = diagnostics.filter({ $0.isError })
+    }
+    print(DiagnosticsFormatter(diagnostics: printableDiagnostics, sourceContext: sourceContext).rendered())
   }
 }

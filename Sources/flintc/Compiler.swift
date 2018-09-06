@@ -66,13 +66,14 @@ struct Compiler {
       exit(0)
     }
 
-
     // Generate YUL IR code.
     let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment).generateCode()
 
     // Compile the YUL IR code using solc.
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
+    diagnostics.display()
+    
     print("Produced binary in \(outputDirectory.path.bold).")
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
   }
