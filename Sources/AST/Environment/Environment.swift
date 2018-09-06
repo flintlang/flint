@@ -13,9 +13,6 @@ public struct Environment {
   /// functions.
   var types = [RawTypeIdentifier: TypeInformation]()
 
-  /// The offset tables used to represent each type at runtime.
-  var offsets = [RawTypeIdentifier: OffsetTable]()
-
   /// A list of the names of the contracts which have been declared in the program.
   var declaredContracts = [Identifier]()
 

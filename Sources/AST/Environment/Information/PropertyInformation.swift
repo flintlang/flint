@@ -39,12 +39,4 @@ public struct PropertyInformation {
     return property.type!.rawType
   }
 
-  public var typeGenericArguments: [RawType] {
-    switch property {
-    case .variableDeclaration(let variableDeclaration):
-      return variableDeclaration.type.genericArguments.map { $0.rawType }
-    case .enumCase(_):
-      return []
-    }
-  }
 }

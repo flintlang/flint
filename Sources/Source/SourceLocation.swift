@@ -43,8 +43,4 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
 extension SourceLocation {
   public static let DUMMY = SourceLocation(line: 0, column: 0, length: 0, file: .init(fileURLWithPath: ""))
   public static let INVALID = SourceLocation(line: -1, column: -1, length: -1, file: .init(fileURLWithPath: ""))
-
-  public var isValid: Bool {
-    return line > 0 && column > 0 && length > 0 && file.path != ""
-  }
 }

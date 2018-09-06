@@ -15,12 +15,6 @@ extension Parser {
     return ParserError.emit(diag)
   }
 
-  func assert(_ cond: Bool, else diag: Diagnostic) throws {
-    if !cond {
-      throw raise(diag)
-    }
-  }
-
   /// Consumes the given token from the given list, i.e. discard it and move on to the next one. Throws if the current
   /// token being processed isn't equal to the given token.
   ///
