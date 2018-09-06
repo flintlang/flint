@@ -100,6 +100,13 @@ extension ASTPassContext {
     set { self[EnumDeclarationContextEntry.self] = newValue }
   }
 
+  /// Contextual information used when visiting declarations in an event declaration, such as the
+  /// name of the event the members belong to.
+  public var traitDeclarationContext: TraitDeclarationContext? {
+    get { return self[TraitDeclarationContextEntry.self] }
+    set { self[TraitDeclarationContextEntry.self] = newValue }
+  }
+
   /// Contextual information used when visiting declarations in an event, such as the name of the event
   public var eventDeclarationContext: EventDeclarationContext? {
     get { return self[EventDeclarationContextEntry.self] }
@@ -203,6 +210,10 @@ private struct StructDeclarationContextEntry: PassContextEntry {
 
 private struct EnumDeclarationContextEntry: PassContextEntry {
   typealias Value = EnumDeclarationContext
+}
+
+private struct TraitDeclarationContextEntry: PassContextEntry {
+  typealias Value = TraitDeclarationContext
 }
 
 private struct EventDeclarationContextEntry: PassContextEntry {

@@ -33,6 +33,9 @@ extension Parser {
       case .enum:
         let enumDeclaration = try parseEnumDeclaration()
         declarations.append(.enumDeclaration(enumDeclaration))
+      case .trait:
+        let traitDeclaration = try parseTraitDeclaration()
+        declarations.append(.traitDeclaration(traitDeclaration))
       case .identifier(_):
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
@@ -83,6 +86,20 @@ extension Parser {
     return EnumDeclaration(enumToken: enumToken, identifier: identifier, type: typeAnnotation.type, cases: cases)
   }
 
+  func parseTraitDeclaration() throws -> TraitDeclaration {
+    let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
+    let identifier = try parseIdentifier()
+    try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
+    let traitMembers = try parseTraitMembers()
+    try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "event declaration", at: latestSource))
+
+    return TraitDeclaration(
+      traitToken: traitToken,
+      identifier: identifier,
+      members: traitMembers
+    )
+  }
+
   func parseEventDeclaration() throws -> EventDeclaration {
     let eventToken = try consume(.event, or: .badDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
@@ -96,7 +113,6 @@ extension Parser {
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
     let contractIdentifier = try parseIdentifier()
 
-
     var states: [TypeState] = []
     var capabilityBinding: Identifier? = nil
 
@@ -104,7 +120,6 @@ extension Parser {
       let _ = try consume(.punctuation(.at), or: .dummy())
       states = try parseTypeStateGroup()
     }
-
 
     try consume(.punctuation(.doubleColon), or: .expectedBehaviourSeparator(at: latestSource))
 
@@ -150,7 +165,7 @@ extension Parser {
       }
     }
   }
-  
+
   func parseEnumCases(enumIdentifier: Identifier, hiddenType: Type) throws -> [EnumMember] {
     var cases = [EnumMember]()
     while let first = currentToken?.kind {
@@ -176,7 +191,41 @@ extension Parser {
     }
     return EnumMember(caseToken: caseToken, identifier: identifier, type: Type(identifier: enumIdentifier), hiddenValue: hiddenValue, hiddenType: hiddenType)
   }
-  
+
+  func parseTraitMembers() throws -> [TraitMember] {
+    var members = [TraitMember]()
+    while let first = currentToken?.kind {
+      switch first {
+      case .event, .func:
+        members.append(try parseTraitMember())
+      case .punctuation(.closeBrace):
+        return members
+      default:
+        throw raise(.badMember(in: "trait", at: latestSource))
+      }
+    }
+    throw raise(.unexpectedEOF())
+  }
+
+  func parseTraitMember() throws -> TraitMember {
+    let first = currentToken?.kind
+
+    if first == .event {
+      return .eventDeclaration(try parseEventDeclaration())
+    }
+
+    let attrs = try parseAttributes()
+    let modifiers = try parseModifiers()
+    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+      throw raise(.statementSameLine(at: latestSource))
+    }
+    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
+      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+    }
+
+    return .functionSignatureDeclaration(try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+  }
+
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
     var members = [ContractBehaviorMember]()
 
@@ -292,7 +341,7 @@ extension Parser {
 
     return VariableDeclaration(modifiers: modifiers, declarationToken: declarationToken, identifier: name, type: typeAnnotation.type, assignedExpression: assignedExpression)
   }
-  
+
   func parseResult() throws -> Type {
     try consume(.punctuation(.arrow), or: .expectedRightArrow(at: latestSource))
     let identifier = try parseIdentifier()
@@ -312,6 +361,28 @@ extension Parser {
     let (body, closeBraceToken) = try parseCodeBlock()
 
     return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
+  }
+
+  func parseFunctionSignatureDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionSignatureDeclaration {
+    let funcToken = try consume(.func, or: .badDeclaration(at: latestSource))
+    let identifier = try parseIdentifier()
+    let (parameters, closeBracketToken) = try parseParameters()
+    let resultType: Type?
+    if currentToken?.kind == .punctuation(.arrow) {
+      resultType = try parseResult()
+    } else {
+      resultType = nil
+    }
+
+    return FunctionSignatureDeclaration(
+      funcToken: funcToken,
+      attributes: attributes,
+      modifiers: modifiers,
+      identifier: identifier,
+      parameters: parameters,
+      closeBracketToken: closeBracketToken,
+      resultType: resultType
+    )
   }
 
   func parseSpecialDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> SpecialDeclaration {

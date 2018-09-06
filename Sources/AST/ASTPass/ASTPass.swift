@@ -21,12 +21,14 @@ public protocol ASTPass {
   func process(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration>
   func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
   func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration>
+  func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration>
   func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
 
   // MARK: Top Level Members
   func process(contractMember: ContractMember, passContext: ASTPassContext) -> ASTPassResult<ContractMember>
   func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
   func process(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember>
+  func process(traitMember: TraitMember, passContext: ASTPassContext) -> ASTPassResult<TraitMember>
   func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
 
   // MARK: Statements
@@ -40,6 +42,7 @@ public protocol ASTPass {
   // MARK: Declarations
   func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
   func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
+  func process(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration>
   func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration>
   func process(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration>
 
@@ -75,12 +78,14 @@ public protocol ASTPass {
   func postProcess(contractDeclaration: ContractDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration>
   func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration>
   func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration>
+  func postProcess(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration>
   func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration>
 
   // MARK: Top Level Members
   func postProcess(contractMember: ContractMember, passContext: ASTPassContext) -> ASTPassResult<ContractMember>
   func postProcess(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember>
   func postProcess(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember>
+  func postProcess(traitMember: TraitMember, passContext: ASTPassContext) -> ASTPassResult<TraitMember>
   func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember>
 
   // MARK: Statements
@@ -94,6 +99,7 @@ public protocol ASTPass {
   // MARK: Declarations
   func postProcess(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration>
   func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
+  func postProcess(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration>
   func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration>
   func postProcess(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration>
 
@@ -140,6 +146,9 @@ extension ASTPass {
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
+  public func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    return ASTPassResult(element: traitDeclaration, diagnostics: [], passContext: passContext)
+  }
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -153,6 +162,9 @@ extension ASTPass {
   }
   public func process(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  public func process(traitMember: TraitMember, passContext: ASTPassContext) -> ASTPassResult<TraitMember> {
+    return ASTPassResult(element: traitMember, diagnostics: [], passContext: passContext)
   }
   public func process(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
     return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
@@ -184,6 +196,9 @@ extension ASTPass {
   }
   public func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+  public func process(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
+    return ASTPassResult(element: functionSignatureDeclaration, diagnostics: [], passContext: passContext)
   }
   public func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
@@ -270,6 +285,9 @@ extension ASTPass {
   public func postProcess(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
     return ASTPassResult(element: enumDeclaration, diagnostics: [], passContext: passContext)
   }
+  public func postProcess(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    return ASTPassResult(element: traitDeclaration, diagnostics: [], passContext: passContext)
+  }
   public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -283,6 +301,9 @@ extension ASTPass {
   }
   public func postProcess(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
     return ASTPassResult(element: enumCase, diagnostics: [], passContext: passContext)
+  }
+  public func postProcess(traitMember: TraitMember, passContext: ASTPassContext) -> ASTPassResult<TraitMember> {
+    return ASTPassResult(element: traitMember, diagnostics: [], passContext: passContext)
   }
   public func postProcess(contractBehaviorMember: ContractBehaviorMember, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorMember> {
     return ASTPassResult(element: contractBehaviorMember, diagnostics: [], passContext: passContext)
@@ -314,6 +335,9 @@ extension ASTPass {
   }
   public func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+  public func postProcess(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
+    return ASTPassResult(element: functionSignatureDeclaration, diagnostics: [], passContext: passContext)
   }
   public func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)

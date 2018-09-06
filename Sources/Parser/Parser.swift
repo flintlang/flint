@@ -89,6 +89,10 @@ public class Parser {
 
         case .enumDeclaration(let enumDeclaration):
           environment.addEnum(enumDeclaration)
+
+        case .traitDeclaration(_):
+          // TODO: add trait declaration to environment
+          break
         }
       }
     }
