@@ -31,7 +31,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
     case literal(Literal)
 
     // Keywords
-  case contract, `enum`, `case`, `struct`, `func`, `event`, trait
+    case contract, `enum`, `case`, `struct`, `func`, `event`, trait
     case `init`, fallback
     case `public`, visible, `mutating`
     case `return`, become, `try`, `emit`

@@ -100,8 +100,8 @@ extension ASTPassContext {
     set { self[EnumDeclarationContextEntry.self] = newValue }
   }
 
-  /// Contextual information used when visiting declarations in an event declaration, such as the
-  /// name of the event the members belong to.
+  /// Contextual information used when visiting declarations in a trait declaration, such as the
+  /// name of the trait the members belong to.
   public var traitDeclarationContext: TraitDeclarationContext? {
     get { return self[TraitDeclarationContextEntry.self] }
     set { self[TraitDeclarationContextEntry.self] = newValue }

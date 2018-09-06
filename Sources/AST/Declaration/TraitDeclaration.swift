@@ -19,7 +19,6 @@ public struct TraitDeclaration: ASTNode {
     identifier: Identifier,
     members: [TraitMember]
   ) {
-    // TODO: error on non-trait traittoken?
     self.traitToken = traitToken
     self.identifier = identifier
     self.members = members

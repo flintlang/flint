@@ -9,7 +9,7 @@ import Source
 /// A member in a trait declaration.
 ///
 /// - functionDeclaration - The declaration of a function
-/// - functionDeclarationStub - The declaration of a function signature
+/// - functionSignatureDeclaration - The declaration of a function signature
 /// - eventDeclaration - The declaration of an event
 public enum TraitMember: ASTNode {
   case functionDeclaration(FunctionDeclaration)
