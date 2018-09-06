@@ -91,7 +91,7 @@ extension Parser {
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
     let traitMembers = try parseTraitMembers()
-    try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "event declaration", at: latestSource))
+    try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "trait declaration", at: latestSource))
 
     return TraitDeclaration(
       traitToken: traitToken,
