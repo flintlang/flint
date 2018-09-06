@@ -26,18 +26,23 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
   }
 
-  static func noTryForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [FunctionInformation]) -> Diagnostic {
+  static func noTryForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [CallableInformation]) -> Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
-      let callerCapabilities = renderGroup(candidate.callerCapabilities)
+      guard case .functionInformation(let functionCandidate) = candidate else {
+        fatalError("Non-function CallableInformation where function expected")
+      }
+      let callerCapabilities = renderGroup(functionCandidate.callerCapabilities)
       let messageTail: String
 
-      if candidate.callerCapabilities.count > 1 {
-        messageTail = "one of the caller capabilities in '(\(callerCapabilities))'"
+      if functionCandidate.callerCapabilities.count == 0 {
+        messageTail = ""
+      } else if functionCandidate.callerCapabilities.count > 1 {
+        messageTail = ", which requires one of the caller capabilities in '(\(callerCapabilities))'"
       } else {
-        messageTail = "the caller capability '\(callerCapabilities)'"
+        messageTail = ", which requires the caller capability '\(callerCapabilities)'"
       }
 
-      return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function, which requires \(messageTail)")
+      return Diagnostic(severity: .note, sourceLocation: functionCandidate.declaration.sourceLocation, message: "Perhaps you meant this function\(messageTail)")
     }
 
     let callerPlural = contextCallerCapabilities.count > 1
@@ -46,9 +51,34 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
 
-  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall) -> Diagnostic {
-     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope")
-   }
+  static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, candidates: [CallableInformation]) -> Diagnostic {
+    let candidateNotes = candidates.map { callablecandidate -> Diagnostic in
+      switch callablecandidate{
+      case .functionInformation(let candidate):
+        let callerCapabilities = renderGroup(candidate.callerCapabilities)
+        let messageTail: String
+
+        if candidate.callerCapabilities.count == 0 {
+          messageTail = ""
+        } else if candidate.callerCapabilities.count > 1 {
+          messageTail = ", which requires one of the caller capabilities in '(\(callerCapabilities))'"
+        } else {
+          messageTail = ", which requires the caller capability '\(callerCapabilities)'"
+        }
+
+        return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function\(messageTail)")
+      case .specialInformation(let candidate):
+        if candidate.declaration.isInit {
+          return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant the initializer for this struct")
+        } else {
+          // Is fallback
+          return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this fallback function")
+        }
+      }
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' is not in scope", notes: candidateNotes)
+  }
 
   static func partialMatchingEvents(_ functionCall: FunctionCall, candidates: [EventInformation]) -> Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in

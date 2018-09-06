@@ -24,10 +24,10 @@ extension Environment {
     switch match {
       case .matchedFunction(let matchingFunction): return matchingFunction.resultType
       case .matchedFunctionWithoutCaller(let matchingFunctions):
-        guard matchingFunctions.count == 1 else {
-           return .errorType
-         }
-         return matchingFunctions.first!.resultType
+        guard matchingFunctions.count == 1, case .functionInformation(let functionInformation) = matchingFunctions.first! else {
+          return .errorType
+        }
+        return functionInformation.resultType
       case .matchedInitializer(_):
         let name = functionCall.identifier.name
         if let stdlibType = RawType.StdlibType(rawValue: name) {

@@ -208,11 +208,14 @@ extension IRPreprocessor {
       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedFunctionWithoutCaller(let candidates):
       guard candidates.count == 1 else {
-         fatalError("Unable to find unique declaration of \(functionCall)")
-       }
-       let declaration = candidates.first!.declaration
-       let parameterTypes = declaration.parameters.map { $0.type.rawType }
-       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
+        fatalError("Unable to find unique declaration of \(functionCall)")
+      }
+      guard case .functionInformation(let candidate) = candidates.first! else {
+        fatalError("Non-function CallableInformation where function expected")
+      }
+      let declaration = candidate.declaration
+      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedInitializer(let initializerInformation):
       let declaration = initializerInformation.declaration
       let parameterTypes = declaration.parameters.map { $0.type.rawType }

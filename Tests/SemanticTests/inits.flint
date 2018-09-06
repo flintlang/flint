@@ -59,6 +59,11 @@ struct A {
   var a: Int = 0
   var b: Bool // expected-error {{State property 'b' needs to be assigned a value}}
   var c: C = C(0)
+
+  func initB() {
+    var b: B = B() // expected-error {{Function 'B' is not in scope}}
+    // expected-note@+9 {{Perhaps you meant the initializer for this struct}}
+  }
 }
 
 struct B {
