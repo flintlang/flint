@@ -6,7 +6,7 @@
 //
 import Foundation
 
-public struct CompilationContext {
+public struct SourceContext {
   var sourceFiles: [URL]
 
   func sourceCode(in sourceFile: URL) -> String {

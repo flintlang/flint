@@ -29,13 +29,6 @@ public indirect enum RawType: Equatable {
     case void = "Void"
     case bool = "Bool"
     case event = "Event"
-
-    var isCallerCapabilityType: Bool {
-      switch self {
-      case .address: return true
-      default: return false
-      }
-    }
   }
 
   public enum StdlibType: RawTypeIdentifier {

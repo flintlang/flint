@@ -30,8 +30,7 @@ func main() {
       stdlibFiles: StandardLibrary.default.files,
       outputDirectory: outputDirectory,
       emitBytecode: emitBytecode,
-      shouldVerify: shouldVerify,
-      quiet: quiet
+      diagnostics: DiagnosticPool(shouldVerify: shouldVerify, quiet: quiet, sourceContext: SourceContext(sourceFiles: inputFiles))
     ).compile()
 
     if emitIR {
@@ -53,7 +52,7 @@ func main() {
 
 func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
   let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "Invalid file: '\(file.path)'.")
-  print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
+  print(DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
   exit(1)
 }
 
@@ -64,7 +63,7 @@ func exitWithSolcNotInstalledDiagnostic() -> Never {
     message: "Missing dependency: solc",
     notes: [Diagnostic(severity: .note, sourceLocation: nil, message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html for installation instructions.")]
   )
-  print(DiagnosticsFormatter(diagnostics: [diagnostic], compilationContext: nil).rendered())
+  print(DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
   exit(1)
 }
 

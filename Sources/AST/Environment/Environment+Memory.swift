@@ -53,16 +53,3 @@ extension Environment {
     return offset
   }
 }
-
-/// A table representing the memory offset of each property in a type.
-struct OffsetTable {
-  private var storage = [String: Int]()
-
-  func offset(for propertyName: String) -> Int? {
-    return storage[propertyName]
-  }
-
-  init(offsetMap: [String: Int]) {
-    storage = offsetMap
-  }
-}

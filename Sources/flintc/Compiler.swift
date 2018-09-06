@@ -21,8 +21,10 @@ struct Compiler {
   var stdlibFiles: [URL]
   var outputDirectory: URL
   var emitBytecode: Bool
-  var shouldVerify: Bool
-  var quiet: Bool
+  var diagnostics: DiagnosticPool
+  var sourceContext: SourceContext {
+    return SourceContext(sourceFiles: inputFiles)
+  }
 
   func tokenizeFiles() -> [Token] {
     let stdlibTokens = StandardLibrary.default.files.flatMap { Lexer(sourceFile: $0, isFromStdlib: true).lex() }
@@ -37,15 +39,16 @@ struct Compiler {
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
-    // Create a compilation context.
-    let compilationContext = CompilationContext(sourceFiles: inputFiles)
-
-    guard let ast = parserAST, !parserDiagnostics.contains(where: { $0.isError }) else {
-      // If there are any parser errors, abort execution.
-      print(DiagnosticsFormatter(diagnostics: parserDiagnostics, compilationContext: compilationContext).rendered())
-      exitWithFailure()
+    if let failed = diagnostics.checkpoint(parserDiagnostics) {
+      if failed {
+        exitWithFailure()
+      }
+      exit(0)
     }
 
+    guard let ast = parserAST else {
+      exitWithFailure()
+    }
     // The AST passes to run sequentially.
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
@@ -55,32 +58,12 @@ struct Compiler {
     ]
 
     // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, compilationContext: compilationContext)
-
-    let diagnostics = passRunnerOutcome.diagnostics.filter {
-      if case .warning = $0.severity {
-        return !quiet
-      }
-      return true
-    }
-
-    if !diagnostics.isEmpty, !shouldVerify {
-      // Print the errors and warnings emitted during the passes.
-      print(DiagnosticsFormatter(diagnostics: diagnostics, compilationContext: compilationContext).rendered())
-    }
-
-    if shouldVerify {
-      // Used during development of the compiler: verify that the diagnostics emitted matches what we expected.
-      if DiagnosticsVerifier().verify(producedDiagnostics: diagnostics, compilationContext: compilationContext) {
-        exit(0)
-      } else {
+    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    if let failed = diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+      if failed {
         exitWithFailure()
       }
-    }
-
-    guard !diagnostics.contains(where: { $0.isError }) else {
-      // If there is at least one error, abort.
-      exitWithFailure()
+      exit(0)
     }
 
     // Generate YUL IR code.
@@ -89,6 +72,8 @@ struct Compiler {
     // Compile the YUL IR code using solc.
     SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
+    diagnostics.display()
+    
     print("Produced binary in \(outputDirectory.path.bold).")
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
   }

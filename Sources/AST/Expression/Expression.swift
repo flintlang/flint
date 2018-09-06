@@ -75,13 +75,6 @@ public indirect enum Expression: ASTNode {
     }
   }
 
-  public var isLiteral: Bool {
-    switch self {
-    case .literal(_), .arrayLiteral(_), .dictionaryLiteral(_): return true
-    default: return false
-    }
-  }
-
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
     switch self {
