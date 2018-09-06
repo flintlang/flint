@@ -62,7 +62,9 @@ extension Environment {
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
-    types[enclosingType, default: TypeInformation()].initializers.append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
+    types[enclosingType, default: TypeInformation()]
+      .initializers
+      .append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller

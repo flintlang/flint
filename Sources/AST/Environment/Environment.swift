@@ -51,7 +51,7 @@ public struct Environment {
 
   /// The list of initializers in a type.
   public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
-    return types[enclosingType]!.initializers
+    return types[enclosingType]!.allInitialisers
   }
 
   /// The list of fallbacks in a type.
@@ -61,7 +61,7 @@ public struct Environment {
 
   /// The list of events in a type.
   public func events(in enclosingType: RawTypeIdentifier) -> [EventInformation] {
-    return types[enclosingType]!.events.flatMap({ $1 })
+    return types[enclosingType]!.allEvents.flatMap({ $1 })
   }
 
   /// The list of properties declared in a type which can be used as caller capabilities.
