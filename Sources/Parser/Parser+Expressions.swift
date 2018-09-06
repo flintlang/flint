@@ -112,7 +112,7 @@ extension Parser {
     return nil
   }
 
-  // MARK: Bracked
+  // MARK: Bracketed
   func parseBracketedExpression() throws -> BracketedExpression {
     let openBracketToken = try consume(.punctuation(.openBracket), or: .expectedExpr(at: latestSource))
     guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
@@ -279,4 +279,3 @@ extension Parser {
   }
 
 }
-
