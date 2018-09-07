@@ -138,13 +138,14 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
-  /// The identifier of the enclosing type (a contract or a struct or an enum).
+  /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
-    return contractBehaviorDeclarationContext?.contractIdentifier ??
+    return (contractBehaviorDeclarationContext?.contractIdentifier ??
       structDeclarationContext?.structIdentifier ??
       contractStateDeclarationContext?.contractIdentifier ??
-      enumDeclarationContext?.enumIdentifier ??
-      eventDeclarationContext?.eventIdentifier
+      enumDeclarationContext?.enumIdentifier) ??
+      (traitDeclarationContext?.traitIdentifier ??
+      eventDeclarationContext?.eventIdentifier)
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.

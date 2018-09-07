@@ -200,7 +200,6 @@ extension Parser {
         return members
       default:
         members.append(try parseTraitMember())
-        //throw raise(.badMember(in: "trait", at: latestSource))
       }
     }
     throw raise(.unexpectedEOF())
