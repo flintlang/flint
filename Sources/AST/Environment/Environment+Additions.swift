@@ -94,7 +94,7 @@ extension Environment {
   }
 
   /// Add a trait to the environment.
-  public mutating func addTrait(_ traitDeclaration: ContractDeclaration) { //TODO: Use Trait Declaration
+  public mutating func addTrait(_ traitDeclaration: TraitDeclaration) {
     types[traitDeclaration.identifier.name] = TypeInformation()
   }
 

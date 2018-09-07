@@ -63,6 +63,7 @@ public class Parser {
               environment.addEvent(eventDeclaration, enclosingType: contract.identifier.name)
             }
           }
+
         case .contractBehaviorDeclaration(let behaviour):
           let contractIdentifier = behaviour.contractIdentifier.name
           for member in behaviour.members {
@@ -83,11 +84,16 @@ public class Parser {
               }
             }
           }
+
         case .structDeclaration(let structDeclaration):
           environment.addStruct(structDeclaration)
 
         case .enumDeclaration(let enumDeclaration):
           environment.addEnum(enumDeclaration)
+
+        case .traitDeclaration(let trait):
+          environment.addTrait(trait)
+          // TODO: add events, states?
         }
       }
     }

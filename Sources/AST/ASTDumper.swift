@@ -57,6 +57,8 @@ public class ASTDumper {
         self.dump(structDeclaration)
       case .enumDeclaration(let enumDeclaration):
         self.dump(enumDeclaration)
+      case .traitDeclaration(let traitDeclaration):
+        self.dump(traitDeclaration)
       }
     }
   }
@@ -142,6 +144,31 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ traitDeclaration: TraitDeclaration) {
+    writeNode("TraitDeclaration") {
+      self.dump(traitDeclaration.identifier)
+
+      for member in traitDeclaration.members {
+        self.dump(member)
+      }
+    }
+  }
+
+  func dump(_ traitMember: TraitMember) {
+    switch traitMember {
+    case .functionDeclaration(let functionDeclaration):
+      self.dump(functionDeclaration)
+    case .functionSignatureDeclaration(let functionSignatureDeclaration):
+      self.dump(functionSignatureDeclaration)
+    case .specialDeclaration(let specialDeclaration):
+      self.dump(specialDeclaration)
+    case .specialSignatureDeclaration(let specialSignatureDeclaration):
+      self.dump(specialSignatureDeclaration)
+    case .eventDeclaration(let eventDeclaration):
+      self.dump(eventDeclaration)
+    }
+  }
+
   func dump(_ structMember: StructMember) {
     switch structMember {
     case .functionDeclaration(let functionDeclaration):
@@ -194,10 +221,21 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ functionSignatureDeclaration: FunctionSignatureDeclaration) {
+    writeNode("FunctionSignatureDeclaration") {
+      self.dumpNodeContents(functionSignatureDeclaration)
+    }
+  }
 
   func dump(_ specialDeclaration: SpecialDeclaration) {
     writeNode("SpecialDeclaration") {
       self.dumpNodeContents(specialDeclaration.asFunctionDeclaration)
+    }
+  }
+
+  func dump(_ specialSignatureDeclaration: SpecialSignatureDeclaration) {
+    writeNode("SpecialSignatureDeclaration") {
+      self.dumpNodeContents(specialSignatureDeclaration.asFunctionSignatureDeclaration)
     }
   }
 
@@ -228,6 +266,32 @@ public class ASTDumper {
 
     for statement in functionDeclaration.body {
       self.dump(statement)
+    }
+  }
+
+  func dumpNodeContents(_ functionSignatureDeclaration: FunctionSignatureDeclaration) {
+    for attribute in functionSignatureDeclaration.attributes {
+      self.dump(attribute)
+    }
+
+    for modifier in functionSignatureDeclaration.modifiers {
+      self.dump(modifier)
+    }
+
+    self.dump(functionSignatureDeclaration.funcToken)
+
+    self.dump(functionSignatureDeclaration.identifier)
+
+    for parameter in functionSignatureDeclaration.parameters {
+      self.dump(parameter)
+    }
+
+    self.dump(functionSignatureDeclaration.closeBracketToken)
+
+    if let resultType = functionSignatureDeclaration.resultType {
+      self.writeNode("ResultType") {
+        self.dump(resultType)
+      }
     }
   }
 
