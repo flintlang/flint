@@ -55,6 +55,7 @@ public class Parser {
         switch tld {
         case .contractDeclaration(let contract):
           environment.addContract(contract)
+          // TODO: Add conformances here 
           if contract.isStateful {
             environment.addEnum(contract.stateEnum)
           }
