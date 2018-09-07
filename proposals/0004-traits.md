@@ -86,7 +86,7 @@ ToyToken :: caller <- (any) {
 }
 ```
 
-In the example below, we define `Ownable`, which declares a contract as something that can be owned and transfered. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
+In the example below, we define `Ownable`, which declares a contract as something that can be owned and transferred. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
 
 ```swift
 trait Ownable {
@@ -130,7 +130,7 @@ ToyWallet :: (getOwner) {
 
 ```
 
-In the example below, we define `Pausable`, which declares a contract as something that can be owned and transfered. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
+In the example below, we define `Pausable`, which declares a contract as something that can be owned and transferred. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
 
 ```swift
 trait Pausable @(Inactive, Active) {
@@ -218,3 +218,16 @@ contract Type: Trait {
 These expressions must be of the form self(.F)* where F is some qualified field in the Contract / Structure. The properties will be checked to be compatible (same type, constant/variable match). You can't access the expression via the field name, only the trait will use this mapping.
 
 ### State Declaration
+State declaration for contracts could be moved inside of the contract declaration as opposed to at the head.
+```
+contract Type {
+  @ (State1, State2, State3)
+}
+```
+This would reduce the worry about the initial declaration becoming too messy. Equally we can expand the Grammar and parser to support adding line breaks to the declaration.
+```
+contract Type: Trait1, Trait2, Trait3
+         @(State1, State2) {
+ // As normal from here on                
+}
+```
