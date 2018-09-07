@@ -109,25 +109,25 @@ extension Environment {
 
   /// Attempts to find a conflicting event declaration in given contract.
   public func conflictingEventDeclaration(for event: Identifier, in type: RawTypeIdentifier) -> Identifier? {
-    let declaredEvents = types[type]!.events[event.name]?.map {$0.declaration.identifier } ?? []
+    let declaredEvents = types[type]!.allEvents[event.name]?.map { $0.declaration.identifier } ?? []
     return conflictingDeclaration(of: event, in: declaredEvents + declaredStructs + declaredContracts + declaredEnums)
   }
 
-  
+
   /// Attempts to find a conflicting declaration of the given function declaration
   public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
     var contractFunctions = [Identifier]()
 
     if isContractDeclared(type) {
       // Contract functions do not support overloading.
-      contractFunctions = types[type]!.functions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
+      contractFunctions = types[type]!.allFunctions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
     }
 
     if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
       return conflict
     }
 
-    let functions = types[type]!.functions[function.identifier.name]?.filter { functionInformation in
+    let functions = types[type]!.allFunctions[function.identifier.name]?.filter { functionInformation in
       let identifier1 = function.identifier
       let identifier2 = functionInformation.declaration.identifier
       let parameterList1 = function.parameters.map { $0.type.rawType.name }
@@ -151,4 +151,3 @@ extension Environment {
     return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
   }
 }
-
