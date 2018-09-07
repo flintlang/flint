@@ -20,7 +20,16 @@ trait Test {
   @payable
   func g(b: Bool) -> Int
 
+// CHECK-AST: SpecialSignatureDeclaration
+  public init(c: Bool)
+
 // CHECK-AST: EventDeclaration
 // CHECK-AST:   identifier "e"
   event e {}
+}
+
+trait TestSpecial {
+
+// CHECK-AST: SpecialDeclaration
+  init() {}
 }
