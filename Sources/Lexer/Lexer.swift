@@ -79,6 +79,7 @@ public struct Lexer {
     "let": .let,
     "func": .func,
     "event": .event,
+    "trait": .trait,
     "init": .init,
     "fallback": .fallback,
     "try": .try,
