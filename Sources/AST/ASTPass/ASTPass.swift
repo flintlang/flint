@@ -67,6 +67,7 @@ public protocol ASTPass {
   func process(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type>
   func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
   func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState>
+  func process(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance>
   func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument>
 
   // MARK: -
@@ -125,6 +126,7 @@ public protocol ASTPass {
   func postProcess(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type>
   func postProcess(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
   func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState>
+  func postProcess(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance>
   func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument>
 
 }
@@ -265,6 +267,9 @@ extension ASTPass {
   }
   public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
     return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+  public func process(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance> {
+    return ASTPassResult(element: conformance, diagnostics: [], passContext: passContext)
   }
   public func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
@@ -407,6 +412,9 @@ extension ASTPass {
   }
   public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
     return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
+  }
+  public func postProcess(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance> {
+    return ASTPassResult(element: conformance, diagnostics: [], passContext: passContext)
   }
   public func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)

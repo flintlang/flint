@@ -67,6 +67,9 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
+      if !contractDeclaration.conformances.isEmpty {
+        self.dump(contractDeclaration.conformances)
+      }
       if !contractDeclaration.states.isEmpty {
         self.dump(contractDeclaration.states)
       }
@@ -80,6 +83,14 @@ public class ASTDumper {
     writeNode("States") {
       for state in states {
         self.dump(state)
+      }
+    }
+  }
+
+  func dump(_ conformances: [Conformance]) {
+    writeNode("Conforms to") {
+      for trait in conformances {
+        self.dump(trait.identifier)
       }
     }
   }

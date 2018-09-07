@@ -13,6 +13,7 @@ public struct ContractDeclaration: ASTNode {
 
   public var contractToken: Token
   public var identifier: Identifier
+  public var conformances: [Conformance]
   public var states: [TypeState]
   public var members: [ContractMember]
 
@@ -46,7 +47,7 @@ public struct ContractDeclaration: ASTNode {
     return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
   }
 
-  public init(contractToken: Token, identifier: Identifier, states: [TypeState], members: [ContractMember]) {
+  public init(contractToken: Token, identifier: Identifier, conformances: [Conformance], states: [TypeState], members: [ContractMember]) {
     self.identifier = identifier
     self.members = members
     self.states = states
