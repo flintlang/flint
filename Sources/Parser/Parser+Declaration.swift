@@ -218,11 +218,29 @@ extension Parser {
     guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
       throw raise(.statementSameLine(at: latestSource))
     }
+    let signatureDeclaration: Bool
     if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
-      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      signatureDeclaration = false
+    } else {
+      signatureDeclaration = true
     }
 
-    return .functionSignatureDeclaration(try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+    let declType = currentToken?.kind
+    if .func == declType {
+      if signatureDeclaration {
+        return .functionSignatureDeclaration(try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      } else {
+        return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+    } else if .init == declType {
+      if signatureDeclaration {
+        return .specialSignatureDeclaration(try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      } else {
+        return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+    } else {
+      throw raise(.badMember(in: "trait", at: latestSource))
+    }
   }
 
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
@@ -389,5 +407,18 @@ extension Parser {
     let (parameters, closeBracketToken) = try parseParameters()
     let (body, closeBraceToken) = try parseCodeBlock()
     return SpecialDeclaration(specialToken: specialToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
+  }
+
+  func parseSpecialSignatureDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> SpecialSignatureDeclaration {
+    let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
+    let (parameters, closeBracketToken) = try parseParameters()
+
+    return SpecialSignatureDeclaration(
+      specialToken: specialToken,
+      attributes: attributes,
+      modifiers: modifiers,
+      parameters: parameters,
+      closeBracketToken: closeBracketToken
+    )
   }
 }
