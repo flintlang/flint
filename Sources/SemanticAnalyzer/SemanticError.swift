@@ -148,7 +148,7 @@ extension Diagnostic {
   }
 
   static func invalidReturnTypeInFunction(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Type '\(functionDeclaration.resultType!.name)' not valid as return type in function '\(functionDeclaration.identifier.name)'")
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Type '\(functionDeclaration.signature.resultType!.name)' not valid as return type in function '\(functionDeclaration.identifier.name)'")
   }
 
   static func reassignmentToConstant(_ identifier: Identifier, _ declarationSourceLocation: SourceLocation) -> Diagnostic {

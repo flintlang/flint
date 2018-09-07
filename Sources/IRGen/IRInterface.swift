@@ -58,7 +58,7 @@ struct IRInterface {
     }
 
     let returnCode: String
-    if let resultType = functionDeclaration.resultType {
+    if let resultType = functionDeclaration.signature.resultType {
       returnCode = " returns (\(CanonicalType(from: resultType.rawType)!) ret)"
     } else {
       returnCode = ""

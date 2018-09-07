@@ -59,7 +59,7 @@ struct IRFunction {
   }
 
   var resultCanonicalType: CanonicalType? {
-    return functionDeclaration.resultType.flatMap({ CanonicalType(from: $0.rawType)! })
+    return functionDeclaration.signature.resultType.flatMap({ CanonicalType(from: $0.rawType)! })
   }
 
   func rendered() -> String {
@@ -73,7 +73,7 @@ struct IRFunction {
   }
 
   func signature(withReturn: Bool = true) -> String {
-    let doesReturn = functionDeclaration.resultType != nil && withReturn
+    let doesReturn = functionDeclaration.signature.resultType != nil && withReturn
      let parametersString = parameterNames.joined(separator: ", ")
      return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IRFunction.returnVariableName)" : "")"
   }

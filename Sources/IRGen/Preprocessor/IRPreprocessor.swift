@@ -60,7 +60,7 @@ public struct IRPreprocessor: ASTPass {
     var functionDeclaration = functionDeclaration
 
     // Mangle the function name in the declaration.
-    let parameters = functionDeclaration.parameters.map { $0.type.rawType }
+    let parameters = functionDeclaration.signature.parameters.map { $0.type.rawType }
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name, parameterTypes: parameters, enclosingType: passContext.enclosingTypeIdentifier!.name)
     functionDeclaration.mangledIdentifier = name
 
@@ -79,21 +79,21 @@ public struct IRPreprocessor: ASTPass {
       if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
         let parameter = constructParameter(name: "flintSelf", type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)), sourceLocation: functionDeclaration.sourceLocation)
-        functionDeclaration.parameters.insert(parameter, at: 0)
+        functionDeclaration.signature.parameters.insert(parameter, at: 0)
       }
     }
 
     // Add an isMem parameter for each struct parameter.
-    let dynamicParameters = functionDeclaration.parameters.enumerated().filter { $0.1.type.rawType.isDynamicType }
+    let dynamicParameters = functionDeclaration.signature.parameters.enumerated().filter { $0.1.type.rawType.isDynamicType }
 
     var offset = 0
     for (index, parameter) in dynamicParameters where !parameter.isImplicit {
       let isMemParameter = constructParameter(name: Mangler.isMem(for: parameter.identifier.name), type: .basicType(.bool), sourceLocation: parameter.sourceLocation)
-      functionDeclaration.parameters.insert(isMemParameter, at: index + 1 + offset)
+      functionDeclaration.signature.parameters.insert(isMemParameter, at: index + 1 + offset)
       offset += 1
     }
 
-    functionDeclaration.scopeContext?.parameters = functionDeclaration.parameters
+    functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 

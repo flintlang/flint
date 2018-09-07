@@ -17,7 +17,7 @@ extension TypeChecker {
 
     if let expression = returnStatement.expression {
       let actualType = environment.type(of: expression, enclosingType: typeIdentifier.name, scopeContext: passContext.scopeContext!)
-      let expectedType = functionDeclarationContext.declaration.rawType
+      let expectedType = functionDeclarationContext.declaration.signature.rawType
 
       // Ensure the type of the returned value in a function matches the function's return type.
 

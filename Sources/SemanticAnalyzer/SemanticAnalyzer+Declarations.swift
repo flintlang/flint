@@ -185,8 +185,9 @@ extension SemanticAnalyzer {
       diagnostics.append(.invalidRedeclaration(functionDeclaration.identifier, originalSource: conflict))
     }
 
-    let implicitParameters = functionDeclaration.parameters.filter { $0.isImplicit }
-    let payableValueParameters = functionDeclaration.parameters.filter { $0.isPayableValueParameter }
+    let signature = functionDeclaration.signature
+    let implicitParameters = signature.parameters.filter { $0.isImplicit }
+    let payableValueParameters = signature.parameters.filter { $0.isPayableValueParameter }
     if functionDeclaration.isPayable {
       // If a function is marked with the @payable annotation, ensure it contains one compatible payable parameter, and no other implicit parameters.
       if payableValueParameters.count > 1 {
@@ -207,14 +208,14 @@ extension SemanticAnalyzer {
     }
 
     if functionDeclaration.isPublic {
-      let dynamicParameters = functionDeclaration.parameters.filter { $0.type.rawType.isDynamicType && !$0.isImplicit }
+      let dynamicParameters = signature.parameters.filter { $0.type.rawType.isDynamicType && !$0.isImplicit }
       if !dynamicParameters.isEmpty {
         diagnostics.append(.useOfDynamicParamaterInFunctionDeclaration(functionDeclaration, dynamicParameters: dynamicParameters))
       }
     }
 
     // A function may not return a struct type.
-    if let rawType = functionDeclaration.resultType?.rawType, case .userDefinedType(_) = rawType {
+    if let rawType = functionDeclaration.signature.resultType?.rawType, case .userDefinedType(_) = rawType {
       diagnostics.append(.invalidReturnTypeInFunction(functionDeclaration))
     }
 
@@ -238,7 +239,7 @@ extension SemanticAnalyzer {
     }
 
     if returns.isEmpty,
-      let resultType = functionDeclaration.resultType {
+      let resultType = functionDeclaration.signature.resultType {
       // Emit an error if a non-void function doesn't have a return statement.
       diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken, resultType: resultType))
     }
@@ -295,7 +296,7 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
 
     if specialDeclaration.isFallback {
-      if !specialDeclaration.parameters.isEmpty {
+      if !specialDeclaration.signature.parameters.isEmpty {
         diagnostics.append(.fallbackDeclaredWithArguments(specialDeclaration))
       }
       let complexStatements = specialDeclaration.body.filter({isComplexStatement($0, env: environment, enclosingType: enclosingType)})
@@ -381,9 +382,9 @@ extension SemanticAnalyzer {
         } else {
           // This is the first public initializer we encounter in this contract.
           if specialDeclaration.isInit {
-            passContext.environment!.setPublicInitializer(specialDeclaration, forContract: contractName)
+            passContext.environment!.setPublicInitializer(specialDeclaration, for: contractName)
           } else if specialDeclaration.isFallback {
-            passContext.environment!.setPublicFallback(specialDeclaration, forContract: contractName)
+            passContext.environment!.setPublicFallback(specialDeclaration, for: contractName)
           }
         }
       }
