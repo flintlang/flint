@@ -50,7 +50,11 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    let states: [TypeState]
+    var states: [TypeState] = []
+    var conformances: [Conformance] = []
+    if currentToken?.kind == .punctuation(.colon) {
+      conformances = try parseConformances()
+    }
     if currentToken?.kind == .punctuation(.openBracket) {
       states = try parseTypeStateGroup()
     } else {
