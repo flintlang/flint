@@ -51,7 +51,7 @@ traitMember = functionDeclaration
 eventDeclaration = "event" identifer "{" *(variableDeclaration) "}"
 
 ; STRUCTS
-structDeclaration = %s"struct" SP identifier SP "{" *(WSP structMember CRLF) "}";
+structDeclaration = %s"struct" SP identifier [":" WSP identifierList ] SP "{" *(WSP structMember CRLF) "}";
 
 structMember = variableDeclaration
                 / functionDeclaration
@@ -65,10 +65,11 @@ contractBehaviourMember = functionDeclaration
                             / fallbackDeclaration;
 
 ; ACCESS GROUPS
-stateGroup               = "@" identifierGroup;
+stateGroup              = "@" identifierGroup;
 callerCapabilityBinding = identifier WSP "<-";
 callerCapabilityGroup   = identifierGroup;
-identifierGroup           = "(" identifier *("," WSP identifier) ")";
+identifierGroup         = "(" identifierList ")";
+identifierList          = identifier *("," WSP identifier)
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
 functionSignatureDeclaration    = functionHead SP identifier parameterList [returnType]
