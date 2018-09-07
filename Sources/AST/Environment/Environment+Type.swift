@@ -13,6 +13,10 @@ extension Environment {
       return type
     }
 
+    if let function = types[enclosingType]?.functions[property]?.first! {
+      return .functionType(parameters: function.parameterTypes, result: function.resultType)
+    }
+
     guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { return .errorType }
     return type
   }
