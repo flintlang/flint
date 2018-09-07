@@ -10,7 +10,9 @@ trait Test {
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   identifier "f"
 // CHECK-AST:   built-in type Bool
-  public func f() -> Bool {}
+  public func f() -> Bool {
+    return true
+  }
 
 // CHECK-AST: FunctionSignatureDeclaration
 // CHECK-AST:   identifier "g"
