@@ -173,14 +173,48 @@ ToyDAO @(Active) :: (any) {
 
 ## Alternatives considered
 
-### Interfaces
-
 ### Inheritance of Contracts / Structures
+The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance could also be used repeatedly.
 
 ### Public by default
+Functions declared in traits could have been public by default, removing the need for the public modifier for each function. This would however be inconsistent with Flint's private by default function policy.
 
-### Stub only
+### No implementation in traits
+We could have limited traits to only enforce functions to be declared and not define any pre-existing functionality. This would have made them very similar to Solidity Interfaces. However for a little additional complexity we don't need to have two separate concepts for interfacing and functions.
+
+### Syntax Alternatives
+
+#### Keyword
+```
+contract Name @(State1, State2) {
+  conforms Trait1, Trait2
+}
+```
+
+#### Addition sign for multiple traits
+```
+contract Name: Trait1 + Trait2 + Trait3 {}
+```
 
 ### Property Declaration
+Accessors have a number of disadvantages. Of course there is the obvious one: they are tedious to define and to use. Writing `node.location().x` and `node.set_location(p)` is simply less nice than `node.location.x` and `node.location = p`. We could adopt a syntactic sugar by which the latter can be automatically translated to the former.
+
+We would extend traits with an optional "field block" which would be a list of variable declarations. These could then be used within the trait according to their
+
+```
+trait Trait {
+  let field1: Type1
+  var field2: Type2
+}
+```
+
+Conforming structures and contracts would have to then map field names to expressions.
+```
+contract Type: Trait {
+  field1 -> self.x
+  field2 -> self.y.z
+}
+```
+These expressions must be of the form self(.F)* where F is some qualified field in the Contract / Structure. The properties will be checked to be compatible (same type, constant/variable match). You can't access the expression via the field name, only the trait will use this mapping.
 
 ### State Declaration
