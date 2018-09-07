@@ -35,6 +35,11 @@ extension Environment {
     return declaredEnums.contains { $0.name == type }
   }
 
+  /// Whether a trait has been declared in the program.
+  public func isTraitDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredTraits.contains { $0.name == type }
+  }
+
   /// Whether a type has been declared in the program.
   public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
     return types[type] != nil
