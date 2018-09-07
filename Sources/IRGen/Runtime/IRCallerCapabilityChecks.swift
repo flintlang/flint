@@ -1,57 +1,79 @@
 //
- //  IRCallerCapabilityChecks.swift
- //  IRGen
- //
- //  Created by Hails, Daniel R on 11/07/2018.
- //
+//  IRCallerCapabilityChecks.swift
+//  IRGen
+//
+//  Created by Hails, Daniel R on 11/07/2018.
+//
 
- import AST
+import AST
 
- /// Checks whether the caller of a function has appropriate caller capabilities.
- struct IRCallerCapabilityChecks {
-   static let postfix: String = "CallerCheck"
-   static let varName: String = "_flint" + postfix
+/// Checks whether the caller of a function has appropriate caller capabilities.
+struct IRCallerCapabilityChecks {
+  static let postfix: String = "CallerCheck"
+  static let varName: String = "_flint" + postfix
 
-   var variableName: String
-   var callerCapabilities: [CallerCapability]
-   let revert: Bool
+  var variableName: String
+  var callerCapabilities: [CallerCapability]
+  let revert: Bool
 
-   init(callerCapabilities: [CallerCapability], revert: Bool = true, variableName: String = varName) {
-     self.variableName = variableName
-     self.callerCapabilities = callerCapabilities
-     self.revert = revert
-   }
+  init(callerCapabilities: [CallerCapability], revert: Bool = true, variableName: String = varName) {
+    self.variableName = variableName
+    self.callerCapabilities = callerCapabilities
+    self.revert = revert
+  }
 
-   func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> String {
-     let checks = callerCapabilities.compactMap { callerCapability -> String? in
-       guard !callerCapability.isAny else { return nil }
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> String {
+    let checks = callerCapabilities.compactMap { callerCapability -> String? in
+      guard !callerCapability.isAny else { return nil }
 
-       let type = environment.type(of: callerCapability.identifier.name, enclosingType: enclosingType)
-       let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: enclosingType)!
+      let type = environment.type(of: callerCapability.identifier.name, enclosingType: enclosingType)
+      let offset = environment.propertyOffset(for: callerCapability.name, enclosingType: enclosingType)
+      let functionContext = FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false)
 
-       switch type {
-       case .fixedSizeArrayType(_, let size):
-         return (0..<size).map { index in
-           let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset), \(index)))")
-           return "\(variableName) := add(\(variableName), \(check)"
-           }.joined(separator: "\n")
-       case .arrayType(_):
-         let check = IRRuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset)
-         return "\(variableName) := add(\(variableName), \(check))"
-       default:
-         let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(\(offset)))")
-         return "\(variableName) := add(\(variableName), \(check)"
-       }
-     }
-     let revertString = revert ? "if eq(\(variableName), 0) { revert(0, 0) }" : ""
-     if !checks.isEmpty {
-       return """
-         let \(variableName) := 0
-         \(checks.joined(separator: "\n"))
-         \(revertString)
-         """
-     }
+      switch type {
+      case .functionType(parameters: [], result: .basicType(.address)):
+        var identifier = callerCapability.identifier
+        let name = Mangler.mangleFunctionName(identifier.name, parameterTypes: [], enclosingType: enclosingType)
+        identifier.identifierToken.kind = .identifier(name)
+        let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
+        let check = "eq(caller(), \(functionCall.rendered(functionContext: functionContext)))"
+        return "\(variableName) := add(\(variableName), \(check))"
+      case .functionType(parameters: [.basicType(.address)], result: .basicType(.bool)):
+        var identifier = callerCapability.identifier
+        let name = Mangler.mangleFunctionName(identifier.name, parameterTypes: [.basicType(.address)], enclosingType: enclosingType)
+        identifier.identifierToken.kind = .identifier(name)
+        let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [FunctionArgument(.rawAssembly("caller()", resultType: .basicType(.address)))], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
+        let check = "\(functionCall.rendered(functionContext: functionContext))"
+        return "\(variableName) := add(\(variableName), \(check))"
+      case .fixedSizeArrayType(_, let size):
+        return (0..<size).map { index in
+          let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(add(\(offset!), \(index)))")
+          return "\(variableName) := add(\(variableName), \(check)"
+          }.joined(separator: "\n")
+      case .arrayType(_):
+        let check = IRRuntimeFunction.isCallerCapabilityInArray(arrayOffset: offset!)
+        return "\(variableName) := add(\(variableName), \(check))"
+      case .basicType(.address):
+        let check = IRRuntimeFunction.isValidCallerCapability(address: "sload(\(offset!)))")
+        return "\(variableName) := add(\(variableName), \(check)"
+      case .basicType(_), .stdlibType(_), .rangeType(_), .dictionaryType(_), .userDefinedType(_),
+           .inoutType(_), .functionType(_), .any, .errorType:
+        return ""
+      }
 
-     return ""
-   }
- }
+
+
+
+      }
+    let revertString = revert ? "if eq(\(variableName), 0) { revert(0, 0) }" : ""
+      if !checks.isEmpty {
+      return """
+       let \(variableName) := 0
+       \(checks.joined(separator: "\n"))
+       \(revertString)
+       """
+      }
+
+      return ""
+  }
+}

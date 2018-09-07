@@ -66,7 +66,7 @@ public struct Environment {
 
   /// The list of properties declared in a type which can be used as caller capabilities.
   func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
-    return types[enclosingType]!.properties.compactMap { key, value in
+    let properties: [String] = types[enclosingType]!.properties.compactMap { key, value in
       switch value.rawType {
       case .basicType(.address): return key
       case .fixedSizeArrayType(.basicType(.address), _): return key
@@ -75,6 +75,18 @@ public struct Environment {
       default: return nil
       }
     }
+    let functions: [String] = types[enclosingType]!.functions.compactMap { name, functions in
+      for function in functions {
+        if function.resultType == .basicType(.address), function.parameterTypes == [] {
+          return name
+        }
+        if function.resultType == .basicType(.bool), function.parameterTypes == [.basicType(.address)] {
+          return name
+        }
+      }
+      return nil
+    }
+    return properties + functions
   }
 
   public func getStateValue(_ state: Identifier, in contract: RawTypeIdentifier) -> Expression {

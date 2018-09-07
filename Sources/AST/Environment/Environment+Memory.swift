@@ -18,6 +18,7 @@ extension Environment {
     case .inoutType(_): fatalError()
     case .any: return 0
     case .errorType: return 0
+    case .functionType(_): return 0
 
     case .stdlibType(let type):
       return types[type.rawValue]!.properties.reduce(0) { acc, element in
