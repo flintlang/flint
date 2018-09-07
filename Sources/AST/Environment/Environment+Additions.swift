@@ -62,7 +62,9 @@ extension Environment {
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
-    types[enclosingType, default: TypeInformation()].initializers.append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
+    types[enclosingType, default: TypeInformation()]
+      .initializers
+      .append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
@@ -84,6 +86,16 @@ extension Environment {
     if types[enclosingType]!.properties[property.identifier.name] == nil {
       types[enclosingType]!.properties[property.identifier.name] = PropertyInformation(property: property)
     }
+  }
+
+  /// Add a conformance to a type.
+  public mutating func addConformance(_ type: RawTypeIdentifier, conformsTo trait: RawTypeIdentifier) {
+    types[type]!.conformances.append(types[trait]!)
+  }
+
+  /// Add a trait to the environment.
+  public mutating func addTrait(_ traitDeclaration: ContractDeclaration) { //TODO: Use Trait Declaration
+    types[traitDeclaration.identifier.name] = TypeInformation()
   }
 
   /// Add a use of an undefined variable.

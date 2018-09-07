@@ -19,7 +19,7 @@ extension Environment {
   public func matchEventCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> EventMatchResult {
     var candidates = [EventInformation]()
 
-    if let events = types[enclosingType]?.events[functionCall.identifier.name] {
+    if let events = types[enclosingType]?.allEvents[functionCall.identifier.name] {
       for candidate in events {
         guard areArgumentsCompatible(source: functionCall.arguments, target: candidate, enclosingType: enclosingType, scopeContext: scopeContext) else {
             candidates.append(candidate)
