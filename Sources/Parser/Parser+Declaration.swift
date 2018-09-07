@@ -196,12 +196,11 @@ extension Parser {
     var members = [TraitMember]()
     while let first = currentToken?.kind {
       switch first {
-      case .event, .func:
-        members.append(try parseTraitMember())
       case .punctuation(.closeBrace):
         return members
       default:
-        throw raise(.badMember(in: "trait", at: latestSource))
+        members.append(try parseTraitMember())
+        //throw raise(.badMember(in: "trait", at: latestSource))
       }
     }
     throw raise(.unexpectedEOF())
