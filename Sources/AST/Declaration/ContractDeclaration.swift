@@ -50,6 +50,7 @@ public struct ContractDeclaration: ASTNode {
   public init(contractToken: Token, identifier: Identifier, conformances: [Conformance], states: [TypeState], members: [ContractMember]) {
     self.identifier = identifier
     self.members = members
+    self.conformances = conformances
     self.states = states
     self.contractToken = contractToken
   }
