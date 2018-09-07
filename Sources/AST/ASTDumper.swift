@@ -65,13 +65,6 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
-      if !contractDeclaration.conformances.isEmpty {
-        self.writeNode("Conforms to") {
-          for traitIdentifier in contractDeclaration.conformances {
-            self.dump(traitIdentifier)
-          }
-        }
-      }
       if !contractDeclaration.states.isEmpty {
         self.dump(contractDeclaration.states)
       }

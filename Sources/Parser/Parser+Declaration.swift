@@ -47,19 +47,17 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    var states: [TypeState] = []
-    var conformances: [Identifier] = []
-    if currentToken?.kind == .punctuation(.colon) {
-      conformances = try parseConformances()
-    }
+    let states: [TypeState]
     if currentToken?.kind == .punctuation(.openBracket) {
       states = try parseTypeStateGroup()
+    } else {
+      states = []
     }
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "contract declaration", at: latestSource))
     let members = try parseContractMembers(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "contract declaration", at: latestSource))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, conformances: conformances, states: states, members: members)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, members: members)
   }
 
   func parseStructDeclaration() throws -> StructDeclaration {
