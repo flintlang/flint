@@ -65,6 +65,13 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
+      if !contractDeclaration.conformances.isEmpty {
+        self.writeNode("Conforms to") {
+          for traitIdentifier in contractDeclaration.conformances {
+            self.dump(traitIdentifier)
+          }
+        }
+      }
       if !contractDeclaration.states.isEmpty {
         self.dump(contractDeclaration.states)
       }
@@ -104,7 +111,13 @@ public class ASTDumper {
   func dump(_ structDeclaration: StructDeclaration) {
     writeNode("StructDeclaration") {
       self.dump(structDeclaration.identifier)
-
+      if !structDeclaration.conformances.isEmpty {
+        self.writeNode("Conforms to") {
+          for traitIdentifier in structDeclaration.conformances {
+            self.dump(traitIdentifier)
+          }
+        }
+      }
       for member in structDeclaration.members {
         self.dump(member)
       }

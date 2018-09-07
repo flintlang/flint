@@ -47,27 +47,33 @@ extension Parser {
   func parseContractDeclaration() throws -> ContractDeclaration {
     let contractToken = try consume(.contract, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    let states: [TypeState]
+    var states: [TypeState] = []
+    var conformances: [Identifier] = []
+    if currentToken?.kind == .punctuation(.colon) {
+      conformances = try parseConformances()
+    }
     if currentToken?.kind == .punctuation(.openBracket) {
       states = try parseTypeStateGroup()
-    } else {
-      states = []
     }
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "contract declaration", at: latestSource))
     let members = try parseContractMembers(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "contract declaration", at: latestSource))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, members: members)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, conformances: conformances, states: states, members: members)
   }
 
   func parseStructDeclaration() throws -> StructDeclaration {
     let structToken = try consume(.struct, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
+    var conformances: [Identifier] = []
+    if currentToken?.kind == .punctuation(.colon) {
+      conformances = try parseConformances()
+    }
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "struct declaration", at: latestSource))
     let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "struct declaration", at: latestSource))
 
-    return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
+    return StructDeclaration(structToken: structToken, identifier: identifier, conformances: conformances, members: members)
   }
 
   func parseEnumDeclaration() throws -> EnumDeclaration {

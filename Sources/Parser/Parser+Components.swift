@@ -21,17 +21,18 @@ extension Parser {
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
-    let identifiers = try parseIdentifierList()
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw raise(.expectedCloseParen(at: latestSource))
+    }
+    let identifiers = try parseIdentifierList(upTo: closingIndex)
     let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
 
     return (identifiers, closeBracketToken)
   }
 
-  func parseIdentifierList() throws -> [Identifier] {
+  func parseIdentifierList(upTo closingIndex: Int) throws -> [Identifier] {
     var identifiers = [Identifier]()
-    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      return []
-    }
+
     while currentIndex < closingIndex {
       identifiers.append(try parseIdentifier())
       if currentIndex < closingIndex {
@@ -155,6 +156,15 @@ extension Parser {
     }
 
     return (callerCapabilities, closeBracketToken)
+  }
+
+  // MARK: Conformances
+  func parseConformances() throws -> [Identifier] {
+    try consume(.punctuation(.colon), or: .expectedConformance(at: latestSource))
+    guard let endOfConformances = indexOfFirstAtCurrentDepth([.punctuation(.openBracket), .newline, .punctuation(.openBrace)]) else {
+      throw raise(.expectedConformance(at: latestSource))
+    }
+    return try parseIdentifierList(upTo: endOfConformances)
   }
 
   // MARK: Type State
