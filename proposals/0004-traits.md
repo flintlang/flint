@@ -7,15 +7,15 @@
 
 ## Introduction
 
-A trait is a collection of functions and events. They can access other methods declared in the same trait. Contracts or Structures can then conform to a particular Traits by declaring any function stubs necessary.
+A trait is a collection of functions and events. It can access other methods declared in the same trait. Contracts or Structures can conform to a particular trait by implementing all of the trait's function stubs.
 
-We introduce the concept of ‘Traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
+We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions and function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions and function stubs.
 
-Contract or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of functions declared in them.
+Contract or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them.
 
 
 ## Motivation
-Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MutiSig, Pausable, ERC20, ERC721 etc) and Structures (Transferable, RawValued, Describable etc).
+Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc).
 
 It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](0001-asset-trait.md) and Numerics.
 
@@ -175,6 +175,9 @@ ToyDAO @(Active) :: (any) {
 
 ### Inheritance of Contracts / Structures
 The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance could also be used repeatedly.
+****
+SUSAN: I DON'T UNDERSTAND WHAT YOU ARE SAYING AT THE END OF THE LAST SENTENCE
+****
 
 ### Public by default
 Functions declared in traits could have been public by default, removing the need for the public modifier for each function. This would however be inconsistent with Flint's private by default function policy.
