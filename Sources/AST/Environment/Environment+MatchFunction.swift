@@ -69,7 +69,7 @@ extension Environment {
   private func matchRegularFunction(functionCall: FunctionCall, enclosingType: RawTypeIdentifier, argumentTypes: [RawType], typeStates: [TypeState], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
-    if let functions = types[enclosingType]?.functions[functionCall.identifier.name] {
+    if let functions = types[enclosingType]?.allFunctions[functionCall.identifier.name] {
       for candidate in functions {
         guard candidate.parameterTypes == argumentTypes,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities),
@@ -92,7 +92,7 @@ extension Environment {
   private func matchInitaliserFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
-    if let initializers = types[functionCall.identifier.name]?.initializers {
+    if let initializers = types[functionCall.identifier.name]?.allInitialisers {
       for candidate in initializers {
         guard candidate.parameterTypes == argumentTypes,
           areCallerCapabilitiesCompatible(source: callerCapabilities, target: candidate.callerCapabilities) else {
@@ -126,7 +126,7 @@ extension Environment {
   private func matchGlobalFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerCapabilities: [CallerCapability]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
-    if let functions = types[Environment.globalFunctionStructName]?.functions[functionCall.identifier.name] {
+    if let functions = types[Environment.globalFunctionStructName]?.allFunctions[functionCall.identifier.name] {
       for candidate in functions {
 
         guard candidate.parameterTypes == argumentTypes,
