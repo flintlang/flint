@@ -135,6 +135,16 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' cannot have dynamic parameters", notes: notes)
   }
 
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in contract: ContractDeclaration) -> Diagnostic {
+    let notes = functions.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Function signature has not been implemented") }
+    return Diagnostic(severity: .error, sourceLocation: contract.sourceLocation, message: "Contract doesn't conform to traits as it doesn't implement the declared functions", notes: notes)
+  }
+
+  static func notImplementedInitialiser(_ functions: [SpecialInformation], in contract: ContractDeclaration) -> Diagnostic {
+    let notes = functions.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Initialiser has not been implemented") }
+    return Diagnostic(severity: .error, sourceLocation: contract.sourceLocation, message: "Contract doesn't conform to traits as it doesn't implement the declared initialiser", notes: notes)
+  }
+
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type")
   }
