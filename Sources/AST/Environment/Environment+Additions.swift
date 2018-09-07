@@ -160,6 +160,7 @@ extension Environment {
 
   /// Add a trait to the environment.
   public mutating func addTrait(_ trait: TraitDeclaration) {
+    declaredTraits.append(trait.identifier)
     types[trait.identifier.name] = TypeInformation()
     for member in trait.members {
       if case .eventDeclaration(let eventDeclaration) = member {
