@@ -55,10 +55,11 @@ public struct ContractDeclaration: ASTNode {
 
   // MARK: - ASTNode
   public var description: String {
-    let stateText = states.map({ $0.description }).joined(separator: " ")
-    let headText = "contract \(identifier) \(stateText)"
-    let memberText = members.map({ $0.description }).joined(separator: "\n")
-    return "\(headText) {\(memberText)}"
+    let conformsText = conformances.map ({ $0.description }).joined(separator: ", ")
+    let stateText = states.map({ $0.description }).joined(separator: ", ")
+    let headText = "contract \(identifier): \(conformsText) \(stateText)"
+    let membersText = members.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(membersText)}"
   }
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)

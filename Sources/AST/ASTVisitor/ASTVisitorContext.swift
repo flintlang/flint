@@ -53,6 +53,16 @@ public struct EnumDeclarationContext {
   }
 }
 
+/// Contextual information used when visiting declarations in a trait declaration, such as the name
+/// of the trait the members are declared for.
+public struct TraitDeclarationContext {
+  public var traitIdentifier: Identifier
+
+  public init(traitIdentifier: Identifier) {
+    self.traitIdentifier = traitIdentifier
+  }
+}
+
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
