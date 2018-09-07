@@ -70,7 +70,7 @@ extension Parser {
     let members = try parseContractMembers(enclosingType: identifier.name)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "contract declaration", at: latestSource))
 
-    return ContractDeclaration(contractToken: contractToken, identifier: identifier, states: states, members: members)
+    return ContractDeclaration(contractToken: contractToken, identifier: identifier, conformances: conformances, states: states, members: members)
   }
 
   func parseStructDeclaration() throws -> StructDeclaration {

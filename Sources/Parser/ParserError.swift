@@ -85,6 +85,9 @@ extension Diagnostic {
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
   }
+  static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected a trait identifier to conform to")
+  }
 
   // MARK: Enum
   static func expectedEnumDeclarationCaseMember(at sourceLocation: SourceLocation) -> Diagnostic {
