@@ -120,22 +120,23 @@ extension Environment {
 
     if isContractDeclared(type) {
       // Contract functions do not support overloading.
-      contractFunctions = types[type]!.allFunctions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
+      contractFunctions = types[type]!.allFunctions[function.name]?.filter({ !$0.isSignature }).map { $0.declaration.identifier } ?? []
     }
 
     if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
       return conflict
     }
 
-    let functions = types[type]!.allFunctions[function.identifier.name]?.filter { functionInformation in
+    let functions = types[type]!.allFunctions[function.name]?.filter { functionInformation in
       let identifier1 = function.identifier
       let identifier2 = functionInformation.declaration.identifier
-      let parameterList1 = function.parameters.map { $0.type.rawType.name }
-      let parameterList2 = functionInformation.declaration.parameters.map { $0.type.rawType.name }
+      let parameterList1 = function.signature.parameters.map { $0.type.rawType.name }
+      let parameterList2 = functionInformation.declaration.signature.parameters.map { $0.type.rawType.name }
 
-      return identifier1.name == identifier2.name &&
+      return !functionInformation.isSignature &&
+        identifier1.name == identifier2.name &&
         parameterList1 == parameterList2 &&
-        identifier1.sourceLocation.line < identifier2.sourceLocation.line
+        identifier1.sourceLocation < identifier2.sourceLocation
     }
 
     return functions?.first?.declaration.identifier
