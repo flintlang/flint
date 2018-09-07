@@ -153,7 +153,9 @@ extension Environment {
 
   /// Add a conformance to a type.
   public mutating func addConformance(_ type: RawTypeIdentifier, conformsTo trait: RawTypeIdentifier) {
-    types[type]!.conformances.append(types[trait]!)
+    if types[trait] != nil {
+      types[type]!.conformances.append(types[trait]!)
+    }
   }
 
   /// Add a trait to the environment.
