@@ -20,12 +20,21 @@ public struct SemanticAnalyzer: ASTPass {
       diagnostics.append(.contractNotDeclaredInModule())
     }
     for declaration in topLevelModule.declarations {
-      if case .contractDeclaration(let contractDeclaration) = declaration,
-        passContext.environment!.publicFallback(forContract: contractDeclaration.identifier.name) == nil {
-        let fallbacks = passContext.environment!.fallbacks(in: contractDeclaration.identifier.name)
-        if !fallbacks.isEmpty {
-          diagnostics.append(.contractOnlyHasPrivateFallbacks(contractIdentifier: contractDeclaration.identifier, fallbacks.map{$0.declaration}))
+      if case .contractDeclaration(let contractDeclaration) = declaration {
+        // Check for unique public fallback
+        if passContext.environment!.publicFallback(forContract: contractDeclaration.identifier.name) == nil {
+          let fallbacks = passContext.environment!.fallbacks(in: contractDeclaration.identifier.name)
+          if !fallbacks.isEmpty {
+            diagnostics.append(.contractOnlyHasPrivateFallbacks(contractIdentifier: contractDeclaration.identifier, fallbacks.map{$0.declaration}))
+          }
         }
+        // Check that all trait functions are defined
+        let functions = passContext.environment!.undefinedFunctions(in: contractDeclaration.identifier)
+        diagnostics.append(.notImplementedFunctions(functions, in: contractDeclaration))
+
+        // Check that all trait initialisers are defined
+        let inits = passContext.environment!.undefinedInitialisers(in: contractDeclaration.identifier)
+        diagnostics.append(.notImplementedInitialiser(inits, in: contractDeclaration))
       }
     }
     return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
