@@ -8,10 +8,36 @@ import Source
 
 extension Environment {
   /// Add a contract declaration to the environment.
-  public mutating func addContract(_ contractDeclaration: ContractDeclaration) {
-    declaredContracts.append(contractDeclaration.identifier)
-    types[contractDeclaration.identifier.name] = TypeInformation()
-    setProperties(contractDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contractDeclaration.identifier.name)
+  public mutating func addContract(_ contract: ContractDeclaration) {
+    declaredContracts.append(contract.identifier)
+    types[contract.identifier.name] = TypeInformation()
+    setProperties(contract.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contract.identifier.name)
+
+    for conformance in contract.conformances {
+      addConformance(contract.identifier.name, conformsTo: conformance.name)
+    }
+    if contract.isStateful {
+      addEnum(contract.stateEnum)
+    }
+    for member in contract.members {
+      if case .eventDeclaration(let eventDeclaration) = member {
+        addEvent(eventDeclaration, enclosingType: contract.identifier.name)
+      }
+    }
+  }
+
+  /// Add a contract behaviour declaration to the environment.
+  public mutating func addContractBehaviour(_ behaviour: ContractBehaviorDeclaration) {
+    let contractIdentifier = behaviour.contractIdentifier
+    for member in behaviour.members {
+      switch member {
+      case .functionDeclaration(let functionDeclaration):
+        // Record all the function declarations.
+        addFunction(functionDeclaration, enclosingType: contractIdentifier.name, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
+      case .specialDeclaration(let specialDeclaration):
+        addSpecial(specialDeclaration, enclosingType: behaviour.contractIdentifier, callerCapabilities: behaviour.callerCapabilities)
+      }
+    }
   }
 
   /// Add a struct declaration to the environment.
@@ -49,14 +75,27 @@ extension Environment {
       .append(EventInformation(declaration: eventDeclaration))
   }
 
+  public mutating func addSpecial(_ special: SpecialDeclaration, enclosingType: Identifier, callerCapabilities: [CallerCapability]) {
+    if special.isInit {
+      addInitializer(special, enclosingType: enclosingType.name)
+      if special.isPublic, publicInitializer(forContract: enclosingType.name) == nil {
+        // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
+        // contract's state properties.
+        setPublicInitializer(special, for: enclosingType.name)
+      }
+    } else if special.isFallback {
+      addFallback(special, enclosingType: enclosingType.name)
+    }
+  }
+
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
   public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerCapabilities: [CallerCapability]) {
-    let functionName = functionDeclaration.identifier.name
+    let functionName = functionDeclaration.name
 
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
-      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating))
+      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating, isSignature: false))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
@@ -64,13 +103,37 @@ extension Environment {
   public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
     types[enclosingType, default: TypeInformation()]
       .initializers
-      .append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities))
+      .append(SpecialInformation(declaration: initializerDeclaration, callerCapabilities: callerCapabilities, isSignature: false))
+  }
+
+  /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
+  /// capabilities is expected.
+  public mutating func addFunctionSignature(_ signature: FunctionSignatureDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerCapabilities: [CallerCapability]) {
+    let functionName = signature.identifier.name
+
+    let functionDeclaration = FunctionDeclaration(signature: signature, body: [], closeBraceToken: .init(kind: .punctuation(.closeBrace), sourceLocation: .DUMMY))
+
+    types[enclosingType, default: TypeInformation()]
+      .functions[functionName, default: [FunctionInformation]()]
+      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerCapabilities: callerCapabilities, isMutating: functionDeclaration.isMutating, isSignature: true))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// capabilities is expected.
+  public mutating func addInitializerSignature(_ initalizerSignature: SpecialSignatureDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
+
+    let specialDeclaration = SpecialDeclaration(signature: initalizerSignature, body: [], closeBraceToken: .init(kind: .punctuation(.closeBrace), sourceLocation: .DUMMY))
+
+    types[enclosingType, default: TypeInformation()]
+      .initializers
+      .append(SpecialInformation(declaration: specialDeclaration, callerCapabilities: callerCapabilities, isSignature: true))
+  }
+
+
+  /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
+  /// capabilities is expected.
   public mutating func addFallback(_ fallbackDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerCapabilities: [CallerCapability] = []) {
-    types[enclosingType, default: TypeInformation()].fallbacks.append(SpecialInformation(declaration: fallbackDeclaration, callerCapabilities: callerCapabilities))
+    types[enclosingType, default: TypeInformation()].fallbacks.append(SpecialInformation(declaration: fallbackDeclaration, callerCapabilities: callerCapabilities, isSignature: false))
   }
 
   /// Add a list of properties to a type.
@@ -94,8 +157,21 @@ extension Environment {
   }
 
   /// Add a trait to the environment.
-  public mutating func addTrait(_ traitDeclaration: TraitDeclaration) {
-    types[traitDeclaration.identifier.name] = TypeInformation()
+  public mutating func addTrait(_ trait: TraitDeclaration) {
+    types[trait.identifier.name] = TypeInformation()
+    for member in trait.members {
+      if case .eventDeclaration(let eventDeclaration) = member {
+        addEvent(eventDeclaration, enclosingType: trait.identifier.name)
+      } else if case .functionDeclaration(let functionDeclaration) = member {
+        addFunction(functionDeclaration, enclosingType: trait.identifier.name, states: [], callerCapabilities: [])
+      } else if case .specialDeclaration(let specialDeclaration) = member {
+        addSpecial(specialDeclaration, enclosingType: trait.identifier, callerCapabilities: [])
+      } else if case .functionSignatureDeclaration(let signature) = member {
+        addFunctionSignature(signature, enclosingType: trait.identifier.name, states: [], callerCapabilities: [])
+      } else if case .specialSignatureDeclaration(let signature) = member {
+        addInitializerSignature(signature, enclosingType: trait.identifier.name, callerCapabilities: [])
+      }
+    }
   }
 
   /// Add a use of an undefined variable.
@@ -105,12 +181,12 @@ extension Environment {
   }
 
   /// Set the public initializer for the given contract. A contract should have at most one public initializer.
-  public mutating func setPublicInitializer(_ publicInitializer: SpecialDeclaration, forContract contract: RawTypeIdentifier) {
-    types[contract]!.publicInitializer = publicInitializer
+  public mutating func setPublicInitializer(_ publicInitializer: SpecialDeclaration, for type: RawTypeIdentifier) {
+    types[type]!.publicInitializer = publicInitializer
   }
 
   /// Set the public fallback for the given contract. A contract should have at most one public fallback.
-  public mutating func setPublicFallback(_ publicFallback: SpecialDeclaration, forContract contract: RawTypeIdentifier) {
-    types[contract]!.publicFallback = publicFallback
+  public mutating func setPublicFallback(_ publicFallback: SpecialDeclaration, for type: RawTypeIdentifier) {
+    types[type]!.publicFallback = publicFallback
   }
 }
