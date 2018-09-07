@@ -9,7 +9,7 @@ topLevelDeclaration = contractDeclaration
                         / enumDeclaration;
 
 ; CONTRACTS
-contractDeclaration = %s"contract" SP identifier SP [identifierGroup] SP "{" *(WSP variableDeclaration CRLF) "}";
+contractDeclaration = %s"contract" SP identifier [":" WSP identifierList ] SP [identifierGroup] SP "{" *(WSP variableDeclaration CRLF) "}";
 
 ; VARIABLES
 variableDeclaration = [*(modifier SP)] SP (%s"var" / %s"let") SP identifier typeAnnotation [WSP "=" WSP expression];
@@ -55,10 +55,11 @@ contractBehaviourMember = functionDeclaration
                             / fallbackDeclaration;
 
 ; ACCESS GROUPS
-stateGroup               = "@" identifierGroup;
+stateGroup              = "@" identifierGroup;
 callerCapabilityBinding = identifier WSP "<-";
 callerCapabilityGroup   = identifierGroup;
-identifierGroup           = "(" identifier *("," WSP identifier) ")";
+identifierGroup         = "(" identifierList ")";
+identifierList          = identifier *("," WSP identifier)
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
 functionDeclaration    = functionHead SP identifier parameterList [returnType] codeBlock;
