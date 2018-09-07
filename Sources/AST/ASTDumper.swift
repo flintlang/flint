@@ -287,6 +287,8 @@ public class ASTDumper {
 
     self.dump(functionSignatureDeclaration.funcToken)
 
+    self.dump(functionSignatureDeclaration.identifier)
+
     for parameter in functionSignatureDeclaration.parameters {
       self.dump(parameter)
     }
