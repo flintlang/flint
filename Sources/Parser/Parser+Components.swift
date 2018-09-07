@@ -157,6 +157,16 @@ extension Parser {
     return (callerCapabilities, closeBracketToken)
   }
 
+  // MARK: Conformances
+  func parseConformances() throws -> [Conformance] {
+    try consume(.punctuation(.colon), or: .expectedConformance(at: latestSource))
+    guard let endOfConformances = indexOfFirstAtCurrentDepth([.punctuation(.openBracket), .newline, .punctuation(.openBrace)]) else {
+      throw raise(.expectedConformance(at: latestSource))
+    }
+    let identifiers = try parseIdentifierList(upTo: endOfConformances)
+    return identifiers.map { Conformance(identifier: $0) }
+  }
+
   // MARK: Type State
   func parseTypeStateGroup() throws -> [TypeState] {
     let (identifiers, _) = try parseIdentifierGroup()

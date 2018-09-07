@@ -62,11 +62,16 @@ public struct ASTVisitor {
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
+
+    processResult.passContext.contractStateDeclarationContext = ContractStateDeclarationContext(contractIdentifier: contractDeclaration.identifier)
+    
+    processResult.element.conformances = processResult.element.conformances.map { conformance in
+      return processResult.combining(visit(conformance, passContext: processResult.passContext))
+    }
+
     processResult.element.states = processResult.element.states.map { typeState in
       return processResult.combining(visit(typeState, passContext: processResult.passContext))
     }
-
-    processResult.passContext.contractStateDeclarationContext = ContractStateDeclarationContext(contractIdentifier: contractDeclaration.identifier)
 
     processResult.element.members = processResult.element.members.map { member in
       return processResult.combining(visit(member, passContext: processResult.passContext))
@@ -725,6 +730,15 @@ public struct ASTVisitor {
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
     let postProcessResult = pass.postProcess(typeState: processResult.element, passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance> {
+    var processResult = pass.process(conformance: conformance, passContext: passContext)
+
+    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
+
+    let postProcessResult = pass.postProcess(conformance: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
