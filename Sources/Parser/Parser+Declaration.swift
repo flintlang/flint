@@ -363,18 +363,10 @@ extension Parser {
   }
 
   func parseFunctionDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionDeclaration {
-    let funcToken = try consume(.func, or: .badDeclaration(at: latestSource))
-    let identifier = try parseIdentifier()
-    let (parameters, closeBracketToken) = try parseParameters()
-    let resultType: Type?
-    if currentToken?.kind == .punctuation(.arrow) {
-      resultType = try parseResult()
-    } else {
-      resultType = nil
-    }
+    let signature = try parseFunctionSignatureDeclaration(attributes: attributes, modifiers: modifiers)
     let (body, closeBraceToken) = try parseCodeBlock()
 
-    return FunctionDeclaration(funcToken: funcToken, attributes: attributes, modifiers: modifiers, identifier: identifier, parameters: parameters, closeBracketToken: closeBracketToken, resultType: resultType, body: body, closeBraceToken: closeBraceToken)
+    return FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken)
   }
 
   func parseFunctionSignatureDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionSignatureDeclaration {
@@ -400,10 +392,9 @@ extension Parser {
   }
 
   func parseSpecialDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> SpecialDeclaration {
-    let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
-    let (parameters, closeBracketToken) = try parseParameters()
+    let signature = try parseSpecialSignatureDeclaration(attributes: attributes, modifiers: modifiers)
     let (body, closeBraceToken) = try parseCodeBlock()
-    return SpecialDeclaration(specialToken: specialToken, attributes: attributes, modifiers: modifiers, parameters: parameters, closeBracketToken: closeBracketToken, body: body, closeBraceToken: closeBraceToken)
+    return SpecialDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken)
   }
 
   func parseSpecialSignatureDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> SpecialSignatureDeclaration {

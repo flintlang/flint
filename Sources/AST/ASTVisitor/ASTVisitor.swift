@@ -431,25 +431,13 @@ public struct ASTVisitor {
   func visit(_ functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var processResult = pass.process(functionDeclaration: functionDeclaration, passContext: passContext)
 
-    processResult.element.attributes = processResult.element.attributes.map { attribute in
-      return processResult.combining(visit(attribute, passContext: processResult.passContext))
-    }
-
-    processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
-
-    processResult.element.parameters = processResult.element.parameters.map { parameter in
-      return processResult.combining(visit(parameter, passContext: processResult.passContext))
-    }
-
-    if let resultType = processResult.element.resultType {
-      processResult.element.resultType = processResult.combining(visit(resultType, passContext: processResult.passContext))
-    }
+    processResult.element.signature = processResult.combining(visit(processResult.element.signature, passContext: processResult.passContext))
 
     let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration)
 
     processResult.passContext.functionDeclarationContext = functionDeclarationContext
 
-    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
+    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.signature.parameters)
 
     processResult.element.body = processResult.element.body.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
@@ -486,19 +474,13 @@ public struct ASTVisitor {
   func visit(_ specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var processResult = pass.process(specialDeclaration: specialDeclaration, passContext: passContext)
 
-    processResult.element.attributes = processResult.element.attributes.map { attribute in
-      return processResult.combining(visit(attribute, passContext: processResult.passContext))
-    }
-
-    processResult.element.parameters = processResult.element.parameters.map { parameter in
-      return processResult.combining(visit(parameter, passContext: processResult.passContext))
-    }
+    processResult.element.signature = processResult.combining(visit(processResult.element.signature, passContext: processResult.passContext))
 
     let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
     processResult.passContext.specialDeclarationContext = specialDeclarationContext
 
     let functionDeclaration = specialDeclaration.asFunctionDeclaration
-    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.parameters)
+    processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.signature.parameters)
 
     var newBody = [Statement]()
     for statement in processResult.element.body {

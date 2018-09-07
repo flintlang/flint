@@ -204,7 +204,7 @@ extension IRPreprocessor {
     switch matchResult {
     case .matchedFunction(let functionInformation):
       let declaration = functionInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedFunctionWithoutCaller(let candidates):
       guard candidates.count == 1 else {
@@ -214,16 +214,16 @@ extension IRPreprocessor {
         fatalError("Non-function CallableInformation where function expected")
       }
       let declaration = candidate.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedInitializer(let initializerInformation):
       let declaration = initializerInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
     case .matchedFallback(_):
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: [])
     case .matchedGlobalFunction(let functionInformation):
-      let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = functionInformation.declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
     case .failure(_):
       return nil
