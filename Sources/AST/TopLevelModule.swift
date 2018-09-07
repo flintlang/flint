@@ -54,7 +54,15 @@ public struct TopLevelModule: ASTNode {
     }
     let body = [Statement.returnStatement(ReturnStatement(returnToken: Token(kind: .return, sourceLocation: variable.sourceLocation), expression: expression))]
 
-    return FunctionDeclaration(funcToken: dummyFuncToken, attributes: [], modifiers: [Token(kind: .public, sourceLocation: variable.sourceLocation)], identifier: identifier, parameters: parameters, closeBracketToken: dummyCloseToken, resultType: resultType, body: body, closeBraceToken: dummyCloseToken)
+    let functionSignature = FunctionSignatureDeclaration(funcToken: dummyFuncToken,
+                                                         attributes: [],
+                                                         modifiers: [Token(kind: .public, sourceLocation: variable.sourceLocation)],
+                                                         identifier: identifier,
+                                                         parameters: parameters,
+                                                         closeBracketToken: dummyCloseToken,
+                                                         resultType: resultType)
+
+    return FunctionDeclaration(signature: functionSignature, body: body, closeBraceToken: dummyCloseToken)
   }
 
   func synthesizeMutator(variable: VariableDeclaration) -> FunctionDeclaration? {
@@ -71,7 +79,16 @@ public struct TopLevelModule: ASTNode {
     let valueParameter = Parameter(identifier: valueIdentifier, type: resultType, implicitToken: nil)
     let body = [Statement.expression(.binaryExpression(BinaryExpression(lhs: expression, op: Token(kind: .punctuation(.equal), sourceLocation: variable.sourceLocation), rhs: .identifier(valueIdentifier))))]
 
-    return FunctionDeclaration(funcToken: dummyFuncToken, attributes: [], modifiers: [Token(kind: .public, sourceLocation: variable.sourceLocation), Token(kind: .mutating, sourceLocation: variable.sourceLocation)], identifier: identifier, parameters: parameters + [valueParameter], closeBracketToken: dummyCloseToken, resultType: nil, body: body, closeBraceToken: dummyCloseToken)
+    let functionSignature = FunctionSignatureDeclaration(funcToken: dummyFuncToken,
+                                                          attributes: [],
+                                                          modifiers: [Token(kind: .public, sourceLocation: variable.sourceLocation),
+                                                                      Token(kind: .mutating, sourceLocation: variable.sourceLocation)],
+                                                          identifier: identifier,
+                                                          parameters: parameters + [valueParameter],
+                                                          closeBracketToken: dummyCloseToken,
+                                                          resultType: nil)
+
+    return FunctionDeclaration(signature: functionSignature, body: body, closeBraceToken: dummyCloseToken)
   }
 
   func getProperty(identifier: Identifier, variableType: Type, sourceLocation: SourceLocation) -> ([Parameter], Expression, Type)? {

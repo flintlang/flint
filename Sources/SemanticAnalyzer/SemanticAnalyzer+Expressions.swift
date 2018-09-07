@@ -163,7 +163,7 @@ extension SemanticAnalyzer {
   /// Checks whether the function arguments are storage references, and creates an error if the enclosing function is not mutating.
   fileprivate func checkFunctionArguments(_ functionCall: FunctionCall, _ declaration: (FunctionDeclaration), _ passContext: inout ASTPassContext, _ isMutating: Bool, _ diagnostics: inout [Diagnostic]) {
     // If there are arguments passed inout which refer to state properties, the enclosing function need to be declared mutating.
-    for (argument, parameter) in zip(functionCall.arguments, declaration.parameters) where parameter.isInout {
+    for (argument, parameter) in zip(functionCall.arguments, declaration.signature.parameters) where parameter.isInout {
       if isStorageReference(expression: argument.expression, scopeContext: passContext.scopeContext!) {
         addMutatingExpression(argument.expression, passContext: &passContext)
 

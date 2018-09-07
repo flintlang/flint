@@ -240,29 +240,7 @@ public class ASTDumper {
   }
 
   func dumpNodeContents(_ functionDeclaration: FunctionDeclaration) {
-    for attribute in functionDeclaration.attributes {
-      self.dump(attribute)
-    }
-
-    for modifier in functionDeclaration.modifiers {
-      self.dump(modifier)
-    }
-
-    self.dump(functionDeclaration.funcToken)
-
-    self.dump(functionDeclaration.identifier)
-
-    for parameter in functionDeclaration.parameters {
-      self.dump(parameter)
-    }
-
-    self.dump(functionDeclaration.closeBracketToken)
-
-    if let resultType = functionDeclaration.resultType {
-      self.writeNode("ResultType") {
-        self.dump(resultType)
-      }
-    }
+    self.dumpNodeContents(functionDeclaration.signature)
 
     for statement in functionDeclaration.body {
       self.dump(statement)

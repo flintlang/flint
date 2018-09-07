@@ -22,40 +22,10 @@ public struct FunctionSignatureDeclaration: ASTNode {
   public var resultType: Type?
 
   public var mangledIdentifier: String? = nil
-
+  
   /// The raw type of the function's return type.
   public var rawType: RawType {
     return resultType?.rawType ?? .basicType(.void)
-  }
-
-  public var isMutating: Bool {
-    return hasModifier(kind: .mutating)
-  }
-
-  public var isPayable: Bool {
-    return attributes.contains { $0.kind == .payable }
-  }
-
-  public var isVoid: Bool {
-    return resultType == nil || resultType?.rawType == .basicType(.void)
-  }
-
-  /// The first parameter which is both `implicit` and has a currency type.
-  public var firstPayableValueParameter: Parameter? {
-    return parameters.first { $0.isPayableValueParameter }
-  }
-
-  /// The non-implicit parameters of the function.
-  public var explicitParameters: [Parameter] {
-    return parameters.filter { !$0.isImplicit }
-  }
-
-  public var mutatingToken: Token {
-    return modifiers.first { $0.kind == .mutating }!
-  }
-
-  public var isPublic: Bool {
-    return hasModifier(kind: .public)
   }
 
   public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?) {
@@ -68,7 +38,7 @@ public struct FunctionSignatureDeclaration: ASTNode {
     self.resultType = resultType
   }
 
-  private func hasModifier(kind: Token.Kind) -> Bool {
+  func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind }
   }
 
