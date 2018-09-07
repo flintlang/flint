@@ -6,7 +6,8 @@ topLevelModule = 1*(topLevelDeclaration CRLF);
 topLevelDeclaration = contractDeclaration
                         / contractBehaviourDeclaration
                         / structDeclaration
-                        / enumDeclaration;
+                        / enumDeclaration
+                        / traitDeclaration;
 
 ; CONTRACTS
 contractDeclaration = %s"contract" SP identifier [":" WSP identifierList ] SP [identifierGroup] SP "{" *(WSP variableDeclaration CRLF) "}";
@@ -37,6 +38,13 @@ enumDeclaration = %s"enum" SP identifier SP [typeAnnotation] SP "{" *(WSP enumCa
 enumCase        = %s"case" SP identifier
                    / %s"case" SP identifier WSP "=" WSP expression;
 
+; TRAITS
+traitDeclaration = %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
+
+traitMember = functionDeclaration
+               / functionSignatureDeclaration
+               / eventDeclaration;
+
 ; EVENTS
 eventDeclaration = "event" identifer "{" *(variableDeclaration) "}"
 
@@ -62,9 +70,10 @@ identifierGroup         = "(" identifierList ")";
 identifierList          = identifier *("," WSP identifier)
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
-functionDeclaration    = functionHead SP identifier parameterList [returnType] codeBlock;
-initializerDeclaration = initializerHead parameterList codeBlock;
-fallbackDeclaration    = fallbackHead parameterList codeBlock;
+functionSignatureDeclaration = functionHead SP identifier parameterList [returnType]
+functionDeclaration          = functionSignatureDeclaration codeBlock;
+initializerDeclaration       = initializerHead parameterList codeBlock;
+fallbackDeclaration          = fallbackHead parameterList codeBlock;
 
 functionHead     = [*(attribute SP)] [*(modifier SP)] %s"func";
 initializerHead  = [*(attribute SP)] [*(modifier SP)] %s"init";
@@ -94,7 +103,7 @@ statement   = expression
 returnStatement = %s"return" SP expression
 becomeStatement = %s"become" SP expression
 emitStatement   = %s"emit" SP expression
-forStatement = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+forStatement    = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
 
 ; EXPRESSIONS
 expression = identifier
