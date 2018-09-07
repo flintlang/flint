@@ -163,10 +163,14 @@ public class ASTDumper {
 
   func dump(_ traitMember: TraitMember) {
     switch traitMember {
-    case .functionSignatureDeclaration(let functionSignatureDeclaration):
-      self.dump(functionSignatureDeclaration)
     case .functionDeclaration(let functionDeclaration):
       self.dump(functionDeclaration)
+    case .functionSignatureDeclaration(let functionSignatureDeclaration):
+      self.dump(functionSignatureDeclaration)
+    case .specialDeclaration(let specialDeclaration):
+      self.dump(specialDeclaration)
+    case .specialSignatureDeclaration(let specialSignatureDeclaration):
+      self.dump(specialSignatureDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
     }
@@ -233,6 +237,12 @@ public class ASTDumper {
   func dump(_ specialDeclaration: SpecialDeclaration) {
     writeNode("SpecialDeclaration") {
       self.dumpNodeContents(specialDeclaration.asFunctionDeclaration)
+    }
+  }
+
+  func dump(_ specialSignatureDeclaration: SpecialSignatureDeclaration) {
+    writeNode("SpecialSignatureDeclaration") {
+      self.dumpNodeContents(specialSignatureDeclaration.asFunctionSignatureDeclaration)
     }
   }
 

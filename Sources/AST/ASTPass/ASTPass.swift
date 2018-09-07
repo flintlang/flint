@@ -44,6 +44,7 @@ public protocol ASTPass {
   func process(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
   func process(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration>
   func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration>
+  func process(specialSignatureDeclaration: SpecialSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration>
   func process(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration>
 
   // MARK: Expression
@@ -101,6 +102,7 @@ public protocol ASTPass {
   func postProcess(functionDeclaration: FunctionDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration>
   func postProcess(functionSignatureDeclaration: FunctionSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration>
   func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration>
+  func postProcess(specialSignatureDeclaration: SpecialSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration>
   func postProcess(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration>
 
   // MARK: Expression
@@ -202,6 +204,9 @@ extension ASTPass {
   }
   public func process(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
+  }
+  public func process(specialSignatureDeclaration: SpecialSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration> {
+    return ASTPassResult(element: specialSignatureDeclaration, diagnostics: [], passContext: passContext)
   }
   public func process(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration> {
     return ASTPassResult(element: eventDeclaration, diagnostics: [], passContext: passContext)
@@ -341,6 +346,9 @@ extension ASTPass {
   }
   public func postProcess(specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
+  }
+  public func postProcess(specialSignatureDeclaration: SpecialSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration> {
+    return ASTPassResult(element: specialSignatureDeclaration, diagnostics: [], passContext: passContext)
   }
   public func postProcess(eventDeclaration: EventDeclaration, passContext: ASTPassContext) -> ASTPassResult<EventDeclaration> {
     return ASTPassResult(element: eventDeclaration, diagnostics: [], passContext: passContext)

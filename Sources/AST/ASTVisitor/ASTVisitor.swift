@@ -247,11 +247,16 @@ public struct ASTVisitor {
       processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
     case .functionSignatureDeclaration(let functionSignatureDeclaration):
       processResult.element = .functionSignatureDeclaration(processResult.combining(visit(functionSignatureDeclaration, passContext: processResult.passContext)))
+    case .specialDeclaration(let specialDeclaration):
+      processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
+    case .specialSignatureDeclaration(let specialSignatureDeclaration):
+      processResult.element = .specialSignatureDeclaration(processResult.combining(visit(specialSignatureDeclaration, passContext: processResult.passContext)))
     case .eventDeclaration(let eventDeclaration):
       processResult.element = .eventDeclaration(processResult.combining(visit(eventDeclaration, passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(traitMember: processResult.element, passContext: processResult.passContext)
+
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
@@ -474,7 +479,8 @@ public struct ASTVisitor {
     }
 
     let postProcessResult = pass.postProcess(functionSignatureDeclaration: processResult.element, passContext: processResult.passContext)
-    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext) 
+
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
   func visit(_ specialDeclaration: SpecialDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
@@ -502,6 +508,22 @@ public struct ASTVisitor {
     processResult.passContext.specialDeclarationContext = nil
 
     let postProcessResult = pass.postProcess(specialDeclaration: processResult.element, passContext: processResult.passContext)
+
+    return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ specialSignatureDeclaration: SpecialSignatureDeclaration, passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration> {
+    var processResult = pass.process(specialSignatureDeclaration: specialSignatureDeclaration, passContext: passContext)
+
+    processResult.element.attributes = processResult.element.attributes.map { attribute in
+      return processResult.combining(visit(attribute, passContext: processResult.passContext))
+    }
+
+    processResult.element.parameters = processResult.element.parameters.map { parameter in
+      return processResult.combining(visit(parameter, passContext: processResult.passContext))
+    }
+
+    let postProcessResult = pass.postProcess(specialSignatureDeclaration: processResult.element, passContext: processResult.passContext)
 
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
