@@ -110,6 +110,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability '\(callerCapability.name)' is undefined in '\(contractIdentifier.name)' or has incompatible type")
   }
 
+  static func undeclaredTrait(_ trait: Conformance, contractIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: trait.sourceLocation, message: "'\(contractIdentifier.name)' cannot conform to undefined Trait '\(trait.name)'")
+  }
+
   static func useOfMutatingExpressionInNonMutatingFunction(_ expression: Expression, functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation, message: "Use of mutating statement in a nonmutating function")
   }
