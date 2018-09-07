@@ -20,8 +20,10 @@ struct Compiler {
   var inputFiles: [URL]
   var stdlibFiles: [URL]
   var outputDirectory: URL
+  var dumpAST: Bool
   var emitBytecode: Bool
   var diagnostics: DiagnosticPool
+
   var sourceContext: SourceContext {
     return SourceContext(sourceFiles: inputFiles)
   }
@@ -49,6 +51,12 @@ struct Compiler {
     guard let ast = parserAST else {
       exitWithFailure()
     }
+
+    if dumpAST {
+      print(ASTDumper(topLevelModule: ast).dump())
+      exit(0)
+    }
+
     // The AST passes to run sequentially.
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
