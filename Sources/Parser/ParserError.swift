@@ -54,6 +54,9 @@ extension Diagnostic {
   static func expectedBehaviourSeparator(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected behaviour separator")
   }
+  static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected conformance")
+  }
 
   // MARK: Statement
   static func expectedStatement(at sourceLocation: SourceLocation) -> Diagnostic {
