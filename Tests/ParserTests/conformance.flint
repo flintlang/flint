@@ -1,2 +1,19 @@
 // RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
+// CHECK-AST: StructDeclaration
+// CHECK-AST:  identifier "S1"
+// CHECK-AST:  Conforms to
+// CHECK-AST:    "Trait1"
+
+struct S1: Trait1 {
+}
+
+
+// CHECK-AST: StructDeclaration
+// CHECK-AST:  identifier "S2"
+// CHECK-AST:  Conforms to
+// CHECK-AST:    "Trait1"
+// CHECK-AST:    "Trait2"
+
+struct S2: Trait1, Trait2 {
+}
