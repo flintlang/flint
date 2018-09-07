@@ -156,4 +156,23 @@ extension Environment {
   public func containsCallerCapability(_ callerCapability: CallerCapability, enclosingType: RawTypeIdentifier) -> Bool {
     return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
   }
+
+  public func undefinedFunctions(in enclosingType: Identifier) -> [FunctionInformation] {
+    let typeInfo = types[enclosingType.name]!
+    var notImplemented = [FunctionInformation]()
+    for name in typeInfo.allFunctions.keys {
+      if !typeInfo.isImplemented(function: name){
+        notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
+      }
+    }
+    return notImplemented
+  }
+
+  public func undefinedInitialisers(in enclosingType: Identifier) -> [SpecialInformation] {
+    let typeInfo = types[enclosingType.name]!
+    if !typeInfo.isImplemented(){
+      return typeInfo.allInitialisers
+    }
+    return []
+  }
 }
