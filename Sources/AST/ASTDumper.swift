@@ -310,6 +310,8 @@ public class ASTDumper {
       writeLine("Any")
     case .errorType:
       writeLine("Flint error type \(rawType.name)")
+    case .functionType(_):
+      writeLine("function type \(rawType.name)")
     }
   }
 

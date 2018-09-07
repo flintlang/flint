@@ -19,6 +19,7 @@ public indirect enum RawType: Equatable {
   case dictionaryType(key: RawType, value: RawType)
   case userDefinedType(RawTypeIdentifier)
   case inoutType(RawType)
+  case functionType(parameters: [RawType], result: RawType)
   case any
   case errorType
 
@@ -47,6 +48,7 @@ public indirect enum RawType: Equatable {
     case .inoutType(let rawType): return "$inout\(rawType.name)"
     case .any: return "Any"
     case .errorType: return "Flint$ErrorType"
+    case .functionType(let parameters, let result): return "(\(parameters.map{ $0.name }.joined(separator: ", ")) -> \(result)"
     }
   }
 
@@ -59,6 +61,7 @@ public indirect enum RawType: Equatable {
     case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
     case .inoutType(let element): return element.isBuiltInType
     case .userDefinedType(_): return false
+    case .functionType(_): return false
     }
   }
 

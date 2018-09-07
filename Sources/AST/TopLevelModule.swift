@@ -111,7 +111,7 @@ public struct TopLevelModule: ASTNode {
         let keyParameter = Parameter(identifier: keyIdentifier, type: Type(inferredType: key, identifier: identifier), implicitToken: nil)
         let subExpression = SubscriptExpression(baseExpression: .identifier(identifier), indexExpression: .identifier(keyIdentifier), closeSquareBracketToken: Token(kind: .punctuation(.closeSquareBracket), sourceLocation: sourceLocation))
         return ([keyParameter], .subscriptExpression(subExpression), Type(inferredType: value, identifier: identifier))
-      case .stdlibType(_), .rangeType(_), .userDefinedType(_), .inoutType(_), .any, .errorType:
+      case .stdlibType(_), .rangeType(_), .userDefinedType(_), .inoutType(_), .functionType(_), .any, .errorType:
         return nil
     }
   }

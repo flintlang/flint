@@ -12,6 +12,14 @@ Caller :: (any) {
     owners[lastIndex] = caller
     lastIndex += 1
   }
+
+  public func lastOwner() -> Address {
+    return owners[lastIndex - 1]
+  }
+
+  public func isPrimaryOwner(addr: Address) -> Bool {
+    return addr == owner
+  }
 }
 
 Caller :: (owners) {
@@ -32,6 +40,18 @@ Caller :: (owner) {
   public mutating func addOwner(newOwner: Address) {
     owners[lastIndex] = newOwner
     lastIndex += 1
+  }
+}
+
+Caller :: (lastOwner) {
+  public func lastCall() -> Bool {
+    return true
+  }
+}
+
+Caller :: (isPrimaryOwner) {
+  public func primaryCall() -> Bool {
+    return true
   }
 }
 
