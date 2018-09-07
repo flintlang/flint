@@ -76,11 +76,15 @@ extension Parser {
   func parseStructDeclaration() throws -> StructDeclaration {
     let structToken = try consume(.struct, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
+    var conformances: [Identifier] = []
+    if currentToken?.kind == .punctuation(.colon) {
+      conformances = try parseConformances()
+    }
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "struct declaration", at: latestSource))
     let members = try parseStructMembers(structIdentifier: identifier)
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "struct declaration", at: latestSource))
 
-    return StructDeclaration(structToken: structToken, identifier: identifier, members: members)
+    return StructDeclaration(structToken: structToken, identifier: identifier, conformances: conformances, members: members)
   }
 
   func parseEnumDeclaration() throws -> EnumDeclaration {
