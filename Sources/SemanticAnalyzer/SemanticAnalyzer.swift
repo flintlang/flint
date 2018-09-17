@@ -30,11 +30,15 @@ public struct SemanticAnalyzer: ASTPass {
         }
         // Check that all trait functions are defined
         let functions = passContext.environment!.undefinedFunctions(in: contractDeclaration.identifier)
-        diagnostics.append(.notImplementedFunctions(functions, in: contractDeclaration))
+        if !functions.isEmpty {
+          diagnostics.append(.notImplementedFunctions(functions, in: contractDeclaration))
+        }
 
         // Check that all trait initialisers are defined
         let inits = passContext.environment!.undefinedInitialisers(in: contractDeclaration.identifier)
-        diagnostics.append(.notImplementedInitialiser(inits, in: contractDeclaration))
+        if !inits.isEmpty {
+          diagnostics.append(.notImplementedInitialiser(inits, in: contractDeclaration))
+        }
       }
     }
     return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
