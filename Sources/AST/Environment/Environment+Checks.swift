@@ -161,7 +161,7 @@ extension Environment {
     let typeInfo = types[enclosingType.name]!
     var notImplemented = [FunctionInformation]()
     for name in typeInfo.allFunctions.keys {
-      if !typeInfo.isImplemented(function: name){
+      if !typeInfo.isImplemented(function: name) {
         notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
       }
     }
@@ -170,7 +170,7 @@ extension Environment {
 
   public func undefinedInitialisers(in enclosingType: Identifier) -> [SpecialInformation] {
     let typeInfo = types[enclosingType.name]!
-    if !typeInfo.isImplemented(){
+    if !typeInfo.isImplemented() {
       return typeInfo.allInitialisers
     }
     return []
