@@ -30,7 +30,7 @@ extension SemanticAnalyzer {
 
     let environment = passContext.environment!
 
-    if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
+    if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name), contractBehaviorDeclaration.contractIdentifier.name != "self" {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier.name) != (contractBehaviorDeclaration.states != []) {
@@ -393,8 +393,8 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
     var passContext = passContext
 
-    // If we are in a contract behavior declaration, check there is only one public initializer.
-    if let context = passContext.contractBehaviorDeclarationContext, specialDeclaration.isPublic {
+    // If we are in a contract behavior declaration, of a contract, check there is only one public initializer.
+    if let context = passContext.contractBehaviorDeclarationContext, passContext.traitDeclarationContext == nil, specialDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
 
       // The caller capability block in which this initializer appears should be scoped by "any".

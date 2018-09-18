@@ -183,6 +183,8 @@ public class ASTDumper {
       self.dump(specialSignatureDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
+    case .contractBehaviourDeclaration(let contractBehaviorDeclaration):
+      self.dump(contractBehaviorDeclaration)
     }
   }
 

@@ -256,6 +256,8 @@ public struct ASTVisitor {
       processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
     case .specialSignatureDeclaration(let specialSignatureDeclaration):
       processResult.element = .specialSignatureDeclaration(processResult.combining(visit(specialSignatureDeclaration, passContext: processResult.passContext)))
+    case .contractBehaviourDeclaration(let contractBehaviourDeclaration):
+      processResult.element = .contractBehaviourDeclaration(processResult.combining(visit(contractBehaviourDeclaration, passContext: processResult.passContext)))
     case .eventDeclaration(let eventDeclaration):
       processResult.element = .eventDeclaration(processResult.combining(visit(eventDeclaration, passContext: processResult.passContext)))
     }

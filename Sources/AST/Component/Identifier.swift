@@ -13,6 +13,9 @@ public struct Identifier: Hashable, ASTNode {
   public var enclosingType: String? = nil
 
   public var name: String {
+    if case .self = identifierToken.kind {
+      return "self"
+    }
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
     return name
   }
