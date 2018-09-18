@@ -54,9 +54,6 @@ extension Diagnostic {
   static func expectedBehaviourSeparator(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected behaviour separator")
   }
-  static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected conformance")
-  }
 
   // MARK: Statement
   static func expectedStatement(at sourceLocation: SourceLocation) -> Diagnostic {
@@ -139,7 +136,7 @@ extension Diagnostic {
   static func expectedEndAfterInout(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ',' or ')' after inout identifier")
   }
-  
+
   // MARK: Generics
   static func expectedRightChevron(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '>' to complete \(node)")
