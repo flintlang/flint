@@ -130,7 +130,7 @@ ToyWallet :: (getOwner) {
 
 ```
 
-In the example below, we define `Pausable`, which declares a contract as something that can be owned and transferred. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
+In the example below, we define `Pausable`, which declares a contract as something that can be paused. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
 
 ```swift
 trait Pausable @(Inactive, Active) {
@@ -174,10 +174,7 @@ ToyDAO @(Active) :: (any) {
 ## Alternatives considered
 
 ### Inheritance of Contracts / Structures
-The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance could also be used repeatedly.
-****
-SUSAN: I DON'T UNDERSTAND WHAT YOU ARE SAYING AT THE END OF THE LAST SENTENCE
-****
+The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance would also allow multiple levels of inheritance, while traits only allow one.
 
 ### Public by default
 Functions declared in traits could have been public by default, removing the need for the public modifier for each function. This would however be inconsistent with Flint's private by default function policy.
