@@ -39,13 +39,15 @@ enumCase        = %s"case" SP identifier
                    / %s"case" SP identifier WSP "=" WSP expression;
 
 ; TRAITS
-traitDeclaration = %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
+traitDeclaration = %s"struct" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
+                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
 
 traitMember = functionDeclaration
-               / functionSignatureDeclaration
-               / initializerDeclaration
-               / initializerSignatureDeclaration
-               / eventDeclaration;
+            / functionSignatureDeclaration
+            / initializerDeclaration
+            / initializerSignatureDeclaration
+            / contractBehaviourDeclaration
+            / eventDeclaration;
 
 ; EVENTS
 eventDeclaration = "event" identifer "{" *(variableDeclaration) "}"
@@ -61,8 +63,10 @@ structMember = variableDeclaration
 contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
 
 contractBehaviourMember = functionDeclaration
-                            / initializerDeclaration
-                            / fallbackDeclaration;
+                        / initializerDeclaration
+                        / fallbackDeclaration
+                        / initializerSignatureDeclaration
+                        / functionSignatureDeclaration;
 
 ; ACCESS GROUPS
 stateGroup              = "@" identifierGroup;
