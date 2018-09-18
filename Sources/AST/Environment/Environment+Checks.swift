@@ -109,7 +109,7 @@ extension Environment {
 
   /// Attempts to find a conflicting declaration of the given type.
   public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
-    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums + declaredTraits)
   }
 
   /// Attempts to find a conflicting event declaration in given contract.
