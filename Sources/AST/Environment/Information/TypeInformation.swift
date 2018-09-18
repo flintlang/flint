@@ -29,14 +29,6 @@ public struct TypeInformation {
   public var allInitialisers: [SpecialInformation] {
     return initializers + conformances.flatMap({ $0.initializers })
   }
-
-  public func isImplemented(function: String) -> Bool {
-    return functions[function]!.contains { !$0.isSignature }
-  }
-
-  public func isImplemented() -> Bool {
-    return initializers.contains { !$0.isSignature }
-  }
 }
 
 func + <K, V>(lhs: [K: [V]], rhs: [K: [V]]) -> [K: [V]] {

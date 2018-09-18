@@ -8,7 +8,7 @@ import Source
 import Lexer
 
 // The declaration of a function signature.
-public struct FunctionSignatureDeclaration: ASTNode {
+public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   public var funcToken: Token
 
   /// The attributes associated with the function, such as `@payable`.
@@ -40,6 +40,17 @@ public struct FunctionSignatureDeclaration: ASTNode {
 
   func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind }
+  }
+
+  // MARK: - Equatable
+  public static func == (lhs: FunctionSignatureDeclaration, rhs: FunctionSignatureDeclaration) -> Bool {
+    return lhs.identifier.name == rhs.identifier.name &&
+      lhs.modifiers.map{ $0.kind } == rhs.modifiers.map{ $0.kind } &&
+      lhs.attributes.map{ $0.kind } == rhs.attributes.map{ $0.kind } &&
+      lhs.resultType?.rawType == rhs.resultType?.rawType &&
+      lhs.parameters.map({ $0.identifier.name }) == rhs.parameters.map({ $0.identifier.name }) &&
+      lhs.parameters.map({ $0.type.rawType }) == rhs.parameters.map({ $0.type.rawType }) &&
+      lhs.parameters.map({ $0.isInout }) == rhs.parameters.map({ $0.isInout })
   }
 
   // MARK: - ASTNode
