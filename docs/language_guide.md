@@ -28,6 +28,7 @@ Flint's language design was influenced by Swift, if you are familiar with that l
   - [Payable](#payable)
   - [Events](#events)
   - [Type States](#type-states)
+  - [Traits](#traits)
 - **Standard Library**
   - [Assertions](#assertions)
 - **Examples**
@@ -906,6 +907,68 @@ Auction @(InProgress) :: (any) {
   }
 }
 ```
+
+
+---
+
+## Traits
+We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions and function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions and function stubs.
+
+Contracts or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them. Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc).
+It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](/proposals/0001-asset-trait.md) and Numerics.
+
+
+### Structure Traits
+
+
+### Contract Traits
+
+
+#### Accessing properties
+In the example below, we define `Ownable`, which declares a contract as something that can be owned and transferred. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
+
+```swift
+trait Ownable {
+  event OwnershipRenounced {
+    let previousOwner: Address
+  }
+  event OwnershipTransfered {
+    let previousOwner: Address
+    let newOwner: Address
+  }
+
+  self :: (any) {
+    public getOwner() -> Address
+  }
+
+  self :: (getOwner) {
+    func setOwner(newOwner: Address)
+
+    public func renounceOwnership() {
+      emit OwnershipRenounced(getOwner())
+      setOwner(0x000...)
+    }
+    public func transferOwnership(newOwner: Address) {
+      assert(newOwner != 0x000...)
+      emit OwnershipTransfered(getOwner(), newOwner)
+      setOwner(newOwner)
+    }
+  }
+}
+
+contract ToyWallet: Ownable {
+  visible var owner: Address // visible automatically creates getOwner
+}
+// Skipping initialiser as not relevant for this example
+
+ToyWallet :: (getOwner) {
+  func setOwner(newOwner: Address){
+    self.owner = newOwner
+  }
+}
+
+```
+
 
 ---
 # Standard Library
