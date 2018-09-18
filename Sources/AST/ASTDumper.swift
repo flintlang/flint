@@ -118,11 +118,7 @@ public class ASTDumper {
     writeNode("StructDeclaration") {
       self.dump(structDeclaration.identifier)
       if !structDeclaration.conformances.isEmpty {
-        self.writeNode("Conforms to") {
-          for traitIdentifier in structDeclaration.conformances {
-            self.dump(traitIdentifier)
-          }
-        }
+        self.dump(structDeclaration.conformances)
       }
       for member in structDeclaration.members {
         self.dump(member)
