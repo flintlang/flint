@@ -106,6 +106,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract '\(contractBehaviorDeclaration.contractIdentifier.name)' is \(isContractStateful ? "" : "not ")stateful but behavior declaration is\(!isContractStateful ? "" : " not")")
   }
 
+  static func signatureInContract(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Cannot use signatures in contracts, only in traits")
+  }
+
   static func contractTraitMemberInStructTrait(_ member: TraitMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: member.sourceLocation, message: "Use of contract trait member in struct trait")
   }

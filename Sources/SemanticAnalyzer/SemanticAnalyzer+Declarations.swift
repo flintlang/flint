@@ -38,6 +38,20 @@ extension SemanticAnalyzer {
       diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
     }
 
+    // If we're not in a trait then throw errors for any signature declarations
+    if passContext.traitDeclarationContext == nil {
+      contractBehaviorDeclaration.members.forEach{ member in
+        switch member {
+          case .functionDeclaration(_), .specialDeclaration(_):
+            break
+          case .functionSignatureDeclaration(let decl):
+            diagnostics.append(.signatureInContract(at: decl.sourceLocation))
+          case .specialSignatureDeclaration(let decl):
+            diagnostics.append(.signatureInContract(at: decl.sourceLocation))
+        }
+      }
+    }
+
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
     // within it are scoped by.
     let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
