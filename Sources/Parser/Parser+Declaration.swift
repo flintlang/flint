@@ -270,7 +270,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-        case .func, .init, .fallback, .public, .visible, .mutating:
+        case .func, .init, .fallback, .public, .visible, .mutating, .punctuation(.at):
           members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
         case .punctuation(.closeBrace):
           return members
