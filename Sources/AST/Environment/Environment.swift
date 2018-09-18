@@ -47,7 +47,7 @@ public struct Environment {
 
   /// The list of property declarations in a type.
   public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [Property] {
-    return types[enclosingType]!.properties.values.map { $0.property }
+    return types[enclosingType]?.properties.values.map { $0.property } ?? []
   }
 
   // MARK: - Accessors of type properties
@@ -99,12 +99,12 @@ public struct Environment {
 
   /// The public initializer for the given contract. A contract should have at most one public initializer.
   public func publicInitializer(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
-    return types[contract]!.publicInitializer
+    return types[contract]?.publicInitializer
   }
 
   /// The public fallback for the given contract. A contract should have at most one public fallback.
   public func publicFallback(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
-    return types[contract]!.publicFallback
+    return types[contract]?.publicFallback
   }
 
   // MARK: - Compatibility
