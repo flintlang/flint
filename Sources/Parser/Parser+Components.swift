@@ -11,12 +11,18 @@ import Lexer
 extension Parser {
   // MARK: Identifier
   func parseIdentifier() throws -> Identifier {
-    guard let token = currentToken, case .identifier(_) = token.kind else {
+    guard let token = currentToken else {
       throw raise(.expectedIdentifier(at: latestSource))
     }
-    currentIndex += 1
-    consumeNewLines()
-    return Identifier(identifierToken: token)
+    switch token.kind {
+      case .identifier(_), .self:
+        currentIndex += 1
+        consumeNewLines()
+        return Identifier(identifierToken: token)
+      default:
+        throw raise(.expectedIdentifier(at: latestSource))
+    }
+
   }
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {

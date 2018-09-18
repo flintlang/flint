@@ -163,8 +163,8 @@ public class ASTDumper {
 
   func dump(_ traitDeclaration: TraitDeclaration) {
     writeNode("TraitDeclaration") {
+      self.dump(traitDeclaration.traitKind)
       self.dump(traitDeclaration.identifier)
-
       for member in traitDeclaration.members {
         self.dump(member)
       }
