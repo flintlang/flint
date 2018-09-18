@@ -22,6 +22,12 @@ public struct TypeInformation {
     return conformances.map({ $0.functions }).reduce(functions, +)
   }
 
+  public var conformingFunctions: [FunctionInformation] {
+    return conformances.flatMap({ $0.functions }).flatMap({ $0.value }).filter {
+      !$0.isSignature
+    }
+  }
+
   public var allEvents: [String: [EventInformation]] {
     return conformances.map({ $0.events }).reduce(events, +)
   }

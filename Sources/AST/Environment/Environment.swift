@@ -52,6 +52,11 @@ public struct Environment {
 
   // MARK: - Accessors of type properties
 
+  /// The list of conforming functions in a type.
+  public func conformingFunctions(in enclosingType: RawTypeIdentifier) -> [FunctionInformation] {
+    return types[enclosingType]!.conformingFunctions
+  }
+
   /// The list of initializers in a type.
   public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
     return types[enclosingType]!.allInitialisers
@@ -168,5 +173,3 @@ public struct Environment {
     return true
   }
 }
-
-

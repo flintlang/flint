@@ -47,9 +47,15 @@ extension Environment {
       types[structDeclaration.identifier.name] = TypeInformation()
     }
     setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
+
+    for conformance in structDeclaration.conformances {
+      addConformance(structDeclaration.identifier.name, conformsTo: conformance.name)
+    }
+
     for functionDeclaration in structDeclaration.functionDeclarations {
       addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name, states: [], callerCapabilities: [])
     }
+
     for specialDeclaration in structDeclaration.specialDeclarations {
       if specialDeclaration.isInit {
         addInitializer(specialDeclaration, enclosingType: structDeclaration.identifier.name)

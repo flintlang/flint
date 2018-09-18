@@ -21,7 +21,7 @@ struct IRFunction {
 
   var environment: Environment
 
-  var isContractFunction = false
+  var isContractFunction: Bool
 
   var containsAnyCaller: Bool {
     return callerCapabilities.contains(where: { $0.isAny })
@@ -34,10 +34,7 @@ struct IRFunction {
     self.capabilityBinding = capabilityBinding
     self.callerCapabilities = callerCapabilities
     self.environment = environment
-
-    if !callerCapabilities.isEmpty {
-      isContractFunction = true
-    }
+    self.isContractFunction = !callerCapabilities.isEmpty
   }
 
   var name: String {
@@ -74,8 +71,8 @@ struct IRFunction {
 
   func signature(withReturn: Bool = true) -> String {
     let doesReturn = functionDeclaration.signature.resultType != nil && withReturn
-     let parametersString = parameterNames.joined(separator: ", ")
-     return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IRFunction.returnVariableName)" : "")"
+    let parametersString = parameterNames.joined(separator: ", ")
+    return "\(name)(\(parametersString)) \(doesReturn ? "-> \(IRFunction.returnVariableName)" : "")"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.
@@ -96,7 +93,7 @@ struct IRFunctionBody {
 
   var environment: Environment
 
-  var isContractFunction = false
+  var isContractFunction: Bool
 
   /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
