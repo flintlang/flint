@@ -11,7 +11,7 @@ import Lexer
 public struct StructDeclaration: ASTNode {
   public var structToken: Token
   public var identifier: Identifier
-  public var conformances: [Identifier]
+  public var conformances: [Conformance]
   public var members: [StructMember]
 
   public var variableDeclarations: [VariableDeclaration] {
@@ -59,7 +59,7 @@ public struct StructDeclaration: ASTNode {
     return unassignedProperties.count == 0
   }
 
-  public init(structToken: Token, identifier: Identifier, conformances: [Identifier], members: [StructMember]) {
+  public init(structToken: Token, identifier: Identifier, conformances: [Conformance], members: [StructMember]) {
     self.structToken = structToken
     self.identifier = identifier
     self.members = members
