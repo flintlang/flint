@@ -30,7 +30,7 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var description: String {
     let statesText = states.map({$0.description}).joined(separator: ", ")
     let callerText = callerCapabilities.map({ $0.description }).joined(separator: ", ")
-    let headText = "\(contractIdentifier) @\(statesText):: \(callerText)"
+    let headText = "\(contractIdentifier) @\(statesText) :: \(callerText)"
     let membersText = members.map({ $0.description }).joined(separator: "\n")
     return "\(headText) {\(membersText)}"
   }
