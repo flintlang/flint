@@ -1,0 +1,23 @@
+{
+  "name": "flight-manager-ui",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "json-loader": "^0.5.7",
+    "querystring-es3": "^0.2.1",
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "1.1.4",
+    "url": "^0.11.0",
+    "web3": "^1.0.0-beta.34",
+    "webpack": "^3.11.0",
+    "websocket": "^1.0.26"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
