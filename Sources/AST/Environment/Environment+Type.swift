@@ -7,9 +7,8 @@
 import Lexer
 
 extension Environment {
-  /// The type of a property in the given enclosing type or in a scope if it is a local variable.
+  /// The type of an identifier in the given enclosing type or in a scope if it is a local variable.
   public func type(of identifier: String, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext? = nil) -> RawType {
-
 
     // Type of property
     if let type = types[enclosingType]?.properties[identifier]?.rawType {
@@ -22,12 +21,12 @@ extension Environment {
     }
     
     // Type of a function
-    if let function = types[enclosingType]?.functions[property]?.first! {
+    if let function = types[enclosingType]?.functions[identifier]?.first! {
       return .functionType(parameters: function.parameterTypes, result: function.resultType)
     }
 
     // Type of local variable
-    guard let scopeContext = scopeContext, let type = scopeContext.type(for: property) else { return .errorType }
+    guard let scopeContext = scopeContext, let type = scopeContext.type(for: identifier) else { return .errorType }
     return type
   }
 
