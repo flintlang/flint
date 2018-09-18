@@ -140,12 +140,25 @@ extension ASTPassContext {
 
   /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
-    return (contractBehaviorDeclarationContext?.contractIdentifier ??
-      structDeclarationContext?.structIdentifier ??
-      contractStateDeclarationContext?.contractIdentifier ??
-      enumDeclarationContext?.enumIdentifier) ??
-      (traitDeclarationContext?.traitIdentifier ??
-      eventDeclarationContext?.eventIdentifier)
+    if let trait = traitDeclarationContext?.traitIdentifier {
+      return trait
+    }
+    if let contractBehaviour = contractBehaviorDeclarationContext?.contractIdentifier {
+      return contractBehaviour
+    }
+    if let structure = structDeclarationContext?.structIdentifier {
+      return structure
+    }
+    if let contract = contractStateDeclarationContext?.contractIdentifier {
+      return contract
+    }
+    if let enumeration = enumDeclarationContext?.enumIdentifier {
+      return enumeration
+    }
+    if let event = eventDeclarationContext?.eventIdentifier {
+      return event
+    }
+    return nil
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.
