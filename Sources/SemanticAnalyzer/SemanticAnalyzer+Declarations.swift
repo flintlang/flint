@@ -108,6 +108,41 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
 
+  // MARK: Trait
+  public func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
+    }
+    traitDeclaration.members.forEach { member in
+      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
+        diagnostics.append(.contractTraitMemberInStructTrait(member))
+      }
+      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
+        diagnostics.append(.structTraitMemberInContractTrait(member))
+      }
+    }
+
+    return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func isContractTraitMember(member: TraitMember) -> Bool {
+    switch member {
+    case .contractBehaviourDeclaration(_), .eventDeclaration(_):
+      return true
+    case .functionDeclaration(_), .specialDeclaration(_),
+         .functionSignatureDeclaration(_), .specialSignatureDeclaration(_):
+      return false
+    }
+  }
+
+  func isStructTraitMember(member: TraitMember) -> Bool {
+    return !isContractTraitMember(member: member)
+  }
+
+
   // MARK: Variable
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext

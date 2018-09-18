@@ -106,6 +106,14 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract '\(contractBehaviorDeclaration.contractIdentifier.name)' is \(isContractStateful ? "" : "not ")stateful but behavior declaration is\(!isContractStateful ? "" : " not")")
   }
 
+  static func contractTraitMemberInStructTrait(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation, message: "Use of contract trait member in struct trait")
+  }
+
+  static func structTraitMemberInContractTrait(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation, message: "Use of struct trait member in contract trait")
+  }
+
   static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability '\(callerCapability.name)' is undefined in '\(contractIdentifier.name)' or has incompatible type")
   }
