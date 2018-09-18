@@ -118,11 +118,7 @@ public class ASTDumper {
     writeNode("StructDeclaration") {
       self.dump(structDeclaration.identifier)
       if !structDeclaration.conformances.isEmpty {
-        self.writeNode("Conforms to") {
-          for traitIdentifier in structDeclaration.conformances {
-            self.dump(traitIdentifier)
-          }
-        }
+        self.dump(structDeclaration.conformances)
       }
       for member in structDeclaration.members {
         self.dump(member)
@@ -210,10 +206,14 @@ public class ASTDumper {
 
   func dump(_ contractBehaviorMember: ContractBehaviorMember) {
     switch contractBehaviorMember {
-    case .functionDeclaration(let functionDeclaration):
-      self.dump(functionDeclaration)
-    case .specialDeclaration(let specialDeclaration):
-      self.dump(specialDeclaration)
+    case .functionDeclaration(let decl):
+      self.dump(decl)
+    case .specialDeclaration(let decl):
+      self.dump(decl)
+    case .functionSignatureDeclaration(let decl):
+      self.dump(decl)
+    case .specialSignatureDeclaration(let decl):
+      self.dump(decl)
     }
   }
 

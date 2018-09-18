@@ -78,7 +78,7 @@ extension Parser {
   func parseStructDeclaration() throws -> StructDeclaration {
     let structToken = try consume(.struct, or: .badTopLevelDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    var conformances: [Identifier] = []
+    var conformances: [Conformance] = []
     if currentToken?.kind == .punctuation(.colon) {
       conformances = try parseConformances()
     }
