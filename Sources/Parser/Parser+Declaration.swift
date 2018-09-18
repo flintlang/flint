@@ -268,24 +268,49 @@ extension Parser {
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
     var members = [ContractBehaviorMember]()
 
-    while true {
-      let attrs = try parseAttributes()
-      let modifiers = try parseModifiers()
-
-      let first = currentToken?.kind
-
-      if first == .func {
-        let decl = try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers)
-        members.append(.functionDeclaration(decl))
-      } else if first == .init || first == .fallback {
-        let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
-        members.append(.specialDeclaration(decl))
-      } else if first == .punctuation(.closeBrace) {
-        return members
-      } else {
-        throw raise(.badMember(in: "contract behaviour", at: latestSource))
+    while let first = currentToken?.kind {
+      switch first {
+        case .func, .init, .fallback, .public, .visible, .mutating:
+          members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
+        case .punctuation(.closeBrace):
+          return members
+        default:
+          throw raise(.badMember(in: "contract behaviour", at: latestSource))
       }
     }
+    throw raise(.unexpectedEOF())
+  }
+
+  func parseContractBehaviorMember(enclosingType: RawTypeIdentifier) throws -> ContractBehaviorMember {
+
+    let attrs = try parseAttributes()
+    let modifiers = try parseModifiers()
+    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+      throw raise(.statementSameLine(at: latestSource))
+    }
+    let signatureDeclaration: Bool
+    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
+      signatureDeclaration = false
+    } else {
+      signatureDeclaration = true
+    }
+
+    let first = currentToken?.kind
+
+    if .func == first {
+      if signatureDeclaration {
+        return .functionSignatureDeclaration(try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+    }
+
+    if .init == first  || .fallback == first {
+      if signatureDeclaration {
+        return .specialSignatureDeclaration(try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+      return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
+    }
+    throw raise(.badMember(in: "contract behaviour", at: latestSource))
   }
 
   func parseContractMembers(enclosingType: RawTypeIdentifier) throws -> [ContractMember] {

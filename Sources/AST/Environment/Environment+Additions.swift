@@ -36,6 +36,8 @@ extension Environment {
         addFunction(functionDeclaration, enclosingType: contractIdentifier.name, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
       case .specialDeclaration(let specialDeclaration):
         addSpecial(specialDeclaration, enclosingType: behaviour.contractIdentifier, callerCapabilities: behaviour.callerCapabilities)
+      case .functionSignatureDeclaration(_), .specialSignatureDeclaration(_):
+        break
       }
     }
   }
