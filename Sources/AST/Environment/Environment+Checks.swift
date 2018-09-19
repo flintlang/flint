@@ -152,6 +152,11 @@ extension Environment {
     return conflictingDeclaration(of: identifier, in: propertyDeclarations(in: type).map { $0.identifier })
   }
 
+  // If the number of functions is greater than 2 (the implementation and the signature) then there must be a conflict
+  public func conflictingTraitSignatures(for type: RawTypeIdentifier) -> [String : [FunctionInformation]] {
+    return types[type]!.allFunctions.filter{ (name, functions) in functions.count > 2}
+  }
+
   /// Whether the given caller capability is declared in the given type.
   public func containsCallerCapability(_ callerCapability: CallerCapability, enclosingType: RawTypeIdentifier) -> Bool {
     return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
