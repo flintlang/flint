@@ -25,6 +25,7 @@ variety of security features.
   - [Structures](#structures)
   - [Enumerations](#enumerations)
 - **Flint Specific Features**
+  - [Safe Arithmetic](#safe-arithmetic)
   - [Assets](#assets)
   - [Caller Capabilities](#caller-capabilities)
   - [Payable](#payable)
@@ -610,6 +611,12 @@ Flint will infer the raw value of cases by default based upon the last declared 
 
 # Flint Specific Features
 ---
+## Safe Arithmetic
+Safe arithmetic operators are also provided. The `+`, `-`, `*` and `**` operators throw an exception and abort execution of the smart contract when an overflow occurs. The `/` operator implements integer division. No underflows can occur as we do not support floating point types yet. The performance overhead of our safe operators are low.
+
+In rare cases, allowing overflows is the programmer’s intended behaviour. Flint also supports
+overflowing operators, `&+`, `&-`, and `&*`, which will not crash on overflows.
+
 
 ## Assets
 Flint supports special safe operations when handling assets, such as Ether. They help ensure the contract's state consistently represents its Ether value, preventing attacks such as TheDAO.
