@@ -445,23 +445,16 @@ It performs _type checks_ when compiling code and flags any mismatched types as 
 |`Address` | 160-bit Ethereum Address|
 |`Int`     | 256-bit integer         |
 |`Bool`    | Boolean value           |
+|`String`  | String value            |
 |`Void`    | Void value              |
 
-### Arrays and Dictionaries
+### Dynamic Types
 |Type      | Description             |
 |----------|-------------------------|
-| `Array` | Dynamic-size array. `[Int]` is an array of Ints |
-| `Fixed-size Array` | Fixed-size memory block containing elements of the same type. `Int[10]` is an array of 10 `Int`s.         |
-| `Dictionary` | Dynamic-size mappings from one key type to a value type `[Address: Bool]` is a mapping from `Address` to `Bool` |
-
-### Ethereum-specific types
-Uses cases for the following types is described into more detail in `Payable Functions and Events`.
-
-|Type      | Description             |
-|----------|-------------------------|
-| `Wei` | A Wei value (the smallest denomination of Ether) |
-| `Event<T...>` | An Ethereum event. Takes an arbitrary number of type arguments |
-
+| `Array` | Dynamic-size array. `[T]` is an array of element type T |
+| `Fixed-size Array` | Fixed-size memory block containing elements of the same type. `T[n]` is an array of size `n`, of element type `T`.         |
+| `Dictionary` | Dynamic-size mappings from one key type to a value type `[K: V]` is a a dictionary of key type `K` and value type `V`. |
+| Structs | Struct values, including Wei, are considered to be of dynamic type. |
 ---
 
 ## Range
