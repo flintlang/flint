@@ -164,7 +164,7 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
 
     if !environment.isTraitDeclared(conformance.name) {
-      diagnostics.append(.undeclaredTrait(conformance, contractIdentifier: contractDeclarationContext.contractIdentifier))
+      diagnostics.append(.contractUsesUndeclaredTraits(conformance, in: contractDeclarationContext.contractIdentifier))
     }
     return ASTPassResult(element: conformance, diagnostics: diagnostics, passContext: passContext)
   }

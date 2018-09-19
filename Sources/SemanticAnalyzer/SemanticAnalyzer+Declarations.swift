@@ -21,6 +21,14 @@ extension SemanticAnalyzer {
     if environment.publicInitializer(forContract: contractDeclaration.identifier.name) == nil {
       diagnostics.append(.contractDoesNotHaveAPublicInitializer(contractIdentifier: contractDeclaration.identifier))
     }
+
+    let crossReference = contractDeclaration.conformances.reduce(into: [String: [Conformance]]()) {
+      $0[$1.identifier.name, default: []].append($1)
+    }
+    if crossReference.contains(where: { $1.count > 1}) {
+      diagnostics.append(.repeatedConformance(contractIdentifier: contractDeclaration.identifier))
+    }
+
     return ASTPassResult(element: contractDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -70,6 +78,18 @@ extension SemanticAnalyzer {
       diagnostics.append(.invalidRedeclaration(eventDeclaration.identifier, originalSource: conflict))
     }
     return ASTPassResult(element: eventDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  // MARK: Traits
+  public func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
+    }
+
+    return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   // MARK: Struct
