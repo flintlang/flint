@@ -1,0 +1,31 @@
+{
+  "name": "token",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franklinsch/token.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/franklinsch/token/issues"
+  },
+  "homepage": "https://github.com/franklinsch/token#readme",
+  "dependencies": {
+    "dotenv": "^6.0.0",
+    "ethereumjs-wallet": "^0.6.0",
+    "scrypt": "^6.0.3",
+    "scrypt.js": "^0.2.0",
+    "truffle": "^4.1.12",
+    "truffle-wallet-provider": "0.0.5",
+    "web3": "^1.0.0-beta.33"
+  }
+}

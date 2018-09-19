@@ -1,0 +1,82 @@
+contract FlightManager {
+  var flightInformation: FlightInformation
+  let admin: Address
+  var ticketPrice: Int
+
+  var numRemainingSeats: Int
+
+  var passengers: [Address] = []
+  var numPassengers: Int = 0
+
+  var amountPaid: [Address: Wei] = [:]
+}
+
+FlightManager :: caller <- (any) {
+  public init(flightID: String, admin: Address, ticketPrice: Int, numSeats: Int) {
+    self.flightInformation = FlightInformation(flightID, numSeats)
+    self.admin = admin
+    self.ticketPrice = ticketPrice
+    self.numRemainingSeats = numSeats
+  }  
+
+  public func getFlightID() -> String {
+    return flightInformation.flightID
+  }
+
+  public func isFlightCancelled() -> Bool {
+    return flightInformation.isCancelled
+  }
+
+  public func getTicketPrice() -> Int {
+    return ticketPrice
+  }
+
+  public func getNumRemainingSeats() -> Int {
+    return numRemainingSeats
+  }
+
+  @payable
+  mutating public func buy(implicit value: Wei) {
+    let amountGiven: Int = value.getRawValue()
+    assert(amountGiven == ticketPrice)
+    assert(numRemainingSeats > 0)
+    assert(flightInformation.isCancelled == false)
+
+    // Record the received Ether in the contract's state.
+    amountPaid[caller].transfer(&value)
+
+    passengers[numPassengers] = caller
+    numPassengers += 1
+
+    numRemainingSeats -= 1
+  }
+} 
+
+FlightManager :: (admin) {
+  mutating public func cancelFlight() {
+    flightInformation.cancelFlight()
+  }
+
+  mutating public func setTicketPrice(ticketPrice: Int) {
+    self.ticketPrice = ticketPrice
+  }
+}
+
+struct FlightInformation {
+  var flightID: String
+  var isCancelled: Bool = false
+  var numTotalSeats: Int = 0
+
+  init(flightID: String, numTotalSeats: Int) {
+    self.flightID = flightID
+    self.numTotalSeats = numTotalSeats
+  }
+
+  mutating func cancelFlight() {
+    isCancelled = true
+  }
+
+  func getNumTotalSeat() -> Int {
+    return numTotalSeats
+  }
+}
