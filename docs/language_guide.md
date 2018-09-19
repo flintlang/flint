@@ -678,8 +678,6 @@ Wallet :: (owner) {
 }
 ```
 Another example which uses Assets is the Bank example.
-
-A more advanced use of Assets (not supported yet):
 ```swift
 contract Wallet {
   var beneficiaries: [Address: Wei]
@@ -697,12 +695,11 @@ Wallet :: (any) {
   }
 }
 
-// Future syntax.
 Wallet :: (owner) {
   mutating func distribute(amount: Int) {
     let beneficiaryBonus = bonus.getRawValue() / beneficiaries.count
-    for i in (0..<beneficiaries.count) {
-      var allocation = Wei(from: &balance, amount: amount * weights[i])
+    for let person: Address in beneficiaries {
+      var allocation = Wei(from: &balance, amount: amount * weights[person])
       allocation.transfer(from: &bonus, amount: beneficiaryBonus)
 
       send(beneficiaries[i], &allocation)
