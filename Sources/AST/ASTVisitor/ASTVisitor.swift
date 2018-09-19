@@ -39,7 +39,6 @@ public struct ASTVisitor {
   // MARK: Top Level Declarations
   func visit(_ topLevelDeclaration: TopLevelDeclaration, passContext: ASTPassContext) -> ASTPassResult<TopLevelDeclaration> {
     var processResult = pass.process(topLevelDeclaration: topLevelDeclaration, passContext: passContext)
-
     switch processResult.element {
     case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
       processResult.element = .contractBehaviorDeclaration(processResult.combining(visit(contractBehaviorDeclaration, passContext: processResult.passContext)))
@@ -64,7 +63,7 @@ public struct ASTVisitor {
 
 
     processResult.passContext.contractStateDeclarationContext = ContractStateDeclarationContext(contractIdentifier: contractDeclaration.identifier)
-    
+
     processResult.element.conformances = processResult.element.conformances.map { conformance in
       return processResult.combining(visit(conformance, passContext: processResult.passContext))
     }
