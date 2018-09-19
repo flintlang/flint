@@ -622,23 +622,14 @@ overflowing operators, `&+`, `&-`, and `&*`, which will not crash on overflows.
 
 
 ## Assets
+Numerous attacks targeting smart contracts, such as ones relating to reentrancy calls (see TheDAO), allow hackers to steal a contract’s Ether. These happen because smart contracts encode Ether values as integers, making it is easy to make mistakes when performing Ether transfers between variables, or to forget to record Ether arriving or leaving the smart contract.
+
 Flint supports special safe operations when handling assets, such as Ether. They help ensure the contract's state consistently represents its Ether value, preventing attacks such as TheDAO.
 
-*No Unprivileged Creation* - The only way to create an Asset is through the init(unsafeRawValue:)
-initialiser, which is considered to be a privileged operation. An @privileged function annotation
-is discussed in 5.6.2. An Int cannot be directly assigned to a variable of type Wei.
-*No Unprivileged Destruction* - There is no function which allows explicitly decreasing
-the number of Wei using an integer. When an Asset variable goes out of scope, its contents
-are destroyed. This is considered to be a privileged operation, and Flint will emit a compiler
-warning when the contents of an Asset going out of scope are not transferred.
-*Safe Internal Transfers* - The init(source:amount:) and init(source:) initialisers remove
-an amount a from a variable and adds the same amount a to another. The total amount of
-the Asset thus remains unchanged.
-*Safe External Transfers* - For sending assets, we use the send function, which takes a
-Wei parameter rather than an integer value, and clears its contents when transferring. This
-prevents attacks such as TheDAO. Smart contracts receive Assets as parameters to functions.
-From *No Unprivileged Destruction*, it follows the parameter’s value must be written to
-state before the function returns.
+*No Unprivileged Creation* - The only way to create an Asset is through the init(unsafeRawValue:) initialiser, which is considered to be a privileged operation. An Int cannot be directly assigned to a variable of type Wei.
+*No Unprivileged Destruction* - There is no function which allows explicitly decreasing the number of Wei using an integer. When an Asset variable goes out of scope, its contents are destroyed. This is considered to be a privileged operation, and Flint will emit a compiler warning when the contents of an Asset going out of scope are not transferred.
+*Safe Internal Transfers* - The init(source:amount:) and init(source:) initialisers remove an amount a from a variable and adds the same amount a to another. The total amount of the Asset thus remains unchanged.
+*Safe External Transfers* - For sending assets, we use the send function, which takes a Wei parameter rather than an integer value, and clears its contents when transferring. This prevents attacks such as TheDAO. Smart contracts receive Assets as parameters to functions. From *No Unprivileged Destruction*, it follows the parameter’s value must be written to state before the function returns.
 
 The design of the Asset feature is in progress, the FIP-0001 proposal tracks its progress. At the moment, the compiler supports the Asset atomic operations for the Wei type only.
 
