@@ -38,6 +38,12 @@ extension Parser {
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       default:
         diagnostics.append(.badTopLevelDeclaration(at: first.sourceLocation))
+        // Skip to next non-empty line
+        guard let eol = indexOfFirstAtCurrentDepth([.newline]) else {
+          throw raise(.unexpectedEOF())
+        }
+        currentIndex = eol
+        consumeNewLines()
       }
     }
 
