@@ -30,12 +30,26 @@ extension SemanticAnalyzer {
 
     let environment = passContext.environment!
 
-    if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name) {
+    if !environment.isContractDeclared(contractBehaviorDeclaration.contractIdentifier.name), contractBehaviorDeclaration.contractIdentifier.name != "self" {
       // The contract behavior declaration could not be associated with any contract declaration.
       diagnostics.append(.contractBehaviorDeclarationNoMatchingContract(contractBehaviorDeclaration))
     } else if environment.isStateful(contractBehaviorDeclaration.contractIdentifier.name) != (contractBehaviorDeclaration.states != []) {
       // The statefullness of the contract declaration and contract behavior declaration do not match.
       diagnostics.append(.contractBehaviorDeclarationMismatchedStatefulness(contractBehaviorDeclaration))
+    }
+
+    // If we're not in a trait then throw errors for any signature declarations
+    if passContext.traitDeclarationContext == nil {
+      contractBehaviorDeclaration.members.forEach { member in
+        switch member {
+          case .functionDeclaration(_), .specialDeclaration(_):
+            break
+          case .functionSignatureDeclaration(let decl):
+            diagnostics.append(.signatureInContract(at: decl.sourceLocation))
+          case .specialSignatureDeclaration(let decl):
+            diagnostics.append(.signatureInContract(at: decl.sourceLocation))
+        }
+      }
     }
 
     // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
@@ -107,6 +121,41 @@ extension SemanticAnalyzer {
 
     return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
   }
+
+  // MARK: Trait
+  public func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+
+    if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
+    }
+    traitDeclaration.members.forEach { member in
+      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
+        diagnostics.append(.contractTraitMemberInStructTrait(member))
+      }
+      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
+        diagnostics.append(.structTraitMemberInContractTrait(member))
+      }
+    }
+
+    return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func isContractTraitMember(member: TraitMember) -> Bool {
+    switch member {
+    case .contractBehaviourDeclaration(_), .eventDeclaration(_):
+      return true
+    case .functionDeclaration(_), .specialDeclaration(_),
+         .functionSignatureDeclaration(_), .specialSignatureDeclaration(_):
+      return false
+    }
+  }
+
+  func isStructTraitMember(member: TraitMember) -> Bool {
+    return !isContractTraitMember(member: member)
+  }
+
 
   // MARK: Variable
   public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
@@ -360,8 +409,8 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
     var passContext = passContext
 
-    // If we are in a contract behavior declaration, check there is only one public initializer.
-    if let context = passContext.contractBehaviorDeclarationContext, specialDeclaration.isPublic {
+    // If we are in a contract behavior declaration, of a contract, check there is only one public initializer.
+    if let context = passContext.contractBehaviorDeclarationContext, passContext.traitDeclarationContext == nil, specialDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
 
       // The caller capability block in which this initializer appears should be scoped by "any".

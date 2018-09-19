@@ -21,6 +21,8 @@ struct IRInterface {
         case .specialDeclaration(_):
           return ""
           // Rendering initializers/fallback is not supported yet.
+        case .functionSignatureDeclaration(_), .specialSignatureDeclaration(_):
+          fatalError("No signatures in contract body")
         }
       }
     }.joined(separator: "\n")
