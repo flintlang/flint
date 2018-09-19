@@ -1,4 +1,4 @@
-trait ERC20 {
+contract trait ERC20 {
   event transfer {
     let from: Address
     let to: Address

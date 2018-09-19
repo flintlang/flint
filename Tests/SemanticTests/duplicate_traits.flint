@@ -1,7 +1,10 @@
 // RUN: %flintc %s --verify
 
-trait A {}
-trait A {} // expected-error {{Invalid redeclaration of 'A'}}
+contract trait A {}
+contract trait A {} // expected-error {{Invalid redeclaration of 'A'}}
+
+struct trait C {}
+struct trait C {} // expected-error {{Invalid redeclaration of 'C'}}
 
 contract X: A, A {} // expected-error {{Contract 'X' has repeated conformances}}
 
