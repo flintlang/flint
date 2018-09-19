@@ -1,4 +1,4 @@
-trait A {
+struct trait A {
     func foo() -> Int
     func bar() -> Bool {
         return false
