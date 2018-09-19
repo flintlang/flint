@@ -12,7 +12,7 @@ variety of security features.
   - [Installation](#installation)
   - [Syntax Highlighting](#syntax-highlighting)
   - [Compilation](#compilation)
-- **Core Features**
+- **Programming In Flint**
   - [Constants and Variables](#constants-and-variables)
   - [Literals](#literals)
   - [Comments](#comments)
@@ -160,11 +160,21 @@ To run the generated Solidity file on Remix:
 You should now be able to call the contract's functions.
 
 ---
-# Core Features
+# Programming In Flint
 ---
+A smart contract’s state is represented by its fields, or state properties. Its behaviour is characterised by its functions, which can mutate the contract’s state. Public functions can be called by external Ethereum users.
+Flint’s syntax is focused on allowing programmers to write and reason about smart contracts easily. Providing an intuitive and familiar syntax is essential for programmers to express their smart contract naturally. As the source code of a smart contract is publicly available, it should be easily understandable by its readers. The syntax is inspired by the Swift Programming
+Language’s syntax.
+
+When developing Flint, we focused on the novel features aimed at smart contract security.
+For this reason, some features which developers might expect from a programming language
+and its compiler such as recursive data types or type inference have not yet been implemented
+in the compiler.
 
 ## Constants and Variables
 Constants and Variables associate a name with a value of a particular type. The value of a constant can't be changed once it's set, whereas a variable can be set to a different value in the future.
+
+Variables can be state properties - public contract specific data stored in EVM Storage - or local variables - transaction specific data stored temporarily in EVM Memory.
 
 ### Declaring Constants and Variables
 You declare constants with the `let` keyword and variables with the `var` keyword.
