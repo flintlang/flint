@@ -1,0 +1,16 @@
+// RUN: %flintc %s --verify
+
+trait A {}
+trait A {} // expected-error {{Invalid redeclaration of 'A'}}
+
+contract X: A, A {} // expected-error {{Contract 'X' has repeated conformances}}
+
+contract Y: B {} // expected-error {{Contract 'Y' conforms to undeclared trait 'B'}}
+
+X :: (any) {
+  public init() {}
+}
+
+Y :: (any) {
+  public init() {}
+}
