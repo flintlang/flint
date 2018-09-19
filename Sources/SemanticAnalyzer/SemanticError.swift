@@ -136,7 +136,12 @@ extension Diagnostic {
   }
 
   static func notImplementedFunctions(_ functions: [FunctionInformation], in contract: ContractDeclaration) -> Diagnostic {
-    let notes = functions.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Function signature has not been implemented") }
+    let notes = functions.map { function -> Diagnostic in
+      if function.isSignature {
+        return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Function signature has not been implemented")
+      }
+      return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Is this meant to implement the trait signature?")
+    }
     return Diagnostic(severity: .error, sourceLocation: contract.sourceLocation, message: "Contract doesn't conform to traits as it doesn't implement the declared functions", notes: notes)
   }
 

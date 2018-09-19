@@ -273,9 +273,11 @@ extension SemanticAnalyzer {
     // Called after all the statements in a function have been visited.
 
     let mutatingExpressions = passContext.mutatingExpressions ?? []
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if functionDeclaration.isMutating, mutatingExpressions.isEmpty {
+    if functionDeclaration.isMutating, mutatingExpressions.isEmpty, !environment.isConforming(functionDeclaration, in: enclosingType) {
       // The function is declared mutating but its body does not contain any mutating expression.
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
