@@ -1,0 +1,74 @@
+trait ERC20 {
+  event transfer {
+    let from: Address
+    let to: Address
+    let value: Int
+  }
+  event approval {
+    let from: Address
+    let to: Address
+    let value: Int
+  }
+  public func totalSupply() -> Int
+  public func balanceOf(owner: Address) -> Int
+  public func allowance(owner: Address, spender: Address) -> Int
+
+  public mutating func transfer(to: Address, value: Int) -> Bool
+  public mutating func approve(spender: Address, value: Int) -> Bool
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool
+}
+
+contract AlphaToken: ERC20 {}
+contract BravoToken: ERC20 {} // expected-error {{Contract doesn't conform to traits as it doesn't implement the declared functions}}
+contract CharlieToken: ERC20 {} // expected-error {{Contract doesn't conform to traits as it doesn't implement the declared functions}}
+contract DeltaToken: ERC20 {} // expected-error {{Contract doesn't conform to traits as it doesn't implement the declared functions}}
+contract EchoToken: ERC20 {} // expected-error {{Contract doesn't conform to traits as it doesn't implement the declared functions}}
+
+AlphaToken :: (any) {
+  public init() {}
+  public func totalSupply() -> Int { return 0 }
+  public func balanceOf(owner: Address) -> Int { return 0 }
+  public func allowance(owner: Address, spender: Address) -> Int { return 0 }
+  public mutating func transfer(to: Address, value: Int) -> Bool { return true }
+  public mutating func approve(spender: Address, value: Int) -> Bool { return true }
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool { return true }
+}
+
+BravoToken :: (any) {
+  public init() {}
+  public func totalSupply() -> Int { return 0 }
+  public func balanceOf(owner: Address) -> Int { return 0 }
+  public func allowance(owner: Address, spender: Address) -> Int { return 0 }
+  public mutating func approve(spender: Address, value: Int) -> Bool { return true }
+}
+
+CharlieToken :: (any) {
+  public init() {}
+  public func totalSupply() -> Int { return 0 }
+  public func balanceOf(owner: Address) -> Int { return 0 }
+  public func allowance(owner: Address, spender: Address) -> Int { return 0 }
+  public func transfer(to: Address, value: Int) -> Bool { return true } // expected-error { Mutating }
+  func approve(spender: Address, value: Int) -> Bool { return true } // expected-error { public, mutating }
+  // expected-warning@+1 {{Function does not have to be declared mutating: none of its statements are mutating}}
+  mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool { return true } // expected-error {public}
+}
+
+DeltaToken :: (any) {
+  public init() {}
+  public func totalSupply() -> Int { return 0 }
+  public func balanceOf(owner: Address) -> Int { return 0 }
+  public func allowance(owner: Address, spender: Address) -> Bool { return true } // expected-error {function of type (Address, Address) -> Int }
+  public mutating func transfer(to: Address, value: Int) -> Bool { return true }
+  public mutating func approve(spender: Address, value: Int) -> Bool { return true }
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool { return true }
+}
+
+EchoToken :: (any) {
+  public init() {}
+  public func totalSupply() -> Int { return 0 }
+  public func balanceOf(o: Address) -> Int { return 0 }
+  public func allowance(o: Address, s: Address) -> Int { return 0 }
+  public mutating func transfer(to: Address, value: Int) -> Bool { return true }
+  public mutating func approve(spender: Address, value: Int) -> Bool { return true }
+  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool { return true }
+}

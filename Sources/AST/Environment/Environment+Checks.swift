@@ -161,8 +161,16 @@ extension Environment {
     let typeInfo = types[enclosingType.name]!
     var notImplemented = [FunctionInformation]()
     for name in typeInfo.allFunctions.keys {
-      if !typeInfo.isImplemented(function: name) {
-        notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
+      if let signature = typeInfo.allFunctions[name]?.filter({ $0.isSignature }).first {
+        let conforming = typeInfo.functions[name]?.filter({ !$0.isSignature }) ?? []
+        if conforming.isEmpty {
+          notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
+        }
+        for conform in conforming {
+          if conform.declaration.signature != signature.declaration.signature {
+            notImplemented.append(conform)
+          }
+        }
       }
     }
     return notImplemented
@@ -170,9 +178,18 @@ extension Environment {
 
   public func undefinedInitialisers(in enclosingType: Identifier) -> [SpecialInformation] {
     let typeInfo = types[enclosingType.name]!
-    if !typeInfo.isImplemented() {
-      return typeInfo.allInitialisers
+    if let conforming = typeInfo.initializers.filter({ !$0.isSignature }).first { // Compatibility check
+      if let signature = typeInfo.allInitialisers.filter({ $0.isSignature }).first,
+        conforming.declaration.signature != signature.declaration.signature {
+        return [signature]
+      }
+      return []
     }
-    return []
+    return typeInfo.allInitialisers
+  }
+
+  public func isConforming(_ function: FunctionDeclaration, in enclosingType: RawTypeIdentifier) -> Bool {
+    let signature = types[enclosingType]?.allFunctions[function.identifier.name]?.filter({ $0.isSignature }).first
+    return function.signature == signature?.declaration.signature
   }
 }

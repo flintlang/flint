@@ -108,7 +108,6 @@ public struct Environment {
   }
 
   // MARK: - Compatibility
-
   func areArgumentsCompatible(source: [FunctionArgument], target: EventInformation, enclosingType: String, scopeContext: ScopeContext) -> Bool {
     let targetVariables = target.declaration.variableDeclarations
     let targetTypes = target.eventTypes
