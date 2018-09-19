@@ -432,7 +432,7 @@ AddressBook :: caller <- (any) {
 
 ## Types
 
-Flint supports the following types.
+Flint is a _statically-typed_ language with a simple type system, without basic support for subtyping through [traits](#traits). Type inference is a planned feature.
 
 Flint is a _type-safe_ language. A type safe language encourages clarity about the type of values your code can work with.
 
