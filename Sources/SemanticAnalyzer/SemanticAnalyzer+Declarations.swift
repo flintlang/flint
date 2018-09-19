@@ -88,6 +88,15 @@ extension SemanticAnalyzer {
     if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
     }
+    
+    traitDeclaration.members.forEach { member in
+      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
+        diagnostics.append(.contractTraitMemberInStructTrait(member))
+      }
+      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
+        diagnostics.append(.structTraitMemberInContractTrait(member))
+      }
+    }
 
     return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
@@ -140,26 +149,6 @@ extension SemanticAnalyzer {
     }
 
     return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
-  }
-
-  // MARK: Trait
-  public func process(traitDeclaration: TraitDeclaration, passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
-    var diagnostics = [Diagnostic]()
-    let environment = passContext.environment!
-
-    if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
-      diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
-    }
-    traitDeclaration.members.forEach { member in
-      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
-        diagnostics.append(.contractTraitMemberInStructTrait(member))
-      }
-      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
-        diagnostics.append(.structTraitMemberInContractTrait(member))
-      }
-    }
-
-    return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   func isContractTraitMember(member: TraitMember) -> Bool {
