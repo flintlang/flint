@@ -2,9 +2,11 @@
 
 :+1::tada: First off, thanks for the interest in Flint! :tada::+1:
 
-The following details the language, it's unique features, and provides an overview of all the features currently implemented.
+Even though the Ethereum platform requires smart contract programmers to ensure the correct behaviour of their program before deployment, it has not seen a language designed with safety in mind. Solidity and others do not tailor for Ethereum’s unique programming model and instead, mimic existing popular languages like JavaScript, Python, or C, without providing additional safety mechanisms.
 
-Flint's language design was influenced by Swift, if you are familiar with that language you should find the common features similar.
+Flint, changes that, as a new programming language built for easily writing safe Ethereum smart
+contracts. Flint is approachable to existing and new Ethereum developers, and presents a
+variety of security features.
 
 - **Setup**
   - [Installation](#installation)
