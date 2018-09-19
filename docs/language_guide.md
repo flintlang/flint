@@ -1029,7 +1029,19 @@ It will also form the basis for allowing end users to access compiler level guar
 
 
 ### Structure Traits
+```swift
+trait Numeric {
+  infix func +(_ other: Self)
+  infix func -(_ other: Self)
+}
 
+trait Comparable {
+  infix func <(_ other: Self)
+  infix func <=(_ other: Self)
+  infix func >(_ other: Self)
+  infix func >=(_ other: Self)
+}
+```
 
 ### Contract Traits
 
