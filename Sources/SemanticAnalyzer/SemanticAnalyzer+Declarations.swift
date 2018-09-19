@@ -40,7 +40,7 @@ extension SemanticAnalyzer {
 
     // If we're not in a trait then throw errors for any signature declarations
     if passContext.traitDeclarationContext == nil {
-      contractBehaviorDeclaration.members.forEach{ member in
+      contractBehaviorDeclaration.members.forEach { member in
         switch member {
           case .functionDeclaration(_), .specialDeclaration(_):
             break
