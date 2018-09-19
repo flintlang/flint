@@ -714,18 +714,19 @@ Wallet :: (owner) {
 
 Flint introduces the concept of **caller capabilities**. While traditional computer programs have an entry point (the _main_ function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services presenting API endpoints. It is important to prevent unauthorized parties from calling sensitive functions.
 
-In Flint, functions of a contract are declared within caller capability blocks, which restrict which users/contracts are allowed to call the enclosed functions.
-```swift
-// Only the manager of the Bank can call "clear".
-Bank :: (manager) { // manager is a state property.
-  func clear(address: Address) {
-    // body
-  }
-}
-```
-Caller capabilities can be any property declared in the contract's declaration, as long as their type is `Address` or `[Address]`.
+Solidity uses function modifiers to insert dynamic checks in functions, which can for instance abort unauthorised calls. However, it is easy to forget to specify these checks, as the language does not require programmers to write them.
+Having a language construct which protects functions from invalid calls could require programmers to systematically think about which parties should be able to call the functions they are about to define.
 
-Note: The special caller capability any allows `any` caller to execute the function in the group.
+In Flint, functions of a contract are declared within caller capability blocks, which protect the functions from invalid access.
+
+### Caller Group
+They contain a caller group, namely `(any)`, `(child)` and `(child, parent)`. The transaction caller needs to hold _any_ of the addresses contained within the caller group which is a a union of its members.
+
+The Ethereum address of the caller of a function is unforgeable. It is not possible to impersonate another user, as a consequence of Ethereum’s mechanism which generates public addresses from private keys. Transactions are signed using a private key, and determine the public key of the caller. Stealing a caller capability would hence require stealing a private key. The recommended way for Ethereum users to transfer their ability to call functions is to either change the backing address of the caller capability they have (the smart contract must have a function which allows this), or to securely send their private key to the new owner, outside of the Ethereum platform.
+
+Caller groups can contain members of the following types: `Address -> Bool`, `() -> Address`, `Address`, `[Address]` and `[Address: T]`
+
+Note: The special caller capability `any` allows any caller to execute the function in the group.
 
 Calls to Flint functions are validated both at compile-time and runtime.
 
@@ -847,7 +848,71 @@ Bank :: account <- (accounts) {
 ```
 `withdraw` can be called by any caller which has an account in the bank. The caller's address is bound to the variable `account`, which can then be used in the body of the functions.
 
+### Extended Example
 
+```swift
+contract ChildCollegeFund {
+  var parent: Address
+  var child: Address
+  var canWithdraw: Bool = false
+  var target: Int
+  var contents: Wei = Wei(0)
+}
+// Anyone can initialise the contract.
+// The contract can be deployed by anyone,
+// and is initialised during contract deployment.
+// This initialisation allows you to set the contract address.
+ChildCollegeFund :: (any) {
+  public init(parent: Address, child: Address, target: Int) {
+    self.parent = parent
+    self.child = child
+    self.target = target
+  }
+}
+// Functions both the parent and child can call.
+ChildCollegeFund :: (parent, child) {
+  public func getTarget() -> Int {
+    return target
+  }
+
+  // Trying to withdraw() here would fail as it
+  // requires the caller to be 'child' statically.
+  // At runtime we can only know the caller has one
+  // of the capabilities.
+}
+
+// Functions only the parent can call.
+ChildCollegeFund :: (parent) {
+
+  // The parent can deposit money
+  @payable
+  public mutating func deposit(implicit value: Wei) {
+    contents.transfer(&value)
+  }
+
+  public mutating func allowWithdrawaL() {
+    self.canWithdraw = true
+  }
+
+  public func getContents() -> Int {
+    return contents.getRawValue()
+  }
+
+  public func getDistanceFromGoal() -> Int {
+    // The caller of this function is known to be 'parent'
+    // Therefore, the calls to getTarget and getContents can be performed
+    return getTarget() - getContents() // OK
+  }
+}
+
+// Functions only the child can call
+ChildCollegeFund :: (child) {
+  public mutating func withdraw() {
+    assert(canWithdraw == false)
+    send(child, &contents)
+  }
+}
+```
 ---
 
 ## Payable
