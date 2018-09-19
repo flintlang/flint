@@ -159,8 +159,8 @@ public class ASTDumper {
 
   func dump(_ traitDeclaration: TraitDeclaration) {
     writeNode("TraitDeclaration") {
+      self.dump(traitDeclaration.traitKind)
       self.dump(traitDeclaration.identifier)
-
       for member in traitDeclaration.members {
         self.dump(member)
       }
@@ -179,6 +179,8 @@ public class ASTDumper {
       self.dump(specialSignatureDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
+    case .contractBehaviourDeclaration(let contractBehaviorDeclaration):
+      self.dump(contractBehaviorDeclaration)
     }
   }
 
@@ -204,10 +206,14 @@ public class ASTDumper {
 
   func dump(_ contractBehaviorMember: ContractBehaviorMember) {
     switch contractBehaviorMember {
-    case .functionDeclaration(let functionDeclaration):
-      self.dump(functionDeclaration)
-    case .specialDeclaration(let specialDeclaration):
-      self.dump(specialDeclaration)
+    case .functionDeclaration(let decl):
+      self.dump(decl)
+    case .specialDeclaration(let decl):
+      self.dump(decl)
+    case .functionSignatureDeclaration(let decl):
+      self.dump(decl)
+    case .specialSignatureDeclaration(let decl):
+      self.dump(decl)
     }
   }
 

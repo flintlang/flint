@@ -22,21 +22,29 @@ extension Parser {
     var declarations = [TopLevelDeclaration]()
 
     while let first = currentToken {
-      // At the top-level, a contract, a struct, or a contract behavior can be declared.
+      // At the top-level, a contract, a struct, a trait or a contract behavior can be declared.
+      let second = tokens[currentIndex + 1].kind
       switch first.kind {
       case .contract:
-        let contractDeclaration = try parseContractDeclaration()
-        declarations.append(.contractDeclaration(contractDeclaration))
+        if second == .trait {
+          let traitDeclaration = try parseTraitDeclaration()
+          declarations.append(.traitDeclaration(traitDeclaration))
+        } else {
+          let contractDeclaration = try parseContractDeclaration()
+          declarations.append(.contractDeclaration(contractDeclaration))
+        }
       case .struct:
-        let structDeclaration = try parseStructDeclaration()
-        declarations.append(.structDeclaration(structDeclaration))
+        if second == .trait {
+          let traitDeclaration = try parseTraitDeclaration()
+          declarations.append(.traitDeclaration(traitDeclaration))
+        } else {
+          let structDeclaration = try parseStructDeclaration()
+          declarations.append(.structDeclaration(structDeclaration))
+        }
       case .enum:
         let enumDeclaration = try parseEnumDeclaration()
         declarations.append(.enumDeclaration(enumDeclaration))
-      case .trait:
-        let traitDeclaration = try parseTraitDeclaration()
-        declarations.append(.traitDeclaration(traitDeclaration))
-      case .identifier(_):
+      case .identifier(_), .self:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       default:
@@ -99,6 +107,7 @@ extension Parser {
   }
 
   func parseTraitDeclaration() throws -> TraitDeclaration {
+    let traitKind = try consume(anyOf: [.struct, .contract], or: .badDeclaration(at: latestSource))
     let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
@@ -106,6 +115,7 @@ extension Parser {
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "trait declaration", at: latestSource))
 
     return TraitDeclaration(
+      traitKind: traitKind,
       traitToken: traitToken,
       identifier: identifier,
       members: traitMembers
@@ -218,10 +228,17 @@ extension Parser {
   }
 
   func parseTraitMember() throws -> TraitMember {
-    let first = currentToken?.kind
+    guard let first = currentToken?.kind else {
+      throw raise(.unexpectedEOF())
+    }
 
-    if first == .event {
-      return .eventDeclaration(try parseEventDeclaration())
+    switch first {
+      case .event:
+        return .eventDeclaration(try parseEventDeclaration())
+      case .self, .identifier(_):
+        return .contractBehaviourDeclaration(try parseContractBehaviorDeclaration())
+      default:
+        break
     }
 
     let attrs = try parseAttributes()
@@ -257,24 +274,49 @@ extension Parser {
   func parseContractBehaviorMembers(contractIdentifier: RawTypeIdentifier) throws -> [ContractBehaviorMember] {
     var members = [ContractBehaviorMember]()
 
-    while true {
-      let attrs = try parseAttributes()
-      let modifiers = try parseModifiers()
-
-      let first = currentToken?.kind
-
-      if first == .func {
-        let decl = try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers)
-        members.append(.functionDeclaration(decl))
-      } else if first == .init || first == .fallback {
-        let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
-        members.append(.specialDeclaration(decl))
-      } else if first == .punctuation(.closeBrace) {
-        return members
-      } else {
-        throw raise(.badMember(in: "contract behaviour", at: latestSource))
+    while let first = currentToken?.kind {
+      switch first {
+        case .func, .init, .fallback, .public, .visible, .mutating, .punctuation(.at):
+          members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
+        case .punctuation(.closeBrace):
+          return members
+        default:
+          throw raise(.badMember(in: "contract behaviour", at: latestSource))
       }
     }
+    throw raise(.unexpectedEOF())
+  }
+
+  func parseContractBehaviorMember(enclosingType: RawTypeIdentifier) throws -> ContractBehaviorMember {
+
+    let attrs = try parseAttributes()
+    let modifiers = try parseModifiers()
+    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+      throw raise(.statementSameLine(at: latestSource))
+    }
+    let signatureDeclaration: Bool
+    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
+      signatureDeclaration = false
+    } else {
+      signatureDeclaration = true
+    }
+
+    let first = currentToken?.kind
+
+    if .func == first {
+      if signatureDeclaration {
+        return .functionSignatureDeclaration(try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+    }
+
+    if .init == first  || .fallback == first {
+      if signatureDeclaration {
+        return .specialSignatureDeclaration(try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      }
+      return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
+    }
+    throw raise(.badMember(in: "contract behaviour", at: latestSource))
   }
 
   func parseContractMembers(enclosingType: RawTypeIdentifier) throws -> [ContractMember] {

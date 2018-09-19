@@ -9,16 +9,19 @@ import Lexer
 
 // The declaration of a trait.
 public struct TraitDeclaration: ASTNode {
+  public var traitKind: Token
   public var traitToken: Token
   public var identifier: Identifier
   // TODO: public var states: [TypeState]
   public var members: [TraitMember]
 
   public init(
+    traitKind: Token,
     traitToken: Token,
     identifier: Identifier,
     members: [TraitMember]
   ) {
+    self.traitKind = traitKind
     self.traitToken = traitToken
     self.identifier = identifier
     self.members = members

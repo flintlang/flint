@@ -255,6 +255,8 @@ public struct ASTVisitor {
       processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
     case .specialSignatureDeclaration(let specialSignatureDeclaration):
       processResult.element = .specialSignatureDeclaration(processResult.combining(visit(specialSignatureDeclaration, passContext: processResult.passContext)))
+    case .contractBehaviourDeclaration(let contractBehaviourDeclaration):
+      processResult.element = .contractBehaviourDeclaration(processResult.combining(visit(contractBehaviourDeclaration, passContext: processResult.passContext)))
     case .eventDeclaration(let eventDeclaration):
       processResult.element = .eventDeclaration(processResult.combining(visit(eventDeclaration, passContext: processResult.passContext)))
     }
@@ -268,10 +270,14 @@ public struct ASTVisitor {
     var processResult = pass.process(contractBehaviorMember: contractBehaviorMember, passContext: passContext)
 
     switch processResult.element {
-    case .functionDeclaration(let functionDeclaration):
-      processResult.element = .functionDeclaration(processResult.combining(visit(functionDeclaration, passContext: processResult.passContext)))
-    case .specialDeclaration(let specialDeclaration):
-      processResult.element = .specialDeclaration(processResult.combining(visit(specialDeclaration, passContext: processResult.passContext)))
+    case .functionDeclaration(let decl):
+      processResult.element = .functionDeclaration(processResult.combining(visit(decl, passContext: processResult.passContext)))
+    case .specialDeclaration(let decl):
+      processResult.element = .specialDeclaration(processResult.combining(visit(decl, passContext: processResult.passContext)))
+    case .functionSignatureDeclaration(let decl):
+      processResult.element = .functionSignatureDeclaration(processResult.combining(visit(decl, passContext: processResult.passContext)))
+    case .specialSignatureDeclaration(let decl):
+      processResult.element = .specialSignatureDeclaration(processResult.combining(visit(decl, passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(contractBehaviorMember: processResult.element, passContext: processResult.passContext)
