@@ -1083,7 +1083,11 @@ ToyWallet :: (getOwner) {
 ---
 # Standard Library
 ---
-## Assertion
+## Wei
+The standard library defines the `Wei` type. For full details see [Assets](#assets)
+
+## Global Functions
+### Assertion
 Assertions are checks that happen at runtime. They are used to ensure an essential condition is satisfied before executing any further code. If the Boolean condition evaluates to true then the execution continues as usual. Otherwise the transaction is reverted.
 It is a global function accessible from any contract or contract group:
 ```
