@@ -480,9 +480,9 @@ for let i: Int in (0..<count) {
 ---
 
 ## Structures
-_Structures_ in Flint are general-purpose constructs that define properties and functions that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties.
+_Structures_ in Flint are general-purpose constructs that group state and functions that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties. Structure functions are not protected as they can only be called by (protected) contract functions, and are required to be annotated `mutating` if they mutate the struct's state.
 
-### Defintion
+### Definition
 You introduce structures with the `struct` keyword and their definition is contained within a pair of braces:
 ```swift
 struct SomeStructure {
@@ -503,7 +503,7 @@ struct Rectangle {
 ```
 
 ### Instances
-The `Rectangle` structure definition describes only what a `Rectangle` would look like and what functionality they contain. They don't descibe specific rectangles. To do that you create an instance of that structure.
+The `Rectangle` structure definition describes only what a `Rectangle` would look like and what functionality they contain. They don't describe specific rectangles. To do that you create an instance of that structure.
 
 ```swift
 let someRectangle: Rectangle = Rectangle()
@@ -520,6 +520,11 @@ struct Rectangle {
   }
 }
 ```
+
+```swift
+let bigRectangle = Rectangle(400, 10000)
+```
+
 ### Accessing Properties/Functions
 You can access properties/functions of an instance using _dot syntax_. In dot syntax, you write the property name immediately after the instance name, separated by a period (.), without any spaces.
 
@@ -542,9 +547,30 @@ struct Square {
 Square.shapeName() // Evaluates to "Square"
 ```
 
-### Reference Types in Contracts
-When structures are used as variables/constants in contracts they are passed by reference. This means that the structures are not copied when assigned to a variable or constant, or when they are passed to a function. Rather than a copy, a reference to the same existing instance is used.
+### State Properties or Local Variables
+Struct values can be declared as state properties or local variables/constants through their intialisers. When stored as a state property, the struct's data resides in EVM storage. When stored as a local variable, it resides in EVM memory, and a pointer is allocated on the EVM stack.
 
+
+### Structs as function arguments
+When struct values are passed as function arguments, they are passed _by value_ by default. That is, on function entry, a struct is copied in storage or memory (depending on whether it is a state property or a local variable).
+
+Structs can be passed _by reference_ using the *inout* keyword. The struct is then treated as an implicit reference to the value in the caller.
+
+```
+func foo() {
+  let s = S(8)
+  byValue(s) // s.x == 8
+  byReference(s) // s.x == 10
+}
+
+func byValue(s: S) {
+  s.x = 10
+}
+
+func byReference(s: inout S) {
+  s.x
+}
+```
 ---
 
 ## Enumerations
