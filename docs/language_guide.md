@@ -1100,8 +1100,12 @@ if x == 2 {
   fatalError()
 }
 ```
-## Fatal Error
+
+### Fatal Error
 `fatalError()` is a function exposed that reverts a transaction when called. This means that any contract storage changes are rolledback and no values are returned.
+
+### Send
+`send(address: Address, value: inout Wei)` sends the `value` Wei to the Ethereum address `address`, and clears the contents of `value`.
 
 ---
 # Examples
