@@ -6,13 +6,9 @@
 * Status: **Awaiting review**
 
 ## Introduction
-
-A trait is a collection of functions and events. It can access other methods declared in the same trait. Contracts or Structures can conform to a particular trait by implementing all of the trait's function stubs.
-
-We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions and function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions and function stubs.
+We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
 
 Contract or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them.
-
 
 ## Motivation
 Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc).
@@ -22,7 +18,7 @@ It will also form the basis for allowing end users to access compiler level guar
 ## Proposed Solution
 In the example below, we define `ERC20`, which declares a contract to follow the Ethereum token specifications. The `ERC20` `trait` is then specified by the `ToyToken` `contract` allowing use of functions and events in `ERC20`.
 ```swift
-trait ERC20 {
+contract trait ERC20 {
   event Transfer {
     let from: Address
     let to: Address
@@ -89,7 +85,7 @@ ToyToken :: caller <- (any) {
 In the example below, we define `Ownable`, which declares a contract as something that can be owned and transferred. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
 
 ```swift
-trait Ownable {
+contract trait Ownable {
   event OwnershipRenounced {
     let previousOwner: Address
   }
@@ -133,7 +129,7 @@ ToyWallet :: (getOwner) {
 In the example below, we define `Pausable`, which declares a contract as something that can be owned and transferred. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
 
 ```swift
-trait Pausable @(Inactive, Active) {
+contract trait Pausable @(Inactive, Active) {
   event Paused {}
 
   self @(any) :: (any) {
@@ -169,9 +165,60 @@ ToyDAO @(Active) :: (any) {
   // Normal Functions
 }
 ```
+
+We can also define structure traits using a less detailed syntax. Here we define an `Animal` structure trait. The `Person` structure then conforms to the `Animal` `trait` allowing the use of functions within that.
+```swift
+struct trait Animal {
+  // Must have an empty and named initialiser
+  public init()
+  public init(name: String)
+   // These are signatures that conforming structures must implement
+  // access properties of the structure
+  func isNamed() -> Bool
+  public func name() -> String
+  public func noise() -> String
+   // This is a pre-implemented function using the functions already in the trait.
+  public func speak() -> String {
+    if isNamed() {
+      return name()
+    }
+    else {
+      return noise()
+    }
+  }
+}
+ struct Person: Animal {
+  let name: String
+   public init() {
+    self.name = "John Doe"
+  }
+  public init(name: String) {
+    self.name = name
+  }
+   // People always have a name, it's just not always known
+  func isNamed() -> Bool {
+    return true
+  }
+  // These access the properties of the struct
+  public func name() -> String {
+    return self.name
+  }
+   public func noise() -> String {
+    return "Huh?"
+  }
+   // Person can also have functions in addition to Animal
+  public func greet() -> String {
+    return "Hi"
+  }
+}
+ ```
+
 ## Semantics
 
 ## Alternatives considered
+
+### Generic traits
+Traits are separated into two types - Structure Traits and Contract Traits - with different members being valid depending on the type. We also considered just having one type of trait but that resulted in non-sensical syntax such as structures with restriction blocks or contracts without them.
 
 ### Inheritance of Contracts / Structures
 The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance could also be used repeatedly.
