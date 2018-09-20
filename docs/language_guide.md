@@ -1032,33 +1032,79 @@ Auction @(InProgress) :: (any) {
 ## Traits
 We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions and function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions and function stubs.
 
-Contracts or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them. Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc).
+Contracts or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them. Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc.).
 It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](/proposals/0001-asset-trait.md) and Numerics.
 
 
 ### Structure Traits
+Traits can be implemented for structures using the keyword combination of `struct trait` followed by a unique identifier before the block of trait members.
+
+Structure traits can contain functions, function signatures, initialisers, or initialiser signatures.
+A signature is simply missing a code block following it.
+
+In the example below we define an `Animal` structure trait. The `Person` structure then conforms to the `Animal` `trait` allowing the use of functions within that.
 ```swift
-trait Numeric {
-  infix func +(_ other: Self)
-  infix func -(_ other: Self)
+struct trait Animal {
+  // Must have an empty and named initialiser
+  public init()
+  public init(name: String)
+
+  // These are signatures that conforming structures must implement
+  // access properties of the structure
+  func isNamed() -> Bool
+  public func name() -> String
+  public func noise() -> String
+
+  // This is a pre-implemented function using the functions already in the trait.
+  public func speak() -> String {
+    if isNamed() {
+      return name()
+    }
+    else {
+      return noise()
+    }
+  }
 }
 
-trait Comparable {
-  infix func <(_ other: Self)
-  infix func <=(_ other: Self)
-  infix func >(_ other: Self)
-  infix func >=(_ other: Self)
+struct Person: Animal {
+  let name: String
+
+  public init() {
+    self.name = "John Doe"
+  }
+  public init(name: String) {
+    self.name = name
+  }
+
+  // People always have a name, it's just not always known
+  func isNamed() -> Bool {
+    return true
+  }
+  // These access the properties of the struct
+  public func name() -> String {
+    return self.name
+  }
+
+  public func noise() -> String {
+    return "Huh?"
+  }
+
+  // Person can also have functions in addition to Animal
+  public func greet() -> String {
+    return "Hi"
+  }
 }
+
 ```
-
 ### Contract Traits
+Traits can be implemented for structures using the keyword combination of `contract trait` followed by a unique identifier before the block of trait members.
 
+Contract traits can contain anonymous contract behaviour declarations containing methods or method signatures, or events.
 
-#### Accessing properties
 In the example below, we define `Ownable`, which declares a contract as something that can be owned and transferred. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
 
 ```swift
-trait Ownable {
+contract trait Ownable {
   event OwnershipRenounced {
     let previousOwner: Address
   }
