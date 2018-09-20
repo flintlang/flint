@@ -711,7 +711,7 @@ Having a language construct which protects functions from invalid calls could re
 In Flint, functions of a contract are declared within caller capability blocks, which protect the functions from invalid access.
 
 ### Caller Group
-Caller Groups consist of a list of Caller Members enclosed in parentheses. These Caller Members can be a function of type `Address -> Bool` or `() -> Address`, a contract state property of the types `Address`, `[Address]`, `[Address: T]` or `Address[n]`, or the special `any` keyword that denotes all addresses. For example, `(any)`, `(admin)`, `(owners, manager)` are all valid Caller Groups where `admin` and `manager` refer to a state property of type `Address` and `owners` refers to a state property of type `[Address]`
+Caller Groups consist of a list of Caller Members enclosed in parentheses. These Caller Members can be a function of type `Address -> Bool` or `() -> Address`, a contract state property of the types `Address`, `[Address]`, `[T: Address]` or `Address[n]`, or the special `any` keyword that denotes all addresses. For example, `(any)`, `(admin)`, `(owners, manager)` are all valid Caller Groups where `admin` and `manager` refer to a state property of type `Address` and `owners` refers to a state property of type `[Address]`
 
 Functions inside these caller groups can only be called by an Ethereum Address (aka the caller address) that satisfies at least one of these Caller Members. The satisfaction comes in different forms depending on the member.
 | Type | Satisfaction |
@@ -720,7 +720,7 @@ Functions inside these caller groups can only be called by an Ethereum Address (
 | `() -> Address` | The returned address must match the caller address |
 | `Address` | The address property must match the caller address |
 | `[Address]` | The caller address must be contained within the list of addresses |
-| `[Address: T]` | The caller address must be contained with in the keys of the dictionary |
+| `[T: Address]` | The caller address must be contained with in the values of the dictionary |
 | `any` | Always satisfied |
 
 The Ethereum address of the caller of a function is unforgeable. It is not possible to impersonate another user, as a consequence of Ethereum’s mechanism which generates public addresses from private keys. Transactions are signed using a private key, and determine the public key of the caller. Stealing a caller capability would hence require stealing a private key. The recommended way for Ethereum users to transfer their ability to call functions is to either change the backing address of the caller capability they have (the smart contract must have a function which allows this), or to securely send their private key to the new owner, outside of the Ethereum platform.
