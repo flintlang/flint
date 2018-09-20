@@ -27,7 +27,18 @@ struct trait E {
   func foo(y: Int)
 }
 
+struct trait F {
+  public func foo(x: Int) -> Int
+}
+
+
 struct Z: D, E { // expected-error {{Struct 'Z' conforms to traits using the same function name}}
+  public func foo(x: Int) -> Int {
+    return 3
+  }
+}
+
+struct W: D, F {
   public func foo(x: Int) -> Int {
     return 3
   }

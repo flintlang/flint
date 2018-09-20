@@ -157,7 +157,9 @@ extension Environment {
     guard let typeInfo = types[type] else {
       return [:]
     }
-    return typeInfo.traitFunctions.filter{ (name, functions) in functions.count > 1}
+    return typeInfo.traitFunctions.filter{ (name, functions) in
+      functions.count > 1 && functions.contains(where: { $0.declaration.signature != functions.first!.declaration.signature})
+    }
   }
 
   /// Whether the given caller capability is declared in the given type.
