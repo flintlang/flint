@@ -3,7 +3,7 @@
 * Proposal: [FIP-0001](0001-asset-trait.md)
 * Author: [Franklin Schrans](https://github.com/franklin_sch)
 * Review Manager: TBD
-* Status: **Awaiting review**
+* Status: **Split** [FIP-0004](0004-traits.md) & [FIP-0005](0005-assets.md) 
 * Issue label: [0001-asset-trait](https://github.com/franklinsch/flint/issues?q=is%3Aopen+is%3Aissue+label%3A0001-asset-trait)
 
 ## Introduction
