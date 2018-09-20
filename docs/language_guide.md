@@ -444,13 +444,13 @@ It performs _type checks_ when compiling code and flags any mismatched types as 
 
 
 ### Basic Types
-|Type      | Description             |
-|----------|-------------------------|
-|`Address` | 160-bit Ethereum Address|
-|`Int`     | 256-bit integer         |
-|`Bool`    | Boolean value           |
-|`String`  | String value            |
-|`Void`    | Void value              |
+|Type      | Description                              |
+|----------|------------------------------------------|
+|`Address` | 160-bit Ethereum Address                 |
+|`Int`     | 256-bit integer                          |
+|`Bool`    | Boolean value                            |
+|`String`  | String value (currently max of 256 bits) |
+|`Void`    | Void value                               |
 
 ### Dynamic Types
 |Type      | Description             |
