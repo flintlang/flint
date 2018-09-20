@@ -143,19 +143,35 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' cannot have dynamic parameters", notes: notes)
   }
 
-  static func notImplementedFunctions(_ functions: [FunctionInformation], in contract: ContractDeclaration) -> Diagnostic {
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in decl: ContractDeclaration) -> Diagnostic {
+    return notImplementedFunctions(functions, in: "Contract \(decl.identifier.name)", at: decl.sourceLocation)
+  }
+
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in decl: StructDeclaration) -> Diagnostic {
+    return notImplementedFunctions(functions, in: "Struct \(decl.identifier.name)", at: decl.sourceLocation)
+  }
+
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in string: String, at source: SourceLocation) -> Diagnostic {
     let notes = functions.map { function -> Diagnostic in
       if function.isSignature {
         return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Function signature has not been implemented")
       }
       return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Is this meant to implement the trait signature?")
     }
-    return Diagnostic(severity: .error, sourceLocation: contract.sourceLocation, message: "Contract doesn't conform to traits as it doesn't implement the declared functions", notes: notes)
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(string) doesn't conform to traits as it doesn't implement the declared functions", notes: notes)
   }
 
-  static func notImplementedInitialiser(_ functions: [SpecialInformation], in contract: ContractDeclaration) -> Diagnostic {
-    let notes = functions.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Initialiser has not been implemented") }
-    return Diagnostic(severity: .error, sourceLocation: contract.sourceLocation, message: "Contract doesn't conform to traits as it doesn't implement the declared initialiser", notes: notes)
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in string: String, at source: SourceLocation) -> Diagnostic {
+    let notes = intialisers.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Initialiser has not been implemented") }
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(string) doesn't conform to traits as it doesn't implement the declared initialiser", notes: notes)
+  }
+
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in decl: ContractDeclaration) -> Diagnostic {
+    return notImplementedInitialiser(intialisers, in: "Contract", at: decl.sourceLocation)
+  }
+
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in decl: StructDeclaration) -> Diagnostic {
+    return notImplementedInitialiser(intialisers, in: "Struct", at: decl.sourceLocation)
   }
 
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
@@ -220,6 +236,25 @@ extension Diagnostic {
 
   static func repeatedConformance(contractIdentifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' has repeated conformances")
+  }
+
+  static func repeatedConformance(structIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Struct '\(structIdentifier.name)' has repeated conformances")
+  }
+
+  static func traitsAreIncompatible(_ contractDeclaration: ContractDeclaration, _ functions: [FunctionInformation]) -> Diagnostic {
+     return traitsAreIncompatible(in: "Contract '\(contractDeclaration.identifier.name)'", with: functions, at: contractDeclaration.sourceLocation)
+  }
+
+  static func traitsAreIncompatible(_ structDeclaration: StructDeclaration, _ functions: [FunctionInformation]) -> Diagnostic {
+    return traitsAreIncompatible(in: "Struct '\(structDeclaration.identifier.name)'", with: functions, at: structDeclaration.sourceLocation)
+  }
+
+  static func traitsAreIncompatible(in type: String, with functions: [FunctionInformation], at source: SourceLocation) -> Diagnostic {
+    let notes = functions.map{ function in
+      return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Function with the name '\(function.declaration.name)' has been declared here")
+    }
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(type) conforms to traits using the same function name", notes: notes)
   }
 
   static func contractUsesUndeclaredTraits(_ trait: Conformance, in type: Identifier) -> Diagnostic {

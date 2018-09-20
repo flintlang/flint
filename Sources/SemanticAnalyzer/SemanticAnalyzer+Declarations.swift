@@ -22,14 +22,68 @@ extension SemanticAnalyzer {
       diagnostics.append(.contractDoesNotHaveAPublicInitializer(contractIdentifier: contractDeclaration.identifier))
     }
 
-    let crossReference = contractDeclaration.conformances.reduce(into: [String: [Conformance]]()) {
-      $0[$1.identifier.name, default: []].append($1)
-    }
-    if crossReference.contains(where: { $1.count > 1}) {
+    if isConformanceRepeated(contractDeclaration.conformances) {
       diagnostics.append(.repeatedConformance(contractIdentifier: contractDeclaration.identifier))
     }
 
+    let conflictingSignatures = environment.conflictingTraitSignatures(for: contractDeclaration.identifier.name)
+    conflictingSignatures.forEach { (functionName, functions) in
+      diagnostics.append(.traitsAreIncompatible(contractDeclaration, functions))
+    }
+
+
     return ASTPassResult(element: contractDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  // MARK: Struct
+  public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    let structName = structDeclaration.identifier.name
+
+    // Check for redeclaration
+    if let conflict = environment.conflictingTypeDeclaration(for: structDeclaration.identifier) {
+      diagnostics.append(.invalidRedeclaration(structDeclaration.identifier, originalSource: conflict))
+    }
+
+    // Detect Recursive types
+    if let conflict = passContext.environment!.selfReferentialProperty(in: structName, enclosingType: structName) {
+      diagnostics.append(.recursiveStruct(structDeclaration.identifier, conflict))
+    }
+
+    if isConformanceRepeated(structDeclaration.conformances) {
+      diagnostics.append(.repeatedConformance(structIdentifier: structDeclaration.identifier))
+    }
+
+    let conflictingSignatures = environment.conflictingTraitSignatures(for: structDeclaration.identifier.name)
+    conflictingSignatures.forEach { (functionName, functions) in
+      diagnostics.append(.traitsAreIncompatible(structDeclaration, functions))
+    }
+
+    return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func postProcess(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    var diagnostics = [Diagnostic]()
+    // Check that all trait functions are defined
+    let functions = passContext.environment!.undefinedFunctions(in: structDeclaration.identifier)
+    if !functions.isEmpty {
+      diagnostics.append(.notImplementedFunctions(functions, in: structDeclaration))
+    }
+
+    // Check that all trait initialisers are defined
+    let inits = passContext.environment!.undefinedInitialisers(in: structDeclaration.identifier)
+    if !inits.isEmpty {
+      diagnostics.append(.notImplementedInitialiser(inits, in: structDeclaration))
+    }
+    return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+
+  func isConformanceRepeated(_ conformances: [Conformance]) -> Bool {
+    return conformances.reduce(into: [String: [Conformance]]()) {
+      $0[$1.identifier.name, default: []].append($1)
+    }.contains(where: { $1.count > 1})
   }
 
   // MARK: Contract Behaviour
@@ -99,22 +153,6 @@ extension SemanticAnalyzer {
     }
 
     return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
-  }
-
-  // MARK: Struct
-  public func process(structDeclaration: StructDeclaration, passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    var diagnostics = [Diagnostic]()
-    if let conflict = passContext.environment!.conflictingTypeDeclaration(for: structDeclaration.identifier) {
-      diagnostics.append(.invalidRedeclaration(structDeclaration.identifier, originalSource: conflict))
-    }
-    // Detect Recursive types
-    let structName = structDeclaration.identifier.name
-
-    if let conflict = passContext.environment!.selfReferentialProperty(in: structName, enclosingType: structName) {
-      diagnostics.append(.recursiveStruct(structDeclaration.identifier, conflict))
-    }
-
-    return ASTPassResult(element: structDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   // MARK: Enum

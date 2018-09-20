@@ -17,3 +17,18 @@ X :: (any) {
 Y :: (any) {
   public init() {}
 }
+
+
+struct trait D {
+  public func foo(x: Int) -> Int
+}
+
+struct trait E {
+  func foo(y: Int)
+}
+
+struct Z: D, E { // expected-error {{Struct 'Z' conforms to traits using the same function name}}
+  public func foo(x: Int) -> Int {
+    return 3
+  }
+}
