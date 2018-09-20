@@ -1,62 +1,77 @@
-// This program doesn't compile yet.
-
-contract Ballot {
+contract Ballot (Proposing, Voting) {
   // The administrator of the ballot.
   let chairperson: Address
 
   // The accounts which have voted in this ballot.
   var voters: [Address: Voter]
+  var votersKeys: [Address] // TODO: remove this once keys property of dictionary added to stdlib.
 
   // The list of proposals.
-  var proposals: [Proposal]
+  var proposals: [Proposal] = []
 }
 
-Ballot :: caller <- (any) {
-  public init(proposalNames: [String]) {
+Ballot@(any) :: caller <- (any) {
+  public init() {
     chairperson = caller
-    voters[chairperson] = Voter(weight: 1)
 
-    for proposalName in proposalNames {
-      proposals.append(Proposal(name: proposalName))
-    }
+    // Chairperson is a normal voter.
+    voters[chairperson] = Voter(1)
+    votersKeys[0] = chairperson
+
+    become Proposing
   }
 }
 
-Ballot :: (chairperson) {
+Ballot@(Proposing) :: (chairperson) {
+  // Add a proposal to the list of proposals to vote on.
+  public mutating func addProposal(proposalName: String) {
+    proposals[proposals.size] = Proposal(proposalName)
+  }
+
   // Allow an address to vote.
   public mutating func giveRightToVote(voter: Address) {
-    // Ensure the voter hasn't voted yet, or no
-    if voters[voter].hasVoted || voters[voter].votingWeight != 0 {
-      fatalError()
-    }
+    // Ensure the voter has not been initialised yet, by checking the weight.
+    assert(voters[voter].votingWeight == 0)
 
-    voters[voter].votingWeight = 1
+    // Create voter and add to dictionary.
+    voters[voter] = Voter(1)
+    votersKeys[votersKeys.size] = voter
+  }
+
+  // Begin the voting phase.
+  public mutating func beginVote() {
+    become Voting
   }
 }
 
-Ballot :: voter <- (voters.keys) {
+Ballot@(Voting) :: voter <- (votersKeys) {
   // Delegate vote to another voter.
-  public mutating func delegate(target: Voter) {
-    if voters[voter].hasVoted { fatalError() }
-    if voter == target { fatalError() }
-    
-    // TODO: support forwarding delegations
-   
-   voters[voter].hasVoted = true
-   voters[voter].delegate = target
+  public mutating func delegate(target: Address) {
+    // Ensure the delegator has not already voted, the delegator is not the delegate,
+    // and that the delegate has the right to vote.
+    assert((voters[voter].hasVoted == false) && (voter != target) && (voters[target].votingWeight != 0))
 
-   // The voting weight of the caller.
-   let voterWeight = voters[voter].votingWeight
+    // Delegating to a delegate that itself delegates is not allowed, as loops could be formed and
+    // unbounded gas consumption is possible. This must be checked explicitly as otherwise votes
+    // would be sent to an incorrect proposal.
+    assert(voters[target].delegate == 0x0000000000000000000000000000000000000000)
 
-   // Increase the weight of the delegate.
-   voters[target].votingWeight += voterWeight
+    voters[voter].hasVoted = true
+    voters[voter].delegate = target
 
-   if voters[target].hasVoted {
-     // If the delegate has already voted for a proposal, increase its number of votes.
+    // The voting weight of the caller.
+    let voterWeight: Int = voters[voter].votingWeight
 
-     // The proposal the delegate has voted for.
-     let votedProposalID = voters[target].votedProposalID
-     proposals[votedProposalID].numVotes += voterWeight
+    // Increase the weight of the delegate.
+    voters[target].votingWeight += voterWeight
+
+    if voters[target].hasVoted {
+      // If the delegate has already voted for a proposal, increase its number of votes.
+
+      // The proposal the delegate has voted for.
+      var votedProposalID: Int = voters[target].votedProposalID // TODO: this should be let, but is var due to a bug.
+      proposals[votedProposalID].numVotes += voterWeight
+    }
   }
 
   public mutating func vote(proposalID: Int) {
@@ -64,25 +79,25 @@ Ballot :: voter <- (voters.keys) {
     voters[voter].hasVoted = true
     voters[voter].votedProposalID = proposalID
 
-    let weight = voters[voter].votingWeight
-    proposals[proposalID].voteCount += weight
+    let weight: Int = voters[voter].votingWeight
+    proposals[proposalID].numVotes += weight
   }
 }
 
-Ballot :: (any) {
+Ballot@(Voting) :: (any) {
   public func getWinningProposalID() -> Int {
-    var maxVotes = 0
-    var winningProposalID = 0
+    var winningProposalID: Int = 0
 
-    var i = 0
-    for proposal in proposals {
-      if proposal.numVotes > maxVotes {
-        maxVotes = proposal.numVotes
+    var i: Int = 0
+    for let proposal: Proposal in proposals {
+      if proposal.numVotes > proposals[winningProposalID].numVotes {
         winningProposalID = i
       }
 
       i += 1
     }
+
+    return winningProposalID
   }
 
   public func getWinningProposalName() -> String {
@@ -96,13 +111,17 @@ struct Voter {
   var votingWeight: Int
 
   // Whether the voter has voted for a proposal.
-  var hasVoted: Bool
+  var hasVoted: Bool = false
 
   // The voter this voter has delegated its vote to.
-  var delegate: Address
+  var delegate: Address = 0x0000000000000000000000000000000000000000
 
   // The ID of the proposal this voter has voted for.
-  var votedProposalID: Int
+  var votedProposalID: Int = 0
+
+  public init(weight: Int) {
+    votingWeight = weight
+  }
 }
 
 struct Proposal {
@@ -111,4 +130,8 @@ struct Proposal {
 
   // The number of votes for this proposal.
   var numVotes: Int = 0
+
+  public init(name: String) {
+    self.name = name
+  }
 }
