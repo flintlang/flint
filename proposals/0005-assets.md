@@ -1,7 +1,7 @@
 # Introducing Assets
 
 * Proposal: [FIP-0005](0005-assets.md)
-* Author: [Daniel Hails](https://github.com/djrhails)
+* Author: [Daniel Hails](https://github.com/djrhails) & [Franklin Schrans](https://github.com/franklin_sch)
 * Review Manager: TBD
 * Status: **Awaiting Review**
 * Issue label: TBD
