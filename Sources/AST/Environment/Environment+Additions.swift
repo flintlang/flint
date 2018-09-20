@@ -98,7 +98,7 @@ extension Environment {
 
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerProtections: [callerProtection]) {
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerProtections: [CallerProtection]) {
     let functionName = functionDeclaration.name
 
     types[enclosingType, default: TypeInformation()]
@@ -108,7 +108,7 @@ extension Environment {
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerProtections: [callerProtection] = []) {
+  public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerProtections: [CallerProtection] = []) {
     types[enclosingType, default: TypeInformation()]
       .initializers
       .append(SpecialInformation(declaration: initializerDeclaration, callerProtections: callerProtections, isSignature: false))
