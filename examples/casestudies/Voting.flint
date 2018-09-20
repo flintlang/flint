@@ -1,10 +1,10 @@
 contract Ballot (Proposing, Voting) {
   // The administrator of the ballot.
-  let chairperson: Address
+  visible let chairperson: Address
 
   // The accounts which have voted in this ballot.
-  var voters: [Address: Voter]
-  var votersKeys: [Address] // TODO: remove this once keys property of dictionary added to stdlib.
+  var voters: [Address: Voter] = [:]
+  visible var votersKeys: [Address] = [] // this can be removed once keys property of dictionary is added to stdlib
 
   // The list of proposals.
   var proposals: [Proposal] = []
