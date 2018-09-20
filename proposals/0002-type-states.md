@@ -167,7 +167,7 @@ func timeDependent() (InProgress -> (InProgress, Terminated)) -> Int {
   if (time > 5000) {
     state <- Terminated
   }
-  return try! name() // State could be InProgress or Terminated, so try enables runtime checking. Otherwise would fail to compile. Same syntax as try?! for caller capabilities.
+  return try! name() // State could be InProgress or Terminated, so try enables runtime checking. Otherwise would fail to compile. Same syntax as try?! for caller protections.
 }
 ```
 
@@ -208,7 +208,7 @@ Optional Requirements:
 ### Dynamic/multiple concurrent states
 Could introduce multiple states being possible and the idea of sub-states. For instance imagine a main state transition of: `Unitialised -> Active -> Closed`. Then within `Active` you might have: `AwaitingUsers -> InProgress -> Return`. This could be implemented with more states but would lead to longer code and annotations
 
-### Capability Functions for State
+### Protection Functions for State
 ```
 Bank @(any) :: (any) {
   func isActiveState(state: State) -> Bool {

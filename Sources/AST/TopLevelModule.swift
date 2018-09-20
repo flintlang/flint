@@ -38,7 +38,7 @@ public struct TopLevelModule: ASTNode {
     let anyIdentifier = Identifier(identifierToken: Token(kind: .identifier("any"), sourceLocation: contract.sourceLocation))
     let states = contract.isStateful ? [TypeState(identifier: anyIdentifier)] : []
 
-    return ContractBehaviorDeclaration(contractIdentifier: contract.identifier, states: states, capabilityBinding: nil, callerCapabilities: [CallerCapability(identifier: anyIdentifier)], closeBracketToken: dummyCloseToken, members: accessors + mutators)
+    return ContractBehaviorDeclaration(contractIdentifier: contract.identifier, states: states, callerBinding: nil, callerProtections: [CallerProtection(identifier: anyIdentifier)], closeBracketToken: dummyCloseToken, members: accessors + mutators)
 
   }
 

@@ -80,7 +80,7 @@ extension ASTPassContext {
   }
 
   /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
-  /// contract the functions are declared for, and the caller capability associated with them.
+  /// contract the functions are declared for, and the caller protections associated with them.
   public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
     get { return self[ContractBehaviorDeclarationContextEntry.self] }
     set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }

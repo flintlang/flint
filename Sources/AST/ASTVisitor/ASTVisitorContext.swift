@@ -11,16 +11,16 @@ public struct ContractStateDeclarationContext {
 }
 
 /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
-/// contract the functions are declared for, and the caller capability associated with them.
+/// contract the functions are declared for, and the caller protections associated with them.
 public struct ContractBehaviorDeclarationContext {
   public var contractIdentifier: Identifier
   public var typeStates: [TypeState]
-  public var callerCapabilities: [CallerCapability]
+  public var callerProtections: [CallerProtection]
 
-  public init(contractIdentifier: Identifier, typeStates: [TypeState], callerCapabilities: [CallerCapability]) {
+  public init(contractIdentifier: Identifier, typeStates: [TypeState], callerProtections: [CallerProtection]) {
     self.contractIdentifier = contractIdentifier
     self.typeStates         = typeStates
-    self.callerCapabilities = callerCapabilities
+    self.callerProtections = callerProtections
   }
 }
 

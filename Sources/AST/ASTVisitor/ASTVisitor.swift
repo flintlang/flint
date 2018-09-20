@@ -83,11 +83,11 @@ public struct ASTVisitor {
   }
 
   func visit(_ contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerProtections: contractBehaviorDeclaration.callerProtections)
 
     var localVariables = [VariableDeclaration]()
-    if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
-      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
+    if let callerBinding = contractBehaviorDeclaration.callerBinding {
+      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: callerBinding, type: Type(inferredType: .basicType(.address), identifier: callerBinding)))
     }
 
     let scopeContext = ScopeContext(localVariables: localVariables)
@@ -104,12 +104,12 @@ public struct ASTVisitor {
       return processResult.combining(visit(typeState, passContext: processResult.passContext))
     }
 
-    if let capabilityBinding = processResult.element.capabilityBinding {
-      processResult.element.capabilityBinding = processResult.combining(visit(capabilityBinding, passContext: processResult.passContext))
+    if let callerBinding = processResult.element.callerBinding {
+      processResult.element.callerBinding = processResult.combining(visit(callerBinding, passContext: processResult.passContext))
     }
 
-    processResult.element.callerCapabilities = processResult.element.callerCapabilities.map { callerCapability in
-      return processResult.combining(visit(callerCapability, passContext: processResult.passContext))
+    processResult.element.callerProtections = processResult.element.callerProtections.map { callerProtection in
+      return processResult.combining(visit(callerProtection, passContext: processResult.passContext))
     }
 
     let typeScopeContext = processResult.passContext.scopeContext
@@ -720,12 +720,12 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 
-  func visit(_ callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
-    var processResult = pass.process(callerCapability: callerCapability, passContext: passContext)
+  func visit(_ callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection> {
+    var processResult = pass.process(callerProtection: callerProtection, passContext: passContext)
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier, passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(callerCapability: processResult.element, passContext: processResult.passContext)
+    let postProcessResult = pass.postProcess(callerProtection: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
 

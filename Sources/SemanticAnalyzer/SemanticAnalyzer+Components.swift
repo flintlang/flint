@@ -139,17 +139,17 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
+  public func process(callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection> {
     let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext!
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if !callerCapability.isAny && !environment.containsCallerCapability(callerCapability, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) {
-      // The caller capability is neither `any` or a valid property in the enclosing contract.
-      diagnostics.append(.undeclaredCallerCapability(callerCapability, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
+    if !callerProtection.isAny && !environment.containsCallerProtection(callerProtection, enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) {
+      // The caller protection is neither `any` or a valid property in the enclosing contract.
+      diagnostics.append(.undeclaredCallerProtection(callerProtection, contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
     }
 
-    return ASTPassResult(element: callerCapability, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: callerProtection, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {

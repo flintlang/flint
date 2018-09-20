@@ -162,9 +162,9 @@ extension Environment {
     }
   }
 
-  /// Whether the given caller capability is declared in the given type.
-  public func containsCallerCapability(_ callerCapability: CallerCapability, enclosingType: RawTypeIdentifier) -> Bool {
-    return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
+  /// Whether the given caller protection is declared in the given type.
+  public func containsCallerProtection(_ callerProtection: CallerProtection, enclosingType: RawTypeIdentifier) -> Bool {
+    return declaredCallerProtections(enclosingType: enclosingType).contains(callerProtection.name)
   }
 
   public func undefinedFunctions(in enclosingType: Identifier) -> [FunctionInformation] {

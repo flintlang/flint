@@ -147,20 +147,20 @@ extension Parser {
     return (parameters, closeBracketToken)
   }
 
-  // MARK: Capability
-  func parseCapabilityBinding() throws -> Identifier {
+  // MARK: Protection
+  func parseProtectionBinding() throws -> Identifier {
     let identifier = try parseIdentifier()
     try consume(.punctuation(.leftArrow), or: .expectedLeftArrow(at: latestSource))
     return identifier
   }
 
-  func parseCallerCapabilityGroup() throws -> (callerCapabilities: [CallerCapability], closeBracketToken: Token) {
+  func parseCallerProtectionGroup() throws -> (callerProtections: [CallerProtection], closeBracketToken: Token) {
     let (identifiers, closeBracketToken) = try parseIdentifierGroup()
-    let callerCapabilities = identifiers.map {
-      return CallerCapability(identifier: $0)
+    let callerProtections = identifiers.map {
+      return CallerProtection(identifier: $0)
     }
 
-    return (callerCapabilities, closeBracketToken)
+    return (callerProtections, closeBracketToken)
   }
 
   // MARK: Conformances

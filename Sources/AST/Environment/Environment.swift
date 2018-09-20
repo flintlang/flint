@@ -72,8 +72,8 @@ public struct Environment {
     return types[enclosingType]!.allEvents.flatMap({ $1 })
   }
 
-  /// The list of properties declared in a type which can be used as caller capabilities.
-  func declaredCallerCapabilities(enclosingType: RawTypeIdentifier) -> [String] {
+  /// The list of properties declared in a type which can be used as caller protections.
+  func declaredCallerProtections(enclosingType: RawTypeIdentifier) -> [String] {
     let properties: [String] = types[enclosingType]!.properties.compactMap { key, value in
       switch value.rawType {
       case .basicType(.address): return key
@@ -148,12 +148,12 @@ public struct Environment {
     return true
   }
 
-  /// Whether two caller capability groups are compatible, i.e. whether a function with caller capabilities `source` is
-  /// able to call a function which require caller capabilities `target`.
-  func areCallerCapabilitiesCompatible(source: [CallerCapability], target: [CallerCapability]) -> Bool {
+  /// Whether two caller protection groups are compatible, i.e. whether a function with caller protection `source` is
+  /// able to call a function which require caller protections `target`.
+  func areCallerProtectionsCompatible(source: [CallerProtection], target: [CallerProtection]) -> Bool {
     guard !target.isEmpty else { return true }
-    for callCallerCapability in source {
-      if !target.contains(where: { return callCallerCapability.isSubCapability(of: $0) }) {
+    for callCallerProtection in source {
+      if !target.contains(where: { return callCallerProtection.isSubProtection(of: $0) }) {
         return false
       }
     }

@@ -98,14 +98,14 @@ public class ASTDumper {
   func dump(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     writeNode("ContractBehaviorDeclaration") {
       self.dump(contractBehaviorDeclaration.contractIdentifier)
-      if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
-        self.writeLine("capability binding \"\(capabilityBinding.name)\"")
+      if let callerBinding = contractBehaviorDeclaration.callerBinding {
+        self.writeLine("caller binding \"\(callerBinding.name)\"")
       }
 
       self.dump(contractBehaviorDeclaration.states)
 
-      for callerCapability in contractBehaviorDeclaration.callerCapabilities {
-        self.dump(callerCapability)
+      for callerProtection in contractBehaviorDeclaration.callerProtections {
+        self.dump(callerProtection)
       }
       for member in contractBehaviorDeclaration.members {
         self.dump(member)
@@ -380,9 +380,9 @@ public class ASTDumper {
     writeLine("built-in type \(builtInType.rawValue)")
   }
 
-  func dump(_ callerCapability: CallerCapability) {
-    writeNode("CallerCapability") {
-      self.dump(callerCapability.identifier)
+  func dump(_ callerProtection: CallerProtection) {
+    writeNode("CallerProtection") {
+      self.dump(callerProtection.identifier)
     }
   }
 

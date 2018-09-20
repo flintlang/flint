@@ -65,7 +65,7 @@ public protocol ASTPass {
   func process(typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation>
   func process(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier>
   func process(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type>
-  func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
+  func process(callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection>
   func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState>
   func process(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance>
   func process(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument>
@@ -124,7 +124,7 @@ public protocol ASTPass {
   func postProcess(typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation>
   func postProcess(identifier: Identifier, passContext: ASTPassContext) -> ASTPassResult<Identifier>
   func postProcess(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type>
-  func postProcess(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability>
+  func postProcess(callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection>
   func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState>
   func postProcess(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance>
   func postProcess(functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument>
@@ -262,8 +262,8 @@ extension ASTPass {
   public func process(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
     return ASTPassResult(element: type, diagnostics: [], passContext: passContext)
   }
-  public func process(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
-    return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
+  public func process(callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection> {
+    return ASTPassResult(element: callerProtection, diagnostics: [], passContext: passContext)
   }
   public func process(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
     return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
@@ -407,8 +407,8 @@ extension ASTPass {
   public func postProcess(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
     return ASTPassResult(element: type, diagnostics: [], passContext: passContext)
   }
-  public func postProcess(callerCapability: CallerCapability, passContext: ASTPassContext) -> ASTPassResult<CallerCapability> {
-    return ASTPassResult(element: callerCapability, diagnostics: [], passContext: passContext)
+  public func postProcess(callerProtection: CallerProtection, passContext: ASTPassContext) -> ASTPassResult<CallerProtection> {
+    return ASTPassResult(element: callerProtection, diagnostics: [], passContext: passContext)
   }
   public func postProcess(typeState: TypeState, passContext: ASTPassContext) -> ASTPassResult<TypeState> {
     return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)

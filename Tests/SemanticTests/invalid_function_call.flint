@@ -14,7 +14,7 @@ Test :: caller <- (any) {
   }
 
   public func foo() {
-    restrictedFunc() // expected-error {{Function 'restrictedFunc' cannot be called using the capability 'any'}}
+    restrictedFunc() // expected-error {{Function 'restrictedFunc' cannot be called using the protection 'any'}}
   }
 }
 

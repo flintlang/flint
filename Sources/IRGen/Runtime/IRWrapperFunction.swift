@@ -17,7 +17,7 @@ struct IRWrapperFunction {
   }
 
   func rendered(enclosingType: RawTypeIdentifier, hard: Bool) -> String {
-    let callerCheck = IRCallerCapabilityChecks.init(callerCapabilities: function.callerCapabilities, revert: false)
+    let callerCheck = IRCallerProtectionChecks.init(callerProtections: function.callerProtections, revert: false)
     let callerCode = callerCheck.rendered(enclosingType: enclosingType, environment: function.environment)
     let functionCall = function.signature(withReturn: false)
 

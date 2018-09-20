@@ -1,12 +1,12 @@
 //
-//  CallerCapability.swift
+//  CallerProtection.swift
 //  AST
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
 import Source
 
-public struct CallerCapability: ASTNode {
+public struct CallerProtection: ASTNode {
   public var identifier: Identifier
 
   public var name: String {
@@ -21,7 +21,7 @@ public struct CallerCapability: ASTNode {
     self.identifier = identifier
   }
 
-  public func isSubCapability(of parent: CallerCapability) -> Bool {
+  public func isSubProtection(of parent: CallerProtection) -> Bool {
     return parent.isAny || name == parent.name
   }
 
