@@ -4,8 +4,6 @@
 /*.xcodeproj
 Package.resolved
 
-*.sol
-
 bin/
 contracts/
 build/
