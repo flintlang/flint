@@ -36,7 +36,7 @@ extension SemanticAnalyzer {
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
 
     if attemptExpression.isSoft,
-      case .matchedFunction(let function) = environment.matchFunctionCall(attemptExpression.functionCall, enclosingType: passContext.enclosingTypeIdentifier!.name, typeStates: typeStates, callerCapabilities: [], scopeContext: ScopeContext()),
+      case .matchedFunction(let function) = environment.matchFunctionCall(attemptExpression.functionCall, enclosingType: passContext.enclosingTypeIdentifier!.name, typeStates: typeStates, callerProtections: [], scopeContext: ScopeContext()),
       !function.declaration.isVoid {
       diagnostics.append(.nonVoidAttemptCall(attemptExpression))
     }
@@ -88,7 +88,7 @@ extension SemanticAnalyzer {
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
 
     var diagnostics = [Diagnostic]()
 
@@ -97,7 +97,7 @@ extension SemanticAnalyzer {
 
     if !passContext.isInEmit {
       // Find the function declaration associated with this function call.
-      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!) {
+      switch environment.matchFunctionCall(functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: passContext.scopeContext!) {
       case .matchedFunction(let matchingFunction):
         // The function declaration is found.
 
@@ -125,7 +125,7 @@ extension SemanticAnalyzer {
       // The function declaration is found, but caller is incorrect
       if !functionCall.isAttempted || matchingFunctions.count > 1 {
         // If function call is not attempted, or there are multiple matching functions
-        diagnostics.append(.noTryForFunctionCall(functionCall, contextCallerCapabilities: callerCapabilities, stateCapabilities: typeStates, candidates: matchingFunctions))
+        diagnostics.append(.noTryForFunctionCall(functionCall, contextCallerProtections: callerProtections, stateProtections: typeStates, candidates: matchingFunctions))
       }
 
     case .failure(let candidates):

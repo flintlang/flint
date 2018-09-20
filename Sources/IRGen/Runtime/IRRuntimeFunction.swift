@@ -19,9 +19,9 @@ enum IRRuntimeFunction {
     case allocateMemory
     case checkNoValue
     case isMatchingTypeState
-    case isValidCallerCapability
-    case isCallerCapabilityInArray
-    case isCallerCapabilityInDictionary
+    case isValidCallerProtection
+    case isCallerProtectionInArray
+    case isCallerProtectionInDictionary
     case return32Bytes
     case isInvalidSubscriptExpression
     case storageArrayOffset
@@ -96,16 +96,16 @@ enum IRRuntimeFunction {
     return "\(Identifiers.isMatchingTypeState.mangled)(\(stateValue), \(stateVariable))"
   }
 
-  static func isValidCallerCapability(address: String) -> String {
-    return "\(Identifiers.isValidCallerCapability.mangled)(\(address))"
+  static func isValidCallerProtection(address: String) -> String {
+    return "\(Identifiers.isValidCallerProtection.mangled)(\(address))"
   }
 
-  static func isCallerCapabilityInArray(arrayOffset: Int) -> String {
-    return "\(Identifiers.isCallerCapabilityInArray.mangled)(\(arrayOffset))"
+  static func isCallerProtectionInArray(arrayOffset: Int) -> String {
+    return "\(Identifiers.isCallerProtectionInArray.mangled)(\(arrayOffset))"
   }
 
-  static func isCallerCapabilityInDictionary(dictionaryOffset: Int) -> String {
-    return "\(Identifiers.isCallerCapabilityInDictionary.mangled)(\(dictionaryOffset))"
+  static func isCallerProtectionInDictionary(dictionaryOffset: Int) -> String {
+    return "\(Identifiers.isCallerProtectionInDictionary.mangled)(\(dictionaryOffset))"
   }
 
   static func return32Bytes(value: String) -> String {
@@ -175,9 +175,9 @@ enum IRRuntimeFunction {
     IRRuntimeFunctionDeclaration.allocateMemory,
     IRRuntimeFunctionDeclaration.checkNoValue,
     IRRuntimeFunctionDeclaration.isMatchingTypeState,
-    IRRuntimeFunctionDeclaration.isValidCallerCapability,
-    IRRuntimeFunctionDeclaration.isCallerCapabilityInArray,
-    IRRuntimeFunctionDeclaration.isCallerCapabilityInDictionary,
+    IRRuntimeFunctionDeclaration.isValidCallerProtection,
+    IRRuntimeFunctionDeclaration.isCallerProtectionInArray,
+    IRRuntimeFunctionDeclaration.isCallerProtectionInDictionary,
     IRRuntimeFunctionDeclaration.return32Bytes,
     IRRuntimeFunctionDeclaration.isInvalidSubscriptExpression,
     IRRuntimeFunctionDeclaration.storageArrayOffset,
@@ -280,16 +280,16 @@ struct IRRuntimeFunctionDeclaration {
   }
   """
 
-  static let isValidCallerCapability =
+  static let isValidCallerProtection =
   """
-  function flint$isValidCallerCapability(_address) -> ret {
+  function flint$isValidCallerProtection(_address) -> ret {
     ret := eq(_address, caller())
   }
   """
 
-  static let isCallerCapabilityInArray =
+  static let isCallerProtectionInArray =
   """
-  function flint$isCallerCapabilityInArray(arrayOffset) -> ret {
+  function flint$isCallerProtectionInArray(arrayOffset) -> ret {
     let size := sload(arrayOffset)
     let found := 0
     let _caller := caller()
@@ -302,9 +302,9 @@ struct IRRuntimeFunctionDeclaration {
   }
   """
 
-  static let isCallerCapabilityInDictionary =
+  static let isCallerProtectionInDictionary =
   """
-  function flint$isCallerCapabilityInDictionary(dictionaryOffset) -> ret {
+  function flint$isCallerProtectionInDictionary(dictionaryOffset) -> ret {
     let size := sload(dictionaryOffset)
     let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
     let found := 0

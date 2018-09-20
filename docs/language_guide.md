@@ -27,7 +27,7 @@ variety of security features.
 - **Flint Specific Features**
   - [Safe Arithmetic](#safe-arithmetic)
   - [Assets](#assets)
-  - [Caller Capabilities](#caller-capabilities)
+  - [Protection Blocks](#protection-blocks)
   - [Payable](#payable)
   - [Events](#events)
   - [Type States](#type-states)
@@ -359,7 +359,7 @@ if x == 2 {
 ---
 
 ## Functions
-_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions cannot be overloaded and are contained within contract behaviour blocks. For more information, see [Caller Capabilities](#caller-capabilities)
+_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions cannot be overloaded and are contained within [Protection Blocks](#protection-blocks).
 
 They are defined with the keyword `func` followed by the identifier and the set of parameters and optional return type:
 ```swift
@@ -371,7 +371,7 @@ func identifier() {
 In Flint all functions are `private` by default and as such can only be accessed from within the contract body.
 
 ### Function Parameters
-Functions can also take parameters which can be used within the function. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples names to add the Key, Value pair of caller's address and name. For more information about callers, see [Caller Capability Bindings](#caller-capability-bindings):
+Functions can also take parameters which can be used within the function. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples names to add the Key, Value pair of caller's address and name. For more information about callers, see [Caller Bindings](#caller-bindings):
 ```swift
 contract AddressBook {
   var people: [Address: String]
@@ -693,14 +693,18 @@ Wallet :: (owner) {
 
 ---
 
-## Caller Capabilities
+## Protection Blocks
 
-Flint introduces the concept of **caller capabilities**. While traditional computer programs have an entry point (the _main_ function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services presenting API endpoints. It is important to prevent unauthorized parties from calling sensitive functions.
+Flint introduces the concept of **protection blocks**. While traditional computer programs have an entry point (the _main_ function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services presenting API endpoints. It is important to prevent unauthorized parties from calling sensitive functions.
+
+In Flint, functions of a contract are declared within protection blocks, which restrict when the enclosed functions are allowed to be called.
+
+There are two elements to protection blocks, the caller protection and the optional type state protection (see [Type States](#type-states) for more detail). A protection block is minimally declared as the contract name (`Bank`) followed by a `::` and a caller group (`(manager)`).
 
 Solidity uses function modifiers to insert dynamic checks in functions, which can for instance abort unauthorised calls. However, it is easy to forget to specify these checks, as the language does not require programmers to write them.
 Having a language construct which protects functions from invalid calls could require programmers to systematically think about which parties should be able to call the functions they are about to define.
 
-In Flint, functions of a contract are declared within caller capability blocks, which protect the functions from invalid access.
+In Flint, functions of a contract are declared within protection blocks, which protect the functions from invalid access.
 
 ### Caller Group
 Caller Groups consist of a list of Caller Members enclosed in parentheses. These Caller Members can be a function of type `Address -> Bool` or `() -> Address`, a contract state property of the types `Address`, `[Address]`, `[T: Address]` or `Address[n]`, or the special `any` keyword that denotes all addresses. For example, `(any)`, `(admin)`, `(owners, manager)` are all valid Caller Groups where `admin` and `manager` refer to a state property of type `Address` and `owners` refers to a state property of type `[Address]`
@@ -722,14 +726,14 @@ Calls to Flint functions are validated both at compile-time and runtime, with ru
 ---
 
 ### Static checking
-In a Flint function, if a function call to another Flint function is performed, the compiler checks that the caller has sufficient caller capabilities.
+In a Flint function, if a function call to another Flint function is performed, the compiler checks that the caller meets the caller protection.
 
 Consider the following example.
 
 ```swift
 Bank :: (any) {
   func foo() {
-    // Error: Capability "any" cannot be used to perform a call to a
+    // Error: Protection "any" cannot be used to perform a call to a
     // function for "manager"
     bar()
   }
@@ -739,27 +743,25 @@ Bank :: (manager) {
   func bar() {}
 }
 ```
-Within the context of `foo`, the caller is regarded as any. It is not certain that the caller also has capability manager, so the compiler rejects the call.
+Within the context of `foo`, the caller is regarded as any. It is not certain that the caller also satisfies the `manager` protection, so the compiler rejects the call.
 
 ---
 ### Dynamic checking
 #### Attempt function calls
-It is still possible for the caller of `bar` to have the capability `manager`.
+It is still possible for `foo` to satisfy the protections of the function `bar`.
 
 For these cases, two additional language constructs exist:
 
-- `try? bar()`: The function `bar`'s body is executed if at runtime, the caller's capability matches `bar`'s. The expression `try? bar()` returns a boolean.
-- `try! bar()`: If at runtime, the caller's capability doesn't match `manager`, an exception is thrown and the body doesn't get executed. Otherwise, it does.
-
-Note: this is not supported by the compiler yet.
+- `try? bar()`: The function `bar`'s body is executed if, at runtime, the protections are satisfied (i.e. the caller satisfies the caller protection and the state of the contract satisfies the type state protection). The expression `try? bar()` returns a boolean if successful.
+- `try! bar()`: If at runtime `bar`'s protections are not satisfied an exception is thrown and the body doesn't get executed. Otherwise, it does.
 
 #### Calls from Ethereum users or non-Flint smart contracts
 Functions to contracts on the Blockchain can also be called by users directly, through an Ethereum client, or another non-Flint smart contract.
 
-For those cases, Flint checks at runtime whether the caller has the appropriate capabilities to perform the call, and throws an exception if not.
+For those cases, Flint checks at runtime whether the caller has the appropriate protections to perform the call, and throws an exception if not.
 
-#### Multiple capabilities
-A contract behavior declaration can be restricted by multiple caller capabilities.
+#### Multiple protections
+A contract behavior declaration can be restricted by multiple caller protections.
 
 Consider the following contract behavior declaration:
 ```
@@ -769,11 +771,11 @@ Bank :: (manager, accounts) {
 ```
 The function `forManagerOrCustomers` can only be called by either the manager, or any of the accounts registered in the bank.
 
-Calls to functions of multiple capabilities are accepted if **each** of the capabilities of the enclosing function are compatible with **any** of the target function's capabilities.
+Calls to functions of multiple protections are accepted if **each** of the protections of the enclosing function are compatible with **any** of the target function's protections.
 
 Consider the following examples:
 
-#### Insufficient capabilities
+#### Insufficient protections
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -786,7 +788,7 @@ Bank :: (manager) {
   func forManager() {}
 }
 ```
-#### Sufficient capabilities
+#### Sufficient protections
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -800,7 +802,7 @@ Bank :: (accounts, manager) {
   func forManagerOrCustomers2() {}
 }
 ```
-#### `any` is compatible with any capability
+#### `any` is compatible with any caller protection
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -810,16 +812,16 @@ Bank :: (manager, accounts) {
   }
 }
 
-// The caller capability "manager" has no effect: "any" is compatible with any capability
+// The caller protection "manager" has no effect: "any" is compatible with any caller protection
 Bank :: (manager, any) {
   func forManagerOrCustomers2() {}
 }
 ```
 #### Static and dynamic checking
-Just like single-capability definitions, capability lists are checked both at compile-time and runtime.
+Just like single-member protection definitions, multi-member protections are checked both at compile-time and runtime.
 
-### Capability Binding
-Capabilities can be bound to temporary variables.
+### Caller Binding
+Callers can be bound to temporary variables.
 
 Consider the following example.
 ```swift
@@ -954,7 +956,7 @@ Bank :: caller <- (any) {
 ## Type States
 Flint introduces the concept of **type states**. Insufficient and incorrect state management in Solidity code have led to security vulnerabilities and unexpected behaviour in widely deployed smart contracts. Avoiding these vulnerabilities by the design of the language is a strong advantage.
 
-In Flint, states of a contract are declared within capability blocks, which restrict which users/contracts are allowed to call the enclosed functions.
+In Flint, states of a contract are declared within protection blocks, which protect the enclosed function from invalid calls.
 ```swift
 // Ahyone can deposit into the Bank iff the state is Deposit
 Bank @(Deposit) :: (any) { // Deposit is a state identifier.

@@ -17,15 +17,15 @@ C2 @(any) :: (any) {
   }
 }
 
-contract CapabilityBinding (stated){}
+contract ProtectionBinding (stated){}
 
 // CHECK-AST: ContractBehaviorDeclaration
-// CHECK-AST:   identifier "CapabilityBinding"
+// CHECK-AST:   identifier "ProtectionBinding"
 // CHECK-AST:   TypeState
 // CHECK-AST:     identifier "stated"
-// CHECK-AST:   CallerCapability
+// CHECK-AST:   CallerProtection
 // CHECK-AST:     identifier "any"
-CapabilityBinding @(stated) :: (any) {
+ProtectionBinding @(stated) :: (any) {
 
 // CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public

@@ -2,9 +2,9 @@
 
 <img src="docs/flint_small.png" height="70">
 
-Flint is a new type-safe, capabilities-secure, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
+Flint is a new type-safe, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
-Flint is still in **active development**, and is not ready to be used in the real world yet.
+Flint is still in **alpha development**, and is not ready to be used in production yet.
 
 Medium article: [Flint: A New Language for Safe Smart Contracts on Ethereum](https://medium.com/@fschrans/flint-a-new-language-for-safe-smart-contracts-on-ethereum-a5672137a5c7)
 
@@ -16,9 +16,9 @@ The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), 
 
 Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
 
-### Caller Capabilities
+### Caller Protections
 
-[**Caller capabilities**](https://docs.flintlang.org/caller-capabilities) require programmers to think about who should be able to call the contract’s sensitive functions. Capabilities are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+[**Caller protections**](https://docs.flintlang.org/caller-protections) require programmers to think about who should be able to call the contract’s sensitive functions. Protections are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
 
 Example:
 
@@ -28,7 +28,7 @@ contract Bank {
   var manager: Address
 }
 
-// Functions are declared in caller capability blocks,
+// Functions are declared in protection blocks,
 // which specify which users are allowed to call them.
 Bank :: (manager) { // manager is a state property.
 

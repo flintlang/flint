@@ -136,7 +136,7 @@ extension Parser {
     let contractIdentifier = try parseIdentifier()
 
     var states: [TypeState] = []
-    var capabilityBinding: Identifier? = nil
+    var callerBinding: Identifier? = nil
 
     if currentToken?.kind == .punctuation(.at) {
       let _ = try consume(.punctuation(.at), or: .dummy())
@@ -146,16 +146,16 @@ extension Parser {
     try consume(.punctuation(.doubleColon), or: .expectedBehaviourSeparator(at: latestSource))
 
     if case .identifier(_)? = currentToken?.kind {
-      capabilityBinding = try parseCapabilityBinding()
+      callerBinding = try parseProtectionBinding()
     }
-    let (callerCapabilities, closeBracketToken) = try parseCallerCapabilityGroup()
+    let (callerProtections, closeBracketToken) = try parseCallerProtectionGroup()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "contract behavior", at: latestSource))
 
     let members = try parseContractBehaviorMembers(contractIdentifier: contractIdentifier.name)
 
     try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "contract behavior", at: latestSource))
 
-    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, states: states, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, closeBracketToken: closeBracketToken, members: members)
+    return ContractBehaviorDeclaration(contractIdentifier: contractIdentifier, states: states, callerBinding: callerBinding, callerProtections: callerProtections, closeBracketToken: closeBracketToken, members: members)
   }
 
   // MARK: Top Level Members

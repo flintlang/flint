@@ -25,7 +25,6 @@ struct IRContractFallback {
   }
 
   func rendered() -> String {
-    return IRFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: nil, callerCapabilities: [], environment: environment, isContractFunction: true).rendered()
+    return IRFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, callerBinding: nil, callerProtections: [], environment: environment, isContractFunction: true).rendered()
   }
 }
-

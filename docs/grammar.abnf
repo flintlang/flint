@@ -60,7 +60,7 @@ structMember = variableDeclaration
              / initializerDeclaration;
 
 ; BEHAVIOUR
-contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
+contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerBinding] callerProtectionGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
 
 contractBehaviourMember = functionDeclaration
                         / initializerDeclaration
@@ -69,11 +69,11 @@ contractBehaviourMember = functionDeclaration
                         / functionSignatureDeclaration;
 
 ; ACCESS GROUPS
-stateGroup              = "@" identifierGroup;
-callerCapabilityBinding = identifier WSP "<-";
-callerCapabilityGroup   = identifierGroup;
-identifierGroup         = "(" identifierList ")";
-identifierList          = identifier *("," WSP identifier)
+stateGroup            = "@" identifierGroup;
+callerBinding         = identifier WSP "<-";
+callerProtectionGroup = identifierGroup;
+identifierGroup       = "(" identifierList ")";
+identifierList        = identifier *("," WSP identifier)
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
 functionSignatureDeclaration    = functionHead SP identifier parameterList [returnType]

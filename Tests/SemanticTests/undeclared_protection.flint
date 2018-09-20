@@ -1,0 +1,28 @@
+// RUN: %flintc %s --verify
+
+contract Test {}
+
+Test :: caller <- (any) {
+  public init() {}
+
+  public func isOwner(addr: Address, x: Int) -> Bool {
+    return true
+  }
+
+  public func isOwner2(addr: Address, x: Int) -> Int {
+    return 1
+  }
+
+
+  public func getPrimaryOwner(addr: Address) -> Address {
+    return addr
+  }
+}
+
+Test :: (alice) {} // expected-error {{Caller protection 'alice' is undefined in 'Test' or has incompatible type}}
+
+Test :: (isOwner) {} // expected-error {{Caller protection 'isOwner' is undefined in 'Test' or has incompatible type}}
+
+Test :: (isOwner2) {} // expected-error {{Caller protection 'isOwner2' is undefined in 'Test' or has incompatible type}}
+
+Test :: (getPrimaryOwner) {} // expected-error {{Caller protection 'getPrimaryOwner' is undefined in 'Test' or has incompatible type}}

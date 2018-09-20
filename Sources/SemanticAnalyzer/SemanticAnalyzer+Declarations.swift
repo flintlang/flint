@@ -114,9 +114,9 @@ extension SemanticAnalyzer {
       }
     }
 
-    // Create a context containing the contract the methods are defined for, and the caller capabilities the functions
+    // Create a context containing the contract the methods are defined for, and the caller protections the functions
     // within it are scoped by.
-    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerCapabilities: contractBehaviorDeclaration.callerCapabilities)
+    let declarationContext = ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier, typeStates: contractBehaviorDeclaration.states, callerProtections: contractBehaviorDeclaration.callerProtections)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -142,7 +142,7 @@ extension SemanticAnalyzer {
     if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(traitDeclaration.identifier, originalSource: conflict))
     }
-    
+
     traitDeclaration.members.forEach { member in
       if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
         diagnostics.append(.contractTraitMemberInStructTrait(member))
@@ -424,7 +424,7 @@ extension SemanticAnalyzer {
           return true
         }
       case .functionCall(let function):
-        let match = environment.matchFunctionCall(function, enclosingType: enclosingType, typeStates: [], callerCapabilities: [], scopeContext: ScopeContext())
+        let match = environment.matchFunctionCall(function, enclosingType: enclosingType, typeStates: [], callerProtections: [], scopeContext: ScopeContext())
         if case .matchedFunction(let functionInformation) = match,
           !functionInformation.isMutating {
           return false
@@ -460,12 +460,12 @@ extension SemanticAnalyzer {
     if let context = passContext.contractBehaviorDeclarationContext, passContext.traitDeclarationContext == nil, specialDeclaration.isPublic {
       let contractName = context.contractIdentifier.name
 
-      // The caller capability block in which this initializer appears should be scoped by "any".
-      if !context.callerCapabilities.contains(where: { $0.isAny }) {
+      // The caller protection block in which this initializer appears should be scoped by "any".
+      if !context.callerProtections.contains(where: { $0.isAny }) {
         if specialDeclaration.isInit {
-          diagnostics.append(.contractInitializerNotDeclaredInAnyCallerCapabilityBlock(specialDeclaration))
+          diagnostics.append(.contractInitializerNotDeclaredInAnyCallerProtectionBlock(specialDeclaration))
         } else if specialDeclaration.isFallback {
-          diagnostics.append(.contractFallbackNotDeclaredInAnyCallerCapabilityBlock(specialDeclaration))
+          diagnostics.append(.contractFallbackNotDeclaredInAnyCallerProtectionBlock(specialDeclaration))
         }
       } else {
         if let publicFallback = passContext.environment!.publicFallback(forContract: contractName),
