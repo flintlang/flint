@@ -913,7 +913,9 @@ ChildCollegeFund :: (child) {
 ---
 
 ## Payable
-When a user creates a transaction to call a function, they can attach Ether to send to the contract. Functions which expect Ether to be attached when called must be annotated with the `@payable` annotation. When adding the annotation, a parameter marked implicit of type `Wei` must be declared. `implicit` parameters are a mechanism to expose information from the Ethereum transaction to the developer of the smart contract, without using globally accessible variables defined by the language, such as `msg.value` in Solidity. This mechanism allows developers to name `implicit` variables themselves, and do not need to remember the name of a global variable.
+When a user creates a transaction to call a function, they can attach Ether to send to the contract. Functions which expect Ether to be attached when called must be annotated with the `@payable` annotation otherwise the transaction will revert when Ether is attached.
+
+When adding the annotation, a parameter marked implicit of type `Wei` must be declared. `implicit` parameters are a mechanism to expose information from the Ethereum transaction to the developer of the smart contract, without using globally accessible variables defined by the language, such as `msg.value` in Solidity. This mechanism allows developers to name `implicit` variables themselves, and do not need to remember the name of a global variable.
 
 Functions in Flint can be marked as payable using the `@payable` attribute. The amount of Wei sent is bound to an implicit variable:
 ```swift
