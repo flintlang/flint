@@ -35,6 +35,11 @@ extension Environment {
     return declaredEnums.contains { $0.name == type }
   }
 
+  /// Whether a trait has been declared in the program.
+  public func isTraitDeclared(_ type: RawTypeIdentifier) -> Bool {
+    return declaredTraits.contains { $0.name == type }
+  }
+
   /// Whether a type has been declared in the program.
   public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
     return types[type] != nil
@@ -104,38 +109,39 @@ extension Environment {
 
   /// Attempts to find a conflicting declaration of the given type.
   public func conflictingTypeDeclaration(for type: Identifier) -> Identifier? {
-    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums)
+    return conflictingDeclaration(of: type, in: declaredStructs + declaredContracts + declaredEnums + declaredTraits)
   }
 
   /// Attempts to find a conflicting event declaration in given contract.
   public func conflictingEventDeclaration(for event: Identifier, in type: RawTypeIdentifier) -> Identifier? {
-    let declaredEvents = types[type]!.events[event.name]?.map {$0.declaration.identifier } ?? []
+    let declaredEvents = types[type]!.allEvents[event.name]?.map { $0.declaration.identifier } ?? []
     return conflictingDeclaration(of: event, in: declaredEvents + declaredStructs + declaredContracts + declaredEnums)
   }
 
-  
+
   /// Attempts to find a conflicting declaration of the given function declaration
   public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
     var contractFunctions = [Identifier]()
 
     if isContractDeclared(type) {
       // Contract functions do not support overloading.
-      contractFunctions = types[type]!.functions[function.identifier.name]?.map { $0.declaration.identifier } ?? []
+      contractFunctions = types[type]!.allFunctions[function.name]?.filter({ !$0.isSignature }).map { $0.declaration.identifier } ?? []
     }
 
     if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
       return conflict
     }
 
-    let functions = types[type]!.functions[function.identifier.name]?.filter { functionInformation in
+    let functions = types[type]!.allFunctions[function.name]?.filter { functionInformation in
       let identifier1 = function.identifier
       let identifier2 = functionInformation.declaration.identifier
-      let parameterList1 = function.parameters.map { $0.type.rawType.name }
-      let parameterList2 = functionInformation.declaration.parameters.map { $0.type.rawType.name }
+      let parameterList1 = function.signature.parameters.map { $0.type.rawType.name }
+      let parameterList2 = functionInformation.declaration.signature.parameters.map { $0.type.rawType.name }
 
-      return identifier1.name == identifier2.name &&
+      return !functionInformation.isSignature &&
+        identifier1.name == identifier2.name &&
         parameterList1 == parameterList2 &&
-        identifier1.sourceLocation.line < identifier2.sourceLocation.line
+        identifier1.sourceLocation < identifier2.sourceLocation
     }
 
     return functions?.first?.declaration.identifier
@@ -146,9 +152,54 @@ extension Environment {
     return conflictingDeclaration(of: identifier, in: propertyDeclarations(in: type).map { $0.identifier })
   }
 
+  // If the number of functions is greater than 1 (the signature of the trait) then there must be a conflict
+  public func conflictingTraitSignatures(for type: RawTypeIdentifier) -> [String : [FunctionInformation]] {
+    guard let typeInfo = types[type] else {
+      return [:]
+    }
+    return typeInfo.traitFunctions.filter{ (name, functions) in
+      functions.count > 1 && functions.contains(where: { $0.declaration.signature != functions.first!.declaration.signature})
+    }
+  }
+
   /// Whether the given caller capability is declared in the given type.
   public func containsCallerCapability(_ callerCapability: CallerCapability, enclosingType: RawTypeIdentifier) -> Bool {
     return declaredCallerCapabilities(enclosingType: enclosingType).contains(callerCapability.name)
   }
-}
 
+  public func undefinedFunctions(in enclosingType: Identifier) -> [FunctionInformation] {
+    let typeInfo = types[enclosingType.name]!
+    var notImplemented = [FunctionInformation]()
+    for name in typeInfo.allFunctions.keys {
+      if let signature = typeInfo.allFunctions[name]?.filter({ $0.isSignature }).first {
+        let conforming = typeInfo.functions[name]?.filter({ !$0.isSignature }) ?? []
+        if conforming.isEmpty {
+          notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
+        }
+        for conform in conforming {
+          if conform.declaration.signature != signature.declaration.signature {
+            notImplemented.append(conform)
+          }
+        }
+      }
+    }
+    return notImplemented
+  }
+
+  public func undefinedInitialisers(in enclosingType: Identifier) -> [SpecialInformation] {
+    let typeInfo = types[enclosingType.name]!
+    if let conforming = typeInfo.initializers.filter({ !$0.isSignature }).first { // Compatibility check
+      if let signature = typeInfo.allInitialisers.filter({ $0.isSignature }).first,
+        conforming.declaration.signature != signature.declaration.signature {
+        return [signature]
+      }
+      return []
+    }
+    return typeInfo.allInitialisers
+  }
+
+  public func isConforming(_ function: FunctionDeclaration, in enclosingType: RawTypeIdentifier) -> Bool {
+    let signature = types[enclosingType]?.allFunctions[function.identifier.name]?.filter({ $0.isSignature }).first
+    return function.signature == signature?.declaration.signature
+  }
+}

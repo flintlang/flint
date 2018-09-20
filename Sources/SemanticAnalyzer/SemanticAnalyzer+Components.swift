@@ -158,6 +158,17 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: typeState, diagnostics: [], passContext: passContext)
   }
 
+  public func process(conformance: Conformance, passContext: ASTPassContext) -> ASTPassResult<Conformance> {
+    let environment = passContext.environment!
+    let contractDeclarationContext = passContext.contractStateDeclarationContext!
+    var diagnostics = [Diagnostic]()
+
+    if !environment.isTraitDeclared(conformance.name) {
+      diagnostics.append(.contractUsesUndeclaredTraits(conformance, in: contractDeclarationContext.contractIdentifier))
+    }
+    return ASTPassResult(element: conformance, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
     var diagnostics = [Diagnostic]()
     if case .literal(let token) = literalToken.kind,

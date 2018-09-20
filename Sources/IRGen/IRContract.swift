@@ -104,7 +104,7 @@ struct IRContract {
 
     let initializer = IRContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
 
-    let parameters = initializerDeclaration.parameters.map { parameter in
+    let parameters = initializerDeclaration.signature.parameters.map { parameter in
       let parameterName = parameter.identifier.name.mangled
       return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
       }.joined(separator: ", ")

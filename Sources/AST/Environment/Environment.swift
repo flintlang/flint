@@ -9,7 +9,7 @@ import Lexer
 
 /// Information about the source program.
 public struct Environment {
-  /// Information about each type (contracts and structs) which the program define, such as its properties and
+  /// Information about each type (contracts, structs and traits) which the program define, such as its properties and
   /// functions.
   var types = [RawTypeIdentifier: TypeInformation]()
 
@@ -21,6 +21,9 @@ public struct Environment {
 
   /// A list of the names of the enums which have been declared in the program.
   var declaredEnums = [Identifier]()
+
+  // A list of the names of the traits which have been declared in the program.
+  var declaredTraits = [Identifier]()
 
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
@@ -44,14 +47,19 @@ public struct Environment {
 
   /// The list of property declarations in a type.
   public func propertyDeclarations(in enclosingType: RawTypeIdentifier) -> [Property] {
-    return types[enclosingType]!.properties.values.map { $0.property }
+    return types[enclosingType]?.properties.values.map { $0.property } ?? []
   }
 
   // MARK: - Accessors of type properties
 
+  /// The list of conforming functions in a type.
+  public func conformingFunctions(in enclosingType: RawTypeIdentifier) -> [FunctionInformation] {
+    return types[enclosingType]!.conformingFunctions
+  }
+
   /// The list of initializers in a type.
   public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
-    return types[enclosingType]!.initializers
+    return types[enclosingType]!.allInitialisers
   }
 
   /// The list of fallbacks in a type.
@@ -61,7 +69,7 @@ public struct Environment {
 
   /// The list of events in a type.
   public func events(in enclosingType: RawTypeIdentifier) -> [EventInformation] {
-    return types[enclosingType]!.events.flatMap({ $1 })
+    return types[enclosingType]!.allEvents.flatMap({ $1 })
   }
 
   /// The list of properties declared in a type which can be used as caller capabilities.
@@ -96,16 +104,15 @@ public struct Environment {
 
   /// The public initializer for the given contract. A contract should have at most one public initializer.
   public func publicInitializer(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
-    return types[contract]!.publicInitializer
+    return types[contract]?.publicInitializer
   }
 
   /// The public fallback for the given contract. A contract should have at most one public fallback.
   public func publicFallback(forContract contract: RawTypeIdentifier) -> SpecialDeclaration? {
-    return types[contract]!.publicFallback
+    return types[contract]?.publicFallback
   }
 
   // MARK: - Compatibility
-
   func areArgumentsCompatible(source: [FunctionArgument], target: EventInformation, enclosingType: String, scopeContext: ScopeContext) -> Bool {
     let targetVariables = target.declaration.variableDeclarations
     let targetTypes = target.eventTypes
@@ -165,5 +172,3 @@ public struct Environment {
     return true
   }
 }
-
-

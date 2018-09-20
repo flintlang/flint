@@ -11,16 +11,17 @@ public struct FunctionInformation {
   public var typeStates: [TypeState]
   public var callerCapabilities: [CallerCapability]
   public var isMutating: Bool
+  public var isSignature: Bool
 
   var parameterTypes: [RawType] {
-    return declaration.parameters.map { $0.type.rawType }
+    return declaration.signature.parameters.map { $0.type.rawType }
   }
 
   var parameterIdentifiers: [Identifier] {
-    return declaration.parameters.map { $0.identifier }
+    return declaration.signature.parameters.map { $0.identifier }
   }
 
   var resultType: RawType {
-    return declaration.rawType
+    return declaration.signature.rawType
   }
 }

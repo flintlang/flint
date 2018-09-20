@@ -85,6 +85,9 @@ extension Diagnostic {
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
   }
+  static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected a trait identifier to conform to")
+  }
 
   // MARK: Enum
   static func expectedEnumDeclarationCaseMember(at sourceLocation: SourceLocation) -> Diagnostic {
@@ -133,6 +136,7 @@ extension Diagnostic {
   static func expectedEndAfterInout(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ',' or ')' after inout identifier")
   }
+
   // MARK: Generics
   static func expectedRightChevron(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '>' to complete \(node)")

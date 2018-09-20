@@ -29,6 +29,7 @@ func main() {
       inputFiles: inputFiles,
       stdlibFiles: StandardLibrary.default.files,
       outputDirectory: outputDirectory,
+      dumpAST: dumpAST,
       emitBytecode: emitBytecode,
       diagnostics: DiagnosticPool(shouldVerify: shouldVerify, quiet: quiet, sourceContext: SourceContext(sourceFiles: inputFiles))
     ).compile()
@@ -42,10 +43,6 @@ func main() {
         irFileURL = URL(fileURLWithPath: irOutputPath, isDirectory: true).appendingPathComponent(fileName)
       }
       try! compilationOutcome.irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
-    }
-
-    if dumpAST {
-      print(compilationOutcome.astDump)
     }
   }.run()
 }

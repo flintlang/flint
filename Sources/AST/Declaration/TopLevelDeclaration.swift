@@ -17,6 +17,7 @@ public enum TopLevelDeclaration: ASTNode {
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
   case structDeclaration(StructDeclaration)
   case enumDeclaration(EnumDeclaration)
+  case traitDeclaration(TraitDeclaration)
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
@@ -28,7 +29,9 @@ public enum TopLevelDeclaration: ASTNode {
       case .structDeclaration(let structDeclaration):
         return structDeclaration.sourceLocation
       case .enumDeclaration(let enumDeclaration):
-         return enumDeclaration.sourceLocation
+        return enumDeclaration.sourceLocation
+      case .traitDeclaration(let traitDeclaration):
+        return traitDeclaration.sourceLocation
     }
   }
 
@@ -42,6 +45,8 @@ public enum TopLevelDeclaration: ASTNode {
       return structDeclaration.description
     case .enumDeclaration(let enumDeclaration):
       return enumDeclaration.description
+    case .traitDeclaration(let traitDeclaration):
+      return traitDeclaration.description
     }
   }
 }

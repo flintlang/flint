@@ -15,5 +15,34 @@ public struct TypeInformation {
   var fallbacks = [SpecialInformation]()
   var publicInitializer: SpecialDeclaration? = nil
   var publicFallback: SpecialDeclaration? = nil
+
+  var conformances: [TypeInformation] = []
+
+  public var allFunctions: [String: [FunctionInformation]] {
+    return conformances.map({ $0.functions }).reduce(functions, +)
+  }
+
+  public var traitFunctions: [String: [FunctionInformation]] {
+    return conformances.map({ $0.functions }).reduce([:], +)
+  }
+
+  public var conformingFunctions: [FunctionInformation] {
+    return conformances.flatMap({ $0.functions }).flatMap({ $0.value }).filter {
+      !$0.isSignature
+    }
+  }
+
+  public var allEvents: [String: [EventInformation]] {
+    return conformances.map({ $0.events }).reduce(events, +)
+  }
+
+  public var allInitialisers: [SpecialInformation] {
+    return initializers + conformances.flatMap({ $0.initializers })
+  }
 }
 
+func + <K, V>(lhs: [K: [V]], rhs: [K: [V]]) -> [K: [V]] {
+  var combined = lhs
+  combined.merge(rhs, uniquingKeysWith: + )
+  return combined
+}
