@@ -96,7 +96,7 @@ extension IRPreprocessor {
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
     let scopeContext = passContext.scopeContext!
@@ -127,7 +127,7 @@ extension IRPreprocessor {
       if isGlobalFunctionCall {
         declarationEnclosingType = Environment.globalFunctionStructName
       } else {
-        declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext).name
+        declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerProtections: callerProtections, scopeContext: scopeContext).name
       }
 
       // Set the mangled identifier for the function.
@@ -155,7 +155,7 @@ extension IRPreprocessor {
         scopeContext.isParameterImplicit(parameterName) {
         isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
       } else {
-        let type = passContext.environment!.type(of: argument.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+        let type = passContext.environment!.type(of: argument.expression, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
         guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
@@ -198,13 +198,13 @@ extension IRPreprocessor {
     }
 
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
+    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: passContext.scopeContext!)
 
     switch matchResult {
     case .matchedFunction(let functionInformation):
       let declaration = functionInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedFunctionWithoutCaller(let candidates):
       guard candidates.count == 1 else {
@@ -214,16 +214,16 @@ extension IRPreprocessor {
         fatalError("Non-function CallableInformation where function expected")
       }
       let declaration = candidate.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
     case .matchedInitializer(let initializerInformation):
       let declaration = initializerInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
     case .matchedFallback(_):
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: [])
     case .matchedGlobalFunction(let functionInformation):
-      let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = functionInformation.declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
     case .failure(_):
       return nil
@@ -233,11 +233,11 @@ extension IRPreprocessor {
   func isGlobalFunctionCall(_ functionCall: FunctionCall, in passContext: ASTPassContext) -> Bool {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
     let scopeContext = passContext.scopeContext!
     let environment = passContext.environment!
 
-    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
 
     // Mangle global function
     if case .matchedGlobalFunction(_) = match {

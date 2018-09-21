@@ -80,7 +80,7 @@ extension ASTPassContext {
   }
 
   /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
-  /// contract the functions are declared for, and the caller capability associated with them.
+  /// contract the functions are declared for, and the caller protections associated with them.
   public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
     get { return self[ContractBehaviorDeclarationContextEntry.self] }
     set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }
@@ -98,6 +98,13 @@ extension ASTPassContext {
   public var enumDeclarationContext: EnumDeclarationContext? {
     get { return self[EnumDeclarationContextEntry.self] }
     set { self[EnumDeclarationContextEntry.self] = newValue }
+  }
+
+  /// Contextual information used when visiting declarations in a trait declaration, such as the
+  /// name of the trait the members belong to.
+  public var traitDeclarationContext: TraitDeclarationContext? {
+    get { return self[TraitDeclarationContextEntry.self] }
+    set { self[TraitDeclarationContextEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting declarations in an event, such as the name of the event
@@ -131,13 +138,27 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
-  /// The identifier of the enclosing type (a contract or a struct or an enum).
+  /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
-    return contractBehaviorDeclarationContext?.contractIdentifier ??
-      structDeclarationContext?.structIdentifier ??
-      contractStateDeclarationContext?.contractIdentifier ??
-      enumDeclarationContext?.enumIdentifier ??
-      eventDeclarationContext?.eventIdentifier
+    if let trait = traitDeclarationContext?.traitIdentifier {
+      return trait
+    }
+    if let contractBehaviour = contractBehaviorDeclarationContext?.contractIdentifier {
+      return contractBehaviour
+    }
+    if let structure = structDeclarationContext?.structIdentifier {
+      return structure
+    }
+    if let contract = contractStateDeclarationContext?.contractIdentifier {
+      return contract
+    }
+    if let enumeration = enumDeclarationContext?.enumIdentifier {
+      return enumeration
+    }
+    if let event = eventDeclarationContext?.eventIdentifier {
+      return event
+    }
+    return nil
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.
@@ -203,6 +224,10 @@ private struct StructDeclarationContextEntry: PassContextEntry {
 
 private struct EnumDeclarationContextEntry: PassContextEntry {
   typealias Value = EnumDeclarationContext
+}
+
+private struct TraitDeclarationContextEntry: PassContextEntry {
+  typealias Value = TraitDeclarationContext
 }
 
 private struct EventDeclarationContextEntry: PassContextEntry {

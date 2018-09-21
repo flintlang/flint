@@ -32,7 +32,7 @@ struct IRContract {
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }
-        return IRFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, typeStates: contractBehaviorDeclaration.states, capabilityBinding: contractBehaviorDeclaration.capabilityBinding, callerCapabilities: contractBehaviorDeclaration.callerCapabilities, environment: environment)
+        return IRFunction(functionDeclaration: functionDeclaration, typeIdentifier: contractDeclaration.identifier, typeStates: contractBehaviorDeclaration.states, callerBinding: contractBehaviorDeclaration.callerBinding, callerProtections: contractBehaviorDeclaration.callerProtections, environment: environment)
       }
     }
 
@@ -99,12 +99,12 @@ struct IRContract {
   func renderPublicInitializer() -> String {
     let (initializerDeclaration, contractBehaviorDeclaration) = findContractPublicInitializer()!
 
-    let capabilityBinding = contractBehaviorDeclaration.capabilityBinding
-    let callerCapabilities = contractBehaviorDeclaration.callerCapabilities
+    let callerBinding = contractBehaviorDeclaration.callerBinding
+    let callerProtections = contractBehaviorDeclaration.callerProtections
 
-    let initializer = IRContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: true).rendered()
+    let initializer = IRContractInitializer(initializerDeclaration: initializerDeclaration, typeIdentifier: contractDeclaration.identifier, propertiesInEnclosingType: contractDeclaration.variableDeclarations, callerBinding: callerBinding, callerProtections: callerProtections, environment: environment, isContractFunction: true).rendered()
 
-    let parameters = initializerDeclaration.parameters.map { parameter in
+    let parameters = initializerDeclaration.signature.parameters.map { parameter in
       let parameterName = parameter.identifier.name.mangled
       return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
       }.joined(separator: ", ")

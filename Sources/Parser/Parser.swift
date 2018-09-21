@@ -55,39 +55,14 @@ public class Parser {
         switch tld {
         case .contractDeclaration(let contract):
           environment.addContract(contract)
-          if contract.isStateful {
-            environment.addEnum(contract.stateEnum)
-          }
-          for member in contract.members {
-            if case .eventDeclaration(let eventDeclaration) = member {
-              environment.addEvent(eventDeclaration, enclosingType: contract.identifier.name)
-            }
-          }
         case .contractBehaviorDeclaration(let behaviour):
-          let contractIdentifier = behaviour.contractIdentifier.name
-          for member in behaviour.members {
-            switch member {
-            case .functionDeclaration(let functionDeclaration):
-              // Record all the function declarations.
-              environment.addFunction(functionDeclaration, enclosingType: contractIdentifier, states: behaviour.states, callerCapabilities: behaviour.callerCapabilities)
-            case .specialDeclaration(let specialDeclaration):
-              if specialDeclaration.isInit {
-                environment.addInitializer(specialDeclaration, enclosingType: contractIdentifier)
-                if specialDeclaration.isPublic, environment.publicInitializer(forContract: contractIdentifier) == nil {
-                  // Record the public initializer, we will need to know if one of was declared during semantic analysis of the
-                  // contract's state properties.
-                  environment.setPublicInitializer(specialDeclaration, forContract: contractIdentifier)
-                }
-              } else if specialDeclaration.isFallback {
-                environment.addFallback(specialDeclaration, enclosingType: contractIdentifier)
-              }
-            }
-          }
+          environment.addContractBehaviour(behaviour)
         case .structDeclaration(let structDeclaration):
           environment.addStruct(structDeclaration)
-
         case .enumDeclaration(let enumDeclaration):
           environment.addEnum(enumDeclaration)
+        case .traitDeclaration(let trait):
+          environment.addTrait(trait)
         }
       }
     }

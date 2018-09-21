@@ -46,7 +46,7 @@ Test :: caller <- (any) {
 }
 
 Test :: (a) {
-  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller capability 'any'}}
+  public init(a: Address) { // expected-error {{Public contract initializer should be callable using caller protection 'any'}}
     self.a = a
     e = false
     f = 0

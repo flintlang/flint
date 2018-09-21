@@ -57,9 +57,9 @@ struct IRFunctionSelector {
     let typeStates = function.typeStates
     let typeStateChecks = IRTypeStateChecks(typeStates: typeStates).rendered(enclosingType: enclosingType.name, environment: environment)
 
-    // Dynamically check the caller has appropriate caller capabilities.
-    let callerCapabilities = function.callerCapabilities
-    let callerCapabilityChecks = IRCallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType.name, environment: environment)
+    // Dynamically check the caller has appropriate caller protections.
+    let callerProtections = function.callerProtections
+    let callerProtectionChecks = IRCallerProtectionChecks(callerProtections: callerProtections).rendered(enclosingType: enclosingType.name, environment: environment)
 
     // Dynamically check the function is not being called with value, if it is not payable.
     let valueChecks: String
@@ -81,11 +81,11 @@ struct IRFunctionSelector {
 
     if let resultType = function.resultCanonicalType {
       switch resultType {
-      case .address, .uint256, .bytes32: return typeStateChecks + "\n" + callerCapabilityChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
+      case .address, .uint256, .bytes32: return typeStateChecks + "\n" + callerProtectionChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    return "\(typeStateChecks)\n\(callerCapabilityChecks)\n\(valueChecks)\(call)"
+    return "\(typeStateChecks)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
   }
 }
 

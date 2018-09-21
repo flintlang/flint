@@ -13,6 +13,7 @@ public struct ContractDeclaration: ASTNode {
 
   public var contractToken: Token
   public var identifier: Identifier
+  public var conformances: [Conformance]
   public var states: [TypeState]
   public var members: [ContractMember]
 
@@ -46,19 +47,21 @@ public struct ContractDeclaration: ASTNode {
     return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
   }
 
-  public init(contractToken: Token, identifier: Identifier, states: [TypeState], members: [ContractMember]) {
+  public init(contractToken: Token, identifier: Identifier, conformances: [Conformance], states: [TypeState], members: [ContractMember]) {
     self.identifier = identifier
     self.members = members
+    self.conformances = conformances
     self.states = states
     self.contractToken = contractToken
   }
 
   // MARK: - ASTNode
   public var description: String {
-    let stateText = states.map({ $0.description }).joined(separator: " ")
-    let headText = "contract \(identifier) \(stateText)"
-    let memberText = members.map({ $0.description }).joined(separator: "\n")
-    return "\(headText) {\(memberText)}"
+    let conformsText = conformances.map ({ $0.description }).joined(separator: ", ")
+    let stateText = states.map({ $0.description }).joined(separator: ", ")
+    let headText = "contract \(identifier): \(conformsText) \(stateText)"
+    let membersText = members.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(membersText)}"
   }
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)

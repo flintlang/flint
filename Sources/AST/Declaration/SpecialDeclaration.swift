@@ -9,24 +9,9 @@ import Lexer
 
 /// The declaration of an initializer or fallback
 public struct SpecialDeclaration: ASTNode {
-  public var specialToken: Token
-
-  /// The attributes associated with the function, such as `@payable`.
-  public var attributes: [Attribute]
-
-  /// The modifiers associted with the function, such as `public`.
-  public var modifiers: [Token]
-  public var parameters: [Parameter]
-  public var closeBracketToken: Token
+  public var signature: SpecialSignatureDeclaration
   public var body: [Statement]
   public var closeBraceToken: Token
-
-  public var isInit: Bool {
-    return specialToken.kind == .init
-  }
-  public var isFallback: Bool {
-    return specialToken.kind == .fallback
-  }
 
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext
@@ -39,59 +24,58 @@ public struct SpecialDeclaration: ASTNode {
   /// A function declaration equivalent of the initializer.
   public var asFunctionDeclaration: FunctionDeclaration {
     let dummyIdentifier = Identifier(
-      identifierToken: Token(kind: .identifier(specialToken.kind.description),
-      sourceLocation: specialToken.sourceLocation)
+      identifierToken: Token(kind: .identifier(signature.specialToken.kind.description),
+      sourceLocation: signature.specialToken.sourceLocation)
     )
-
-    return FunctionDeclaration(
-      funcToken: specialToken,
-      attributes: attributes,
-      modifiers: modifiers,
+    let functionSignature = FunctionSignatureDeclaration(
+      funcToken: signature.specialToken,
+      attributes: signature.attributes,
+      modifiers: signature.modifiers,
       identifier: dummyIdentifier,
-      parameters: parameters,
-      closeBracketToken: closeBracketToken,
-      resultType: nil,
-      body: body,
-      closeBraceToken: closeBracketToken,
-      scopeContext: scopeContext
-    )
+      parameters: signature.parameters,
+      closeBracketToken: signature.closeBracketToken,
+      resultType: nil)
+
+    return FunctionDeclaration(signature: functionSignature, body: body, closeBraceToken: closeBraceToken, scopeContext: scopeContext)
+  }
+
+  public var isInit: Bool {
+    return signature.specialToken.kind == .init
+  }
+  public var isFallback: Bool {
+    return signature.specialToken.kind == .fallback
   }
 
   public var isPublic: Bool {
     return asFunctionDeclaration.isPublic
   }
 
-  public init(specialToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext = ScopeContext()) {
-    self.specialToken = specialToken
-    self.attributes = attributes
-    self.modifiers = modifiers
-    self.parameters = parameters
-    self.closeBracketToken = closeBracketToken
+
+  public init(signature: SpecialSignatureDeclaration, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext = ScopeContext()) {
+    self.signature = signature
     self.body = body
     self.closeBraceToken = closeBraceToken
     self.scopeContext = scopeContext
   }
 
   public init(_ functionDeclaration: FunctionDeclaration) {
-    self.specialToken = functionDeclaration.funcToken
-    self.attributes = functionDeclaration.attributes
-    self.modifiers = functionDeclaration.modifiers
-    self.parameters = functionDeclaration.parameters
-    self.closeBracketToken = functionDeclaration.closeBracketToken
+    self.signature = SpecialSignatureDeclaration(specialToken: functionDeclaration.signature.funcToken,
+                                                 attributes: functionDeclaration.signature.attributes,
+                                                 modifiers: functionDeclaration.signature.modifiers,
+                                                 parameters: functionDeclaration.signature.parameters,
+                                                 closeBracketToken: functionDeclaration.signature.closeBracketToken)
     self.body = functionDeclaration.body
-    self.closeBraceToken = functionDeclaration.closeBracketToken
+    self.closeBraceToken = functionDeclaration.closeBraceToken
     self.scopeContext = functionDeclaration.scopeContext ?? ScopeContext()
   }
 
   // MARK: - ASTNode
-  public var description: String {
-    let modifierText = modifiers.map({ $0.description }).joined(separator: " ")
-    let paramText = parameters.map({ $0.description }).joined(separator: ", ")
-    let headText = "\(modifierText) \(specialToken)(\(paramText))"
-    let bodyText = body.map({ $0.description }).joined(separator: "\n")
-    return "\(headText) {\(bodyText)}"
-  }
   public var sourceLocation: SourceLocation {
-    return specialToken.sourceLocation
+    return signature.sourceLocation
+  }
+
+  public var description: String {
+    let bodyText = body.map({ $0.description }).joined(separator: "\n")
+    return "\(signature) {\(bodyText)}"
   }
 }

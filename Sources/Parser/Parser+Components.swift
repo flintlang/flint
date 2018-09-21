@@ -11,27 +11,33 @@ import Lexer
 extension Parser {
   // MARK: Identifier
   func parseIdentifier() throws -> Identifier {
-    guard let token = currentToken, case .identifier(_) = token.kind else {
+    guard let token = currentToken else {
       throw raise(.expectedIdentifier(at: latestSource))
     }
-    currentIndex += 1
-    consumeNewLines()
-    return Identifier(identifierToken: token)
+    switch token.kind {
+      case .identifier(_), .self:
+        currentIndex += 1
+        consumeNewLines()
+        return Identifier(identifierToken: token)
+      default:
+        throw raise(.expectedIdentifier(at: latestSource))
+    }
+
   }
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
-    let identifiers = try parseIdentifierList()
+    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      throw raise(.expectedCloseParen(at: latestSource))
+    }
+    let identifiers = try parseIdentifierList(upTo: closingIndex)
     let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
 
     return (identifiers, closeBracketToken)
   }
 
-  func parseIdentifierList() throws -> [Identifier] {
+  func parseIdentifierList(upTo closingIndex: Int) throws -> [Identifier] {
     var identifiers = [Identifier]()
-    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      return []
-    }
     while currentIndex < closingIndex {
       identifiers.append(try parseIdentifier())
       if currentIndex < closingIndex {
@@ -141,20 +147,30 @@ extension Parser {
     return (parameters, closeBracketToken)
   }
 
-  // MARK: Capability
-  func parseCapabilityBinding() throws -> Identifier {
+  // MARK: Protection
+  func parseProtectionBinding() throws -> Identifier {
     let identifier = try parseIdentifier()
     try consume(.punctuation(.leftArrow), or: .expectedLeftArrow(at: latestSource))
     return identifier
   }
 
-  func parseCallerCapabilityGroup() throws -> (callerCapabilities: [CallerCapability], closeBracketToken: Token) {
+  func parseCallerProtectionGroup() throws -> (callerProtections: [CallerProtection], closeBracketToken: Token) {
     let (identifiers, closeBracketToken) = try parseIdentifierGroup()
-    let callerCapabilities = identifiers.map {
-      return CallerCapability(identifier: $0)
+    let callerProtections = identifiers.map {
+      return CallerProtection(identifier: $0)
     }
 
-    return (callerCapabilities, closeBracketToken)
+    return (callerProtections, closeBracketToken)
+  }
+
+  // MARK: Conformances
+  func parseConformances() throws -> [Conformance] {
+    try consume(.punctuation(.colon), or: .expectedConformance(at: latestSource))
+    guard let endOfConformances = indexOfFirstAtCurrentDepth([.punctuation(.openBracket), .newline, .punctuation(.openBrace)]) else {
+      throw raise(.expectedConformance(at: latestSource))
+    }
+    let identifiers = try parseIdentifierList(upTo: endOfConformances)
+    return identifiers.map { Conformance(identifier: $0) }
   }
 
   // MARK: Type State

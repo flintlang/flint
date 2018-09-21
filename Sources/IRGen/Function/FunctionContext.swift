@@ -12,7 +12,7 @@ struct FunctionContext {
   /// Environment information, such as typing of variables, for the source program.
   var environment: Environment
 
-  /// Set of local variables defined in the scope of the function, including caller capability bindings.
+  /// Set of local variables defined in the scope of the function, including caller bindings.
   var scopeContext: ScopeContext
 
   /// The type in which the function is declared.

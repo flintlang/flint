@@ -26,44 +26,44 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation, message: "Address literal should be 42 characters long")
   }
 
-  static func noTryForFunctionCall(_ functionCall: FunctionCall, contextCallerCapabilities: [CallerCapability], stateCapabilities: [TypeState], candidates: [CallableInformation]) -> Diagnostic {
+  static func noTryForFunctionCall(_ functionCall: FunctionCall, contextCallerProtections: [CallerProtection], stateProtections: [TypeState], candidates: [CallableInformation]) -> Diagnostic {
     let candidateNotes = candidates.map { candidate -> Diagnostic in
       guard case .functionInformation(let functionCandidate) = candidate else {
         fatalError("Non-function CallableInformation where function expected")
       }
-      let callerCapabilities = renderGroup(functionCandidate.callerCapabilities)
+      let callerProtections = renderGroup(functionCandidate.callerProtections)
       let messageTail: String
 
-      if functionCandidate.callerCapabilities.count == 0 {
+      if functionCandidate.callerProtections.count == 0 {
         messageTail = ""
-      } else if functionCandidate.callerCapabilities.count > 1 {
-        messageTail = ", which requires one of the caller capabilities in '(\(callerCapabilities))'"
+      } else if functionCandidate.callerProtections.count > 1 {
+        messageTail = ", which requires one of the caller protections in '(\(callerProtections))'"
       } else {
-        messageTail = ", which requires the caller capability '\(callerCapabilities)'"
+        messageTail = ", which requires the caller protection '\(callerProtections)'"
       }
 
       return Diagnostic(severity: .note, sourceLocation: functionCandidate.declaration.sourceLocation, message: "Perhaps you meant this function\(messageTail)")
     }
 
-    let callerPlural = contextCallerCapabilities.count > 1
-    let statesPlural = stateCapabilities.count > 1
-    let statesSpecified = " at \(statesPlural ? "states": "state") '\(renderGroup(stateCapabilities))'"
-    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' cannot be called using the \(callerPlural ? "capabilities" : "capability") '\(renderGroup(contextCallerCapabilities))'\(stateCapabilities.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
+    let callerPlural = contextCallerProtections.count > 1
+    let statesPlural = stateProtections.count > 1
+    let statesSpecified = " at \(statesPlural ? "states": "state") '\(renderGroup(stateProtections))'"
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation, message: "Function '\(functionCall.identifier.name)' cannot be called using the \(callerPlural ? "protections" : "protection") '\(renderGroup(contextCallerProtections))'\(stateProtections.isEmpty ? "" : statesSpecified)", notes: candidateNotes)
   }
 
   static func noMatchingFunctionForFunctionCall(_ functionCall: FunctionCall, candidates: [CallableInformation]) -> Diagnostic {
     let candidateNotes = candidates.map { callablecandidate -> Diagnostic in
       switch callablecandidate{
       case .functionInformation(let candidate):
-        let callerCapabilities = renderGroup(candidate.callerCapabilities)
+        let callerProtections = renderGroup(candidate.callerProtections)
         let messageTail: String
 
-        if candidate.callerCapabilities.count == 0 {
+        if candidate.callerProtections.count == 0 {
           messageTail = ""
-        } else if candidate.callerCapabilities.count > 1 {
-          messageTail = ", which requires one of the caller capabilities in '(\(callerCapabilities))'"
+        } else if candidate.callerProtections.count > 1 {
+          messageTail = ", which requires one of the caller protections in '(\(callerProtections))'"
         } else {
-          messageTail = ", which requires the caller capability '\(callerCapabilities)'"
+          messageTail = ", which requires the caller protection '\(callerProtections)'"
         }
 
         return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation, message: "Perhaps you meant this function\(messageTail)")
@@ -106,8 +106,20 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: contractBehaviorDeclaration.sourceLocation, message: "Contract '\(contractBehaviorDeclaration.contractIdentifier.name)' is \(isContractStateful ? "" : "not ")stateful but behavior declaration is\(!isContractStateful ? "" : " not")")
   }
 
-  static func undeclaredCallerCapability(_ callerCapability: CallerCapability, contractIdentifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: callerCapability.sourceLocation, message: "Caller capability '\(callerCapability.name)' is undefined in '\(contractIdentifier.name)' or has incompatible type")
+  static func signatureInContract(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Cannot use signatures in contracts, only in traits")
+  }
+
+  static func contractTraitMemberInStructTrait(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation, message: "Use of contract trait member in struct trait")
+  }
+
+  static func structTraitMemberInContractTrait(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation, message: "Use of struct trait member in contract trait")
+  }
+
+  static func undeclaredCallerProtection(_ callerProtection: CallerProtection, contractIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: callerProtection.sourceLocation, message: "Caller protection '\(callerProtection.name)' is undefined in '\(contractIdentifier.name)' or has incompatible type")
   }
 
   static func useOfMutatingExpressionInNonMutatingFunction(_ expression: Expression, functionDeclaration: FunctionDeclaration) -> Diagnostic {
@@ -131,6 +143,37 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Function '\(functionDeclaration.identifier.name)' cannot have dynamic parameters", notes: notes)
   }
 
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in decl: ContractDeclaration) -> Diagnostic {
+    return notImplementedFunctions(functions, in: "Contract \(decl.identifier.name)", at: decl.sourceLocation)
+  }
+
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in decl: StructDeclaration) -> Diagnostic {
+    return notImplementedFunctions(functions, in: "Struct \(decl.identifier.name)", at: decl.sourceLocation)
+  }
+
+  static func notImplementedFunctions(_ functions: [FunctionInformation], in string: String, at source: SourceLocation) -> Diagnostic {
+    let notes = functions.map { function -> Diagnostic in
+      if function.isSignature {
+        return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Function signature has not been implemented")
+      }
+      return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Is this meant to implement the trait signature?")
+    }
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(string) doesn't conform to traits as it doesn't implement the declared functions", notes: notes)
+  }
+
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in string: String, at source: SourceLocation) -> Diagnostic {
+    let notes = intialisers.map { Diagnostic(severity: .note, sourceLocation: $0.declaration.sourceLocation, message: "Initialiser has not been implemented") }
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(string) doesn't conform to traits as it doesn't implement the declared initialiser", notes: notes)
+  }
+
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in decl: ContractDeclaration) -> Diagnostic {
+    return notImplementedInitialiser(intialisers, in: "Contract", at: decl.sourceLocation)
+  }
+
+  static func notImplementedInitialiser(_ intialisers: [SpecialInformation], in decl: StructDeclaration) -> Diagnostic {
+    return notImplementedInitialiser(intialisers, in: "Struct", at: decl.sourceLocation)
+  }
+
   static func ambiguousPayableValueParameter(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Ambiguous implicit payable value parameter. Only one parameter can be declared implicit with a currency type")
   }
@@ -148,7 +191,7 @@ extension Diagnostic {
   }
 
   static func invalidReturnTypeInFunction(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Type '\(functionDeclaration.resultType!.name)' not valid as return type in function '\(functionDeclaration.identifier.name)'")
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation, message: "Type '\(functionDeclaration.signature.resultType!.name)' not valid as return type in function '\(functionDeclaration.identifier.name)'")
   }
 
   static func reassignmentToConstant(_ identifier: Identifier, _ declarationSourceLocation: SourceLocation) -> Diagnostic {
@@ -188,7 +231,34 @@ extension Diagnostic {
   }
 
   static func contractDoesNotHaveAPublicInitializer(contractIdentifier: Identifier) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the capability 'any'")
+    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' needs a public initializer accessible using the protection 'any'")
+  }
+
+  static func repeatedConformance(contractIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: contractIdentifier.sourceLocation, message: "Contract '\(contractIdentifier.name)' has repeated conformances")
+  }
+
+  static func repeatedConformance(structIdentifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: structIdentifier.sourceLocation, message: "Struct '\(structIdentifier.name)' has repeated conformances")
+  }
+
+  static func traitsAreIncompatible(_ contractDeclaration: ContractDeclaration, _ functions: [FunctionInformation]) -> Diagnostic {
+     return traitsAreIncompatible(in: "Contract '\(contractDeclaration.identifier.name)'", with: functions, at: contractDeclaration.sourceLocation)
+  }
+
+  static func traitsAreIncompatible(_ structDeclaration: StructDeclaration, _ functions: [FunctionInformation]) -> Diagnostic {
+    return traitsAreIncompatible(in: "Struct '\(structDeclaration.identifier.name)'", with: functions, at: structDeclaration.sourceLocation)
+  }
+
+  static func traitsAreIncompatible(in type: String, with functions: [FunctionInformation], at source: SourceLocation) -> Diagnostic {
+    let notes = functions.map{ function in
+      return Diagnostic(severity: .note, sourceLocation: function.declaration.sourceLocation, message: "Function with the name '\(function.declaration.name)' has been declared here")
+    }
+    return Diagnostic(severity: .error, sourceLocation: source, message: "\(type) conforms to traits using the same function name", notes: notes)
+  }
+
+  static func contractUsesUndeclaredTraits(_ trait: Conformance, in type: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: trait.sourceLocation, message: "Contract '\(type.name)' conforms to undeclared trait '\(trait.identifier.name)'")
   }
 
   static func multiplePublicInitializersDefined(_ invalidAdditionalInitializer: SpecialDeclaration, originalInitializerLocation: SourceLocation) -> Diagnostic {
@@ -196,8 +266,8 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalInitializer.sourceLocation, message: "A public initializer has already been defined", notes: [note])
   }
 
-  static func contractInitializerNotDeclaredInAnyCallerCapabilityBlock(_ initializerDeclaration: SpecialDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller capability 'any'")
+  static func contractInitializerNotDeclaredInAnyCallerProtectionBlock(_ initializerDeclaration: SpecialDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: initializerDeclaration.sourceLocation, message: "Public contract initializer should be callable using caller protection 'any'")
   }
 
   // FALLBACK ERRORS //
@@ -207,8 +277,8 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: invalidAdditionalFallback.sourceLocation, message: "A public fallback has already been defined", notes: [note])
   }
 
-  static func contractFallbackNotDeclaredInAnyCallerCapabilityBlock(_ invalidFallback: SpecialDeclaration) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: invalidFallback.sourceLocation, message: "Public contract fallback should be callable using caller capability 'any'")
+  static func contractFallbackNotDeclaredInAnyCallerProtectionBlock(_ invalidFallback: SpecialDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: invalidFallback.sourceLocation, message: "Public contract fallback should be callable using caller protection 'any'")
   }
 
   static func fallbackDeclaredWithArguments(_ invalidFallback: SpecialDeclaration) -> Diagnostic {
@@ -251,8 +321,8 @@ extension Diagnostic {
    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation, message: "Cannot declare variable '\(variableDeclaration.identifier.name)' both public and visible")
   }
 
-  static func renderGroup(_ capabilities: [CallerCapability]) -> String {
-    return "\(capabilities.map({ $0.name }).joined(separator: ", "))"
+  static func renderGroup(_ protections: [CallerProtection]) -> String {
+    return "\(protections.map({ $0.name }).joined(separator: ", "))"
   }
 
   static func renderGroup(_ states: [TypeState]) -> String {

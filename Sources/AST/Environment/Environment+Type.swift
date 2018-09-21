@@ -22,8 +22,8 @@ extension Environment {
   }
 
   /// The type return type of a function call, determined by looking up the function's declaration.
-  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability], scopeContext: ScopeContext) -> RawType? {
-    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+  public func type(of functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerProtections: [CallerProtection], scopeContext: ScopeContext) -> RawType? {
+    let match = matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
 
     switch match {
       case .matchedFunction(let matchingFunction): return matchingFunction.resultType
@@ -126,12 +126,12 @@ extension Environment {
     return .dictionaryType(key: keyType ?? .any, value: valueType ?? .any)
   }
 
-  public func type(of attemptExpression: AttemptExpression, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> RawType {
+  public func type(of attemptExpression: AttemptExpression, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerProtections: [CallerProtection] = [], scopeContext: ScopeContext) -> RawType {
     if attemptExpression.isSoft {
      return .basicType(.bool)
     }
     let functionCall = attemptExpression.functionCall
-    return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities , scopeContext: scopeContext) ?? .errorType
+    return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerProtections: callerProtections , scopeContext: scopeContext) ?? .errorType
   }
 
   /// The type of an expression.
@@ -140,14 +140,14 @@ extension Environment {
   ///   - expression: The expression to compute the type for.
   ///   - functionDeclarationContext: Contextual information if the expression is used in a function.
   ///   - enclosingType: The enclosing type of the expression, if any.
-  ///   - callerCapabilities: The caller capabilities associated with the expression, if the expression is a function call.
+  ///   - callerProtections: The caller protections associated with the expression, if the expression is a function call.
   ///   - scopeContext: Contextual information about the scope in which the expression resides.
   /// - Returns: The `RawType` of the expression.
-  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, typeStates: [TypeState] = [], callerCapabilities: [CallerCapability] = [], scopeContext: ScopeContext) -> RawType {
+  public func type(of expression: Expression, enclosingType: RawTypeIdentifier, typeStates: [TypeState] = [], callerProtections: [CallerProtection] = [], scopeContext: ScopeContext) -> RawType {
 
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext))
+      return .inoutType(type(of: inoutExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext))
 
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
@@ -155,7 +155,7 @@ extension Environment {
       }
 
       if binaryExpression.opToken == .dot {
-        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) {
+        switch type(of: binaryExpression.lhs, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext) {
         case .arrayType(_):
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
@@ -179,13 +179,13 @@ extension Environment {
         }
       }
 
-      return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      return type(of: binaryExpression.rhs, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
 
     case .bracketedExpression(let bracketedExpression):
-      return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+      return type(of: bracketedExpression.expression, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
 
     case .functionCall(let functionCall):
-      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext) ?? .errorType
+      return type(of: functionCall, enclosingType: functionCall.identifier.enclosingType ?? enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext) ?? .errorType
 
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
@@ -215,7 +215,7 @@ extension Environment {
     case .range(let rangeExpression):
       return type(ofRangeExpression: rangeExpression, enclosingType: enclosingType, scopeContext: scopeContext)
     case .attemptExpression(let attemptExpression):
-       return type(of: attemptExpression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+       return type(of: attemptExpression, enclosingType: enclosingType, typeStates: typeStates, callerProtections: callerProtections, scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence(_): fatalError()

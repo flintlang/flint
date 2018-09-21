@@ -15,8 +15,8 @@ struct IRContractInitializer {
   /// The properties defined in the enclosing type. The default values of each property will be set in the initializer.
   var propertiesInEnclosingType: [VariableDeclaration]
 
-  var capabilityBinding: Identifier?
-  var callerCapabilities: [CallerCapability]
+  var callerBinding: Identifier?
+  var callerProtections: [CallerProtection]
 
   var environment: Environment
 
@@ -27,13 +27,13 @@ struct IRContractInitializer {
     return initializerDeclaration.explicitParameters.map { IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc) }
   }
 
-  /// The function's parameters and caller capability binding, as variable declarations in a `ScopeContext`.
+  /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     var localVariables = [VariableDeclaration]()
-    if let capabilityBinding = capabilityBinding {
-      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: capabilityBinding, type: Type(inferredType: .basicType(.address), identifier: capabilityBinding)))
+    if let callerBinding = callerBinding {
+      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: callerBinding, type: Type(inferredType: .basicType(.address), identifier: callerBinding)))
     }
-    return ScopeContext(parameters: initializerDeclaration.parameters, localVariables: localVariables)
+    return ScopeContext(parameters: initializerDeclaration.signature.parameters, localVariables: localVariables)
   }
 
   func rendered() -> String {
@@ -52,7 +52,7 @@ struct IRContractInitializer {
       """
     }.joined(separator: "\n")
 
-    let body = IRFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, capabilityBinding: capabilityBinding, callerCapabilities: callerCapabilities, environment: environment, isContractFunction: isContractFunction).rendered()
+    let body = IRFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, callerBinding: callerBinding, callerProtections: callerProtections, environment: environment, isContractFunction: isContractFunction).rendered()
 
     return """
     init()

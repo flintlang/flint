@@ -56,8 +56,8 @@ contract Test {
 // CHECK-AST: TopLevelDeclaration
 // CHECK-AST: ContractBehaviorDeclaration
 // CHECK-AST:   identifier "Test"
-// CHECK-AST:   capability binding "caller"
-// CHECK-AST:   CallerCapability
+// CHECK-AST:   caller binding "caller"
+// CHECK-AST:   CallerProtection
 // CHECK-AST:     identifier "any"
 Test :: caller <- (any) {
 // CHECK-AST: SpecialDeclaration

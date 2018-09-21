@@ -57,6 +57,8 @@ public class ASTDumper {
         self.dump(structDeclaration)
       case .enumDeclaration(let enumDeclaration):
         self.dump(enumDeclaration)
+      case .traitDeclaration(let traitDeclaration):
+        self.dump(traitDeclaration)
       }
     }
   }
@@ -65,6 +67,9 @@ public class ASTDumper {
     writeNode("ContractDeclaration") {
       self.dump(contractDeclaration.contractToken)
       self.dump(contractDeclaration.identifier)
+      if !contractDeclaration.conformances.isEmpty {
+        self.dump(contractDeclaration.conformances)
+      }
       if !contractDeclaration.states.isEmpty {
         self.dump(contractDeclaration.states)
       }
@@ -82,17 +87,25 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ conformances: [Conformance]) {
+    writeNode("Conforms to") {
+      for trait in conformances {
+        self.dump(trait.identifier)
+      }
+    }
+  }
+
   func dump(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     writeNode("ContractBehaviorDeclaration") {
       self.dump(contractBehaviorDeclaration.contractIdentifier)
-      if let capabilityBinding = contractBehaviorDeclaration.capabilityBinding {
-        self.writeLine("capability binding \"\(capabilityBinding.name)\"")
+      if let callerBinding = contractBehaviorDeclaration.callerBinding {
+        self.writeLine("caller binding \"\(callerBinding.name)\"")
       }
 
       self.dump(contractBehaviorDeclaration.states)
 
-      for callerCapability in contractBehaviorDeclaration.callerCapabilities {
-        self.dump(callerCapability)
+      for callerProtection in contractBehaviorDeclaration.callerProtections {
+        self.dump(callerProtection)
       }
       for member in contractBehaviorDeclaration.members {
         self.dump(member)
@@ -104,7 +117,9 @@ public class ASTDumper {
   func dump(_ structDeclaration: StructDeclaration) {
     writeNode("StructDeclaration") {
       self.dump(structDeclaration.identifier)
-
+      if !structDeclaration.conformances.isEmpty {
+        self.dump(structDeclaration.conformances)
+      }
       for member in structDeclaration.members {
         self.dump(member)
       }
@@ -142,6 +157,33 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ traitDeclaration: TraitDeclaration) {
+    writeNode("TraitDeclaration") {
+      self.dump(traitDeclaration.traitKind)
+      self.dump(traitDeclaration.identifier)
+      for member in traitDeclaration.members {
+        self.dump(member)
+      }
+    }
+  }
+
+  func dump(_ traitMember: TraitMember) {
+    switch traitMember {
+    case .functionDeclaration(let functionDeclaration):
+      self.dump(functionDeclaration)
+    case .functionSignatureDeclaration(let functionSignatureDeclaration):
+      self.dump(functionSignatureDeclaration)
+    case .specialDeclaration(let specialDeclaration):
+      self.dump(specialDeclaration)
+    case .specialSignatureDeclaration(let specialSignatureDeclaration):
+      self.dump(specialSignatureDeclaration)
+    case .eventDeclaration(let eventDeclaration):
+      self.dump(eventDeclaration)
+    case .contractBehaviourDeclaration(let contractBehaviorDeclaration):
+      self.dump(contractBehaviorDeclaration)
+    }
+  }
+
   func dump(_ structMember: StructMember) {
     switch structMember {
     case .functionDeclaration(let functionDeclaration):
@@ -164,10 +206,14 @@ public class ASTDumper {
 
   func dump(_ contractBehaviorMember: ContractBehaviorMember) {
     switch contractBehaviorMember {
-    case .functionDeclaration(let functionDeclaration):
-      self.dump(functionDeclaration)
-    case .specialDeclaration(let specialDeclaration):
-      self.dump(specialDeclaration)
+    case .functionDeclaration(let decl):
+      self.dump(decl)
+    case .specialDeclaration(let decl):
+      self.dump(decl)
+    case .functionSignatureDeclaration(let decl):
+      self.dump(decl)
+    case .specialSignatureDeclaration(let decl):
+      self.dump(decl)
     }
   }
 
@@ -194,6 +240,11 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ functionSignatureDeclaration: FunctionSignatureDeclaration) {
+    writeNode("FunctionSignatureDeclaration") {
+      self.dumpNodeContents(functionSignatureDeclaration)
+    }
+  }
 
   func dump(_ specialDeclaration: SpecialDeclaration) {
     writeNode("SpecialDeclaration") {
@@ -201,33 +252,43 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ specialSignatureDeclaration: SpecialSignatureDeclaration) {
+    writeNode("SpecialSignatureDeclaration") {
+      self.dumpNodeContents(specialSignatureDeclaration.asFunctionSignatureDeclaration)
+    }
+  }
+
   func dumpNodeContents(_ functionDeclaration: FunctionDeclaration) {
-    for attribute in functionDeclaration.attributes {
-      self.dump(attribute)
-    }
-
-    for modifier in functionDeclaration.modifiers {
-      self.dump(modifier)
-    }
-
-    self.dump(functionDeclaration.funcToken)
-
-    self.dump(functionDeclaration.identifier)
-
-    for parameter in functionDeclaration.parameters {
-      self.dump(parameter)
-    }
-
-    self.dump(functionDeclaration.closeBracketToken)
-
-    if let resultType = functionDeclaration.resultType {
-      self.writeNode("ResultType") {
-        self.dump(resultType)
-      }
-    }
+    self.dumpNodeContents(functionDeclaration.signature)
 
     for statement in functionDeclaration.body {
       self.dump(statement)
+    }
+  }
+
+  func dumpNodeContents(_ functionSignatureDeclaration: FunctionSignatureDeclaration) {
+    for attribute in functionSignatureDeclaration.attributes {
+      self.dump(attribute)
+    }
+
+    for modifier in functionSignatureDeclaration.modifiers {
+      self.dump(modifier)
+    }
+
+    self.dump(functionSignatureDeclaration.funcToken)
+
+    self.dump(functionSignatureDeclaration.identifier)
+
+    for parameter in functionSignatureDeclaration.parameters {
+      self.dump(parameter)
+    }
+
+    self.dump(functionSignatureDeclaration.closeBracketToken)
+
+    if let resultType = functionSignatureDeclaration.resultType {
+      self.writeNode("ResultType") {
+        self.dump(resultType)
+      }
     }
   }
 
@@ -319,9 +380,9 @@ public class ASTDumper {
     writeLine("built-in type \(builtInType.rawValue)")
   }
 
-  func dump(_ callerCapability: CallerCapability) {
-    writeNode("CallerCapability") {
-      self.dump(callerCapability.identifier)
+  func dump(_ callerProtection: CallerProtection) {
+    writeNode("CallerProtection") {
+      self.dump(callerProtection.identifier)
     }
   }
 

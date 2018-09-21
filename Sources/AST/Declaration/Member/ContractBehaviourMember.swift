@@ -15,18 +15,24 @@ import Lexer
 public enum ContractBehaviorMember: ASTNode {
   case functionDeclaration(FunctionDeclaration)
   case specialDeclaration(SpecialDeclaration)
+  case functionSignatureDeclaration(FunctionSignatureDeclaration)
+  case specialSignatureDeclaration(SpecialSignatureDeclaration)
 
   // MARK: - ASTNode
   public var description: String {
     switch self {
-    case .functionDeclaration(let functionDeclaration): return functionDeclaration.description
-    case .specialDeclaration(let specialDeclaration): return specialDeclaration.description
+    case .functionDeclaration(let decl): return decl.description
+    case .specialDeclaration(let decl): return decl.description
+    case .functionSignatureDeclaration(let decl): return decl.description
+    case .specialSignatureDeclaration(let decl): return decl.description
     }
   }
   public var sourceLocation: SourceLocation {
     switch self {
-    case .functionDeclaration(let functionDeclaration): return functionDeclaration.sourceLocation
-    case .specialDeclaration(let specialDeclaration): return specialDeclaration.sourceLocation
+    case .functionDeclaration(let decl): return decl.sourceLocation
+    case .specialDeclaration(let decl): return decl.sourceLocation
+    case .functionSignatureDeclaration(let decl): return decl.sourceLocation
+    case .specialSignatureDeclaration(let decl): return decl.sourceLocation
     }
   }
 
