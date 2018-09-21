@@ -7,6 +7,8 @@ contract Constants {
   let d: Int = 3
   let e: Int // expected-note {{'e' is uninitialized}}
   var f: [Int] = []
+  let g: [Int] = []
+  var h: [Int] = []
 }
 
 Constants :: (any) {
@@ -29,6 +31,9 @@ Constants :: (any) {
 
     let x: Int = 2
     f[x] = 3
+
+    f[g[1] + c] = 2
+    f[d + g[c]] = 2
   }
 
   mutating func bar() {
