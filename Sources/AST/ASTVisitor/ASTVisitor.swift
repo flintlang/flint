@@ -636,13 +636,14 @@ public struct ASTVisitor {
 
   func visit(_ subscriptExpression: SubscriptExpression, passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     var processResult = pass.process(subscriptExpression: subscriptExpression, passContext: passContext)
-
+    let inSubscript = processResult.passContext.isInSubscript
+    
     processResult.element.baseExpression = processResult.combining(visit(processResult.element.baseExpression, passContext: processResult.passContext))
 
     processResult.passContext.isInSubscript = true
     processResult.element.indexExpression = processResult.combining(visit(processResult.element.indexExpression, passContext: processResult.passContext))
-    processResult.passContext.isInSubscript = false
-
+    processResult.passContext.isInSubscript = inSubscript
+    
     let postProcessResult = pass.postProcess(subscriptExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)
   }
