@@ -330,7 +330,7 @@ function winnerName() public view
 
 These functions highlight the differences between returning values in Solidity and Flint. In Solidity, values can be returned implicitly at the end of a function, as their names are defined in the `returns` block in the function signature. On the other hand Flint requires explicit return statements at the end of functions using the `return` statement and a variable explicitly defined by the programmer in the body of the function.
 
-There is also a difference between in the loop construction, as Flint must loop over the `proposals` array and hold an additional index variable which is not required in Solidity.
+There is also a difference in the construction of the loop, as Flint must loop over the `proposals` array and hold an additional index variable which is not required in Solidity.
 
 Otherwise the code is similar in function, if not form, between the two languages.
 
