@@ -207,7 +207,7 @@ extension Environment {
       case .arrayType(let elementType): return elementType
       case .fixedSizeArrayType(let elementType, _): return elementType
       case .dictionaryType(_, let valueType): return valueType
-      default: fatalError()
+      default: return .errorType
       }
     case .literal(let literalToken): return type(ofLiteralToken: literalToken)
     case .arrayLiteral(let arrayLiteral):

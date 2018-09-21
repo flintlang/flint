@@ -62,7 +62,7 @@ extension SemanticAnalyzer {
 
         let scopeContext = passContext.scopeContext!
         if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
-          if variableDeclaration.isConstant, asLValue {
+          if variableDeclaration.isConstant, !variableDeclaration.type.rawType.isInout, asLValue, !passContext.isInSubscript {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
@@ -81,7 +81,7 @@ extension SemanticAnalyzer {
           // The property is not defined in the enclosing type.
           diagnostics.append(.useOfUndeclaredIdentifier(identifier))
           passContext.environment!.addUsedUndefinedVariable(identifier, enclosingType: enclosingType)
-        } else if asLValue {
+        } else if asLValue, !passContext.isInSubscript {
 
           if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
             // Retrieve the source location of that property's declaration.

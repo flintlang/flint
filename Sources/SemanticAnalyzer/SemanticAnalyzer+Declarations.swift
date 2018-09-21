@@ -235,7 +235,8 @@ extension SemanticAnalyzer {
     }
 
     if passContext.inFunctionOrInitializer {
-      if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name) {
+      if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name),
+        !isShadowing(conflict, variableDeclaration) {
         diagnostics.append(.invalidRedeclaration(variableDeclaration.identifier, originalSource: conflict.identifier))
       }
 
@@ -270,6 +271,12 @@ extension SemanticAnalyzer {
     }
 
     return ASTPassResult(element: variableDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func isShadowing(_ first: VariableDeclaration, _ second: VariableDeclaration) -> Bool {
+    return first.isConstant && second.isVariable &&
+      !first.type.rawType.isInout &&
+      first.type.rawType == second.type.rawType
   }
 
   // MARK: Function

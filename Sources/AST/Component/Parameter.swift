@@ -35,7 +35,7 @@ public struct Parameter: ASTNode {
   }
 
   public var asVariableDeclaration: VariableDeclaration {
-    return VariableDeclaration(modifiers: [], declarationToken: nil, identifier: identifier, type: type)
+    return VariableDeclaration(modifiers: [], declarationToken: Token(kind: .let, sourceLocation: sourceLocation), identifier: identifier, type: type)
   }
 
   public init(identifier: Identifier, type: Type, implicitToken: Token?) {

@@ -78,6 +78,13 @@ public indirect enum RawType: Equatable {
     return true
   }
 
+  public var isInout: Bool {
+    if case .inoutType(_) = self {
+      return true
+    }
+    return false
+  }
+
   /// Whether the type is compatible with the given type, i.e., if two expressions of those types can be used
   /// interchangeably.
   public func isCompatible(with otherType: RawType) -> Bool {

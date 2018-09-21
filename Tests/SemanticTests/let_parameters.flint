@@ -1,0 +1,27 @@
+// RUN: %flintc %s --verify
+
+struct S {
+  var x: Int = 0
+}
+
+contract LetParameter {}
+
+LetParameter :: (any) {
+  public init() {}
+
+  func foo(a: Int, b: Address) -> Bool {
+    a += 2 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}
+    return true
+  }
+
+  func foo2(a: Int) -> Bool {
+    var a: Int = a
+    a += 2
+    return true
+  }
+
+
+  func bar(b: inout S) {
+    b.x = 20
+  }
+}
