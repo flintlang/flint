@@ -20,7 +20,7 @@ Wallet :: (owner) {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.
     var w: Wei = Wei(&contents, value)
-   
+
     // Send Wei to the owner's Ethereum address.
     send(owner, &w)
   }
