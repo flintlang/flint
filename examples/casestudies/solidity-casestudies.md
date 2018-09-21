@@ -390,3 +390,50 @@ struct Proposal {
 ```
 
 Definitions of structures between the two languages are also very similar, with Flint declaring init functions and default values for struct members where Solidity does not but otherwise differing only in syntax. Please also remember that Flint structs are global whereas Soldidity structs are declared inside contracts.
+
+## Wallet
+
+The Wallet contract is a simple store of Ether value. The deposit function can be called by anyone and adds the value sent with the function call to the balance. The withdraw function however can only be called by the owner of the contract and allows a withdrawal from the contract's balance.
+
+This is not actually a translated contract from Solidity by Example but instead our own contract, but it is useful to see how to manipulate value using the Wei asset.
+
+Flint:
+```swift
+contract Wallet {
+  var owner: Address
+  var contents: Wei = Wei(0)
+}
+
+Wallet :: caller <- (any) {
+	public init() {
+		owner = caller
+	}
+
+	@payable
+	public mutating func deposit(implicit value: Wei) {
+		// Record the Wei received into the contents state property.
+		contents.transfer(&value)
+	}
+}
+
+Wallet :: (owner) {
+	public mutating func withdraw(value: Int) {
+		// Transfer an amount of Wei into a local variable. This
+		// removes Wei from the contents state property.
+		var w: Wei = Wei(&contents, value)
+
+		// Send Wei to the owner's Ethereum address.
+		send(owner, &w)
+	}
+
+	public func getContents() -> Int {
+		return contents.getRawValue()
+	}
+}
+```
+
+The `deposit` function is marked with the `@payable` annotation and has an `implicit` argument of type `Wei`. Both of these things are required to receive value with a function. The whole amount of value stored in `value`  is then transferred to the `contents` state property, so that no Ether is lost.
+
+The `withdraw` function uses a constructor for the standard library structure `Wei`, taking another instance of `Wei` and an amount to transfer to the new structure. This smaller value is then sent back to the `owner` address using the `send` function from the standard library. `w`, and `contents` are passed as a reference / *inout argument*, so that the value they contain is not copied and conservation of money is upheld.
+
+In `getContents`, the `getRawValue` function of `Wei` is used to get the current balance, in *Wei* as as `Int`.
