@@ -62,7 +62,7 @@ extension SemanticAnalyzer {
 
         let scopeContext = passContext.scopeContext!
         if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
-          if variableDeclaration.isConstant, asLValue {
+          if variableDeclaration.isConstant, !variableDeclaration.type.rawType.isInout, asLValue {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
