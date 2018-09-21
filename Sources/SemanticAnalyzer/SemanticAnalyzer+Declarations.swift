@@ -275,7 +275,7 @@ extension SemanticAnalyzer {
 
   func isShadowing(_ first: VariableDeclaration, _ second: VariableDeclaration) -> Bool {
     return first.isConstant && second.isVariable &&
-      //!first.type.rawType.isInout &&
+      !first.type.rawType.isInout &&
       first.type.rawType == second.type.rawType
   }
 
