@@ -639,7 +639,9 @@ public struct ASTVisitor {
 
     processResult.element.baseExpression = processResult.combining(visit(processResult.element.baseExpression, passContext: processResult.passContext))
 
+    processResult.passContext.isInSubscript = true
     processResult.element.indexExpression = processResult.combining(visit(processResult.element.indexExpression, passContext: processResult.passContext))
+    processResult.passContext.isInSubscript = false
 
     let postProcessResult = pass.postProcess(subscriptExpression: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element, diagnostics: processResult.diagnostics + postProcessResult.diagnostics, passContext: postProcessResult.passContext)

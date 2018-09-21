@@ -54,6 +54,12 @@ extension ASTPassContext {
     get { return self[AsLValueContextEntry.self] }
     set { self[AsLValueContextEntry.self] = newValue }
   }
+    
+  /// Whether the node currently being visited is inside a subscript i.e. 'a' in 'foo[a]'
+  public var isInSubscript: Bool {
+    get { return self[isInSubscriptEntry.self] ?? false }
+    set { self[isInSubscriptEntry.self] = newValue }
+  }
 
   /// Whether the node currently being visited is being the enclosing variable i.e. 'a' in 'a.foo'
   public var isEnclosing: Bool {
@@ -192,6 +198,10 @@ extension PassContextEntry {
 
 private struct EnvironmentContextEntry: PassContextEntry {
   typealias Value = Environment
+}
+
+private struct isInSubscriptEntry: PassContextEntry {
+  typealias Value = Bool
 }
 
 private struct AsLValueContextEntry: PassContextEntry {
