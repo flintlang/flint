@@ -6,7 +6,7 @@ These case studies are taken from the [Solidity by Example](https://solidity.rea
 
 This contract aims to implement an electronic voting system, whereby designated voters can cast their vote for one of several proposals, or instead opt to delegate their vote to another participant. Voters can be designated by the *chairperson*, which is the ethereum address that created the Ballot contract. The winning proposal at any given time is the proposal with the largest number of accumulated votes.
 
-## Defining the Contract
+### Defining the Contract
 
 Flint:
 ```swift
@@ -49,7 +49,7 @@ Declaring *state properties* of the contract is similar in both Solidity and Fli
 
 For `voters`, `votersKeys`, and `proposals`, a default value is provided in the Flint code, meaning these properties to not have to be explicitly initialised in the initialiser.
 
-## Initialisation
+### Initialisation
 
 Flint:
 ```swift
@@ -106,7 +106,7 @@ In Flint, the address of the external caller is bound at the start of the restri
 
 As Flint does not support complex external call arguments or return values, the init function does not take any arguments and simply sets the chairperson Address. *Type states* are used to implement an initialisation phase so that proposals can only be added before voting is enabled.
 
-## Voter Designation
+### Voter Designation
 
 Flint:
 ```swift
@@ -156,7 +156,7 @@ However, in Flint it is necessary to check if the current `Voter` has already be
 
 Flint's structures have initialiser functions so the voter is added to the dictionary using `Voter(1)`, where 1 is the `voterWeight`. In Solidity initialisation is optional but in Flint it is required (although not currently strictly enforced).
 
-## Delegation of Votes
+### Delegation of Votes
 
 Flint:
 ```swift
@@ -240,7 +240,7 @@ The only type of loops supported in Flint are for loops over finite objects and 
 
 The Flint code also checks that the delegate voter has been initialised so that it is not possible to delegate to an address without the right to vote. Solidity stores the delegator as a reference in memory but Flint's struct variables are copies rather than references.
 
-## Voting
+### Voting
 
 Flint:
 ```swift
@@ -276,7 +276,7 @@ function vote(uint proposal) public {
 
 The voting functions are virtually identical in both Flint and Solidity, save that the Flint code also checks for initialisation of the Proposal.
 
-## Winning Proposal
+### Winning Proposal
 
 Flint:
 ```swift
@@ -334,7 +334,7 @@ There is also a difference in the construction of the loop, as Flint must loop o
 
 Otherwise the code is similar in function, if not form, between the two languages.
 
-## Structures
+### Structures
 
 Flint:
 ```swift
