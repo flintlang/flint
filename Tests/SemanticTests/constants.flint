@@ -6,6 +6,7 @@ contract Constants {
   let c: Int = 2 + 3
   let d: Int = 3
   let e: Int // expected-note {{'e' is uninitialized}}
+  var f: [Int] = []
 }
 
 Constants :: (any) {
@@ -25,6 +26,9 @@ Constants :: (any) {
     }
 
     d = 4 // expected-error {{Cannot reassign to value: 'd' is a 'let' constant}}
+
+    let x: Int = 2
+    f[x] = 3
   }
 
   mutating func bar() {
