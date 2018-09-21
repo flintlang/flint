@@ -75,7 +75,7 @@ Ballot@(Voting) :: voter <- (votersKeys) {
   }
 
   public mutating func vote(proposalID: Int) {
-    if voters[voter].hasVoted { fatalError() }
+    assert(voters[voter].hasVoted == false)
     voters[voter].hasVoted = true
     voters[voter].votedProposalID = proposalID
 

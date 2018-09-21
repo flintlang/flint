@@ -233,3 +233,160 @@ function delegate(address to) public {
 	}
 }
 ```
+
+Delegation of votes works similarly in both Flint and Solidity. The main differences are that Flint uses *caller capabilities* to protect against non-voters delegating their vote rather than manual checking, the Flint code does not support chained vote delegations, and also that the Solidity code does not check the the delegate voter has been initialised.
+
+The only type of loops supported in Flint are for loops over finite objects and ranges. It is not possible to set up an infinite loop in Flint, in order to reduce the chance of infinite loops and consequentially running out of gas, potentially resulting in a terminally stuck contract. The Flint contract therefore does not implement chained delegations, instead the delegator should check if the delegate already delegates themselves, and in that case simply delegate to their delegate's delegate instead. Since the Ballot contract specification gives that it is not possible to cast a vote multiple times no more complexity is needed. This has the additional benefit of reducing code size and therefore cost of deployment to the blockchain.
+
+The Flint code also checks that the delegate voter has been initialised so that it is not possible to delegate to an address without the right to vote. Solidity stores the delegator as a reference in memory but Flint's struct variables are copies rather than references.
+
+## Voting
+
+Flint:
+```swift
+Ballot@(Voting) :: voter <- (votersKeys) {
+	public mutating func vote(proposalID: Int) {
+		assert(voters[voter].hasVoted == false)
+		assert(proposals[proposalID].name != "")
+		voters[voter].hasVoted = true
+		voters[voter].votedProposalID = proposalID
+
+		let weight: Int = voters[voter].votingWeight
+		proposals[proposalID].numVotes += weight
+	}
+}
+```
+
+Solidity:
+```javascript
+/// Give your vote (including votes delegated to you)
+/// to proposal `proposals[proposal].name`.
+function vote(uint proposal) public {
+	Voter storage sender = voters[msg.sender];
+	require(!sender.voted, "Already voted.");
+	sender.voted = true;
+	sender.vote = proposal;
+
+	// If `proposal` is out of the range of the array,
+	// this will throw automatically and revert all
+	// changes.
+	proposals[proposal].voteCount += sender.weight;
+}
+```
+
+The voting functions are virtually identical in both Flint and Solidity, save that the Flint code also checks for initialisation of the Proposal.
+
+## Winning Proposal
+
+Flint:
+```swift
+Ballot@(Voting) :: (any) {
+	public func getWinningProposalID() -> Int {
+		var winningProposalID: Int = 0
+
+		var i: Int = 0
+		for let proposal: Proposal in proposals {
+			if proposal.numVotes > proposals[winningProposalID].numVotes {
+				winningProposalID = i
+			}
+
+			i += 1
+		}
+
+		return winningProposalID
+	}
+
+	public func getWinningProposalName() -> String {
+		return proposals[getWinningProposalID()].name
+	}
+}
+```
+
+Solidity:
+```javascript
+/// @dev Computes the winning proposal taking all
+/// previous votes into account.
+function winningProposal() public view
+		returns (uint winningProposal_)
+{
+	uint winningVoteCount = 0;
+	for (uint p = 0; p < proposals.length; p++) {
+		if (proposals[p].voteCount > winningVoteCount) {
+			winningVoteCount = proposals[p].voteCount;
+			winningProposal_ = p;
+		}
+	}
+}
+
+// Calls winningProposal() function to get the index
+// of the winner contained in the proposals array and then
+// returns the name of the winner
+function winnerName() public view
+		returns (bytes32 winnerName_)
+{
+	winnerName_ = proposals[winningProposal()].name;
+}
+```
+
+These functions highlight the differences between returning values in Solidity and Flint. In Solidity, values can be returned implicitly at the end of a function, as their names are defined in the `returns` block in the function signature. On the other hand Flint requires explicit return statements at the end of functions using the `return` statement and a variable explicitly defined by the programmer in the body of the function.
+
+There is also a difference between in the loop construction, as Flint must loop over the `proposals` array and hold an additional index variable which is not required in Solidity.
+
+Otherwise the code is similar in function, if not form, between the two languages.
+
+## Structures
+
+Flint:
+```swift
+struct Voter {
+  // The weight of this voter's vote. Increases when other voters delegate
+  // their vote to this voter.
+  var votingWeight: Int
+
+  // Whether the voter has voted for a proposal.
+  var hasVoted: Bool = false
+
+  // The voter this voter has delegated its vote to.
+  var delegate: Address = 0x0000000000000000000000000000000000000000
+
+  // The ID of the proposal this voter has voted for.
+  var votedProposalID: Int = 0
+
+  public init(weight: Int) {
+    votingWeight = weight
+  }
+}
+
+struct Proposal {
+  // The name of the proposal.
+  var name: String
+
+  // The number of votes for this proposal.
+  var numVotes: Int = 0
+
+  public init(name: String) {
+    self.name = name
+  }
+}
+```
+
+Solidity:
+```javascript
+// This declares a new complex type which will
+// be used for variables later.
+// It will represent a single voter.
+struct Voter {
+	uint weight; // weight is accumulated by delegation
+	bool voted;  // if true, that person already voted
+	address delegate; // person delegated to
+	uint vote;   // index of the voted proposal
+}
+
+// This is a type for a single proposal.
+struct Proposal {
+	bytes32 name;   // short name (up to 32 bytes)
+	uint voteCount; // number of accumulated votes
+}
+```
+
+Definitions of structures between the two languages are also very similar, with Flint declaring init functions and default values for struct members where Solidity does not but otherwise differing only in syntax. Please also remember that Flint structs are global whereas Soldidity structs are declared inside contracts.
