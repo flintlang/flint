@@ -1,4 +1,4 @@
-FROM swift
+FROM swift:4.2
 
 LABEL maintainer "Franklin Schrans <f.schrans@me.com>"
 
