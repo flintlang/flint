@@ -1,8 +1,8 @@
-all: lint
+all:
 	swift build
 	cp -r stdlib .build/debug/
 
-release: lint
+release:
 	swift build	-c release --static-swift-stdlib
 	cp -r stdlib .build/release/
 
@@ -11,7 +11,7 @@ zip: release
 	zip -r flintc.zip flintc stdlib
 	rm flintc
 
-test: release
+test: lint release
 	cd Tests/BehaviorTests && ./compile_behavior_tests.sh
 	swift run -c release lite
 
