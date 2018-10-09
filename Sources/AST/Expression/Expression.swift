@@ -92,26 +92,26 @@ public indirect enum Expression: ASTNode {
     case .attemptExpression(let attemptExpression): return attemptExpression.sourceLocation
     case .range(let rangeExpression): return rangeExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
-    case .rawAssembly(_): fatalError()
+    case .rawAssembly: fatalError()
     }
   }
   public var description: String {
     switch self {
-      case .identifier(let identifier): return identifier.description
-      case .inoutExpression(let inoutExpression): return inoutExpression.description
-      case .binaryExpression(let binaryExpression): return binaryExpression.description
-      case .functionCall(let functionCall): return functionCall.description
-      case .literal(let literal): return literal.description
-      case .arrayLiteral(let arrayLiteral): return arrayLiteral.description
-      case .dictionaryLiteral(let dictionaryLiteral): return dictionaryLiteral.description
-      case .self(let `self`): return self.description
-      case .variableDeclaration(let variableDeclaration): return variableDeclaration.description
-      case .bracketedExpression(let bracketedExpression): return bracketedExpression.description
-      case .subscriptExpression(let subscriptExpression): return subscriptExpression.description
-      case .attemptExpression(let attemptExpression): return attemptExpression.description
-      case .range(let rangeExpression): return rangeExpression.description
-      case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
-      case .rawAssembly(_): fatalError()
+    case .identifier(let identifier): return identifier.description
+    case .inoutExpression(let inoutExpression): return inoutExpression.description
+    case .binaryExpression(let binaryExpression): return binaryExpression.description
+    case .functionCall(let functionCall): return functionCall.description
+    case .literal(let literal): return literal.description
+    case .arrayLiteral(let arrayLiteral): return arrayLiteral.description
+    case .dictionaryLiteral(let dictionaryLiteral): return dictionaryLiteral.description
+    case .self(let `self`): return self.description
+    case .variableDeclaration(let variableDeclaration): return variableDeclaration.description
+    case .bracketedExpression(let bracketedExpression): return bracketedExpression.description
+    case .subscriptExpression(let subscriptExpression): return subscriptExpression.description
+    case .attemptExpression(let attemptExpression): return attemptExpression.description
+    case .range(let rangeExpression): return rangeExpression.description
+    case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
+    case .rawAssembly: fatalError()
     }
   }
 }

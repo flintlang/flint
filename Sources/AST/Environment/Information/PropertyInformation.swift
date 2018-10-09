@@ -13,7 +13,7 @@ public struct PropertyInformation {
   public var isConstant: Bool {
     switch property {
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.isConstant
-    case .enumCase(_): return true
+    case .enumCase: return true
     }
   }
 

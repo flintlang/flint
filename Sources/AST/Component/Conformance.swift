@@ -25,4 +25,3 @@ public struct Conformance: ASTNode {
     return identifier.sourceLocation
   }
 }
-

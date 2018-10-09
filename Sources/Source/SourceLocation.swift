@@ -24,11 +24,14 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
     self.isFromStdlib = isFromStdlib
   }
 
-  public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1, to upperBoundEntity: S2) -> SourceLocation {
+  public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1,
+                                                                  to upperBoundEntity: S2) -> SourceLocation {
     let lowerBound = lowerBoundEntity.sourceLocation
     let upperBound = upperBoundEntity.sourceLocation
     guard lowerBound.line == upperBound.line else { return lowerBound }
-    return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: upperBound.column + upperBound.length - lowerBound.column, file: lowerBound.file)
+
+    let length = upperBound.column + upperBound.length - lowerBound.column
+    return SourceLocation(line: lowerBound.line, column: lowerBound.column, length: length, file: lowerBound.file)
   }
 
   // MARK: - CustomStringConvertible

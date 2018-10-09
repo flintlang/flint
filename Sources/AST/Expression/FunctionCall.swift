@@ -14,7 +14,7 @@ public struct FunctionCall: ASTNode {
   public var closeBracketToken: Token
   public var isAttempted: Bool
 
-  public var mangledIdentifier: String? = nil
+  public var mangledIdentifier: String?
 
   public init(identifier: Identifier, arguments: [FunctionArgument], closeBracketToken: Token, isAttempted: Bool) {
     self.identifier = identifier

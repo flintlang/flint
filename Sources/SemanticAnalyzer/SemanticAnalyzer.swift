@@ -12,7 +12,8 @@ import Diagnostic
 public struct SemanticAnalyzer: ASTPass {
   public init() {}
 
-  public func postProcess(topLevelModule: TopLevelModule, passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
+  public func postProcess(topLevelModule: TopLevelModule,
+                          passContext: ASTPassContext) -> ASTPassResult<TopLevelModule> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
@@ -25,7 +26,8 @@ public struct SemanticAnalyzer: ASTPass {
         if passContext.environment!.publicFallback(forContract: contractDeclaration.identifier.name) == nil {
           let fallbacks = passContext.environment!.fallbacks(in: contractDeclaration.identifier.name)
           if !fallbacks.isEmpty {
-            diagnostics.append(.contractOnlyHasPrivateFallbacks(contractIdentifier: contractDeclaration.identifier, fallbacks.map{$0.declaration}))
+            diagnostics.append(.contractOnlyHasPrivateFallbacks(contractIdentifier: contractDeclaration.identifier,
+                                                                fallbacks.map {$0.declaration}))
           }
         }
         // Check that all trait functions are defined

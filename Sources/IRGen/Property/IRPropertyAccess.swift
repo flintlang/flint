@@ -38,13 +38,13 @@ struct IRPropertyAccess {
       } else {
         fatalError()
       }
-    case .arrayType(_):
+    case .arrayType:
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
         rhsOffset = "0"
       } else {
         fatalError()
       }
-    case .dictionaryType(_):
+    case .dictionaryType:
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
         rhsOffset = "0"
       } else {
@@ -57,18 +57,23 @@ struct IRPropertyAccess {
     let offset: String
     if isInStructFunction {
       let enclosingName: String
-      if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+      if let enclosingParameter =
+        functionContext.scopeContext.enclosingParameter(expression: lhs,
+                                                        enclosingTypeName: functionContext.enclosingTypeName) {
         enclosingName = enclosingParameter
       } else {
         enclosingName = "flintSelf"
       }
 
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = IRRuntimeFunction.addOffset(base: enclosingName.mangled, offset: rhsOffset, inMemory: Mangler.isMem(for: enclosingName).mangled)
+      offset = IRRuntimeFunction.addOffset(base: enclosingName.mangled,
+                                           offset: rhsOffset,
+                                           inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
       let lhsOffset: String
       if case .identifier(let lhsIdentifier) = lhs {
-        if let enclosingType = lhsIdentifier.enclosingType, let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
+        if let enclosingType = lhsIdentifier.enclosingType,
+            let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
           lhsOffset = "\(offset)"
         } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
           lhsOffset = lhsIdentifier.name.mangled
