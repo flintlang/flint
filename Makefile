@@ -1,8 +1,8 @@
-all: 
-	swift build	
+all: lint
+	swift build
 	cp -r stdlib .build/debug/
 
-release:
+release: lint
 	swift build	-c release --static-swift-stdlib
 	cp -r stdlib .build/release/
 
@@ -13,4 +13,8 @@ zip: release
 
 test: release
 	cd Tests/BehaviorTests && ./compile_behavior_tests.sh
-	swift run -c release lite 
+	swift run -c release lite
+
+.PHONY: lint
+lint:
+	swiftlint lint
