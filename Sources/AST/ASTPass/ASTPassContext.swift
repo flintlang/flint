@@ -31,7 +31,7 @@ public struct ASTPassContext {
   ///
   /// - Parameter updates: The modifications which should be applied to the new `ASTPassContext`.
   /// - Returns: The `ASTPassContext` applied with the `updates`.
-  public func withUpdates(updates: (inout ASTPassContext) -> ()) -> ASTPassContext {
+  public func withUpdates(updates: (inout ASTPassContext) -> Void) -> ASTPassContext {
     var copy = self
     updates(&copy)
     return copy
@@ -54,29 +54,29 @@ extension ASTPassContext {
     get { return self[AsLValueContextEntry.self] }
     set { self[AsLValueContextEntry.self] = newValue }
   }
-    
+
   /// Whether the node currently being visited is inside a subscript i.e. 'a' in 'foo[a]'
   public var isInSubscript: Bool {
-    get { return self[isInSubscriptEntry.self] ?? false }
-    set { self[isInSubscriptEntry.self] = newValue }
+    get { return self[IsInSubscriptEntry.self] ?? false }
+    set { self[IsInSubscriptEntry.self] = newValue }
   }
 
   /// Whether the node currently being visited is being the enclosing variable i.e. 'a' in 'a.foo'
   public var isEnclosing: Bool {
-    get { return self[isEnclosingEntry.self] ?? false }
-    set { self[isEnclosingEntry.self] = newValue }
+    get { return self[IsEnclosingEntry.self] ?? false }
+    set { self[IsEnclosingEntry.self] = newValue }
   }
 
   /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
   public var isInBecome: Bool {
-    get { return self[isInBecomeEntry.self] ?? false }
-    set { self[isInBecomeEntry.self] = newValue }
+    get { return self[IsInBecomeEntry.self] ?? false }
+    set { self[IsInBecomeEntry.self] = newValue }
   }
 
   /// Whether the node currently being visited is within a emit statement i.e. 'a' in 'emit a'
   public var isInEmit: Bool {
-    get { return self[isInEmitEntry.self] ?? false }
-    set { self[isInEmitEntry.self] = newValue }
+    get { return self[IsInEmitEntry.self] ?? false }
+    set { self[IsInEmitEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting the state properties declared in a contract declaration.
@@ -200,7 +200,7 @@ private struct EnvironmentContextEntry: PassContextEntry {
   typealias Value = Environment
 }
 
-private struct isInSubscriptEntry: PassContextEntry {
+private struct IsInSubscriptEntry: PassContextEntry {
   typealias Value = Bool
 }
 
@@ -208,15 +208,15 @@ private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isEnclosingEntry: PassContextEntry {
+private struct IsEnclosingEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isInBecomeEntry: PassContextEntry {
+private struct IsInBecomeEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isInEmitEntry: PassContextEntry {
+private struct IsInEmitEntry: PassContextEntry {
   typealias Value = Bool
 }
 

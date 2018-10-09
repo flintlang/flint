@@ -33,4 +33,3 @@ public struct TypeState: ASTNode {
     return identifier.sourceLocation
   }
 }
-

@@ -48,20 +48,21 @@ public indirect enum RawType: Equatable {
     case .inoutType(let rawType): return "$inout\(rawType.name)"
     case .any: return "Any"
     case .errorType: return "Flint$ErrorType"
-    case .functionType(let parameters, let result): return "(\(parameters.map{ $0.name }.joined(separator: ", ")) -> \(result)"
+    case .functionType(let parameters, let result):
+      return "(\(parameters.map { $0.name }.joined(separator: ", ")) -> \(result)"
     }
   }
 
   public var isBuiltInType: Bool {
     switch self {
-    case .basicType(_), .stdlibType(_), .any, .errorType: return true
+    case .basicType, .stdlibType, .any, .errorType: return true
     case .arrayType(let element): return element.isBuiltInType
     case .rangeType(let element): return element.isBuiltInType
     case .fixedSizeArrayType(let element, _): return element.isBuiltInType
     case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
     case .inoutType(let element): return element.isBuiltInType
-    case .userDefinedType(_): return false
-    case .functionType(_): return false
+    case .userDefinedType: return false
+    case .functionType: return false
     }
   }
 
@@ -104,7 +105,6 @@ public indirect enum RawType: Equatable {
     }
   }
 }
-
 
 /// A Flint type.
 public struct Type: ASTNode {
@@ -157,7 +157,10 @@ public struct Type: ASTNode {
     sourceLocation = .spanning(type, to: closeSquareBracketToken)
   }
 
-  public init(openSquareBracketToken: Token, dictionaryWithKeyType keyType: Type, valueType: Type, closeSquareBracketToken: Token) {
+  public init(openSquareBracketToken: Token,
+              dictionaryWithKeyType keyType: Type,
+              valueType: Type,
+              closeSquareBracketToken: Token) {
     rawType = .dictionaryType(key: keyType.rawType, value: valueType.rawType)
     sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }

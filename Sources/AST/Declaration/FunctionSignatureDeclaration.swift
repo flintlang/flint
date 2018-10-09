@@ -21,14 +21,20 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   public var closeBracketToken: Token
   public var resultType: Type?
 
-  public var mangledIdentifier: String? = nil
+  public var mangledIdentifier: String?
 
   /// The raw type of the function's return type.
   public var rawType: RawType {
     return resultType?.rawType ?? .basicType(.void)
   }
 
-  public init(funcToken: Token, attributes: [Attribute], modifiers: [Token], identifier: Identifier, parameters: [Parameter], closeBracketToken: Token, resultType: Type?) {
+  public init(funcToken: Token,
+              attributes: [Attribute],
+              modifiers: [Token],
+              identifier: Identifier,
+              parameters: [Parameter],
+              closeBracketToken: Token,
+              resultType: Type?) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers

@@ -23,7 +23,7 @@ public class ASTDumper {
     return output
   }
 
-  func writeNode(_ node: String, contents: (() -> ())? = nil) {
+  func writeNode(_ node: String, contents: (() -> Void)? = nil) {
     output += String(repeating: " ", count: indentation)
     output += "\(node) (\n"
     indentation += 2
@@ -347,7 +347,7 @@ public class ASTDumper {
         self.dump(rawType)
       }
     case .rangeType(let rawType):
-      writeNode("RangeType"){
+      writeNode("RangeType") {
         self.dump(rawType)
       }
     case .dictionaryType(key: let keyType, value: let valueType):
@@ -371,7 +371,7 @@ public class ASTDumper {
       writeLine("Any")
     case .errorType:
       writeLine("Flint error type \(rawType.name)")
-    case .functionType(_):
+    case .functionType:
       writeLine("function type \(rawType.name)")
     }
   }
@@ -409,7 +409,7 @@ public class ASTDumper {
       case .attemptExpression(let attemptExpression): self.dump(attemptExpression)
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
       case .range(let rangeExpression): self.dump(rangeExpression)
-      case .rawAssembly(_): fatalError()
+      case .rawAssembly: fatalError()
       }
     }
   }
@@ -547,7 +547,7 @@ public class ASTDumper {
     }
   }
 
-  func dump(_ rangeExpression: RangeExpression){
+  func dump(_ rangeExpression: RangeExpression) {
     writeNode("RangeExpression") {
       self.dump(rangeExpression.initial)
       self.dump(rangeExpression.op)

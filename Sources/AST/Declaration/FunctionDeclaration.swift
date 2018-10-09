@@ -13,12 +13,15 @@ public struct FunctionDeclaration: ASTNode {
   public var body: [Statement]
   public var closeBraceToken: Token
 
-  public var mangledIdentifier: String? = nil
+  public var mangledIdentifier: String?
 
   // Contextual information for the scope defined by the function.
-  public var scopeContext: ScopeContext? = nil
+  public var scopeContext: ScopeContext?
 
-  public init(signature: FunctionSignatureDeclaration, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext? = nil) {
+  public init(signature: FunctionSignatureDeclaration,
+              body: [Statement],
+              closeBraceToken: Token,
+              scopeContext: ScopeContext? = nil) {
     self.signature = signature
     self.body = body
     self.closeBraceToken = closeBraceToken
@@ -54,7 +57,6 @@ public struct FunctionDeclaration: ASTNode {
   public var isPublic: Bool {
     return signature.hasModifier(kind: .public)
   }
-
 
   public var identifier: Identifier {
     return signature.identifier

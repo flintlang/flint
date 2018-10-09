@@ -63,7 +63,8 @@ extension Parser {
     if case .punctuation(.openBracket) = first {
       // Check for a range by descending into the open bracket and looking for a range operator
       currentIndex+=1
-      let isRange = indexOfFirstAtCurrentDepth([.punctuation(.halfOpenRange), .punctuation(.closedRange)], maxIndex: limitTokenIndex) != nil
+      let isRange = indexOfFirstAtCurrentDepth([.punctuation(.halfOpenRange),
+                                                .punctuation(.closedRange)], maxIndex: limitTokenIndex) != nil
       currentIndex-=1
 
       if isRange {
@@ -119,9 +120,11 @@ extension Parser {
       throw raise(.expectedCloseParen(at: latestSource))
     }
     let expression = try parseExpression(upTo: closeBracketIndex)
-    let closeBracketToken = try! consume(.punctuation(.closeBracket), or: .dummy())
+    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .dummy())
 
-    return BracketedExpression(expression: expression, openBracketToken: openBracketToken, closeBracketToken: closeBracketToken)
+    return BracketedExpression(expression: expression,
+                               openBracketToken: openBracketToken,
+                               closeBracketToken: closeBracketToken)
   }
 
   // MARK: Attempt
@@ -136,7 +139,12 @@ extension Parser {
   // MARK: Inout
   func parseInoutExpression() throws -> InoutExpression {
     let ampersandToken = try consume(.punctuation(.ampersand), or: .expectedExpr(at: latestSource))
-    guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)], maxIndex: tokens.count) else {
+    guard let statementEndIndex = indexOfFirstAtCurrentDepth(
+      [
+        .punctuation(.comma),
+       .punctuation(.closeBracket)
+      ],
+      maxIndex: tokens.count) else {
       throw raise(.expectedEndAfterInout(at: latestSource))
     }
     let expression = try parseExpression(upTo: statementEndIndex)
@@ -148,7 +156,10 @@ extension Parser {
     let identifier = try parseIdentifier()
     let (arguments, closeBracketToken) = try parseFunctionCallArgumentList()
 
-    return FunctionCall(identifier: identifier, arguments: arguments, closeBracketToken: closeBracketToken, isAttempted: false)
+    return FunctionCall(identifier: identifier,
+                        arguments: arguments,
+                        closeBracketToken: closeBracketToken,
+                        isAttempted: false)
   }
 
   func parseFunctionCallArgumentList() throws -> ([FunctionArgument], closeBracketToken: Token) {
@@ -171,7 +182,8 @@ extension Parser {
         try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
       }
     }
-    closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
+    closeBracketToken = try consume(.punctuation(.closeBracket),
+                                    or: .expectedParameterCloseParenthesis(at: latestSource))
 
     return (arguments, closeBracketToken)
   }
@@ -193,11 +205,16 @@ extension Parser {
   func parseRangeExpression() throws -> AST.RangeExpression {
     let startToken = try consume(.punctuation(.openBracket), or: .expectedExpr(at: latestSource))
     let start = try parseLiteral()
-    let op = try consume(anyOf: [.punctuation(.halfOpenRange), .punctuation(.closedRange)], or: .expectedRangeOperator(at: latestSource))
+    let op = try consume(anyOf: [.punctuation(.halfOpenRange),
+                                 .punctuation(.closedRange)], or: .expectedRangeOperator(at: latestSource))
     let end = try parseLiteral()
     let endToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
 
-    return AST.RangeExpression(startToken: startToken, endToken: endToken, initial: .literal(start), bound: .literal(end), op: op)
+    return AST.RangeExpression(startToken: startToken,
+                               endToken: endToken,
+                               initial: .literal(start),
+                               bound: .literal(end),
+                               op: op)
   }
 
   // MARK: Dictionary Literal
@@ -210,9 +227,12 @@ extension Parser {
 
     if currentToken?.kind == .punctuation(.colon) {
       /// The dictionary literal doesn't contain any elements.
-      let _ = try consume(.punctuation(.colon), or: .dummy())
-      closeSquareBracket = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
-      return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket)
+      _ = try consume(.punctuation(.colon), or: .dummy())
+      closeSquareBracket = try consume(.punctuation(.closeSquareBracket),
+                                       or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
+      return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket,
+                                   elements: elements,
+                                   closeSquareBracketToken: closeSquareBracket)
     }
 
     guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeSquareBracket)]) else {
@@ -220,7 +240,8 @@ extension Parser {
     }
 
     while currentIndex < closingIndex {
-      guard let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeSquareBracket)]) else {
+      guard let elementEnd = indexOfFirstAtCurrentDepth([.punctuation(.comma),
+                                                         .punctuation(.closeSquareBracket)]) else {
         throw raise(.expectedSeparator(at: latestSource))
       }
       let element = try parseDictionaryElement(upTo: elementEnd)
@@ -229,9 +250,12 @@ extension Parser {
         try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
       }
     }
-    closeSquareBracket = try consume(.punctuation(.closeBracket), or: .expectedParameterCloseParenthesis(at: latestSource))
+    closeSquareBracket = try consume(.punctuation(.closeBracket),
+                                     or: .expectedParameterCloseParenthesis(at: latestSource))
 
-    return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket, elements: elements, closeSquareBracketToken: closeSquareBracket)
+    return AST.DictionaryLiteral(openSquareBracketToken: openSquareBracket,
+                                 elements: elements,
+                                 closeSquareBracketToken: closeSquareBracket)
   }
 
   func parseDictionaryElement(upTo commaIndex: Int) throws -> (Expression, Expression) {
@@ -259,8 +283,11 @@ extension Parser {
         throw raise(.expectedCloseSquareSubscript(at: latestSource))
       }
       let indexExpression = try parseExpression(upTo: index)
-      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket), or: .expectedCloseSquareSubscript(at: latestSource))
-      base = .subscriptExpression(SubscriptExpression(baseExpression: base, indexExpression: indexExpression, closeSquareBracketToken: closeSquareBracketToken))
+      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
+                                                or: .expectedCloseSquareSubscript(at: latestSource))
+      base = .subscriptExpression(SubscriptExpression(baseExpression: base,
+                                                      indexExpression: indexExpression,
+                                                      closeSquareBracketToken: closeSquareBracketToken))
       if currentToken?.kind != .punctuation(.openSquareBracket),
         case .subscriptExpression(let expr) = base {
         return expr

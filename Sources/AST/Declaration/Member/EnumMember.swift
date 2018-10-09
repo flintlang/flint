@@ -16,7 +16,7 @@ public struct EnumMember: ASTNode {
   public var hiddenValue: Expression?
   public var hiddenType: Type
 
-  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?, hiddenType: Type){
+  public init(caseToken: Token, identifier: Identifier, type: Type, hiddenValue: Expression?, hiddenType: Type) {
     self.caseToken = caseToken
     self.identifier = identifier
     self.hiddenValue = hiddenValue
