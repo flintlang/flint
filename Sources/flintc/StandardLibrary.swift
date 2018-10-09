@@ -14,8 +14,10 @@ struct StandardLibrary {
   var url: URL
 
   var files: [URL] {
+    // swiftlint:disable force_try
     return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
       .filter { $0.pathExtension == "flint" }
+    // swiftlint:enable force_try
   }
 
   static var `default`: StandardLibrary {

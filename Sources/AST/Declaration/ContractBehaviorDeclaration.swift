@@ -17,7 +17,12 @@ public struct ContractBehaviorDeclaration: SourceEntity {
   public var closeBracketToken: Token
   public var members: [ContractBehaviorMember]
 
-  public init(contractIdentifier: Identifier, states: [TypeState], callerBinding: Identifier?, callerProtections: [CallerProtection], closeBracketToken: Token, members: [ContractBehaviorMember]) {
+  public init(contractIdentifier: Identifier,
+              states: [TypeState],
+              callerBinding: Identifier?,
+              callerProtections: [CallerProtection],
+              closeBracketToken: Token,
+              members: [ContractBehaviorMember]) {
     self.contractIdentifier = contractIdentifier
     self.states = states
     self.callerBinding = callerBinding

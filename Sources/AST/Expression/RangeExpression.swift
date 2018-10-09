@@ -14,8 +14,8 @@ public struct RangeExpression: ASTNode {
   public var initial: Expression
   public var bound: Expression
   public var op: Token
-  
-  public init(startToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token){
+
+  public init(startToken: Token, endToken: Token, initial: Expression, bound: Expression, op: Token) {
     self.openSquareBracketToken = startToken
     self.closeSquareBracketToken = endToken
     self.initial = initial

@@ -22,7 +22,7 @@ public struct EnumDeclaration: ASTNode {
     synthesizeRawValues()
   }
 
-  mutating func synthesizeRawValues(){
+  mutating func synthesizeRawValues() {
     var lastRawValue: Expression?
     var newCases = [EnumMember]()
 
@@ -30,8 +30,7 @@ public struct EnumDeclaration: ASTNode {
       if enumCase.hiddenValue == nil, type.rawType == .basicType(.int) {
         if lastRawValue == nil {
           enumCase.hiddenValue = .literal(.init(kind: .literal(.decimal(.integer(0))), sourceLocation: .DUMMY))
-        }
-        else if case .literal(let token)? = lastRawValue,
+        } else if case .literal(let token)? = lastRawValue,
           case .literal(.decimal(.integer(let i))) = token.kind {
           enumCase.hiddenValue = .literal(.init(kind: .literal(.decimal(.integer(i + 1))), sourceLocation: .DUMMY))
         }

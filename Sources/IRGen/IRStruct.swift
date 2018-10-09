@@ -19,7 +19,9 @@ public struct IRStruct {
   func rendered() -> String {
     // At this point, the initializers and conforming functions have been converted to functions.
     let functionsCode = structDeclaration.functionDeclarations.compactMap { functionDeclaration in
-      return IRFunction(functionDeclaration: functionDeclaration, typeIdentifier: structDeclaration.identifier, environment: environment).rendered()
+      return IRFunction(functionDeclaration: functionDeclaration,
+                        typeIdentifier: structDeclaration.identifier,
+                        environment: environment).rendered()
     }.joined(separator: "\n\n")
 
     return functionsCode

@@ -18,8 +18,10 @@ struct IRIdentifier {
   }
 
   func rendered(functionContext: FunctionContext) -> String {
-    if let _ = identifier.enclosingType {
-      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)), rhs: .identifier(identifier), asLValue: asLValue).rendered(functionContext: functionContext)
+    if identifier.enclosingType != nil {
+      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
+                              rhs: .identifier(identifier), asLValue: asLValue)
+        .rendered(functionContext: functionContext)
     }
     return identifier.name.mangled
   }

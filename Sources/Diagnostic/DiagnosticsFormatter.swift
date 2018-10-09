@@ -14,16 +14,17 @@ public struct DiagnosticsFormatter {
   var diagnostics: [Diagnostic]
   var sourceContext: SourceContext?
 
-  public init(diagnostics: [Diagnostic], sourceContext: SourceContext?){
+  public init(diagnostics: [Diagnostic], sourceContext: SourceContext?) {
     self.diagnostics = diagnostics
     self.sourceContext = sourceContext
   }
 
-  public func rendered() -> String {
-    return diagnostics.map({ renderDiagnostic($0) }).joined(separator: "\n")
+  public func rendered() throws -> String {
+    return try diagnostics.map({ try renderDiagnostic($0) }).joined(separator: "\n")
   }
 
-  func renderDiagnostic(_ diagnostic: Diagnostic, highlightColor: Color = .lightRed, style: Style = .bold) -> String {
+  func renderDiagnostic(_ diagnostic: Diagnostic,
+                        highlightColor: Color = .lightRed, style: Style = .bold) throws -> String {
     let diagnosticFile = diagnostic.sourceLocation?.file
     var sourceFileText = ""
     if let file = diagnosticFile {
@@ -42,16 +43,20 @@ public struct DiagnosticsFormatter {
     let body: String
 
     if let sourceContext = sourceContext, let file = diagnosticFile {
-      let sourceCode = sourceContext.sourceCode(in: file)
+      let sourceCode = try sourceContext.sourceCode(in: file)
+      let sourcePreview = renderSourcePreview(at: diagnostic.sourceLocation,
+                                              sourceCode: sourceCode, highlightColor: highlightColor, style: style)
       body = """
       \(diagnostic.message.indented(by: 2).bold)\(render(diagnostic.sourceLocation).bold):
-      \(renderSourcePreview(at: diagnostic.sourceLocation, sourceCode: sourceCode, highlightColor: highlightColor, style: style))
+      \(sourcePreview)
       """
     } else {
       body = "  \(diagnostic.message.indented(by: 2).bold)"
     }
 
-    let notes = diagnostic.notes.map({ renderDiagnostic($0, highlightColor: .white, style: .default) }).joined(separator: "\n")
+    let notes = try diagnostic.notes.map {
+        try renderDiagnostic($0, highlightColor: .white, style: .default)
+    }.joined(separator: "\n")
 
     return """
     \(infoLine)
@@ -64,7 +69,10 @@ public struct DiagnosticsFormatter {
     return " at line \(sourceLocation.line), column \(sourceLocation.column)"
   }
 
-  func renderSourcePreview(at sourceLocation: SourceLocation?, sourceCode: String, highlightColor: Color, style: Style) -> String {
+  func renderSourcePreview(at sourceLocation: SourceLocation?,
+                           sourceCode: String,
+                           highlightColor: Color,
+                           style: Style) -> String {
     let sourceLines = sourceCode.components(separatedBy: "\n")
     guard let sourceLocation = sourceLocation else { return "" }
 
@@ -74,8 +82,11 @@ public struct DiagnosticsFormatter {
     let spaceOffsetLength = sourceLocation.column != 0 ? sourceLocation.column - 1 : 0
     let spaceOffset = String(repeating: " ", count: spaceOffsetLength)
 
-    let renderedSourceLine = renderSourceLine(sourceLine, rangeOfInterest: (sourceLocation.column..<sourceLocation.column + sourceLocation.length), highlightColor: highlightColor, style: style)
-    let indicator = spaceOffset + String(repeating: "^", count: sourceLocation.length).applyingCodes(highlightColor, style)
+    let rangeOfInterest = sourceLocation.column..<sourceLocation.column + sourceLocation.length
+    let renderedSourceLine = renderSourceLine(sourceLine, rangeOfInterest: rangeOfInterest,
+                                              highlightColor: highlightColor, style: style)
+    let indicator =
+        spaceOffset + String(repeating: "^", count: sourceLocation.length).applyingCodes(highlightColor, style)
 
     return """
     \(renderedSourceLine)
@@ -83,14 +94,17 @@ public struct DiagnosticsFormatter {
     """
   }
 
-  func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>, highlightColor: Color, style: Style) -> String {
+  func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>,
+                        highlightColor: Color, style: Style) -> String {
     let lowerBound = rangeOfInterest.lowerBound != 0 ? rangeOfInterest.lowerBound - 1 : 0
     let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : max(0, sourceLine.count - 1)
 
     let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: lowerBound)
     let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: upperBound)
 
-    return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) + String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) + String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
+    return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) +
+        String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) +
+        String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
   }
 }
 

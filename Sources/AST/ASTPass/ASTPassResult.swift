@@ -24,7 +24,7 @@ public struct ASTPassResult<T> {
     self.diagnostics = diagnostics
     self.passContext = passContext
   }
-  
+
   /// Combines two processings of AST nodes, by merging contexts if required.
   ///
   /// - Parameters:
@@ -34,7 +34,7 @@ public struct ASTPassResult<T> {
   mutating func combining<S>(_ newPassResult: ASTPassResult<S>, mergingContexts: Bool = false) -> S {
     diagnostics.append(contentsOf: newPassResult.diagnostics)
 
-    passContext.storage.merge(newPassResult.passContext.storage, uniquingKeysWith: { lhs, rhs in
+    passContext.storage.merge(newPassResult.passContext.storage, uniquingKeysWith: { _, rhs in
       // Use the newest entry in case both contexts have values for the same key.
       return rhs
     })

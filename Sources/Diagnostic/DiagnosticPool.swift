@@ -32,29 +32,27 @@ public class DiagnosticPool {
     diagnostics = []
   }
 
-  public func checkpoint(_ additions: [Diagnostic]) -> Bool? {
+  public func checkpoint(_ additions: [Diagnostic]) throws -> Bool? {
     diagnostics.append(contentsOf: additions)
 
     if hasError {
-      if shouldVerify, DiagnosticsVerifier(sourceContext).verify(producedDiagnostics: diagnostics) {
+      if shouldVerify, try DiagnosticsVerifier(sourceContext).verify(producedDiagnostics: diagnostics) {
         return false
-      }
-      else if !shouldVerify {
-        display()
+      } else if !shouldVerify {
+        try display()
         return true
-      }
-      else {
+      } else {
         return true
       }
     }
     return nil
   }
 
-  public func display() {
+  public func display() throws {
     var printableDiagnostics: [Diagnostic] = diagnostics
     if quiet {
       printableDiagnostics = diagnostics.filter({ $0.isError })
     }
-    print(DiagnosticsFormatter(diagnostics: printableDiagnostics, sourceContext: sourceContext).rendered())
+    print(try DiagnosticsFormatter(diagnostics: printableDiagnostics, sourceContext: sourceContext).rendered())
   }
 }

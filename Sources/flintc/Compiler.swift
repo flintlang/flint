@@ -28,20 +28,20 @@ struct Compiler {
     return SourceContext(sourceFiles: inputFiles)
   }
 
-  func tokenizeFiles() -> [Token] {
-    let stdlibTokens = StandardLibrary.default.files.flatMap { Lexer(sourceFile: $0, isFromStdlib: true).lex() }
-    let userTokens = inputFiles.flatMap { Lexer(sourceFile: $0).lex() }
+  func tokenizeFiles() throws -> [Token] {
+    let stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+    let userTokens = try inputFiles.flatMap { try Lexer(sourceFile: $0).lex() }
 
     return stdlibTokens + userTokens
   }
 
-  func compile() -> CompilationOutcome {
-    let tokens = tokenizeFiles()
+  func compile() throws -> CompilationOutcome {
+    let tokens = try tokenizeFiles()
 
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
-    if let failed = diagnostics.checkpoint(parserDiagnostics) {
+    if let failed = try diagnostics.checkpoint(parserDiagnostics) {
       if failed {
         exitWithFailure()
       }
@@ -66,8 +66,9 @@ struct Compiler {
     ]
 
     // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: astPasses, in: environment, sourceContext: sourceContext)
-    if let failed = diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+    let passRunnerOutcome = ASTPassRunner(ast: ast)
+      .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
       }
@@ -75,13 +76,14 @@ struct Compiler {
     }
 
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment).generateCode()
+    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+      .generateCode()
 
     // Compile the YUL IR code using solc.
-    SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
+    try SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: emitBytecode).compile()
 
-    diagnostics.display()
-    
+    try diagnostics.display()
+
     print("Produced binary in \(outputDirectory.path.bold).")
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
   }

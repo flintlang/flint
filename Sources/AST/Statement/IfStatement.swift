@@ -19,10 +19,10 @@ public struct IfStatement: ASTNode {
   public var elseBody: [Statement]
 
   // Contextual information for the scope defined by the if body.
-  public var ifBodyScopeContext: ScopeContext? = nil
+  public var ifBodyScopeContext: ScopeContext?
 
   // Contextual information for the scope defined by the else body.
-  public var elseBodyScopeContext: ScopeContext? = nil
+  public var elseBodyScopeContext: ScopeContext?
 
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in
@@ -52,4 +52,3 @@ public struct IfStatement: ASTNode {
     return "\(ifToken) \(condition) {\(bodyText)} else {\(elseText)}"
   }
 }
-

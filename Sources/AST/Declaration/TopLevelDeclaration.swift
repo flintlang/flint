@@ -22,16 +22,16 @@ public enum TopLevelDeclaration: ASTNode {
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
     switch self {
-      case .contractDeclaration(let contractDeclaration):
-        return contractDeclaration.sourceLocation
-      case .contractBehaviorDeclaration(let behaviourDeclaration):
-        return behaviourDeclaration.sourceLocation
-      case .structDeclaration(let structDeclaration):
-        return structDeclaration.sourceLocation
-      case .enumDeclaration(let enumDeclaration):
-        return enumDeclaration.sourceLocation
-      case .traitDeclaration(let traitDeclaration):
-        return traitDeclaration.sourceLocation
+    case .contractDeclaration(let contractDeclaration):
+      return contractDeclaration.sourceLocation
+    case .contractBehaviorDeclaration(let behaviourDeclaration):
+      return behaviourDeclaration.sourceLocation
+    case .structDeclaration(let structDeclaration):
+      return structDeclaration.sourceLocation
+    case .enumDeclaration(let enumDeclaration):
+      return enumDeclaration.sourceLocation
+    case .traitDeclaration(let traitDeclaration):
+      return traitDeclaration.sourceLocation
     }
   }
 

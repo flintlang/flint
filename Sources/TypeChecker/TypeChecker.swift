@@ -12,15 +12,19 @@ import Diagnostic
 public class TypeChecker: ASTPass {
   public init() {}
 
-  public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+  public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
     contractBehaviorDeclaration.states.forEach { typeState in
-      if environment.isStateDeclared(typeState.identifier, in: contractBehaviorDeclaration.contractIdentifier.name) || typeState.isAny {
+      if environment.isStateDeclared(typeState.identifier,
+                                     in: contractBehaviorDeclaration.contractIdentifier.name) || typeState.isAny {
         // Become has an identifier of a state declared in the contract
       } else {
-        diagnostics.append(.invalidState(falseState: .identifier(typeState.identifier), contract: contractBehaviorDeclaration.contractIdentifier.name))
+        diagnostics.append(
+          .invalidState(falseState: .identifier(typeState.identifier),
+                        contract: contractBehaviorDeclaration.contractIdentifier.name))
       }
     }
 
@@ -35,9 +39,13 @@ public class TypeChecker: ASTPass {
     let hiddenType = enumDeclaration.type.rawType
     for enumCase in enumDeclaration.cases {
       if let hiddenValue = enumCase.hiddenValue {
-        let valueType = environment.type(of: hiddenValue, enclosingType: passContext.enclosingTypeIdentifier?.name ?? "", scopeContext: ScopeContext() )
+        let valueType = environment.type(of: hiddenValue,
+                                         enclosingType: passContext.enclosingTypeIdentifier?.name ?? "",
+                                         scopeContext: ScopeContext() )
         if !hiddenType.isCompatible(with: valueType), ![hiddenType, valueType].contains(.errorType) {
-          diagnostics.append(.incompatibleCaseValueType(actualType: valueType, expectedType: hiddenType, expression: hiddenValue))
+          diagnostics.append(.incompatibleCaseValueType(actualType: valueType,
+                                                        expectedType: hiddenType,
+                                                        expression: hiddenValue))
         }
       }
     }
@@ -45,11 +53,12 @@ public class TypeChecker: ASTPass {
     return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(variableDeclaration: VariableDeclaration, passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
+  public func process(variableDeclaration: VariableDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     var diagnostics = [Diagnostic]()
 
-    if let _ = passContext.functionDeclarationContext {
+    if passContext.functionDeclarationContext != nil {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
     }
@@ -63,12 +72,14 @@ public class TypeChecker: ASTPass {
       let rhsType: RawType?
 
       switch assignedExpression {
-      case .arrayLiteral(_):
+      case .arrayLiteral:
         rhsType = RawType.arrayType(.any)
-      case .dictionaryLiteral(_):
+      case .dictionaryLiteral:
         rhsType = RawType.dictionaryType(key: .any, value: .any)
       default:
-        rhsType = environment.type(of: assignedExpression, enclosingType: passContext.enclosingTypeIdentifier!.name, scopeContext: ScopeContext())
+        rhsType = environment.type(of: assignedExpression,
+                                   enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                   scopeContext: ScopeContext())
       }
 
       if let rhsType = rhsType, !lhsType.isCompatible(with: rhsType), ![lhsType, rhsType].contains(.errorType) {
