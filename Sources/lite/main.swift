@@ -14,6 +14,8 @@ import Symbolic
   import Glibc
 #endif
 
+// swiftlint:disable force_try
+
 /// Finds the named executable relative to the location of the `lite`
 /// executable.
 // Thank you Harlan and Robert! (https://github.com/silt-lang/silt/blob/master/Sources/lite/SiltInvocation.swift)
@@ -34,12 +36,15 @@ var fileCheckExecutableLocation: URL {
 }
 
 func runParserTests() -> Bool {
-  let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)"), ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")],
-                              pathExtensions: ["flint"],
-                              testDirPath: "Tests/ParserTests",
-                              testLinePrefix: "//",
-                              parallelismLevel: .automatic,
-                              successMessage: "Parser tests passed.")
+  let allPassed = try! runLite(substitutions: [
+        ("flintc", "\(flintcExecutableLocation.path)"),
+        ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")
+    ],
+    pathExtensions: ["flint"],
+    testDirPath: "Tests/ParserTests",
+    testLinePrefix: "//",
+    parallelismLevel: .automatic,
+    successMessage: "Parser tests passed.")
   return allPassed
 }
 
@@ -72,3 +77,5 @@ func run() -> Int32 {
 }
 
 exit(run())
+
+// swiftlint:enable force_try

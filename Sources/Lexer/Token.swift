@@ -52,7 +52,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .var: return "var"
       case .let: return "let"
       case .func: return "func"
-      case .init: return "init"
+      case .`init`: return "init"
       case .fallback: return "fallback"
       case .self: return "self"
       case .implicit: return "implicit"

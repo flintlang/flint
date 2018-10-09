@@ -16,12 +16,17 @@ extension Environment {
   }
 
   /// Associates a function call to an event call. Events are declared as properties in the contract's declaration.
-  public func matchEventCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, scopeContext: ScopeContext) -> EventMatchResult {
+  public func matchEventCall(_ functionCall: FunctionCall,
+                             enclosingType: RawTypeIdentifier,
+                             scopeContext: ScopeContext) -> EventMatchResult {
     var candidates = [EventInformation]()
 
     if let events = types[enclosingType]?.allEvents[functionCall.identifier.name] {
       for candidate in events {
-        guard areArgumentsCompatible(source: functionCall.arguments, target: candidate, enclosingType: enclosingType, scopeContext: scopeContext) else {
+        guard areArgumentsCompatible(source: functionCall.arguments,
+                                     target: candidate,
+                                     enclosingType: enclosingType,
+                                     scopeContext: scopeContext) else {
             candidates.append(candidate)
             continue
         }

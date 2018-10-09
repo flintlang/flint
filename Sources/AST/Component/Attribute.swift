@@ -15,7 +15,11 @@ public struct Attribute: ASTNode {
   var identifierToken: Token
 
   public init?(atToken: Token, identifierToken: Token) {
-    guard case .identifier(let attribute) = identifierToken.kind, let kind = Kind(rawValue: attribute) else { return nil }
+    guard case .identifier(let attribute) = identifierToken.kind,
+      let kind = Kind(rawValue: attribute) else {
+        return nil
+    }
+
     self.kind = kind
     self.atToken = atToken
     self.identifierToken = identifierToken

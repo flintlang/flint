@@ -8,6 +8,7 @@
 extension String {
   func indented(by level: Int, andFirst: Bool = false) -> String {
     let lines = components(separatedBy: "\n")
-    return ( andFirst ? String(repeating: " ", count: level) : "" ) + lines.joined(separator: "\n" + String(repeating: " ", count: level))
+    let spaces = String(repeating: " ", count: level)
+    return ( andFirst ? spaces : "" ) + lines.joined(separator: "\n" + spaces)
   }
 }

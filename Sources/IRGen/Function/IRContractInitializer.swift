@@ -23,15 +23,25 @@ struct IRContractInitializer {
   var isContractFunction = false
 
   var parameterNames: [String] {
-    let fc = FunctionContext(environment: environment, scopeContext: scopeContext, enclosingTypeName: typeIdentifier.name, isInStructFunction: !isContractFunction)
-    return initializerDeclaration.explicitParameters.map { IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc) }
+    let fc = FunctionContext(environment: environment,
+                             scopeContext: scopeContext,
+                             enclosingTypeName: typeIdentifier.name,
+                             isInStructFunction: !isContractFunction)
+    return initializerDeclaration.explicitParameters.map {
+        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc)
+    }
   }
 
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     var localVariables = [VariableDeclaration]()
     if let callerBinding = callerBinding {
-      localVariables.append(VariableDeclaration(modifiers: [], declarationToken: nil, identifier: callerBinding, type: Type(inferredType: .basicType(.address), identifier: callerBinding)))
+      let variableDeclaration = VariableDeclaration(modifiers: [],
+                                                    declarationToken: nil,
+                                                    identifier: callerBinding,
+                                                    type: Type(inferredType: .basicType(.address),
+                                                               identifier: callerBinding))
+      localVariables.append(variableDeclaration)
     }
     return ScopeContext(parameters: initializerDeclaration.signature.parameters, localVariables: localVariables)
   }
@@ -52,7 +62,12 @@ struct IRContractInitializer {
       """
     }.joined(separator: "\n")
 
-    let body = IRFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, callerBinding: callerBinding, callerProtections: callerProtections, environment: environment, isContractFunction: isContractFunction).rendered()
+    let body = IRFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration,
+                              typeIdentifier: typeIdentifier,
+                              callerBinding: callerBinding,
+                              callerProtections: callerProtections,
+                              environment: environment,
+                              isContractFunction: isContractFunction).rendered()
 
     return """
     init()

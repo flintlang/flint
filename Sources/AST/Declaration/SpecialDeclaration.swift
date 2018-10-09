@@ -36,7 +36,10 @@ public struct SpecialDeclaration: ASTNode {
       closeBracketToken: signature.closeBracketToken,
       resultType: nil)
 
-    return FunctionDeclaration(signature: functionSignature, body: body, closeBraceToken: closeBraceToken, scopeContext: scopeContext)
+    return FunctionDeclaration(signature: functionSignature,
+                               body: body,
+                               closeBraceToken: closeBraceToken,
+                               scopeContext: scopeContext)
   }
 
   public var isInit: Bool {
@@ -50,8 +53,10 @@ public struct SpecialDeclaration: ASTNode {
     return asFunctionDeclaration.isPublic
   }
 
-
-  public init(signature: SpecialSignatureDeclaration, body: [Statement], closeBraceToken: Token, scopeContext: ScopeContext = ScopeContext()) {
+  public init(signature: SpecialSignatureDeclaration,
+              body: [Statement],
+              closeBraceToken: Token,
+              scopeContext: ScopeContext = ScopeContext()) {
     self.signature = signature
     self.body = body
     self.closeBraceToken = closeBraceToken

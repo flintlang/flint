@@ -17,7 +17,7 @@ public struct ForStatement: ASTNode {
   public var body: [Statement]
 
   // Contextual information for the scope defined by the for body.
-  public var forBodyScopeContext: ScopeContext? = nil
+  public var forBodyScopeContext: ScopeContext?
 
   public var endsWithReturnStatement: Bool {
     return body.contains { statement in

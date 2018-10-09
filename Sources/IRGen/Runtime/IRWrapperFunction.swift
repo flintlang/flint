@@ -13,7 +13,9 @@ struct IRWrapperFunction {
   let function: IRFunction
 
   func rendered(enclosingType: RawTypeIdentifier) -> String {
-   return rendered(enclosingType: enclosingType, hard: true) + "\n" + rendered(enclosingType: enclosingType, hard: false)
+   return rendered(enclosingType: enclosingType, hard: true) +
+    "\n" +
+    rendered(enclosingType: enclosingType, hard: false)
   }
 
   func rendered(enclosingType: RawTypeIdentifier, hard: Bool) -> String {
@@ -23,14 +25,18 @@ struct IRWrapperFunction {
 
     let invalidCall = hard ? "revert(0, 0)" : "\(IRFunction.returnVariableName) := 0"
 
-    var validCall = hard ? "\(IRFunction.returnVariableName) := \(functionCall)" : "\(functionCall)\n    \(IRFunction.returnVariableName) := 1"
     var returnSignature = "-> \(IRFunction.returnVariableName) "
+
+    let validCall: String
     if hard, function.functionDeclaration.isVoid {
       validCall = functionCall
       returnSignature = ""
-    }
-    if !hard, !function.functionDeclaration.isVoid {
+    } else if !hard, !function.functionDeclaration.isVoid {
       validCall = "\(IRFunction.returnVariableName) := \(functionCall)\n    \(IRFunction.returnVariableName) := 1"
+    } else if hard {
+      validCall = "\(IRFunction.returnVariableName) := \(functionCall)"
+    } else {
+      validCall = "\(functionCall)\n    \(IRFunction.returnVariableName) := 1"
     }
 
     return """
@@ -48,6 +54,7 @@ struct IRWrapperFunction {
   }
 
   func signature(_ hard: Bool) -> String {
-    return "\(hard ? IRWrapperFunction.prefixHard : IRWrapperFunction.prefixSoft)\(function.signature(withReturn: false))"
+    let prefix = hard ? IRWrapperFunction.prefixHard : IRWrapperFunction.prefixSoft
+    return "\(prefix)\(function.signature(withReturn: false))"
   }
 }
