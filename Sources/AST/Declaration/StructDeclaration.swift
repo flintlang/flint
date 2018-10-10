@@ -75,8 +75,16 @@ public struct StructDeclaration: ASTNode {
     let dummySourceLocation = sourceLocation
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
-    let specialSignature = SpecialSignatureDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken)
-    return SpecialDeclaration(signature: specialSignature, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+    let specialSignature =
+      SpecialSignatureDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation),
+                                  attributes: [],
+                                  modifiers: [],
+                                  parameters: [],
+                                  closeBracketToken: closeBracketToken)
+    return SpecialDeclaration(signature: specialSignature,
+                              body: [],
+                              closeBraceToken: closeBraceToken,
+                              scopeContext: ScopeContext())
   }
 
   // MARK: - ASTNode

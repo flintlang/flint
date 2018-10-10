@@ -41,7 +41,11 @@ extension Environment {
   ///   - callerProtections: The caller protections associated with the function call.
   ///   - scopeContext: Contextual information about the scope in which the function call appears.
   /// - Returns: A `FunctionCallMatchResult`, either `success` or `failure`.
-  public func matchFunctionCall(_ functionCall: FunctionCall, enclosingType: RawTypeIdentifier, typeStates: [TypeState], callerProtections: [CallerProtection], scopeContext: ScopeContext) -> FunctionCallMatchResult {
+  public func matchFunctionCall(_ functionCall: FunctionCall,
+                                enclosingType: RawTypeIdentifier,
+                                typeStates: [TypeState],
+                                callerProtections: [CallerProtection],
+                                scopeContext: ScopeContext) -> FunctionCallMatchResult {
     let match: FunctionCallMatchResult = .failure(candidates: [])
 
     let argumentTypes = functionCall.arguments.map {
@@ -49,16 +53,24 @@ extension Environment {
     }
 
     // Check if it can be a regular function.
-    let regularMatch = matchRegularFunction(functionCall: functionCall, enclosingType: enclosingType, argumentTypes: argumentTypes, typeStates: typeStates, callerProtections: callerProtections)
+    let regularMatch = matchRegularFunction(functionCall: functionCall,
+                                            enclosingType: enclosingType,
+                                            argumentTypes: argumentTypes,
+                                            typeStates: typeStates,
+                                            callerProtections: callerProtections)
 
     // Check if it can be an initializer.
-    let initaliserMatch = matchInitaliserFunction(functionCall: functionCall, argumentTypes: argumentTypes, callerProtections: callerProtections)
+    let initaliserMatch = matchInitaliserFunction(functionCall: functionCall,
+                                                  argumentTypes: argumentTypes,
+                                                  callerProtections: callerProtections)
 
     // Check if it can be a fallback function.
     let fallbackMatch = matchFallbackFunction(functionCall: functionCall, callerProtections: callerProtections)
 
     // Check if it can be a global function.
-    let globalMatch = matchGlobalFunction(functionCall: functionCall, argumentTypes: argumentTypes, callerProtections: callerProtections)
+    let globalMatch = matchGlobalFunction(functionCall: functionCall,
+                                          argumentTypes: argumentTypes,
+                                          callerProtections: callerProtections)
 
     return match.merge(with: globalMatch)
                 .merge(with: fallbackMatch)
@@ -66,7 +78,11 @@ extension Environment {
                 .merge(with: regularMatch)
   }
 
-  private func matchRegularFunction(functionCall: FunctionCall, enclosingType: RawTypeIdentifier, argumentTypes: [RawType], typeStates: [TypeState], callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
+  private func matchRegularFunction(functionCall: FunctionCall,
+                                    enclosingType: RawTypeIdentifier,
+                                    argumentTypes: [RawType],
+                                    typeStates: [TypeState],
+                                    callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
     if let functions = types[enclosingType]?.allFunctions[functionCall.identifier.name] {
@@ -80,7 +96,7 @@ extension Environment {
 
         return .matchedFunction(candidate)
       }
-      let matchedCandidates = candidates.filter{ $0.parameterTypes == argumentTypes }
+      let matchedCandidates = candidates.filter { $0.parameterTypes == argumentTypes }
       if matchedCandidates.count > 0 {
        return .matchedFunctionWithoutCaller(matchedCandidates)
       }
@@ -89,7 +105,9 @@ extension Environment {
     return .failure(candidates: candidates)
   }
 
-  private func matchInitaliserFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
+  private func matchInitaliserFunction(functionCall: FunctionCall,
+                                       argumentTypes: [RawType],
+                                       callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
     if let initializers = types[functionCall.identifier.name]?.allInitialisers {
@@ -106,7 +124,8 @@ extension Environment {
     return .failure(candidates: candidates)
   }
 
-  private func matchFallbackFunction(functionCall: FunctionCall, callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
+  private func matchFallbackFunction(functionCall: FunctionCall,
+                                     callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
     if let fallbacks = types[functionCall.identifier.name]?.fallbacks {
@@ -123,7 +142,9 @@ extension Environment {
     return .failure(candidates: candidates)
   }
 
-  private func matchGlobalFunction(functionCall: FunctionCall, argumentTypes: [RawType], callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
+  private func matchGlobalFunction(functionCall: FunctionCall,
+                                   argumentTypes: [RawType],
+                                   callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
 
     if let functions = types[Environment.globalFunctionStructName]?.allFunctions[functionCall.identifier.name] {

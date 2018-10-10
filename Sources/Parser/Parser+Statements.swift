@@ -17,7 +17,7 @@ extension Parser {
       case .punctuation(.semicolon), .newline:
         currentIndex+=1
      // Valid starting tokens for statements
-      case .return, .become, .emit, .for, .if, .identifier(_), .punctuation(.ampersand), .punctuation(.openSquareBracket),
+      case .return, .become, .emit, .for, .if, .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
            .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
         statements.append(try parseStatement())
       default:
@@ -32,7 +32,13 @@ extension Parser {
       throw raise(.unexpectedEOF())
     }
 
-    guard let statementEndIndex = indexOfFirstAtCurrentDepth([.punctuation(.semicolon), .newline, .punctuation(.closeBrace)], maxIndex: tokens.count) else {
+    guard let statementEndIndex = indexOfFirstAtCurrentDepth(
+      [
+        .punctuation(.semicolon),
+        .newline,
+        .punctuation(.closeBrace)
+      ],
+      maxIndex: tokens.count) else {
       throw raise(.statementSameLine(at: latestSource))
     }
     let statement: Statement
@@ -54,7 +60,7 @@ extension Parser {
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)
     // Valid starting tokens for expressions
-    case .identifier(_), .punctuation(.ampersand), .punctuation(.openSquareBracket),
+    case .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
          .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
       let expression = try parseExpression(upTo: statementEndIndex)
       statement = .expression(expression)
@@ -68,14 +74,14 @@ extension Parser {
   func parseCodeBlock() throws -> ([Statement], closeBraceToken: Token) {
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "code block", at: latestSource))
     let statements = try parseStatements()
-    let closeBraceToken = try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "code block", at: latestSource))
+    let closeBraceToken = try consume(.punctuation(.closeBrace),
+                                      or: .rightBraceExpected(in: "code block", at: latestSource))
     return (statements, closeBraceToken)
   }
 
-
   func parseReturnStatement(statementEndIndex: Int) throws -> ReturnStatement {
     let returnToken = try consume(.return, or: .expectedStatement(at: latestSource))
-    var expression: Expression? = nil
+    var expression: Expression?
     if currentToken?.kind != .newline {
       expression = try parseExpression(upTo: statementEndIndex)
     }
@@ -106,7 +112,10 @@ extension Parser {
       elseClauseStatements = try parseElseClause()
     }
 
-    return IfStatement(ifToken: ifToken, condition: condition, statements: statements, elseClauseStatements: elseClauseStatements)
+    return IfStatement(ifToken: ifToken,
+                       condition: condition,
+                       statements: statements,
+                       elseClauseStatements: elseClauseStatements)
   }
 
   func parseElseClause() throws -> [Statement] {

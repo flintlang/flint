@@ -13,9 +13,11 @@ struct IRPropertyOffset {
 
   func rendered(functionContext: FunctionContext) -> String {
     if case .binaryExpression(let binaryExpression) = expression {
-      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true).rendered(functionContext: functionContext)
+      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
+        .rendered(functionContext: functionContext)
     } else if case .subscriptExpression(let subscriptExpression) = expression {
-      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: true).rendered(functionContext: functionContext)
+      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: true)
+        .rendered(functionContext: functionContext)
     }
     guard case .identifier(let identifier) = expression else { fatalError() }
 

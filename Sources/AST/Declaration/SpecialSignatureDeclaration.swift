@@ -42,7 +42,11 @@ public struct SpecialSignatureDeclaration: ASTNode {
     )
   }
 
-  public init(specialToken: Token, attributes: [Attribute], modifiers: [Token], parameters: [Parameter], closeBracketToken: Token) {
+  public init(specialToken: Token,
+              attributes: [Attribute],
+              modifiers: [Token],
+              parameters: [Parameter],
+              closeBracketToken: Token) {
     self.specialToken = specialToken
     self.attributes = attributes
     self.modifiers = modifiers

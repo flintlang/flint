@@ -11,7 +11,8 @@ extension Environment {
   public mutating func addContract(_ contract: ContractDeclaration) {
     declaredContracts.append(contract.identifier)
     types[contract.identifier.name] = TypeInformation()
-    setProperties(contract.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: contract.identifier.name)
+    setProperties(contract.variableDeclarations.map { .variableDeclaration($0) },
+                  enclosingType: contract.identifier.name)
 
     for conformance in contract.conformances {
       addConformance(contract.identifier.name, conformsTo: conformance.name)
@@ -33,10 +34,14 @@ extension Environment {
       switch member {
       case .functionDeclaration(let functionDeclaration):
         // Record all the function declarations.
-        addFunction(functionDeclaration, enclosingType: contractIdentifier.name, states: behaviour.states, callerProtections: behaviour.callerProtections)
+        addFunction(functionDeclaration, enclosingType: contractIdentifier.name,
+                    states: behaviour.states,
+                    callerProtections: behaviour.callerProtections)
       case .specialDeclaration(let specialDeclaration):
-        addSpecial(specialDeclaration, enclosingType: behaviour.contractIdentifier, callerProtections: behaviour.callerProtections)
-      case .functionSignatureDeclaration(_), .specialSignatureDeclaration(_):
+        addSpecial(specialDeclaration,
+                   enclosingType: behaviour.contractIdentifier,
+                   callerProtections: behaviour.callerProtections)
+      case .functionSignatureDeclaration, .specialSignatureDeclaration:
         break
       }
     }
@@ -48,20 +53,22 @@ extension Environment {
     if types[structDeclaration.identifier.name] == nil {
       types[structDeclaration.identifier.name] = TypeInformation()
     }
-    setProperties(structDeclaration.variableDeclarations.map{ .variableDeclaration($0) }, enclosingType: structDeclaration.identifier.name)
+    setProperties(structDeclaration.variableDeclarations.map { .variableDeclaration($0) },
+                  enclosingType: structDeclaration.identifier.name)
 
     for conformance in structDeclaration.conformances {
       addConformance(structDeclaration.identifier.name, conformsTo: conformance.name)
     }
 
     for functionDeclaration in structDeclaration.functionDeclarations {
-      addFunction(functionDeclaration, enclosingType: structDeclaration.identifier.name, states: [], callerProtections: [])
+      addFunction(functionDeclaration,
+                  enclosingType: structDeclaration.identifier.name,
+                  states: [],
+                  callerProtections: [])
     }
 
-    for specialDeclaration in structDeclaration.specialDeclarations {
-      if specialDeclaration.isInit {
-        addInitializer(specialDeclaration, enclosingType: structDeclaration.identifier.name)
-      }
+    for specialDeclaration in structDeclaration.specialDeclarations where specialDeclaration.isInit {
+      addInitializer(specialDeclaration, enclosingType: structDeclaration.identifier.name)
     }
   }
 
@@ -71,7 +78,7 @@ extension Environment {
     if types[enumDeclaration.identifier.name] == nil {
       types[enumDeclaration.identifier.name] = TypeInformation()
     }
-    setProperties(enumDeclaration.cases.map{ .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
+    setProperties(enumDeclaration.cases.map { .enumCase($0) }, enclosingType: enumDeclaration.identifier.name)
   }
 
   /// Add an event declaration to the environment.
@@ -83,7 +90,9 @@ extension Environment {
       .append(EventInformation(declaration: eventDeclaration))
   }
 
-  public mutating func addSpecial(_ special: SpecialDeclaration, enclosingType: Identifier, callerProtections: [CallerProtection]) {
+  public mutating func addSpecial(_ special: SpecialDeclaration,
+                                  enclosingType: Identifier,
+                                  callerProtections: [CallerProtection]) {
     if special.isInit {
       addInitializer(special, enclosingType: enclosingType.name)
       if special.isPublic, publicInitializer(forContract: enclosingType.name) == nil {
@@ -98,50 +107,82 @@ extension Environment {
 
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerProtections: [CallerProtection]) {
+  public mutating func addFunction(_ functionDeclaration: FunctionDeclaration,
+                                   enclosingType: RawTypeIdentifier,
+                                   states: [TypeState],
+                                   callerProtections: [CallerProtection]) {
     let functionName = functionDeclaration.name
 
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
-      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerProtections: callerProtections, isMutating: functionDeclaration.isMutating, isSignature: false))
+      .append(FunctionInformation(declaration: functionDeclaration,
+                                  typeStates: states,
+                                  callerProtections: callerProtections,
+                                  isMutating: functionDeclaration.isMutating,
+                                  isSignature: false))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerProtections: [CallerProtection] = []) {
+  public mutating func addInitializer(_ initializerDeclaration: SpecialDeclaration,
+                                      enclosingType: RawTypeIdentifier,
+                                      callerProtections: [CallerProtection] = []) {
     types[enclosingType, default: TypeInformation()]
       .initializers
-      .append(SpecialInformation(declaration: initializerDeclaration, callerProtections: callerProtections, isSignature: false))
+      .append(SpecialInformation(declaration: initializerDeclaration,
+                                 callerProtections: callerProtections,
+                                 isSignature: false))
   }
 
   /// Add a function declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addFunctionSignature(_ signature: FunctionSignatureDeclaration, enclosingType: RawTypeIdentifier, states: [TypeState], callerProtections: [CallerProtection]) {
+  public mutating func addFunctionSignature(_ signature: FunctionSignatureDeclaration,
+                                            enclosingType: RawTypeIdentifier,
+                                            states: [TypeState],
+                                            callerProtections: [CallerProtection]) {
     let functionName = signature.identifier.name
 
-    let functionDeclaration = FunctionDeclaration(signature: signature, body: [], closeBraceToken: .init(kind: .punctuation(.closeBrace), sourceLocation: .DUMMY))
+    let functionDeclaration = FunctionDeclaration(signature: signature,
+                                                  body: [],
+                                                  closeBraceToken: .init(kind: .punctuation(.closeBrace),
+                                                                         sourceLocation: .DUMMY))
 
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
-      .append(FunctionInformation(declaration: functionDeclaration, typeStates: states, callerProtections: callerProtections, isMutating: functionDeclaration.isMutating, isSignature: true))
+      .append(FunctionInformation(declaration: functionDeclaration,
+                                  typeStates: states,
+                                  callerProtections: callerProtections,
+                                  isMutating: functionDeclaration.isMutating,
+                                  isSignature: true))
   }
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addInitializerSignature(_ initalizerSignature: SpecialSignatureDeclaration, enclosingType: RawTypeIdentifier, callerProtections: [CallerProtection] = []) {
+  public mutating func addInitializerSignature(_ initalizerSignature: SpecialSignatureDeclaration,
+                                               enclosingType: RawTypeIdentifier,
+                                               callerProtections: [CallerProtection] = []) {
 
-    let specialDeclaration = SpecialDeclaration(signature: initalizerSignature, body: [], closeBraceToken: .init(kind: .punctuation(.closeBrace), sourceLocation: .DUMMY))
+    let specialDeclaration = SpecialDeclaration(signature: initalizerSignature,
+                                                body: [],
+                                                closeBraceToken: .init(kind: .punctuation(.closeBrace),
+                                                                       sourceLocation: .DUMMY))
 
     types[enclosingType, default: TypeInformation()]
       .initializers
-      .append(SpecialInformation(declaration: specialDeclaration, callerProtections: callerProtections, isSignature: true))
+      .append(SpecialInformation(declaration: specialDeclaration,
+                                 callerProtections: callerProtections,
+                                 isSignature: true))
   }
-
 
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
-  public mutating func addFallback(_ fallbackDeclaration: SpecialDeclaration, enclosingType: RawTypeIdentifier, callerProtections: [CallerProtection] = []) {
-    types[enclosingType, default: TypeInformation()].fallbacks.append(SpecialInformation(declaration: fallbackDeclaration, callerProtections: callerProtections, isSignature: false))
+  public mutating func addFallback(_ fallbackDeclaration: SpecialDeclaration,
+                                   enclosingType: RawTypeIdentifier,
+                                   callerProtections: [CallerProtection] = []) {
+    types[enclosingType, default: TypeInformation()].fallbacks
+      .append(SpecialInformation(declaration: fallbackDeclaration,
+                                 callerProtections: callerProtections,
+                                 isSignature: false))
   }
 
   /// Add a list of properties to a type.
@@ -187,7 +228,10 @@ extension Environment {
 
   /// Add a use of an undefined variable.
   public mutating func addUsedUndefinedVariable(_ variable: Identifier, enclosingType: RawTypeIdentifier) {
-    let declaration = VariableDeclaration(modifiers: [], declarationToken: nil, identifier: variable, type: Type(inferredType: .errorType, identifier: variable))
+    let declaration = VariableDeclaration(modifiers: [],
+                                          declarationToken: nil,
+                                          identifier: variable,
+                                          type: Type(inferredType: .errorType, identifier: variable))
     addProperty(.variableDeclaration(declaration), enclosingType: enclosingType)
   }
 
