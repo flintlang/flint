@@ -188,13 +188,13 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: conformance, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
+  public func process(token: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
     var diagnostics = [Diagnostic]()
-    if case .literal(let token) = literalToken.kind,
-      case .address(let address) = token,
+    if case .literal(let tokenKind) = token.kind,
+      case .address(let address) = tokenKind,
       address.count != 42 {
-      diagnostics.append(.invalidAddressLiteral(literalToken))
+      diagnostics.append(.invalidAddressLiteral(token))
     }
-    return ASTPassResult(element: literalToken, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: token, diagnostics: diagnostics, passContext: passContext)
   }
 }

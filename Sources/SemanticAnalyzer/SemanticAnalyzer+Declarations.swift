@@ -181,22 +181,22 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: enumDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
+  public func process(enumMember: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
 
-    if let conflict = environment.conflictingPropertyDeclaration(for: enumCase.identifier,
-                                                                 in: enumCase.type.rawType.name) {
-      diagnostics.append(.invalidRedeclaration(enumCase.identifier, originalSource: conflict))
+    if let conflict = environment.conflictingPropertyDeclaration(for: enumMember.identifier,
+                                                                 in: enumMember.type.rawType.name) {
+      diagnostics.append(.invalidRedeclaration(enumMember.identifier, originalSource: conflict))
     }
 
-    if enumCase.hiddenValue == nil {
-      diagnostics.append(.cannotInferHiddenValue(enumCase.identifier, enumCase.hiddenType))
-    } else if case .literal(_)? = enumCase.hiddenValue {} else {
-      diagnostics.append(.invalidHiddenValue(enumCase))
+    if enumMember.hiddenValue == nil {
+      diagnostics.append(.cannotInferHiddenValue(enumMember.identifier, enumMember.hiddenType))
+    } else if case .literal(_)? = enumMember.hiddenValue {} else {
+      diagnostics.append(.invalidHiddenValue(enumMember))
     }
 
-    return ASTPassResult(element: enumCase, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: enumMember, diagnostics: diagnostics, passContext: passContext)
   }
 
   func isContractTraitMember(member: TraitMember) -> Bool {

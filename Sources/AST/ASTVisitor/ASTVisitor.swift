@@ -295,13 +295,13 @@ public struct ASTVisitor {
   }
 
   func visit(_ enumCase: EnumMember, passContext: ASTPassContext) -> ASTPassResult<EnumMember> {
-    var processResult = pass.process(enumCase: enumCase, passContext: passContext)
+    var processResult = pass.process(enumMember: enumCase, passContext: passContext)
 
     processResult.element.identifier =
       processResult.combining(visit(processResult.element.identifier,
                                     passContext: processResult.passContext))
 
-    let postProcessResult = pass.postProcess(enumCase: processResult.element, passContext: processResult.passContext)
+    let postProcessResult = pass.postProcess(enumMember: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)
@@ -974,8 +974,8 @@ public struct ASTVisitor {
   }
 
   func visit(_ literalToken: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
-    let processResult = pass.process(literalToken: literalToken, passContext: passContext)
-    let postProcessResult = pass.process(literalToken: processResult.element, passContext: processResult.passContext)
+    let processResult = pass.process(token: literalToken, passContext: passContext)
+    let postProcessResult = pass.process(token: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: postProcessResult.diagnostics,
                          passContext: passContext)
