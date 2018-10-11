@@ -21,11 +21,14 @@ struct IRExpression {
   func rendered(functionContext: FunctionContext) -> String {
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return IRExpression(expression: inoutExpression.expression, asLValue: true).rendered(functionContext: functionContext)
+      return IRExpression(expression: inoutExpression.expression, asLValue: true)
+        .rendered(functionContext: functionContext)
     case .binaryExpression(let binaryExpression):
-      return IRBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue)
+        .rendered(functionContext: functionContext)
     case .bracketedExpression(let bracketedExpression):
-      return IRExpression(expression: bracketedExpression.expression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRExpression(expression: bracketedExpression.expression, asLValue: asLValue)
+        .rendered(functionContext: functionContext)
     case .attemptExpression(let attemptExpression):
       return IRAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
@@ -49,11 +52,15 @@ struct IRExpression {
     case .self(let `self`):
       return IRSelf(selfToken: self, asLValue: asLValue).rendered(functionContext: functionContext)
     case .subscriptExpression(let subscriptExpression):
-      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: asLValue)
+        .rendered(functionContext: functionContext)
     case .sequence(let expressions):
-      return expressions.map { IRExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext) }.joined(separator: "\n")
-    case .rawAssembly(let assembly, _): return assembly
-    case .range(_): fatalError("Range shouldn't be rendered directly")
+      return expressions.map {
+            IRExpression(expression: $0, asLValue: asLValue).rendered(functionContext: functionContext)
+        }.joined(separator: "\n")
+    case .rawAssembly(let assembly, _):
+      return assembly
+    case .range: fatalError("Range shouldn't be rendered directly")
     }
   }
 }

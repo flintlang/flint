@@ -15,7 +15,11 @@ public struct VariableDeclaration: ASTNode {
   public var type: Type
   public var assignedExpression: Expression?
 
-  public init(modifiers: [Token], declarationToken: Token?, identifier: Identifier, type: Type, assignedExpression: Expression? = nil) {
+  public init(modifiers: [Token],
+              declarationToken: Token?,
+              identifier: Identifier,
+              type: Type,
+              assignedExpression: Expression? = nil) {
     self.modifiers = modifiers
     self.declarationToken = declarationToken
     self.identifier = identifier

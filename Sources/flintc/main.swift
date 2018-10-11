@@ -23,16 +23,35 @@ func main() {
     }
 
     let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin")
-    try! FileManager.default.createDirectory(atPath: outputDirectory.path, withIntermediateDirectories: true, attributes: nil)
+    do {
+      try FileManager.default.createDirectory(atPath: outputDirectory.path,
+                                              withIntermediateDirectories: true,
+                                              attributes: nil)
+    } catch {
+      exitWithDirectoryNotCreatedDiagnostic(outputDirectory: outputDirectory)
+    }
 
-    let compilationOutcome = Compiler(
-      inputFiles: inputFiles,
-      stdlibFiles: StandardLibrary.default.files,
-      outputDirectory: outputDirectory,
-      dumpAST: dumpAST,
-      emitBytecode: emitBytecode,
-      diagnostics: DiagnosticPool(shouldVerify: shouldVerify, quiet: quiet, sourceContext: SourceContext(sourceFiles: inputFiles))
-    ).compile()
+    let compilationOutcome: CompilationOutcome
+    do {
+      compilationOutcome = try Compiler(
+        inputFiles: inputFiles,
+        stdlibFiles: StandardLibrary.default.files,
+        outputDirectory: outputDirectory,
+        dumpAST: dumpAST,
+        emitBytecode: emitBytecode,
+        diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
+                                    quiet: quiet,
+                                    sourceContext: SourceContext(sourceFiles: inputFiles))
+      ).compile()
+    } catch let err {
+      let diagnostic = Diagnostic(severity: .error,
+                                  sourceLocation: nil,
+                                  message: err.localizedDescription)
+      // swiftlint:disable force_try
+      print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+      // swiftlint:enable force_try
+      exit(1)
+    }
 
     if emitIR {
       let fileName = "main.sol"
@@ -42,14 +61,40 @@ func main() {
       } else {
         irFileURL = URL(fileURLWithPath: irOutputPath, isDirectory: true).appendingPathComponent(fileName)
       }
-      try! compilationOutcome.irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+      do {
+        try compilationOutcome.irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+      } catch {
+        exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+      }
     }
   }.run()
 }
 
 func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
   let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "Invalid file: '\(file.path)'.")
-  print(DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:disable force_try
+  print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:enable force_try
+  exit(1)
+}
+
+func exitWithDirectoryNotCreatedDiagnostic(outputDirectory: URL) -> Never {
+  let diagnostic = Diagnostic(severity: .error,
+                              sourceLocation: nil,
+                              message: "Could not create output directory: '\(outputDirectory.path)'.")
+  // swiftlint:disable force_try
+  print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:enable force_try
+  exit(1)
+}
+
+func exitWithUnableToWriteIRFile(irFileURL: URL) {
+  let diagnostic = Diagnostic(severity: .error,
+                              sourceLocation: nil,
+                              message: "Could not write IR file: '\(irFileURL.path)'.")
+  // swiftlint:disable force_try
+  print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:enable force_try
   exit(1)
 }
 
@@ -58,9 +103,17 @@ func exitWithSolcNotInstalledDiagnostic() -> Never {
     severity: .error,
     sourceLocation: nil,
     message: "Missing dependency: solc",
-    notes: [Diagnostic(severity: .note, sourceLocation: nil, message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html for installation instructions.")]
+    notes: [
+      Diagnostic(
+        severity: .note,
+        sourceLocation: nil,
+        message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html " +
+                 "for installation instructions.")
+    ]
   )
-  print(DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:disable force_try
+  print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+  // swiftlint:enable force_try
   exit(1)
 }
 

@@ -164,7 +164,6 @@ enum IRRuntimeFunction {
     return "\(Identifiers.power.mangled)(\(b), \(e))"
   }
 
-
   static let allDeclarations: [String] = [
     IRRuntimeFunctionDeclaration.selector,
     IRRuntimeFunctionDeclaration.decodeAsAddress,

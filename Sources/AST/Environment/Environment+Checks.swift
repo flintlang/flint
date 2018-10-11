@@ -58,7 +58,8 @@ extension Environment {
   }
 
   /// Whether a struct is self referencing.
-  public func selfReferentialProperty(in type: RawTypeIdentifier, enclosingType: RawTypeIdentifier) -> PropertyInformation? {
+  public func selfReferentialProperty(in type: RawTypeIdentifier,
+                                      enclosingType: RawTypeIdentifier) -> PropertyInformation? {
     guard let enclosingMemberTypes = types[enclosingType] else { return nil }
 
     for member in enclosingMemberTypes.orderedProperties {
@@ -118,17 +119,20 @@ extension Environment {
     return conflictingDeclaration(of: event, in: declaredEvents + declaredStructs + declaredContracts + declaredEnums)
   }
 
-
   /// Attempts to find a conflicting declaration of the given function declaration
-  public func conflictingFunctionDeclaration(for function: FunctionDeclaration, in type: RawTypeIdentifier) -> Identifier? {
+  public func conflictingFunctionDeclaration(for function: FunctionDeclaration,
+                                             in type: RawTypeIdentifier) -> Identifier? {
     var contractFunctions = [Identifier]()
 
     if isContractDeclared(type) {
       // Contract functions do not support overloading.
-      contractFunctions = types[type]!.allFunctions[function.name]?.filter({ !$0.isSignature }).map { $0.declaration.identifier } ?? []
+      contractFunctions = types[type]!.allFunctions[function.name]?
+        .filter({ !$0.isSignature })
+        .map { $0.declaration.identifier } ?? []
     }
 
-    if let conflict = conflictingDeclaration(of: function.identifier, in: contractFunctions + declaredStructs + declaredContracts) {
+    if let conflict = conflictingDeclaration(of: function.identifier,
+                                             in: contractFunctions + declaredStructs + declaredContracts) {
       return conflict
     }
 
@@ -153,12 +157,14 @@ extension Environment {
   }
 
   // If the number of functions is greater than 1 (the signature of the trait) then there must be a conflict
-  public func conflictingTraitSignatures(for type: RawTypeIdentifier) -> [String : [FunctionInformation]] {
+  public func conflictingTraitSignatures(for type: RawTypeIdentifier) -> [String: [FunctionInformation]] {
     guard let typeInfo = types[type] else {
       return [:]
     }
-    return typeInfo.traitFunctions.filter{ (name, functions) in
-      functions.count > 1 && functions.contains(where: { $0.declaration.signature != functions.first!.declaration.signature})
+    return typeInfo.traitFunctions.filter { (_, functions) in
+      functions.count > 1 && functions.contains(where: {
+        $0.declaration.signature != functions.first!.declaration.signature
+      })
     }
   }
 
@@ -176,10 +182,8 @@ extension Environment {
         if conforming.isEmpty {
           notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
         }
-        for conform in conforming {
-          if conform.declaration.signature != signature.declaration.signature {
-            notImplemented.append(conform)
-          }
+        for conform in conforming where conform.declaration.signature != signature.declaration.signature {
+          notImplemented.append(conform)
         }
       }
     }

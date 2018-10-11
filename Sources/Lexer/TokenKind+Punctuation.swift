@@ -59,7 +59,9 @@ extension Token.Kind {
 
     static var allBinaryOperators: [Punctuation] {
       return [
-        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
+        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .equal,
+        .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
+
         .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
         .or, .and
       ]
@@ -73,7 +75,10 @@ extension Token.Kind {
     }
 
     public var isBooleanOperator: Bool {
-      return [.doubleEqual, .notEqual, .lessThanOrEqual, .greaterThanOrEqual, .or, .and, .openAngledBracket, .closeAngledBracket].contains(self)
+      return [
+        .doubleEqual, .notEqual, .lessThanOrEqual, .greaterThanOrEqual,
+        .or, .and, .openAngledBracket, .closeAngledBracket
+        ].contains(self)
     }
 
     var precedence: Int {
@@ -81,7 +86,9 @@ extension Token.Kind {
       case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10
       case .or: return 11
       case .and: return 12
-      case .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual: return 15
+      case .closeAngledBracket, .openAngledBracket,
+           .lessThanOrEqual, .greaterThanOrEqual, .doubleEqual, .notEqual:
+        return 15
       case .plus, .overflowingPlus: return 20
       case .minus, .overflowingMinus: return 20
       case .times, .overflowingTimes: return 30
