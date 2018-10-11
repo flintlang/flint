@@ -39,7 +39,9 @@ let package = Package(
         "Source",
         "Diagnostic",
         "Lexer",
-      ]
+      ],
+      exclude: ["ASTPass/ASTPass.template.swift"],
+      sources: [".", "../../.derived-sources/AST"]
     ),
     .target(
       name: "Parser",
