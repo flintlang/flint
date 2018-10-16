@@ -10,19 +10,19 @@ import Lexer
 /// A emit statement.
 public struct EmitStatement: ASTNode {
   public var emitToken: Token
-  public var expression: Expression
+  public var functionCall: FunctionCall
 
-  public init(emitToken: Token, expression: Expression) {
+  public init(emitToken: Token, functionCall: FunctionCall) {
     self.emitToken = emitToken
-    self.expression = expression
+    self.functionCall = functionCall
   }
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
-    return .spanning(emitToken, to: expression)
+    return .spanning(emitToken, to: functionCall)
   }
   public var description: String {
-    return "\(emitToken) \(expression)"
+    return "\(emitToken) \(functionCall)"
   }
 
 }

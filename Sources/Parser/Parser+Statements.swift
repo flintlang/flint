@@ -96,8 +96,8 @@ extension Parser {
 
   func parseEmitStatement(statementEndIndex: Int) throws -> EmitStatement {
     let token = try consume(.emit, or: .expectedStatement(at: latestSource))
-    let expression = try parseExpression(upTo: statementEndIndex)
-    return EmitStatement(emitToken: token, expression: expression)
+    let functionCall = try parseFunctionCall()
+    return EmitStatement(emitToken: token, functionCall: functionCall)
   }
 
   func parseIfStatement() throws -> IfStatement {

@@ -110,7 +110,7 @@ statement = expression
 
 returnStatement = %s"return" SP expression
 becomeStatement = %s"become" SP expression
-emitStatement   = %s"emit" SP expression
+emitStatement   = %s"emit" SP functionCall
 forStatement    = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
 
 ; EXPRESSIONS

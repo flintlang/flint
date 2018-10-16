@@ -436,8 +436,8 @@ public struct ASTVisitor {
     var processResult = pass.process(emitStatement: emitStatement, passContext: passContext)
 
     processResult.passContext.isInEmit = true
-    processResult.element.expression =
-      processResult.combining(visit(processResult.element.expression,
+    processResult.element.functionCall =
+      processResult.combining(visit(processResult.element.functionCall,
                                     passContext: processResult.passContext))
     processResult.passContext.isInEmit = false
 

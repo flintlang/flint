@@ -279,6 +279,6 @@ struct IREmitStatement {
   var emitStatement: EmitStatement
 
   func rendered(functionContext: FunctionContext) -> String {
-    return IRExpression(expression: emitStatement.expression).rendered(functionContext: functionContext)
+    return IRFunctionCall(functionCall: emitStatement.functionCall).rendered(functionContext: functionContext)
   }
 }

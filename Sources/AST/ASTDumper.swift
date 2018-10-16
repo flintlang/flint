@@ -505,7 +505,7 @@ public class ASTDumper {
   func dump(_ emitStatement: EmitStatement) {
     writeNode("EmitStatement") {
       self.dump(emitStatement.emitToken)
-      self.dump(emitStatement.expression)
+      self.dump(emitStatement.functionCall)
     }
   }
 
