@@ -98,6 +98,7 @@ public struct Lexer {
     "for": .for,
     "in": .in,
     "self": .self,
+    "Self": .selfType,
     "implicit": .implicit,
     "inout": .inout,
     "+": .punctuation(.plus),

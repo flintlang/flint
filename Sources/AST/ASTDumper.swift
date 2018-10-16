@@ -367,6 +367,8 @@ public class ASTDumper {
       writeNode("inout type") {
         self.dump(rawType)
       }
+    case .selfType:
+      writeNode("Self type")
     case .any:
       writeLine("Any")
     case .errorType:

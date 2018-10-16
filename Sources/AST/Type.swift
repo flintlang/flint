@@ -20,6 +20,7 @@ public indirect enum RawType: Equatable {
   case userDefinedType(RawTypeIdentifier)
   case inoutType(RawType)
   case functionType(parameters: [RawType], result: RawType)
+  case selfType
   case any
   case errorType
 
@@ -46,6 +47,7 @@ public indirect enum RawType: Equatable {
     case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
     case .userDefinedType(let identifier): return identifier
     case .inoutType(let rawType): return "$inout\(rawType.name)"
+    case .selfType: return "Self"
     case .any: return "Any"
     case .errorType: return "Flint$ErrorType"
     case .functionType(let parameters, let result):
@@ -61,6 +63,7 @@ public indirect enum RawType: Equatable {
     case .fixedSizeArrayType(let element, _): return element.isBuiltInType
     case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
     case .inoutType(let element): return element.isBuiltInType
+    case .selfType: return true
     case .userDefinedType: return false
     case .functionType: return false
     }
@@ -119,6 +122,12 @@ public struct Type: ASTNode {
     switch rawType {
     case .stdlibType(.wei): return true
     default: return false
+    }
+  }
+
+  var isSelfType: Bool {
+    get {
+        return rawType == .selfType
     }
   }
 

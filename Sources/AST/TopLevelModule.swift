@@ -174,7 +174,7 @@ public struct TopLevelModule: ASTNode {
                                               closeSquareBracketToken: Token(kind: .punctuation(.closeSquareBracket),
                                                                              sourceLocation: sourceLocation))
       return ([keyParameter], .subscriptExpression(subExpression), Type(inferredType: value, identifier: identifier))
-    case .stdlibType, .rangeType, .userDefinedType, .inoutType, .functionType, .any, .errorType:
+    case .stdlibType, .rangeType, .userDefinedType, .inoutType, .functionType, .selfType, .any, .errorType:
       return nil
     }
   }

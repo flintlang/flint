@@ -16,6 +16,7 @@ extension Environment {
     case .rangeType: return 0 // Ranges do not use memory
     case .dictionaryType: return 1
     case .inoutType: fatalError()
+    case .selfType: fatalError("Self type should have been replaced with concrete type")
     case .any: return 0
     case .errorType: return 0
     case .functionType: return 0

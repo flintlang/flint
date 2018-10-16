@@ -65,6 +65,8 @@ struct IRCallerProtectionChecks {
       case .basicType, .stdlibType, .rangeType, .dictionaryType, .userDefinedType,
            .inoutType, .functionType, .any, .errorType:
         return ""
+      case .selfType:
+        fatalError("Self type should have been replaced with concrete type")
       }
 
       }
