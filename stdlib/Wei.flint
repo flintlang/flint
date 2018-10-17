@@ -33,6 +33,11 @@ struct Wei {
     transfer(&source, source.getRawValue())
   }
 
+  mutating func setRawValue(value: Int) -> Int {
+    rawValue = value
+    return rawValue
+  }
+
   func getRawValue() -> Int {
     return rawValue
   }
