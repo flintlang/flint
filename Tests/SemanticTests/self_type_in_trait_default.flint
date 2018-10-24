@@ -1,0 +1,45 @@
+// RUN: %flintc %s --verify
+
+struct trait Trait {
+  mutating func function()
+
+  // NOT YET IMPLEMENTED (#21) mutating func notDefaulted(thisParam: inout Self)
+
+  // Accept Self parameter
+  mutating func defaulted(thisParam: inout Self, anotherOne: inout Self) {
+    // Variable declaration
+    var this: Self = self
+    // Variable assignment
+    this = self
+    // Function call to Self (trait)
+    this.function()
+    // Function self
+    thisParam.function()
+    anotherOne.function()
+  }
+}
+
+// An implementation of struct trait Trait
+struct Implementation: Trait {
+  // Implementation of trait function calling defaulted function with self param
+  mutating func function() {
+    defaulted(&self, &self)
+  }
+
+  mutating func comparison(thisParam: inout Implementation) {
+    // Variable declaration
+    var this: Implementation = self
+    // Variable assignment
+    this = self
+    // Function call to Self (trait)
+    this.function()
+    // Function self
+    thisParam.function()
+  }
+}
+
+contract A { }
+
+A :: a <- (any) {
+  public init() {}
+}

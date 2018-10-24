@@ -14,6 +14,7 @@ extension SemanticAnalyzer {
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var binaryExpression = binaryExpression
     let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
 
     if case .dot = binaryExpression.opToken {
       // The identifier explicitly refers to a state property, such as in `self.foo`.
@@ -25,12 +26,19 @@ extension SemanticAnalyzer {
       if case .identifier(let enumIdentifier) = binaryExpression.lhs,
         environment.isEnumDeclared(enumIdentifier.name) {
         binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
+      } else if lhsType == .selfType {
+        if let traitDeclarationContext = passContext.traitDeclarationContext {
+          binaryExpression.rhs =
+            binaryExpression.rhs.assigningEnclosingType(type: traitDeclarationContext.traitIdentifier.name)
+        } else {
+          diagnostics.append(.useOfSelfOutsideTrait(at: binaryExpression.lhs.sourceLocation))
+        }
       } else {
         binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
       }
     }
 
-    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+    return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(attemptExpression: AttemptExpression,

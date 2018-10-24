@@ -29,7 +29,7 @@ extension TypeChecker {
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     case .equal:
       // Both sides must have the same type.
-      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType) {
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType, in: passContext) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType,
                                                    rhsType: rhsType,
                                                    expression: .binaryExpression(binaryExpression)))

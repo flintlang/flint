@@ -244,6 +244,11 @@ extension SemanticAnalyzer {
       diagnostics.append(.useOfUndeclaredType(variableDeclaration.type))
     }
 
+    // Ensure that the type is not Self unless in a trait declaration
+    if passContext.traitDeclarationContext == nil && variableDeclaration.type.rawType.isSelfType {
+      diagnostics.append(.useOfSelfOutsideTrait(at: variableDeclaration.sourceLocation))
+    }
+
     if passContext.inFunctionOrInitializer {
       if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name),
         !isShadowing(conflict, variableDeclaration) {

@@ -63,7 +63,7 @@ public indirect enum RawType: Equatable {
     case .fixedSizeArrayType(let element, _): return element.isBuiltInType
     case .dictionaryType(let key, let value): return key.isBuiltInType && value.isBuiltInType
     case .inoutType(let element): return element.isBuiltInType
-    case .selfType: return true
+    case .selfType: return false
     case .userDefinedType: return false
     case .functionType: return false
     }
@@ -89,6 +89,14 @@ public indirect enum RawType: Equatable {
     return false
   }
 
+  public var isSelfType: Bool {
+    if case .inoutType(.selfType) = self {
+      return true
+    }
+
+    return self == .selfType
+  }
+
   /// Whether the type is compatible with the given type, i.e., if two expressions of those types can be used
   /// interchangeably.
   public func isCompatible(with otherType: RawType) -> Bool {
@@ -106,6 +114,16 @@ public indirect enum RawType: Equatable {
       return key1.isCompatible(with: key2) && value1.isCompatible(with: value2)
     default: return false
     }
+  }
+
+  public func isCompatible(with otherType: RawType, in passContext: ASTPassContext) -> Bool {
+    if let traitDeclarationContext = passContext.traitDeclarationContext,
+      self == .selfType,
+      traitDeclarationContext.traitIdentifier.name == otherType.name {
+      return true
+    }
+
+    return isCompatible(with: otherType)
   }
 }
 
@@ -126,9 +144,7 @@ public struct Type: ASTNode {
   }
 
   var isSelfType: Bool {
-    get {
-        return rawType == .selfType
-    }
+    return rawType.isSelfType
   }
 
   // Initializers for each kind of raw type.

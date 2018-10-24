@@ -11,7 +11,7 @@ import Foundation
 import Source
 import Lexer
 
-/// A prepocessing step to update the program's AST before code generation.
+/// A preprocessing step to update the program's AST before code generation.
 public struct IRPreprocessor: ASTPass {
 
   public init() {}
@@ -49,24 +49,6 @@ public struct IRPreprocessor: ASTPass {
   }
 
   // MARK: Declaration
-  public func process(structDeclaration: StructDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    let environment = passContext.environment!
-    var structDeclaration = structDeclaration
-
-    let conformingFunctions = environment.conformingFunctions(in: structDeclaration.identifier.name)
-      .compactMap { functionInformation -> StructMember in
-        var functionDeclaration = functionInformation.declaration
-        functionDeclaration.scopeContext = ScopeContext()
-
-        return .functionDeclaration(functionDeclaration)
-      }
-
-    structDeclaration.members += conformingFunctions
-
-    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
-  }
-
   public func process(variableDeclaration: VariableDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext

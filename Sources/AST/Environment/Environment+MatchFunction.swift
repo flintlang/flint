@@ -87,7 +87,9 @@ extension Environment {
 
     if let functions = types[enclosingType]?.allFunctions[functionCall.identifier.name] {
       for candidate in functions {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areFunctionArgumentsCompatible(source: candidate.parameterTypes,
+                                             target: argumentTypes,
+                                             enclosingType: enclosingType),
           areCallerProtectionsCompatible(source: callerProtections, target: candidate.callerProtections),
           areTypeStatesCompatible(source: typeStates, target: candidate.typeStates) else {
             candidates.append(.functionInformation(candidate))

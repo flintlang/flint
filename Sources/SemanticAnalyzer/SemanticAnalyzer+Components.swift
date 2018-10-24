@@ -148,6 +148,8 @@ extension SemanticAnalyzer {
       // Ensure all structs are passed by reference, for now.
       diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation,
                                     message: "Structs cannot be passed by value yet, and have to be passed inout"))
+    } else if passContext.traitDeclarationContext == nil && parameter.type.rawType.isSelfType {
+      diagnostics.append(.useOfSelfOutsideTrait(at: parameter.sourceLocation))
     }
 
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
