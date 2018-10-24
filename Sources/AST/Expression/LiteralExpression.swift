@@ -30,7 +30,6 @@ public struct ArrayLiteral: ASTNode {
   }
 }
 
-
 /// A dictionary literal, such as "[1: 2, 3: 4]"
 public struct DictionaryLiteral: ASTNode {
   public var openSquareBracketToken: Token

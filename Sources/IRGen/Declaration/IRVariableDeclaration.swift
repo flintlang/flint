@@ -11,7 +11,8 @@ struct IRVariableDeclaration {
   var variableDeclaration: VariableDeclaration
 
   func rendered(functionContext: FunctionContext) -> String {
-    let allocate = IRRuntimeFunction.allocateMemory(size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
+    let allocate = IRRuntimeFunction.allocateMemory(
+      size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
     return "let \(variableDeclaration.identifier.name.mangled) := \(allocate)"
   }
 }

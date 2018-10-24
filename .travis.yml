@@ -9,15 +9,16 @@ matrix:
     - sudo add-apt-repository -y ppa:ethereum/ethereum
     - sudo apt-get update
     - sudo apt-get -y install solc
+    - npm install
     - npm install -g truffle
-    install:
     - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
+    - git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
+    - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
+    - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
+    install:
+    - "swiftenv install || true"
     script:
     - make test
-  - os: osx
-    language: objective-c
-    osx_image: xcode9.3
-    if: tag =~ ^*-macos$
 before_deploy:
 - make release
 - make zip

@@ -13,8 +13,8 @@ public struct TypeInformation {
   var events = [String: [EventInformation]]()
   var initializers = [SpecialInformation]()
   var fallbacks = [SpecialInformation]()
-  var publicInitializer: SpecialDeclaration? = nil
-  var publicFallback: SpecialDeclaration? = nil
+  var publicInitializer: SpecialDeclaration?
+  var publicFallback: SpecialDeclaration?
 
   var conformances: [TypeInformation] = []
 

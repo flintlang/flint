@@ -21,15 +21,19 @@ struct IRBinaryExpression {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
         return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
       }
-      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
+      return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
+        .rendered(functionContext: functionContext)
     }
 
-    let lhs = IRExpression(expression: binaryExpression.lhs, asLValue: asLValue).rendered(functionContext: functionContext)
-    let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue).rendered(functionContext: functionContext)
+    let lhs = IRExpression(expression: binaryExpression.lhs, asLValue: asLValue)
+      .rendered(functionContext: functionContext)
+    let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue)
+      .rendered(functionContext: functionContext)
 
     switch binaryExpression.opToken {
     case .equal:
-      return IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs).rendered(functionContext: functionContext)
+      return IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
+        .rendered(functionContext: functionContext)
 
     case .plus: return IRRuntimeFunction.add(a: lhs, b: rhs)
     case .overflowingPlus: return "add(\(lhs), \(rhs))"

@@ -1,0 +1,15 @@
+{
+  "name": "codegen",
+  "version": "1.0.0",
+  "description": "Generate Swift Code from template files",
+  "main": "codegen.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mkdirp": "^0.5.1",
+    "nunjucks": "^3.1.3"
+  }
+}

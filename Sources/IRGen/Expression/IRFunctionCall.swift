@@ -1,4 +1,3 @@
-
 //
 //  IRFunctionCall.swift
 //  IRGen
@@ -14,8 +13,12 @@ struct IRFunctionCall {
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
 
-    if case .matchedEvent(let eventInformation) = environment.matchEventCall(functionCall, enclosingType: functionContext.enclosingTypeName, scopeContext: functionContext.scopeContext) {
-      return IREventCall(eventCall: functionCall, eventDeclaration: eventInformation.declaration).rendered(functionContext: functionContext)
+    if case .matchedEvent(let eventInformation) =
+      environment.matchEventCall(functionCall,
+                                 enclosingType: functionContext.enclosingTypeName,
+                                 scopeContext: functionContext.scopeContext) {
+      return IREventCall(eventCall: functionCall, eventDeclaration: eventInformation.declaration)
+        .rendered(functionContext: functionContext)
     }
 
     let args: String = functionCall.arguments.map({ argument in

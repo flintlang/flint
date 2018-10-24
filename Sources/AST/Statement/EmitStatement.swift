@@ -26,4 +26,3 @@ public struct EmitStatement: ASTNode {
   }
 
 }
-

@@ -10,15 +10,15 @@ extension Environment {
   public func size(of type: RawType) -> Int {
     switch type {
     case .basicType(.event): return 0 // Events do not use memory.
-    case .basicType(_): return 1
+    case .basicType: return 1
     case .fixedSizeArrayType(let rawType, let elementCount): return size(of: rawType) * elementCount
-    case .arrayType(_): return 1
-    case .rangeType(_): return 0 // Ranges do not use memory
-    case .dictionaryType(_, _): return 1
-    case .inoutType(_): fatalError()
+    case .arrayType: return 1
+    case .rangeType: return 0 // Ranges do not use memory
+    case .dictionaryType: return 1
+    case .inoutType: fatalError()
     case .any: return 0
     case .errorType: return 0
-    case .functionType(_): return 0
+    case .functionType: return 0
 
     case .stdlibType(let type):
       return types[type.rawValue]!.properties.reduce(0) { acc, element in
@@ -26,7 +26,7 @@ extension Environment {
       }
     case .userDefinedType(let identifier):
       if isEnumDeclared(identifier),
-        case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property{
+        case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property {
         return size(of: enumCase.hiddenType.rawType)
       }
       return types[identifier]!.properties.reduce(0) { acc, element in

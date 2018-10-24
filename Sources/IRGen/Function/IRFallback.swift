@@ -15,7 +15,10 @@ struct IRContractFallback {
   var environment: Environment
 
   var functionContext: FunctionContext {
-    return FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: typeIdentifier.name, isInStructFunction: false)
+    return FunctionContext(environment: environment,
+                           scopeContext: ScopeContext(),
+                           enclosingTypeName: typeIdentifier.name,
+                           isInStructFunction: false)
   }
 
   var parameterNames: [String] {
@@ -25,6 +28,11 @@ struct IRContractFallback {
   }
 
   func rendered() -> String {
-    return IRFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration, typeIdentifier: typeIdentifier, callerBinding: nil, callerProtections: [], environment: environment, isContractFunction: true).rendered()
+    return IRFunctionBody(functionDeclaration: fallbackDeclaration.asFunctionDeclaration,
+                          typeIdentifier: typeIdentifier,
+                          callerBinding: nil,
+                          callerProtections: [],
+                          environment: environment,
+                          isContractFunction: true).rendered()
   }
 }

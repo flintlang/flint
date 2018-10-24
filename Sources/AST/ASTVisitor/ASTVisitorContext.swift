@@ -38,7 +38,7 @@ public struct StructDeclarationContext {
 public struct EventDeclarationContext {
   public var eventIdentifier: Identifier
 
-  public init(eventIdentifier: Identifier){
+  public init(eventIdentifier: Identifier) {
     self.eventIdentifier = eventIdentifier
   }
 }
