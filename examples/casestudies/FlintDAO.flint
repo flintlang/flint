@@ -1,0 +1,101 @@
+// A condensed smart contract for a Decentralized Autonomous Organization (DAO)
+// to automate organizational governance and decision-making.
+
+// Removed features:
+// - Spliting DAO
+// - Grace/Quorum Periods
+// Moved consensus features to curator to keep short
+
+struct Proposal {
+  var proposer: Address
+  var value: Wei
+  var recipient: Address
+  var yea: Int = 0
+  var nay: Int = 0
+  var finished: Bool = false
+  var success: Bool = false
+  var voted: [Address: Bool] = [:]
+}
+
+contract SimpleDAO (Join, Propose, Vote) {
+  var curator: Address
+  var proposals: [Proposal] = []
+  var balances: [Address: Wei] = [:]
+}
+
+SimpleDAO @(any) :: caller <- (any) {
+  public init(curator: Address){
+    self.curator = curator
+    become Join
+  }
+  @payable
+  public fallback(implicit value: inout Wei) {
+    balances[curator].transfer(&value)
+  }
+
+  public func tokenHolder(addr: Address) -> Bool {
+    return balances[addr] != 0
+  }
+}
+
+SimpleDAO @(Join) :: caller <- (any) {
+  @payable
+  public fallback(implicit value: inout Wei) {
+    balances[caller].transfer(&value)
+  }
+
+  @payable
+  public mutating func join(implicit value: inout Wei) {
+    balances[caller].transfer(&value)
+  }
+}
+
+SimpleDAO @(Join) :: (curator) {
+  public mutating func joinTimeElapsed() {
+    become Propose
+  }
+}
+
+SimpleDAO @(Propose) :: caller <- (tokenHolder) {
+  @payable
+  public mutating func newProposal(implicit value: inout Wei, recipient: Address, value: Int) -> Int {
+    // Sanity checks ommited to be concise
+    pID = proposals.length + 1;
+    proposals[pID] = Proposal(caller, &value, recipient)
+
+  }
+
+  public mutating func leave() {
+    send(caller, &balances[caller])
+  }
+}
+
+SimpleDAO @(Vote) :: caller <- (tokenHolder) {
+  public mutating func vote(id: Int, approve: Bool) {
+    if proposals[id].voted[caller] {
+      fatalError()
+    }
+
+    if approve {
+      proposals[id].yea += balances[caller]
+    } else {
+      proposals[id].nay += balances[caller]
+    }
+
+    proposals[id].voted[caller] = true
+  }
+
+  public mutating func executeProposal(id: Int) {
+    if(caller != proposals[id].proposer || proposals[id].finished) {
+      fatalError()
+    }
+
+    proposals[id].finished = true
+    if (proposals[id].yea + proposals[id].nay) >= proposals[id].yea > proposals[id].nay {
+       proposals[id].success = true
+       send(proposals[id].recipient, &proposals[id].value)
+    }
+
+    become Propose
+  }
+}
