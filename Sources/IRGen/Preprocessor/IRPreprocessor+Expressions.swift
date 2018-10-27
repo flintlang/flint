@@ -241,7 +241,7 @@ extension IRPreprocessor {
     switch matchResult {
     case .matchedFunction(let functionInformation):
       let declaration = functionInformation.declaration
-      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.rawTypes
       return Mangler.mangleFunctionName(declaration.identifier.name,
                                         parameterTypes: parameterTypes,
                                         enclosingType: enclosingType)
@@ -253,18 +253,18 @@ extension IRPreprocessor {
         fatalError("Non-function CallableInformation where function expected")
       }
       let declaration = candidate.declaration
-      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.rawTypes
       return Mangler.mangleFunctionName(declaration.identifier.name,
                                         parameterTypes: parameterTypes,
                                         enclosingType: enclosingType)
     case .matchedInitializer(let initializerInformation):
       let declaration = initializerInformation.declaration
-      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.rawTypes
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
     case .matchedFallback:
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: [])
     case .matchedGlobalFunction(let functionInformation):
-      let parameterTypes = functionInformation.declaration.signature.parameters.map { $0.type.rawType }
+      let parameterTypes = functionInformation.declaration.signature.parameters.rawTypes
       return Mangler.mangleFunctionName(functionCall.identifier.name,
                                         parameterTypes: parameterTypes,
                                         enclosingType: Environment.globalFunctionStructName)

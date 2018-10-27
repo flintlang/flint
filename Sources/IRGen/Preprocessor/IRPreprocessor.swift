@@ -66,7 +66,7 @@ public struct IRPreprocessor: ASTPass {
     var functionDeclaration = functionDeclaration
 
     // Mangle the function name in the declaration.
-    let parameters = functionDeclaration.signature.parameters.map { $0.type.rawType }
+    let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
                                           enclosingType: passContext.enclosingTypeIdentifier!.name)

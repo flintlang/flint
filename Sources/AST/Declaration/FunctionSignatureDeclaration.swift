@@ -54,8 +54,8 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
       lhs.modifiers.map({ $0.kind }) == rhs.modifiers.map({ $0.kind }) &&
       lhs.attributes.map({ $0.kind }) == rhs.attributes.map({ $0.kind }) &&
       lhs.resultType?.rawType == rhs.resultType?.rawType &&
-      lhs.parameters.map({ $0.identifier.name }) == rhs.parameters.map({ $0.identifier.name }) &&
-      lhs.parameters.map({ $0.type.rawType }) == rhs.parameters.map({ $0.type.rawType }) &&
+      lhs.parameters.identifierNames == rhs.parameters.identifierNames &&
+      lhs.parameters.rawTypes == rhs.parameters.rawTypes &&
       lhs.parameters.map({ $0.isInout }) == rhs.parameters.map({ $0.isInout })
   }
 

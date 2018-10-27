@@ -182,7 +182,9 @@ extension Environment {
         if conforming.isEmpty {
           notImplemented.append(contentsOf: typeInfo.allFunctions[name]!)
         }
-        for conform in conforming where conform.declaration.signature != signature.declaration.signature {
+        for conform in conforming where !areFunctionSignaturesCompatible(source: signature.declaration.signature,
+                                                                         target: conform.declaration.signature,
+                                                                         enclosingType: enclosingType.name) {
           notImplemented.append(conform)
         }
       }
