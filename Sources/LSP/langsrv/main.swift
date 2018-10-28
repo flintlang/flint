@@ -9,8 +9,7 @@ import JsonRpcProtocol
 
 if CommandLine.arguments.contains("-v") || CommandLine.arguments.contains("--version") {
     print("Swift Language Server v\(0.001)")
-}
-else {
+} else {
     let inputBuffer = StandardInputOutputBuffer()
     let jsonrpc = JsonRpcProtocol()
     let langsrv = SwiftLanguageServer(transport: jsonrpc)

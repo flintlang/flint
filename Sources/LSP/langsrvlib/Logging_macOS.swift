@@ -6,7 +6,7 @@
 #if os(macOS)
 import Darwin
 import os.log
-private var logs: [String:OSLog] = [:]
+private var logs: [String: OSLog] = [:]
 
 let subsystem = "com.kiadstudios.swift-langsrv"
 
@@ -16,8 +16,7 @@ internal func log(_ message: StaticString, category: String, _ args: Any...) {
         logs[category] = log
 
         os_log(message, log: log, type: .default, args)
-    }
-    else {
+    } else {
         // Implementation Note: This method is currently a big hack to just to get
         // any sort of logging output. This needs to get revamped and put into a 
         // file or something. Also, **VERY IMPORTANT**: the protocol talks over

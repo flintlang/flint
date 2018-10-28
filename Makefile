@@ -18,7 +18,7 @@ test: lint release
 	swift run -c release lite
 
 lint:
-	swiftlint lint
+	swiftlint lint --strict
 
 generate:
 	./utils/codegen/codegen.js

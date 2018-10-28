@@ -23,9 +23,8 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
     private var transport: TransportType
 
     // cached goodness... maybe abstract this.
-    private var openDocuments: [DocumentUri:String] = [:]
+    private var openDocuments: [DocumentUri: String] = [:]
     // Settings that are not updated until a workspaceDidChangeConfiguration request comes in.
-
 
     /// Initializes a new instance of a `SwiftLanguageServer`.
     public init(transport: TransportType) {
@@ -36,28 +35,29 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
     /// the appropriately registered handler.
     public func run(source: InputOutputBuffer) {
         log("Starting the language server.", category: languageServerLogCategory)
-        source.run() { message in
+        source.run { message in
             log("message received:\n%{public}@", category: languageServerLogCategory, message.description)
             do {
                 let command = try self.transport.translate(message: message)
-                log("message translated to command: %{public}@", category: languageServerLogCategory, String(describing: command))
+                log("message translated to command: %{public}@",
+                    category: languageServerLogCategory, String(describing: command))
 
                 guard let response = try self.process(command: command) else { return nil }
                 return try self.transport.translate(response: response)
-            }
-            catch LanguageServerError.toolchainNotFound(let path) {                
-                let params = ShowMessageParams(type: MessageType.error, message: "Unable to find the toolchain at: \(path)")
+            } catch LanguageServerError.toolchainNotFound(let path) {
+                let params = ShowMessageParams(type: MessageType.error,
+                                               message: "Unable to find the toolchain at: \(path)")
                 let response = LanguageServerResponse.windowShowMessage(params: params)
 
                 do {
                     return try self.transport.translate(response: response)
+                } catch {
+                    log("unable to convert error message: %{public}@",
+                        category: languageServerLogCategory, String(describing: error))
                 }
-                catch {
-                    log("unable to convert error message: %{public}@", category: languageServerLogCategory, String(describing: error))
-                }
-            }
-            catch {
-                log("unable to convert message into a command: %{public}@", category: languageServerLogCategory, String(describing: error))
+            } catch {
+                log("unable to convert message into a command: %{public}@",
+                    category: languageServerLogCategory, String(describing: error))
             }
 
             return nil
@@ -70,8 +70,8 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
         switch command {
         case .initialize(let requestId, let params):
             return try doInitialize(requestId, params)
-        
-        case .initialized: 
+
+        case .initialized:
             return try doInitialized()
 
         case .shutdown(let requestId):
@@ -108,36 +108,35 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
 
         return nil
     }
-    
+
     private func doShutdown(_ requestId: RequestId) throws -> LanguageServerResponse {
         canExit = true
         return .shutdown(requestId: requestId)
     }
-    
+
     private func doExit() {
         exit(canExit ? 0 : 1)
     }
-    
+
     private func doDocumentDidOpen(_ params: DidOpenTextDocumentParams) throws -> LanguageServerResponse {
         log("command: documentDidOpen - %{public}@", category: languageServerLogCategory, params.textDocument.uri)
         // openDocuments[params.textDocument.uri] = params.textDocument.text
-      
+
         // TODO(ethan) implement this to process the input file and generate diagnostics
         // Also check if the capabilities below will need to be set to true.
         let d = LanguageServerProtocol.Diagnostic(
             range: Range(start: Position(line: 0, character: 0),
-                         end: Position(line: 0, character:3)),
+                         end: Position(line: 0, character: 3)),
             message: "Some error", severity: LanguageServerProtocol.DiagnosticSeverity.error)
         let params = PublishDiagnosticsParams(uri: params.textDocument.uri, diagnostics: [d])
         return .textDocumentPublishDiagnostics(params: params)
-        
+
     }
-  
+
     private func doDocumentDidChange(_ params: DidChangeTextDocumentParams) throws {
         log("command: documentDidChange - %{public}@", category: languageServerLogCategory, params.textDocument.uri)
     }
 
-    
     private func doInitialize(_ requestId: RequestId, _ params: InitializeParams) throws -> LanguageServerResponse {
         var capabilities = ServerCapabilities()
         capabilities.textDocumentSync = .kind(.full)
@@ -154,17 +153,18 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
         // capabilities.codeLensProvider = CodeLensOptions(resolveProvider: false)
         // capabilities.documentFormattingProvider = true
         // capabilities.documentRangeFormattingProvider = true
-        // capabilities.documentOnTypeFormattingProvider = DocumentOnTypeFormattingOptions(firstTriggerCharacter: "{", moreTriggerCharacter: nil)
+        // capabilities.documentOnTypeFormattingProvider =
+        //     DocumentOnTypeFormattingOptions(firstTriggerCharacter: "{", moreTriggerCharacter: nil)
         // capabilities.renameProvider = true
         // capabilities.documentLinkProvider = DocumentLinkOptions(resolveProvider: false)
         // try configureWorkspace(settings: nil)
-        
+
         return .initialize(requestId: requestId, result: InitializeResult(capabilities: capabilities))
     }
 
     private func doInitialized() throws -> LanguageServerResponse? {
-      let params = ShowMessageParams(type: .info, message: "LSP initialized");
-      return .windowShowMessage(params: params);
+      let params = ShowMessageParams(type: .info, message: "LSP initialized")
+      return .windowShowMessage(params: params)
     }
 
     private func doWorkspaceDidChangeConfiguration(_ params: DidChangeConfigurationParams) throws {
@@ -225,4 +225,3 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
         }
     }
 }
-
