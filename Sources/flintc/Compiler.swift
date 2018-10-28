@@ -63,6 +63,7 @@ struct Compiler {
       TypeChecker(),
       Optimizer(),
       TraitResolver(),
+      FunctionCallCompleter(),
       IRPreprocessor()
     ]
 

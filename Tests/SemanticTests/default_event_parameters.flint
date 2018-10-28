@@ -1,0 +1,32 @@
+// RUN: %flintc %s --verify
+contract EventTest {
+  event Finished {}
+
+  event A {}
+
+  event B {
+    let a: Int = 3
+    let b: Int = 3
+  }
+
+  event bad { // expected-error {{Default parameters should be the last ones to be declared}}
+    let a: Int = 2
+    let b: Address
+  }
+
+  event duplicate { //expected-error {{Duplicate parameter declarations in event declaration}}
+    let a: Int
+    let a: Int
+  }
+}
+
+EventTest :: (any) {
+  public init(owner: Address, receiver: Address) {}
+
+  public func f() {
+      emit B()
+      emit B(a: 1)
+      emit B(b: 4)
+      emit B(a: 1, b: 2)
+  }
+}

@@ -114,42 +114,38 @@ public struct Environment {
   }
 
   // MARK: - Compatibility
-  func areArgumentsCompatible(source: [FunctionArgument],
-                              target: EventInformation,
+  func areArgumentsCompatible(source: EventInformation,
+                              target: [FunctionArgument],
                               enclosingType: String,
                               scopeContext: ScopeContext) -> Bool {
-    let targetVariables = target.declaration.variableDeclarations
-    let targetTypes = target.eventTypes
+    let declaredParameters = source.declaration.variableDeclarations
+    let declarationTypes = source.eventTypes
 
-    guard source.count <= target.parameterIdentifiers.count else {
-      return false
-    }
-    guard source.count >= target.requiredParameterIdentifiers.count else {
+    guard target.count <= source.parameterIdentifiers.count &&
+          target.count >= source.requiredParameterIdentifiers.count else {
       return false
     }
 
-    var sourceIndex = 0
-    var targetIndex = 0
-    while sourceIndex < source.count && targetIndex < targetVariables.count {
-      if let identifier = source[sourceIndex].identifier,
-        identifier.name != targetVariables[targetIndex].identifier.name {
-        if targetVariables[targetIndex].assignedExpression == nil {
-          return false
-        } else {
-          targetIndex+=1
-          continue
+    return checkParameterCompatibility(of: target,
+                                       against: declaredParameters,
+                                       withTypes: declarationTypes,
+                                       enclosingType: enclosingType,
+                                       scopeContext: scopeContext)
+  }
+
+  // Attempts to replace Self in rawTypeList with the given enclosingType
+  func replaceSelf(in rawTypeList: [RawType], enclosingType: RawTypeIdentifier) -> [RawType] {
+    return rawTypeList.map { type -> RawType in
+      if type.isSelfType {
+        if type.isInout {
+          return .inoutType(.userDefinedType(enclosingType))
         }
+
+        return .userDefinedType(enclosingType)
       }
-      if targetTypes[targetIndex] == type(of: source[sourceIndex].expression,
-                                          enclosingType: enclosingType,
-                                          scopeContext: scopeContext) {
-        sourceIndex+=1
-        targetIndex+=1
-      } else {
-        return false
-      }
+
+      return type
     }
-    return true
   }
 
   /// Whether two function arguments are compatible.
@@ -163,21 +159,110 @@ public struct Environment {
   ///   - target: arguments of the function available in this scope.
   ///   - enclosingType: Type identifier of type containing *source* function.
   /// - Returns: Boolean indicating whether function arguments are compatible.
-  func areFunctionArgumentsCompatible(source: [RawType], target: [RawType], enclosingType: RawTypeIdentifier) -> Bool {
+  func areFunctionArgumentsCompatible(source: [RawType],
+                                      target: [RawType],
+                                      enclosingType: RawTypeIdentifier) -> Bool {
     // If source contains an argument of self type then attempt to replace with enclosing type
-    let sourceSelf = source.map { type -> RawType in
-      if type.isSelfType {
-        if type.isInout {
-          return .inoutType(.userDefinedType(enclosingType))
-        }
+    let sourceSelf = replaceSelf(in: source, enclosingType: enclosingType)
+    return sourceSelf == target
+  }
 
-        return .userDefinedType(enclosingType)
-      }
+  /// Function that checks whether the arguments of a function call are compatible
+  /// (i.e. the call could be successfully made) with a function declaration.
+  /// - Parameters:
+  ///   - source: function information of the function that the user is trying to call.
+  ///   - target: function call that the user is trying to make.
+  /// - Returns: Boolean indicating whether function call arguments are compatible.
+  func areFunctionCallArgumentsCompatible(source: FunctionInformation,
+                                          target: FunctionCall,
+                                          enclosingType: RawTypeIdentifier,
+                                          scopeContext: ScopeContext) -> Bool {
+    // If source contains an argument of self type then attempt to replace with enclosing type
+    let declarationTypesNoSelf = replaceSelf(in: source.parameterTypes, enclosingType: enclosingType)
+    let declaredParameters = source.declaration.signature.parameters.map({ $0.asVariableDeclaration })
 
-      return type
+    guard target.arguments.count <= source.parameterIdentifiers.count &&
+          target.arguments.count >= source.requiredParameterIdentifiers.count else {
+      return false
     }
 
-    return sourceSelf == target
+    return checkParameterCompatibility(of: target.arguments,
+                                       against: declaredParameters,
+                                       withTypes: declarationTypesNoSelf,
+                                       enclosingType: enclosingType,
+                                       scopeContext: scopeContext)
+  }
+
+  func checkParameterCompatibility(of callArguments: [FunctionArgument],
+                                   against declaredParameters: [VariableDeclaration],
+                                   withTypes declarationTypes: [RawType],
+                                   enclosingType: RawTypeIdentifier,
+                                   scopeContext: ScopeContext) -> Bool {
+    var declaredIndex = 0
+    var callArgumentIndex = 0
+
+    // Check required parameters first
+    while declaredIndex < declaredParameters.count && declaredParameters[declaredIndex].assignedExpression == nil {
+      // Check identifiers
+      if callArguments[callArgumentIndex].identifier != nil {
+        if callArguments[callArgumentIndex].identifier!.name != declaredParameters[declaredIndex].identifier.name {
+          return false
+        }
+      }
+
+      // Check types
+      if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
+                                                 enclosingType: enclosingType,
+                                                 scopeContext: scopeContext) {
+        // Wrong type
+        return false
+      }
+
+      declaredIndex += 1
+      callArgumentIndex += 1
+    }
+
+    // Check default parameters
+    while declaredIndex < declaredParameters.count && callArgumentIndex < callArguments.count {
+      guard let argumentIdentifier = callArguments[callArgumentIndex].identifier else {
+        if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
+                                                   enclosingType: enclosingType,
+                                                   scopeContext: scopeContext) {
+          return false
+        }
+
+        declaredIndex += 1
+        callArgumentIndex += 1
+        continue
+      }
+
+      while declaredIndex < declaredParameters.count &&
+          argumentIdentifier.name != declaredParameters[declaredIndex].identifier.name {
+        declaredIndex += 1
+      }
+
+      if declaredIndex == declaredParameters.count {
+        // Identifier was not found
+        return false
+      }
+
+      if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
+                                                 enclosingType: enclosingType,
+                                                 scopeContext: scopeContext) {
+        // Wrong type
+        return false
+      }
+
+      declaredIndex += 1
+      callArgumentIndex += 1
+    }
+
+    if callArgumentIndex < callArguments.count {
+      // Not all arguments were matches
+      return false
+    }
+
+    return true
   }
 
   /// Whether two function signatures are compatible.

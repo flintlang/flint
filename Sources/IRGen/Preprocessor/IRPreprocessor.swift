@@ -129,7 +129,11 @@ public struct IRPreprocessor: ASTPass {
 
   func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
-    return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
+    return Parameter(identifier: identifier,
+                     type: Type(inferredType: type,
+                                identifier: identifier),
+                     implicitToken: nil,
+                     assignedExpression: nil)
   }
 
   public func process(specialDeclaration: SpecialDeclaration,

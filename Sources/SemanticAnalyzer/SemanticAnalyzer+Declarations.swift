@@ -140,6 +140,34 @@ extension SemanticAnalyzer {
                                                                            in: enclosingType) {
       diagnostics.append(.invalidRedeclaration(eventDeclaration.identifier, originalSource: conflict))
     }
+
+    // Check that all default arguments are at the end
+    let arguments = eventDeclaration.variableDeclarations
+
+    var currentArgumentIndex = 0
+
+    while currentArgumentIndex < arguments.count && arguments[currentArgumentIndex].assignedExpression == nil {
+      currentArgumentIndex += 1
+    }
+
+    while currentArgumentIndex < arguments.count {
+      if arguments[currentArgumentIndex].assignedExpression == nil {
+        diagnostics.append(.defaultArgumentsNotAtEnd(eventDeclaration))
+      }
+
+      currentArgumentIndex += 1
+    }
+
+    // Check there are no duplicate parameters
+    var identifiers = [String]()
+    for argument in arguments {
+      if identifiers.contains(argument.identifier.name) {
+        diagnostics.append(.duplicateParameterDeclarations(eventDeclaration))
+      }
+
+      identifiers.append(argument.identifier.name)
+    }
+
     return ASTPassResult(element: eventDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -390,6 +418,33 @@ extension SemanticAnalyzer {
     // Add warning for each become apart from the last
     becomes.dropLast().forEach { statement in
       diagnostics.append(.multipleBecomes(statement))
+    }
+
+    // Check that all default arguments are at the end
+    let arguments = signature.parameters
+
+    var currentArgumentIndex = 0
+
+    while currentArgumentIndex < arguments.count && arguments[currentArgumentIndex].assignedExpression == nil {
+      currentArgumentIndex += 1
+    }
+
+    while currentArgumentIndex < arguments.count {
+      if arguments[currentArgumentIndex].assignedExpression == nil {
+        diagnostics.append(.defaultArgumentsNotAtEnd(functionDeclaration))
+      }
+
+      currentArgumentIndex += 1
+    }
+
+    // Check there are no duplicate parameters
+    var identifiers = [String]()
+    for argument in arguments {
+      if identifiers.contains(argument.identifier.name) {
+        diagnostics.append(.duplicateParameterDeclarations(functionDeclaration))
+      }
+
+      identifiers.append(argument.identifier.name)
     }
 
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)

@@ -13,6 +13,7 @@ public struct Parameter: ASTNode {
   public var type: Type
 
   public var implicitToken: Token?
+  public var assignedExpression: Expression?
 
   public var isImplicit: Bool {
     return implicitToken != nil
@@ -38,13 +39,15 @@ public struct Parameter: ASTNode {
     return VariableDeclaration(modifiers: [],
                                declarationToken: Token(kind: .let, sourceLocation: sourceLocation),
                                identifier: identifier,
-                               type: type)
+                               type: type,
+                               assignedExpression: assignedExpression)
   }
 
-  public init(identifier: Identifier, type: Type, implicitToken: Token?) {
+  public init(identifier: Identifier, type: Type, implicitToken: Token?, assignedExpression: Expression?) {
     self.identifier = identifier
     self.type = type
     self.implicitToken = implicitToken
+    self.assignedExpression = assignedExpression
   }
 
   // MARK: - ASTNode

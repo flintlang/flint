@@ -1,0 +1,60 @@
+//RUN: %flintc %s --verify
+
+contract Test {
+  var a: Int
+  var b: Int
+  var c: Int
+  var d: Int
+}
+
+Test :: (any) {
+  public init(caller: Address) {
+    self.a = 0
+    self.b = 0
+    self.c = 0
+    self.d = 0
+  }
+
+  mutating func set(a: Int, b: Int, c: Int = 10, d: Int = 20) {
+    self.a = a
+    self.b = b
+    self.c = c
+    self.d = d
+  }
+
+  public mutating func test1() {
+    set(a: 1, 1)
+  }
+
+  public mutating func test2() {
+    set(5, 10, 5)
+  }
+
+  public mutating func test3() {
+    set(7, b: 9, d: 66)
+  }
+
+  public mutating func test4() {
+    set(11, 12, c: 7, 90)
+  }
+
+  public mutating func test5() {
+    set(a: 15, b: 15, c: 7, d: 90)
+  }
+
+  public func getA() -> Int {
+    return self.a
+  }
+
+  public func getB() -> Int {
+    return self.b
+  }
+
+  public func getC() -> Int {
+    return self.c
+  }
+
+  public func getD() -> Int {
+    return self.d
+  }
+}

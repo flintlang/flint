@@ -96,7 +96,7 @@ returnType = "->" type;
 parameterList = "()"
               / "(" parameter *("," parameter) ")";
 
-parameter          = *(parameterModifiers SP) identifier typeAnnotation;
+parameter          = *(parameterModifiers SP) identifier typeAnnotation [WSP "=" WSP expression];
 parameterModifiers = %s"inout" / %s"implicit"
 
 ; STATEMENTS

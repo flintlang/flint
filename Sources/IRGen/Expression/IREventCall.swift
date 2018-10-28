@@ -16,6 +16,7 @@ struct IREventCall {
 
     var stores = [String]()
     var memoryOffset = 0
+
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = IRExpression(expression: argument.expression).rendered(functionContext: functionContext)
       stores.append("mstore(\(memoryOffset), \(argument))")

@@ -53,7 +53,7 @@ public struct VariableDeclaration: ASTNode {
   }
   // MARK: - ASTNode
   public var description: String {
-    return "\(declarationToken?.description ?? "") \(identifier): \(type)"
+    return "\(declarationToken?.description ?? "") \(identifier): \(type) = \(assignedExpression?.description ?? "")"
   }
   public var sourceLocation: SourceLocation {
     if let declarationToken = declarationToken {

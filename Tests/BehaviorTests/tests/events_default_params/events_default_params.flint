@@ -1,0 +1,65 @@
+//RUN: %flintc %s --verify
+
+contract Test {
+  var owner: Address
+
+  event A {
+    let a: Int
+    let b: Int = 3
+  }
+
+  event B {
+    let a: Int
+    let b: Int = 0
+    let c: Address = 0x0000000000000000000000000000000000000000
+  }
+
+  event C {
+    let a: Int
+  }
+
+  event D {
+    let a: Int = 1
+    let b: Int = 2
+    let c: Int = 3
+    let d: Int = 4
+  }
+}
+
+Test :: (any) {
+  public init(caller: Address) {
+    self.owner = caller
+  }
+
+  public func test1() {
+    emit A(a: 1)
+  }
+
+  public func test2() {
+    emit A(a: 1, b: 2)
+  }
+
+  public func test3() {
+    emit B(a: 1)
+  }
+
+  public func test4() {
+    emit B(a: 1, c: 0x0000000000000000000000000000000000000001)
+  }
+
+  public func test5() {
+    emit C(a: 420)
+  }
+
+  public func test6() {
+    emit D()
+  }
+
+  public func test7() {
+    emit D(d: 10)
+  }
+
+  public func test8() {
+    emit D(a: 4, b: 3, c: 2, d: 1)
+  }
+}

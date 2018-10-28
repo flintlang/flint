@@ -111,6 +111,11 @@ extension TypeChecker {
       // Ensure an event call's arguments match the expected types.
 
       for argument in functionCall.arguments {
+        guard argument.identifier != nil else {
+          // This will have been caught as a semantic error
+          continue
+        }
+
         let argumentType = environment.type(of: argument.expression,
                                             enclosingType: enclosingType,
                                             scopeContext: passContext.scopeContext!)

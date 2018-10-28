@@ -12,11 +12,13 @@ struct IRFunctionCall {
 
   func rendered(functionContext: FunctionContext) -> String {
     let environment = functionContext.environment
+    let enclosingType: RawTypeIdentifier = functionContext.enclosingTypeName
+    let scopeContext: ScopeContext = functionContext.scopeContext
 
     if case .matchedEvent(let eventInformation) =
       environment.matchEventCall(functionCall,
-                                 enclosingType: functionContext.enclosingTypeName,
-                                 scopeContext: functionContext.scopeContext) {
+                                 enclosingType: enclosingType,
+                                 scopeContext: scopeContext) {
       return IREventCall(eventCall: functionCall, eventDeclaration: eventInformation.declaration)
         .rendered(functionContext: functionContext)
     }

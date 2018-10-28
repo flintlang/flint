@@ -11,9 +11,9 @@ contract EventTest {
   }
 
   event Approve {
-    let from: Address = 0x0000000000000000000000000000000000000000
     let to: Address
     let value: Int
+    let from: Address = 0x0000000000000000000000000000000000000000
   }
 
   event Transfer {
@@ -31,7 +31,7 @@ EventTest :: (any) {
     emit Approve(value: 20, to: owner) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
     emit Approve(to: owner, from: owner, value: 100) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
     emit Approve(from: owner, value: 30) // expected-error {{Event 'Approve' cannot be called using the given parameters}}
-    emit Approve(from: owner, to: receiver, value: 100)
+    emit Approve(to: receiver, value: 100, from: owner)
     emit Approve() // expected-error {{Event 'Approve' cannot be called using the given parameters}}
     emit Transfer(from: owner, to: receiver, value: 100)
 
@@ -45,5 +45,7 @@ EventTest :: (any) {
     emit B()
     emit B(a: 1)
     emit B(b: 4)
+    emit B(1) // expected-error {{All arguments of an event call should be labeled}}
+    emit B(1, 2) // expected-error {{All arguments of an event call should be labeled}}
   }
 }
