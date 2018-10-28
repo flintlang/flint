@@ -359,8 +359,6 @@ public class ASTDumper {
       writeNode("BasicType") {
         self.dump(rawType)
       }
-    case .stdlibType(let type):
-      writeLine("Stdlib type \(type.rawValue)")
     case .userDefinedType(let userDefinedType):
       writeLine("user-defined type \(userDefinedType)")
     case .inoutType(let rawType):

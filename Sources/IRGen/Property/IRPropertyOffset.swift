@@ -24,7 +24,6 @@ struct IRPropertyOffset {
     let structIdentifier: String
 
     switch enclosingType {
-    case .stdlibType(let type): structIdentifier = type.rawValue
     case .userDefinedType(let type): structIdentifier = type
     default: fatalError()
     }

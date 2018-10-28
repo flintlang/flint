@@ -62,7 +62,7 @@ struct IRCallerProtectionChecks {
       case .basicType(.address):
         let check = IRRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
         return "\(variableName) := add(\(variableName), \(check)"
-      case .basicType, .stdlibType, .rangeType, .dictionaryType, .userDefinedType,
+      case .basicType, .rangeType, .dictionaryType, .userDefinedType,
            .inoutType, .functionType, .any, .errorType:
         return ""
       case .selfType:

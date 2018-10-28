@@ -12,7 +12,6 @@ public typealias RawTypeIdentifier = String
 // A Flint raw type, without a source location.
 public indirect enum RawType: Equatable {
   case basicType(BasicType)
-  case stdlibType(StdlibType)
   case rangeType(RawType)
   case arrayType(RawType)
   case fixedSizeArrayType(RawType, size: Int)
@@ -43,7 +42,6 @@ public indirect enum RawType: Equatable {
     case .arrayType(let rawType): return "[\(rawType.name)]"
     case .rangeType(let rawType): return "(\(rawType.name))"
     case .basicType(let builtInType): return "\(builtInType.rawValue)"
-    case .stdlibType(let type): return "\(type.rawValue)"
     case .dictionaryType(let keyType, let valueType): return "[\(keyType.name): \(valueType.name)]"
     case .userDefinedType(let identifier): return identifier
     case .inoutType(let rawType): return "$inout\(rawType.name)"
@@ -57,7 +55,7 @@ public indirect enum RawType: Equatable {
 
   public var isBuiltInType: Bool {
     switch self {
-    case .basicType, .stdlibType, .any, .errorType: return true
+    case .basicType, .any, .errorType: return true
     case .arrayType(let element): return element.isBuiltInType
     case .rangeType(let element): return element.isBuiltInType
     case .fixedSizeArrayType(let element, _): return element.isBuiltInType
@@ -95,6 +93,13 @@ public indirect enum RawType: Equatable {
     }
 
     return self == .selfType
+  }
+
+  public var isCurrencyType: Bool {
+    if case .userDefinedType(let typeIdentifier) = self, RawType.StdlibType(rawValue: typeIdentifier) == .wei {
+      return true
+    }
+    return false
   }
 
   /// Whether the type is compatible with the given type, i.e., if two expressions of those types can be used
@@ -136,11 +141,8 @@ public struct Type: ASTNode {
     return rawType.name
   }
 
-  var isCurrencyType: Bool {
-    switch rawType {
-    case .stdlibType(.wei): return true
-    default: return false
-    }
+  public var isCurrencyType: Bool {
+    return rawType.isCurrencyType
   }
 
   var isSelfType: Bool {
@@ -153,8 +155,6 @@ public struct Type: ASTNode {
     let name = identifier.name
     if let builtInType = RawType.BasicType(rawValue: name) {
       rawType = .basicType(builtInType)
-    } else if let stdlibType = RawType.StdlibType(rawValue: name) {
-      rawType = .stdlibType(stdlibType)
     } else {
       rawType = .userDefinedType(name)
     }

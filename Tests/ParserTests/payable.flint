@@ -6,7 +6,7 @@ Payable :: (any) {
 // CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {}
-  
+
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST: attribute payable
 // CHECK-AST: token: public
@@ -15,7 +15,7 @@ Payable :: (any) {
 // CHECK-AST: Parameter
 // CHECK-AST:   implicit
 // CHECK-AST:   identifier "value"
-// CHECK-AST:   Stdlib type Wei
+// CHECK-AST:   user-defined type Wei
   @payable
   public func foo(implicit value: Wei) {
 

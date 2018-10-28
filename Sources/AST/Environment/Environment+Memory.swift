@@ -21,10 +21,6 @@ extension Environment {
     case .errorType: return 0
     case .functionType: return 0
 
-    case .stdlibType(let type):
-      return types[type.rawValue]!.properties.reduce(0) { acc, element in
-        return acc + size(of: element.value.rawType)
-      }
     case .userDefinedType(let identifier):
       if isEnumDeclared(identifier),
         case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property {
