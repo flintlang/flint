@@ -17,11 +17,24 @@ let package = Package(
   targets: [
     .target(
       name: "flintc",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
+      dependencies: ["Compiler"]),
     .target(
       name: "Source",
       dependencies: []
     ),
+    .target(
+      name: "Compiler",
+      dependencies: [
+        "Parser",
+        "Lexer",
+        "SemanticAnalyzer",
+        "TypeChecker",
+        "Optimizer",
+        "IRGen",
+        "Commander",
+        "Rainbow",
+        "Symbolic",
+        "Diagnostic"]),
     .target(
       name: "Diagnostic",
       dependencies: [
@@ -93,12 +106,8 @@ let package = Package(
         name: "file-check",
         dependencies: ["FileCheck", "Commander"]),
     .target(
-      name: "langsrvlib", 
-      dependencies: ["JSONLib", "LanguageServerProtocol", "JsonRpcProtocol"],
-      path: "Sources/LSP/langsrvlib"),
-    .target(
-      name: "langsrv", 
-      dependencies: ["langsrvlib"],
-      path: "Sources/LSP/langsrv"),
+        name: "langsrv",
+        dependencies: ["Compiler", "JSONLib", "LanguageServerProtocol", "JsonRpcProtocol"],
+        path: "Sources/LSP/langsrv")
     ]
 )

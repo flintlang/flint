@@ -9,18 +9,18 @@ import Foundation
 import Symbolic
 
 /// The Flint standard library.
-struct StandardLibrary {
+public struct StandardLibrary {
   /// Path to the stdlib directory.
-  var url: URL
+  public var url: URL
 
-  var files: [URL] {
+  public var files: [URL] {
     // swiftlint:disable force_try
     return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
       .filter { $0.pathExtension == "flint" }
     // swiftlint:enable force_try
   }
 
-  static var `default`: StandardLibrary {
+  public static var `default`: StandardLibrary {
     guard let path = SymbolInfo(address: #dsohandle)?.filename else {
       fatalError("Unable to get SymbolInfo for \(#dsohandle)")
     }
