@@ -33,7 +33,7 @@ struct trait Test {
 contract trait TestSpecial {
   // CHECK-AST: EventDeclaration
   // CHECK-AST:   identifier "e"
-  event e {}
+  event e ()
 
   // CHECK-AST: SpecialDeclaration
   init() {}

@@ -50,7 +50,7 @@ traitMember = functionDeclaration
             / eventDeclaration;
 
 ; EVENTS
-eventDeclaration = %s"event" identifer "{" *(variableDeclaration) "}"
+eventDeclaration = %s"event" identifer parameterList
 
 ; STRUCTS
 structDeclaration = %s"struct" SP identifier [":" WSP identifierList ] SP "{" *(WSP structMember CRLF) "}";

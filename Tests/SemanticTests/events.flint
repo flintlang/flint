@@ -1,26 +1,15 @@
 // RUN: %flintc %s --verify
 contract EventTest {
-  event Finished {}
+  event Finished()
 
-  event A {}
-  event A {} // expected-error {{Invalid redeclaration of 'A'}}
+  event A()
+  event A() // expected-error {{Invalid redeclaration of 'A'}}
 
-  event B {
-    let a: Int = 3
-    let b: Int = 3
-  }
+  event B(a: Int = 3, b: Int = 3)
 
-  event Approve {
-    let to: Address
-    let value: Int
-    let from: Address = 0x0000000000000000000000000000000000000000
-  }
+  event Approve(to: Address, value: Int, from: Address = 0x0000000000000000000000000000000000000000)
 
-  event Transfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
+  event Transfer(from: Address, to: Address, value: Int)
 }
 
 EventTest :: (any) {

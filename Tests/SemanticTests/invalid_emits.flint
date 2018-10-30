@@ -1,10 +1,7 @@
 // RUN: %flintc %s --verify
 
 contract Events {
-  event eventA {
-    let addr: Address
-    let x: Int
-  }
+  event eventA(addr: Address, x: Int)
 }
 
 Events :: caller <- (any) {

@@ -144,6 +144,12 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
+  /// When visiting argument labels in a function call, this property is set to `true`.
+  public var isFunctionCallArgumentLabel: Bool {
+    get { return self[IsFunctionCallArgumentLabel.self] ?? false }
+    set { self[IsFunctionCallArgumentLabel.self] = newValue }
+  }
+
   /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
     if let trait = traitDeclarationContext?.traitIdentifier {
@@ -265,5 +271,9 @@ private struct IsAssignment: PassContextEntry {
 }
 
 private struct IsPropertyDefaultAssignment: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsFunctionCallArgumentLabel: PassContextEntry {
   typealias Value = Bool
 }

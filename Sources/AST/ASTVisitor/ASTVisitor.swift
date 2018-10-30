@@ -983,10 +983,14 @@ public struct ASTVisitor {
 
   func visit(_ functionArgument: FunctionArgument, passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
     var processResult = pass.process(functionArgument: functionArgument, passContext: passContext)
+
+    processResult.passContext.isFunctionCallArgumentLabel = true
     if let identifier = processResult.element.identifier {
       processResult.element.identifier = processResult.combining(visit(identifier,
                                                                        passContext: processResult.passContext))
     }
+    processResult.passContext.isFunctionCallArgumentLabel = false
+
     processResult.element.expression = processResult.combining(visit(processResult.element.expression,
                                                                      passContext: processResult.passContext))
 

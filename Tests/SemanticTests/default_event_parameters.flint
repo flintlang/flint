@@ -1,23 +1,14 @@
 // RUN: %flintc %s --verify
 contract EventTest {
-  event Finished {}
+  event Finished()
 
-  event A {}
+  event A()
 
-  event B {
-    let a: Int = 3
-    let b: Int = 3
-  }
+  event B(a: Int = 3, b: Int = 3)
 
-  event bad { // expected-error {{Default parameters should be the last ones to be declared}}
-    let a: Int = 2
-    let b: Address
-  }
+  event bad(a: Int = 2, b: Address) // expected-error {{Default parameters should be the last ones to be declared}}
 
-  event duplicate { //expected-error {{Duplicate parameter declarations in event declaration}}
-    let a: Int
-    let a: Int
-  }
+  event duplicate(a: Int, a: Int) //expected-error {{Duplicate parameter declarations in event declaration}}
 }
 
 EventTest :: (any) {

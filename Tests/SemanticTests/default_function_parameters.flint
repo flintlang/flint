@@ -45,4 +45,29 @@ Test :: caller <- (any) {
     test3(3, b: 0x0000000000000000000000000000000000000000) // expected-error {{Function 'test3' is not in scope}}
     test3(b: 2, a: 2) // expected-error {{Function 'test3' cannot be called using the protection 'any'}}
   }
+
+  func f(unseen_before_label1: Int = 0, unseen_before_label2: Int = 0) {}
+
+  func g() {
+    f()
+    f(unseen_before_label1: 1)
+    f(unseen_before_label2: 2)
+    f(unseen_before_label1: 1, unseen_before_label2: 2)
+  }
+
+  func nested(x: Int = 1) -> Int {
+    return x
+  }
+
+  func nested2(y: Int = 1) -> Int {
+    return y
+  }
+
+  func nested3(z: Int) -> Int {
+    return z
+  }
+
+  func nestedTest() -> Int {
+    return nested3(z: nested2(y: nested()))
+  }
 }

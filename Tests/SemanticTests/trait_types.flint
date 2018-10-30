@@ -9,7 +9,7 @@ struct trait StructureTrait {
 }
 
 contract trait ContractTrait {
-  event e {}
+  event e()
 
   self :: (any) {
     public init() {}
@@ -18,7 +18,7 @@ contract trait ContractTrait {
 }
 
 struct trait FalseStructureTrait {
-  event e {} // expected-error {{Use of contract trait member in struct trait}}
+  event e() // expected-error {{Use of contract trait member in struct trait}}
 
   self :: (any) { // expected-error {{Use of contract trait member in struct trait}}
     public init() {}

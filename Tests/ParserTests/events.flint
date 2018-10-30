@@ -5,42 +5,34 @@
 contract Foo {
   // CHECK-AST:   EventDeclaration
   // CHECK-AST:     identifier "Finished"
-  event Finished {}
+  event Finished()
 
   // CHECK-AST:   EventDeclaration
   // CHECK-AST:     identifier "Transfer"
-  event Transfer {
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "from"
-    // CHECK-AST:   built-in type Address
-    let from: Address
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "to"
-    // CHECK-AST:   built-in type Address
-    let to: Address
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "value"
-    // CHECK-AST:   built-in type Int
-    let value: Int
-  }
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "from"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "to"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "value"
+  // CHECK-AST:   built-in type Int
+  event Transfer(from: Address, to: Address, value: Int)
 
   // CHECK-AST:   EventDeclaration
   // CHECK-AST:     identifier "Approve"
-  event Approve {
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "from"
-    // CHECK-AST:   built-in type Address
-    // CHECK-AST:    literal 0x0000000000000000000000000000000000000000
-    let from: Address = 0x0000000000000000000000000000000000000000
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "to"
-    // CHECK-AST:   built-in type Address
-    let to: Address
-    // CHECK-AST: VariableDeclaration
-    // CHECK-AST:   identifier "value"
-    // CHECK-AST:   built-in type Int
-    let value: Int
-  }
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "to"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "value"
+  // CHECK-AST:   built-in type Int
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "from"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST:    literal 0x0000000000000000000000000000000000000000
+  event Approve(to: Address, value: Int, from: Address = 0x0000000000000000000000000000000000000000)
 }
 
 Foo :: (any) {
@@ -68,15 +60,15 @@ Foo :: (any) {
     // CHECK-AST: EmitStatement
     // CHECK-AST:   identifier "Approve"
     // CHECK-AST:   FunctionArgument
-    // CHECK-AST:     identifier "from"
-    // CHECK-AST:     identifier "owner"
-    // CHECK-AST:   FunctionArgument
     // CHECK-AST:     identifier "to"
     // CHECK-AST:     identifier "receiver"
     // CHECK-AST:   FunctionArgument
     // CHECK-AST:     identifier "value"
     // CHECK-AST:     literal 100
-    emit Approve(from: owner, to: receiver, value: 100)
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "from"
+    // CHECK-AST:     identifier "owner"
+    emit Approve(to: receiver, value: 100, from: owner)
     // CHECK-AST: EmitStatement
     // CHECK-AST:   identifier "Transfer"
     // CHECK-AST:   FunctionArgument

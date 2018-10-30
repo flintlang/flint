@@ -132,11 +132,9 @@ extension Parser {
   func parseEventDeclaration() throws -> EventDeclaration {
     let eventToken = try consume(.event, or: .badDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
-    try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "event declaration", at: latestSource))
-    let variables = try parseVariableDeclarations(enclosingType: identifier.name)
-    try consume(.punctuation(.closeBrace), or: .rightBraceExpected(in: "event declaration", at: latestSource))
+    let (parameters, _) = try parseParameters()
 
-    return EventDeclaration(eventToken: eventToken, identifier: identifier, variables: variables)
+    return EventDeclaration(eventToken: eventToken, identifier: identifier, parameters: parameters)
   }
 
   func parseContractBehaviorDeclaration() throws -> ContractBehaviorDeclaration {
