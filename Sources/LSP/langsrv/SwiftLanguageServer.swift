@@ -5,12 +5,19 @@
  * Licensed under the MIT License. See License in the project root for license information.
  */
 
+import Foundation
+
+import Commander
+import JSONLib
+import LanguageServerProtocol
+
+import AST
 import Compiler
 import struct Diagnostic.Diagnostic
+import class Diagnostic.DiagnosticPool
+import struct Diagnostic.SourceContext
 
-import JSONLib
-import Foundation
-import LanguageServerProtocol
+typealias FlintDiagnostic = Diagnostic
 
 let languageServerLogCategory = "FlintLanguageServer"
 let languageServerSettingsKey = "flint"
@@ -131,11 +138,8 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
 
         // TODO(ethan) implement this to process the input file and generate diagnostics
         // Also check if the capabilities below will need to be set to true.
-        let d = LanguageServerProtocol.Diagnostic(
-            range: Range(start: Position(line: 0, character: 0),
-                         end: Position(line: 0, character: 3)),
-            message: "Some error", severity: LanguageServerProtocol.DiagnosticSeverity.error)
-        let params = PublishDiagnosticsParams(uri: params.textDocument.uri, diagnostics: [d])
+        let diagnostics = doCompile(inputFiles: [URL(string: params.textDocument.uri)!]).map(translateDiagnostic)
+        let params = PublishDiagnosticsParams(uri: params.textDocument.uri, diagnostics: diagnostics)
         return .textDocumentPublishDiagnostics(params: params)
 
     }
@@ -181,6 +185,17 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
     private func configureWorkspace(settings: JSValue?) throws {
         log("configureWorkspace", category: languageServerLogCategory)
         // TODO(owensd): handle targets...
+    }
+
+    private func doCompile(inputFiles: [URL]) -> [FlintDiagnostic] {
+        do {
+            return try Compiler.diagnose(config: DiagnoserConfiguration(inputFiles: inputFiles))
+        } catch let err {
+            let diagnostic = Diagnostic(severity: .error,
+                                        sourceLocation: nil,
+                                        message: err.localizedDescription)
+            return [diagnostic]
+        }
     }
 
     func kind(_ value: String?) -> CompletionItemKind {
