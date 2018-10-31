@@ -98,13 +98,13 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
             try doWorkspaceDidChangeConfiguration(params)
 // TODO(ethan), the cases commented are beyond our first demoable implementation, hence not supported.
 //        case .workspaceDidChangeWatchedFiles(let params):
-//            try doWorkspaceDidChangeWatchedFiles(params)
-//
+//            return try doWatchedFilesChanged(params)
+
         case .textDocumentDidOpen(let params):
             return try doDocumentDidOpen(params)
 
         case .textDocumentDidChange(let params):
-            try doDocumentDidChange(params)
+            return try doDocumentDidChange(params)
 
 //        case .textDocumentCompletion(let requestId, let params):
 //            return try doCompletion(requestId, params)
@@ -134,19 +134,19 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
 
     private func doDocumentDidOpen(_ params: DidOpenTextDocumentParams) throws -> LanguageServerResponse {
         log("command: documentDidOpen - %{public}@", category: languageServerLogCategory, params.textDocument.uri)
-        // openDocuments[params.textDocument.uri] = params.textDocument.text
-
-        // TODO(ethan) implement this to process the input file and generate diagnostics
-        // Also check if the capabilities below will need to be set to true.
-        let diagnostics = doCompile(inputFiles: [URL(string: params.textDocument.uri)!]).map(translateDiagnostic)
-        let params = PublishDiagnosticsParams(uri: params.textDocument.uri, diagnostics: diagnostics)
-        return .textDocumentPublishDiagnostics(params: params)
+        return doCompile(inputFile: params.textDocument.uri)
 
     }
 
-    private func doDocumentDidChange(_ params: DidChangeTextDocumentParams) throws {
+    private func doDocumentDidChange(_ params: DidChangeTextDocumentParams) throws -> LanguageServerResponse {
         log("command: documentDidChange - %{public}@", category: languageServerLogCategory, params.textDocument.uri)
+        return doCompile(inputFile: params.textDocument.uri)
     }
+
+//    private func doWatchedFilesChanged(_ params: DidChangeWatchedFilesParams) throws -> LanguageServerResponse {
+//        log("command: watchedFilesChanged - %{public}@", category: languageServerLogCategory, params.textDocument.uri)
+//        return doCompile(inputFile: params.changes.)
+//    }
 
     private func doInitialize(_ requestId: RequestId, _ params: InitializeParams) throws -> LanguageServerResponse {
         var capabilities = ServerCapabilities()
@@ -187,15 +187,21 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
         // TODO(owensd): handle targets...
     }
 
-    private func doCompile(inputFiles: [URL]) -> [FlintDiagnostic] {
+    private func doCompile(inputFile: DocumentUri) -> LanguageServerResponse {
+        var flintDiagnostics: [FlintDiagnostic]!
         do {
-            return try Compiler.diagnose(config: DiagnoserConfiguration(inputFiles: inputFiles))
+            let config = DiagnoserConfiguration(inputFiles: [URL(string: inputFile)!])
+            flintDiagnostics = try Compiler.diagnose(config: config)
         } catch let err {
-            let diagnostic = Diagnostic(severity: .error,
+            flintDiagnostics = [Diagnostic(severity: .error,
                                         sourceLocation: nil,
-                                        message: err.localizedDescription)
-            return [diagnostic]
+                                        message: err.localizedDescription)]
         }
+
+        let lspDiagnostic = flintDiagnostics.compactMap(translateDiagnostic)
+        let params = PublishDiagnosticsParams(uri: inputFile, diagnostics: lspDiagnostic)
+
+        return .textDocumentPublishDiagnostics(params: params)
     }
 
     func kind(_ value: String?) -> CompletionItemKind {
