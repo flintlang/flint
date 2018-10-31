@@ -30,8 +30,14 @@ public struct Compiler {
     exit(1)
   }
 
-  private static func tokenizeFiles(inputFiles: [URL]) throws -> [Token] {
-    let stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+  private static func tokenizeFiles(inputFiles: [URL], withStandardLibrary: Bool = true) throws -> [Token] {
+    let stdlibTokens: [Token]
+    if withStandardLibrary {
+      stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+    } else {
+      stdlibTokens = []
+    }
+
     let userTokens = try inputFiles.flatMap { try Lexer(sourceFile: $0).lex() }
 
     return stdlibTokens + userTokens
@@ -65,7 +71,7 @@ extension Compiler {
 // MARK: - Compilation
 extension Compiler {
   public static func compile(config: CompilerConfiguration) throws -> CompilationOutcome {
-    let tokens = try tokenizeFiles(inputFiles: config.inputFiles)
+    let tokens = try tokenizeFiles(inputFiles: config.inputFiles, withStandardLibrary: config.loadStdlib)
 
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
@@ -133,6 +139,7 @@ public struct CompilerConfiguration {
   public let dumpAST: Bool
   public let emitBytecode: Bool
   public let diagnostics: DiagnosticPool
+  public let loadStdlib: Bool
   public let astPasses: [ASTPass]
 
   public init(inputFiles: [URL],
@@ -141,6 +148,7 @@ public struct CompilerConfiguration {
               dumpAST: Bool,
               emitBytecode: Bool,
               diagnostics: DiagnosticPool,
+              loadStdlib: Bool = true,
               astPasses: [ASTPass] = Compiler.defaultASTPasses) {
     self.inputFiles = inputFiles
     self.stdlibFiles = stdlibFiles
@@ -149,6 +157,7 @@ public struct CompilerConfiguration {
     self.emitBytecode = emitBytecode
     self.diagnostics = diagnostics
     self.astPasses = astPasses
+    self.loadStdlib = loadStdlib
   }
 }
 

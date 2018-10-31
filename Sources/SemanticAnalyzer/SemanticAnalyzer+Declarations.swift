@@ -465,7 +465,7 @@ extension SemanticAnalyzer {
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
 
-    // Clear the context in preparation for the next time we visit a function declaration.
+    // Clear the context in preparation for the next time we visit a special or function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
 
     var functionDeclaration = functionDeclaration
@@ -612,8 +612,12 @@ extension SemanticAnalyzer {
       }
     }
 
+    // Clear the context in preparation for the next time we visit a special or function declaration.
+    passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
+
     var specialDeclaration = specialDeclaration
     specialDeclaration.scopeContext = passContext.scopeContext ?? ScopeContext()
+
     return ASTPassResult(element: specialDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 }

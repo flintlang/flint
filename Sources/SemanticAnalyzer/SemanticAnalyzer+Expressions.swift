@@ -109,7 +109,9 @@ extension SemanticAnalyzer {
 
     var diagnostics = [Diagnostic]()
 
-    let isMutating = passContext.functionDeclarationContext?.isMutating ?? false
+    let isMutating: Bool =
+      passContext.specialDeclarationContext?.declaration.isInit ?? false ||
+        passContext.functionDeclarationContext?.isMutating ?? false
 
     if !passContext.isInEmit {
       // Find the function declaration associated with this function call.

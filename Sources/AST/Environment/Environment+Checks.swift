@@ -156,14 +156,18 @@ extension Environment {
     return conflictingDeclaration(of: identifier, in: propertyDeclarations(in: type).map { $0.identifier })
   }
 
-  // If the number of functions is greater than 1 (the signature of the trait) then there must be a conflict
+  // Two signatures conflict if trait functions with the same name have equal parameters
+  // but different modifiers, label names, etc
   public func conflictingTraitSignatures(for type: RawTypeIdentifier) -> [String: [FunctionInformation]] {
     guard let typeInfo = types[type] else {
       return [:]
     }
     return typeInfo.traitFunctions.filter { (_, functions) in
       functions.count > 1 && functions.contains(where: {
-        $0.declaration.signature != functions.first!.declaration.signature
+        let compare = $0.declaration.signature
+        let against = functions.first!.declaration.signature
+
+        return compare.parameters.rawTypes == against.parameters.rawTypes && compare != against
       })
     }
   }
@@ -196,7 +200,9 @@ extension Environment {
     let typeInfo = types[enclosingType.name]!
     if let conforming = typeInfo.initializers.filter({ !$0.isSignature }).first { // Compatibility check
       if let signature = typeInfo.allInitialisers.filter({ $0.isSignature }).first,
-        conforming.declaration.signature != signature.declaration.signature {
+        !areFunctionSignaturesCompatible(source: signature.declaration.signature.asFunctionSignatureDeclaration,
+                                         target: conforming.declaration.signature.asFunctionSignatureDeclaration,
+                                         enclosingType: enclosingType.name) {
         return [signature]
       }
       return []

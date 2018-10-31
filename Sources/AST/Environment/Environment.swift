@@ -135,17 +135,7 @@ public struct Environment {
 
   // Attempts to replace Self in rawTypeList with the given enclosingType
   func replaceSelf(in rawTypeList: [RawType], enclosingType: RawTypeIdentifier) -> [RawType] {
-    return rawTypeList.map { type -> RawType in
-      if type.isSelfType {
-        if type.isInout {
-          return .inoutType(.userDefinedType(enclosingType))
-        }
-
-        return .userDefinedType(enclosingType)
-      }
-
-      return type
-    }
+    return rawTypeList.map { $0.replacingSelf(with: enclosingType) }
   }
 
   /// Whether two function arguments are compatible.
@@ -213,7 +203,7 @@ public struct Environment {
       // Check types
       if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
                                                  enclosingType: enclosingType,
-                                                 scopeContext: scopeContext) {
+                                                 scopeContext: scopeContext).replacingSelf(with: enclosingType) {
         // Wrong type
         return false
       }
@@ -227,7 +217,7 @@ public struct Environment {
       guard let argumentIdentifier = callArguments[callArgumentIndex].identifier else {
         if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
                                                    enclosingType: enclosingType,
-                                                   scopeContext: scopeContext) {
+                                                   scopeContext: scopeContext).replacingSelf(with: enclosingType) {
           return false
         }
 
@@ -248,7 +238,7 @@ public struct Environment {
 
       if declarationTypes[declaredIndex] != type(of: callArguments[callArgumentIndex].expression,
                                                  enclosingType: enclosingType,
-                                                 scopeContext: scopeContext) {
+                                                 scopeContext: scopeContext).replacingSelf(with: enclosingType) {
         // Wrong type
         return false
       }

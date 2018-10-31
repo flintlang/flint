@@ -2,60 +2,63 @@
 // fully. The default implementations should be left intact, only
 // `getRawValue` and `setRawValue` need to be implemented.
 
-// TODO: semantic check preventing cross-asset transfers
 struct trait Asset {
   // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
   init(unsafeRawValue: Int)
-  
+
   // Initialises the asset by transferring `amount` from an existing asset.
   // Should check if `source` has sufficient funds, and cause a fatal error
   // if not.
-  init(source: inout Asset, amount: Int)
-  
+  init(source: inout Self, amount: Int)
+
   // Initialises the asset by transferring all funds from `source`.
   // `source` should be left empty.
-  init(source: inout Asset)
-  
-  // TODO: These implementations cause the compiler to crash due to calling
-  // a mutating function from the constructor.
-  // See: https://github.com/flintrocks/flint/issues/30
-  //init(unsafeRawValue: Int) {
-  //  setRawValue(unsafeRawValue)
-  //}
-  //
-  //init(source: inout Asset, amount: Int) {
-  //  if source.getRawValue() < amount {
-  //    fatalError()
-  //  }
-  //  
-  //  source.setRawValue(source.getRawValue() - amount)
-  //  setRawValue(getRawValue() + amount)
-  //}
-  //
-  //init(source: inout Asset) {
-  //  let value: Int = source.getRawValue()
-  //  source.setRawValue(0)
-  //  setRawValue(0)
-  //}
-  
+  init(source: inout Self)
+
   // Moves `amount` from `source` into `this` asset.
-  mutating func transfer(source: inout Asset, amount: Int) {
+  mutating func transfer(source: inout Self, amount: Int) {
     if source.getRawValue() < amount {
       fatalError()
     }
-    
-    source.setRawValue(source.getRawValue() - amount)
-    setRawValue(getRawValue() + amount)
+
+    // TODO: support let _: Int = ...
+    let unused1: Int = source.setRawValue(source.getRawValue() - amount)
+    let unused2: Int = setRawValue(getRawValue() + amount)
   }
-  
-  // Moves all funds from `source` into `this` asset.
-  mutating func transfer(source: inout Asset) {
+
+  mutating func transfer(source: inout Self) {
     transfer(&source, source.getRawValue())
   }
-  
+
   // Returns the funds contained in this asset, as an integer.
   mutating func setRawValue(value: Int) -> Int
-  
+
   // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
+}
+
+struct Wei: Asset {
+  var rawValue: Int = 0
+
+  init(unsafeRawValue: Int) {
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout Wei, amount: Int) {
+    transfer(&source, amount)
+  }
+
+  init(source: inout Wei) {
+    let amount: Int = source.getRawValue()
+    transfer(&source, amount)
+  }
+
+  mutating func setRawValue(value: Int) -> Int {
+    rawValue = value
+    return rawValue
+  }
+
+  func getRawValue() -> Int {
+    return rawValue
+  }
 }

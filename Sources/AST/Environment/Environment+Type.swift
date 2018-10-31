@@ -231,10 +231,7 @@ extension Environment {
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
         let type = scopeContext.type(for: identifier.name) {
-        if case .inoutType(let type) = type {
-          return type
-        }
-        return type
+        return type.stripInout
       }
       return type(of: identifier.name,
                   enclosingType: identifier.enclosingType ?? enclosingType,

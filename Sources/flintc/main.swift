@@ -14,8 +14,9 @@ func main() {
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
     Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
+    Flag("no-stdlib", description: "Do not load the standard library"),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify, quiet, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -43,7 +44,9 @@ func main() {
         emitBytecode: emitBytecode,
         diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
                                     quiet: quiet,
-                                    sourceContext: SourceContext(sourceFiles: inputFiles)))
+                                    sourceContext: SourceContext(sourceFiles: inputFiles)),
+        loadStdlib: !noStdlib
+        )
       compilationOutcome = try Compiler.compile(config: compilerConfig)
     } catch let err {
       let diagnostic = Diagnostic(severity: .error,

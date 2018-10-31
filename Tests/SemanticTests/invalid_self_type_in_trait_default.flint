@@ -16,8 +16,7 @@ struct Implementation {
     let this: Self = self // expected-error {{Use of Self is only allowed in traits}}
                           // expected-error@-1 {{Incompatible assignment between values of type 'Self' and 'Implementation'}}
     this.functionAcceptingSelf(&self) // expected-error {{Use of Self is only allowed in traits}}
-    this.functionAcceptingSelf(&this) // expected-error {{Function 'functionAcceptingSelf' is not in scope}}
-                                      // expected-error@-1 {{Use of Self is only allowed in traits}}
+    this.functionAcceptingSelf(&this) // expected-error {{Use of Self is only allowed in traits}}
   }
 }
 
