@@ -28,7 +28,6 @@ contract SimpleDAO (Join, Propose, Vote) {
   visible var proposal: Int = 0
   var proposals: [Proposal] = []
   var balances: [Address: Wei] = [:]
-  var totalstake: Int = 0
 }
 
 SimpleDAO @(any) :: caller <- (any) {
@@ -44,13 +43,20 @@ SimpleDAO @(any) :: caller <- (any) {
   public func tokenHolder(addr: Address) -> Bool {
     return balances[addr].getRawValue() != 0
   }
+
+  public func getTotalStake() -> Int {
+    var sum: Int = 0
+    for let balance: Wei in balances {
+      sum += balance.getRawValue()
+    }
+    return sum
+  }
 }
 
 SimpleDAO @(Join) :: caller <- (any) {
 
   @payable
   public mutating func join(implicit value: inout Wei) {
-    totalstake += value.getRawValue()
     balances[caller].transfer(&value)
   }
 }
@@ -70,7 +76,6 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
   }
 
   public mutating func leave() {
-    totalstake -= balances[caller].getRawValue()
     send(caller, &balances[caller])
   }
 }
@@ -107,12 +112,12 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
     if proposals[proposal].yea > proposals[proposal].nay {
        proposals[proposal].success = true
        let transfervalue: Wei = Wei(0)
+       let totalstake: Int = getTotalStake()
        for let value: Wei in balances {
          let rawvalue: Int = (proposals[proposal].value * value.getRawValue()) / totalstake
          transfervalue.transfer(&value, rawvalue)
        }
        send(proposals[proposal].recipient, &transfervalue)
-       totalstake -= proposals[proposal].value
     }
 
     become Propose
