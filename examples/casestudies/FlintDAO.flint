@@ -8,19 +8,27 @@
 
 struct Proposal {
   var proposer: Address
-  var value: Wei
+  var value: Int
   var recipient: Address
   var yea: Int = 0
   var nay: Int = 0
   var finished: Bool = false
   var success: Bool = false
   var voted: [Address: Bool] = [:]
+
+  mutating init(proposer: Address, value: Int, recipient: Address) {
+    self.proposer = proposer
+    self.value = value
+    self.recipient = recipient
+  }
 }
 
 contract SimpleDAO (Join, Propose, Vote) {
   var curator: Address
+  visible var proposal: Int = 0
   var proposals: [Proposal] = []
   var balances: [Address: Wei] = [:]
+  var totalstake: Int = 0
 }
 
 SimpleDAO @(any) :: caller <- (any) {
@@ -28,24 +36,21 @@ SimpleDAO @(any) :: caller <- (any) {
     self.curator = curator
     become Join
   }
-  @payable
-  public fallback(implicit value: inout Wei) {
-    balances[curator].transfer(&value)
+
+  public mutating fallback() {
+    fatalError()
   }
 
   public func tokenHolder(addr: Address) -> Bool {
-    return balances[addr] != 0
+    return balances[addr].getRawValue() != 0
   }
 }
 
 SimpleDAO @(Join) :: caller <- (any) {
-  @payable
-  public fallback(implicit value: inout Wei) {
-    balances[caller].transfer(&value)
-  }
 
   @payable
   public mutating func join(implicit value: inout Wei) {
+    totalstake += value.getRawValue()
     balances[caller].transfer(&value)
   }
 }
@@ -57,43 +62,57 @@ SimpleDAO @(Join) :: (curator) {
 }
 
 SimpleDAO @(Propose) :: caller <- (tokenHolder) {
-  @payable
-  public mutating func newProposal(implicit value: inout Wei, recipient: Address, value: Int) -> Int {
-    // Sanity checks ommited to be concise
-    pID = proposals.length + 1;
-    proposals[pID] = Proposal(caller, &value, recipient)
-
+  public mutating func newProposal(value: Int, recipient: Address) -> Int {
+    // Sanity checks omitted to be concise
+    let pID: Int = proposals.size + 1;
+    proposals[pID] = Proposal(caller, value, recipient)
+    return pID
   }
 
   public mutating func leave() {
+    totalstake -= balances[caller].getRawValue()
     send(caller, &balances[caller])
   }
 }
 
+SimpleDAO @(Propose) :: (curator) {
+  public mutating func beginVote(proposal: Int) {
+    self.proposal = proposal
+    become Vote
+  }
+}
+
 SimpleDAO @(Vote) :: caller <- (tokenHolder) {
-  public mutating func vote(id: Int, approve: Bool) {
-    if proposals[id].voted[caller] {
+  public mutating func vote(approve: Bool) {
+    if proposals[proposal].voted[caller] {
       fatalError()
     }
 
     if approve {
-      proposals[id].yea += balances[caller]
+      proposals[proposal].yea += balances[caller].getRawValue()
     } else {
-      proposals[id].nay += balances[caller]
+      proposals[proposal].nay += balances[caller].getRawValue()
     }
 
-    proposals[id].voted[caller] = true
+    proposals[proposal].voted[caller] = true
   }
 
-  public mutating func executeProposal(id: Int) {
-    if(caller != proposals[id].proposer || proposals[id].finished) {
+  public mutating func executeProposal() {
+    if(caller != proposals[proposal].proposer || proposals[proposal].finished) {
       fatalError()
     }
 
-    proposals[id].finished = true
-    if (proposals[id].yea + proposals[id].nay) >= proposals[id].yea > proposals[id].nay {
-       proposals[id].success = true
-       send(proposals[id].recipient, &proposals[id].value)
+    proposals[proposal].finished = true
+    // Quorum check omitted for brevity.
+    if proposals[proposal].yea > proposals[proposal].nay {
+       proposals[proposal].success = true
+       let transfervalue: Wei = Wei(0)
+       for let value: Wei in balances {
+         let rawvalue: Int = (proposals[proposal].value * value.getRawValue()) / totalstake
+         transfervalue.transfer(&value, rawvalue)
+       }
+       send(proposals[proposal].recipient, &transfervalue)
+       totalstake -= proposals[proposal].value
     }
 
     become Propose
