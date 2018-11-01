@@ -8,7 +8,7 @@
 
 struct Proposal {
   var proposer: Address
-  var value: Int
+  var payout: Int
   var recipient: Address
   var yea: Int = 0
   var nay: Int = 0
@@ -16,9 +16,9 @@ struct Proposal {
   var success: Bool = false
   var voted: [Address: Bool] = [:]
 
-  mutating init(proposer: Address, value: Int, recipient: Address) {
+  mutating init(proposer: Address, payout: Int, recipient: Address) {
     self.proposer = proposer
-    self.value = value
+    self.payout = payout
     self.recipient = recipient
   }
 }
@@ -114,7 +114,7 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
        let transfervalue: Wei = Wei(0)
        let totalstake: Int = getTotalStake()
        for let value: Wei in balances {
-         let rawvalue: Int = (proposals[proposal].value * value.getRawValue()) / totalstake
+         let rawvalue: Int = (proposals[proposal].payout * value.getRawValue()) / totalstake
          transfervalue.transfer(&value, rawvalue)
        }
        send(proposals[proposal].recipient, &transfervalue)
