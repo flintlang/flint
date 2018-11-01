@@ -116,7 +116,12 @@ public struct Type: ASTNode {
   }
 
   var isCurrencyType: Bool {
-    switch rawType {
+    var innerType: RawType = rawType
+    while case .inoutType(let inoutInnerType) = innerType {
+      innerType = inoutInnerType
+    }
+
+    switch innerType {
     case .stdlibType(.wei): return true
     default: return false
     }
