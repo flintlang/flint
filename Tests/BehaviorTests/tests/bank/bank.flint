@@ -23,14 +23,14 @@ Bank :: account <- (any) {
 
   @payable
   public mutating func donate(implicit value: Wei) {
-    totalDonations.transfer(&value)
+    totalDonations.transfer(source: &value)
   }
 }
 
 Bank :: (manager) {
   public mutating func freeDeposit(account: Address, amount: Int) {
     var w: Wei = Wei(amount)
-    balances[account].transfer(&w)
+    balances[account].transfer(source: &w)
   }
 
   public mutating func clear(account: Address) {
@@ -49,11 +49,11 @@ Bank :: account <- (accounts) {
 
   @payable
   public mutating func deposit(implicit value: Wei) {
-    balances[account].transfer(&value)
+    balances[account].transfer(source: &value)
   }
 
   public mutating func transfer(amount: Int, destination: Address) {
-    balances[destination].transfer(&balances[account], amount)
+    balances[destination].transfer(source: &balances[account], amount: amount)
   }
 
   public mutating func withdraw(amount: Int) {

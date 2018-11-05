@@ -135,6 +135,7 @@ extension SemanticAnalyzer {
                 functionDeclaration: passContext.functionDeclarationContext!.declaration))
           }
         }
+        checkArgumentLabels(functionCall, &diagnostics, isEventCall: false)
         checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
 
       case .matchedInitializer(let matchingInitializer):
@@ -179,16 +180,20 @@ extension SemanticAnalyzer {
         environment.matchEventCall(functionCall,
                                    enclosingType: enclosingType,
                                    scopeContext: passContext.scopeContext ?? ScopeContext()) {
-        // Make sure all arguments are labeled
-        for argument in functionCall.arguments {
-          guard argument.identifier != nil else {
-            diagnostics.append(.unlabeledEventCallArguments(functionCall))
-            return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
-          }
-        }
+        checkArgumentLabels(functionCall, &diagnostics, isEventCall: true)
     }
 
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  // Checks whether all arguments of a function call are labeled
+  private func checkArgumentLabels(_ functionCall: FunctionCall,
+                                   _ diagnostics: inout [Diagnostic],
+                                   isEventCall: Bool) {
+
+    if !functionCall.arguments.filter({$0.identifier == nil}).isEmpty {
+      diagnostics.append(.unlabeledFunctionCallArguments(functionCall, isEventCall: isEventCall))
+    }
   }
 
   /// Whether an expression refers to a state property.

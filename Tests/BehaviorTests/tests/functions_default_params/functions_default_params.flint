@@ -23,19 +23,19 @@ Test :: (any) {
   }
 
   public mutating func test1() {
-    set(a: 1, 1)
+    set(a: 1, b: 1)
   }
 
   public mutating func test2() {
-    set(5, 10, 5)
+    set(a: 5, b: 10, c: 5)
   }
 
   public mutating func test3() {
-    set(7, b: 9, e: 66)
+    set(a: 7, b: 9, e: 66)
   }
 
   public mutating func test4() {
-    set(11, 12, c: 7, 90)
+    set(a: 11, b: 12, c: 7, e: 90)
   }
 
   public mutating func test5() {

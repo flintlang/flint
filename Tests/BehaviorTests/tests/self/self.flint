@@ -3,7 +3,7 @@ struct trait A {
     mutating func setStoredValue(value: Int)
 
     mutating func add(other: inout Self) {
-        setStoredValue(getStoredValue() + other.getStoredValue())
+        setStoredValue(value: getStoredValue() + other.getStoredValue())
     }
 
     mutating func addNoDefault(other: inout Self)
@@ -21,7 +21,7 @@ struct B: A {
     }
 
     mutating func addNoDefault(other: inout B) {
-      setStoredValue(getStoredValue() + other.getStoredValue())
+      setStoredValue(value: getStoredValue() + other.getStoredValue())
     }
 }
 
@@ -42,12 +42,12 @@ C :: (any) {
     }
 
     public mutating func add() -> Int {
-      b.add(&otherB)
+      b.add(other: &otherB)
       return b.getStoredValue()
     }
 
     public mutating func addNoDefault() -> Int {
-      b.addNoDefault(&otherB)
+      b.addNoDefault(other: &otherB)
       return b.getStoredValue()
     }
 }

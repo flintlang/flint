@@ -22,12 +22,12 @@ struct trait Asset {
     }
 
     // TODO: support let _: Int = ...
-    let unused1: Int = source.setRawValue(source.getRawValue() - amount)
-    let unused2: Int = setRawValue(getRawValue() + amount)
+    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
+    let unused2: Int = setRawValue(value: getRawValue() + amount)
   }
 
   mutating func transfer(source: inout Self) {
-    transfer(&source, source.getRawValue())
+    transfer(source: &source, amount: source.getRawValue())
   }
 
   // Returns the funds contained in this asset, as an integer.
@@ -45,12 +45,12 @@ struct Wei: Asset {
   }
 
   init(source: inout Wei, amount: Int) {
-    transfer(&source, amount)
+    transfer(source: &source, amount: amount)
   }
 
   init(source: inout Wei) {
     let amount: Int = source.getRawValue()
-    transfer(&source, amount)
+    transfer(source: &source, amount: amount)
   }
 
   mutating func setRawValue(value: Int) -> Int {

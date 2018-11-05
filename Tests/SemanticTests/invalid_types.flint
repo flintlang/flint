@@ -34,7 +34,7 @@ InvalidTypes :: (any) {
 
     f(a) // expected-error {{Function 'f' is not in scope}}
 
-    f(self.int)
+    f(a: self.int)
   }
 
   func f(a: Int) {}

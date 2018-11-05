@@ -28,7 +28,7 @@ struct B {
   }
 
   mutating func setXx(y: Int) {
-    x.setX(y)
+    x.setX(x: y)
   }
 }
 
@@ -77,19 +77,19 @@ C :: (any) {
   }
 
   public mutating func setBxx2(x: Int) {
-    b.setXx(x)
+    b.setXx(y: x)
   }
 
   public mutating func setBxx3(x: Int) {
-    setB(&b, x)
+    setB(b: &b, x: x)
   }
 
   public mutating func setCxx(x: Int) {
-    c.setXx(x)
+    c.setXx(y: x)
   }
 
   public mutating func setCxx2(x: Int) {
-    setB(&c, x)
+    setB(b: &c, x: x)
   }
 
   public func getCxx() -> Int {
@@ -97,7 +97,7 @@ C :: (any) {
   }
 
   mutating func setB(b: inout B, x: Int) {
-    b.setXx(x)
+    b.setXx(y: x)
   }
 
   public func getBxy() -> Bool {
@@ -117,11 +117,11 @@ C :: (any) {
   }
 
   public mutating func append(x: Int) {
-    arr.add(x)
+    arr.add(value: x)
   }
 
   public func get(x: Int) -> Int {
-    return arr.get(x)
+    return arr.get(n: x)
   }
 
   public func getSize() -> Int {

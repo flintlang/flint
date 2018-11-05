@@ -23,7 +23,7 @@ struct trait Trait {
 struct Implementation: Trait {
   // Implementation of trait function calling defaulted function with self param
   mutating func function() {
-    defaulted(&self, &self)
+    defaulted(thisParam: &self, anotherOne: &self)
   }
 
   mutating func comparison(thisParam: inout Implementation) {

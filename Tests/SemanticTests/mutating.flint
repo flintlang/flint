@@ -20,7 +20,7 @@ Test :: (any) {
   }
 
   func a() {
-    b(c()) // expected-error {{Use of mutating statement in a nonmutating function}}
+    b(a: c()) // expected-error {{Use of mutating statement in a nonmutating function}}
   }
 
   func b(a: Int) {
@@ -57,8 +57,8 @@ Test :: (any) {
   func j(f: inout Foo) {}
 
   func k(f: inout Foo) {
-    j(&self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
-    j(&f)
+    j(f: &self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
+    j(f: &f)
 
     let foo: Foo = Foo()
     Foo(&foo)
@@ -67,7 +67,7 @@ Test :: (any) {
   }
 
   mutating func l() {
-    j(&self.f)
+    j(f: &self.f)
   }
 }
 

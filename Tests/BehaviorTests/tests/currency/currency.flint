@@ -11,11 +11,11 @@ C :: (any) {
 
   mutating public func transfer1(from: Int, to: Int, amount: Int) {
     let w: Coin = Coin(&accounts[from], amount)
-    accounts[to].transfer(&w, amount)
+    accounts[to].transfer(other: &w, amount: amount)
   }
 
   mutating public func transfer2(from: Int, to: Int, amount: Int) {
-    accounts[to].transfer(&accounts[from], amount)
+    accounts[to].transfer(other: &accounts[from], amount: amount)
   }
 
   public func get(index: Int) -> Int {

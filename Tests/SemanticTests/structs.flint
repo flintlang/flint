@@ -37,12 +37,12 @@ Foo :: (any) {
   }
 
   mutating func a() {
-    b(&a)
+    b(b: &a)
     b(&b) // expected-error {{Function 'b' is not in scope}}
   }
 
   mutating func b(b: inout Test) {
-    b(&b)
+    b(b: &b)
     b(&self.b) // expected-error {{Function 'b' is not in scope}}
   }
 

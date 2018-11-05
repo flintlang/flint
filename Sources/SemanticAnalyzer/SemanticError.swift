@@ -571,9 +571,9 @@ extension Diagnostic {
       message: "Duplicate parameter declarations in event declaration")
   }
 
-  static func unlabeledEventCallArguments(_ eventCall: FunctionCall) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: eventCall.sourceLocation,
-      message: "All arguments of an event call should be labeled")
+  static func unlabeledFunctionCallArguments(_ functionCall: FunctionCall, isEventCall: Bool) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation,
+      message: "All arguments of " + (isEventCall ? "an event" : "a function") + " call should be labeled")
   }
 
 }
