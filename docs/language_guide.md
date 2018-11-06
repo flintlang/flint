@@ -359,7 +359,7 @@ if x == 2 {
 ---
 
 ## Functions
-_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions cannot be overloaded and are contained within [Protection Blocks](#protection-blocks).
+_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions are contained within [Protection Blocks](#protection-blocks).
 
 They are defined with the keyword `func` followed by the identifier and the set of parameters and optional return type:
 ```swift
@@ -371,14 +371,14 @@ func identifier() {
 In Flint all functions are `private` by default and as such can only be accessed from within the contract body.
 
 ### Function Parameters
-Functions can also take parameters which can be used within the function. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples names to add the Key, Value pair of caller's address and name. For more information about callers, see [Caller Bindings](#caller-bindings):
+Functions can also take parameters which can be used within the function. These must be declared in the function signature. Flint also supports parameters that take default values, but these must be declared at the end of the signature. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples' names to add the Key, Value pair of caller's address and name. If the parameter `name` is not provided to the function call, then the default value of "John Doe" will be used. For more information about callers, see [Caller Bindings](#caller-bindings):
 ```swift
 contract AddressBook {
   var people: [Address: String]
 }
 
 AddressBook :: caller <- (any) {
-  mutating func remember(name: String) {
+  mutating func remember(name: String = "John Doe") {
     people[caller] = name
   }
 }
@@ -395,11 +395,13 @@ AddressBook :: (any) {
 ```
 
 ### Calling Functions
-Functions can then be called from within a contract behaviour block with the same identifier. For instance if we wanted to get the caller's name we can reuse the name function:
+Functions can then be called from within a contract behaviour block with the same identifier. The call arguments must be provided in the same order as the one they are declared in (in the function signature), and they must be labeled accordingly. If any of the optional parameters are not provided, then their default values are going to be used automatically.
+
+For instance if we wanted to get the caller's name we can reuse the name function:
 ```swift
 AddressBook :: caller <- (any) {
   func myName() -> String {
-    return name(caller)
+    return name(address: caller)
   }
 }
 ```
@@ -925,18 +927,15 @@ Payable functions may have an arbitrary amount of parameters, but exactly one ne
 ## Events
 JavaScript applications can listen to events emitted by an Ethereum smart contract.
 
-In Flint, events are declared in contract declarations. They use a similar syntax to structs except using the keyword `event` and only allowing _constants_. It can be assigned a default value if desired.
+In Flint, events are declared in contract declarations. They use a similar syntax to functions, except using the keyword `event`. Like functions, some of the parameters can have default values, but these must be declared at the end of the signature.
 
-Events can then be emitted using the keyword `emit` followed by an event call. An event call is the identifier followed by the arguments to the event which should be labelled with the correct variable name followed a colon and the value it should take.  
+Events can then be emitted using the keyword `emit` followed by an event call. An event call is similar to a function call (parameters must be provided in order, and they must have the correct label and type; if any optional parameters are omitted, their default value will be used automatically).
+
 ```swift
 contract Bank {
   var balances: [Address: Int]
 
-  event didCompleteTransfer {
-    let origin: Address
-    let destination: Address
-    let amount: Int
-  }
+  event didCompleteTransfer(origin: Address, destination: Address, amount: Int)
 }
 
 Bank :: caller <- (any) {
