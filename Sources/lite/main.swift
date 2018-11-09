@@ -51,7 +51,7 @@ func runParserTests() -> Bool {
 func runSemanticTests() -> Bool {
   let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)")],
                                pathExtensions: ["flint"],
-                               testDirPath: "Tests/SemanticTests",
+                               testDirPath: "Tests/Integration/SemanticTests",
                                testLinePrefix: "//",
                                parallelismLevel: .automatic,
                                successMessage: "Semantic tests passed.")
@@ -61,7 +61,7 @@ func runSemanticTests() -> Bool {
 func runBehaviorTests() -> Bool {
   let allPassed = try! runLite(substitutions: [("flintc", "\(flintcExecutableLocation.path)")],
                                pathExtensions: ["js"],
-                               testDirPath: "Tests/BehaviorTests",
+                               testDirPath: "Tests/Integration/BehaviorTests",
                                testLinePrefix: "//",
                                parallelismLevel: .none,
                                successMessage: "Behavior tests passed.")

@@ -12,15 +12,14 @@ for (const source of [
   'AST/ASTPass/ASTPass'
 ]) {
   let sourcePath = `Sources/${source}.template.swift`;
-  let resultPath = `.derived-sources/${source}.swift`;
+  let resultPath = `Sources/${source}.generated.swift`;
   let sourceTime = fs.statSync(sourcePath).mtimeMs;
   let resultTime = fs.existsSync(resultPath) ? fs.statSync(resultPath).mtimeMs : 0;
   if (sourceTime <= resultTime) {
-    console.log(`Skipping ${source}.swift`);
+    console.log(`Skipping ${source}.generated.swift`);
     continue;
   }
-  console.log(`Processing ${source}.swift ...`);
-  mkdirp.sync(`.derived-sources/${path.dirname(source)}`);
+  console.log(`Processing ${source}.generated.swift ...`);
   fs.writeFileSync(
     resultPath,
     env.renderString(

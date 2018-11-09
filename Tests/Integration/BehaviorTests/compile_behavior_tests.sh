@@ -5,7 +5,7 @@ for t in tests/*; do
   mkdir $t/test/contracts
 
   echo "Compile $t"
-  ../../.build/release/flintc $t/*.flint --emit-ir --ir-output $t/test/contracts/ --quiet
+  ../../../.build/release/flintc $t/*.flint --emit-ir --ir-output $t/test/contracts/ --quiet
 
   #for f in $t/*.flint; do
     #[ -f "$f" ] || break

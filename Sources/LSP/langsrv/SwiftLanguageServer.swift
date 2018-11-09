@@ -28,8 +28,8 @@ public enum LanguageServerError: Error {
 }
 
 public final class SwiftLanguageServer<TransportType: MessageProtocol> {
-    private var initialized = false
-    private var canExit = false
+    private var initialized: Bool = false
+    private var canExit: Bool = false
     private var transport: TransportType
 
     // cached goodness... maybe abstract this.

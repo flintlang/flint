@@ -5,14 +5,20 @@
 //  Created by Franklin Schrans on 1/8/18.
 //
 
+/*
+ // Shadow Swift RangeExpression and DictionaryLiteral for stub Generation
+ import structAST.RangeExpression
+ import structAST.DictionaryLiteral
+*/
+
 import Foundation
 import Lexer
 
 /// Prints an AST.
 public class ASTDumper {
   var topLevelModule: TopLevelModule
-  var indentation = 0
-  var output = ""
+  var indentation: Int = 0
+  var output: String = ""
 
   public init(topLevelModule: TopLevelModule) {
     self.topLevelModule = topLevelModule
