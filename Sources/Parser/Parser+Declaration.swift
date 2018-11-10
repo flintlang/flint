@@ -47,6 +47,9 @@ extension Parser {
       case .identifier, .self:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
+      case .external:
+        let externalTraitDeclaration = try parseTraitDeclaration()
+        declarations.append(.traitDeclaration(externalTraitDeclaration))
       default:
         diagnostics.append(.badTopLevelDeclaration(at: first.sourceLocation))
         // Skip to next non-empty line
@@ -114,7 +117,7 @@ extension Parser {
   }
 
   func parseTraitDeclaration() throws -> TraitDeclaration {
-    let traitKind = try consume(anyOf: [.struct, .contract], or: .badDeclaration(at: latestSource))
+    let traitKind = try consume(anyOf: [.struct, .contract, .external], or: .badDeclaration(at: latestSource))
     let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
