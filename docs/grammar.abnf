@@ -40,7 +40,8 @@ enumCase        = %s"case" SP identifier
 
 ; TRAITS
 traitDeclaration = %s"struct" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
-                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
+                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
+                 / %s"external" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
 
 traitMember = functionDeclaration
             / functionSignatureDeclaration

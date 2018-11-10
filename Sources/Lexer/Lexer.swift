@@ -88,6 +88,7 @@ public struct Lexer {
     "fallback": .fallback,
     "try": .try,
     "mutating": .mutating,
+    "external": .external,
     "return": .return,
     "become": .become,
     "emit": .emit,
