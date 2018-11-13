@@ -1,8 +1,10 @@
-all: generate
+.PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
+
+all: debug
+
+debug: generate-sources
 	swift build
 	cp -r stdlib .build/debug/
-
-.PHONY: all release zip test lint generate-sources generate-mocks test-nogen
 
 release: generate-sources
 	swift build	-c release --static-swift-stdlib
@@ -32,3 +34,6 @@ generate-mocks:
 
 generate-sources:
 	./utils/codegen/codegen.js
+
+clean:
+	rm -rf .build

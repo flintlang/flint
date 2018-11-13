@@ -1,0 +1,205 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+external trait Test {
+  public func f()
+
+  @payable
+  func g(b: Bool) -> Int
+
+  public init(c: Bool)
+}
+
+contract Contract {
+  
+}
+
+Contract :: (any) {
+  public init() {
+    let addr: Address = 0x0000000000000000000000000000000000000000
+    let contr: Test = Test(address: addr)
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call contr.f()
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     FunctionArgument (
+    //   CHECK-AST:       Identifier (
+    //   CHECK-AST:         token: identifier "wei"
+    //   CHECK-AST:       )
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         token: literal 100
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call(wei: 100) contr.f()
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     FunctionArgument (
+    //   CHECK-AST:      Identifier (
+    //   CHECK-AST:        token: identifier "wei"
+    //   CHECK-AST:       )
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         token: literal 100
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:     Forced execution (
+    //   CHECK-AST:     )
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call(wei: 100)! contr.f()
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     Forced execution (
+    //   CHECK-AST:     )
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call! contr.f()
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     Returns optional (
+    //   CHECK-AST:     )
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call? contr.f()
+
+    //   CHECK-AST: Statement (
+    //   CHECK-AST:   ExternalCall (
+    //   CHECK-AST:     Forced execution (
+    //   CHECK-AST:     )
+    //   CHECK-AST:     BinaryExpression (
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         Identifier (
+    //   CHECK-AST:           token: identifier "contr"
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:       token: .
+    //   CHECK-AST:       Expression (
+    //   CHECK-AST:         FunctionCall (
+    //   CHECK-AST:           Identifier (
+    //   CHECK-AST:             token: identifier "f"
+    //   CHECK-AST:           )
+    //   CHECK-AST:           FunctionArgument (
+    //   CHECK-AST:             Identifier (
+    //   CHECK-AST:               token: identifier "test"
+    //   CHECK-AST:             )
+    //   CHECK-AST:             Expression (
+    //   CHECK-AST:               ExternalCall (
+    //   CHECK-AST:                 Forced execution (
+    //   CHECK-AST:                 )
+    //   CHECK-AST:                 BinaryExpression (
+    //   CHECK-AST:                   Expression (
+    //   CHECK-AST:                     Identifier (
+    //   CHECK-AST:                       token: identifier "contr"
+    //   CHECK-AST:                     )
+    //   CHECK-AST:                   )
+    //   CHECK-AST:                   token: .
+    //   CHECK-AST:                   Expression (
+    //   CHECK-AST:                     FunctionCall (
+    //   CHECK-AST:                       Identifier (
+    //   CHECK-AST:                         token: identifier "f"
+    //   CHECK-AST:                       )
+    //   CHECK-AST:                       token: )
+    //   CHECK-AST:                     )
+    //   CHECK-AST:                   )
+    //   CHECK-AST:                 )
+    //   CHECK-AST:               )
+    //   CHECK-AST:             )
+    //   CHECK-AST:           )
+    //   CHECK-AST:           token: )
+    //   CHECK-AST:         )
+    //   CHECK-AST:       )
+    //   CHECK-AST:     )
+    //   CHECK-AST:   )
+    //   CHECK-AST: )
+    call! contr.f(test: call! contr.f())
+  }
+}
+

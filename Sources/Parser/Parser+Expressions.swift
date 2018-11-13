@@ -29,6 +29,10 @@ extension Parser {
       return .inoutExpression(try parseInoutExpression())
     }
 
+    if case .call = first {
+      return .externalCall(try parseExternalCall(upTo: limitTokenIndex))
+    }
+
     // Try to parse a binary expression.
     // For each Flint binary operator, try to find it in the tokens ahead, and parse the tokens before and after as
     // the LHS and RHS expressions.
@@ -149,6 +153,36 @@ extension Parser {
     }
     let expression = try parseExpression(upTo: statementEndIndex)
     return InoutExpression(ampersandToken: ampersandToken, expression: expression)
+  }
+
+  // MARK: External Calls
+  func parseExternalCall(upTo limitTokenIndex: Int) throws -> ExternalCall {
+    try consume(.call, or: .badDeclaration(at: latestSource))
+
+    var arguments: [FunctionArgument] = []
+    if tokens[currentIndex].kind == .punctuation(.openBracket) {
+      (arguments, _) = try parseFunctionCallArgumentList()
+    }
+
+    var mode: ExternalCall.Mode = .normal
+    if tokens[currentIndex].kind == .punctuation(.question) ||
+      tokens[currentIndex].kind == .punctuation(.bang) {
+      let token = try consume(anyOf: [.punctuation(.question), .punctuation(.bang)], or: .dummy())
+
+      if token.kind == .punctuation(.bang) {
+        mode = .isForced
+      } else if token.kind == .punctuation(.question) {
+        mode = .returnsGracefullyOptional
+      }
+    }
+
+    guard let functionCall = try parseBinaryExpression(upTo: limitTokenIndex) else {
+      throw raise(.badDeclaration(at: tokens[currentIndex].sourceLocation))
+    }
+
+    return ExternalCall(configurationParameters: arguments,
+                        functionCall: functionCall,
+                        mode: mode)
   }
 
   // MARK: Function Call

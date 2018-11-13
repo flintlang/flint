@@ -144,10 +144,24 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
+  /// When visiting an external call, this property is set to `true`.
+  public var isExternalCall: Bool {
+    get { return self[IsExternalCallContextEntry.self] ?? false }
+    set { self[IsExternalCallContextEntry.self] = newValue }
+  }
+
   /// When visiting argument labels in a function call, this property is set to `true`.
   public var isFunctionCallArgumentLabel: Bool {
     get { return self[IsFunctionCallArgumentLabel.self] ?? false }
     set { self[IsFunctionCallArgumentLabel.self] = newValue }
+  }
+
+  /// When visiting an external configuration parameter, this property is set to `true`.
+  /// External configuration params are hyper-parameters to the call, like the gas, the
+  /// wei used for the external call or reentrancy.
+  public var isExternalConfigurationParam: Bool {
+    get { return self[IsExternalConfigurationParam.self] ?? false }
+    set { self[IsExternalConfigurationParam.self] = newValue }
   }
 
   /// The identifier of the enclosing type (contract, struct, enum, trait or event).
@@ -266,6 +280,10 @@ private struct IsFunctionCallContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
+private struct IsExternalCallContextEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
 private struct IsAssignment: PassContextEntry {
   typealias Value = Bool
 }
@@ -275,5 +293,12 @@ private struct IsPropertyDefaultAssignment: PassContextEntry {
 }
 
 private struct IsFunctionCallArgumentLabel: PassContextEntry {
+  typealias Value = Bool
+}
+
+/// See the 'isExternalConfigurationParam' property
+/// External configuration params are hyper-parameters to the call, like the gas, the
+/// wei used for the external call or reentrancy.
+private struct IsExternalConfigurationParam: PassContextEntry {
   typealias Value = Bool
 }

@@ -28,6 +28,8 @@ struct IRStatement {
       return IRForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     case .doCatchStatement(let doCatchStatement):
       return IRDoCatchStatement(doCatchStatement: doCatchStatement).rendered(functionContext: functionContext)
+    case .externalCall(let externalCall):
+      return IRExternalCallStatement(externalCall: externalCall).rendered(functionContext: functionContext)
     }
   }
 }
@@ -290,5 +292,14 @@ struct IRDoCatchStatement {
 
   func rendered(functionContext: FunctionContext) -> String {
     fatalError("Not implemented")
+  }
+}
+
+/// Generates code for an external call.
+struct IRExternalCallStatement {
+  var externalCall: ExternalCall
+
+  func rendered(functionContext: FunctionContext) -> String {
+    fatalError()
   }
 }

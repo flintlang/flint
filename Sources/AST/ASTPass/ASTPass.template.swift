@@ -64,6 +64,7 @@ public protocol ASTPass {
     "InoutExpression",
     "BinaryExpression",
     "FunctionCall",
+    "ExternalCall",
     "ArrayLiteral",
     "DictionaryLiteral",
     "RangeExpression",

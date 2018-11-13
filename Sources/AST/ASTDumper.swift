@@ -405,6 +405,7 @@ public class ASTDumper {
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
       case .bracketedExpression(let bracketedExpression): self.dump(bracketedExpression)
       case .functionCall(let functionCall): self.dump(functionCall)
+      case .externalCall(let externalCall): self.dump(externalCall)
       case .identifier(let identifier): self.dump(identifier)
       case .literal(let token): self.dump(token)
       case .arrayLiteral(let arrayLiteral): self.dump(arrayLiteral)
@@ -430,6 +431,7 @@ public class ASTDumper {
       case .forStatement(let forStatement): self.dump(forStatement)
       case .emitStatement(let emitStatement): self.dump(emitStatement)
       case .doCatchStatement(let doCatchStatement): self.dump(doCatchStatement)
+      case .externalCall(let externalCall): self.dump(externalCall)
       }
     }
   }
@@ -471,6 +473,22 @@ public class ASTDumper {
       }
 
       self.dump(functionCall.closeBracketToken)
+    }
+  }
+
+  func dump(_ externalCall: ExternalCall) {
+    writeNode("ExternalCall") {
+      for argument in externalCall.configurationParameters {
+        self.dump(argument)
+      }
+
+      if externalCall.mode == .isForced {
+        self.writeNode("Forced execution")
+      } else if externalCall.mode == .returnsGracefullyOptional {
+        self.writeNode("Returns optional")
+      }
+
+      self.dump(externalCall.functionCall)
     }
   }
 

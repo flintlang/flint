@@ -530,6 +530,8 @@ extension SemanticAnalyzer {
           return false
         }
         return true
+      case .externalCall(let externalCall):
+        fatalError()
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
            .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
            .subscriptExpression, .range:
@@ -545,6 +547,8 @@ extension SemanticAnalyzer {
       return true
     case .emitStatement:
       return false
+    case .externalCall:
+      fatalError()
     }
     return true
   }
