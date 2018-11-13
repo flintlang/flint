@@ -340,10 +340,14 @@ for var i: Int in fixedLen {}
 for let value: String in dictionary {}
 ```
 ### If Statements
-The `if` statement has a single condition  i.e. `x == 2`. It executes a set of statements only if that condition evaluates to `true`
+The `if` statement has a single condition. This should be either a Boolean expression (i.e. `x == 2`), or a valid let statement (i.e. of the form `let x: Int = call? alpha.f()`, where `call?` executes an external call). It executes a set of statements only if the condition evaluates to `true` (if it is a Boolean expression), or if the external call returns a value successfully (if it is a valid let statement).
 ```swift
 if x == 2 {
   // ...
+}
+
+if let y: Int = call? alpha.f() {
+  // function returned value, here available as `y`
 }
 ```
 #### Else Clauses
@@ -353,6 +357,12 @@ if x == 2 {
   // ...
 } else {
   // ,,,
+}
+
+if let example: Bool = call(gas: 5000)? alpha.functionWithBoolReturn() {
+  // function returned value, here available as `example`
+} else {
+  // no value returned, handle gracefully
 }
 ```
 
