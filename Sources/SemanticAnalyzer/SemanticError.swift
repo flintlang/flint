@@ -576,4 +576,8 @@ extension Diagnostic {
       message: "All arguments of " + (isEventCall ? "an event" : "a function") + " call should be labeled")
   }
 
+  static func invalidConditionTypeInIfStatement(_ ifStatement: IfStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: ifStatement.condition.sourceLocation,
+      message: "Condition has invalid type: must be Bool or a valid let statement")
+  }
 }
