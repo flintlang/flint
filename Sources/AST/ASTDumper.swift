@@ -429,6 +429,7 @@ public class ASTDumper {
       case .ifStatement(let ifStatement): self.dump(ifStatement)
       case .forStatement(let forStatement): self.dump(forStatement)
       case .emitStatement(let emitStatement): self.dump(emitStatement)
+      case .doCatchStatement(let doCatchStatement): self.dump(doCatchStatement)
       }
     }
   }
@@ -537,6 +538,18 @@ public class ASTDumper {
       self.dump(forStatement.iterable)
       for statement in forStatement.body {
         self.dump(statement)
+      }
+    }
+  }
+
+  func dump(_ doCatchStatement: DoCatchStatement) {
+    writeNode("DoCatchStatement") {
+      for s in doCatchStatement.doBody {
+        self.dump(s)
+      }
+      self.dump(doCatchStatement.error)
+      for s in doCatchStatement.catchBody {
+        self.dump(s)
       }
     }
   }

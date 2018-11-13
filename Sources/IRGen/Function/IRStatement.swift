@@ -26,6 +26,8 @@ struct IRStatement {
       return IREmitStatement(emitStatement: emitStatement).rendered(functionContext: functionContext)
     case .forStatement(let forStatement):
       return IRForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
+    case .doCatchStatement(let doCatchStatement):
+      return IRDoCatchStatement(doCatchStatement: doCatchStatement).rendered(functionContext: functionContext)
     }
   }
 }
@@ -280,5 +282,13 @@ struct IREmitStatement {
 
   func rendered(functionContext: FunctionContext) -> String {
     return IRFunctionCall(functionCall: emitStatement.functionCall).rendered(functionContext: functionContext)
+  }
+}
+
+struct IRDoCatchStatement {
+  var doCatchStatement: DoCatchStatement
+
+  func rendered(functionContext: FunctionContext) -> String {
+    fatalError("Not implemented")
   }
 }

@@ -18,7 +18,7 @@ extension Parser {
         currentIndex+=1
      // Valid starting tokens for statements
       case .return, .become, .emit, .for, .if, .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
-           .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
+           .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try, .do:
         statements.append(try parseStatement())
       default:
         break endStatement
@@ -59,6 +59,9 @@ extension Parser {
     case .if:
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)
+    case .do:
+      let doCatchStatement = try parseDoCatchStatement()
+      statement = .doCatchStatement(doCatchStatement)
     // Valid starting tokens for expressions
     case .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
          .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
@@ -116,6 +119,28 @@ extension Parser {
                        condition: condition,
                        statements: statements,
                        elseClauseStatements: elseClauseStatements)
+  }
+
+  func parseDoCatchStatement() throws -> DoCatchStatement {
+    // Parse do block
+    try consume(.do, or: .expectedStatement(at: latestSource))
+    let (doStatements, _) = try parseCodeBlock()
+    // Parse catch is Error
+    try consume(.catch, or: .expectedStatement(at: latestSource))
+    try consume(.is, or: .expectedStatement(at: latestSource))
+    let err = try parseErrorType()
+
+    let (catchStatements, _) = try parseCodeBlock()
+    return DoCatchStatement(doBody: doStatements, catchBody: catchStatements, error: err)
+  }
+
+  func parseErrorType() throws -> Expression {
+    guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
+      throw raise(.leftBraceExpected(in: "Do-catch Statement", at: latestSource))
+    }
+
+    let err = try parseExpression(upTo: nextOpenBraceIndex)
+    return err
   }
 
   func parseElseClause() throws -> [Statement] {

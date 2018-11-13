@@ -39,6 +39,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
     case `self`, `selfType`
     case implicit, `inout`
     case `var`, `let`
+    case `catch`, `do`, `is`
 
     public var description: String {
       switch self {
@@ -70,6 +71,9 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .for: return "for"
       case .in: return "in"
       case .try: return "try"
+      case .catch: return "catch"
+      case .do: return "do"
+      case .is: return "is"
       case .punctuation(let punctuation): return punctuation.rawValue
       case .identifier(let identifier): return "identifier \"\(identifier)\""
       case .literal(let literal): return literal.description

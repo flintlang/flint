@@ -44,7 +44,8 @@ public protocol ASTPass {
     "BecomeStatement",
     "EmitStatement",
     "IfStatement",
-    "ForStatement"
+    "ForStatement",
+    "DoCatchStatement"
   ]) -%}
   
   {# Declarations #}
