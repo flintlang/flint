@@ -41,7 +41,7 @@ func runParserTests() -> Bool {
         ("FileCheck", "\"\(fileCheckExecutableLocation.path)\"")
     ],
     pathExtensions: ["flint"],
-    testDirPath: "Tests/ParserTests",
+    testDirPath: "Tests/Integration/ParserTests",
     testLinePrefix: "//",
     parallelismLevel: .automatic,
     successMessage: "Parser tests passed.")

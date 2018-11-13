@@ -17,7 +17,8 @@ extension Parser {
       case .punctuation(.semicolon), .newline:
         currentIndex+=1
      // Valid starting tokens for statements
-      case .return, .become, .emit, .for, .if, .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
+      case .return, .become, .emit, .call, .for, .if, .identifier,
+           .punctuation(.ampersand), .punctuation(.openSquareBracket),
            .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try, .do:
         statements.append(try parseStatement())
       default:
@@ -56,6 +57,9 @@ extension Parser {
     case .for:
       let forStatement = try parseForStatement()
       statement = .forStatement(forStatement)
+    case .call:
+      let externalCall = try parseExternalCall(upTo: statementEndIndex)
+      statement = .externalCall(externalCall)
     case .if:
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)

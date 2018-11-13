@@ -228,6 +228,13 @@ extension Environment {
                   callerProtections: callerProtections,
                   scopeContext: scopeContext) ?? .errorType
 
+    case .externalCall(let externalCall):
+      return type(of: externalCall.functionCall.lhs,
+                  enclosingType: enclosingType,
+                  typeStates: typeStates,
+                  callerProtections: callerProtections,
+                  scopeContext: scopeContext) ?? .errorType
+
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
         let type = scopeContext.type(for: identifier.name) {

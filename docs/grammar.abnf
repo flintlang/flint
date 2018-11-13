@@ -129,7 +129,8 @@ expression = identifier
            / bracketedExpression
            / subscriptExpression
            / rangeExpression
-           / attemptExpression;
+           / attemptExpression
+           / externalCall;
 
 inOutExpression = "&" expression;
 
@@ -158,6 +159,9 @@ try = %s"try" ( "!" / "?" )
 
 ; FUNCTION CALLS
 functionCall = identifier "(" [expression] *( "," WSP expression ) ")";
+
+; EXTERNAL CALLS
+externalCall = %s"call" WSP [ "(" [expression] *( "," WSP expression ) ")" ] WSP [ "!" / "?" ] SP functionCall;
 
 ; CONDITIONALS
 ifStatement = %s"if" SP expression SP codeBlock [elseClause];

@@ -92,6 +92,7 @@ public struct Lexer {
     "return": .return,
     "become": .become,
     "emit": .emit,
+    "call": .call,
     "public": .public,
     "visible": .visible,
     "if": .if,
