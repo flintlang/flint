@@ -13,6 +13,7 @@ public struct ContractDeclaration: ASTNode {
 
   public var contractToken: Token
   public var identifier: Identifier
+  public var conformances: [Conformance]
   public var states: [TypeState]
   public var members: [ContractMember]
 
@@ -29,7 +30,8 @@ public struct ContractDeclaration: ASTNode {
   }
 
   public var stateEnumIdentifier: Identifier {
-    return Identifier(identifierToken: Token(kind: .identifier(ContractDeclaration.contractEnumPrefix+identifier.name), sourceLocation: sourceLocation))
+    return Identifier(identifierToken: Token(kind: .identifier(ContractDeclaration.contractEnumPrefix+identifier.name),
+                                             sourceLocation: sourceLocation))
   }
 
   private var stateType: Type {
@@ -40,25 +42,35 @@ public struct ContractDeclaration: ASTNode {
     let enumToken = Token(kind: .enum, sourceLocation: sourceLocation)
     let caseToken = Token(kind: .case, sourceLocation: sourceLocation)
     let intType = Type(inferredType: .basicType(.int), identifier: stateEnumIdentifier)
-    let cases: [EnumMember] = states.map{ typeState in
-      return EnumMember(caseToken: caseToken, identifier: typeState.identifier, type: stateType, hiddenValue: nil, hiddenType: intType)
+    let cases: [EnumMember] = states.map { typeState in
+      return EnumMember(caseToken: caseToken,
+                        identifier: typeState.identifier,
+                        type: stateType,
+                        hiddenValue: nil,
+                        hiddenType: intType)
     }
     return EnumDeclaration(enumToken: enumToken, identifier: stateEnumIdentifier, type: intType, cases: cases)
   }
 
-  public init(contractToken: Token, identifier: Identifier, states: [TypeState], members: [ContractMember]) {
+  public init(contractToken: Token,
+              identifier: Identifier,
+              conformances: [Conformance],
+              states: [TypeState],
+              members: [ContractMember]) {
     self.identifier = identifier
     self.members = members
+    self.conformances = conformances
     self.states = states
     self.contractToken = contractToken
   }
 
   // MARK: - ASTNode
   public var description: String {
-    let stateText = states.map({ $0.description }).joined(separator: " ")
-    let headText = "contract \(identifier) \(stateText)"
-    let memberText = members.map({ $0.description }).joined(separator: "\n")
-    return "\(headText) {\(memberText)}"
+    let conformsText = conformances.map ({ $0.description }).joined(separator: ", ")
+    let stateText = states.map({ $0.description }).joined(separator: ", ")
+    let headText = "contract \(identifier): \(conformsText) \(stateText)"
+    let membersText = members.map({ $0.description }).joined(separator: "\n")
+    return "\(headText) {\(membersText)}"
   }
   public var sourceLocation: SourceLocation {
     return .spanning(contractToken, to: identifier)

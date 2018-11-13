@@ -13,9 +13,10 @@ struct SolcCompiler {
   var outputDirectory: URL
   var emitBytecode: Bool
 
-  func compile() {
-    let temporaryFile = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true).appendingPathComponent(UUID().uuidString)
-    try! inputSource.write(to: temporaryFile, atomically: true, encoding: .utf8)
+  func compile() throws {
+    let temporaryFile = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+      .appendingPathComponent(UUID().uuidString)
+    try inputSource.write(to: temporaryFile, atomically: true, encoding: .utf8)
 
     let process = Process()
 
@@ -23,7 +24,18 @@ struct SolcCompiler {
 
     verifySolc(launchPath: process.launchPath!)
     process.standardError = Pipe()
-    process.arguments = ["solc", temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
+    process.arguments = Array([
+      [
+        "solc",
+        temporaryFile.path,
+        "--bin"
+      ],
+      emitBytecode ? ["--opcodes"] : [],
+      [
+        "-o",
+        outputDirectory.path
+      ]
+    ].joined())
 
     process.launch()
     process.waitUntilExit()

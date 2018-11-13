@@ -104,6 +104,12 @@ Array :: (any) {
     return nestedDict[i][j]
   }
 
+  public func shadowing(i: Int) -> Int {
+    var i: Int = i
+    i += 20
+    return i
+  }
+
 }
 
 struct S {

@@ -38,8 +38,8 @@ extension Parser {
     return first
   }
 
-  /// Consumes one of the given tokens from the given list, i.e. discard it and move on to the next one. Throws if the current
-  /// token being processed isn't equal to any of the given tokens.
+  /// Consumes one of the given tokens from the given list, i.e. discard it and move on to the next one. Throws if the
+  /// current token being processed isn't equal to any of the given tokens.
   ///
   /// - Parameters:
   ///   - tokens: The tokens that can be consumed.

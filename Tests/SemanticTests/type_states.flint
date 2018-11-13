@@ -52,7 +52,7 @@ TypeStates @(State1) :: (any) {
   }
 
   public func becomeState3WithoutState2() {
-    becomeState3() // expected-error {{Function 'becomeState3' cannot be called using the capability 'any' at state 'State1'}}
+    becomeState3() // expected-error {{Function 'becomeState3' cannot be called using the protection 'any' at state 'State1'}}
   }
 
   public func moveToState2AndDoStuff() {

@@ -9,26 +9,29 @@ import Source
 /// A Flint top-level declaration.
 ///
 /// - contractDeclaration: The declaration of a contract.
-/// - contractBehaviorDeclaration:  A Flint contract beheavior declaration, i.e. the functions of a contract for a given
-///                                 caller capability group.
+/// - contractBehaviorDeclaration:  A Flint contract behavior declaration,
+///                                 i.e. the functions of a contract for given protections.
 /// - structDeclaration:            The declaration of a struct.
 public enum TopLevelDeclaration: ASTNode {
   case contractDeclaration(ContractDeclaration)
   case contractBehaviorDeclaration(ContractBehaviorDeclaration)
   case structDeclaration(StructDeclaration)
   case enumDeclaration(EnumDeclaration)
+  case traitDeclaration(TraitDeclaration)
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
     switch self {
-      case .contractDeclaration(let contractDeclaration):
-        return contractDeclaration.sourceLocation
-      case .contractBehaviorDeclaration(let behaviourDeclaration):
-        return behaviourDeclaration.sourceLocation
-      case .structDeclaration(let structDeclaration):
-        return structDeclaration.sourceLocation
-      case .enumDeclaration(let enumDeclaration):
-         return enumDeclaration.sourceLocation
+    case .contractDeclaration(let contractDeclaration):
+      return contractDeclaration.sourceLocation
+    case .contractBehaviorDeclaration(let behaviourDeclaration):
+      return behaviourDeclaration.sourceLocation
+    case .structDeclaration(let structDeclaration):
+      return structDeclaration.sourceLocation
+    case .enumDeclaration(let enumDeclaration):
+      return enumDeclaration.sourceLocation
+    case .traitDeclaration(let traitDeclaration):
+      return traitDeclaration.sourceLocation
     }
   }
 
@@ -42,6 +45,8 @@ public enum TopLevelDeclaration: ASTNode {
       return structDeclaration.description
     case .enumDeclaration(let enumDeclaration):
       return enumDeclaration.description
+    case .traitDeclaration(let traitDeclaration):
+      return traitDeclaration.description
     }
   }
 }

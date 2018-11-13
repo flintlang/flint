@@ -86,7 +86,7 @@ syn match flintTypePair contained skipwhite nextgroup=flintTypeParameters,flintT
       \ /\<[A-Za-z_][A-Za-z_0-9\.]*\>[!?]\?/
 " (Type[, Type]) (tuple)
 "
-syn match flintCapability contained skipwhite nextgroup=flintCapabilityBinding
+syn match flintProtection contained skipwhite nextgroup=flintProtectionBinding
       \ /\<[A-Za-z_][A-Za-z_0-9\.]*\>[!?]\?/
 
 " FIXME: we should be able to use skip="," and drop flintParamDelim
@@ -105,12 +105,12 @@ syn match flintTypeDeclaration skipwhite nextgroup=flintType,flintInOutKeyword
 syn match flintTypeDeclaration skipwhite nextgroup=flintType
       \ /->/
 
-syn match flintCapabilityGroupDeclaration skipwhite nextgroup=flintCapability,flintCapabilityGroup
+syn match flintProtectionGroupDeclaration skipwhite nextgroup=flintProtection,flintProtectionGroup
       \ /::/
-syn match flintCapabilityBinding skipwhite nextgroup=flintCapabilityGroup
+syn match flintProtectionBinding skipwhite nextgroup=flintProtectionGroup
       \ /<-/
 
-syn region flintCapabilityGroup contained contains=flintCapability,flintParamDelim
+syn region flintProtectionGroup contained contains=flintProtection,flintParamDelim
       \ matchgroup=Delimiter start="[^@](" end=")" matchgroup=NONE skip=","
 
 syn region flintString start=/"/ skip=/\\\\\|\\"/ end=/"/ contains=flintInterpolationRegion
@@ -145,7 +145,7 @@ hi def link flintMultiwordTypeDefinition Define
 hi def link flintType Type
 hi def link flintTypePair Type
 hi def link flintTypeName Function
-hi def link flintCapability Identifier
+hi def link flintProtection Identifier
 hi def link flintConstraint Special
 hi def link flintFuncDefinition Define
 hi def link flintDefinitionModifier Define
@@ -158,8 +158,8 @@ hi def link flintImplicitVarName Identifier
 hi def link flintIdentifierKeyword Identifier
 hi def link flintTypeDeclaration Delimiter
 hi def link flintTypeParameters Delimiter
-hi def link flintCapabilityGroupDeclaration Delimiter
-hi def link flintCapabilityBinding Delimiter
+hi def link flintProtectionGroupDeclaration Delimiter
+hi def link flintProtectionBinding Delimiter
 hi def link flintBoolean Boolean
 hi def link flintString String
 hi def link flintInterpolation Special

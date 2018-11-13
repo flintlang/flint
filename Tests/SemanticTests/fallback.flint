@@ -17,7 +17,7 @@ Test :: caller <- (any) {
 }
 
 Test :: (a) {
-  public fallback() {} // expected-error {{Public contract fallback should be callable using caller capability 'any'}}
+  public fallback() {} // expected-error {{Public contract fallback should be callable using caller protection 'any'}}
 }
 
 contract Test2 {} // expected-warning {{Contract 'Test2' doesn't have a public fallback but does have a private fallback}}

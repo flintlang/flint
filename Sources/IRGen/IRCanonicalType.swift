@@ -22,7 +22,7 @@ enum CanonicalType: String {
       case .string: self = .bytes32
       default: return nil
       }
-    case .userDefinedType(_): self = .uint256
+    case .userDefinedType: self = .uint256
     case .inoutType(let rawType):
       guard let type = CanonicalType(from: rawType) else { return nil }
       self = type

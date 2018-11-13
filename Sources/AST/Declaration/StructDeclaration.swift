@@ -11,6 +11,7 @@ import Lexer
 public struct StructDeclaration: ASTNode {
   public var structToken: Token
   public var identifier: Identifier
+  public var conformances: [Conformance]
   public var members: [StructMember]
 
   public var variableDeclarations: [VariableDeclaration] {
@@ -58,11 +59,11 @@ public struct StructDeclaration: ASTNode {
     return unassignedProperties.count == 0
   }
 
-  public init(structToken: Token, identifier: Identifier, members: [StructMember]) {
+  public init(structToken: Token, identifier: Identifier, conformances: [Conformance], members: [StructMember]) {
     self.structToken = structToken
     self.identifier = identifier
     self.members = members
-
+    self.conformances = conformances
     // Synthesize an initializer if none was defined.
     if shouldInitializerBeSynthesized {
       self.members.append(.specialDeclaration(synthesizeInitializer()))
@@ -74,7 +75,16 @@ public struct StructDeclaration: ASTNode {
     let dummySourceLocation = sourceLocation
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
-    return SpecialDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation), attributes: [], modifiers: [], parameters: [], closeBracketToken: closeBracketToken, body: [], closeBraceToken: closeBraceToken, scopeContext: ScopeContext())
+    let specialSignature =
+      SpecialSignatureDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation),
+                                  attributes: [],
+                                  modifiers: [],
+                                  parameters: [],
+                                  closeBracketToken: closeBracketToken)
+    return SpecialDeclaration(signature: specialSignature,
+                              body: [],
+                              closeBraceToken: closeBraceToken,
+                              scopeContext: ScopeContext())
   }
 
   // MARK: - ASTNode

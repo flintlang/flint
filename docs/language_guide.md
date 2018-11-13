@@ -2,15 +2,17 @@
 
 :+1::tada: First off, thanks for the interest in Flint! :tada::+1:
 
-The following details the language, it's unique features, and provides an overview of all the features currently implemented.
+Even though the Ethereum platform requires smart contract programmers to ensure the correct behaviour of their program before deployment, it has not seen a language designed with safety in mind. Solidity and others do not tailor for Ethereum’s unique programming model and instead, mimic existing popular languages like JavaScript, Python, or C, without providing additional safety mechanisms.
 
-Flint's language design was influenced by Swift, if you are familiar with that language you should find the common features similar.
+Flint changes that, as a new programming language built for easily writing safe Ethereum smart
+contracts. Flint is approachable to existing and new Ethereum developers, and presents a
+variety of security features.
 
 - **Setup**
   - [Installation](#installation)
   - [Syntax Highlighting](#syntax-highlighting)
   - [Compilation](#compilation)
-- **Core Features**
+- **Programming In Flint**
   - [Constants and Variables](#constants-and-variables)
   - [Literals](#literals)
   - [Comments](#comments)
@@ -23,11 +25,13 @@ Flint's language design was influenced by Swift, if you are familiar with that l
   - [Structures](#structures)
   - [Enumerations](#enumerations)
 - **Flint Specific Features**
+  - [Safe Arithmetic](#safe-arithmetic)
   - [Assets](#assets)
-  - [Caller Capabilities](#caller-capabilities)
+  - [Protection Blocks](#protection-blocks)
   - [Payable](#payable)
   - [Events](#events)
   - [Type States](#type-states)
+  - [Traits](#traits)
 - **Standard Library**
   - [Assertions](#assertions)
 - **Examples**
@@ -157,11 +161,21 @@ To run the generated Solidity file on Remix:
 You should now be able to call the contract's functions.
 
 ---
-# Core Features
+# Programming In Flint
 ---
+A smart contract’s state is represented by its fields, or state properties. Its behaviour is characterised by its functions, which can mutate the contract’s state. Public functions can be called by external Ethereum users.
+Flint’s syntax is focused on allowing programmers to write and reason about smart contracts easily. Providing an intuitive and familiar syntax is essential for programmers to express their smart contract naturally. As the source code of a smart contract is publicly available, it should be easily understandable by its readers. The syntax is inspired by the Swift Programming
+Language’s syntax.
+
+When developing Flint, we focused on the novel features aimed at smart contract security.
+For this reason, some features which developers might expect from a programming language
+and its compiler such as recursive data types or type inference have not yet been implemented
+in the compiler.
 
 ## Constants and Variables
 Constants and Variables associate a name with a value of a particular type. The value of a constant can't be changed once it's set, whereas a variable can be set to a different value in the future.
+
+Variables can be state properties - public contract specific data stored in EVM Storage - or local variables - transaction specific data stored temporarily in EVM Memory.
 
 ### Declaring Constants and Variables
 You declare constants with the `let` keyword and variables with the `var` keyword.
@@ -184,7 +198,7 @@ currentValue = 0
 ```
 Unlike a variable, the value of a constant can't be changed after it's set.
 ```swift
-let languageName = "Flint"
+let languageName: String = "Flint"
 languageName = "f" // This a compile-time error
 ```
 ---
@@ -230,15 +244,14 @@ Flint supports the following _arithmetic operators_ for all number types:
 10 / 2 // equals 5
 ```
 
-#### Overflow Operators
-Unlike languages such as Solidity, Flint arithmetic operators don't allow values to overflow by default. You can opt in to value overflow by using `&`
+Flint has unique [Safe Arithmetic](#safe-arithmetic)
 
 ### Assignment Operators
 The _assignment_ operator (`a = b`) initializes or updates the value of a with the value of b:
 
 ```swift
-let b = 10
-var a = 5
+let b: Int = 10
+var a: Int = 5
 a = b
 // a is equal to 10
 ```
@@ -286,6 +299,9 @@ contract Bank {
   let name: String = "Bank"
 }
 ```
+### Mutation
+Smart contracts can remain in activity for a large number of years, during which a large number of state mutations can occur. To aid with reasoning, Flint functions cannot mutate smart contracts’ state by default. This helps avoid accidental state mutations when writing the code, and allows readers to easily draw their attention to the mutating functions of the smart contract.
+
 ### Visibility Modifiers
 Variables declared in the contract can have modifiers in front of their declaration which control the automatic synthesis of variable accessors and mutators. By the nature of smart contracts all storage is visible already, but providing accessors makes that process easier.
 
@@ -304,7 +320,7 @@ visible var owner: Address
 ## Control Flow
 
 ### For-In Loops
-`for-in` loops can be used to iterate over a sequence (currently contract instance arrays and dictionary keys, and [ranges](#ranges))
+`for-in` loops can be used to iterate over a sequence (currently contract instance arrays and dictionary values, and [ranges](#ranges))
 ```
 contract X {
   var names: [String]
@@ -343,7 +359,7 @@ if x == 2 {
 ---
 
 ## Functions
-_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions cannot be overloaded and are contained within contract behaviour blocks. For more information, see [Caller Capabilities](#caller-capabilities)
+_Functions_ are self-contained blocks of code that perform a specific task, which is called using its identifier. In Flint functions cannot be overloaded and are contained within [Protection Blocks](#protection-blocks).
 
 They are defined with the keyword `func` followed by the identifier and the set of parameters and optional return type:
 ```swift
@@ -355,7 +371,7 @@ func identifier() {
 In Flint all functions are `private` by default and as such can only be accessed from within the contract body.
 
 ### Function Parameters
-Functions can also take parameters which can be used within the function. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples names to add the Key, Value pair of caller's address and name. For more information about callers, see [Caller Capability Bindings](#caller-capability-bindings):
+Functions can also take parameters which can be used within the function. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples names to add the Key, Value pair of caller's address and name. For more information about callers, see [Caller Bindings](#caller-bindings):
 ```swift
 contract AddressBook {
   var people: [Address: String]
@@ -419,7 +435,7 @@ AddressBook :: caller <- (any) {
 
 ## Types
 
-Flint supports the following types.
+Flint is a _statically-typed_ language with a simple type system, with basic support for subtyping through [traits](#traits). Type inference is a planned feature.
 
 Flint is a _type-safe_ language. A type safe language encourages clarity about the type of values your code can work with.
 
@@ -427,28 +443,21 @@ It performs _type checks_ when compiling code and flags any mismatched types as 
 
 
 ### Basic Types
+|Type      | Description                              |
+|----------|------------------------------------------|
+|`Address` | 160-bit Ethereum Address                 |
+|`Int`     | 256-bit integer                          |
+|`Bool`    | Boolean value                            |
+|`String`  | String value (currently max of 256 bits) |
+|`Void`    | Void value                               |
+
+### Dynamic Types
 |Type      | Description             |
 |----------|-------------------------|
-|`Address` | 160-bit Ethereum Address|
-|`Int`     | 256-bit integer         |
-|`Bool`    | Boolean value           |
-|`Void`    | Void value              |
-
-### Arrays and Dictionaries
-|Type      | Description             |
-|----------|-------------------------|
-| `Array` | Dynamic-size array. `[Int]` is an array of Ints |
-| `Fixed-size Array` | Fixed-size memory block containing elements of the same type. `Int[10]` is an array of 10 `Int`s.         |
-| `Dictionary` | Dynamic-size mappings from one key type to a value type `[Address: Bool]` is a mapping from `Address` to `Bool` |
-
-### Ethereum-specific types
-Uses cases for the following types is described into more detail in `Payable Functions and Events`.
-
-|Type      | Description             |
-|----------|-------------------------|
-| `Wei` | A Wei value (the smallest denomination of Ether) |
-| `Event<T...>` | An Ethereum event. Takes an arbitrary number of type arguments |
-
+| `Array` | Dynamic-size array. `[T]` is an array of element type T |
+| `Fixed-size Array` | Fixed-size memory block containing elements of the same type. `T[n]` is an array of size `n`, of element type `T`.         |
+| `Dictionary` | Dynamic-size mappings from one key type to a value type `[K: V]` is a a dictionary of key type `K` and value type `V`. |
+| Structs | Struct values, including Wei, are considered to be of dynamic type. |
 ---
 
 ## Range
@@ -474,9 +483,9 @@ for let i: Int in (0..<count) {
 ---
 
 ## Structures
-_Structures_ in Flint are general-purpose constructs that define properties and functions that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties.
+_Structures_ in Flint are general-purpose constructs that group state and functions that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties. Structure functions are not protected as they can only be called by (protected) contract functions, and are required to be annotated `mutating` if they mutate the struct's state.
 
-### Defintion
+### Definition
 You introduce structures with the `struct` keyword and their definition is contained within a pair of braces:
 ```swift
 struct SomeStructure {
@@ -497,7 +506,7 @@ struct Rectangle {
 ```
 
 ### Instances
-The `Rectangle` structure definition describes only what a `Rectangle` would look like and what functionality they contain. They don't descibe specific rectangles. To do that you create an instance of that structure.
+The `Rectangle` structure definition describes only what a `Rectangle` would look like and what functionality they contain. They don't describe specific rectangles. To do that you create an instance of that structure.
 
 ```swift
 let someRectangle: Rectangle = Rectangle()
@@ -514,6 +523,11 @@ struct Rectangle {
   }
 }
 ```
+
+```swift
+let bigRectangle = Rectangle(400, 10000)
+```
+
 ### Accessing Properties/Functions
 You can access properties/functions of an instance using _dot syntax_. In dot syntax, you write the property name immediately after the instance name, separated by a period (.), without any spaces.
 
@@ -536,9 +550,30 @@ struct Square {
 Square.shapeName() // Evaluates to "Square"
 ```
 
-### Reference Types in Contracts
-When structures are used as variables/constants in contracts they are passed by reference. This means that the structures are not copied when assigned to a variable or constant, or when they are passed to a function. Rather than a copy, a reference to the same existing instance is used.
+### State Properties or Local Variables
+Struct values can be declared as state properties or local variables/constants through their intialisers. When stored as a state property, the struct's data resides in EVM storage. When stored as a local variable, it resides in EVM memory, and a pointer is allocated on the EVM stack.
 
+
+### Structs as function arguments
+When struct values are passed as function arguments, they are passed _by value_ by default. That is, on function entry, a struct is copied in storage or memory (depending on whether it is a state property or a local variable).
+
+Structs can be passed _by reference_ using the *inout* keyword. The struct is then treated as an implicit reference to the value in the caller.
+
+```
+func foo() {
+  let s = S(8)
+  byValue(s) // s.x == 8
+  byReference(s) // s.x == 10
+}
+
+func byValue(s: S) {
+  s.x = 10
+}
+
+func byReference(s: inout S) {
+  s.x
+}
+```
 ---
 
 ## Enumerations
@@ -578,11 +613,17 @@ Flint will infer the raw value of cases by default based upon the last declared 
 
 # Flint Specific Features
 ---
+## Safe Arithmetic
+Safe arithmetic operators are also provided. The `+`, `-`, `*` and `**` operators throw an exception and abort execution of the smart contract when an overflow occurs. The `/` operator implements integer division. No underflows can occur as we do not support floating point types yet. The performance overhead of our safe operators are low.
+
+In rare cases, allowing overflows is the programmer’s intended behaviour. Flint also supports
+overflowing operators, `&+`, `&-`, and `&*`, which will not crash on overflows.
+
 
 ## Assets
-Flint supports special safe operations when handling assets, such as Ether. They help ensure the contract's state consistently represents its Ether value, preventing attacks such as TheDAO.
+Numerous attacks targeting smart contracts, such as ones relating to reentrancy calls (see TheDAO), allow hackers to steal a contract’s Ether. These happen because smart contracts encode Ether values as integers, making it is easy to make mistakes when performing Ether transfers between variables, or to forget to record Ether arriving or leaving the smart contract.
 
-The design of the Asset feature is in progress, the FIP-0001 proposal tracks its progress. At the moment, the compiler supports the Asset atomic operations for the Wei type only.
+Flint supports special safe operations when handling assets, such as Ether. They help ensure the contract's state consistently represents its Ether value, preventing attacks such as TheDAO.
 
 An simple use of Assets:
 ```swift
@@ -620,8 +661,6 @@ Wallet :: (owner) {
 }
 ```
 Another example which uses Assets is the Bank example.
-
-A more advanced use of Assets (not supported yet):
 ```swift
 contract Wallet {
   var beneficiaries: [Address: Wei]
@@ -639,12 +678,11 @@ Wallet :: (any) {
   }
 }
 
-// Future syntax.
 Wallet :: (owner) {
   mutating func distribute(amount: Int) {
     let beneficiaryBonus = bonus.getRawValue() / beneficiaries.count
-    for i in (0..<beneficiaries.count) {
-      var allocation = Wei(from: &balance, amount: amount * weights[i])
+    for let person: Address in beneficiaries {
+      var allocation = Wei(from: &balance, amount: amount * weights[person])
       allocation.transfer(from: &bonus, amount: beneficiaryBonus)
 
       send(beneficiaries[i], &allocation)
@@ -655,36 +693,47 @@ Wallet :: (owner) {
 
 ---
 
-## Caller Capabilities
+## Protection Blocks
 
-Flint introduces the concept of **caller capabilities**. While traditional computer programs have an entry point (the _main_ function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services presenting API endpoints. It is important to prevent unauthorized parties from calling sensitive functions.
+Flint introduces the concept of **protection blocks**. While traditional computer programs have an entry point (the _main_ function), smart contracts do not. After a contract is deployed on the blockchain, its code does not run until an Ethereum transaction is received. Smart contracts are in fact more akin to RESTful web services presenting API endpoints. It is important to prevent unauthorized parties from calling sensitive functions.
 
-In Flint, functions of a contract are declared within caller capability blocks, which restrict which users/contracts are allowed to call the enclosed functions.
-```swift
-// Only the manager of the Bank can call "clear".
-Bank :: (manager) { // manager is a state property.
-  func clear(address: Address) {
-    // body
-  }
-}
-```
-Caller capabilities can be any property declared in the contract's declaration, as long as their type is `Address` or `[Address]`.
+In Flint, functions of a contract are declared within protection blocks, which restrict when the enclosed functions are allowed to be called.
 
-Note: The special caller capability any allows `any` caller to execute the function in the group.
+There are two elements to protection blocks, the caller protection and the optional type state protection (see [Type States](#type-states) for more detail). A protection block is minimally declared as the contract name (`Bank`) followed by a `::` and a caller group (`(manager)`).
 
-Calls to Flint functions are validated both at compile-time and runtime.
+Solidity uses function modifiers to insert dynamic checks in functions, which can for instance abort unauthorised calls. However, it is easy to forget to specify these checks, as the language does not require programmers to write them.
+Having a language construct which protects functions from invalid calls could require programmers to systematically think about which parties should be able to call the functions they are about to define.
+
+In Flint, functions of a contract are declared within protection blocks, which protect the functions from invalid access.
+
+### Caller Group
+Caller Groups consist of a list of Caller Members enclosed in parentheses. These Caller Members can be a function of type `Address -> Bool` or `() -> Address`, a contract state property of the types `Address`, `[Address]`, `[T: Address]` or `Address[n]`, or the special `any` keyword that denotes all addresses. For example, `(any)`, `(admin)`, `(owners, manager)` are all valid Caller Groups where `admin` and `manager` refer to a state property of type `Address` and `owners` refers to a state property of type `[Address]`
+
+Functions inside these caller groups can only be called by an Ethereum Address (aka the caller address) that satisfies at least one of these Caller Members. The satisfaction comes in different forms depending on the member.
+| Type | Satisfaction |
+| ---- | -------------|
+| `Address -> Bool` | The function is called with the caller as input, satisfied if returns true |
+| `() -> Address` | The returned address must match the caller address |
+| `Address` | The address property must match the caller address |
+| `[Address]` | The caller address must be contained within the list of addresses |
+| `[T: Address]` | The caller address must be contained with in the values of the dictionary |
+| `any` | Always satisfied |
+
+The Ethereum address of the caller of a function is unforgeable. It is not possible to impersonate another user, as a consequence of Ethereum’s mechanism which generates public addresses from private keys. Transactions are signed using a private key, and determine the public key of the caller. Stealing a caller capability would hence require stealing a private key. The recommended way for Ethereum users to transfer their ability to call functions is to either change the backing address of the caller capability they have (the smart contract must have a function which allows this), or to securely send their private key to the new owner, outside of the Ethereum platform.
+
+Calls to Flint functions are validated both at compile-time and runtime, with runtime checks only being added where necessary.
 
 ---
 
 ### Static checking
-In a Flint function, if a function call to another Flint function is performed, the compiler checks that the caller has sufficient caller capabilities.
+In a Flint function, if a function call to another Flint function is performed, the compiler checks that the caller meets the caller protection.
 
 Consider the following example.
 
 ```swift
 Bank :: (any) {
   func foo() {
-    // Error: Capability "any" cannot be used to perform a call to a
+    // Error: Protection "any" cannot be used to perform a call to a
     // function for "manager"
     bar()
   }
@@ -694,27 +743,25 @@ Bank :: (manager) {
   func bar() {}
 }
 ```
-Within the context of `foo`, the caller is regarded as any. It is not certain that the caller also has capability manager, so the compiler rejects the call.
+Within the context of `foo`, the caller is regarded as any. It is not certain that the caller also satisfies the `manager` protection, so the compiler rejects the call.
 
 ---
 ### Dynamic checking
 #### Attempt function calls
-It is still possible for the caller of `bar` to have the capability `manager`.
+It is still possible for `foo` to satisfy the protections of the function `bar`.
 
 For these cases, two additional language constructs exist:
 
-- `try? bar()`: The function `bar`'s body is executed if at runtime, the caller's capability matches `bar`'s. The expression `try? bar()` returns a boolean.
-- `try! bar()`: If at runtime, the caller's capability doesn't match `manager`, an exception is thrown and the body doesn't get executed. Otherwise, it does.
-
-Note: this is not supported by the compiler yet.
+- `try? bar()`: The function `bar`'s body is executed if, at runtime, the protections are satisfied (i.e. the caller satisfies the caller protection and the state of the contract satisfies the type state protection). The expression `try? bar()` returns a boolean if successful.
+- `try! bar()`: If at runtime `bar`'s protections are not satisfied an exception is thrown and the body doesn't get executed. Otherwise, it does.
 
 #### Calls from Ethereum users or non-Flint smart contracts
 Functions to contracts on the Blockchain can also be called by users directly, through an Ethereum client, or another non-Flint smart contract.
 
-For those cases, Flint checks at runtime whether the caller has the appropriate capabilities to perform the call, and throws an exception if not.
+For those cases, Flint checks at runtime whether the caller has the appropriate protections to perform the call, and throws an exception if not.
 
-#### Multiple capabilities
-A contract behavior declaration can be restricted by multiple caller capabilities.
+#### Multiple protections
+A contract behavior declaration can be restricted by multiple caller protections.
 
 Consider the following contract behavior declaration:
 ```
@@ -724,11 +771,11 @@ Bank :: (manager, accounts) {
 ```
 The function `forManagerOrCustomers` can only be called by either the manager, or any of the accounts registered in the bank.
 
-Calls to functions of multiple capabilities are accepted if **each** of the capabilities of the enclosing function are compatible with **any** of the target function's capabilities.
+Calls to functions of multiple protections are accepted if **each** of the protections of the enclosing function are compatible with **any** of the target function's protections.
 
 Consider the following examples:
 
-#### Insufficient capabilities
+#### Insufficient protections
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -741,7 +788,7 @@ Bank :: (manager) {
   func forManager() {}
 }
 ```
-#### Sufficient capabilities
+#### Sufficient protections
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -755,7 +802,7 @@ Bank :: (accounts, manager) {
   func forManagerOrCustomers2() {}
 }
 ```
-#### `any` is compatible with any capability
+#### `any` is compatible with any caller protection
 ```swift
 Bank :: (manager, accounts) {
   func forManagerOrCustomers() {
@@ -765,16 +812,16 @@ Bank :: (manager, accounts) {
   }
 }
 
-// The caller capability "manager" has no effect: "any" is compatible with any capability
+// The caller protection "manager" has no effect: "any" is compatible with any caller protection
 Bank :: (manager, any) {
   func forManagerOrCustomers2() {}
 }
 ```
 #### Static and dynamic checking
-Just like single-capability definitions, capability lists are checked both at compile-time and runtime.
+Just like single-member protection definitions, multi-member protections are checked both at compile-time and runtime.
 
-### Capability Binding
-Capabilities can be bound to temporary variables.
+### Caller Binding
+Callers can be bound to temporary variables.
 
 Consider the following example.
 ```swift
@@ -792,11 +839,77 @@ Bank :: account <- (accounts) {
 ```
 `withdraw` can be called by any caller which has an account in the bank. The caller's address is bound to the variable `account`, which can then be used in the body of the functions.
 
+### Extended Example
 
+```swift
+contract ChildCollegeFund {
+  var parent: Address
+  var child: Address
+  var canWithdraw: Bool = false
+  var target: Int
+  var contents: Wei = Wei(0)
+}
+// Anyone can initialise the contract.
+// The contract can be deployed by anyone,
+// and is initialised during contract deployment.
+// This initialisation allows you to set the contract address.
+ChildCollegeFund :: (any) {
+  public init(parent: Address, child: Address, target: Int) {
+    self.parent = parent
+    self.child = child
+    self.target = target
+  }
+}
+// Functions both the parent and child can call.
+ChildCollegeFund :: (parent, child) {
+  public func getTarget() -> Int {
+    return target
+  }
+
+  // Trying to withdraw() here would fail as it
+  // requires the caller to be 'child' statically.
+  // At runtime we can only know the caller has one
+  // of the capabilities.
+}
+
+// Functions only the parent can call.
+ChildCollegeFund :: (parent) {
+
+  // The parent can deposit money
+  @payable
+  public mutating func deposit(implicit value: Wei) {
+    contents.transfer(&value)
+  }
+
+  public mutating func allowWithdrawaL() {
+    self.canWithdraw = true
+  }
+
+  public func getContents() -> Int {
+    return contents.getRawValue()
+  }
+
+  public func getDistanceFromGoal() -> Int {
+    // The caller of this function is known to be 'parent'
+    // Therefore, the calls to getTarget and getContents can be performed
+    return getTarget() - getContents() // OK
+  }
+}
+
+// Functions only the child can call
+ChildCollegeFund :: (child) {
+  public mutating func withdraw() {
+    assert(canWithdraw == false)
+    send(child, &contents)
+  }
+}
+```
 ---
 
 ## Payable
-On Ethereum, function calls to other contracts (i.e., "transactions") can be attached with an amount of Wei (the smallest denomination of Ether). Such functions are called "payable". The target account is then credited with the attached amount.
+When a user creates a transaction to call a function, they can attach Ether to send to the contract. Functions which expect Ether to be attached when called must be annotated with the `@payable` annotation otherwise the transaction will revert when Ether is attached.
+
+When adding the annotation, a parameter marked implicit of type `Wei` must be declared. `implicit` parameters are a mechanism to expose information from the Ethereum transaction to the developer of the smart contract, without using globally accessible variables defined by the language, such as `msg.value` in Solidity. This mechanism allows developers to name `implicit` variables themselves, and do not need to remember the name of a global variable.
 
 Functions in Flint can be marked as payable using the `@payable` attribute. The amount of Wei sent is bound to an implicit variable:
 ```swift
@@ -843,7 +956,7 @@ Bank :: caller <- (any) {
 ## Type States
 Flint introduces the concept of **type states**. Insufficient and incorrect state management in Solidity code have led to security vulnerabilities and unexpected behaviour in widely deployed smart contracts. Avoiding these vulnerabilities by the design of the language is a strong advantage.
 
-In Flint, states of a contract are declared within capability blocks, which restrict which users/contracts are allowed to call the enclosed functions.
+In Flint, states of a contract are declared within protection blocks, which protect the enclosed function from invalid calls.
 ```swift
 // Ahyone can deposit into the Bank iff the state is Deposit
 Bank @(Deposit) :: (any) { // Deposit is a state identifier.
@@ -907,10 +1020,134 @@ Auction @(InProgress) :: (any) {
 }
 ```
 
+
+---
+
+## Traits
+We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions and function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions and function stubs.
+
+Contracts or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them. Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc.).
+It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](/proposals/0001-asset-trait.md) and Numerics.
+
+
+### Structure Traits
+Traits can be implemented for structures using the keyword combination of `struct trait` followed by a unique identifier before the block of trait members.
+
+Structure traits can contain functions, function signatures, initialisers, or initialiser signatures.
+A signature is simply missing a code block following it.
+
+In the example below we define an `Animal` structure trait. The `Person` structure then conforms to the `Animal` `trait` allowing the use of functions within that.
+```swift
+struct trait Animal {
+  // Must have an empty and named initialiser
+  public init()
+  public init(name: String)
+
+  // These are signatures that conforming structures must implement
+  // access properties of the structure
+  func isNamed() -> Bool
+  public func name() -> String
+  public func noise() -> String
+
+  // This is a pre-implemented function using the functions already in the trait.
+  public func speak() -> String {
+    if isNamed() {
+      return name()
+    }
+    else {
+      return noise()
+    }
+  }
+}
+
+struct Person: Animal {
+  let name: String
+
+  public init() {
+    self.name = "John Doe"
+  }
+  public init(name: String) {
+    self.name = name
+  }
+
+  // People always have a name, it's just not always known
+  func isNamed() -> Bool {
+    return true
+  }
+  // These access the properties of the struct
+  public func name() -> String {
+    return self.name
+  }
+
+  public func noise() -> String {
+    return "Huh?"
+  }
+
+  // Person can also have functions in addition to Animal
+  public func greet() -> String {
+    return "Hi"
+  }
+}
+
+```
+### Contract Traits
+Traits can be implemented for structures using the keyword combination of `contract trait` followed by a unique identifier before the block of trait members.
+
+Contract traits can contain anonymous contract behaviour declarations containing methods or method signatures, or events.
+
+In the example below, we define `Ownable`, which declares a contract as something that can be owned and transferred. The `Ownable` `trait` is then specified by the `ToyWallet` `contract` allowing the use of methods in `Ownable`. This demonstrates how we can expose contract properties:
+
+```swift
+contract trait Ownable {
+  event OwnershipRenounced {
+    let previousOwner: Address
+  }
+  event OwnershipTransfered {
+    let previousOwner: Address
+    let newOwner: Address
+  }
+
+  self :: (any) {
+    public getOwner() -> Address
+  }
+
+  self :: (getOwner) {
+    func setOwner(newOwner: Address)
+
+    public func renounceOwnership() {
+      emit OwnershipRenounced(getOwner())
+      setOwner(0x000...)
+    }
+    public func transferOwnership(newOwner: Address) {
+      assert(newOwner != 0x000...)
+      emit OwnershipTransfered(getOwner(), newOwner)
+      setOwner(newOwner)
+    }
+  }
+}
+
+contract ToyWallet: Ownable {
+  visible var owner: Address // visible automatically creates getOwner
+}
+// Skipping initialiser as not relevant for this example
+
+ToyWallet :: (getOwner) {
+  func setOwner(newOwner: Address){
+    self.owner = newOwner
+  }
+}
+
+```
+
+
 ---
 # Standard Library
 ---
-## Assertion
+## Wei
+The standard library defines the `Wei` type. For full details see [Assets](#assets)
+
+## Global Functions
+### Assertion
 Assertions are checks that happen at runtime. They are used to ensure an essential condition is satisfied before executing any further code. If the Boolean condition evaluates to true then the execution continues as usual. Otherwise the transaction is reverted.
 It is a global function accessible from any contract or contract group:
 ```
@@ -923,8 +1160,12 @@ if x == 2 {
   fatalError()
 }
 ```
-## Fatal Error
+
+### Fatal Error
 `fatalError()` is a function exposed that reverts a transaction when called. This means that any contract storage changes are rolledback and no values are returned.
+
+### Send
+`send(address: Address, value: inout Wei)` sends the `value` Wei to the Ethereum address `address`, and clears the contents of `value`.
 
 ---
 # Examples

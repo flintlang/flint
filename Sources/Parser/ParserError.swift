@@ -47,7 +47,8 @@ extension Diagnostic {
 
   // MARK: Operators
   static func expectedValidOperator(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected operator in binary expression")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected operator in binary expression")
   }
 
   // MARK: Contract
@@ -57,13 +58,16 @@ extension Diagnostic {
 
   // MARK: Statement
   static func expectedStatement(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected statement")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected statement")
   }
   static func expectedForInStatement(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected 'in' between variable declaration and iterable")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'in' between variable declaration and iterable")
   }
   static func statementSameLine(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Statements must be separated by a new line ")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Statements must be separated by a new line ")
   }
 
   // MARK: Components
@@ -85,6 +89,10 @@ extension Diagnostic {
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
   }
+  static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected a trait identifier to conform to")
+  }
 
   // MARK: Enum
   static func expectedEnumDeclarationCaseMember(at sourceLocation: SourceLocation) -> Diagnostic {
@@ -101,7 +109,8 @@ extension Diagnostic {
 
   // MARK: Expressions
   static func expectedCloseParen(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ')' for bracketed expression")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected ')' for bracketed expression")
   }
   static func expectedColonAfterArgumentLabel(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ':' after argument label")
@@ -110,16 +119,19 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected expression")
   }
   static func expectedSort(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected the try to be specified with '!' or '?'")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected the try to be specified with '!' or '?'")
   }
   static func expectedRangeOperator(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '...' or '..<' for setting range type")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected '...' or '..<' for setting range type")
   }
   static func expectedCloseSquareSubscript(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ']' in subscript expression")
   }
   static func expectedCloseSquareDictionaryLiteral(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ']' in dictionary literal expression")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected ']' in dictionary literal expression")
   }
   static func expectedColonDictionaryLiteral(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ':' in dictionary literal")
@@ -131,8 +143,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ',' in list")
   }
   static func expectedEndAfterInout(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ',' or ')' after inout identifier")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected ',' or ')' after inout identifier")
   }
+
   // MARK: Generics
   static func expectedRightChevron(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '>' to complete \(node)")
@@ -146,6 +160,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ']' in array type")
   }
   static func expectedIntegerInFixedArrayType(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected an integer in fixed array type")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected an integer in fixed array type")
   }
 }

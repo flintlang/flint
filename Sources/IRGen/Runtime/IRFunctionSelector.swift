@@ -31,9 +31,10 @@ struct IRFunctionSelector {
 
   func renderFallback() -> String {
     if let fallbackDeclaration = fallback {
-      return IRContractFallback(fallbackDeclaration: fallbackDeclaration, typeIdentifier: enclosingType, environment: environment).rendered()
-    }
-    else {
+      return IRContractFallback(fallbackDeclaration: fallbackDeclaration,
+                                typeIdentifier: enclosingType,
+                                environment: environment).rendered()
+    } else {
       return "revert(0, 0)"
     }
   }
@@ -55,11 +56,13 @@ struct IRFunctionSelector {
   func renderCaseBody(function: IRFunction) -> String {
     // Dynamically check that the state is correct for the function to be called.
     let typeStates = function.typeStates
-    let typeStateChecks = IRTypeStateChecks(typeStates: typeStates).rendered(enclosingType: enclosingType.name, environment: environment)
+    let typeStateChecks = IRTypeStateChecks(typeStates: typeStates)
+        .rendered(enclosingType: enclosingType.name, environment: environment)
 
-    // Dynamically check the caller has appropriate caller capabilities.
-    let callerCapabilities = function.callerCapabilities
-    let callerCapabilityChecks = IRCallerCapabilityChecks(callerCapabilities: callerCapabilities).rendered(enclosingType: enclosingType.name, environment: environment)
+    // Dynamically check the caller has appropriate caller protections.
+    let callerProtections = function.callerProtections
+    let callerProtectionChecks = IRCallerProtectionChecks(callerProtections: callerProtections)
+        .rendered(enclosingType: enclosingType.name, environment: environment)
 
     // Dynamically check the function is not being called with value, if it is not payable.
     let valueChecks: String
@@ -81,11 +84,12 @@ struct IRFunctionSelector {
 
     if let resultType = function.resultCanonicalType {
       switch resultType {
-      case .address, .uint256, .bytes32: return typeStateChecks + "\n" + callerCapabilityChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
+      case .address, .uint256, .bytes32:
+        return typeStateChecks + "\n" + callerProtectionChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    return "\(typeStateChecks)\n\(callerCapabilityChecks)\n\(valueChecks)\(call)"
+    return "\(typeStateChecks)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
   }
 }
 
@@ -97,11 +101,24 @@ struct IRTypeStateChecks {
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 
-      let stateValue = IRExpression(expression: environment.getStateValue(typeState.identifier, in: enclosingType), asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
+      let stateValue = IRExpression(expression: environment.getStateValue(typeState.identifier, in: enclosingType),
+                                    asLValue: false)
+        .rendered(functionContext: FunctionContext(environment: environment,
+                                                   scopeContext: ScopeContext(),
+                                                   enclosingTypeName: enclosingType,
+                                                   isInStructFunction: false))
 
-      let stateVariable: Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType, sourceLocation: .DUMMY))
-      let selfState: Expression = .binaryExpression(BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)), op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY), rhs: stateVariable))
-      let stateVariableRendered = IRExpression(expression: selfState, asLValue: false).rendered(functionContext: FunctionContext(environment: environment, scopeContext: ScopeContext(), enclosingTypeName: enclosingType, isInStructFunction: false))
+      let stateVariable: Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
+                                                             sourceLocation: .DUMMY))
+      let selfState: Expression = .binaryExpression(BinaryExpression(
+        lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+        rhs: stateVariable))
+      let stateVariableRendered = IRExpression(expression: selfState, asLValue: false)
+        .rendered(functionContext: FunctionContext(environment: environment,
+                                                   scopeContext: ScopeContext(),
+                                                   enclosingTypeName: enclosingType,
+                                                   isInStructFunction: false))
 
       let check = IRRuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)
       return "_flintStateCheck := add(_flintStateCheck, \(check))"

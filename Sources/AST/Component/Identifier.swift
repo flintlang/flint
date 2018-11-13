@@ -10,9 +10,12 @@ import Lexer
 /// An identifier for a contract, struct, variable, or function.
 public struct Identifier: Hashable, ASTNode {
   public var identifierToken: Token
-  public var enclosingType: String? = nil
+  public var enclosingType: String?
 
   public var name: String {
+    if case .self = identifierToken.kind {
+      return "self"
+    }
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
     return name
   }
