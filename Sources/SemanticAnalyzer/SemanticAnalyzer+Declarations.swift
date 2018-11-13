@@ -541,7 +541,7 @@ extension SemanticAnalyzer {
       }
     case .ifStatement:
       return false
-    case .returnStatement, .forStatement, .becomeStatement:
+    case .returnStatement, .forStatement, .becomeStatement, .doCatchStatement:
       return true
     case .emitStatement:
       return false

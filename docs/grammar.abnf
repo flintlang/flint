@@ -107,12 +107,14 @@ statement = expression
           / becomeStatement
           / emitStatement
           / forStatement
-          / ifStatement;
+          / ifStatement
+          / doCatchStatement;
 
-returnStatement = %s"return" SP expression
-becomeStatement = %s"become" SP expression
-emitStatement   = %s"emit" SP functionCall
-forStatement    = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+returnStatement  = %s"return" SP expression
+becomeStatement  = %s"become" SP expression
+emitStatement    = %s"emit" SP functionCall
+forStatement     = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+doCatchStatement = %s"do" SP codeBlock SP %s"catch" SP "%s"is SP type SP codeBlock
 
 ; EXPRESSIONS
 expression = identifier

@@ -393,8 +393,10 @@ public struct ASTVisitor {
     case .emitStatement(let emitStatement):
       processResult.element =
         .emitStatement(processResult.combining(visit(emitStatement, passContext: processResult.passContext)))
+    case .doCatchStatement(let doCatchStatement):
+      processResult.element =
+        .doCatchStatement(processResult.combining(visit(doCatchStatement, passContext: processResult.passContext)))
     }
-
     let postProcessResult = pass.postProcess(statement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
@@ -506,6 +508,29 @@ public struct ASTVisitor {
 
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element,
+                         diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
+                         passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ doCatchStatement: DoCatchStatement, passContext: ASTPassContext) -> ASTPassResult<DoCatchStatement> {
+    var passContext = passContext
+    var processResult = pass.process(doCatchStatement: doCatchStatement, passContext: passContext)
+
+    let scopeContext = passContext.scopeContext
+    processResult.element.doBody = processResult.element.doBody.map { statement in
+      return processResult.combining(visit(statement, passContext: processResult.passContext))
+    }
+
+    processResult.passContext.scopeContext = scopeContext
+    processResult.element.catchBody = processResult.element.catchBody.map { statement in
+      return processResult.combining(visit(statement, passContext: processResult.passContext))
+    }
+
+    processResult.passContext.scopeContext = scopeContext
+    let postProcessResult = pass.postProcess(doCatchStatement: processResult.element,
+                                             passContext: processResult.passContext)
+
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)
