@@ -91,3 +91,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
   // MARK: - SourceEntity
   public var sourceLocation: SourceLocation
 }
+
+public extension Token {
+  public static let DUMMY = Token(kind: .public, sourceLocation: .DUMMY)
+}

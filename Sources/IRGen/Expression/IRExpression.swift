@@ -33,7 +33,7 @@ struct IRExpression {
       return IRAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
     case .functionCall(let functionCall):
       return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
-    case .externalCall(let externalCall):
+    case .externalCall:
       fatalError()
     case .identifier(let identifier):
       return IRIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)

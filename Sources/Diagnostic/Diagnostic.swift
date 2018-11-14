@@ -7,7 +7,7 @@
 import Source
 
 /// An error or warning encountered when compiling the source program.
-public struct Diagnostic {
+public struct Diagnostic: Equatable {
 
   /// The severity of the diagnostic.
   ///

@@ -52,7 +52,8 @@ let package = Package(
       dependencies: [
         "Source",
         "Cuckoo",
-      ]
+      ],
+      sources: [".", "../../.derived-tests/Source"]
     ),
     // MARK: Compiler -
     .target(
@@ -75,7 +76,8 @@ let package = Package(
       dependencies: [
         "Compiler",
         "Cuckoo",
-      ]
+      ],
+      sources: [".", "../../.derived-tests/Compiler"]
     ),
     // MARK: Diagnostic -
     .target(
@@ -90,7 +92,8 @@ let package = Package(
       dependencies: [
         "Diagnostic",
         "Cuckoo",
-      ]
+      ],
+      sources: [".", "../../.derived-tests/Diagnostic"]
     ),
     // MARK: Lexer -
     .target(
@@ -105,7 +108,8 @@ let package = Package(
       dependencies: [
         "Lexer",
         "Cuckoo",
-      ]
+      ],
+      sources: [".", "../../.derived-tests/Lexer"]
     ),
     // MARK: AST -
     .target(
