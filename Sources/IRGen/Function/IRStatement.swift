@@ -291,7 +291,38 @@ struct IRDoCatchStatement {
   var doCatchStatement: DoCatchStatement
 
   func rendered(functionContext: FunctionContext) -> String {
-    fatalError("Not implemented")
+    functionContext.push(doCatch: doCatchStatement)
+    let code = doCatchStatement.doBody.reversed().reduce("", { acc, statement in
+      switch statement {
+      case .expression(.functionCall(let _)):
+        var elseCode = ""
+        if let elseBlock = functionContext.top {
+          elseCode = elseBlock.catchBody.map { statement in
+            return IRStatement(statement: statement).rendered(functionContext: functionContext)
+          }.joined(separator: "\n")
+        } else {
+          elseCode = ""
+        }
+        // TODO(ethan): handling of checking external call success is not implemented
+        return """
+        if (true) {
+          \(acc.indented(by: 2))
+        } else {
+          \(elseCode.indented(by: 2))
+        }
+        """
+      default:
+        return IRStatement(statement: statement).rendered(functionContext: functionContext) + "\n" + acc
+      }
+    })
+    functionContext.pop()
+    
+    return """
+    // do-catch block
+    {
+      \(code.indented(by: 2))
+    }
+    """
   }
 }
 

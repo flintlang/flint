@@ -179,7 +179,7 @@ extension IRPreprocessor {
                                                  typeStates: typeStates,
                                                  callerProtections: callerProtections,
                                                  scopeContext: scopeContext)
-        guard type != .errorType else { fatalError() }
+        // guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
         if let enclosingIdentifier = argument.expression.enclosingIdentifier,

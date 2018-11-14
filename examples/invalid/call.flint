@@ -1,0 +1,44 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+external trait Test {
+  func f()
+
+  @payable
+  func g(b: Bool) -> Int
+
+  init(c: Bool)
+}
+
+contract Contract {
+  
+}
+
+Contract :: (any) {
+
+  public init() {
+    let x: Int = 1
+    do {
+      let y:Int = 2
+      do {
+        let z: Int = 3
+        f()
+        g()
+      } catch is 2 {
+        let z: Int = y + 1
+      }
+      g()
+      f()
+    } catch is 1 {
+      let y: Int = 5
+    }
+  }
+
+  public func g() -> Int {
+    return 42
+  }
+
+  public func f() -> Int {
+    return 42
+  }
+}
+
