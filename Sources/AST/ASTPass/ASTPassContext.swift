@@ -31,7 +31,7 @@ public struct ASTPassContext {
   ///
   /// - Parameter updates: The modifications which should be applied to the new `ASTPassContext`.
   /// - Returns: The `ASTPassContext` applied with the `updates`.
-  public func withUpdates(updates: (inout ASTPassContext) -> ()) -> ASTPassContext {
+  public func withUpdates(updates: (inout ASTPassContext) -> Void) -> ASTPassContext {
     var copy = self
     updates(&copy)
     return copy
@@ -55,22 +55,28 @@ extension ASTPassContext {
     set { self[AsLValueContextEntry.self] = newValue }
   }
 
+  /// Whether the node currently being visited is inside a subscript i.e. 'a' in 'foo[a]'
+  public var isInSubscript: Bool {
+    get { return self[IsInSubscriptEntry.self] ?? false }
+    set { self[IsInSubscriptEntry.self] = newValue }
+  }
+
   /// Whether the node currently being visited is being the enclosing variable i.e. 'a' in 'a.foo'
   public var isEnclosing: Bool {
-    get { return self[isEnclosingEntry.self] ?? false }
-    set { self[isEnclosingEntry.self] = newValue }
+    get { return self[IsEnclosingEntry.self] ?? false }
+    set { self[IsEnclosingEntry.self] = newValue }
   }
 
   /// Whether the node currently being visited is within a become statement i.e. 'a' in 'become a'
   public var isInBecome: Bool {
-    get { return self[isInBecomeEntry.self] ?? false }
-    set { self[isInBecomeEntry.self] = newValue }
+    get { return self[IsInBecomeEntry.self] ?? false }
+    set { self[IsInBecomeEntry.self] = newValue }
   }
 
   /// Whether the node currently being visited is within a emit statement i.e. 'a' in 'emit a'
   public var isInEmit: Bool {
-    get { return self[isInEmitEntry.self] ?? false }
-    set { self[isInEmitEntry.self] = newValue }
+    get { return self[IsInEmitEntry.self] ?? false }
+    set { self[IsInEmitEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting the state properties declared in a contract declaration.
@@ -80,7 +86,7 @@ extension ASTPassContext {
   }
 
   /// Contextual information used when visiting functions in a contract behavior declaration, such as the name of the
-  /// contract the functions are declared for, and the caller capability associated with them.
+  /// contract the functions are declared for, and the caller protections associated with them.
   public var contractBehaviorDeclarationContext: ContractBehaviorDeclarationContext? {
     get { return self[ContractBehaviorDeclarationContextEntry.self] }
     set { self[ContractBehaviorDeclarationContextEntry.self] = newValue }
@@ -98,6 +104,13 @@ extension ASTPassContext {
   public var enumDeclarationContext: EnumDeclarationContext? {
     get { return self[EnumDeclarationContextEntry.self] }
     set { self[EnumDeclarationContextEntry.self] = newValue }
+  }
+
+  /// Contextual information used when visiting declarations in a trait declaration, such as the
+  /// name of the trait the members belong to.
+  public var traitDeclarationContext: TraitDeclarationContext? {
+    get { return self[TraitDeclarationContextEntry.self] }
+    set { self[TraitDeclarationContextEntry.self] = newValue }
   }
 
   /// Contextual information used when visiting declarations in an event, such as the name of the event
@@ -131,13 +144,27 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
-  /// The identifier of the enclosing type (a contract or a struct or an enum).
+  /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
-    return contractBehaviorDeclarationContext?.contractIdentifier ??
-      structDeclarationContext?.structIdentifier ??
-      contractStateDeclarationContext?.contractIdentifier ??
-      enumDeclarationContext?.enumIdentifier ??
-      eventDeclarationContext?.eventIdentifier
+    if let trait = traitDeclarationContext?.traitIdentifier {
+      return trait
+    }
+    if let contractBehaviour = contractBehaviorDeclarationContext?.contractIdentifier {
+      return contractBehaviour
+    }
+    if let structure = structDeclarationContext?.structIdentifier {
+      return structure
+    }
+    if let contract = contractStateDeclarationContext?.contractIdentifier {
+      return contract
+    }
+    if let enumeration = enumDeclarationContext?.enumIdentifier {
+      return enumeration
+    }
+    if let event = eventDeclarationContext?.eventIdentifier {
+      return event
+    }
+    return nil
   }
 
   /// Whether we are visiting a node in a function declaration or initializer.
@@ -173,19 +200,23 @@ private struct EnvironmentContextEntry: PassContextEntry {
   typealias Value = Environment
 }
 
+private struct IsInSubscriptEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
 private struct AsLValueContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isEnclosingEntry: PassContextEntry {
+private struct IsEnclosingEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isInBecomeEntry: PassContextEntry {
+private struct IsInBecomeEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct isInEmitEntry: PassContextEntry {
+private struct IsInEmitEntry: PassContextEntry {
   typealias Value = Bool
 }
 
@@ -203,6 +234,10 @@ private struct StructDeclarationContextEntry: PassContextEntry {
 
 private struct EnumDeclarationContextEntry: PassContextEntry {
   typealias Value = EnumDeclarationContext
+}
+
+private struct TraitDeclarationContextEntry: PassContextEntry {
+  typealias Value = TraitDeclarationContext
 }
 
 private struct EventDeclarationContextEntry: PassContextEntry {

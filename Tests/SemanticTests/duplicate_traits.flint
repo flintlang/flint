@@ -1,0 +1,45 @@
+// RUN: %flintc %s --verify
+
+contract trait A {}
+contract trait A {} // expected-error {{Invalid redeclaration of 'A'}}
+
+struct trait C {}
+struct trait C {} // expected-error {{Invalid redeclaration of 'C'}}
+
+contract X: A, A {} // expected-error {{Contract 'X' has repeated conformances}}
+
+contract Y: B {} // expected-error {{Contract 'Y' conforms to undeclared trait 'B'}}
+
+X :: (any) {
+  public init() {}
+}
+
+Y :: (any) {
+  public init() {}
+}
+
+
+struct trait D {
+  public func foo(x: Int) -> Int
+}
+
+struct trait E {
+  func foo(y: Int)
+}
+
+struct trait F {
+  public func foo(x: Int) -> Int
+}
+
+
+struct Z: D, E { // expected-error {{Struct 'Z' conforms to traits using the same function name}}
+  public func foo(x: Int) -> Int {
+    return 3
+  }
+}
+
+struct W: D, F {
+  public func foo(x: Int) -> Int {
+    return 3
+  }
+}

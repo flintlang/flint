@@ -41,7 +41,10 @@ public struct IRCodeGenerator {
         return structDeclaration
       }
 
-      let contract = IRContract(contractDeclaration: contractDeclaration, contractBehaviorDeclarations: behaviorDeclarations, structDeclarations: structDeclarations, environment: environment)
+      let contract = IRContract(contractDeclaration: contractDeclaration,
+                                contractBehaviorDeclarations: behaviorDeclarations,
+                                structDeclarations: structDeclarations,
+                                environment: environment)
       contracts.append(contract)
       interfaces.append(IRInterface(contract: contract, environment: environment))
     }

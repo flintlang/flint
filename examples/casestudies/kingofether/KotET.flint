@@ -1,0 +1,87 @@
+contract KotET {
+  var king: Address
+  visible var claimPrice: Int = 100
+  var owner: Address
+  var pot: Wei
+}
+
+KotET :: caller <- (any) {
+  public init() {
+    self.owner = caller
+    self.king = caller
+    self.pot = Wei(0)
+  }
+
+  @payable
+  public mutating func dethrone(implicit value: Wei) {
+    if value.getRawValue() < claimPrice {
+      fatalError()
+    }
+
+    let oldKing: Address = king
+    let compensation: Wei = Wei(&pot, calculateCompensation())
+
+    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.king = caller
+
+    pot.transfer(&value)
+    send(oldKing, &compensation) // To add new external call syntax
+    // Currently vulnerable to an oldKing that throws when sending
+    // Should delegate to another function to call
+  }
+
+  func calculateNewPrice(bid: Int) -> Int {
+    return bid + 100
+  }
+
+  func calculateCompensation() -> Int {
+    return pot.getRawValue()
+  }
+}
+
+contract ValidKotET {
+  var king: Address
+  visible var claimPrice: Int = 100
+  var owner: Address
+  var pot: Wei
+  var pastKings: [Address: Wei] = [:]
+}
+
+ValidKotET :: caller <- (any) {
+  public init() {
+    self.owner = caller
+    self.king = caller
+    self.pot = Wei(0)
+  }
+
+  @payable
+  public mutating func dethrone(implicit value: Wei) {
+    if value.getRawValue() < claimPrice {
+      fatalError()
+    }
+    pastKings[king] = Wei(&pot, calculateCompensation())
+
+    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.king = caller
+
+    pot.transfer(&value)
+  }
+
+  func calculateNewPrice(bid: Int) -> Int {
+    return bid + 100
+  }
+
+  func calculateCompensation() -> Int {
+    return pot.getRawValue()
+  }
+}
+
+// Dictionaries still use values instead of keys array
+// ValidKotET :: king <- (pastKings) {
+ValidKotET :: king <- (any) {
+  // should be mutating, but send is not a mutating function although it should
+  // be in this case
+  public func withdrawCompensation() {
+    send(king, &pastKings[king])
+  }
+}

@@ -8,9 +8,10 @@
 /// Information about an initializer/fallback.
 public struct SpecialInformation {
   public var declaration: SpecialDeclaration
-  public var callerCapabilities: [CallerCapability]
+  public var callerProtections: [CallerProtection]
+  public var isSignature: Bool
 
   var parameterTypes: [RawType] {
-    return declaration.parameters.map { $0.type.rawType }
+    return declaration.signature.parameters.map { $0.type.rawType }
   }
 }

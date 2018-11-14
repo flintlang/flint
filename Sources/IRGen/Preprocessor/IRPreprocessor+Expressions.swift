@@ -20,13 +20,15 @@ extension IRPreprocessor {
         case .identifier(let lhsId) = binaryExpression.lhs,
         case .identifier(let rhsId) = binaryExpression.rhs,
         environment.isEnumDeclared(lhsId.name),
-        let matchingProperty = environment.propertyDeclarations(in: lhsId.name).filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
+        let matchingProperty = environment.propertyDeclarations(in: lhsId.name)
+          .filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
         matchingProperty.type!.rawType != .errorType {
         expression = matchingProperty.value!
       } else if case .equal = binaryExpression.opToken,
         case .functionCall(var functionCall) = binaryExpression.rhs {
 
-        let ampersandToken: Token = Token(kind: .punctuation(.ampersand), sourceLocation: binaryExpression.lhs.sourceLocation)
+        let ampersandToken: Token = Token(kind: .punctuation(.ampersand),
+                                          sourceLocation: binaryExpression.lhs.sourceLocation)
 
         if environment.isInitializerCall(functionCall) {
           // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
@@ -37,7 +39,9 @@ extension IRPreprocessor {
 
           if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
             variableDeclaration.type.rawType.isDynamicType {
-            functionCall.arguments[0] = FunctionArgument(.inoutExpression(InoutExpression(ampersandToken: ampersandToken, expression: .identifier(variableDeclaration.identifier))))
+            functionCall.arguments[0] = FunctionArgument(
+              .inoutExpression(InoutExpression(ampersandToken: ampersandToken,
+                                               expression: .identifier(variableDeclaration.identifier))))
             expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
           }
         }
@@ -47,7 +51,8 @@ extension IRPreprocessor {
     return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
   }
 
-  public func process(binaryExpression: BinaryExpression, passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+  public func process(binaryExpression: BinaryExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
 
@@ -55,7 +60,9 @@ extension IRPreprocessor {
       let sourceLocation = binaryExpression.op.sourceLocation
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
       binaryExpression.op = Token(kind: .punctuation(.equal), sourceLocation: sourceLocation)
-      binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs, op: token, rhs: binaryExpression.rhs))
+      binaryExpression.rhs = .binaryExpression(BinaryExpression(lhs: binaryExpression.lhs,
+                                                                op: token,
+                                                                rhs: binaryExpression.rhs))
     } else if case .dot = binaryExpression.opToken {
       let trail = passContext.functionCallReceiverTrail ?? []
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
@@ -63,7 +70,8 @@ extension IRPreprocessor {
 
     // Convert <= and >= expressions.
     if [.lessThanOrEqual, .greaterThanOrEqual].contains(binaryExpression.opToken) {
-      let strictOperator: Token.Kind.Punctuation = binaryExpression.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
+      let strictOperator: Token.Kind.Punctuation =
+        binaryExpression.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
 
       var lhsExpression = binaryExpression
       lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
@@ -81,7 +89,8 @@ extension IRPreprocessor {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
-  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression where Expressions.Element == Expression {
+  func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression
+    where Expressions.Element == Expression {
     guard expressions.count > 1 else { return expressions.first! }
     let head = expressions.first!
     let tail = expressions.dropFirst()
@@ -96,7 +105,7 @@ extension IRPreprocessor {
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
     let scopeContext = passContext.scopeContext!
@@ -127,7 +136,10 @@ extension IRPreprocessor {
       if isGlobalFunctionCall {
         declarationEnclosingType = Environment.globalFunctionStructName
       } else {
-        declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!, enclosingType: enclosingType, callerCapabilities: callerCapabilities, scopeContext: scopeContext).name
+        declarationEnclosingType = passContext.environment!.type(of: receiverTrail.last!,
+                                                                 enclosingType: enclosingType,
+                                                                 callerProtections: callerProtections,
+                                                                 scopeContext: scopeContext).name
       }
 
       // Set the mangled identifier for the function.
@@ -137,13 +149,19 @@ extension IRPreprocessor {
       if passContext.environment!.isStructDeclared(declarationEnclosingType) {
         if !isGlobalFunctionCall {
           let receiver = constructExpression(from: receiverTrail)
-          let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand), sourceLocation: receiver.sourceLocation), expression: receiver)
+          let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand),
+                                                                      sourceLocation: receiver.sourceLocation),
+                                                expression: receiver)
           functionCall.arguments.insert(FunctionArgument(.inoutExpression(inoutExpression)), at: 0)
         }
       }
     }
 
-    guard case .failure(let candidates) = environment.matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: passContext.scopeContext ?? ScopeContext()), candidates.isEmpty else {
+    guard case .failure(let candidates) =
+      environment.matchEventCall(functionCall,
+                                 enclosingType: enclosingType,
+                                 scopeContext: passContext.scopeContext ?? ScopeContext()),
+      candidates.isEmpty else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
     // For each non-implicit dynamic type, add an isMem parameter.
@@ -151,23 +169,35 @@ extension IRPreprocessor {
     for (index, argument) in functionCall.arguments.enumerated() {
       let isMem: Expression
 
-      if let parameterName = scopeContext.enclosingParameter(expression: argument.expression, enclosingTypeName: enclosingType),
+      if let parameterName = scopeContext.enclosingParameter(expression: argument.expression,
+                                                             enclosingTypeName: enclosingType),
         scopeContext.isParameterImplicit(parameterName) {
         isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
       } else {
-        let type = passContext.environment!.type(of: argument.expression, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+        let type = passContext.environment!.type(of: argument.expression,
+                                                 enclosingType: enclosingType,
+                                                 typeStates: typeStates,
+                                                 callerProtections: callerProtections,
+                                                 scopeContext: scopeContext)
         guard type != .errorType else { fatalError() }
         guard type.isDynamicType else { continue }
 
-        if let enclosingIdentifier = argument.expression.enclosingIdentifier, scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+        if let enclosingIdentifier = argument.expression.enclosingIdentifier,
+          scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
           // If the argument is declared locally, it's stored in memory.
           isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-        } else if let enclosingIdentifier = argument.expression.enclosingIdentifier, scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+        } else if let enclosingIdentifier = argument.expression.enclosingIdentifier,
+          scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
           // If the argument is a parameter to the enclosing function, use its isMem parameter.
-          isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)), sourceLocation: argument.sourceLocation)))
-        } else if case .inoutExpression(let inoutExpression) = argument.expression, case .self(_) = inoutExpression.expression {
+          isMem = .identifier(
+            Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)),
+                                              sourceLocation: argument.sourceLocation)))
+        } else if case .inoutExpression(let inoutExpression) = argument.expression,
+          case .self(_) = inoutExpression.expression {
           // If the argument is self, use flintSelf
-          isMem = .identifier(Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")), sourceLocation: argument.sourceLocation)))
+          isMem = .identifier(
+            Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")),
+                                              sourceLocation: argument.sourceLocation)))
         } else {
           // Otherwise, the argument refers to a property, which is not in memory.
           isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
@@ -193,19 +223,28 @@ extension IRPreprocessor {
     let enclosingType: String = functionCall.identifier.enclosingType ?? passContext.enclosingTypeIdentifier!.name
 
     // Don't mangle event calls
-    if case .matchedEvent(_) = environment.matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: passContext.scopeContext ?? ScopeContext()) {
+    if case .matchedEvent(_) =
+      environment.matchEventCall(functionCall,
+                                 enclosingType: enclosingType,
+                                 scopeContext: passContext.scopeContext ?? ScopeContext()) {
       return functionCall.identifier.name
     }
 
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
-    let matchResult = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: passContext.scopeContext!)
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
+    let matchResult = environment.matchFunctionCall(functionCall,
+                                                    enclosingType: enclosingType,
+                                                    typeStates: typeStates,
+                                                    callerProtections: callerProtections,
+                                                    scopeContext: passContext.scopeContext!)
 
     switch matchResult {
     case .matchedFunction(let functionInformation):
       let declaration = functionInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
-      return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(declaration.identifier.name,
+                                        parameterTypes: parameterTypes,
+                                        enclosingType: enclosingType)
     case .matchedFunctionWithoutCaller(let candidates):
       guard candidates.count == 1 else {
         fatalError("Unable to find unique declaration of \(functionCall)")
@@ -214,18 +253,22 @@ extension IRPreprocessor {
         fatalError("Non-function CallableInformation where function expected")
       }
       let declaration = candidate.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
-      return Mangler.mangleFunctionName(declaration.identifier.name, parameterTypes: parameterTypes, enclosingType: enclosingType)
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(declaration.identifier.name,
+                                        parameterTypes: parameterTypes,
+                                        enclosingType: enclosingType)
     case .matchedInitializer(let initializerInformation):
       let declaration = initializerInformation.declaration
-      let parameterTypes = declaration.parameters.map { $0.type.rawType }
+      let parameterTypes = declaration.signature.parameters.map { $0.type.rawType }
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: parameterTypes)
-    case .matchedFallback(_):
+    case .matchedFallback:
       return Mangler.mangleInitializerName(functionCall.identifier.name, parameterTypes: [])
     case .matchedGlobalFunction(let functionInformation):
-      let parameterTypes = functionInformation.declaration.parameters.map { $0.type.rawType }
-      return Mangler.mangleFunctionName(functionCall.identifier.name, parameterTypes: parameterTypes, enclosingType: Environment.globalFunctionStructName)
-    case .failure(_):
+      let parameterTypes = functionInformation.declaration.signature.parameters.map { $0.type.rawType }
+      return Mangler.mangleFunctionName(functionCall.identifier.name,
+                                        parameterTypes: parameterTypes,
+                                        enclosingType: Environment.globalFunctionStructName)
+    case .failure:
       return nil
     }
   }
@@ -233,11 +276,15 @@ extension IRPreprocessor {
   func isGlobalFunctionCall(_ functionCall: FunctionCall, in passContext: ASTPassContext) -> Bool {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
-    let callerCapabilities = passContext.contractBehaviorDeclarationContext?.callerCapabilities ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
     let scopeContext = passContext.scopeContext!
     let environment = passContext.environment!
 
-    let match = environment.matchFunctionCall(functionCall, enclosingType: enclosingType, typeStates: typeStates, callerCapabilities: callerCapabilities, scopeContext: scopeContext)
+    let match = environment.matchFunctionCall(functionCall,
+                                              enclosingType: enclosingType,
+                                              typeStates: typeStates,
+                                              callerProtections: callerProtections,
+                                              scopeContext: scopeContext)
 
     // Mangle global function
     if case .matchedGlobalFunction(_) = match {

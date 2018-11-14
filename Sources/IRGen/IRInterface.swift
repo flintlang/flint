@@ -18,9 +18,11 @@ struct IRInterface {
         switch member {
         case .functionDeclaration(let functionDeclaration):
           return render(functionDeclaration)
-        case .specialDeclaration(_):
+        case .specialDeclaration:
           return ""
           // Rendering initializers/fallback is not supported yet.
+        case .functionSignatureDeclaration, .specialSignatureDeclaration:
+          fatalError("No signatures in contract body")
         }
       }
     }.joined(separator: "\n")
@@ -49,7 +51,9 @@ struct IRInterface {
 
     var attribute = ""
 
-    if !functionDeclaration.isMutating, !functionDeclaration.containsEventCall(environment: environment, contractIdentifier: contract.contractDeclaration.identifier) {
+    if !functionDeclaration.isMutating,
+        !functionDeclaration.containsEventCall(environment: environment,
+                                               contractIdentifier: contract.contractDeclaration.identifier) {
       attribute = "view "
     }
 
@@ -58,7 +62,7 @@ struct IRInterface {
     }
 
     let returnCode: String
-    if let resultType = functionDeclaration.resultType {
+    if let resultType = functionDeclaration.signature.resultType {
       returnCode = " returns (\(CanonicalType(from: resultType.rawType)!) ret)"
     } else {
       returnCode = ""
@@ -68,7 +72,9 @@ struct IRInterface {
   }
 
   func render(_ functionParameter: Parameter) -> String {
-    return "\(CanonicalType(from: functionParameter.type.rawType)!.rawValue) \(functionParameter.identifier.name.mangled)"
+    let canonicalType = CanonicalType(from: functionParameter.type.rawType)!.rawValue
+    let mangledName = functionParameter.identifier.name.mangled
+    return "\(canonicalType) \(mangledName)"
   }
 }
 

@@ -16,7 +16,12 @@ struct IRAssignment {
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
-      return "let \(Mangler.mangleName(variableDeclaration.identifier.name)) := \(rhsCode)"
+      let mangledName = Mangler.mangleName(variableDeclaration.identifier.name)
+      // Shadowed variables shouldn't be redeclared
+      if mangledName == rhsCode {
+        return ""
+      }
+      return "let \(mangledName) := \(rhsCode)"
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return "\(identifier.name.mangled) := \(rhsCode)"
     default:
@@ -25,12 +30,16 @@ struct IRAssignment {
 
       if functionContext.isInStructFunction {
         let enclosingName: String
-        if let enclosingParameter = functionContext.scopeContext.enclosingParameter(expression: lhs, enclosingTypeName: functionContext.enclosingTypeName) {
+        if let enclosingParameter = functionContext.scopeContext.enclosingParameter(
+            expression: lhs,
+            enclosingTypeName: functionContext.enclosingTypeName) {
           enclosingName = enclosingParameter
         } else {
           enclosingName = "flintSelf"
         }
-        return IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: Mangler.isMem(for: enclosingName).mangled)
+        return IRRuntimeFunction.store(address: lhsCode,
+                                       value: rhsCode,
+                                       inMemory: Mangler.isMem(for: enclosingName).mangled)
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
         return IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true)

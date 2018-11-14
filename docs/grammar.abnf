@@ -4,122 +4,140 @@
 topLevelModule = 1*(topLevelDeclaration CRLF);
 
 topLevelDeclaration = contractDeclaration
-                        / contractBehaviourDeclaration
-                        / structDeclaration
-                        / enumDeclaration;
+                    / contractBehaviourDeclaration
+                    / structDeclaration
+                    / enumDeclaration
+                    / traitDeclaration;
 
 ; CONTRACTS
 contractDeclaration = %s"contract" SP identifier SP [identifierGroup] SP "{" *(WSP variableDeclaration CRLF) "}";
 
 ; VARIABLES
-variableDeclaration = [*(modifier SP)] SP (%s"var" / %s"let") SP identifier typeAnnotation [WSP "=" WSP expression];
+variableDeclaration = [*(modifier SP)] WSP (%s"var" / %s"let") SP identifier typeAnnotation [WSP "=" WSP expression];
 
 ; TYPES
 typeAnnotation = ":" WSP type;
 
 type = identifier ["<" type *("," WSP type) ">"]
-       / basicType
-       / arrayType
-       / fixedArrayType
-       / dictType;
+     / basicType
+     / arrayType
+     / fixedArrayType
+     / dictType;
 
 basicType = %s"Bool"
-             / %s"Int"
-             / %s"String"
-             / %s"Address";
+          / %s"Int"
+          / %s"String"
+          / %s"Address";
 
-arrayType        = "[" type "]";
-fixedArrayType  = type "[" numericLiteral "]";
-dictType         = "[" type ":" WSP type "]";
+arrayType      = "[" type "]";
+fixedArrayType = type "[" numericLiteral "]";
+dictType       = "[" type ":" WSP type "]";
 
 ; ENUMS
 enumDeclaration = %s"enum" SP identifier SP [typeAnnotation] SP "{" *(WSP enumCase CRLF) "}";
 enumCase        = %s"case" SP identifier
-                   / %s"case" SP identifier WSP "=" WSP expression;
+                / %s"case" SP identifier WSP "=" WSP expression;
+
+; TRAITS
+traitDeclaration = %s"struct" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
+                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
+
+traitMember = functionDeclaration
+            / functionSignatureDeclaration
+            / initializerDeclaration
+            / initializerSignatureDeclaration
+            / contractBehaviourDeclaration
+            / eventDeclaration;
 
 ; EVENTS
-eventDeclaration = "event" identifer "{" *(variableDeclaration) "}"
+eventDeclaration = %s"event" identifer "{" *(variableDeclaration) "}"
 
 ; STRUCTS
-structDeclaration = %s"struct" SP identifier SP "{" *(WSP structMember CRLF) "}";
+structDeclaration = %s"struct" SP identifier [":" WSP identifierList ] SP "{" *(WSP structMember CRLF) "}";
 
 structMember = variableDeclaration
-                / functionDeclaration
-                / initializerDeclaration;
+             / functionDeclaration
+             / initializerDeclaration;
 
 ; BEHAVIOUR
-contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerCapabilityBinding] callerCapabilityGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
+contractBehaviourDeclaration = identifier WSP [stateGroup] SP "::" WSP [callerBinding] callerProtectionGroup WSP "{" *(WSP contractBehaviourMember CRLF) "}";
 
 contractBehaviourMember = functionDeclaration
-                            / initializerDeclaration
-                            / fallbackDeclaration;
+                        / initializerDeclaration
+                        / fallbackDeclaration
+                        / initializerSignatureDeclaration
+                        / functionSignatureDeclaration;
 
 ; ACCESS GROUPS
-stateGroup               = "@" identifierGroup;
-callerCapabilityBinding = identifier WSP "<-";
-callerCapabilityGroup   = identifierGroup;
-identifierGroup           = "(" identifier *("," WSP identifier) ")";
+stateGroup            = "@" identifierGroup;
+callerBinding         = identifier WSP "<-";
+callerProtectionGroup = identifierGroup;
+identifierGroup       = "(" identifierList ")";
+identifierList        = identifier *("," WSP identifier)
 
 ; FUNCTIONS + INITIALIZER + FALLBACK
-functionDeclaration    = functionHead SP identifier parameterList [returnType] codeBlock;
-initializerDeclaration = initializerHead parameterList codeBlock;
-fallbackDeclaration    = fallbackHead parameterList codeBlock;
+functionSignatureDeclaration    = functionHead SP identifier parameterList [returnType]
+functionDeclaration             = functionSignatureDeclaration codeBlock;
+initializerSignatureDeclaration = initializerHead parameterList
+initializerDeclaration          = initializerSignatureDeclaration codeBlock;
+fallbackDeclaration             = fallbackHead parameterList codeBlock;
 
-functionHead     = [*(attribute SP)] [*(modifier SP)] %s"func";
-initializerHead  = [*(attribute SP)] [*(modifier SP)] %s"init";
-fallbackHead     = [*(modifier SP)] %s"fallback";
+functionHead    = [*(attribute SP)] [*(modifier SP)] %s"func";
+initializerHead = [*(attribute SP)] [*(modifier SP)] %s"init";
+fallbackHead    = [*(modifier SP)] %s"fallback";
 
 attribute = "@" identifier;
 modifier  = %s"public"
-            / %s"mutating"
-            / %s"visible";
+          / %s"mutating"
+          / %s"visible";
 
 returnType = "->" type;
 
-parameterList       = "()"
-                      / "(" parameter *("," parameter) ")";
-parameter           = *(parameterModifiers SP) identifier typeAnnotation;
-parameterModifiers  = %s"inout" / %s"implicit"
+parameterList = "()"
+              / "(" parameter *("," parameter) ")";
+
+parameter          = *(parameterModifiers SP) identifier typeAnnotation;
+parameterModifiers = %s"inout" / %s"implicit"
 
 ; STATEMENTS
-codeBlock   = "{" [CRLF] *(WSP statement CRLF) WSP statement [CRLF]"}";
-statement   = expression
-              / returnStatement
-              / becomeStatement
-              / emitStatement
-              / forStatement
-              / ifStatement;
+codeBlock = "{" [CRLF] *(WSP statement CRLF) WSP statement [CRLF]"}";
+statement = expression
+          / returnStatement
+          / becomeStatement
+          / emitStatement
+          / forStatement
+          / ifStatement;
 
 returnStatement = %s"return" SP expression
 becomeStatement = %s"become" SP expression
 emitStatement   = %s"emit" SP expression
-forStatement = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+forStatement    = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
 
 ; EXPRESSIONS
 expression = identifier
-             / inOutExpression
-             / binaryExpression
-             / functionCall
-             / literal
-             / arrayLiteral
-             / dictionaryLiteral
-             / self
-             / variableDeclaration
-             / bracketedExpression
-             / subscriptExpression
-             / rangeExpression
-             / attemptExpression;
+           / inOutExpression
+           / binaryExpression
+           / functionCall
+           / literal
+           / arrayLiteral
+           / dictionaryLiteral
+           / self
+           / variableDeclaration
+           / bracketedExpression
+           / subscriptExpression
+           / rangeExpression
+           / attemptExpression;
 
 inOutExpression = "&" expression;
 
 binaryOp = "+" / "-" / "*" / "/" / "**"
-            / "&+" / "&-" / "&*"
-            / "="
-            / "==" / "!="
-            / "+=" / "-=" / "*=" / "/="
-            / "||" / "&&"
-            / ">" / "<" / "<=" / ">="
-            / ".";
+         / "&+" / "&-" / "&*"
+         / "="
+         / "==" / "!="
+         / "+=" / "-=" / "*=" / "/="
+         / "||" / "&&"
+         / ">" / "<" / "<=" / ">="
+         / ".";
 
 binaryExpression = expression WSP binaryOp WSP expression;
 
@@ -127,10 +145,10 @@ self = %s"self"
 
 rangeExpression = "(" expression ( "..<" / "..." ) expression ")"
 
-bracketedExpression  = "(" expression ")";
+bracketedExpression = "(" expression ")";
 
-subscriptExpression  = subscriptExpression "[" expression "]";
-                        / identifier "[" expression "]";
+subscriptExpression = subscriptExpression "[" expression "]";
+                    / identifier "[" expression "]";
 
 attemptExpression = try expression
 try = %s"try" ( "!" / "?" )
@@ -139,22 +157,25 @@ try = %s"try" ( "!" / "?" )
 functionCall = identifier "(" [expression] *( "," WSP expression ) ")";
 
 ; CONDITIONALS
-ifStatement  = %s"if" SP expression SP codeBlock [elseClause];
-elseClause   = %s"else" SP codeBlock;
+ifStatement = %s"if" SP expression SP codeBlock [elseClause];
+elseClause  = %s"else" SP codeBlock;
 
 ; LITERALS
 identifier = ( ALPHA / "_" ) *( ALPHA / DIGIT / "$" / "_" );
-literal   = numericLiteral
-            / stringLiteral
-            / booleanLiteral
-            / addressLiteral;
+literal    = numericLiteral
+           / stringLiteral
+           / booleanLiteral
+           / addressLiteral;
 
+number         = 1*DIGIT;
 numericLiteral = decimalLiteral;
 decimalLiteral = number
                / number "." number;
+
 addressLiteral = %s"0x" 40HEXDIG;
-arrayLiteral = "[]";
+
+arrayLiteral      = "[]";
 dictionaryLiteral = "[:]";
+
 booleanLiteral = %s"true" / %s"false";
-stringLiteral = """ identifier """;
-number = 1*DIGIT;
+stringLiteral  = """ identifier """;

@@ -18,9 +18,9 @@ public struct Lexer {
 
   var isFromStdlib: Bool
 
-  public init(sourceFile: URL, isFromStdlib: Bool = false) {
+  public init(sourceFile: URL, isFromStdlib: Bool = false) throws {
     self.sourceFile = sourceFile
-    self.sourceCode = try! String(contentsOf: sourceFile)
+    self.sourceCode = try String(contentsOf: sourceFile)
     self.isFromStdlib = isFromStdlib
   }
 
@@ -46,7 +46,8 @@ public struct Lexer {
         // The token is a number literal.
         let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
 
-        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind, lastTwoTokens.last!.kind == .punctuation(.dot) {
+        if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind,
+            lastTwoTokens.last!.kind == .punctuation(.dot) {
           tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
@@ -58,7 +59,10 @@ public struct Lexer {
         tokens.append(Token(kind: .literal(.address(hex)), sourceLocation: sourceLocation))
       } else if let first = component.first, let last = component.last, first == "\"", first == last {
         // The token is a string literal.
-        tokens.append(Token(kind: .literal(.string(String(component[(component.index(after: component.startIndex)..<component.index(before: component.endIndex))]))), sourceLocation: sourceLocation))
+        let componentSubstring = component[
+            (component.index(after: component.startIndex)..<component.index(before: component.endIndex))
+        ]
+        tokens.append(Token(kind: .literal(.string(String(componentSubstring))), sourceLocation: sourceLocation))
       } else {
         // The token is an identifier.
         tokens.append(Token(kind: .identifier(component), sourceLocation: sourceLocation))
@@ -79,6 +83,7 @@ public struct Lexer {
     "let": .let,
     "func": .func,
     "event": .event,
+    "trait": .trait,
     "init": .init,
     "fallback": .fallback,
     "try": .try,
