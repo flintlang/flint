@@ -840,7 +840,7 @@ public struct ASTVisitor {
     var processResult = pass.process(externalCall: externalCall, passContext: passContext)
 
     processResult.passContext.isExternalConfigurationParam = true
-    processResult.element.configurationParameters = processResult.element.configurationParameters.map { param in
+    processResult.element.hyperParameters = processResult.element.hyperParameters.map { param in
       let paramVisit = visit(param, passContext: processResult.passContext)
       return processResult.combining(paramVisit)
     }

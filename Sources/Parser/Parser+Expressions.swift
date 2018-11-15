@@ -180,7 +180,7 @@ extension Parser {
       throw raise(.badDeclaration(at: tokens[currentIndex].sourceLocation))
     }
 
-    return ExternalCall(configurationParameters: arguments,
+    return ExternalCall(hyperParameters: arguments,
                         functionCall: functionCall,
                         mode: mode)
   }

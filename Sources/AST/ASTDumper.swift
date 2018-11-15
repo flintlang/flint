@@ -482,7 +482,7 @@ public class ASTDumper {
 
   func dump(_ externalCall: ExternalCall) {
     writeNode("ExternalCall") {
-      for argument in externalCall.configurationParameters {
+      for argument in externalCall.hyperParameters {
         self.dump(argument)
       }
 

@@ -13,14 +13,14 @@ public struct ExternalCall: ASTNode {
     case normal, returnsGracefullyOptional, isForced
   }
 
-  public var configurationParameters: [FunctionArgument]
+  public var hyperParameters: [FunctionArgument]
   public var functionCall: BinaryExpression
   public var mode: Mode
 
-  public init(configurationParameters: [FunctionArgument],
+  public init(hyperParameters: [FunctionArgument],
               functionCall: BinaryExpression,
               mode: Mode) {
-    self.configurationParameters = configurationParameters
+    self.hyperParameters = hyperParameters
     self.functionCall = functionCall
     self.mode = mode
   }
@@ -31,7 +31,7 @@ public struct ExternalCall: ASTNode {
   }
 
   public var description: String {
-    let configurationText = configurationParameters.map({ $0.description }).joined(separator: ", ")
+    let configurationText = hyperParameters.map({ $0.description }).joined(separator: ", ")
     return "call(\(configurationText)) - " + "\(functionCall.description))"
   }
 }

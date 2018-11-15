@@ -75,6 +75,33 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    var parametersGiven: [String: Bool] = [
+      "value": false,
+      "gas": false
+    ]
+    var diagnostics = [Diagnostic]()
+
+    // ensure only one instance of value and gas hyper-parameters
+    for parameter in externalCall.hyperParameters {
+      if let identifier: Identifier = parameter.identifier {
+        let name: String = identifier.name
+        if let valueGiven: Bool = parametersGiven[name] {
+          if valueGiven {
+            diagnostics.append(.duplicateExternalCallHyperParameter(identifier))
+          }
+          parametersGiven[name] = true
+        } else {
+          diagnostics.append(.invalidExternalCallHyperParameter(identifier))
+        }
+      } else {
+        diagnostics.append(.unlabeledExternalCallHyperParameter(externalCall))
+      }
+    }
+
+    return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }

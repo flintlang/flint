@@ -478,8 +478,23 @@ extension Diagnostic {
 
   static func publicAndVisible(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
     let identName = variableDeclaration.identifier.name
-   return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation,
-                     message: "Cannot declare variable '\(identName)' both public and visible")
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation,
+                      message: "Cannot declare variable '\(identName)' both public and visible")
+  }
+
+  static func invalidExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation,
+                      message: "'\(identifier.name)' is not a valid external call hyper-parameter")
+  }
+
+  static func duplicateExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation,
+                      message: "'\(identifier.name)' hyper-parameter was already specified")
+  }
+
+  static func unlabeledExternalCallHyperParameter(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "External call hyper-parameter was not labeled")
   }
 
   static func renderGroup(_ protections: [CallerProtection]) -> String {
