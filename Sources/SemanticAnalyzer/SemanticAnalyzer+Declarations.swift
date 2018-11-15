@@ -182,11 +182,14 @@ extension SemanticAnalyzer {
     }
 
     traitDeclaration.members.forEach { member in
-      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
-        diagnostics.append(.contractTraitMemberInStructTrait(member))
+      if traitDeclaration.traitKind.kind == .struct, !isStructTraitMember(member: member) {
+        diagnostics.append(.invalidStructTraitMember(member))
       }
-      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
-        diagnostics.append(.structTraitMemberInContractTrait(member))
+      if traitDeclaration.traitKind.kind == .contract, !isContractTraitMember(member: member) {
+        diagnostics.append(.invalidContractTraitMember(member))
+      }
+      if traitDeclaration.traitKind.kind == .external, !isExternalTraitMember(member: member) {
+        diagnostics.append(.invalidExternalTraitMember(member))
       }
     }
 
@@ -238,7 +241,23 @@ extension SemanticAnalyzer {
   }
 
   func isStructTraitMember(member: TraitMember) -> Bool {
-    return !isContractTraitMember(member: member)
+    switch member {
+    case .functionDeclaration, .specialDeclaration,
+         .functionSignatureDeclaration, .specialSignatureDeclaration:
+      return true
+    case .contractBehaviourDeclaration, .eventDeclaration:
+      return false
+    }
+  }
+
+  func isExternalTraitMember(member: TraitMember) -> Bool {
+    switch member {
+    case .functionSignatureDeclaration:
+      return true
+    case .functionDeclaration, .specialDeclaration, .specialSignatureDeclaration,
+         .contractBehaviourDeclaration, .eventDeclaration:
+      return false
+    }
   }
 
   // MARK: Variable
@@ -276,6 +295,11 @@ extension SemanticAnalyzer {
     if passContext.traitDeclarationContext == nil && variableDeclaration.type.rawType.isSelfType {
       diagnostics.append(.useOfSelfOutsideTrait(at: variableDeclaration.sourceLocation))
     }
+
+    // Check whether Solidity types are allowed in the current context
+    checkWhetherSolidityTypesAreAllowedInContext(type: variableDeclaration.type,
+                                                 passContext: passContext,
+                                                 diagnostics: &diagnostics)
 
     if passContext.inFunctionOrInitializer {
       if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name),
@@ -326,6 +350,18 @@ extension SemanticAnalyzer {
   }
 
   // MARK: Function
+  public func process(functionSignatureDeclaration: FunctionSignatureDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
+    var diagnostics: [Diagnostic] = []
+    if let resultType = functionSignatureDeclaration.resultType {
+        checkWhetherSolidityTypesAreAllowedInContext(type: resultType,
+                                                     passContext: passContext,
+                                                     diagnostics: &diagnostics)
+    }
+
+    return ASTPassResult(element: functionSignatureDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()

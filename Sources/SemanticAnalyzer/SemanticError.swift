@@ -159,14 +159,19 @@ extension Diagnostic {
                       message: "Cannot use signatures in contracts, only in traits")
   }
 
-  static func contractTraitMemberInStructTrait(_ member: TraitMember) -> Diagnostic {
+  static func invalidStructTraitMember(_ member: TraitMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
-                      message: "Use of contract trait member in struct trait")
+                      message: "Member invalid in struct trait context")
   }
 
-  static func structTraitMemberInContractTrait(_ member: TraitMember) -> Diagnostic {
+  static func invalidContractTraitMember(_ member: TraitMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
-                      message: "Use of struct trait member in contract trait")
+                      message: "Member invalid in contract trait context")
+  }
+
+  static func invalidExternalTraitMember(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
+                      message: "Member invalid in external trait context")
   }
 
   static func undeclaredCallerProtection(_ callerProtection: CallerProtection,
@@ -579,5 +584,33 @@ extension Diagnostic {
   static func invalidConditionTypeInIfStatement(_ ifStatement: IfStatement) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: ifStatement.condition.sourceLocation,
       message: "Condition has invalid type: must be Bool or a valid let statement")
+  }
+
+  static func flintTypeUsedInExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
+    var notes: [Diagnostic] = []
+    if case .basicType(let basicType) = type.rawType,
+      let solidityParallel = basicType.solidityParallel {
+      notes.append(Diagnostic(severity: .note, sourceLocation: location,
+                              message: "Perhaps you meant to use '\(solidityParallel)'"))
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: location,
+                      // swiftlint:disable line_length
+                      message: "Only Solidity types may be used in external traits. '\(type.name)' is a Flint type", notes: notes)
+                      // swiftlint:enable line_length
+  }
+
+  static func solidityTypeUsedOutsideExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
+    var notes: [Diagnostic] = []
+    if case .solidityType(let solidityType) = type.rawType,
+      let basicParallel = solidityType.basicParallel {
+      notes.append(Diagnostic(severity: .note, sourceLocation: location,
+                              message: "Perhaps you meant to use '\(basicParallel)'"))
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: location,
+                      // swiftlint:disable line_length
+                      message: "Solidity types may not be used outside of external traits. '\(type.name)' is a Solidity type", notes: notes)
+                      // swiftlint:enable line_length
   }
 }

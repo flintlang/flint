@@ -221,7 +221,8 @@ public struct ASTVisitor {
       processResult.combining(visit(processResult.element.identifier,
                                     passContext: processResult.passContext))
 
-    let traitDeclarationContext = TraitDeclarationContext(traitIdentifier: processResult.element.identifier)
+    let traitDeclarationContext = TraitDeclarationContext(traitIdentifier: processResult.element.identifier,
+                                                          traitKind: processResult.element.traitKind)
     let traitScopeContext = ScopeContext()
 
     processResult.passContext = processResult.passContext.withUpdates {
@@ -951,18 +952,6 @@ public struct ASTVisitor {
                                                                passContext: processResult.passContext))
 
     let postProcessResult = pass.postProcess(parameter: processResult.element, passContext: processResult.passContext)
-    return ASTPassResult(element: postProcessResult.element,
-                         diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
-                         passContext: postProcessResult.passContext)
-  }
-
-  func visit(_ typeAnnotation: TypeAnnotation, passContext: ASTPassContext) -> ASTPassResult<TypeAnnotation> {
-    var processResult = pass.process(typeAnnotation: typeAnnotation, passContext: passContext)
-    processResult.element.type = processResult.combining(visit(processResult.element.type,
-                                                               passContext: processResult.passContext))
-
-    let postProcessResult = pass.postProcess(typeAnnotation: processResult.element,
-                                             passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)

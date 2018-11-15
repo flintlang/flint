@@ -1,16 +1,99 @@
 // RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
 
+// CHECK-AST: TraitDeclaration (
+// CHECK-AST:       token: external
+// CHECK-AST:       Identifier (
+// CHECK-AST:         token: identifier "Test"
+// CHECK-AST:       )
 external trait Test {
-  public func f()
+
+// CHECK-AST:      FunctionSignatureDeclaration (
+// CHECK-AST:        token: func
+// CHECK-AST:        Identifier (
+// CHECK-AST:          token: identifier "f"
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "a"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type address
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "b"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type string
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "c"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type int8
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "d"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type uint136
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "e"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type bool
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        Parameter (
+// CHECK-AST:          Identifier (
+// CHECK-AST:            token: identifier "f"
+// CHECK-AST:          )
+// CHECK-AST:          Type (
+// CHECK-AST:            SolidityType (
+// CHECK-AST:              solidity type int72
+// CHECK-AST:            )
+// CHECK-AST:            Generic Arguments (
+// CHECK-AST:            )
+// CHECK-AST:          )
+// CHECK-AST:        )
+// CHECK-AST:        token: )
+// CHECK-AST:      )
+  func f(a: address, b: string, c: int8, d: uint136, e: bool, f: int72)
 
   @payable
-  func g(b: Bool) -> Int
-
-  public init(c: Bool)
+  func g(b: bool) -> int8
 }
 
 contract Contract {
-  
+
 }
 
 Contract :: (any) {

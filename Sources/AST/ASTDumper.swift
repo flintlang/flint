@@ -379,6 +379,10 @@ public class ASTDumper {
       writeLine("Flint error type \(rawType.name)")
     case .functionType:
       writeLine("function type \(rawType.name)")
+    case .solidityType(let solidityType):
+      writeNode("SolidityType") {
+        self.dump(solidityType)
+      }
     }
   }
 
@@ -599,5 +603,9 @@ public class ASTDumper {
         self.dump(element.value)
       }
     }
+  }
+
+  func dump(_ solidityType: RawType.SolidityType) {
+    writeLine("solidity type \(solidityType.rawValue)")
   }
 }

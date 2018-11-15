@@ -8,6 +8,7 @@ import Foundation
 import AST
 import Lexer
 import Diagnostic
+import Source
 
 extension SemanticAnalyzer {
   /// The set of characters for identifiers which can only be used in the stdlib.
@@ -145,6 +146,10 @@ extension SemanticAnalyzer {
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
     var diagnostics = [Diagnostic]()
 
+    checkWhetherSolidityTypesAreAllowedInContext(type: parameter.type,
+                                                 passContext: passContext,
+                                                 diagnostics: &diagnostics)
+
     if parameter.type.rawType.isUserDefinedType,
       !parameter.isInout,
       !(parameter.type.isCurrencyType && parameter.isImplicit) {
@@ -156,6 +161,21 @@ extension SemanticAnalyzer {
     }
 
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func checkWhetherSolidityTypesAreAllowedInContext(type: Type,
+                                                    passContext: ASTPassContext,
+                                                    diagnostics: inout [Diagnostic]) {
+    if let kind = passContext.traitDeclarationContext?.traitKind.kind, kind == .external {
+      if case .solidityType = type.rawType {} else {
+        // typeAnnotation is describing a Flint type but we are in an external trait declaration
+        diagnostics.append(.flintTypeUsedInExternalTrait(type, at: type.sourceLocation))
+      }
+    } else if case .solidityType = type.rawType {
+      // type annotation is describing a Solidity type but we are not in an external trait declaration
+      diagnostics.append(.solidityTypeUsedOutsideExternalTrait(type, at: type.sourceLocation))
+    }
+
   }
 
   public func process(callerProtection: CallerProtection,

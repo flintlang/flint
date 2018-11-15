@@ -1,0 +1,38 @@
+// RUN: %flintc %s --verify
+
+// expected-warning@0 {{No contract declaration in top level module}}
+
+struct trait StructureTrait {
+  init(param: int256) // expected-error {{Solidity types may not be used outside of external traits. 'int256' is a Solidity type}}
+}
+
+struct Structure {
+  func test(param: Int) -> Int {} // expected-error {{Missing return in function expected to return 'Int'}}
+
+  func test2(param: string) {} // expected-error {{Solidity types may not be used outside of external traits. 'string' is a Solidity type}}
+
+  func test3(param: String) -> bool {} // expected-error {{Solidity types may not be used outside of external traits. 'bool' is a Solidity type}}
+                                       // expected-error@-1 {{Missing return in function expected to return 'bool'}}
+
+  func test4(a: int64, b: int24, c: int256) -> address {} // expected-error {{Solidity types may not be used outside of external traits. 'address' is a Solidity type}}
+                                                          // expected-error@-1 {{Solidity types may not be used outside of external traits. 'int64' is a Solidity type}}
+                                                          // expected-error@-2 {{Solidity types may not be used outside of external traits. 'int24' is a Solidity type}}
+                                                          // expected-error@-3 {{Solidity types may not be used outside of external traits. 'int256' is a Solidity type}}
+                                                          // expected-error@-4 {{Missing return in function expected to return 'address'}}
+}
+
+external trait CorrectExternalTrait {
+  func test(param: int256) -> int32
+
+  func test2()
+
+  func test3(a: string, b: bool, c: address, d: int136)
+}
+
+external trait IncorrectExternalTrait {
+  func test(param: Address, param: String, param: Bool, param: Int) -> Int // expected-error {{Only Solidity types may be used in external traits. 'Int' is a Flint type}}
+                                                                           // expected-error@-1 {{Only Solidity types may be used in external traits. 'Address' is a Flint type}}
+                                                                           // expected-error@-2 {{Only Solidity types may be used in external traits. 'String' is a Flint type}}
+                                                                           // expected-error@-3 {{Only Solidity types may be used in external traits. 'Bool' is a Flint type}}
+                                                                           // expected-error@-4 {{Only Solidity types may be used in external traits. 'Int' is a Flint type}}
+}

@@ -17,10 +17,16 @@ contract trait ContractTrait {
   }
 }
 
-struct trait FalseStructureTrait {
-  event e() // expected-error {{Use of contract trait member in struct trait}}
+external trait ExternalTrait {
+  func test(param: int256) -> int32
 
-  self :: (any) { // expected-error {{Use of contract trait member in struct trait}}
+  func test2()
+}
+
+struct trait FalseStructureTrait {
+  event e() // expected-error {{Member invalid in struct trait context}}
+
+  self :: (any) { // expected-error {{Member invalid in struct trait context}}
     public init() {}
     func test() {}
     func new() -> Bool
@@ -29,8 +35,20 @@ struct trait FalseStructureTrait {
 }
 
 contract trait FalseContractTrait {
-  public init() // expected-error {{Use of struct trait member in contract trait}}
+  public init() // expected-error {{Member invalid in contract trait context}}
 
-  func test() {} // expected-error {{Use of struct trait member in contract trait}}
-  public func signature() -> Int // expected-error {{Use of struct trait member in contract trait}}
+  func test() {} // expected-error {{Member invalid in contract trait context}}
+  public func signature() -> Int // expected-error {{Member invalid in contract trait context}}
+}
+
+external trait FalseExternalTrait {
+  public init() // expected-error {{Member invalid in external trait context}}
+
+  init() {} // expected-error {{Member invalid in external trait context}}
+
+  func test() {} // expected-error {{Member invalid in external trait context}}
+
+  self :: (any) { // expected-error {{Member invalid in external trait context}}
+    public init() {}
+  }
 }
