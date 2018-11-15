@@ -43,7 +43,7 @@ variety of security features.
 ---
 
 ## Installation
-## Docker
+### Docker
 The Flint compiler and its dependencies can be installed using Docker:
 ```
 Docker pull franklinsch/flint
@@ -81,7 +81,7 @@ sudo apt-get install solc
 ### Binary Packages
 Flint is compatible on macOS and Linux platforms, and can be installed by downloading a built binary directly.
 
-The latest releases are available at https://github.com/franklinsch/flint/releases.
+The latest releases are available at https://github.com/flintlang/flint/releases.
 
 
 ### Building From Source
@@ -89,7 +89,7 @@ The best way to start contributing to the Flint compiler, `flintc`, is to clone 
 
 Once you have the `swift` command line tool installed, you can build `flintc`.
 ```
-git clone https://github.com/franklinsch/flint.git
+git clone https://github.com/flintlang/flint.git
 cd flint
 make
 ```
@@ -123,21 +123,21 @@ The `language-flint` package can be downloaded to have syntax highlighting for f
 
 ---
 ## Compilation
-Flint compiles to EVM bytecode, which can be deployed to the Ethereum blockchain using a standard client, or Truffle.
+Flint compiles to EVM bytecode via YUL IR using the Solidity compiler, which can be deployed to the Ethereum blockchain using a standard client, or Truffle.
 
 For testing purposes, the recommended way of running a contract is by using the Remix IDE.
 
 ### Using Remix
 Remix is an online IDE for testing Solidity smart contracts. Flint contracts can also be tested in Remix, by compiling Flint to Solidity.
 
-In this example, we are going to compile and run the `Counter` contract, available to download [here](https://github.com/franklinsch/flint/blob/master/examples/valid/counter.flint).
+In this example, we are going to compile and run the `Counter` contract, available to download [here](https://github.com/flintlang/flint/blob/master/examples/valid/counter.flint).
 
 #### Compiling
 A Flint source file named `counter.flint` containing a contract `Counter` can be compiled to a Solidity file using:
 ```
 flintc main.flint --emit-ir
 ```
-You can view the generate code, embedded as a Solidity program:
+You can view the generated code, embedded as a Solidity program:
 ```
 cat bin/main/Counter.sol
 ```
@@ -358,11 +358,15 @@ if x == 2 {
 } else {
   // ,,,
 }
+```
 
+When using `if let ...` statements, the `else` branch is used when an external call is not successful:
+
+```swift
 if let example: Bool = call(gas: 5000)? alpha.functionWithBoolReturn() {
   // function returned value, here available as `example`
 } else {
-  // no value returned, handle gracefully
+  // no value returned (or external call failure), handle gracefully
 }
 ```
 
@@ -378,10 +382,10 @@ func identifier() {
 }
 ```
 
-In Flint all functions are `private` by default and as such can only be accessed from within the contract body.
+In Flint all functions are `private` by default and as such can only be accessed from within the contract body (see [access modifiers](#access-modifiers)).
 
 ### Function Parameters
-Functions can also take parameters which can be used within the function. These must be declared in the function signature. Flint also supports parameters that take default values, but these must be declared at the end of the signature. Below is a function that [mutates](#mutating-modiifer) the dictionary of peoples' names to add the Key, Value pair of caller's address and name. If the parameter `name` is not provided to the function call, then the default value of "John Doe" will be used. For more information about callers, see [Caller Bindings](#caller-bindings):
+Functions can also take parameters which can be used within the function. These must be declared in the function signature. Flint also supports parameters that take default values, but these must be declared at the end of the signature. Below is a function that [mutates](#mutating-modifier) the dictionary of peoples' names to add the Key, Value pair of caller's address and name. If the parameter `name` is not provided to the function call, then the default value of "John Doe" will be used. For more information about callers, see [Caller Bindings](#caller-bindings):
 ```swift
 contract AddressBook {
   var people: [Address: String]
@@ -484,9 +488,9 @@ for let i: Int in (0..<count) {
 ```
 
 ### Open Range
-The _open range operator_ (`a..,b`) defines a range that runs from a to b and does include b.
+The _open range operator_ (`a...b`) defines a range that runs from a to b and does include b.
 ```swift
-for let i: Int in (0..<count) {
+for let i: Int in (0...count) {
   // ...
 }
 ```
@@ -567,23 +571,24 @@ Struct values can be declared as state properties or local variables/constants t
 
 
 ### Structs as function arguments
-When struct values are passed as function arguments, they are passed _by value_ by default. That is, on function entry, a struct is copied in storage or memory (depending on whether it is a state property or a local variable).
-
 Structs can be passed _by reference_ using the *inout* keyword. The struct is then treated as an implicit reference to the value in the caller.
+
+Passing structs by value (copying the struct into storage or memory) is a planned feature. (See https://github.com/flintlang/flint/issues/133)
 
 ```
 func foo() {
   let s = S(8)
-  byValue(s) // s.x == 8
   byReference(s) // s.x == 10
-}
-
-func byValue(s: S) {
-  s.x = 10
+  // byValue(s) // s.x == 10 (modification not persistent in this scope)
 }
 
 func byReference(s: inout S) {
-  s.x
+  s.x = 10
+}
+
+// currently unsupported:
+func byValue(s: S) {
+  s.x = 12
 }
 ```
 ---
@@ -637,7 +642,7 @@ Numerous attacks targeting smart contracts, such as ones relating to reentrancy 
 
 Flint supports special safe operations when handling assets, such as Ether. They help ensure the contract's state consistently represents its Ether value, preventing attacks such as TheDAO.
 
-An simple use of Assets:
+A simple use of Assets:
 ```swift
 contract Wallet {
   var owner: Address
@@ -702,6 +707,38 @@ Wallet :: (owner) {
   }
 }
 ```
+
+`Wei` is an example of an asset, and it is a `struct` conforming to the `struct trait Asset`, available in the standard library. It is possible to declare custom structs which will behave like assets:
+
+```swift
+struct MyWei : Asset {
+  var rawValue: Int = 0
+
+  init(unsafeRawValue: Int) {
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout MyWei, amount: Int) {
+    transfer(source: &source, amount: amount)
+  }
+
+  init(source: inout MyWei) {
+    let amount: Int = source.getRawValue()
+    transfer(source: &source, amount: amount)
+  }
+
+  mutating func setRawValue(value: Int) -> Int {
+    rawValue = value
+    return rawValue
+  }
+
+  func getRawValue() -> Int {
+    return rawValue
+  }
+}
+```
+
+The `transfer` functions are declared in the `Asset` trait and are inherited automatically. For the time being, traits do not support default implementations for initialisers or variables, so custom assets have to include the code above.
 
 ---
 
@@ -967,7 +1004,7 @@ Flint introduces the concept of **type states**. Insufficient and incorrect stat
 
 In Flint, states of a contract are declared within protection blocks, which protect the enclosed function from invalid calls.
 ```swift
-// Ahyone can deposit into the Bank iff the state is Deposit
+// Anyone can deposit into the Bank iff the state is Deposit
 Bank @(Deposit) :: (any) { // Deposit is a state identifier.
   func deposit(address: Address) {
     // body
