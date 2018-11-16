@@ -5,6 +5,7 @@
 //  Created by Hails, Daniel J R on 22/08/2018.
 //
 import Source
+import Lexer
 
 extension Environment {
   /// Add a contract declaration to the environment.
@@ -160,12 +161,14 @@ extension Environment {
   /// protections is expected.
   public func addInitializerSignature(_ initalizerSignature: SpecialSignatureDeclaration,
                                       enclosingType: RawTypeIdentifier,
-                                      callerProtections: [CallerProtection] = []) {
+                                      callerProtections: [CallerProtection] = [],
+                                      generated: Bool = false) {
 
     let specialDeclaration = SpecialDeclaration(signature: initalizerSignature,
                                                 body: [],
                                                 closeBraceToken: .init(kind: .punctuation(.closeBrace),
-                                                                       sourceLocation: .DUMMY))
+                                                                       sourceLocation: .DUMMY),
+                                                generated: generated)
 
     types[enclosingType, default: TypeInformation()]
       .initializers
@@ -207,10 +210,32 @@ extension Environment {
     }
   }
 
+  private func externalTraitInitializer(_ externalTrait: TraitDeclaration) -> SpecialSignatureDeclaration {
+    return SpecialSignatureDeclaration(
+      specialToken: .init(kind: .punctuation(.openBrace),
+                          sourceLocation: externalTrait.traitToken.sourceLocation),
+      attributes: [],
+      modifiers: [],
+      parameters: [Parameter(identifier: Identifier(identifierToken: Token(kind: .identifier("address"),
+                                                    sourceLocation: externalTrait.traitToken.sourceLocation)),
+                             type: Type(inferredType: .basicType(.address), identifier: externalTrait.identifier),
+                             implicitToken: nil,
+                             assignedExpression: nil)],
+      closeBracketToken: .init(kind:.punctuation(.closeBrace), sourceLocation: externalTrait.traitToken.sourceLocation))
+  }
+
   /// Add a trait to the environment.
   public func addTrait(_ trait: TraitDeclaration) {
     declaredTraits.append(trait.identifier)
     types[trait.identifier.name] = TypeInformation()
+
+    // We insert a generated constructor for external traits
+    if case .external = trait.traitKind.kind {
+      let special = externalTraitInitializer(trait)
+      addInitializerSignature(special, enclosingType: trait.identifier.name, callerProtections: [],
+                              generated: true)
+    }
+
     for member in trait.members {
       if case .eventDeclaration(let eventDeclaration) = member {
         addEvent(eventDeclaration, enclosingType: trait.identifier.name)

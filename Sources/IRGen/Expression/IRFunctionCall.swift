@@ -23,6 +23,14 @@ struct IRFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
+    if case .matchedInitializer(let initializer) =
+      environment.matchFunctionCall(functionCall, enclosingType: enclosingType,
+                                    typeStates: [], callerProtections: [], scopeContext: scopeContext),
+      initializer.declaration.generated {
+      return IRExpression(expression: functionCall.arguments[0].expression, asLValue: false)
+        .rendered(functionContext: functionContext)
+    }
+
     let args: String = functionCall.arguments.map({ argument in
       return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     }).joined(separator: ", ")

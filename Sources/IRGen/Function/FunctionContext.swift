@@ -8,7 +8,7 @@
 import AST
 
 /// Context used when generating code the body of a function.
-struct FunctionContext {
+class FunctionContext {
   /// Environment information, such as typing of variables, for the source program.
   var environment: Environment
 
@@ -20,4 +20,32 @@ struct FunctionContext {
 
   /// Whether the function is declared in a struct.
   var isInStructFunction: Bool
+
+  var doCatchStatementStack: [DoCatchStatement]
+
+  init(environment: Environment,
+       scopeContext: ScopeContext,
+       enclosingTypeName: String,
+       isInStructFunction: Bool,
+       doCatchStatementStack: [DoCatchStatement] = []) {
+    self.environment = environment
+    self.scopeContext = scopeContext
+    self.enclosingTypeName = enclosingTypeName
+    self.isInStructFunction = isInStructFunction
+    self.doCatchStatementStack = doCatchStatementStack
+  }
+
+  func push(doCatch stmt: DoCatchStatement) {
+    doCatchStatementStack.append(stmt)
+  }
+
+  @discardableResult
+  func pop() -> DoCatchStatement? {
+    return doCatchStatementStack.popLast()
+  }
+
+  var top: DoCatchStatement? {
+    return doCatchStatementStack.last
+  }
+
 }
