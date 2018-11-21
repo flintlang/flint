@@ -162,6 +162,21 @@ extension SemanticAnalyzer {
                 functionDeclaration: passContext.functionDeclarationContext!.declaration))
           }
         }
+
+        if let externalCall = passContext.externalCallContext {
+
+          // check value parameter (appropriate usage)
+          if !matchingFunction.declaration.isPayable {
+            if externalCall.hasHyperParameter(parameterName: "value") {
+              diagnostics.append(.valueParameterForUnpayableFunction(externalCall))
+            }
+          } else {
+            if !externalCall.hasHyperParameter(parameterName: "value") {
+              diagnostics.append(.missingValueParameterForPayableFunction(externalCall))
+            }
+          }
+        }
+
         checkArgumentLabels(functionCall, &diagnostics, isEventCall: false)
         checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
 

@@ -34,4 +34,20 @@ public struct ExternalCall: ASTNode {
     let configurationText = hyperParameters.map({ $0.description }).joined(separator: ", ")
     return "call(\(configurationText)) - " + "\(functionCall.description))"
   }
+
+  public func hasHyperParameter(parameterName: String) -> Bool {
+    return getHyperParameter(parameterName: parameterName) != nil
+  }
+
+  public func getHyperParameter(parameterName: String) -> FunctionArgument? {
+    for parameter in hyperParameters {
+      if let identifier = parameter.identifier {
+        if identifier.name == parameterName {
+          return parameter
+        }
+      }
+    }
+
+    return nil
+  }
 }

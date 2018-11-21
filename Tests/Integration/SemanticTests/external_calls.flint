@@ -8,20 +8,53 @@ Contract :: (any) {
   func someFunc() {
     
   }
+
+  @payable
+  func payableFunc(implicit parameter: Wei) {
+
+  }
+
+  func testFunc1() -> Int {
+    return 6
+  }
+
+  @payable
+  func testFunc2(y: Int, z: Int, implicit w: Wei) {
+
+  }
+
+  @payable
+  func testFunc3(implicit w: Wei) -> Int {
+    return 2
+  }
   
   public init() {
     call! self.someFunc()
     call(gas: 100)! self.someFunc()
-    call(value: Wei(100))! self.someFunc()
-    call(value: Wei(100), gas: 100)! self.someFunc()
+    call(value: Wei(100), gas: 100)! self.payableFunc(parameter: Wei(1))
 
-    call(gas: 100, value: Wei(200), gas: 300)! self.someFunc() // expected-error {{'gas' hyper-parameter was already specified}}
-    call(value: Wei(100), value: Wei(200), value: Wei(300))! self.someFunc() // expected-error {{'value' hyper-parameter was already specified}}
-                                                                             // expected-error@-1 {{'value' hyper-parameter was already specified}}
+    call(gas: 100)! self.payableFunc(parameter: Wei(120)) // expected-error {{Attempting to call a payable function without specifying a 'value' hyper-parameter}}
+    call(gas: Wei(100))! self.someFunc() // expected-error {{'gas' hyper-parameter of an external call must be of type Int}}
+    call(value: Wei(100))! self.someFunc() // expected-error {{Attempting to call a non-payable function with a 'value' hyper-parameter}}
+    call(value: 100) self.payableFunc(parameter: Wei(1)) // expected-error {{'value' hyper-parameter of an external call must be of type Wei}}
+    call(gas: 100, value: Wei(200), gas: 300)! self.payableFunc(parameter: Wei(1)) // expected-error {{'gas' hyper-parameter was already specified}}
+    call(value: Wei(100), value: Wei(200), value: Wei(300))! self.payableFunc(parameter: Wei(1)) // expected-error {{'value' hyper-parameter was already specified}}
+                                                                                                 // expected-error@-1 {{'value' hyper-parameter was already specified}}
 
     call(Wei(100))! self.someFunc() // expected-error {{External call hyper-parameter was not labeled}}
 
     call(money: Wei(100))! self.someFunc() // expected-error {{'money' is not a valid external call hyper-parameter}}
+    call(value: Wei(100))! self.testFunc2(y: call! self.testFunc1(), z: call! self.testFunc1(), w: Wei(1))
+    call()! self.testFunc2(y: call! self.testFunc1(), z: call! self.testFunc1(), w: Wei(1)) // expected-error {{Attempting to call a payable function without specifying a 'value' hyper-parameter}}
+    call(value: Wei(100))! self.testFunc2(y: call(value: Wei(1))! self.testFunc1(), z: call! self.testFunc1(), w: Wei(1)) // expected-error {{Attempting to call a non-payable function with a 'value' hyper-parameter}}
+    call(value: Wei(100))! self.testFunc2(y: call()! self.testFunc1(), z: call(value: Wei(1))! self.testFunc1(), w: Wei(1)) // expected-error {{Attempting to call a non-payable function with a 'value' hyper-parameter}}
+    call(value: Wei(100))! self.testFunc2(y: call(gas: Wei(50))! self.testFunc1(), z: call(value: Wei(1))! self.testFunc1(), w: Wei(1)) // expected-error {{Attempting to call a non-payable function with a 'value' hyper-parameter}}
+                                                                                                                                        // expected-error@-1 {{'gas' hyper-parameter of an external call must be of type Int}}
+
+    call(value: Wei(100))! self.testFunc2(y: self.testFunc1(), z: self.testFunc1(), w: Wei(1))
+
+    call(value: Wei(100))! self.testFunc2(y: self.testFunc1(), z: call()! self.testFunc3(w: Wei(1)), w: Wei(1)) //expected-error {{Attempting to call a payable function without specifying a 'value' hyper-parameter}}
+    call(value: Wei(100))! self.testFunc2(y: self.testFunc1(), z: call(value: Wei(50))! self.testFunc3(w: Wei(1)), w: Wei(1))
   }
 }
 

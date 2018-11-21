@@ -150,6 +150,12 @@ extension ASTPassContext {
     set { self[IsExternalCallContextEntry.self] = newValue }
   }
 
+  /// The external call context while visiting an external call
+  public var externalCallContext: ExternalCall? {
+    get { return self[ExternalCallContext.self] }
+    set { self[ExternalCallContext.self] = newValue }
+  }
+
   /// When visiting argument labels in a function call, this property is set to `true`.
   public var isFunctionCallArgumentLabel: Bool {
     get { return self[IsFunctionCallArgumentLabel.self] ?? false }
@@ -274,6 +280,10 @@ private struct InitializerDeclarationContextEntry: PassContextEntry {
 
 private struct ScopeContextContextEntry: PassContextEntry {
   typealias Value = ScopeContext
+}
+
+private struct ExternalCallContext: PassContextEntry {
+  typealias Value = ExternalCall
 }
 
 private struct IsFunctionCallContextEntry: PassContextEntry {
