@@ -5,7 +5,11 @@ contract SimpleDAO {
 		address proposer; 
 		uint256 value; 
 		address recipient; 
-		uint256 yesVotes; 		uint256 noVotes; 		uint256 quorum; 		bool finished; 		mapping (address => bool) voted; 
+		uint256 yesVotes; 		
+		uint256 noVotes; 		
+		uint256 quorum; 		
+		bool finished; 		
+		mapping (address => bool) voted; 
 	} 
 
 	enum Stages { 
@@ -14,7 +18,10 @@ contract SimpleDAO {
 		Vote 
 	} 
 
-	Stages public stage = Stages.Join; 	uint256 public creationTime; 	Proposal public proposal; 	mapping (address => uint256) public balances; 
+	Stages public stage = Stages.Join; 	
+	uint256 public creationTime; 	
+	Proposal public proposal; 	
+	mapping (address => uint256) public balances; 
 	uint256 public totalSupply; 
 
 	modifier atStage(Stages _stage) {
@@ -24,7 +31,8 @@ contract SimpleDAO {
 		_; 
 	} 
 
-	modifier onlyMember() { 		if (balances[msg.sender] <= 0) { 
+	modifier onlyMember() { 		
+		if (balances[msg.sender] <= 0) { 
 			revert(); 
 		} 
 		_; 
