@@ -144,10 +144,10 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
-  /// When visiting an external call, this property is set to `true`.
-  public var isExternalCall: Bool {
-    get { return self[IsExternalCallContextEntry.self] ?? false }
-    set { self[IsExternalCallContextEntry.self] = newValue }
+  /// When visiting an external call's function call, this property is set to `true`.
+  public var isExternalFunctionCall: Bool {
+    get { return self[IsExternalFunctionCallContextEntry.self] ?? false }
+    set { self[IsExternalFunctionCallContextEntry.self] = newValue }
   }
 
   /// The external call context while visiting an external call
@@ -290,7 +290,7 @@ private struct IsFunctionCallContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct IsExternalCallContextEntry: PassContextEntry {
+private struct IsExternalFunctionCallContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 

@@ -106,6 +106,7 @@ public struct Lexer {
     "catch": .catch,
     "do": .do,
     "is": .is,
+    "as": .as,
     "+": .punctuation(.plus),
     "&+": .punctuation(.overflowingPlus),
     "-": .punctuation(.minus),

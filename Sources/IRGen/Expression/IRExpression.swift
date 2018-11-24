@@ -26,6 +26,8 @@ struct IRExpression {
     case .binaryExpression(let binaryExpression):
       return IRBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue)
         .rendered(functionContext: functionContext)
+    case .typeConversionExpression:
+      fatalError()
     case .bracketedExpression(let bracketedExpression):
       return IRExpression(expression: bracketedExpression.expression, asLValue: asLValue)
         .rendered(functionContext: functionContext)

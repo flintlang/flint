@@ -63,6 +63,7 @@ public protocol ASTPass {
     "Expression",
     "InoutExpression",
     "BinaryExpression",
+    "TypeConversionExpression",
     "FunctionCall",
     "ExternalCall",
     "ArrayLiteral",

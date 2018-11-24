@@ -40,6 +40,11 @@ extension Parser {
       return .binaryExpression(expr)
     }
 
+    // Try to parse a type conversion expression.
+    if let expr = try parseTypeConversionExpression(upTo: limitTokenIndex) {
+      return .typeConversionExpression(expr)
+    }
+
     if case .try = first {
       // Try to parse an attempted function call
       return .attemptExpression(try parseAttemptExpression())
@@ -94,6 +99,7 @@ extension Parser {
       // Try to parse a literal.
       return .literal(try parseLiteral())
     }
+
     switch first {
     case .public, .visible, .var, .let:
       // Try to parse a variable declaration.
@@ -115,6 +121,29 @@ extension Parser {
       return BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
     }
     return nil
+  }
+
+  // MARK: Casting
+  func parseTypeConversionExpression(upTo limitTokenIndex: Int) throws -> TypeConversionExpression? {
+    guard let index = indexOfFirstAtCurrentDepth([.as], maxIndex: limitTokenIndex) else {
+      return nil
+    }
+
+    let expression = try parseExpression(upTo: index)
+    let asToken = try consume(.as, or: .dummy())
+    var kind: TypeConversionExpression.Kind = .coerce
+    if let currentToken = currentToken {
+      if currentToken.kind == .punctuation(.bang) {
+        kind = .cast
+        try consume(.punctuation(.bang), or: .dummy())
+      } else if currentToken.kind == .punctuation(.question) {
+        kind = .castOptional
+        try consume(.punctuation(.question), or: .dummy())
+      }
+    }
+    let type = try parseType()
+
+    return TypeConversionExpression(expression: expression, asToken: asToken, kind: kind, type: type)
   }
 
   // MARK: Bracketed

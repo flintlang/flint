@@ -30,6 +30,39 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(typeConversionExpression: TypeConversionExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<TypeConversionExpression> {
+    var diagnostics: [Diagnostic] = []
+    if typeConversionExpression.kind != .cast {
+      // Not implemented yet
+      diagnostics.append(.notImplementedAs(typeConversionExpression))
+    }
+
+    guard let environment = passContext.environment,
+      let enclosingType = passContext.enclosingTypeIdentifier,
+      let scopeContext = passContext.scopeContext else {
+        fatalError("No context available at callsite, unable to determine validity of as")
+    }
+
+    let expressionType = environment.type(of: typeConversionExpression.expression,
+                                             enclosingType: enclosingType.name,
+                                             scopeContext: scopeContext)
+
+    // Check elementary casting constraint
+    if expressionType.canReinterpret(as: typeConversionExpression.type.rawType) {
+      // 1. If we have an external function call, we allow conversions between any kind of type
+      // 2. If we have a solidity type conversion to a non-solidity type conversion we always allow it as the
+      //    only place where we can get a Solidity type is from an external call
+      if !passContext.isExternalFunctionCall && typeConversionExpression.type.rawType.isSolidityType {
+        diagnostics.append(.badSolidityTypeConversion(typeConversionExpression, expressionType: expressionType))
+      }
+    } else {
+      diagnostics.append(.typesNotReinterpretable(typeConversionExpression, expressionType: expressionType))
+    }
+
+    return ASTPassResult(element: typeConversionExpression, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(attemptExpression: AttemptExpression,
                       passContext: ASTPassContext) -> ASTPassResult<AttemptExpression> {
     var diagnostics = [Diagnostic]()

@@ -39,6 +39,10 @@ public indirect enum RawType: Equatable {
       .bool: .bool
     ]
 
+    public var isIntegral: Bool {
+      return self == .int
+    }
+
     public var solidityParallel: RawTypeIdentifier? {
       return BasicType.solidityParallels[self]?.rawValue
     }
@@ -126,78 +130,42 @@ public indirect enum RawType: Equatable {
     case uint248 = "uint248"
     case uint256 = "uint256"
 
-    private static let basicParallels: [SolidityType: BasicType] = [
-      .address: .address,
-      .string: .string,
-      .bool: .bool,
-      .int8: .int,
-      .int16: .int,
-      .int24: .int,
-      .int32: .int,
-      .int40: .int,
-      .int48: .int,
-      .int56: .int,
-      .int64: .int,
-      .int72: .int,
-      .int80: .int,
-      .int88: .int,
-      .int96: .int,
-      .int104: .int,
-      .int112: .int,
-      .int120: .int,
-      .int128: .int,
-      .int136: .int,
-      .int144: .int,
-      .int152: .int,
-      .int160: .int,
-      .int168: .int,
-      .int176: .int,
-      .int184: .int,
-      .int192: .int,
-      .int200: .int,
-      .int208: .int,
-      .int216: .int,
-      .int224: .int,
-      .int232: .int,
-      .int240: .int,
-      .int248: .int,
-      .int256: .int,
-      .uint8: .int,
-      .uint16: .int,
-      .uint24: .int,
-      .uint32: .int,
-      .uint40: .int,
-      .uint48: .int,
-      .uint56: .int,
-      .uint64: .int,
-      .uint72: .int,
-      .uint80: .int,
-      .uint88: .int,
-      .uint96: .int,
-      .uint104: .int,
-      .uint112: .int,
-      .uint120: .int,
-      .uint128: .int,
-      .uint136: .int,
-      .uint144: .int,
-      .uint152: .int,
-      .uint160: .int,
-      .uint168: .int,
-      .uint176: .int,
-      .uint184: .int,
-      .uint192: .int,
-      .uint200: .int,
-      .uint208: .int,
-      .uint216: .int,
-      .uint224: .int,
-      .uint232: .int,
-      .uint240: .int,
-      .uint248: .int,
-      .uint256: .int
-    ]
+    public var isIntegral: Bool {
+      switch self {
+      case .address:
+        return false
+      case .string:
+        return false
+      case .bool:
+        return false
+      case .int8, .int16, .int24, .int32, .int40, .int48, .int56, .int64,
+           .int72, .int80, .int88, .int96, .int104, .int112, .int120, .int128,
+           .int136, .int144, .int152, .int160, .int168, .int176, .int184, .int192,
+           .int200, .int208, .int216, .int224, .int232, .int240, .int248, .int256:
+        return true
+      case .uint8, .uint16, .uint24, .uint32, .uint40, .uint48, .uint56, .uint64,
+           .uint72, .uint80, .uint88, .uint96, .uint104, .uint112, .uint120, .uint128,
+           .uint136, .uint144, .uint152, .uint160, .uint168, .uint176, .uint184, .uint192,
+           .uint200, .uint208, .uint216, .uint224, .uint232, .uint240, .uint248, .uint256:
+        return true
+      }
+    }
 
     public var basicParallel: RawTypeIdentifier? {
-      return SolidityType.basicParallels[self]?.rawValue
+      if isIntegral {
+        return BasicType.int.rawValue
+      }
+
+      switch self {
+      case .address:
+        return BasicType.address.rawValue
+      case .string:
+        return BasicType.string.rawValue
+      case .bool:
+        return BasicType.bool.rawValue
+      default:
+        return nil
+      }
     }
   }
 
@@ -262,6 +230,14 @@ public indirect enum RawType: Equatable {
     return self == .selfType
   }
 
+  public var isSolidityType: Bool {
+    if case .solidityType(_) = self {
+      return true
+    }
+
+    return false
+  }
+
   public var isCurrencyType: Bool {
     if case .userDefinedType(let typeIdentifier) = self, RawType.StdlibType(rawValue: typeIdentifier) == .wei {
       return true
@@ -318,6 +294,38 @@ public indirect enum RawType: Equatable {
 
     return self
   }
+
+  // Can we reinterpret this type as `other`?
+  public func canReinterpret(as other: RawType) -> Bool {
+    // If other is basic, we can reinterpret to other if we are basic or solidity
+    if case .basicType(let basic) = other {
+      // Other is solidity
+      if case .solidityType(let solidity) = self {
+        return basic.isIntegral && solidity.isIntegral ||
+          basic == .string && solidity == .string ||
+          basic == .address && solidity == .address ||
+          basic == .bool && solidity == .bool
+      }
+
+      // Otherwise we need equality of types (basic == basic)
+      return self == other
+    }
+
+    // Two solidity types
+    if case .solidityType(let x) = self,
+      case .solidityType(let y) = other {
+      // Allow integral types to eachother, but equality otherwise
+      return x.isIntegral && y.isIntegral || x == y
+    }
+
+    // If other is solidity type, for now we treat this identically to the above
+    if other.isSolidityType {
+      return other.canReinterpret(as: self)
+    }
+
+    return false
+  }
+
 }
 
 /// A Flint type.

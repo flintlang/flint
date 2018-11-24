@@ -707,6 +707,10 @@ public struct ASTVisitor {
     case .inoutExpression(let inoutExpression):
       processResult.element = .inoutExpression(processResult.combining(visit(inoutExpression,
                                                                              passContext: processResult.passContext)))
+    case .typeConversionExpression(let typeConversionExpression):
+      processResult.element = .typeConversionExpression(
+        processResult.combining(visit(typeConversionExpression, passContext: processResult.passContext)))
+
     case .binaryExpression(let binaryExpression):
       processResult.element = .binaryExpression(processResult.combining(visit(binaryExpression,
                                                                               passContext: processResult.passContext)))
@@ -819,6 +823,21 @@ public struct ASTVisitor {
                          passContext: postProcessResult.passContext)
   }
 
+  func visit(_ typeConversionExpression: TypeConversionExpression,
+             passContext: ASTPassContext) -> ASTPassResult<TypeConversionExpression> {
+    var processResult = pass.process(typeConversionExpression: typeConversionExpression, passContext: passContext)
+
+    processResult.element.expression = processResult.combining(visit(processResult.element.expression,
+                                                                     passContext: passContext))
+    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: passContext))
+
+    let postProcessResult = pass.postProcess(typeConversionExpression: processResult.element,
+                                             passContext: processResult.passContext)
+    return ASTPassResult(element: postProcessResult.element,
+                         diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
+                         passContext: postProcessResult.passContext)
+  }
+
   func visit(_ functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var processResult = pass.process(functionCall: functionCall, passContext: passContext)
 
@@ -858,18 +877,18 @@ public struct ASTVisitor {
     processResult.passContext.isExternalConfigurationParam = false
 
     // for nested external calls
-    let oldIsExternalCall = processResult.passContext.isExternalCall
+    let oldIsExternalCall = processResult.passContext.isExternalFunctionCall
     let oldExternalCallContext = processResult.passContext.externalCallContext
 
-    processResult.passContext.isExternalCall = true
+    processResult.passContext.isExternalFunctionCall = true
     processResult.passContext.externalCallContext = processResult.element
 
     processResult.element.functionCall = processResult.combining(visit(processResult.element.functionCall,
                                                                        passContext: processResult.passContext))
     processResult.passContext.externalCallContext = oldExternalCallContext
-    processResult.passContext.isExternalCall = oldIsExternalCall
+    processResult.passContext.isExternalFunctionCall = oldIsExternalCall
 
-    let postProcessResult = pass.postProcess(externalCall: externalCall,
+    let postProcessResult = pass.postProcess(externalCall: processResult.element,
                                              passContext: processResult.passContext)
 
     return ASTPassResult(element: postProcessResult.element,

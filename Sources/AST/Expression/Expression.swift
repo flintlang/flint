@@ -12,6 +12,7 @@ public indirect enum Expression: ASTNode {
   case identifier(Identifier)
   case inoutExpression(InoutExpression)
   case binaryExpression(BinaryExpression)
+  case typeConversionExpression(TypeConversionExpression)
   case functionCall(FunctionCall)
   case externalCall(ExternalCall)
   case literal(Token)
@@ -89,6 +90,7 @@ public indirect enum Expression: ASTNode {
     case .identifier(let identifier): return identifier.sourceLocation
     case .inoutExpression(let inoutExpression): return inoutExpression.sourceLocation
     case .binaryExpression(let binaryExpression): return binaryExpression.sourceLocation
+    case .typeConversionExpression(let typeConversionExpression): return typeConversionExpression.sourceLocation
     case .functionCall(let functionCall): return functionCall.sourceLocation
     case .externalCall(let externalCall): return externalCall.sourceLocation
     case .literal(let literal): return literal.sourceLocation
@@ -109,6 +111,7 @@ public indirect enum Expression: ASTNode {
     case .identifier(let identifier): return identifier.description
     case .inoutExpression(let inoutExpression): return inoutExpression.description
     case .binaryExpression(let binaryExpression): return binaryExpression.description
+    case .typeConversionExpression(let typeConversionExpression): return typeConversionExpression.description
     case .functionCall(let functionCall): return functionCall.description
     case .externalCall(let externalCall): return externalCall.description
     case .literal(let literal): return literal.description

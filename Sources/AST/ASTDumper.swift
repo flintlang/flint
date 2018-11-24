@@ -407,6 +407,7 @@ public class ASTDumper {
       switch expression {
       case .inoutExpression(let inoutExpression): self.dump(inoutExpression)
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
+      case .typeConversionExpression(let typeConversionExpression): self.dump(typeConversionExpression)
       case .bracketedExpression(let bracketedExpression): self.dump(bracketedExpression)
       case .functionCall(let functionCall): self.dump(functionCall)
       case .externalCall(let externalCall): self.dump(externalCall)
@@ -451,6 +452,14 @@ public class ASTDumper {
       self.dump(binaryExpression.lhs)
       self.dump(binaryExpression.op)
       self.dump(binaryExpression.rhs)
+    }
+  }
+
+  func dump(_ typeConversionExpression: TypeConversionExpression) {
+    writeNode("TypeConversionExpression") {
+      self.dump(typeConversionExpression.expression)
+      self.writeLine("kind: \(typeConversionExpression.kind.description)")
+      self.dump(typeConversionExpression.type)
     }
   }
 

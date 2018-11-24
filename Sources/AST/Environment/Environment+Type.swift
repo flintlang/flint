@@ -173,7 +173,8 @@ extension Environment {
                              typeStates: typeStates,
                              callerProtections: callerProtections,
                              scopeContext: scopeContext))
-
+    case .typeConversionExpression(let typeConversionExpression):
+      return typeConversionExpression.type.rawType
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
@@ -205,7 +206,11 @@ extension Environment {
             fatalError()
           }
         default:
-          break
+          return type(of: binaryExpression.rhs,
+                      enclosingType: lhsType.name,
+                      typeStates: typeStates,
+                      callerProtections: callerProtections,
+                      scopeContext: scopeContext)
         }
       }
 

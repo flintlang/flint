@@ -550,6 +550,8 @@ extension SemanticAnalyzer {
         if binaryExpression.op.kind == .punctuation(.equal) {
           return true
         }
+      case .typeConversionExpression:
+        return true
       case .functionCall(let function):
         let match = environment.matchFunctionCall(function,
                                                   enclosingType: enclosingType,
@@ -567,7 +569,7 @@ extension SemanticAnalyzer {
         }
         return true
       case .externalCall:
-        fatalError()
+        return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
            .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
            .subscriptExpression, .range:
