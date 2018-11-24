@@ -180,11 +180,12 @@ extension Environment {
       }
 
       if binaryExpression.opToken == .dot {
-        switch type(of: binaryExpression.lhs,
-                    enclosingType: enclosingType,
-                    typeStates: typeStates,
-                    callerProtections: callerProtections,
-                    scopeContext: scopeContext) {
+        let lhsType = type(of: binaryExpression.lhs,
+                           enclosingType: enclosingType,
+                           typeStates: typeStates,
+                           callerProtections: callerProtections,
+                           scopeContext: scopeContext)
+        switch lhsType {
         case .arrayType:
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)

@@ -61,6 +61,7 @@ let package = Package(
       dependencies: [
         "Parser",
         "Lexer",
+        "ASTPreprocessor",
         "SemanticAnalyzer",
         "TypeChecker",
         "Optimizer",
@@ -163,6 +164,23 @@ let package = Package(
         "Cuckoo",
       ],
       sources: [".", "../../.derived-tests/SemanticAnalyzer"]
+    ),
+    // MARK: ASTPreprocessor -
+    .target(
+      name: "ASTPreprocessor",
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST"
+      ]
+    ),
+    .testTarget(
+      name: "ASTPreprocessorTests",
+      dependencies: [
+        "ASTPreprocessor",
+        "Cuckoo",
+        ],
+      sources: [".", "../../.derived-tests/ASTPreprocessor"]
     ),
     // MARK: TypeChecker -
     .target(

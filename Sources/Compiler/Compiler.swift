@@ -10,6 +10,7 @@ import AST
 import Diagnostic
 import Lexer
 import Parser
+import ASTPreprocessor
 import SemanticAnalyzer
 import TypeChecker
 import Optimizer
@@ -18,6 +19,8 @@ import IRGen
 /// Runs the different stages of the compiler.
 public struct Compiler {
   public static let defaultASTPasses: [ASTPass] = [
+    ASTPreprocessor(),
+    EnclosingTypeAssigner(),
     SemanticAnalyzer(),
     TypeChecker(),
     Optimizer(),
