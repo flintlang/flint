@@ -504,19 +504,6 @@ extension Diagnostic {
   static func renderGroup(_ states: [TypeState]) -> String {
     return "\(states.map({ $0.name }).joined(separator: ", "))"
   }
-
-  // EXTERNAL CALL ERRORS //
-  static func normalExternalCallOutsideDoCatch(_ externalCall: ExternalCall) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
-                      message: "Cannot use 'call' outside do-catch block")
-  }
-
-  // As there are currently no optional types, we cannot assign to an optional return type.
-  static func externalCallOptionalAssignmentNotImplemented(_ variableDeclarationExpr: BinaryExpression) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: variableDeclarationExpr.sourceLocation,
-                      message: "Assignment to the optional result of 'call?' is not yet implemented")
-  }
-
 }
 
 // MARK: Warnings

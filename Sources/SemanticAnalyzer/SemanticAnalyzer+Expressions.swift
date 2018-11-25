@@ -12,40 +12,19 @@ extension SemanticAnalyzer {
 
   public func process(binaryExpression: BinaryExpression,
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    switch binaryExpression.opToken {
-    case .dot:
-      // The identifier explicitly refers to a state property, such as in `self.foo`.
-      // We set its enclosing type to the type it is declared in.
+    if case .dot = binaryExpression.opToken {
       let enclosingType = passContext.enclosingTypeIdentifier!
       let lhsType = environment.type(of: binaryExpression.lhs,
                                      enclosingType: enclosingType.name,
                                      scopeContext: passContext.scopeContext!)
       if case .identifier(let enumIdentifier) = binaryExpression.lhs,
         environment.isEnumDeclared(enumIdentifier.name) {
-        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
-      } else if lhsType == .selfType {
-        if let traitDeclarationContext = passContext.traitDeclarationContext {
-          binaryExpression.rhs =
-            binaryExpression.rhs.assigningEnclosingType(type: traitDeclarationContext.traitIdentifier.name)
-        } else {
-          diagnostics.append(.useOfSelfOutsideTrait(at: binaryExpression.lhs.sourceLocation))
-        }
-      } else {
-        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      } else if lhsType == .selfType, passContext.traitDeclarationContext == nil {
+        diagnostics.append(.useOfSelfOutsideTrait(at: binaryExpression.lhs.sourceLocation))
       }
-    case .equal:
-      // Check if `call?` assignment
-      if case .externalCall(let externalCall) = binaryExpression.rhs,
-        externalCall.mode == .returnsGracefullyOptional {
-        diagnostics.append(.externalCallOptionalAssignmentNotImplemented(binaryExpression))
-      }
-
-    default:
-      break
     }
 
     return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
@@ -104,33 +83,26 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: attemptExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
-    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
-  }
-
-  public func process(rangeExpression: AST.RangeExpression,
-                      passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
+  public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if case .literal(let startToken) = rangeExpression.initial,
-      case .literal(let endToken) = rangeExpression.bound {
-      if startToken.kind == endToken.kind, rangeExpression.op.kind == .punctuation(.halfOpenRange) {
-        diagnostics.append(.emptyRange(rangeExpression))
-      }
-    } else {
-      diagnostics.append(.invalidRangeDeclaration(rangeExpression.initial))
+    if environment.isInitializerCall(functionCall),
+      !passContext.inAssignment,
+      !passContext.isPropertyDefaultAssignment,
+      functionCall.arguments.isEmpty {
+      diagnostics.append(.noReceiverForStructInitializer(functionCall))
     }
 
-    return ASTPassResult(element: rangeExpression, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
-    var diagnostics = [Diagnostic]()
-
     var parametersGiven: [String: Bool] = [
       "value": false,
       "gas": false
     ]
+    var diagnostics = [Diagnostic]()
 
     // ensure only one instance of value and gas hyper-parameters
     for parameter in externalCall.hyperParameters {
@@ -149,26 +121,27 @@ extension SemanticAnalyzer {
       }
     }
 
-    // Ensure `call` is only used inside do-catch block
-    if externalCall.mode == .normal && passContext.doBlockNestingCount <= 0 {
-      diagnostics.append(.normalExternalCallOutsideDoCatch(externalCall))
-    }
-
     return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    let environment = passContext.environment!
+  public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
+    return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(rangeExpression: AST.RangeExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<AST.RangeExpression> {
     var diagnostics = [Diagnostic]()
 
-    if environment.isInitializerCall(functionCall),
-      !passContext.inAssignment,
-      !passContext.isPropertyDefaultAssignment,
-      functionCall.arguments.isEmpty {
-      diagnostics.append(.noReceiverForStructInitializer(functionCall))
+    if case .literal(let startToken) = rangeExpression.initial,
+      case .literal(let endToken) = rangeExpression.bound {
+      if startToken.kind == endToken.kind, rangeExpression.op.kind == .punctuation(.halfOpenRange) {
+        diagnostics.append(.emptyRange(rangeExpression))
+      }
+    } else {
+      diagnostics.append(.invalidRangeDeclaration(rangeExpression.initial))
     }
 
-    return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: rangeExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {

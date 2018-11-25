@@ -173,20 +173,6 @@ extension TypeChecker {
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
-  public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
-    var diagnostics = [Diagnostic]()
-    let environment = passContext.environment!
-    let enclosingType = passContext.enclosingTypeIdentifier!.name
-
-    if externalCall.mode == .returnsGracefullyOptional && environment.type(of: externalCall.functionCall.rhs,
-                          enclosingType: enclosingType,
-                          scopeContext: passContext.scopeContext!) == .basicType(.void) {
-      diagnostics.append(.optionalExternalCallWithoutReturnType(externalCall: externalCall))
-    }
-
-    return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)
-  }
-
   public func process(subscriptExpression: SubscriptExpression,
                       passContext: ASTPassContext) -> ASTPassResult<SubscriptExpression> {
     var diagnostics = [Diagnostic]()

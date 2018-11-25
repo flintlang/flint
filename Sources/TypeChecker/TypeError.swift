@@ -16,11 +16,6 @@ extension Diagnostic {
       message: "Cannot convert expression of type '\(actualType.name)' to expected return type '\(expectedType.name)'")
   }
 
-  static func optionalExternalCallWithoutReturnType(externalCall: ExternalCall) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
-                      message: "Cannot use 'call?' with external function that has no return type")
-  }
-
   static func invalidState(falseState: Expression, contract: RawTypeIdentifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: falseState.sourceLocation,
                       message: "State not defined for contract '\(contract)'")
