@@ -358,6 +358,12 @@ if x == 2 {
 } else {
   // ,,,
 }
+
+if let example: Bool = call(gas: 5000)? alpha.functionWithBoolReturn() {
+  // function returned value, here available as `example`
+} else {
+  // no value returned, handle gracefully
+}
 ```
 
 When using `if let ...` statements, the `else` branch is used when an external call is not successful:
