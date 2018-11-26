@@ -11,15 +11,17 @@ struct IREventCall {
   var eventCall: FunctionCall
   var eventDeclaration: EventDeclaration
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     let types = eventDeclaration.variableDeclarations.map { $0.type }
 
+    var preambles = [String]()
     var stores = [String]()
     var memoryOffset = 0
 
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = IRExpression(expression: argument.expression).rendered(functionContext: functionContext)
-      stores.append("mstore(\(memoryOffset), \(argument))")
+      preambles.append(argument.preamble)
+      stores.append("mstore(\(memoryOffset), \(argument.expression))")
       memoryOffset += functionContext.environment.size(of: types[i].rawType) * EVM.wordSize
     }
 
@@ -31,9 +33,11 @@ struct IREventCall {
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
     let log = "log1(0, \(totalSize), 0x\(eventHash))"
 
-    return """
-    \(stores.joined(separator: "\n"))
-    \(log)
-    """
+    return ExpressionFragment(
+      pre: preambles.joined(separator: "\n"),
+      """
+      \(stores.joined(separator: "\n"))
+      \(log)
+      """)
   }
 }

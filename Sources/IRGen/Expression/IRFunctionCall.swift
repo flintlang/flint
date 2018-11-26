@@ -10,7 +10,7 @@ import AST
 struct IRFunctionCall {
   var functionCall: FunctionCall
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     let environment = functionContext.environment
     let enclosingType: RawTypeIdentifier = functionContext.enclosingTypeName
     let scopeContext: ScopeContext = functionContext.scopeContext
@@ -31,11 +31,13 @@ struct IRFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
-    let args: String = functionCall.arguments.map({ argument in
-      return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-    }).joined(separator: ", ")
+    let (preamble, args) : (String, [String]) = functionCall.arguments.reduce(("", []), { acc, argument in
+      let e = IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
+      return (acc.0 + "\n" + e.preamble, acc.1 + [e.expression])
+    })
+
     let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
-    return "\(identifier)(\(args))"
+    return ExpressionFragment(pre: preamble, "\(identifier)(\(args.joined(separator: ", ")))")
   }
 
 }

@@ -14,7 +14,7 @@ struct IRExternalCall {
     self.externalCall = externalCall
   }
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     fatalError()
   }
 }

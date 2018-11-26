@@ -21,9 +21,11 @@ struct IRSubscriptExpression {
     return nil
   }
 
-  func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int, functionContext: FunctionContext) -> String {
+  func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int,
+                           functionContext: FunctionContext) -> (String, String) {
     let indexExpressionCode = IRExpression(expression: subExpr.indexExpression)
       .rendered(functionContext: functionContext)
+    let preamble = indexExpressionCode.preamble
 
     let type = functionContext.environment.type(of: subExpr.baseExpression,
                                                 enclosingType: functionContext.enclosingTypeName,
@@ -43,18 +45,19 @@ struct IRSubscriptExpression {
 
     switch subExpr.baseExpression {
     case .identifier:
-      return runtimeFunc(String(baseOffset), indexExpressionCode)
+      return (preamble, runtimeFunc(String(baseOffset), indexExpressionCode.expression))
     case .subscriptExpression(let newBase):
-      return runtimeFunc(nestedStorageOffset(subExpr: newBase,
-                                             baseOffset: baseOffset,
-                                             functionContext: functionContext),
-                         indexExpressionCode)
+      let e = nestedStorageOffset(subExpr: newBase,
+                          baseOffset: baseOffset,
+                          functionContext: functionContext)
+
+      return (preamble + "\n" + e.0, runtimeFunc(e.1, indexExpressionCode.expression))
     default:
       fatalError("Subscript expression has an invalid type")
     }
   }
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     guard let identifier = baseIdentifier(.subscriptExpression(subscriptExpression)),
       let enclosingType = identifier.enclosingType,
       let baseOffset = functionContext.environment.propertyOffset(for: identifier.name,
@@ -62,14 +65,14 @@ struct IRSubscriptExpression {
         fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
     }
 
-    let memLocation: String = nestedStorageOffset(subExpr: subscriptExpression,
+    let (preamble, memLocation): (String, String) = nestedStorageOffset(subExpr: subscriptExpression,
                                                   baseOffset: baseOffset,
                                                   functionContext: functionContext)
 
     if asLValue {
-      return memLocation
+      return ExpressionFragment(pre: preamble, memLocation)
     } else {
-      return "sload(\(memLocation))"
+      return ExpressionFragment(pre: preamble, "sload(\(memLocation))")
     }
   }
 }

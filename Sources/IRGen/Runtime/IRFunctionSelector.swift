@@ -85,11 +85,15 @@ struct IRFunctionSelector {
     if let resultType = function.resultCanonicalType {
       switch resultType {
       case .address, .uint256, .bytes32:
-        return typeStateChecks + "\n" + callerProtectionChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
+        return typeStateChecks.preamble + "\n" +
+          typeStateChecks.expression + "\n" + callerProtectionChecks + "\n" +
+          IRRuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    return "\(typeStateChecks)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
+    // swiftlint:disable line_length
+    return "\(typeStateChecks.preamble)\n\(typeStateChecks.expression)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
+    // swiftlint:enable line_length
   }
 }
 
@@ -97,7 +101,8 @@ struct IRFunctionSelector {
 struct IRTypeStateChecks {
   var typeStates: [TypeState]
 
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> String {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> ExpressionFragment {
+    var preamble = [String]()
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 
@@ -120,18 +125,23 @@ struct IRTypeStateChecks {
                                                    enclosingTypeName: enclosingType,
                                                    isInStructFunction: false))
 
-      let check = IRRuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)
+      let check = IRRuntimeFunction.isMatchingTypeState(stateValue.expression, stateVariableRendered.expression)
+      preamble.append(stateValue.preamble)
+      preamble.append(stateVariableRendered.preamble)
+
       return "_flintStateCheck := add(_flintStateCheck, \(check))"
     }
 
     if !checks.isEmpty {
-      return """
+      return ExpressionFragment(
+        pre: preamble.joined(separator: "\n"),
+        """
       let _flintStateCheck := 0
       \(checks.joined(separator: "\n"))
       if eq(_flintStateCheck, 0) { revert(0, 0) }
-      """ + "\n"
+      """ + "\n")
     }
 
-    return ""
+    return ExpressionFragment(pre: "", "")
   }
 }

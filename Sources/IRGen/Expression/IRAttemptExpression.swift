@@ -10,7 +10,7 @@ import AST
 struct IRAttemptExpression {
   var attemptExpression: AttemptExpression
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     let functionCall = attemptExpression.functionCall
     let functionName = functionCall.mangledIdentifier ?? functionCall.identifier.name
 
@@ -21,10 +21,13 @@ struct IRAttemptExpression {
       callName = IRWrapperFunction.prefixSoft + functionName
     }
 
-    let args: String = functionCall.arguments.map({ argument in
-      return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-    }).joined(separator: ", ")
+    let (preamble, args) = functionCall.arguments.reduce(
+      ("", ""), { (r, argument) in
+      let (preamble, code) = r
+      let e = IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
+      return (preamble + "\n" + e.preamble, code + "\n" + e.expression)
+    })
 
-    return "\(callName)(\(args))"
+    return ExpressionFragment(pre: preamble, "\(callName)(\(args))")
   }
 }

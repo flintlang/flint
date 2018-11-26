@@ -21,7 +21,7 @@ struct IRIdentifier {
     if identifier.enclosingType != nil {
       return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
                               rhs: .identifier(identifier), asLValue: asLValue)
-        .rendered(functionContext: functionContext)
+        .rendered(functionContext: functionContext).expression // TODO: Preamble not handled
     }
     return identifier.name.mangled
   }

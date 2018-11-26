@@ -10,11 +10,11 @@ struct IRSelf {
   var selfToken: Token
   var asLValue: Bool
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
     guard case .self = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
 
-    return functionContext.isInStructFunction ? "_flintSelf" : asLValue ? "0" : ""
+    return ExpressionFragment(pre: "", functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
 }
