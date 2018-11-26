@@ -57,9 +57,6 @@ extension Parser {
     case .for:
       let forStatement = try parseForStatement()
       statement = .forStatement(forStatement)
-    case .call:
-      let externalCall = try parseExternalCall(upTo: statementEndIndex)
-      statement = .externalCall(externalCall)
     case .if:
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)
@@ -68,7 +65,7 @@ extension Parser {
       statement = .doCatchStatement(doCatchStatement)
     // Valid starting tokens for expressions
     case .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
-         .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
+         .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try, .call:
       let expression = try parseExpression(upTo: statementEndIndex)
       statement = .expression(expression)
     default:

@@ -15,7 +15,8 @@ extension SemanticAnalyzer {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if case .dot = binaryExpression.opToken {
+    switch binaryExpression.opToken {
+    case .dot:
       let enclosingType = passContext.enclosingTypeIdentifier!
       let lhsType = environment.type(of: binaryExpression.lhs,
                                      enclosingType: enclosingType.name,
@@ -25,6 +26,14 @@ extension SemanticAnalyzer {
       } else if lhsType == .selfType, passContext.traitDeclarationContext == nil {
         diagnostics.append(.useOfSelfOutsideTrait(at: binaryExpression.lhs.sourceLocation))
       }
+    case .equal:
+      // Check if `call?` assignment
+      if case .externalCall(let externalCall) = binaryExpression.rhs,
+        externalCall.mode == .returnsGracefullyOptional {
+        diagnostics.append(.externalCallOptionalAssignmentNotImplemented(binaryExpression))
+      }
+    default:
+      break
     }
 
     return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
@@ -103,6 +112,8 @@ extension SemanticAnalyzer {
       "gas": false
     ]
     var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
 
     // ensure only one instance of value and gas hyper-parameters
     for parameter in externalCall.hyperParameters {
@@ -119,6 +130,23 @@ extension SemanticAnalyzer {
       } else {
         diagnostics.append(.unlabeledExternalCallHyperParameter(externalCall))
       }
+    }
+
+    switch externalCall.mode {
+    case .normal:
+      // Ensure `call` is only used inside do-catch block
+      if passContext.doBlockNestingCount <= 0 {
+        diagnostics.append(.normalExternalCallOutsideDoCatch(externalCall))
+      }
+    case .returnsGracefullyOptional:
+      // Ensure 'call?' is only called with a returning function
+      if environment.type(of: externalCall.functionCall.rhs,
+                          enclosingType: enclosingType,
+                          scopeContext: passContext.scopeContext!) == .basicType(.void) {
+        diagnostics.append(.optionalExternalCallWithoutReturnType(externalCall: externalCall))
+      }
+    default:
+      break
     }
 
     return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)

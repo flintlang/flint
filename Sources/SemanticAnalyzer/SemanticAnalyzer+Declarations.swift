@@ -268,7 +268,7 @@ extension SemanticAnalyzer {
     let environment = passContext.environment!
 
     // Check valid modifiers
-     if variableDeclaration.isMutating {
+    if variableDeclaration.isMutating {
        if variableDeclaration.isConstant {
           diagnostics.append(.mutatingConstant(variableDeclaration))
        } else if variableDeclaration.isVariable {
@@ -276,7 +276,7 @@ extension SemanticAnalyzer {
        }
      }
 
-     if variableDeclaration.isPublic {
+    if variableDeclaration.isPublic {
        if variableDeclaration.isConstant {
         diagnostics.append(.publicLet(variableDeclaration))
        }
@@ -585,8 +585,6 @@ extension SemanticAnalyzer {
       return true
     case .emitStatement:
       return false
-    case .externalCall:
-      fatalError()
     }
     return true
   }

@@ -436,7 +436,6 @@ public class ASTDumper {
       case .forStatement(let forStatement): self.dump(forStatement)
       case .emitStatement(let emitStatement): self.dump(emitStatement)
       case .doCatchStatement(let doCatchStatement): self.dump(doCatchStatement)
-      case .externalCall(let externalCall): self.dump(externalCall)
       }
     }
   }

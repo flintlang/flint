@@ -28,8 +28,6 @@ struct IRStatement {
       return IRForStatement(forStatement: forStatement).rendered(functionContext: functionContext)
     case .doCatchStatement(let doCatchStatement):
       return IRDoCatchStatement(doCatchStatement: doCatchStatement).rendered(functionContext: functionContext)
-    case .externalCall(let externalCall):
-      return IRExternalCallStatement(externalCall: externalCall).rendered(functionContext: functionContext)
     }
   }
 }

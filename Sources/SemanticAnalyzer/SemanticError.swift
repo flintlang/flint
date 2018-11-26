@@ -482,6 +482,31 @@ extension Diagnostic {
                       message: "Cannot declare variable '\(identName)' both public and visible")
   }
 
+  static func renderGroup(_ protections: [CallerProtection]) -> String {
+    return "\(protections.map({ $0.name }).joined(separator: ", "))"
+  }
+
+  static func renderGroup(_ states: [TypeState]) -> String {
+    return "\(states.map({ $0.name }).joined(separator: ", "))"
+  }
+
+  // EXTERNAL CALL ERRORS //
+  static func normalExternalCallOutsideDoCatch(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Cannot use 'call' outside do-catch block")
+  }
+
+  // As there are currently no optional types, we cannot assign to an optional return type.
+  static func externalCallOptionalAssignmentNotImplemented(_ variableDeclarationExpr: BinaryExpression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: variableDeclarationExpr.sourceLocation,
+                      message: "Assignment to the optional result of 'call?' is not yet implemented")
+  }
+
+  static func optionalExternalCallWithoutReturnType(externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Cannot use 'call?' with external function that has no return type")
+  }
+
   static func invalidExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation,
                       message: "'\(identifier.name)' is not a valid external call hyper-parameter")
@@ -497,13 +522,6 @@ extension Diagnostic {
                       message: "External call hyper-parameter was not labeled")
   }
 
-  static func renderGroup(_ protections: [CallerProtection]) -> String {
-    return "\(protections.map({ $0.name }).joined(separator: ", "))"
-  }
-
-  static func renderGroup(_ states: [TypeState]) -> String {
-    return "\(states.map({ $0.name }).joined(separator: ", "))"
-  }
 }
 
 // MARK: Warnings
