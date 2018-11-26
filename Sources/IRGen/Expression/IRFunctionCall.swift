@@ -32,13 +32,12 @@ struct IRFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
-    let (args) : [String] = functionCall.arguments.reduce([String](), { acc, argument in
-      let e = IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-      return (acc + [e.description])
+    let args : [YUL.Expression] = functionCall.arguments.map({ argument in
+      return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     })
 
     let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
-    return .inline("\(identifier)(\(args.joined(separator: ", ")))")
+    return .functionCall(YUL.FunctionCall(identifier, args))
   }
 
 }

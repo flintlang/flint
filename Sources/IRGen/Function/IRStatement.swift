@@ -44,38 +44,23 @@ struct IRIfStatement {
     let functionContext = functionContext
     functionContext.scopeContext = ifStatement.ifBodyScopeContext!
 
-    let body = ifStatement.body.map { statement in
-      return IRStatement(statement: statement).rendered(functionContext: functionContext).description
-      }.joined(separator: "\n")
-
-    let ifCode: String
-
-    // TODO fixme for using some weird code
-    ifCode = """
-    switch \(condition.description)
-    case 1 {
-      \(body.indented(by: 2))
+    let body = functionContext.withNewBlock {
+      ifStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
     }
-    """
-
-    var elseCode = ""
 
     if !ifStatement.elseBody.isEmpty {
       functionContext.scopeContext = ifStatement.elseBodyScopeContext!
-      let body = ifStatement.elseBody.map { statement in
-        if case .returnStatement(_) = statement {
-          fatalError("Return statements in else blocks are not supported yet")
+      let elseBody = functionContext.withNewBlock {
+        ifStatement.elseBody.forEach { statement in
+          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
         }
-        return IRStatement(statement: statement).rendered(functionContext: functionContext).description
-        }.joined(separator: "\n")
-      elseCode = """
-      default {
-        \(body.indented(by: 2))
       }
-      """
+      return .switch_(Switch(condition, cases: [(YUL.Literal.num(1), body)], default_: elseBody))
     }
 
-    return .inline(ifCode + "\n" + elseCode)
+    return .switch_(Switch(condition, cases: [(YUL.Literal.num(1), body)]))
   }
 }
 
@@ -87,30 +72,18 @@ struct IRForStatement {
     let functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
 
-    let setup: String
-
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      setup = generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
-        iterable: arrayIdentifier, functionContext: functionContext)
+      return .forloop(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
+        iterable: arrayIdentifier, functionContext: functionContext))
     case .range(let rangeExpression):
-      setup = generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext)
+      return .forloop(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
-
-    let body = forStatement.body.map { statement in
-      return IRStatement(statement: statement).rendered(functionContext: functionContext).description
-      }.joined(separator: "\n")
-
-    return .inline("""
-    for \(setup)
-      \(body.indented(by: 2))
-    }
-    """)
   }
 
-  func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> String {
+  func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> ForLoop {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
     let offset: String
@@ -161,22 +134,31 @@ struct IRForStatement {
       fatalError()
     }
 
-    let variableUse = IRAssignment(lhs: .identifier(forStatement.variable.identifier),
-                                   rhs: .rawAssembly(toAssign, resultType: nil))
-      .rendered(functionContext: functionContext, asTypeProperty: false).description
-
-    return """
-    {
+    let initialize = Block([.inline("""
     let \(prefix)i := 0
     let \(prefix)arrLen := \(loadArrLen)
-    } lt(\(prefix)i, \(prefix)arrLen) { \(prefix)i := add(\(prefix)i, 1) } {
-      let \(variableUse)
-    """
+    """)])
+
+    let condition = Expression.inline("lt(\(prefix)i, \(prefix)arrLen)")
+    let step = Block([.inline("""
+     \(prefix)i := add(\(prefix)i, 1)
+    """)])
+
+    let body = functionContext.withNewBlock {
+      let assignment = IRAssignment(lhs: .identifier(forStatement.variable.identifier),
+                                    rhs: .rawAssembly(toAssign, resultType: nil))
+                                    .rendered(functionContext: functionContext, asTypeProperty: false)
+        functionContext.emit(.inline("let \(assignment.description)"))
+        forStatement.body.forEach { statement in
+          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+        }
+    }
+
+    return ForLoop(initialize, condition, step, body)
   }
 
-  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
+  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> ForLoop {
     // Iterating over a range
-
     // Check valid range
     guard case .literal(let rangeStart) = iterable.initial,
       case .literal(let rangeEnd) = iterable.bound else {
@@ -234,12 +216,22 @@ struct IRForStatement {
     let binaryExpression = IRExpression(expression: .binaryExpression(condition))
       .rendered(functionContext: functionContext)
 
-    return """
-    {
-    let \(initialisation.description)
-    let _bound := \(rangeExpression.description)
-    } \(binaryExpression.description) { \(update) } {
-    """
+    let initialize = Block([.inline("""
+      let \(initialisation.description)
+      let _bound := \(rangeExpression.description)
+    """)])
+
+    let step = Block([.inline("""
+      \(update)
+    """)])
+
+    let body = functionContext.withNewBlock {
+      forStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
+    }
+
+    return ForLoop(initialize, binaryExpression, step, body)
   }
 }
 

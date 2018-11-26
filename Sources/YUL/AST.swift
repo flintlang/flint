@@ -13,18 +13,21 @@ public enum Literal: CustomStringConvertible {
   case num(Int)
   case string_(String)
   case bool_(Bool)
-  case real((n1: Int, n2: Int))
+  case decimal((n1: Int, n2: Int))
+  case hex(String)
 
   public var description: String {
     switch self {
     case .num(let i):
       return String(i)
     case .string_(let s):
-      return String(s)
+      return "\"\(s)\""
     case .bool_(let b):
-      return String(b)
-    case .real(let (n1, n2)):
+      return b ? "1" : "0"
+    case .decimal(let (n1, n2)):
       return "\(n1).\(n2)"
+    case .hex(let h):
+      return h
     }
   }
 }
@@ -77,26 +80,37 @@ public struct Switch: CustomStringConvertible {
   }
 
   public var description: String {
-    return "switch \(self.expression)"
+    let cases = self.cases.map { (lit, block) in
+      return "case \(lit) \(block)"
+      }.joined(separator: "\n")
+
+    let default_ = self.default_ != nil ? "default \(self.default_!)" : ""
+
+    return """
+    switch \(self.expression)
+    \(cases)
+    \(default_)
+    """
+
   }
 
 }
 
 public struct ForLoop: CustomStringConvertible {
-  public let b0: Block
-  public let expression: Expression
-  public let b1: Block
-  public let b2: Block
+  public let initialize: Block
+  public let condition: Expression
+  public let step: Block
+  public let body: Block
 
-  public init(b0: Block, expression: Expression, b1: Block, b2: Block) {
-    self.b0 = b0
-    self.expression = expression
-    self.b1 = b1
-    self.b2 = b2
+  public init(_ initialize: Block, _ condition: Expression, _ step: Block, _ body: Block) {
+    self.initialize = initialize
+    self.condition = condition
+    self.step = step
+    self.body = body
   }
 
   public var description: String {
-    return "for "
+    return "for \(initialize) \(condition) \(step) \(body)"
   }
 }
 

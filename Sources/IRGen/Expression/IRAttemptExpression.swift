@@ -22,12 +22,10 @@ struct IRAttemptExpression {
       callName = IRWrapperFunction.prefixSoft + functionName
     }
 
-    let args = functionCall.arguments.reduce(
-      "", { (code, argument) in
-      let e = IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-      return (code + "\n" + e.description)
+    let args = functionCall.arguments.map({ argument in
+      return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     })
 
-    return .inline("\(callName)(\(args))")
+    return .functionCall(YUL.FunctionCall(callName, args))
   }
 }
