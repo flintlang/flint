@@ -5,12 +5,13 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a function call.
 struct IRFunctionCall {
-  var functionCall: FunctionCall
+  var functionCall: AST.FunctionCall
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     let environment = functionContext.environment
     let enclosingType: RawTypeIdentifier = functionContext.enclosingTypeName
     let scopeContext: ScopeContext = functionContext.scopeContext
@@ -31,13 +32,13 @@ struct IRFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
-    let (preamble, args) : (String, [String]) = functionCall.arguments.reduce(("", []), { acc, argument in
+    let (args) : [String] = functionCall.arguments.reduce([String](), { acc, argument in
       let e = IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-      return (acc.0 + "\n" + e.preamble, acc.1 + [e.expression])
+      return (acc + [e.description])
     })
 
     let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
-    return ExpressionFragment(pre: preamble, "\(identifier)(\(args.joined(separator: ", ")))")
+    return .inline("\(identifier)(\(args.joined(separator: ", ")))")
   }
 
 }

@@ -5,30 +5,31 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for an assignment.
 struct IRAssignment {
-  var lhs: Expression
-  var rhs: Expression
+  var lhs: AST.Expression
+  var rhs: AST.Expression
 
-  func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> YUL.Expression {
     let rhsIr = IRExpression(expression: rhs).rendered(functionContext: functionContext)
-    let rhsCode = rhsIr.expression
+    let rhsCode = rhsIr.description
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
       let mangledName = Mangler.mangleName(variableDeclaration.identifier.name)
       // Shadowed variables shouldn't be redeclared
       if mangledName == rhsCode {
-        return ExpressionFragment(pre: rhsIr.preamble, "")
+        return .inline("")
       }
-      return ExpressionFragment(pre: rhsIr.preamble, "let \(mangledName) := \(rhsCode)")
+      return .inline("let \(mangledName) := \(rhsCode)")
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return ExpressionFragment(pre: rhsIr.preamble, "\(identifier.name.mangled) := \(rhsCode)")
+      return .inline("\(identifier.name.mangled) := \(rhsCode)")
     default:
       // LHS refers to a property in storage or memory.
 
-      let lhsCode = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+      let lhsCode = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext).description
 
       if functionContext.isInStructFunction {
         let enclosingName: String
@@ -39,19 +40,15 @@ struct IRAssignment {
         } else {
           enclosingName = "flintSelf"
         }
-        return ExpressionFragment(
-          pre: "\(rhsIr.preamble)\n\(lhsCode.preamble)",
-          IRRuntimeFunction.store(address: lhsCode.expression,
-                                  value: rhsCode,
-                                  inMemory: Mangler.isMem(for: enclosingName).mangled))
+        return .inline(IRRuntimeFunction.store(address: lhsCode,
+                                               value: rhsCode,
+                                               inMemory: Mangler.isMem(for: enclosingName).mangled))
 
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        return ExpressionFragment(pre: "\(rhsIr.preamble)\n\(lhsCode.preamble)",
-          IRRuntimeFunction.store(address: lhsCode.expression, value: rhsCode, inMemory: true))
+        return .inline(IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true))
       } else {
-        return ExpressionFragment(pre: "\(rhsIr.preamble)\n\(lhsCode.preamble)",
-          IRRuntimeFunction.store(address: lhsCode.expression, value: rhsCode, inMemory: false))
+        return .inline(IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false))
       }
     }
   }

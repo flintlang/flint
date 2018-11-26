@@ -225,7 +225,11 @@ let package = Package(
         "Diagnostic",
         "AST",
         "CryptoSwift",
+        "YUL"
       ]
+    ),
+    .target(
+      name: "YUL"
     ),
     .testTarget(
       name: "IRGenTests",

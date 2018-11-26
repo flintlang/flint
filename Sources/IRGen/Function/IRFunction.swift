@@ -52,7 +52,7 @@ struct IRFunction {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return functionDeclaration.explicitParameters.map {
-        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc)
+        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
   }
 
@@ -164,9 +164,9 @@ struct IRFunctionBody {
       \(restCode.indented(by: 2))
       }
       """
-      return firstCode + (restCode.isEmpty ? "" : defaultCode)
+      return firstCode.description + (restCode.isEmpty ? "" : defaultCode)
     } else {
-      return firstCode + (restCode.isEmpty ? "" : "\n" + restCode)
+      return firstCode.description + (restCode.isEmpty ? "" : "\n" + restCode)
     }
   }
 }

@@ -5,7 +5,9 @@
 //  Created by Franklin Schrans on 27/04/2018.
 //
 
+import YUL
 import AST
+
 
 /// Context used when generating code the body of a function.
 class FunctionContext {
@@ -23,6 +25,8 @@ class FunctionContext {
 
   var doCatchStatementStack: [DoCatchStatement]
 
+  var currentBlock: YUL.Block
+
   init(environment: Environment,
        scopeContext: ScopeContext,
        enclosingTypeName: String,
@@ -33,6 +37,21 @@ class FunctionContext {
     self.enclosingTypeName = enclosingTypeName
     self.isInStructFunction = isInStructFunction
     self.doCatchStatementStack = doCatchStatementStack
+
+    self.currentBlock = YUL.Block([])
+  }
+
+  func emit(_ statement: YUL.Statement) {
+    self.currentBlock.statements.append(statement)
+  }
+
+  func withNewBlock(_ inner: () -> ()) -> YUL.Block {
+    let oldBlock = self.currentBlock
+    self.currentBlock = YUL.Block([])
+    inner()
+    let retBlock = self.currentBlock
+    self.currentBlock = oldBlock
+    return retBlock
   }
 
   func push(doCatch stmt: DoCatchStatement) {

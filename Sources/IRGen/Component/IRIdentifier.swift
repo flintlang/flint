@@ -6,24 +6,26 @@
 //
 import AST
 import Lexer
+import YUL
+
 
 /// Generates code for an identifier.
 struct IRIdentifier {
-  var identifier: Identifier
+  var identifier: AST.Identifier
   var asLValue: Bool
 
-  init(identifier: Identifier, asLValue: Bool = false) {
+  init(identifier: AST.Identifier, asLValue: Bool = false) {
     self.identifier = identifier
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     if identifier.enclosingType != nil {
-      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
+      return .inline(IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
                               rhs: .identifier(identifier), asLValue: asLValue)
-        .rendered(functionContext: functionContext).expression // TODO: Preamble not handled
+        .rendered(functionContext: functionContext).description) // TODO: Preamble not handled
     }
-    return identifier.name.mangled
+    return .inline(identifier.name.mangled)
   }
 
   static func mangleName(_ name: String) -> String {

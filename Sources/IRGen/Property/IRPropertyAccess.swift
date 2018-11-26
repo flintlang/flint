@@ -5,14 +5,15 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a property access.
 struct IRPropertyAccess {
-  var lhs: Expression
-  var rhs: Expression
+  var lhs: AST.Expression
+  var rhs: AST.Expression
   var asLValue: Bool
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
@@ -30,12 +31,11 @@ struct IRPropertyAccess {
     }
 
     let rhsOffset: String
-    var rhsPreamble: String = ""
     // Special cases.
     switch lhsType {
     case .fixedSizeArrayType(_, let size):
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
-        return ExpressionFragment(pre: "", "\(size)")
+        return .inline("\(size)")
       } else {
         fatalError()
       }
@@ -53,12 +53,10 @@ struct IRPropertyAccess {
       }
     default:
       let e =  IRPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
-      rhsPreamble = e.preamble
-      rhsOffset = e.expression
+      rhsOffset = e.description
     }
 
     let offset: String
-    var preamble: String = ""
 
     if isInStructFunction {
       let enclosingName: String
@@ -76,7 +74,6 @@ struct IRPropertyAccess {
                                            inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
       let lhsOffset: String
-      var lhsPreamble: String = ""
       if case .identifier(let lhsIdentifier) = lhs {
         if let enclosingType = lhsIdentifier.enclosingType,
             let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
@@ -89,27 +86,22 @@ struct IRPropertyAccess {
         }
       } else {
         let e = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-        lhsPreamble = e.preamble
-        lhsOffset = e.expression
+        lhsOffset = e.description
       }
 
       offset = IRRuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
-      preamble = lhsPreamble
     }
 
     if asLValue {
-      return ExpressionFragment(pre: rhsPreamble + preamble, offset)
+      return .inline(offset)
     }
 
     if isInStructFunction, !isMemoryAccess {
       let lhsEnclosingIdentifier = lhs.enclosingIdentifier?.name.mangled ?? "flintSelf".mangled
-      return ExpressionFragment(pre: rhsPreamble + preamble,
-                                IRRuntimeFunction.load(
-                                  address: offset,
-                                  inMemory: Mangler.isMem(for: lhsEnclosingIdentifier)))
+      return .inline(IRRuntimeFunction.load(address: offset,
+                                            inMemory: Mangler.isMem(for: lhsEnclosingIdentifier)))
     }
 
-    return ExpressionFragment(pre: rhsPreamble + preamble,
-                              IRRuntimeFunction.load(address: offset, inMemory: isMemoryAccess))
+    return .inline(IRRuntimeFunction.load(address: offset, inMemory: isMemoryAccess))
   }
 }

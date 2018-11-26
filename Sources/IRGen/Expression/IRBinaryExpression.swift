@@ -5,6 +5,7 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a binary expression.
 struct IRBinaryExpression {
@@ -16,7 +17,7 @@ struct IRBinaryExpression {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
         return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
@@ -30,17 +31,15 @@ struct IRBinaryExpression {
     let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue)
       .rendered(functionContext: functionContext)
 
-    let preamble = lhs.preamble + "\n" + rhs.preamble
-    let lhsExp = lhs.expression
-    let rhsExp = rhs.expression
+    let lhsExp = lhs.description
+    let rhsExp = rhs.description
 
     let code: String
     switch binaryExpression.opToken {
     case .equal:
       let assign = IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
         .rendered(functionContext: functionContext)
-//      preamble += "\n" + assign.preamble
-      code = assign.expression
+      code = assign.description
     case .plus:
       code = IRRuntimeFunction.add(a: lhsExp, b: rhsExp)
     case .overflowingPlus: code = "add(\(lhsExp), \(rhsExp))"
@@ -59,6 +58,6 @@ struct IRBinaryExpression {
     default: fatalError("opToken not supported")
     }
 
-    return ExpressionFragment(pre: preamble, code)
+    return .inline(code)
   }
 }
