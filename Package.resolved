@@ -84,11 +84,11 @@
       },
       {
         "package": "LanguageServerProtocol",
-        "repositoryURL": "https://github.com/theguild/swift-lsp.git",
+        "repositoryURL": "https://github.com/flintrocks/swift-lsp.git",
         "state": {
-          "branch": null,
+          "branch": "master",
           "revision": "ade02a130a19b2f13a59dd531c9bd583d67c01a3",
-          "version": "4.0.1"
+          "version": null
         }
       },
       {
