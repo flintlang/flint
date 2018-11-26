@@ -54,6 +54,10 @@ class FunctionContext {
     return retBlock
   }
 
+  func dump() -> String {
+    return (self.currentBlock.statements.map {$0.description}).joined(separator: "\n")
+  }
+
   func push(doCatch stmt: DoCatchStatement) {
     doCatchStatementStack.append(stmt)
   }

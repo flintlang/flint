@@ -151,22 +151,21 @@ struct IRFunctionBody {
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
                                                                           functionContext: FunctionContext) -> String
     where S.Element == AST.Statement, S.Index == Int {
-    guard !statements.isEmpty else { return "" }
-    var statements = statements
-    let first = statements.removeFirst()
-    let firstCode = IRStatement(statement: first).rendered(functionContext: functionContext)
-    let restCode = renderBody(statements, functionContext: functionContext)
-
-    if case .ifStatement(let ifStatement) = first, ifStatement.endsWithReturnStatement {
-      let defaultCode = """
-
-      default {
-      \(restCode.indented(by: 2))
+      guard !statements.isEmpty else { return "" }
+      var statements = statements
+      var emitLastBrace = false
+      while !statements.isEmpty {
+        let statement = statements.removeFirst()
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+        if case .ifStatement(let ifStatement) = statement, ifStatement.endsWithReturnStatement {
+          functionContext.emit(.inline("default {"))
+          emitLastBrace = true
+        }
       }
-      """
-      return firstCode.description + (restCode.isEmpty ? "" : defaultCode)
-    } else {
-      return firstCode.description + (restCode.isEmpty ? "" : "\n" + restCode)
-    }
+      if emitLastBrace {
+        functionContext.emit(.inline("}"))
+      }
+      return functionContext.dump()
   }
+
 }
