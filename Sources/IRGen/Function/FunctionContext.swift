@@ -25,7 +25,7 @@ class FunctionContext {
 
   var doCatchStatementStack: [DoCatchStatement]
 
-  var currentBlock: YUL.Block
+  var blockStack: [YUL.Block]
 
   init(environment: Environment,
        scopeContext: ScopeContext,
@@ -38,24 +38,21 @@ class FunctionContext {
     self.isInStructFunction = isInStructFunction
     self.doCatchStatementStack = doCatchStatementStack
 
-    self.currentBlock = YUL.Block([])
+    self.blockStack = [YUL.Block([])]
   }
 
   func emit(_ statement: YUL.Statement) {
-    self.currentBlock.statements.append(statement)
+    self.blockStack[blockStack.count - 1].statements.append(statement)
   }
 
   func withNewBlock(_ inner: () -> ()) -> YUL.Block {
-    let oldBlock = self.currentBlock
-    self.currentBlock = YUL.Block([])
+    self.blockStack.append(YUL.Block([]))
     inner()
-    let retBlock = self.currentBlock
-    self.currentBlock = oldBlock
-    return retBlock
+    return self.blockStack.popLast()!
   }
 
   func dump() -> String {
-    return (self.currentBlock.statements.map {$0.description}).joined(separator: "\n")
+    return (self.blockStack.last!.statements.map {$0.description}).joined(separator: "\n")
   }
 
   func push(doCatch stmt: DoCatchStatement) {
