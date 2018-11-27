@@ -26,6 +26,7 @@ class FunctionContext {
   var doCatchStatementStack: [DoCatchStatement]
 
   var blockStack: [YUL.Block]
+  private var counter: Int
 
   init(environment: Environment,
        scopeContext: ScopeContext,
@@ -39,6 +40,7 @@ class FunctionContext {
     self.doCatchStatementStack = doCatchStatementStack
 
     self.blockStack = [YUL.Block([])]
+    self.counter = 0
   }
 
   func emit(_ statement: YUL.Statement) {
@@ -49,6 +51,12 @@ class FunctionContext {
     self.blockStack.append(YUL.Block([]))
     inner()
     return self.blockStack.popLast()!
+  }
+
+  func freshVariable() -> String {
+    let varName = "temp\(self.counter)"
+    self.counter += 1
+    return varName
   }
 
   func dump() -> String {
