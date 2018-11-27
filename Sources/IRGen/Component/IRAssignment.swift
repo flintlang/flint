@@ -28,7 +28,6 @@ struct IRAssignment {
       return .inline("\(identifier.name.mangled) := \(rhsCode)")
     default:
       // LHS refers to a property in storage or memory.
-
       let lhsCode = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext).description
 
       if functionContext.isInStructFunction {

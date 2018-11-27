@@ -57,10 +57,10 @@ struct IRIfStatement {
           functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
         }
       }
-      return .switch_(Switch(condition, cases: [(YUL.Literal.num(1), body)], default_: elseBody))
+      return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)], default: elseBody))
     }
 
-    return .switch_(Switch(condition, cases: [(YUL.Literal.num(1), body)]))
+    return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)]))
   }
 }
 
@@ -74,10 +74,10 @@ struct IRForStatement {
 
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      return .forloop(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
+      return .`for`(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
         iterable: arrayIdentifier, functionContext: functionContext))
     case .range(let rangeExpression):
-      return .forloop(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
+      return .`for`(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }

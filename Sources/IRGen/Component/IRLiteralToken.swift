@@ -17,10 +17,10 @@ struct IRLiteralToken {
     }
 
     switch literal {
-    case .boolean(let boolean): return boolean == .true ? .bool_(true) : .bool_(false)
-    case .decimal(.real(let num1, let num2)): return Literal.decimal((num1, num2))
+    case .boolean(let boolean): return boolean == .true ? .bool(true) : .bool(false)
+    case .decimal(.real(let num1, let num2)): return Literal.decimal(num1, num2)
     case .decimal(.integer(let num)): return .num(num)
-    case .string(let string): return .string_(string)
+    case .string(let string): return .string(string)
     case .address(let hex): return .hex(hex)
     }
   }

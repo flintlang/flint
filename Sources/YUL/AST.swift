@@ -11,18 +11,18 @@ public typealias Identifier = String
 
 public enum Literal: CustomStringConvertible {
   case num(Int)
-  case string_(String)
-  case bool_(Bool)
-  case decimal((n1: Int, n2: Int))
+  case string(String)
+  case bool(Bool)
+  case decimal(Int, Int)
   case hex(String)
 
   public var description: String {
     switch self {
     case .num(let i):
       return String(i)
-    case .string_(let s):
+    case .string(let s):
       return "\"\(s)\""
-    case .bool_(let b):
+    case .bool(let b):
       return b ? "1" : "0"
     case .decimal(let (n1, n2)):
       return "\(n1).\(n2)"
@@ -67,16 +67,24 @@ public struct If: CustomStringConvertible {
   }
 }
 
+public enum SwitchCase {
+
+}
+
 
 public struct Switch: CustomStringConvertible {
   public let expression: Expression
   public let cases: [(Literal, Block)]
-  public let default_: Block?
+  public let `default`: Block?
 
-  public init(_ expression: Expression, cases: [(Literal, Block)], default_: Block? = nil) {
+  public init(_ expression: Expression, cases: [(Literal, Block)], `default`: Block? = nil) {
     self.expression = expression
     self.cases = cases
-    self.default_ = default_
+    self.default = `default`
+  }
+
+  public init(_ expression: Expression, `default`: Block? = nil) {
+    self.init(expression, cases: [], default: `default`)
   }
 
   public var description: String {
@@ -84,12 +92,12 @@ public struct Switch: CustomStringConvertible {
       return "case \(lit) \(block)"
       }.joined(separator: "\n")
 
-    let default_ = self.default_ != nil ? "default \(self.default_!)" : ""
+    let `default` = self.default != nil ? "default \(self.default!)" : ""
 
     return """
     switch \(self.expression)
     \(cases)
-    \(default_)
+    \(`default`)
     """
 
   }
@@ -120,12 +128,12 @@ public enum Statement: CustomStringConvertible {
   case functionDefinition(FunctionDefinition)
   case variableDeclaration(VariableDeclaration)
   case assignment(Assignment)
-  case if_(If)
+  case `if`(If)
   case expression(Expression)
-  case switch_(Switch)
-  case forloop(ForLoop)
-  case break_
-  case continue_
+  case `switch`(Switch)
+  case `for`(ForLoop)
+  case `break`
+  case `continue`
   case noop
   case inline(String)
 
@@ -139,17 +147,17 @@ public enum Statement: CustomStringConvertible {
       return decl.description
     case .assignment(let assign):
       return assign.description
-    case .if_(let ifs):
+    case .if(let ifs):
       return ifs.description
     case .expression(let e):
       return e.description
-    case .switch_(let sw):
+    case .switch(let sw):
       return sw.description
-    case .forloop(let loop):
+    case .`for`(let loop):
       return loop.description
-    case .break_:
+    case .break:
       return "break"
-    case .continue_:
+    case .continue:
       return "continue"
     case .noop:
       return ""
@@ -159,48 +167,25 @@ public enum Statement: CustomStringConvertible {
   }
 }
 
-public enum Ty: CustomStringConvertible {
-  case BOOL
-  case U8
-  case S8
-  case U32
-  case S32
-  case U64
-  case S64
-  case U128
-  case S128
-  case U256
-  case S256
+public enum Type: String, CustomStringConvertible {
+  case bool = "bool"
+  case u8  = "u8"
+  case s8  = "s8"
+  case u32 = "u32"
+  case s32 = "s32"
+  case u64 = "u64"
+  case s64 = "s64"
+  case u128 = "u128"
+  case s128 = "s128"
+  case u256 = "u256"
+  case s256 = "s256"
 
   public var description: String {
-    switch self {
-    case .BOOL:
-      return "bool"
-    case .U8:
-      return "u8"
-    case .S8:
-      return "s8"
-    case .U32:
-      return "u32"
-    case .S32:
-      return "s32"
-    case .U64:
-      return "u64"
-    case .S64:
-      return "s64"
-    case .U128:
-      return "u128"
-    case .S128:
-      return "s128"
-    case .U256:
-      return "u256"
-    case .S256:
-      return "s256"
-    }
+    return self.rawValue
   }
 }
 
-public typealias TypedIdentifierList = [(Identifier, Ty)]
+public typealias TypedIdentifierList = [(Identifier, Type)]
 
 private func render(typedIdentifierList: TypedIdentifierList) -> String {
   return typedIdentifierList.map({ (ident, ty) in
@@ -241,7 +226,7 @@ public struct VariableDeclaration: CustomStringConvertible {
   public let declarations: TypedIdentifierList
   public let expression: Expression?
 
-  public init(declarations: [(Identifier, Ty)], expression: Expression? = nil) {
+  public init(declarations: TypedIdentifierList, expression: Expression? = nil) {
     self.declarations = declarations
     self.expression = expression
   }

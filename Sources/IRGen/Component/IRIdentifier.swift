@@ -20,20 +20,13 @@ struct IRIdentifier {
   }
 
   func rendered(functionContext: FunctionContext) -> YUL.Expression {
-//    if identifier.enclosingType != nil {
-//      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
-//                              rhs: .identifier(identifier),
-//                              asLValue: asLValue)
-//        .rendered(functionContext: functionContext) // TODO: Preamble not handled
-//    }
-//    return .identifier(identifier.name.mangled)
-
     if identifier.enclosingType != nil {
-      return .inline(IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
-                                      rhs: .identifier(identifier), asLValue: asLValue)
-        .rendered(functionContext: functionContext).description) // TODO: Preamble not handled
+      return IRPropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
+                              rhs: .identifier(identifier),
+                              asLValue: asLValue)
+        .rendered(functionContext: functionContext) // TODO: Preamble not handled
     }
-    return .inline(identifier.name.mangled)
+    return .identifier(identifier.name.mangled)
   }
 
   static func mangleName(_ name: String) -> String {
