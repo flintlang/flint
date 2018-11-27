@@ -8,7 +8,6 @@ import AST
 import Lexer
 import YUL
 
-
 /// Generates code for an identifier.
 struct IRIdentifier {
   var identifier: AST.Identifier

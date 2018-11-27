@@ -32,7 +32,7 @@ struct IRFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
-    let args : [YUL.Expression] = functionCall.arguments.map({ argument in
+    let args: [YUL.Expression] = functionCall.arguments.map({ argument in
       return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     })
 

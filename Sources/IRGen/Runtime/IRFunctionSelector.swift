@@ -91,9 +91,7 @@ struct IRFunctionSelector {
       }
     }
 
-    // swiftlint:disable line_length
     return "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
-    // swiftlint:enable line_length
   }
 }
 

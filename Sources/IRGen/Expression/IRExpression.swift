@@ -64,7 +64,8 @@ struct IRExpression {
                                    asLValue: asLValue).rendered(functionContext: functionContext)
     case .sequence(let expressions):
       return .inline(expressions.map({ expression in
-        return IRExpression(expression: expression, asLValue: asLValue).rendered(functionContext: functionContext).description
+        return IRExpression(expression: expression, asLValue: asLValue)
+          .rendered(functionContext: functionContext).description
       }).joined(separator: "\n"))
     case .rawAssembly(let assembly, _):
       return .inline(assembly)

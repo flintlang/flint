@@ -53,7 +53,9 @@ public struct Block: CustomStringConvertible {
 
 }
 
+// swiftlint:disable type_name
 public struct If: CustomStringConvertible {
+// swiftlint:enable type_name
   public let expression: Expression
   public let block: Block
 
@@ -66,11 +68,6 @@ public struct If: CustomStringConvertible {
     return "if \(expression.description) \(self.block)"
   }
 }
-
-public enum SwitchCase {
-
-}
-
 
 public struct Switch: CustomStringConvertible {
   public let expression: Expression
@@ -122,7 +119,6 @@ public struct ForLoop: CustomStringConvertible {
   }
 }
 
-
 public enum Statement: CustomStringConvertible {
   case block(Block)
   case functionDefinition(FunctionDefinition)
@@ -168,17 +164,17 @@ public enum Statement: CustomStringConvertible {
 }
 
 public enum Type: String, CustomStringConvertible {
-  case bool = "bool"
-  case u8  = "u8"
-  case s8  = "s8"
-  case u32 = "u32"
-  case s32 = "s32"
-  case u64 = "u64"
-  case s64 = "s64"
-  case u128 = "u128"
-  case s128 = "s128"
-  case u256 = "u256"
-  case s256 = "s256"
+  case bool
+  case u8
+  case s8
+  case u32
+  case s32
+  case u64
+  case s64
+  case u128
+  case s128
+  case u256
+  case s256
 
   public var description: String {
     return self.rawValue
@@ -200,7 +196,7 @@ public struct FunctionDefinition: CustomStringConvertible {
   public let body: Block
 
   public init(identifier: Identifier,
-              arguments:  TypedIdentifierList,
+              arguments: TypedIdentifierList,
               returns: TypedIdentifierList = [],
               body: Block) {
     self.identifier = identifier
@@ -276,7 +272,6 @@ public enum Expression: CustomStringConvertible {
     }
   }
 }
-
 
 public struct FunctionCall: CustomStringConvertible {
   public let name: Identifier

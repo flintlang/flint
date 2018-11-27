@@ -17,7 +17,8 @@ struct IRStatement {
   func rendered(functionContext: FunctionContext) -> YUL.Statement {
     switch statement {
     case .expression(let expression):
-      return .expression(IRExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext))
+      return .expression(IRExpression(expression: expression, asLValue: false)
+        .rendered(functionContext: functionContext))
     case .ifStatement(let ifStatement):
       return IRIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
     case .returnStatement(let returnStatement):

@@ -8,7 +8,6 @@
 import YUL
 import AST
 
-
 /// Context used when generating code the body of a function.
 class FunctionContext {
   /// Environment information, such as typing of variables, for the source program.
@@ -47,14 +46,14 @@ class FunctionContext {
     self.blockStack[blockStack.count - 1].statements.append(statement)
   }
 
-  func withNewBlock(_ inner: () -> ()) -> YUL.Block {
+  func withNewBlock(_ inner: () -> Void) -> YUL.Block {
     self.blockStack.append(YUL.Block([]))
     inner()
     return self.blockStack.popLast()!
   }
 
   func freshVariable() -> String {
-    let varName = "temp\(self.counter)"
+    let varName = "$temp\(self.counter)"
     self.counter += 1
     return varName
   }

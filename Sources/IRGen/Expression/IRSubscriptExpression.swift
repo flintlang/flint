@@ -7,7 +7,6 @@
 import AST
 import YUL
 
-
 /// Generates code for a subscript expression.
 struct IRSubscriptExpression {
   var subscriptExpression: SubscriptExpression
