@@ -230,13 +230,7 @@ let package = Package(
       ]
     ),
     .target(
-      name: "YUL",
-      dependencies: [
-        "Source",
-        "Diagnostic",
-        "AST",
-        "CryptoSwift",
-        ]
+      name: "YUL"
     ),
     .testTarget(
       name: "IRGenTests",
