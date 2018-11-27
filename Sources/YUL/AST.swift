@@ -200,42 +200,68 @@ public enum Ty: CustomStringConvertible {
   }
 }
 
+public typealias TypedIdentifierList = [(Identifier, Ty)]
+
+private func render(typedIdentifierList: TypedIdentifierList) -> String {
+  return typedIdentifierList.map({ (ident, ty) in
+    return "\(ident): \(ty)"
+  }).joined(separator: ", ")
+}
+
 public struct FunctionDefinition: CustomStringConvertible {
   public let identifier: Identifier
-  public let arguments: [(Identifier, Ty)]
+  public let arguments: TypedIdentifierList
+  public let returns: TypedIdentifierList
+  public let body: Block
 
-  public init(identifier: Identifier, arguments:  [(Identifier, Ty)]) {
+  public init(identifier: Identifier,
+              arguments:  TypedIdentifierList,
+              returns: TypedIdentifierList = [],
+              body: Block) {
     self.identifier = identifier
     self.arguments = arguments
+    self.returns = returns
+    self.body = body
   }
 
   public var description: String {
-    let args = arguments.map({ (ident, ty) in
-      return "\(ident): \(ty)"
-    }).joined(separator: ", ")
-    return "\(self.identifier)(\(args))"
+    let args = render(typedIdentifierList: self.arguments)
+
+    var ret = ""
+    if !self.returns.isEmpty {
+      let retargs = render(typedIdentifierList: self.returns)
+      ret = "-> \(retargs)"
+    }
+
+    return "\(self.identifier)(\(args)) \(ret) \(self.body)"
   }
 }
 
 public struct VariableDeclaration: CustomStringConvertible {
-  public let declarations: [(Identifier, Ty)]
-  public init(declarations: [(Identifier, Ty)]) {
+  public let declarations: TypedIdentifierList
+  public let expression: Expression?
+
+  public init(declarations: [(Identifier, Ty)], expression: Expression? = nil) {
     self.declarations = declarations
+    self.expression = expression
   }
 
   public var description: String {
-    let decls = self.declarations.map({ (ident, ty) in
-      return "\(ident): \(ty)"
-    }).joined(separator: ", ")
-    return "let \(decls)"
+    let decls = render(typedIdentifierList: self.declarations)
+    if self.expression == nil {
+      return "let \(decls)"
+    }
+    return "let \(decls) := \(self.expression!.description)"
   }
 }
 
+public typealias IdentifierList = [Identifier]
+
 public struct Assignment: CustomStringConvertible {
-  public let identifiers: [Identifier]
+  public let identifiers: IdentifierList
   public let expression: Expression
 
-  public init(_ identifiers: [Identifier], _ rhs: Expression) {
+  public init(_ identifiers: IdentifierList, _ rhs: Expression) {
     self.identifiers = identifiers
     self.expression = rhs
   }
