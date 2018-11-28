@@ -6,6 +6,7 @@
 /node_modules
 
 *.sol
+!sol_emitter.sol
 *.swp
 
 bin/
