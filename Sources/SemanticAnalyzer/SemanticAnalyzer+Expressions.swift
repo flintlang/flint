@@ -29,8 +29,9 @@ extension SemanticAnalyzer {
     case .equal:
       // Check if `call?` assignment
       if case .externalCall(let externalCall) = binaryExpression.rhs,
-        externalCall.mode == .returnsGracefullyOptional {
-        diagnostics.append(.externalCallOptionalAssignmentNotImplemented(binaryExpression))
+        externalCall.mode != .returnsGracefullyOptional,
+        passContext.isInsideIfCondition {
+        diagnostics.append(.ifLetConstructWithoutOptionalExternalCall(binaryExpression))
       }
     default:
       break
@@ -114,6 +115,7 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    var passContext = passContext
 
     // ensure only one instance of value and gas hyper-parameters
     for parameter in externalCall.hyperParameters {
@@ -134,19 +136,37 @@ extension SemanticAnalyzer {
 
     switch externalCall.mode {
     case .normal:
-      // Ensure `call` is only used inside do-catch block
-      if passContext.doBlockNestingCount <= 0 {
+      // Ensure `call` is only used inside the do-body of do-catch statement
+      if passContext.doCatchStatementStack.last != nil {
+        // Update containsExternallCall value of doCatchStatement
+        var doCatchStatementStack = passContext.doCatchStatementStack
+        doCatchStatementStack[doCatchStatementStack.count - 1].containsExternalCall = true
+        passContext = passContext.withUpdates {
+          $0.doCatchStatementStack = doCatchStatementStack
+        }
+      } else {
         diagnostics.append(.normalExternalCallOutsideDoCatch(externalCall))
       }
     case .returnsGracefullyOptional:
-      // Ensure 'call?' is only called with a returning function
-      if environment.type(of: externalCall.functionCall.rhs,
-                          enclosingType: enclosingType,
-                          scopeContext: passContext.scopeContext!) == .basicType(.void) {
-        diagnostics.append(.optionalExternalCallWithoutReturnType(externalCall: externalCall))
+      // Ensure 'call?' is only used in an 'if let ... = call? ...' construct
+      if !passContext.isIfLetConstruct {
+        diagnostics.append(.optionalExternalCallOutsideIfLet(externalCall))
       }
-    default:
-      break
+    case .isForced:
+      // Ensure 'call!' is never used inside a do-catch block
+      if passContext.doCatchStatementStack.count > 0 {
+        diagnostics.append(.forcedExternalCallInsideDoCatch(externalCall))
+      }
+    }
+
+    // Ensure a return value is not ignored
+    if environment.type(of: externalCall.functionCall.rhs,
+                        enclosingType: enclosingType,
+                        scopeContext: passContext.scopeContext!) != .basicType(.void) &&
+      externalCall.mode != .returnsGracefullyOptional &&
+      !passContext.inAssignment &&
+      !passContext.isFunctionCallArgument {
+      diagnostics.append(.externalCallReturnValueIgnored(externalCall))
     }
 
     return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)

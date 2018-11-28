@@ -456,9 +456,13 @@ public struct ASTVisitor {
     var passContext = passContext
     var processResult = pass.process(ifStatement: ifStatement, passContext: passContext)
 
+    processResult.passContext.isInsideIfCondition = true
+
     processResult.element.condition =
       processResult.combining(visit(processResult.element.condition,
                                     passContext: processResult.passContext))
+
+    processResult.passContext.isInsideIfCondition = false
 
     let scopeContext = passContext.scopeContext
     processResult.element.body = processResult.element.body.map { statement in
@@ -518,12 +522,21 @@ public struct ASTVisitor {
     var passContext = passContext
     var processResult = pass.process(doCatchStatement: doCatchStatement, passContext: passContext)
 
-    processResult.passContext.doBlockNestingCount += 1
+    processResult.passContext = processResult.passContext.withUpdates {
+      $0.doCatchStatementStack.append(doCatchStatement)
+    }
+
     let scopeContext = passContext.scopeContext
     processResult.element.doBody = processResult.element.doBody.map { statement in
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
-    processResult.passContext.doBlockNestingCount -= 1
+
+    processResult.element.containsExternalCall =
+      processResult.passContext.doCatchStatementStack.last!.containsExternalCall
+
+    processResult.passContext = processResult.passContext.withUpdates {
+      _ = $0.doCatchStatementStack.popLast()
+    }
 
     processResult.passContext.scopeContext = scopeContext
     processResult.element.catchBody = processResult.element.catchBody.map { statement in
@@ -810,8 +823,12 @@ public struct ASTVisitor {
       if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
         processResult.passContext.inAssignment = true
       }
+      if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs, variableDeclaration.isConstant {
+        processResult.passContext.isIfLetConstruct = processResult.passContext.isInsideIfCondition
+      }
       processResult.element.rhs = processResult.combining(visit(processResult.element.rhs,
                                                                 passContext: processResult.passContext))
+      processResult.passContext.isIfLetConstruct = false
       processResult.passContext.inAssignment = false // Allowed as nested assignments do not exist.
     }
 
@@ -1069,8 +1086,10 @@ public struct ASTVisitor {
     }
     processResult.passContext.isFunctionCallArgumentLabel = false
 
+    processResult.passContext.isFunctionCallArgument = true
     processResult.element.expression = processResult.combining(visit(processResult.element.expression,
                                                                      passContext: processResult.passContext))
+    processResult.passContext.isFunctionCallArgument = false
 
     let postProcessResult = pass.postProcess(functionArgument: processResult.element,
                                              passContext: processResult.passContext)

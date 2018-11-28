@@ -496,15 +496,29 @@ extension Diagnostic {
                       message: "Cannot use 'call' outside do-catch block")
   }
 
-  // As there are currently no optional types, we cannot assign to an optional return type.
-  static func externalCallOptionalAssignmentNotImplemented(_ variableDeclarationExpr: BinaryExpression) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: variableDeclarationExpr.sourceLocation,
-                      message: "Assignment to the optional result of 'call?' is not yet implemented")
+  static func forcedExternalCallInsideDoCatch(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Cannot use 'call!' inside do-catch block")
   }
 
-  static func optionalExternalCallWithoutReturnType(externalCall: ExternalCall) -> Diagnostic {
+  static func doCatchStatementContainsNoExternalCall(_ doCatchStatement: DoCatchStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: doCatchStatement.sourceLocation,
+                      message: "No 'call' found in do-catch block")
+  }
+
+  static func optionalExternalCallOutsideIfLet(_ externalCall: ExternalCall) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
-                      message: "Cannot use 'call?' with external function that has no return type")
+                      message: "Only inside 'if let ... = call?' may 'call?' be used")
+  }
+
+  static func ifLetConstructWithoutOptionalExternalCall(_ binaryExpression: BinaryExpression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: binaryExpression.sourceLocation,
+                      message: "'if let' construct may only be used with 'call?'")
+  }
+
+  static func externalCallReturnValueIgnored(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Return value of external call cannot be ignored.")
   }
 
   static func invalidExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {

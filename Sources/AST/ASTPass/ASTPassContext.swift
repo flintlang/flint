@@ -156,16 +156,34 @@ extension ASTPassContext {
     set { self[ExternalCallContext.self] = newValue }
   }
 
-  /// When inside a do-block, this property is set to `true`.
-  public var doBlockNestingCount: Int {
-    get { return self[DoBlockNestingCount.self] ?? 0 }
-    set { self[DoBlockNestingCount.self] = newValue }
+  /// Stack of do-catch statements
+  public var doCatchStatementStack: [DoCatchStatement] {
+    get { return self[DoCatchStatementStack.self] ?? [DoCatchStatement]() }
+    set { self[DoCatchStatementStack.self] = newValue }
+  }
+
+  /// When inside the condition of an if statement, this property is set to `true`
+  public var isInsideIfCondition: Bool {
+    get { return self[IsInsideIfCondition.self] ?? false }
+    set { self[IsInsideIfCondition.self] = newValue }
+  }
+
+  /// When inside an 'if let ...' construct, this property is set to `true`
+  public var isIfLetConstruct: Bool {
+    get { return self[IsIfLetConstruct.self] ?? false }
+    set { self[IsIfLetConstruct.self] = newValue }
   }
 
   /// When visiting argument labels in a function call, this property is set to `true`.
   public var isFunctionCallArgumentLabel: Bool {
     get { return self[IsFunctionCallArgumentLabel.self] ?? false }
     set { self[IsFunctionCallArgumentLabel.self] = newValue }
+  }
+
+  /// When visiting arguments in a function call, this property is set to `true`.
+  public var isFunctionCallArgument: Bool {
+    get { return self[IsFunctionCallArgument.self] ?? false }
+    set { self[IsFunctionCallArgument.self] = newValue }
   }
 
   /// When visiting an external configuration parameter, this property is set to `true`.
@@ -300,8 +318,16 @@ private struct IsExternalFunctionCallContextEntry: PassContextEntry {
   typealias Value = Bool
 }
 
-private struct DoBlockNestingCount: PassContextEntry {
-  typealias Value = Int
+private struct DoCatchStatementStack: PassContextEntry {
+  typealias Value = [DoCatchStatement]
+}
+
+private struct IsInsideIfCondition: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsIfLetConstruct: PassContextEntry {
+  typealias Value = Bool
 }
 
 private struct IsAssignment: PassContextEntry {
@@ -313,6 +339,10 @@ private struct IsPropertyDefaultAssignment: PassContextEntry {
 }
 
 private struct IsFunctionCallArgumentLabel: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsFunctionCallArgument: PassContextEntry {
   typealias Value = Bool
 }
 

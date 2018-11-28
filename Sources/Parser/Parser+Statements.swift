@@ -124,15 +124,16 @@ extension Parser {
 
   func parseDoCatchStatement() throws -> DoCatchStatement {
     // Parse do block
-    try consume(.do, or: .expectedStatement(at: latestSource))
+    let doToken = try consume(.do, or: .expectedStatement(at: latestSource))
     let (doStatements, _) = try parseCodeBlock()
     // Parse catch is Error
     try consume(.catch, or: .expectedStatement(at: latestSource))
     try consume(.is, or: .expectedStatement(at: latestSource))
     let err = try parseErrorType()
 
-    let (catchStatements, _) = try parseCodeBlock()
-    return DoCatchStatement(doBody: doStatements, catchBody: catchStatements, error: err)
+    let (catchStatements, endToken) = try parseCodeBlock()
+    return DoCatchStatement(doBody: doStatements, catchBody: catchStatements, error: err, startToken: doToken,
+                            endToken: endToken)
   }
 
   func parseErrorType() throws -> Expression {

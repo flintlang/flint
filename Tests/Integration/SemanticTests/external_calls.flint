@@ -64,21 +64,21 @@ Contract :: (any) {
     // RETURN/TYPE CHECKS
     call self.someFunc() // expected-error {{Cannot use 'call' outside do-catch block}}
 
-    call self.someReturningFunc() // expected-error {{Cannot use 'call' outside do-catch block}}
+    let i1: Int = call self.someReturningFunc() // expected-error {{Cannot use 'call' outside do-catch block}}
 
     do {
         call self.someFunc()
 
-        call self.someReturningFunc()
+        let i2: Int = call self.someReturningFunc()
 
-        let x: Int = call self.someReturningFunc()
+        let i3: Int = call self.someReturningFunc()
 
         let y: Bool = call self.someReturningFunc() // expected-error {{Incompatible assignment between values of type 'Bool' and 'Int'}}
 
       do {
         call self.someFunc()   
       } catch is Error {
-        call self.someFunc()
+        call self.someFunc()   
       }
     } catch is Error {
 
@@ -86,15 +86,17 @@ Contract :: (any) {
 
     call! self.someFunc()
 
-    call! self.someReturningFunc()
+    let i4: Int = call! self.someReturningFunc()
 
     let x2: Int = call! self.someReturningFunc()
 
     let y2: Bool = call! self.someReturningFunc() // expected-error {{Incompatible assignment between values of type 'Bool' and 'Int'}}
 
-    call? self.someFunc() // expected-error {{Cannot use 'call?' with external function that has no return type}}
+    call? self.someFunc() // expected-error {{Only inside 'if let ... = call?' may 'call?' be used}}
 
-    let x: Int = call? self.someReturningFunc() // expected-error {{Assignment to the optional result of 'call?' is not yet implemented}}
+    if let x: Int = call? self.someReturningFunc() { 
+
+    }
   }
 }
 

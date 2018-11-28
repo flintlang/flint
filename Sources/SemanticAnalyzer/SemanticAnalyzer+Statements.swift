@@ -47,4 +47,15 @@ extension SemanticAnalyzer {
 
     return ASTPassResult(element: ifStatement, diagnostics: diagnostics, passContext: passContext)
   }
+
+  public func postProcess(doCatchStatement: DoCatchStatement,
+                          passContext: ASTPassContext) -> ASTPassResult<DoCatchStatement> {
+      var diagnostics = [Diagnostic]()
+
+      if !doCatchStatement.containsExternalCall {
+        diagnostics.append(.doCatchStatementContainsNoExternalCall(doCatchStatement))
+      }
+
+      return ASTPassResult(element: doCatchStatement, diagnostics: diagnostics, passContext: passContext)
+  }
 }

@@ -12,16 +12,23 @@ public struct DoCatchStatement: ASTNode {
   public var doBody: [Statement]
   public var catchBody: [Statement]
   public var error: Expression
+  var startToken: Token
+  var endToken: Token
 
-  public init(doBody: [Statement], catchBody: [Statement], error: Expression) {
+  public init(doBody: [Statement], catchBody: [Statement], error: Expression, startToken: Token, endToken: Token) {
     self.doBody = doBody
     self.catchBody = catchBody
     self.error = error
+    self.startToken = startToken
+    self.endToken = endToken
   }
+
+  // Does the do-body contain a call on this level of nesting, may be set while visiting a statement in doBody
+  public var containsExternalCall = false
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
-    return SourceLocation.spanning(doBody[0], to: catchBody[catchBody.count-1])
+    return SourceLocation.spanning(startToken, to: endToken)
   }
 
   public var description: String {
