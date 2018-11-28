@@ -42,6 +42,9 @@ public struct SemanticAnalyzer: ASTPass {
       }
     }
 
+    checkHashCollisions(topLevelModule: topLevelModule,
+                        diagnostics: &diagnostics)
+
     return ASTPassResult(element: topLevelModule, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -80,6 +83,34 @@ public struct SemanticAnalyzer: ASTPass {
   func addMutatingExpression(_ mutatingExpression: Expression, passContext: inout ASTPassContext) {
     let mutatingExpressions = (passContext.mutatingExpressions ?? []) + [mutatingExpression]
     passContext.mutatingExpressions = mutatingExpressions
+  }
+
+  // Checks hash collisions between functions in the same contract
+  func checkHashCollisions(topLevelModule: TopLevelModule,
+                           diagnostics: inout [Diagnostic]) {
+
+    var contractFunctionHashes: [String: [[UInt8]]] = [:]
+
+    outerLoop: for topLevelDeclaration in topLevelModule.declarations {
+      if case .contractBehaviorDeclaration(let behaviorDeclaration) = topLevelDeclaration {
+        let contractIdentifier = behaviorDeclaration.contractIdentifier.name
+
+        for member in behaviorDeclaration.members {
+          if case .functionDeclaration(let declaration) = member,
+             let functionHash = declaration.externalSignatureHash {
+            if var hashes = contractFunctionHashes[contractIdentifier] {
+              if hashes.contains(functionHash) {
+                diagnostics.append(.hashCollision(declaration))
+                break outerLoop
+              }
+              hashes.append(functionHash)
+            } else {
+              contractFunctionHashes[contractIdentifier] = [functionHash]
+            }
+          }
+        }
+      }
+    }
   }
 }
 

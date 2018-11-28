@@ -697,4 +697,12 @@ extension Diagnostic {
                       message: "Conversion from '\(expressionType.name)' to '\(typeConversionExpression.type.name)' only allowed in external call context or from a Solidity to a Flint type")
                       // swiftlint:enable line_length
   }
+
+  static func hashCollision(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error,
+                      sourceLocation: functionDeclaration.sourceLocation,
+                      message: "There is a hash collision between the function " +
+                               functionDeclaration.signature.identifier.name +
+                               " and another function in the same contract")
+  }
 }
