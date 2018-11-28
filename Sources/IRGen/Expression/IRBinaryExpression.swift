@@ -30,7 +30,7 @@ struct IRBinaryExpression {
     let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue)
       .rendered(functionContext: functionContext)
 
-    var preamble = lhs.preamble + "\n" + rhs.preamble
+    let preamble = lhs.preamble + "\n" + rhs.preamble
     let lhsExp = lhs.expression
     let rhsExp = rhs.expression
 
@@ -39,7 +39,7 @@ struct IRBinaryExpression {
     case .equal:
       let assign = IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
         .rendered(functionContext: functionContext)
-      preamble += "\n" + assign.preamble
+//      preamble += "\n" + assign.preamble
       code = assign.expression
     case .plus:
       code = IRRuntimeFunction.add(a: lhsExp, b: rhsExp)

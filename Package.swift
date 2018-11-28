@@ -119,6 +119,7 @@ let package = Package(
         "Source",
         "Diagnostic",
         "Lexer",
+        "ABI",
       ],
       exclude: ["ASTPass/ASTPass.template.swift"]
     ),
@@ -233,6 +234,22 @@ let package = Package(
         "Cuckoo",
       ],
       sources: [".", "../../.derived-tests/IRGen"]
+    ),
+    // MARK: ABI -
+    .target(
+      name: "ABI",
+      dependencies: [
+        "Source",
+        "CryptoSwift",
+      ]
+    ),
+    .testTarget(
+      name: "ABITests",
+      dependencies: [
+        "ABI",
+        "Cuckoo",
+      ],
+      sources: [".", "../../.derived-tests/ABI"]
     ),
     // MARK: flintc -
     .target(

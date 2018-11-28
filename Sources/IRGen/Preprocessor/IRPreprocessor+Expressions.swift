@@ -164,48 +164,63 @@ extension IRPreprocessor {
       candidates.isEmpty else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
+
+    let isExternal: Bool
+    if case .matchedFunction(let functionInformation) =
+      environment.matchFunctionCall(functionCall,
+                                    enclosingType: functionCall.identifier.enclosingType ?? enclosingType,
+                                    typeStates: typeStates,
+                                    callerProtections: callerProtections,
+                                    scopeContext: passContext.scopeContext!) {
+      isExternal = functionInformation.declaration.isExternal
+    } else {
+      isExternal = false
+    }
+
     // For each non-implicit dynamic type, add an isMem parameter.
-    var offset = 0
-    for (index, argument) in functionCall.arguments.enumerated() {
-      let isMem: Expression
+    if !isExternal {
+      var offset = 0
+      for (index, argument) in functionCall.arguments.enumerated() {
+        let isMem: Expression
 
-      if let parameterName = scopeContext.enclosingParameter(expression: argument.expression,
-                                                             enclosingTypeName: enclosingType),
-        scopeContext.isParameterImplicit(parameterName) {
-        isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-      } else {
-        let type = passContext.environment!.type(of: argument.expression,
-                                                 enclosingType: enclosingType,
-                                                 typeStates: typeStates,
-                                                 callerProtections: callerProtections,
-                                                 scopeContext: scopeContext)
-        guard type != .errorType else { fatalError() }
-        guard type.isDynamicType else { continue }
-
-        if let enclosingIdentifier = argument.expression.enclosingIdentifier,
-          scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-          // If the argument is declared locally, it's stored in memory.
+        if let parameterName = scopeContext.enclosingParameter(expression: argument.expression,
+                                                               enclosingTypeName: enclosingType),
+          scopeContext.isParameterImplicit(parameterName) {
           isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-        } else if let enclosingIdentifier = argument.expression.enclosingIdentifier,
-          scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
-          // If the argument is a parameter to the enclosing function, use its isMem parameter.
-          isMem = .identifier(
-            Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)),
-                                              sourceLocation: argument.sourceLocation)))
-        } else if case .inoutExpression(let inoutExpression) = argument.expression,
-          case .self(_) = inoutExpression.expression {
-          // If the argument is self, use flintSelf
-          isMem = .identifier(
-            Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")),
-                                              sourceLocation: argument.sourceLocation)))
         } else {
-          // Otherwise, the argument refers to a property, which is not in memory.
-          isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
-        }
-      }
+          let type = passContext.environment!.type(of: argument.expression,
+                                                   enclosingType: enclosingType,
+                                                   typeStates: typeStates,
+                                                   callerProtections: callerProtections,
+                                                   scopeContext: scopeContext)
+          guard type != .errorType else { fatalError() }
+          guard type.isDynamicType else { continue }
 
-      functionCall.arguments.insert(FunctionArgument(isMem), at: index + offset + 1)
-      offset += 1
+          if let enclosingIdentifier = argument.expression.enclosingIdentifier,
+            scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
+            // If the argument is declared locally, it's stored in memory.
+            isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
+          } else if let enclosingIdentifier = argument.expression.enclosingIdentifier,
+            scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
+            // If the argument is a parameter to the enclosing function, use its isMem parameter.
+            isMem = .identifier(
+              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)),
+                                                sourceLocation: argument.sourceLocation)))
+          } else if case .inoutExpression(let inoutExpression) = argument.expression,
+            case .self(_) = inoutExpression.expression {
+            // If the argument is self, use flintSelf
+            isMem = .identifier(
+              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")),
+                                                sourceLocation: argument.sourceLocation)))
+          } else {
+            // Otherwise, the argument refers to a property, which is not in memory.
+            isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
+          }
+        }
+
+        functionCall.arguments.insert(FunctionArgument(isMem), at: index + offset + 1)
+        offset += 1
+      }
     }
 
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }

@@ -124,6 +124,7 @@ public struct IRPreprocessor: ASTPass {
     }
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 

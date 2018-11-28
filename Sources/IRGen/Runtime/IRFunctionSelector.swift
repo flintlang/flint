@@ -5,9 +5,9 @@
 //  Created by Franklin Schrans on 12/28/17.
 //
 
-import CryptoSwift
 import AST
 import Lexer
+import ABI
 
 /// Runtime code in IR which determines which function to call based on the Ethereum's transaction payload.
 struct IRFunctionSelector {
@@ -41,7 +41,7 @@ struct IRFunctionSelector {
 
   func renderCases() -> String {
     return functions.map { function in
-      let functionHash = "0x\(function.mangledSignature().sha3(.keccak256).prefix(8))"
+      let functionHash = ABI.soliditySelectorHex(of: function.mangledSignature())
 
       return """
 

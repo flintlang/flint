@@ -6,6 +6,7 @@
 //
 
 import AST
+import CryptoSwift
 import Lexer
 
 /// Generates code for a statement.
@@ -318,14 +319,5 @@ struct IRDoCatchStatement {
     })
     functionContext.pop()
     return code
-  }
-}
-
-/// Generates code for an external call.
-struct IRExternalCallStatement {
-  var externalCall: ExternalCall
-
-  func rendered(functionContext: FunctionContext) -> String {
-    fatalError()
   }
 }

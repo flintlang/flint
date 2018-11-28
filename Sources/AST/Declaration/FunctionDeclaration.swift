@@ -6,14 +6,17 @@
 //
 import Source
 import Lexer
+import ABI
 
 /// The declaration of a function.
 public struct FunctionDeclaration: ASTNode {
   public var signature: FunctionSignatureDeclaration
   public var body: [Statement]
   public var closeBraceToken: Token
+  public var isExternal: Bool
 
   public var mangledIdentifier: String?
+  public var externalSignatureHash: [UInt8]?
 
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext?
@@ -21,11 +24,20 @@ public struct FunctionDeclaration: ASTNode {
   public init(signature: FunctionSignatureDeclaration,
               body: [Statement],
               closeBraceToken: Token,
-              scopeContext: ScopeContext? = nil) {
+              scopeContext: ScopeContext? = nil,
+              isExternal: Bool = false) {
     self.signature = signature
     self.body = body
     self.closeBraceToken = closeBraceToken
     self.scopeContext = scopeContext
+    self.isExternal = isExternal
+
+    if isExternal {
+      let args = signature.parameters.map { $0.type.rawType.name }.joined(separator: ",")
+
+      let name = signature.identifier.name
+      self.externalSignatureHash = ABI.soliditySelectorRaw(of: "\(name)(\(args))")
+    }
   }
 
   public var isMutating: Bool {

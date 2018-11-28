@@ -35,7 +35,7 @@ public indirect enum RawType: Equatable {
     private static let solidityParallels: [BasicType: SolidityType] = [
       .address: .address,
       .int: .int256,
-      .string: .string,
+      .string: .bytes32,
       .bool: .bool
     ]
 
@@ -130,6 +130,8 @@ public indirect enum RawType: Equatable {
     case uint248 = "uint248"
     case uint256 = "uint256"
 
+    case bytes32 = "bytes32"
+
     public var isIntegral: Bool {
       switch self {
       case .address:
@@ -137,6 +139,8 @@ public indirect enum RawType: Equatable {
       case .string:
         return false
       case .bool:
+        return false
+      case .bytes32:
         return false
       case .int8, .int16, .int24, .int32, .int40, .int48, .int56, .int64,
            .int72, .int80, .int88, .int96, .int104, .int112, .int120, .int128,
@@ -160,6 +164,8 @@ public indirect enum RawType: Equatable {
       case .address:
         return BasicType.address.rawValue
       case .string:
+        return BasicType.string.rawValue
+      case .bytes32:
         return BasicType.string.rawValue
       case .bool:
         return BasicType.bool.rawValue

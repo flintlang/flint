@@ -140,13 +140,15 @@ extension Environment {
   public func addFunctionSignature(_ signature: FunctionSignatureDeclaration,
                                    enclosingType: RawTypeIdentifier,
                                    states: [TypeState],
-                                   callerProtections: [CallerProtection]) {
+                                   callerProtections: [CallerProtection],
+                                   isExternal: Bool) {
     let functionName = signature.identifier.name
 
     let functionDeclaration = FunctionDeclaration(signature: signature,
                                                   body: [],
                                                   closeBraceToken: .init(kind: .punctuation(.closeBrace),
-                                                                         sourceLocation: .DUMMY))
+                                                                         sourceLocation: .DUMMY),
+                                                  isExternal: isExternal)
 
     types[enclosingType, default: TypeInformation()]
       .functions[functionName, default: [FunctionInformation]()]
@@ -229,11 +231,16 @@ extension Environment {
     declaredTraits.append(trait.identifier)
     types[trait.identifier.name] = TypeInformation()
 
-    // We insert a generated constructor for external traits
+    let isExternal: Bool
     if case .external = trait.traitKind.kind {
+      isExternal = true
+
+      // We insert a generated constructor for external traits
       let special = externalTraitInitializer(trait)
       addInitializerSignature(special, enclosingType: trait.identifier.name, callerProtections: [],
                               generated: true)
+    } else {
+      isExternal = false
     }
 
     for member in trait.members {
@@ -244,7 +251,11 @@ extension Environment {
       } else if case .specialDeclaration(let specialDeclaration) = member {
         addSpecial(specialDeclaration, enclosingType: trait.identifier, callerProtections: [])
       } else if case .functionSignatureDeclaration(let signature) = member {
-        addFunctionSignature(signature, enclosingType: trait.identifier.name, states: [], callerProtections: [])
+        addFunctionSignature(signature,
+                             enclosingType: trait.identifier.name,
+                             states: [],
+                             callerProtections: [],
+                             isExternal: isExternal)
       } else if case .specialSignatureDeclaration(let signature) = member {
         addInitializerSignature(signature, enclosingType: trait.identifier.name, callerProtections: [])
       }
