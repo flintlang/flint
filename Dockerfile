@@ -11,7 +11,7 @@ RUN apt-get update
 RUN apt-get -y install solc nodejs
 RUN npm install
 RUN npm install -g truffle
-RUN git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
+RUN git clone -b "0.29.0" https://github.com/realm/SwiftLint.git /tmp/swiftlint
 RUN (cd /tmp/swiftlint; swift build -c release --static-swift-stdlib)
 ENV PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:${PATH}"
 
