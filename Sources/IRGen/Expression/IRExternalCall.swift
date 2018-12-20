@@ -91,6 +91,8 @@ struct IRExternalCall {
       }
     }
 
+    let callInput = functionContext.freshVariable()
+
     // Render input stack storage.
     let inputSize = 4 + staticSize + dynamicSize
     var currentPosition = 4
@@ -105,26 +107,30 @@ struct IRExternalCall {
     // The output is simply memory suitable for the declared return type.
     let outputSize = 32
 
+    let callSuccess = functionContext.freshVariable()
+    let callOutput = functionContext.freshVariable()
+
     functionContext.emit(.inline("""
-    let flint$callInput := flint$allocateMemory(\(inputSize))
-    mstore8(flint$callInput, 0x\(functionSelector[0]))
-    mstore8(add(flint$callInput, 1), 0x\(functionSelector[1]))
-    mstore8(add(flint$callInput, 2), 0x\(functionSelector[2]))
-    mstore8(add(flint$callInput, 3), 0x\(functionSelector[3]))
+    let \(callInput) := flint$allocateMemory(\(inputSize))
+    mstore8(\(callInput), 0x\(functionSelector[0]))
+    mstore8(add(\(callInput), 1), 0x\(functionSelector[1]))
+    mstore8(add(\(callInput), 2), 0x\(functionSelector[2]))
+    mstore8(add(\(callInput), 3), 0x\(functionSelector[3]))
     \(argumentExpressions.joined(separator: "\n"))
-    let flint$callOutput := flint$allocateMemory(\(outputSize))
-    let flint$callSuccess := call(
+    let \(callOutput) := flint$allocateMemory(\(outputSize))
+    let \(callSuccess) := call(
     \(gasExpression),
     \(addressExpression),
     \(valueExpression),
-    flint$callInput,
+    \(callInput),
     \(inputSize),
-    flint$callOutput,
+    \(callOutput),
     \(outputSize)
     )
-    flint$callOutput := mload(flint$callOutput)
+    \(callOutput) := mload(\(callOutput))
     """))
 
-    return YUL.Expression.inline("flint$callOutput")
+    return Expression.catchable(value: Expression.inline(callOutput),
+                                success: Expression.inline(callSuccess))
   }
 }

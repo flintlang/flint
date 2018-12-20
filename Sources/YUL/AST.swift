@@ -253,11 +253,12 @@ public struct Assignment: CustomStringConvertible {
   }
 }
 
-public enum Expression: CustomStringConvertible {
+public indirect enum Expression: CustomStringConvertible {
   case functionCall(FunctionCall)
   case identifier(Identifier)
   case literal(Literal)
   case inline(String)
+  case catchable(value: Expression, success: Expression)
 
   public var description: String {
     switch self {
@@ -269,6 +270,8 @@ public enum Expression: CustomStringConvertible {
       return l.description
     case .inline(let s):
       return s
+    case .catchable(let value, _):
+      return value.description
     }
   }
 }
