@@ -53,7 +53,8 @@ extension SemanticAnalyzer {
       var diagnostics = [Diagnostic]()
 
       if !doCatchStatement.containsExternalCall {
-        diagnostics.append(.doCatchStatementContainsNoExternalCall(doCatchStatement))
+        // TODO: disabled because breaking ...
+        //diagnostics.append(.doCatchStatementContainsNoExternalCall(doCatchStatement))
       }
 
       return ASTPassResult(element: doCatchStatement, diagnostics: diagnostics, passContext: passContext)

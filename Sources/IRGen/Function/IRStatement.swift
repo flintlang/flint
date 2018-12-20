@@ -288,30 +288,30 @@ struct IRDoCatchStatement {
 
   func rendered(functionContext: FunctionContext) -> YUL.Statement {
     functionContext.push(doCatch: doCatchStatement)
-    let code = doCatchStatement.doBody.reversed().reduce("", { acc, statement in
-      switch statement {
-      case .expression(.functionCall):
-        var elseCode = ""
-        if let elseBlock = functionContext.top {
-          elseCode = elseBlock.catchBody.map { statement in
-            return IRStatement(statement: statement).rendered(functionContext: functionContext).description
-          }.joined(separator: "\n")
-        } else {
-          elseCode = ""
+    var catchCount = 0
+    for statement in doCatchStatement.doBody {
+      let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
+      switch yulStatement {
+      case .expression(.catchable(let value, let success)):
+        functionContext.emit(.inline("switch (\(success))"))
+        functionContext.emit(.inline("case (0) {"))
+        for statement in doCatchStatement.catchBody {
+          functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
         }
-
-        return """
-        if (true) {
-          \(acc.indented(by: 2))
-        } else {
-          \(elseCode.indented(by: 2))
-        }
-        """
+        functionContext.emit(.inline("}"))
+        functionContext.emit(.inline("case (1) {"))
+        catchCount += 1
+        functionContext.emit(.inline(value.description))
       default:
-        return IRStatement(statement: statement).rendered(functionContext: functionContext).description + "\n" + acc
+        functionContext.emit(.inline(yulStatement.description))
       }
-    })
+    }
+    if catchCount > 0 {
+      for _ in 1...catchCount {
+        functionContext.emit(.inline("}"))
+      }
+    }
     functionContext.pop()
-    return .inline(code)
+    return .noop
   }
 }

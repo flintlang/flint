@@ -3,6 +3,7 @@ contract XCall {
 }
 
 external trait ExternalContract {
+  func otherOne(value: uint8)
   func emitCheck(value: uint8) -> uint8
 }
 
@@ -12,10 +13,16 @@ XCall :: caller <- (any) {
   }
 
   public func callExternal(contractToCall: Address) -> Int{
-    let externalContract: ExternalContract = ExternalContract(address: contractToCall) 
-    let ret: Int = (call! externalContract.emitCheck(value: 0 as! uint8)) as! Int
+    let externalContract: ExternalContract = ExternalContract(address: contractToCall)
 
-    return ret
+    do {
+      call externalContract.otherOne(value: 0 as! uint8)
+      //let ret: Int = (call externalContract.emitCheck(value: 0 as! uint8)) as! Int
+    } catch is ExternalCallError {
+      let a: Int = 1
+    }
+
+    return 0
   } 
 }
 
