@@ -101,7 +101,7 @@ struct IRExternalCall {
     let argumentExpressions = slots.map { (slot: YUL.Expression) -> String in
       let storedPosition = currentPosition
       currentPosition += 32
-      return "mstore(add(flint$callInput, \(storedPosition)), \(slot))"
+      return "mstore(add(\(callInput), \(storedPosition)), \(slot))"
     }
 
     // The output is simply memory suitable for the declared return type.

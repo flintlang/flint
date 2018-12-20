@@ -26,6 +26,12 @@ struct IRBinaryExpression {
         .rendered(functionContext: functionContext)
     }
 
+    if case .equal = binaryExpression.opToken {
+      let assign = IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
+        .rendered(functionContext: functionContext)
+      return .inline(assign.description)
+    }
+
     let lhs = IRExpression(expression: binaryExpression.lhs, asLValue: asLValue)
       .rendered(functionContext: functionContext)
     let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue)
@@ -36,12 +42,7 @@ struct IRBinaryExpression {
 
     let code: String
     switch binaryExpression.opToken {
-    case .equal:
-      let assign = IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
-        .rendered(functionContext: functionContext)
-      code = assign.description
-    case .plus:
-      code = IRRuntimeFunction.add(a: lhsExp, b: rhsExp)
+    case .plus: code = IRRuntimeFunction.add(a: lhsExp, b: rhsExp)
     case .overflowingPlus: code = "add(\(lhsExp), \(rhsExp))"
     case .minus: code = IRRuntimeFunction.sub(a: lhsExp, b: rhsExp)
     case .overflowingMinus: code = "sub(\(lhsExp), \(rhsExp))"
