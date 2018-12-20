@@ -245,7 +245,14 @@ public indirect enum RawType: Equatable {
   }
 
   public var isCurrencyType: Bool {
-    if case .userDefinedType(let typeIdentifier) = self, RawType.StdlibType(rawValue: typeIdentifier) == .wei {
+    // Iterate until we find a non-inout type
+    var actualType: RawType = self
+    while case .inoutType(let inoutType) = actualType {
+      actualType = inoutType
+    }
+
+    if case .userDefinedType(let typeIdentifier) = actualType,
+      RawType.StdlibType(rawValue: typeIdentifier) == .wei {
       return true
     }
     return false
