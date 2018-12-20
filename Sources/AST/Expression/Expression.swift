@@ -54,7 +54,7 @@ public indirect enum Expression: ASTNode {
 
   public var enclosingType: String? {
     switch self {
-    case .identifier(let identifier): return identifier.enclosingType ?? identifier.name
+    case .identifier(let identifier): return identifier.enclosingType
     case .inoutExpression(let inoutExpression): return inoutExpression.expression.enclosingType
     case .binaryExpression(let binaryExpression): return binaryExpression.lhs.enclosingType
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.expression.enclosingType

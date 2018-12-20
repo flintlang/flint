@@ -43,8 +43,8 @@ struct IRExpression {
       return IRBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue)
         .rendered(functionContext: functionContext)
     case .typeConversionExpression(let typeConversionExpression):
-//      fatalError()
-      return IRExpression(expression: typeConversionExpression.expression).rendered(functionContext: functionContext)
+      return IRTypeConversionExpression(typeConversionExpression: typeConversionExpression)
+        .rendered(functionContext: functionContext)
     case .bracketedExpression(let bracketedExpression):
       return IRExpression(expression: bracketedExpression.expression, asLValue: asLValue)
         .rendered(functionContext: functionContext)
