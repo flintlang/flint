@@ -127,8 +127,10 @@ enum IRRuntimeFunction {
     return "\(Identifiers.storageArraySize.mangled)(\(arrayOffset))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: YUL.Expression, index: YUL.Expression, arraySize: Int) -> YUL.Expression {
-    return .functionCall(FunctionCall(Identifiers.storageFixedSizeArrayOffset.mangled, [arrayOffset, index, .literal(.num(arraySize))]))
+  static func storageFixedSizeArrayOffset(arrayOffset: YUL.Expression,
+                                          index: YUL.Expression, arraySize: Int) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageFixedSizeArrayOffset.mangled,
+                                      [arrayOffset, index, .literal(.num(arraySize))]))
   }
 
   static func storageDictionaryOffsetForKey(dictionaryOffset: YUL.Expression, key: YUL.Expression) -> YUL.Expression {

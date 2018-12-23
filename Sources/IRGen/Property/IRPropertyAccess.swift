@@ -81,7 +81,8 @@ struct IRPropertyAccess {
           lhsOffset = .identifier(lhsIdentifier.name.mangled)
           isMemoryAccess = true
         } else {
-          lhsOffset = .literal(.num(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!))
+          lhsOffset = .literal(.num(environment.propertyOffset(for: lhsIdentifier.name,
+                                                               enclosingType: enclosingTypeName)!))
         }
       } else {
         lhsOffset = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)

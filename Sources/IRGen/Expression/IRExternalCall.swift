@@ -125,7 +125,8 @@ struct IRExternalCall {
     var currentPosition = 4
     slots.forEach {
       functionContext.emit(.expression(.functionCall(
-        FunctionCall("mstore", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(currentPosition))])), $0])
+        FunctionCall("mstore", [.functionCall(FunctionCall("add",
+                                              [.identifier(callInput), .literal(.num(currentPosition))])), $0])
       )))
       currentPosition += 32
     }

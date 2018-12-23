@@ -107,7 +107,8 @@ struct IRForStatement {
                                                 scopeContext: functionContext.scopeContext)
     switch type {
     case .arrayType:
-      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(arrayOffset: offset, index: .identifier("\(prefix)i"))
+      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(
+        arrayOffset: offset, index: .identifier("\(prefix)i"))
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       switch forStatement.variable.type.rawType {
       case .arrayType, .fixedSizeArrayType:
@@ -119,8 +120,8 @@ struct IRForStatement {
     case .fixedSizeArrayType:
       let typeSize = functionContext.environment.size(of: type)
       loadArrLen = .literal(.num(typeSize))
-      let arrayElementOffset =
-        IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: .identifier("\(prefix)i"), arraySize: typeSize)
+      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(
+        arrayOffset: offset, index: .identifier("\(prefix)i"), arraySize: typeSize)
       toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType:
@@ -129,7 +130,8 @@ struct IRForStatement {
       let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset,
         key: .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))
       let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
-      let dictionaryElementOffset = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
+      let dictionaryElementOffset
+        = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
       toAssign = IRRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
 
     default:
@@ -141,7 +143,8 @@ struct IRForStatement {
     let \(prefix)arrLen := \(loadArrLen)
     """)])
 
-    let condition = YUL.Expression.functionCall(FunctionCall("lt", [.identifier("\(prefix)i"), .identifier("\(prefix)arrLen")]))
+    let condition = YUL.Expression.functionCall(
+      FunctionCall("lt", [.identifier("\(prefix)i"), .identifier("\(prefix)arrLen")]))
     let step = Block([
       .expression(.assignment(Assignment(["\(prefix)i"],
         .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))))
