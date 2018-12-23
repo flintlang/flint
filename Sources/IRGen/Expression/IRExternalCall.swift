@@ -95,14 +95,7 @@ struct IRExternalCall {
 
     // Render input stack storage.
     let inputSize = 4 + staticSize + dynamicSize
-    var currentPosition = 4
     let slots = staticSlots + dynamicSlots
-
-    let argumentExpressions = slots.map { (slot: YUL.Expression) -> String in
-      let storedPosition = currentPosition
-      currentPosition += 32
-      return "mstore(add(\(callInput), \(storedPosition)), \(slot))"
-    }
 
     // The output is simply memory suitable for the declared return type.
     let outputSize = 32
@@ -110,25 +103,52 @@ struct IRExternalCall {
     let callSuccess = functionContext.freshVariable()
     let callOutput = functionContext.freshVariable()
 
-    functionContext.emit(.inline("""
-    let \(callInput) := flint$allocateMemory(\(inputSize))
-    mstore8(\(callInput), 0x\(functionSelector[0]))
-    mstore8(add(\(callInput), 1), 0x\(functionSelector[1]))
-    mstore8(add(\(callInput), 2), 0x\(functionSelector[2]))
-    mstore8(add(\(callInput), 3), 0x\(functionSelector[3]))
-    \(argumentExpressions.joined(separator: "\n"))
-    let \(callOutput) := flint$allocateMemory(\(outputSize))
-    let \(callSuccess) := call(
-    \(gasExpression),
-    \(addressExpression),
-    \(valueExpression),
-    \(callInput),
-    \(inputSize),
-    \(callOutput),
-    \(outputSize)
-    )
-    \(callOutput) := mload(\(callOutput))
-    """))
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callInput, .any)], IRRuntimeFunction.allocateMemory(size: inputSize))
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", [.identifier(callInput), .literal(.hex("0x\(functionSelector[0])"))])
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(1))])),
+      .literal(.hex("0x\(functionSelector[1])"))])
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(2))])),
+      .literal(.hex("0x\(functionSelector[2])"))])
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(3))])),
+      .literal(.hex("0x\(functionSelector[3])"))])
+    )))
+
+    var currentPosition = 4
+    slots.forEach {
+      functionContext.emit(.expression(.functionCall(
+        FunctionCall("mstore", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(currentPosition))])), $0])
+      )))
+      currentPosition += 32
+    }
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callOutput, .any)], IRRuntimeFunction.allocateMemory(size: outputSize))
+    )))
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call", [
+        gasExpression,
+        addressExpression,
+        valueExpression,
+        .identifier(callInput),
+        .literal(.num(inputSize)),
+        .identifier(callOutput),
+        .literal(.num(outputSize))
+      ])))
+    )))
+
+    functionContext.emit(.expression(.assignment(
+      Assignment([callOutput], .functionCall(FunctionCall("mload", [.identifier(callOutput)])))
+    )))
 
     return YUL.Expression.catchable(value: YUL.Expression.identifier(callOutput),
                                     success: YUL.Expression.identifier(callSuccess))
