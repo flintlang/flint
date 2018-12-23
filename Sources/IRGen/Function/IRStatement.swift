@@ -290,13 +290,13 @@ struct IRDoCatchStatement {
   var doCatchStatement: DoCatchStatement
 
   func rendered(functionContext: FunctionContext) -> YUL.Statement {
-    functionContext.pushDoCatch(doCatch: doCatchStatement)
-    //let ret: YUL.Statement = .block(functionContext.withNewBlock {
+    functionContext.pushDoCatch(doCatchStatement)
+    let ret: YUL.Statement = .block(functionContext.withNewBlock {
       doCatchStatement.doBody.forEach { statement in
         functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
       }
-    //})
+    })
     functionContext.popDoCatch()
-    return .noop //ret
+    return ret
   }
 }

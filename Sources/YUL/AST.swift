@@ -46,12 +46,10 @@ public struct Block: CustomStringConvertible {
 
     return """
     {
-      // statement count: \(statements.count)
-      \(statement_description)
+      \(statement_description.indented(by: 2))
     }
     """
   }
-
 }
 
 // swiftlint:disable type_name
@@ -90,16 +88,13 @@ public struct Switch: CustomStringConvertible {
       return "case \(lit) \(block)"
       }.joined(separator: "\n")
 
-    let `default` = self.default != nil ? "default \(self.default!)" : ""
+    let `default` = self.default != nil ? "\ndefault \(self.default!)" : ""
 
     return """
     switch \(self.expression)
-    \(cases)
-    \(`default`)
+    \(cases)\(`default`)
     """
-
   }
-
 }
 
 public struct ForLoop: CustomStringConvertible {
@@ -344,5 +339,4 @@ public struct FunctionCall: CustomStringConvertible {
     }).joined(separator: ", ")
     return "\(name)(\(args))"
   }
-
 }

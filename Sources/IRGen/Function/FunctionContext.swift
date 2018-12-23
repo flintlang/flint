@@ -22,8 +22,8 @@ class FunctionContext {
   /// Whether the function is declared in a struct.
   var isInStructFunction: Bool
 
-  /// Stack of do-catch statements, each with the number of errors handled.
-  var doCatchStatementStack: [DoCatchStatementStackElement]
+  /// Stack of do-catch statements, for handling errors.
+  var doCatchStatementStack: [DoCatchStatement]
 
   /// Stack of code blocks ({ ... })
   var blockStack: [YUL.Block]
@@ -41,7 +41,7 @@ class FunctionContext {
     self.isInStructFunction = isInStructFunction
 
     self.doCatchStatementStack = []
-    self.blockStack = [YUL.Block([])]
+    self.blockStack = [Block([])]
     self.counter = 0
   }
 
@@ -54,25 +54,33 @@ class FunctionContext {
       emit(.inline("switch (\(allSucceeded.description))"))
       emit(.inline("case (0)"))
       emit(.block(withNewBlock {
-        topDoCatch!.doCatchStatement.catchBody.forEach { statement in
+        topDoCatch!.catchBody.forEach { statement in
           emit(IRStatement(statement: statement).rendered(functionContext: self))
         }
       }))
+      // Further statements will be inside this block. It will be closed
+      // eventually in withNewBlock(...).
       emit(.inline("case (1)"))
-      pushBlock()
-      doCatchStatementStack[doCatchStatementStack.count - 1].catchCount += 1
+      let _ = pushBlock()
     }
-    self.blockStack[blockStack.count - 1].statements.append(statement)
+    blockStack[blockStack.count - 1].statements.append(statement)
   }
 
   func withNewBlock(_ inner: () -> Void) -> YUL.Block {
-    pushBlock()
+    // The inner() call may cause more blocks to be pushed (see emit above),
+    // so here we make sure to pop and emit all the additional blocks before
+    // returning this one.
+    let outerCount = pushBlock()
     inner()
+    while blockStack.count != outerCount {
+      emit(.block(popBlock()))
+    }
     return popBlock()
   }
 
-  func pushBlock() {
-    self.blockStack.append(YUL.Block([]))
+  func pushBlock() -> Int {
+    blockStack.append(Block([]))
+    return blockStack.count
   }
 
   func popBlock() -> YUL.Block {
@@ -89,30 +97,15 @@ class FunctionContext {
     return (self.blockStack.last!.statements.map {$0.description}).joined(separator: "\n")
   }
 
-  func pushDoCatch(doCatch: DoCatchStatement) {
-    doCatchStatementStack.append(DoCatchStatementStackElement(doCatchStatement: doCatch))
+  func pushDoCatch(_ doCatchStatement: DoCatchStatement) {
+    doCatchStatementStack.append(doCatchStatement)
   }
 
   func popDoCatch() {
-    let top = doCatchStatementStack.popLast()!
-    if top.catchCount > 0 {
-      for _ in 1...top.catchCount {
-        emit(.block(popBlock()))
-      }
-    }
+    let _ = doCatchStatementStack.popLast()
   }
 
-  var topDoCatch: DoCatchStatementStackElement? {
+  var topDoCatch: DoCatchStatement? {
     return doCatchStatementStack.last
-  }
-}
-
-struct DoCatchStatementStackElement {
-  let doCatchStatement: DoCatchStatement
-  var catchCount: Int
-
-  init(doCatchStatement: DoCatchStatement) {
-    self.doCatchStatement = doCatchStatement
-    catchCount = 0
   }
 }
