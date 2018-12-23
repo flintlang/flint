@@ -150,7 +150,6 @@ struct IRExternalCall {
       Assignment([callOutput], .functionCall(FunctionCall("mload", [.identifier(callOutput)])))
     )))
 
-    return YUL.Expression.catchable(value: YUL.Expression.identifier(callOutput),
-                                    success: YUL.Expression.identifier(callSuccess))
+    return .catchable(value: .identifier(callOutput), success: .identifier(callSuccess))
   }
 }

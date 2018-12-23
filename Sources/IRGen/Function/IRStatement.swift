@@ -292,53 +292,26 @@ struct IRDoCatchStatement {
     doCatchStatement.doBody.forEach { statement in
       let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
       let catchableSuccesses = yulStatement.catchableSuccesses
-      if catchableSuccesses.count == 0 {
-        functionContext.emit(yulStatement)
-      } else {
+      if catchableSuccesses.count != 0 {
         let allSucceeded = catchableSuccesses.reduce("1", { acc, success in
           "and(\(acc), \(success.description))"
         })
         functionContext.emit(.inline("switch (\(allSucceeded))"))
-        functionContext.emit(.inline("case (0) {"))
-        doCatchStatement.catchBody.forEach { statement in
-          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
-        }
-        functionContext.emit(.inline("}"))
-        functionContext.emit(.inline("case (1) {"))
+        functionContext.emit(.inline("case (0)"))
+        functionContext.emit(.block(functionContext.withNewBlock {
+          doCatchStatement.catchBody.forEach { statement in
+            functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+          }
+        }))
+        functionContext.emit(.inline("case (1)"))
+        functionContext.pushBlock()
         catchCount += 1
-        functionContext.emit(yulStatement)
       }
+      functionContext.emit(yulStatement)
     }
-    /*
-    for statement in doCatchStatement.doBody {
-      let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
-      switch yulStatement {
-      //case .expression(let e):
-      //  let catchableSuccesses = e.catchableSuccesses
-      //  if catchableSuccesses.count == 0 {
-      //    functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
-      //  } else {
-      //    let allSucceeded = catchableSuccesses.reduce("1", { acc, success in
-      //      "and(\(acc), \(success.description))"
-      //    })
-      //    functionContext.emit(.inline("switch (\(allSucceeded))"))
-      //    functionContext.emit(.inline("case (0) {"))
-      //    for statement in doCatchStatement.catchBody {
-      //      functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
-      //    }
-      //    functionContext.emit(.inline("}"))
-      //    functionContext.emit(.inline("case (1) {"))
-      //    catchCount += 1
-      //    functionContext.emit(.inline(e.description))
-      //  }
-      default:
-        functionContext.emit(.inline(yulStatement.description))
-      }
-    }
-    */
     if catchCount > 0 {
       for _ in 1...catchCount {
-        functionContext.emit(.inline("}"))
+        functionContext.emit(.block(functionContext.popBlock()))
       }
     }
     functionContext.pop()

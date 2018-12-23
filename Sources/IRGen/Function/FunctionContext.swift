@@ -47,8 +47,16 @@ class FunctionContext {
   }
 
   func withNewBlock(_ inner: () -> Void) -> YUL.Block {
-    self.blockStack.append(YUL.Block([]))
+    pushBlock()
     inner()
+    return popBlock()
+  }
+
+  func pushBlock() {
+    self.blockStack.append(YUL.Block([]))
+  }
+
+  func popBlock() -> YUL.Block {
     return self.blockStack.popLast()!
   }
 
