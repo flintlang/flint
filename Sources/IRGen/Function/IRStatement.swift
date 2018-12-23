@@ -287,34 +287,13 @@ struct IRDoCatchStatement {
   var doCatchStatement: DoCatchStatement
 
   func rendered(functionContext: FunctionContext) -> YUL.Statement {
-    functionContext.push(doCatch: doCatchStatement)
-    var catchCount = 0
-    doCatchStatement.doBody.forEach { statement in
-      let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
-      let catchableSuccesses = yulStatement.catchableSuccesses
-      if catchableSuccesses.count != 0 {
-        let allSucceeded = catchableSuccesses.reduce("1", { acc, success in
-          "and(\(acc), \(success.description))"
-        })
-        functionContext.emit(.inline("switch (\(allSucceeded))"))
-        functionContext.emit(.inline("case (0)"))
-        functionContext.emit(.block(functionContext.withNewBlock {
-          doCatchStatement.catchBody.forEach { statement in
-            functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
-          }
-        }))
-        functionContext.emit(.inline("case (1)"))
-        functionContext.pushBlock()
-        catchCount += 1
+    functionContext.pushDoCatch(doCatch: doCatchStatement)
+    //let ret: YUL.Statement = .block(functionContext.withNewBlock {
+      doCatchStatement.doBody.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
       }
-      functionContext.emit(yulStatement)
-    }
-    if catchCount > 0 {
-      for _ in 1...catchCount {
-        functionContext.emit(.block(functionContext.popBlock()))
-      }
-    }
-    functionContext.pop()
-    return .noop
+    //})
+    functionContext.popDoCatch()
+    return .noop //ret
   }
 }

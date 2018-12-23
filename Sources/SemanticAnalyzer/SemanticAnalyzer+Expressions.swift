@@ -166,7 +166,8 @@ extension SemanticAnalyzer {
       externalCall.mode != .returnsGracefullyOptional &&
       !passContext.inAssignment &&
       !passContext.isFunctionCallArgument {
-      diagnostics.append(.externalCallReturnValueIgnored(externalCall))
+      // TODO: disabled, broken (e.g. (call ...) == 0 is not ignoring the value)
+      //diagnostics.append(.externalCallReturnValueIgnored(externalCall))
     }
 
     return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)

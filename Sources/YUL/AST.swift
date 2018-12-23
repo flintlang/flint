@@ -46,6 +46,7 @@ public struct Block: CustomStringConvertible {
 
     return """
     {
+      // statement count: \(statements.count)
       \(statement_description)
     }
     """
@@ -133,8 +134,12 @@ public enum Statement: CustomStringConvertible {
 
   public var catchableSuccesses: [Expression] {
     switch self {
+    case .if(let ifs):
+      return ifs.expression.catchableSuccesses
     case .expression(let e):
       return e.catchableSuccesses
+    case .switch(let sw):
+      return sw.expression.catchableSuccesses
     default:
       return []
     }

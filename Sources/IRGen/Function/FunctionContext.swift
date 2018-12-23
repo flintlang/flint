@@ -22,27 +22,46 @@ class FunctionContext {
   /// Whether the function is declared in a struct.
   var isInStructFunction: Bool
 
-  var doCatchStatementStack: [DoCatchStatement]
+  /// Stack of do-catch statements, each with the number of errors handled.
+  var doCatchStatementStack: [DoCatchStatementStackElement]
 
+  /// Stack of code blocks ({ ... })
   var blockStack: [YUL.Block]
+
+  /// Fresh variable counter.
   private var counter: Int
 
   init(environment: Environment,
        scopeContext: ScopeContext,
        enclosingTypeName: String,
-       isInStructFunction: Bool,
-       doCatchStatementStack: [DoCatchStatement] = []) {
+       isInStructFunction: Bool) {
     self.environment = environment
     self.scopeContext = scopeContext
     self.enclosingTypeName = enclosingTypeName
     self.isInStructFunction = isInStructFunction
-    self.doCatchStatementStack = doCatchStatementStack
 
+    self.doCatchStatementStack = []
     self.blockStack = [YUL.Block([])]
     self.counter = 0
   }
 
   func emit(_ statement: YUL.Statement) {
+    let catchableSuccesses = statement.catchableSuccesses
+    if catchableSuccesses.count > 0 {
+      let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
+        .functionCall(FunctionCall("and", [acc, success]))
+      })
+      emit(.inline("switch (\(allSucceeded.description))"))
+      emit(.inline("case (0)"))
+      emit(.block(withNewBlock {
+        topDoCatch!.doCatchStatement.catchBody.forEach { statement in
+          emit(IRStatement(statement: statement).rendered(functionContext: self))
+        }
+      }))
+      emit(.inline("case (1)"))
+      pushBlock()
+      doCatchStatementStack[doCatchStatementStack.count - 1].catchCount += 1
+    }
     self.blockStack[blockStack.count - 1].statements.append(statement)
   }
 
@@ -70,17 +89,30 @@ class FunctionContext {
     return (self.blockStack.last!.statements.map {$0.description}).joined(separator: "\n")
   }
 
-  func push(doCatch stmt: DoCatchStatement) {
-    doCatchStatementStack.append(stmt)
+  func pushDoCatch(doCatch: DoCatchStatement) {
+    doCatchStatementStack.append(DoCatchStatementStackElement(doCatchStatement: doCatch))
   }
 
-  @discardableResult
-  func pop() -> DoCatchStatement? {
-    return doCatchStatementStack.popLast()
+  func popDoCatch() {
+    let top = doCatchStatementStack.popLast()!
+    if top.catchCount > 0 {
+      for _ in 1...top.catchCount {
+        emit(.block(popBlock()))
+      }
+    }
   }
 
-  var top: DoCatchStatement? {
+  var topDoCatch: DoCatchStatementStackElement? {
     return doCatchStatementStack.last
   }
+}
 
+struct DoCatchStatementStackElement {
+  let doCatchStatement: DoCatchStatement
+  var catchCount: Int
+
+  init(doCatchStatement: DoCatchStatement) {
+    self.doCatchStatement = doCatchStatement
+    catchCount = 0
+  }
 }

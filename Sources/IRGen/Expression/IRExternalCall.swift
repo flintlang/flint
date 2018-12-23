@@ -150,6 +150,13 @@ struct IRExternalCall {
       Assignment([callOutput], .functionCall(FunctionCall("mload", [.identifier(callOutput)])))
     )))
 
-    return .catchable(value: .identifier(callOutput), success: .identifier(callSuccess))
+    switch externalCall.mode {
+    case .normal:
+      return .catchable(value: .identifier(callOutput), success: .identifier(callSuccess))
+    case .returnsGracefullyOptional:
+      fatalError("call? not implemented")
+    case .isForced:
+      return .identifier(callOutput)
+    }
   }
 }
