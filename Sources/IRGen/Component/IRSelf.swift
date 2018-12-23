@@ -16,6 +16,6 @@ struct IRSelf {
       fatalError("Unexpected token \(selfToken.kind)")
     }
 
-    return .inline(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
+    return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
 }

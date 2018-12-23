@@ -99,7 +99,7 @@ struct IRFunctionSelector {
 struct IRTypeStateChecks {
   var typeStates: [TypeState]
 
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Expression {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 
@@ -135,6 +135,6 @@ struct IRTypeStateChecks {
       """)
     }
 
-    return .inline("")
+    return .noop
   }
 }

@@ -23,13 +23,13 @@ struct IRSubscriptExpression {
   }
 
   func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int,
-                           functionContext: FunctionContext) -> (String) {
+                           functionContext: FunctionContext) -> YUL.Expression {
     let indexExpressionCode = IRExpression(expression: subExpr.indexExpression)
       .rendered(functionContext: functionContext)
     let type = functionContext.environment.type(of: subExpr.baseExpression,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
-    let runtimeFunc: (String, String) -> String
+    let runtimeFunc: (YUL.Expression, YUL.Expression) -> YUL.Expression
 
     switch type {
     case .arrayType:
@@ -44,13 +44,13 @@ struct IRSubscriptExpression {
 
     switch subExpr.baseExpression {
     case .identifier:
-      return (runtimeFunc(String(baseOffset), indexExpressionCode.description))
+      return runtimeFunc(.literal(.num(baseOffset)), indexExpressionCode)
     case .subscriptExpression(let newBase):
       let e = nestedStorageOffset(subExpr: newBase,
                           baseOffset: baseOffset,
                           functionContext: functionContext)
 
-      return (runtimeFunc(e.description, indexExpressionCode.description))
+      return runtimeFunc(e, indexExpressionCode)
     default:
       fatalError("Subscript expression has an invalid type")
     }
@@ -64,14 +64,14 @@ struct IRSubscriptExpression {
         fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
     }
 
-    let (memLocation): (String) = nestedStorageOffset(subExpr: subscriptExpression,
-                                                  baseOffset: baseOffset,
-                                                  functionContext: functionContext)
+    let memLocation = nestedStorageOffset(subExpr: subscriptExpression,
+                                          baseOffset: baseOffset,
+                                          functionContext: functionContext)
 
     if asLValue {
-      return .inline(memLocation)
+      return memLocation
     } else {
-      return .inline("sload(\(memLocation))")
+      return .functionCall(FunctionCall("sload", [memLocation]))
     }
   }
 }

@@ -21,14 +21,14 @@ struct IRAssignment {
       let mangledName = Mangler.mangleName(variableDeclaration.identifier.name)
       // Shadowed variables shouldn't be redeclared
       if mangledName == rhsCode {
-        return .inline("")
+        return .noop
       }
-      return .inline("let \(mangledName) := \(rhsCode)")
+      return .variableDeclaration(YUL.VariableDeclaration([(mangledName, .any)], rhsIr))
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return .inline("\(identifier.name.mangled) := \(rhsCode)")
+      return .assignment(Assignment([identifier.name.mangled], rhsIr))
     default:
       // LHS refers to a property in storage or memory.
-      let lhsCode = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext).description
+      let lhsIr = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
 
       if functionContext.isInStructFunction {
         let enclosingName: String
@@ -39,15 +39,14 @@ struct IRAssignment {
         } else {
           enclosingName = "flintSelf"
         }
-        return .inline(IRRuntimeFunction.store(address: lhsCode,
-                                               value: rhsCode,
-                                               inMemory: Mangler.isMem(for: enclosingName).mangled))
-
+        return IRRuntimeFunction.store(address: lhsIr,
+                                       value: rhsIr,
+                                       inMemory: Mangler.isMem(for: enclosingName).mangled)
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        return .inline(IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: true))
+        return IRRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: true)
       } else {
-        return .inline(IRRuntimeFunction.store(address: lhsCode, value: rhsCode, inMemory: false))
+        return IRRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: false)
       }
     }
   }

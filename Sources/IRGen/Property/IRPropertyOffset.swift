@@ -29,8 +29,8 @@ struct IRPropertyOffset {
     default: fatalError()
     }
 
-    return .inline(
-      "\(functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
-    )
+    return .literal(.num(
+      functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!
+    ))
   }
 }

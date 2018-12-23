@@ -122,8 +122,6 @@ public struct ForLoop: CustomStringConvertible {
 public enum Statement: CustomStringConvertible {
   case block(Block)
   case functionDefinition(FunctionDefinition)
-  case variableDeclaration(VariableDeclaration)
-  case assignment(Assignment)
   case `if`(If)
   case expression(Expression)
   case `switch`(Switch)
@@ -133,16 +131,21 @@ public enum Statement: CustomStringConvertible {
   case noop
   case inline(String)
 
+  public var catchableSuccesses: [Expression] {
+    switch self {
+    case .expression(let e):
+      return e.catchableSuccesses
+    default:
+      return []
+    }
+  }
+
   public var description: String {
     switch self {
     case .block(let b):
       return b.description
     case .functionDefinition(let f):
       return f.description
-    case .variableDeclaration(let decl):
-      return decl.description
-    case .assignment(let assign):
-      return assign.description
     case .if(let ifs):
       return ifs.description
     case .expression(let e):
@@ -175,6 +178,7 @@ public enum Type: String, CustomStringConvertible {
   case s128
   case u256
   case s256
+  case any
 
   public var description: String {
     return self.rawValue
@@ -184,8 +188,13 @@ public enum Type: String, CustomStringConvertible {
 public typealias TypedIdentifierList = [(Identifier, Type)]
 
 private func render(typedIdentifierList: TypedIdentifierList) -> String {
-  return typedIdentifierList.map({ (ident, ty) in
-    return "\(ident): \(ty)"
+  return typedIdentifierList.map({ (ident, type) in
+    switch type {
+    case .any:
+      return "\(ident)"
+    default:
+      return "\(ident): \(type)"
+    }
   }).joined(separator: ", ")
 }
 
@@ -222,9 +231,13 @@ public struct VariableDeclaration: CustomStringConvertible {
   public let declarations: TypedIdentifierList
   public let expression: Expression?
 
-  public init(declarations: TypedIdentifierList, expression: Expression? = nil) {
+  public init(_ declarations: TypedIdentifierList, _ expression: Expression? = nil) {
     self.declarations = declarations
     self.expression = expression
+  }
+
+  public var catchableSuccesses: [Expression] {
+    return expression?.catchableSuccesses ?? []
   }
 
   public var description: String {
@@ -247,6 +260,10 @@ public struct Assignment: CustomStringConvertible {
     self.expression = rhs
   }
 
+  public var catchableSuccesses: [Expression] {
+    return expression.catchableSuccesses
+  }
+
   public var description: String {
     let lhs = self.identifiers.joined(separator: ", ")
     return "\(lhs) := \(self.expression)"
@@ -257,8 +274,29 @@ public indirect enum Expression: CustomStringConvertible {
   case functionCall(FunctionCall)
   case identifier(Identifier)
   case literal(Literal)
-  case inline(String)
   case catchable(value: Expression, success: Expression)
+
+  // TODO: these three should really be statements
+  case variableDeclaration(VariableDeclaration)
+  case assignment(Assignment)
+  case noop
+
+  case inline(String)
+
+  public var catchableSuccesses: [Expression] {
+    switch self {
+    case .variableDeclaration(let decl):
+      return decl.catchableSuccesses
+    case .assignment(let assign):
+      return assign.catchableSuccesses
+    case .functionCall(let f):
+      return f.catchableSuccesses
+    case .catchable(_, let success):
+      return [success]
+    default:
+      return []
+    }
+  }
 
   public var description: String {
     switch self {
@@ -268,10 +306,16 @@ public indirect enum Expression: CustomStringConvertible {
       return id
     case .literal(let l):
       return l.description
-    case .inline(let s):
-      return s
+    case .variableDeclaration(let decl):
+      return decl.description
+    case .assignment(let assign):
+      return assign.description
     case .catchable(let value, _):
       return value.description
+    case .noop:
+      return ""
+    case .inline(let s):
+      return s
     }
   }
 }
@@ -283,6 +327,10 @@ public struct FunctionCall: CustomStringConvertible {
   public init(_ name: Identifier, _ arguments: [Expression]) {
     self.name = name
     self.arguments = arguments
+  }
+
+  public var catchableSuccesses: [Expression] {
+    return arguments.flatMap { argument in argument.catchableSuccesses }
   }
 
   public var description: String {

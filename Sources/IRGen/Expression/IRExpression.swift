@@ -42,8 +42,8 @@ struct IRExpression {
     case .identifier(let identifier):
       return IRIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
-      return .inline(IRVariableDeclaration(variableDeclaration: variableDeclaration)
-        .rendered(functionContext: functionContext))
+      return IRVariableDeclaration(variableDeclaration: variableDeclaration)
+        .rendered(functionContext: functionContext)
     case .literal(let literal):
       return .literal(IRLiteralToken(literalToken: literal).rendered())
     case .arrayLiteral(let arrayLiteral):

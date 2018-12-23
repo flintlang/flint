@@ -87,46 +87,47 @@ struct IRForStatement {
   func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> ForLoop {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
-    let offset: String
+    let offset: YUL.Expression
     if !isLocal,
       let intOffset = functionContext.environment.propertyOffset(for: iterable.name,
                                                                  enclosingType: functionContext.enclosingTypeName) {
       // Is contract array
-        offset = String(intOffset)
+      offset = .literal(.num(intOffset))
     } else if isLocal {
-      offset = "_\(iterable.name)"
+      offset = .identifier("_\(iterable.name)")
     } else {
       fatalError("Couldn't find offset for iterable")
     }
 
-    let loadArrLen: String
-    let toAssign: String
+    let loadArrLen: YUL.Expression
+    let toAssign: YUL.Expression
 
     let type = functionContext.environment.type(of: iterable.name,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
     switch type {
     case .arrayType:
-      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
+      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(arrayOffset: offset, index: .identifier("\(prefix)i"))
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       switch forStatement.variable.type.rawType {
       case .arrayType, .fixedSizeArrayType:
-        toAssign = String(arrayElementOffset)
+        toAssign = arrayElementOffset
       default:
         toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
       }
 
     case .fixedSizeArrayType:
       let typeSize = functionContext.environment.size(of: type)
-      loadArrLen = String(typeSize)
+      loadArrLen = .literal(.num(typeSize))
       let arrayElementOffset =
-        IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+        IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: .identifier("\(prefix)i"), arraySize: typeSize)
       toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType:
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       let keysArrayOffset = IRRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
-      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
+      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset,
+        key: .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))
       let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
       let dictionaryElementOffset = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
       toAssign = IRRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
@@ -140,19 +141,18 @@ struct IRForStatement {
     let \(prefix)arrLen := \(loadArrLen)
     """)])
 
-    let condition = Expression.inline("lt(\(prefix)i, \(prefix)arrLen)")
-    let step = Block([.inline("""
-     \(prefix)i := add(\(prefix)i, 1)
-    """)])
+    let condition = YUL.Expression.functionCall(FunctionCall("lt", [.identifier("\(prefix)i"), .identifier("\(prefix)arrLen")]))
+    let step = Block([
+      .expression(.assignment(Assignment(["\(prefix)i"],
+        .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))))
+    ])
 
     let body = functionContext.withNewBlock {
-      let assignment = IRAssignment(lhs: .identifier(forStatement.variable.identifier),
-                                    rhs: .rawAssembly(toAssign, resultType: nil))
-                                    .rendered(functionContext: functionContext, asTypeProperty: false)
-        functionContext.emit(.inline("let \(assignment.description)"))
-        forStatement.body.forEach { statement in
-          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
-        }
+      functionContext.emit(.expression(
+        .variableDeclaration(VariableDeclaration([(forStatement.variable.identifier.name.mangled, .any)], toAssign))))
+      forStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
     }
 
     return ForLoop(initialize, condition, step, body)
@@ -289,23 +289,53 @@ struct IRDoCatchStatement {
   func rendered(functionContext: FunctionContext) -> YUL.Statement {
     functionContext.push(doCatch: doCatchStatement)
     var catchCount = 0
-    for statement in doCatchStatement.doBody {
+    doCatchStatement.doBody.forEach { statement in
       let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
-      switch yulStatement {
-      case .expression(.catchable(let value, let success)):
-        functionContext.emit(.inline("switch (\(success))"))
+      let catchableSuccesses = yulStatement.catchableSuccesses
+      if catchableSuccesses.count == 0 {
+        functionContext.emit(yulStatement)
+      } else {
+        let allSucceeded = catchableSuccesses.reduce("1", { acc, success in
+          "and(\(acc), \(success.description))"
+        })
+        functionContext.emit(.inline("switch (\(allSucceeded))"))
         functionContext.emit(.inline("case (0) {"))
-        for statement in doCatchStatement.catchBody {
-          functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
+        doCatchStatement.catchBody.forEach { statement in
+          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
         }
         functionContext.emit(.inline("}"))
         functionContext.emit(.inline("case (1) {"))
         catchCount += 1
-        functionContext.emit(.inline(value.description))
+        functionContext.emit(yulStatement)
+      }
+    }
+    /*
+    for statement in doCatchStatement.doBody {
+      let yulStatement = IRStatement(statement: statement).rendered(functionContext: functionContext)
+      switch yulStatement {
+      //case .expression(let e):
+      //  let catchableSuccesses = e.catchableSuccesses
+      //  if catchableSuccesses.count == 0 {
+      //    functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
+      //  } else {
+      //    let allSucceeded = catchableSuccesses.reduce("1", { acc, success in
+      //      "and(\(acc), \(success.description))"
+      //    })
+      //    functionContext.emit(.inline("switch (\(allSucceeded))"))
+      //    functionContext.emit(.inline("case (0) {"))
+      //    for statement in doCatchStatement.catchBody {
+      //      functionContext.emit(.inline(IRStatement(statement: statement).rendered(functionContext: functionContext).description))
+      //    }
+      //    functionContext.emit(.inline("}"))
+      //    functionContext.emit(.inline("case (1) {"))
+      //    catchCount += 1
+      //    functionContext.emit(.inline(e.description))
+      //  }
       default:
         functionContext.emit(.inline(yulStatement.description))
       }
     }
+    */
     if catchCount > 0 {
       for _ in 1...catchCount {
         functionContext.emit(.inline("}"))

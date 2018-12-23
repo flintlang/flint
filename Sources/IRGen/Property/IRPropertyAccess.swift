@@ -30,33 +30,32 @@ struct IRPropertyAccess {
       return IRExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
     }
 
-    let rhsOffset: String
+    let rhsOffset: YUL.Expression
     // Special cases.
     switch lhsType {
     case .fixedSizeArrayType(_, let size):
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
-        return .inline("\(size)")
+        return .literal(.num(size))
       } else {
         fatalError()
       }
     case .arrayType:
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
-        rhsOffset = "0"
+        rhsOffset = .literal(.num(0))
       } else {
         fatalError()
       }
     case .dictionaryType:
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
-        rhsOffset = "0"
+        rhsOffset = .literal(.num(0))
       } else {
         fatalError()
       }
     default:
-      let e =  IRPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
-      rhsOffset = e.description
+      rhsOffset = IRPropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     }
 
-    let offset: String
+    let offset: YUL.Expression
 
     if isInStructFunction {
       let enclosingName: String
@@ -69,39 +68,38 @@ struct IRPropertyAccess {
       }
 
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = IRRuntimeFunction.addOffset(base: enclosingName.mangled,
+      offset = IRRuntimeFunction.addOffset(base: .identifier(enclosingName.mangled),
                                            offset: rhsOffset,
                                            inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
-      let lhsOffset: String
+      let lhsOffset: YUL.Expression
       if case .identifier(let lhsIdentifier) = lhs {
         if let enclosingType = lhsIdentifier.enclosingType,
             let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {
-          lhsOffset = "\(offset)"
+          lhsOffset = .literal(.num(offset))
         } else if functionContext.scopeContext.containsVariableDeclaration(for: lhsIdentifier.name) {
-          lhsOffset = lhsIdentifier.name.mangled
+          lhsOffset = .identifier(lhsIdentifier.name.mangled)
           isMemoryAccess = true
         } else {
-          lhsOffset = "\(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!)"
+          lhsOffset = .literal(.num(environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingTypeName)!))
         }
       } else {
-        let e = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
-        lhsOffset = e.description
+        lhsOffset = IRExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
       }
 
       offset = IRRuntimeFunction.addOffset(base: lhsOffset, offset: rhsOffset, inMemory: isMemoryAccess)
     }
 
     if asLValue {
-      return .inline(offset)
+      return offset
     }
 
     if isInStructFunction, !isMemoryAccess {
       let lhsEnclosingIdentifier = lhs.enclosingIdentifier?.name.mangled ?? "flintSelf".mangled
-      return .inline(IRRuntimeFunction.load(address: offset,
-                                            inMemory: Mangler.isMem(for: lhsEnclosingIdentifier)))
+      return IRRuntimeFunction.load(address: offset,
+                                    inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
     }
 
-    return .inline(IRRuntimeFunction.load(address: offset, inMemory: isMemoryAccess))
+    return IRRuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
   }
 }

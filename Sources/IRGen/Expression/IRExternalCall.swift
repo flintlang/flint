@@ -13,8 +13,8 @@ struct IRExternalCall {
 
   func rendered(functionContext: FunctionContext) -> YUL.Expression {
     // Hyper-parameter defaults.
-    var gasExpression = Expression.inline("2300")
-    var valueExpression = Expression.inline("0")
+    var gasExpression = YUL.Expression.literal(.num(2300))
+    var valueExpression = YUL.Expression.literal(.num(0))
 
     // Hyper-parameters specified in the external call.
     for parameter in externalCall.hyperParameters {
@@ -77,9 +77,9 @@ struct IRExternalCall {
         // String is basic in Flint (in stack memory) but not static in Solidity
         // Flint only supports <32 byte strings, however, because they are in
         // stack, not in memory.
-        staticSlots.append(Expression.inline("\(staticSize + dynamicSize)"))
+        staticSlots.append(YUL.Expression.literal(.num(staticSize + dynamicSize)))
         // TODO: figure out the actual length of the string at runtime (flintrocks issue #133)
-        dynamicSlots.append(Expression.inline("32"))
+        dynamicSlots.append(YUL.Expression.literal(.num(32)))
         dynamicSlots.append(IRExpression(expression: parameter.expression, asLValue: false)
           .rendered(functionContext: functionContext))
         dynamicSize += 32
@@ -130,7 +130,7 @@ struct IRExternalCall {
     \(callOutput) := mload(\(callOutput))
     """))
 
-    return Expression.catchable(value: Expression.inline(callOutput),
-                                success: Expression.inline(callSuccess))
+    return YUL.Expression.catchable(value: YUL.Expression.identifier(callOutput),
+                                    success: YUL.Expression.identifier(callSuccess))
   }
 }
