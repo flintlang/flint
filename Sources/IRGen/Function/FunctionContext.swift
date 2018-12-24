@@ -51,8 +51,10 @@ class FunctionContext {
       let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
         .functionCall(FunctionCall("and", [acc, success]))
       })
-      emit(.inline("switch (\(allSucceeded.description))"))
-      emit(.inline("case (0)"))
+      let allSucceededVariable = freshVariable();
+      emit(.inline("let \(allSucceededVariable) := \(allSucceeded.description)"))
+      emit(.inline("switch \(allSucceededVariable)"))
+      emit(.inline("case 0"))
       emit(.block(withNewBlock {
         topDoCatch!.catchBody.forEach { statement in
           emit(IRStatement(statement: statement).rendered(functionContext: self))
@@ -60,7 +62,7 @@ class FunctionContext {
       }))
       // Further statements will be inside this block. It will be closed
       // eventually in withNewBlock(...).
-      emit(.inline("case (1)"))
+      emit(.inline("case 1"))
       _ = pushBlock()
     }
     blockStack[blockStack.count - 1].statements.append(statement)

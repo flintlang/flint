@@ -1,0 +1,45 @@
+contract XCall {
+  event A(a: Int)
+  event B(a: Int)
+  event C(a: Int)
+}
+
+external trait ExternalContract {
+  func goodFunction(value: uint8) -> uint8
+  func badFunction(value: uint8) -> uint8
+}
+
+XCall :: caller <- (any) {
+  public init() {
+
+  }
+
+  public func test1(contractToCall: Address) -> Int {
+    let externalContract: ExternalContract = ExternalContract(address: contractToCall)
+    let val: Int = (call! externalContract.goodFunction(value: 0 as! uint8)) as! Int
+    return val
+  }
+
+  public func test2(contractToCall: Address) -> Int {
+    let externalContract: ExternalContract = ExternalContract(address: contractToCall)
+    var val: Int = 7
+    do {
+      val = (call externalContract.goodFunction(value: 42 as! uint8)) as! Int
+    } catch is ExternalCallError {
+      val = 1
+    }
+    return val
+  }
+
+  public func test3(contractToCall: Address) -> Int {
+    let externalContract: ExternalContract = ExternalContract(address: contractToCall)
+    var val: Int = 0
+    do {
+      val = (call externalContract.badFunction(value: 42 as! uint8)) as! Int
+    } catch is ExternalCallError {
+      val = 99
+    }
+    return val
+  }
+}
+
