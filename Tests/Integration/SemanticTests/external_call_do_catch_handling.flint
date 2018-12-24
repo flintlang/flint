@@ -51,7 +51,7 @@ Contract :: (any) {
 
     // FIXME: tests disabled (see #138)
     //do { // expected -error {{No 'call' found in do-catch block}}
-    //  call! self.someFunc() // expected-error {{Cannot use 'call!' inside do-catch block}}     
+    //  call! self.someFunc() // expected -error {{Cannot use 'call!' inside do-catch block}}     
     //} catch is Error {
     //}
     //
