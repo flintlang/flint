@@ -169,8 +169,8 @@ enum IRRuntimeFunction {
     return .functionCall(FunctionCall(Identifiers.power.mangled, [b, e]))
   }
 
-  static func revertIfGreater(value: String, max: String) -> String {
-    return "\(Identifiers.revertIfGreater.mangled)(\(value), \(max))"
+  static func revertIfGreater(value: YUL.Expression, max: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.revertIfGreater.mangled, [value, max]))
   }
 
   static let allDeclarations: [String] = [
