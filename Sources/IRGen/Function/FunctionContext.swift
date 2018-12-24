@@ -51,7 +51,7 @@ class FunctionContext {
       let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
         .functionCall(FunctionCall("and", [acc, success]))
       })
-      let allSucceededVariable = freshVariable();
+      let allSucceededVariable = freshVariable()
       emit(.inline("let \(allSucceededVariable) := \(allSucceeded.description)"))
       emit(.inline("switch \(allSucceededVariable)"))
       emit(.inline("case 0"))
