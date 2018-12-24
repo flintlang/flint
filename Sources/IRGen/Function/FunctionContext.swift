@@ -61,7 +61,7 @@ class FunctionContext {
       // Further statements will be inside this block. It will be closed
       // eventually in withNewBlock(...).
       emit(.inline("case (1)"))
-      let _ = pushBlock()
+      _ = pushBlock()
     }
     blockStack[blockStack.count - 1].statements.append(statement)
   }
@@ -102,7 +102,7 @@ class FunctionContext {
   }
 
   func popDoCatch() {
-    let _ = doCatchStatementStack.popLast()
+    _ = doCatchStatementStack.popLast()
   }
 
   var topDoCatch: DoCatchStatement? {
