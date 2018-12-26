@@ -41,15 +41,15 @@ class FunctionContext {
     self.isInStructFunction = isInStructFunction
 
     self.doCatchStatementStack = []
-    self.blockStack = [Block([])]
+    self.blockStack = [Block()]
     self.counter = 0
   }
 
   func emit(_ statement: YUL.Statement) {
     let catchableSuccesses = statement.catchableSuccesses
-    if catchableSuccesses.count > 0 {
+    if !catchableSuccesses.isEmpty {
       let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
-        .functionCall(FunctionCall("and", [acc, success]))
+        .functionCall(FunctionCall("and", acc, success))
       })
       let allSucceededVariable = freshVariable()
       emit(.inline("let \(allSucceededVariable) := \(allSucceeded.description)"))
@@ -81,7 +81,7 @@ class FunctionContext {
   }
 
   func pushBlock() -> Int {
-    blockStack.append(Block([]))
+    blockStack.append(Block())
     return blockStack.count
   }
 
@@ -95,8 +95,10 @@ class FunctionContext {
     return varName
   }
 
-  func dump() -> String {
-    return (self.blockStack.last!.statements.map {$0.description}).joined(separator: "\n")
+  /// Returns the string representation of the outer block.
+  /// The FunctionContext should not be used after this is called.
+  func finalise() -> String {
+    return (popBlock().statements.map {$0.description}).joined(separator: "\n")
   }
 
   func pushDoCatch(_ doCatchStatement: DoCatchStatement) {

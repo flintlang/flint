@@ -3,7 +3,7 @@
 NUM_FAILED=0
 
 echo "Compiling Flint sources"
-./compile_behavior_tests.sh
+#./compile_behavior_tests.sh
 cd tests
 
 for dir in *; do

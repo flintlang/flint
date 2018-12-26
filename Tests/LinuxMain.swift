@@ -12,6 +12,7 @@ import TypeCheckerTests
 import OptimizerTests
 import IRGenTests
 import ABITests
+import UtilsTests
 
 var tests = [XCTestCaseEntry]()
 tests += SourceTests.allTests()
@@ -26,4 +27,5 @@ tests += TypeCheckerTests.allTests()
 tests += OptimizerTests.allTests()
 tests += IRGenTests.allTests()
 tests += ABITests.allTests()
+tests += UtilsTests.allTests()
 XCTMain(tests)

@@ -86,6 +86,7 @@ let package = Package(
       dependencies: [
         "Source",
         "Rainbow",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -224,13 +225,10 @@ let package = Package(
         "Source",
         "Diagnostic",
         "AST",
-        "YUL",
         "CryptoSwift",
-        "YUL"
+        "YUL",
+        "Utils",
       ]
-    ),
-    .target(
-      name: "YUL"
     ),
     .testTarget(
       name: "IRGenTests",
@@ -239,6 +237,13 @@ let package = Package(
         "Cuckoo",
       ],
       sources: [".", "../../.derived-tests/IRGen"]
+    ),
+    // MARK: YUL -
+    .target(
+      name: "YUL",
+      dependencies: [
+        "Utils",
+      ]
     ),
     // MARK: ABI -
     .target(
@@ -255,6 +260,19 @@ let package = Package(
         "Cuckoo",
       ],
       sources: [".", "../../.derived-tests/ABI"]
+    ),
+    // MARK: Utils -
+    .target(
+      name: "Utils",
+      dependencies: []
+    ),
+    .testTarget(
+      name: "UtilsTests",
+      dependencies: [
+        "Utils",
+        "Cuckoo"
+      ],
+      sources: [".", "../../.derived-tests/Utils"]
     ),
     // MARK: flintc -
     .target(

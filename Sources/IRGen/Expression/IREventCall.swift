@@ -19,7 +19,7 @@ struct IREventCall {
 
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = IRExpression(expression: argument.expression).rendered(functionContext: functionContext)
-      functionContext.emit(.expression(.functionCall(FunctionCall("mstore", [.literal(.num(memoryOffset)), argument]))))
+      functionContext.emit(.expression(.functionCall(FunctionCall("mstore", .literal(.num(memoryOffset)), argument))))
       memoryOffset += functionContext.environment.size(of: types[i].rawType) * EVM.wordSize
     }
 
@@ -29,8 +29,8 @@ struct IREventCall {
       }.joined(separator: ",")
 
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
-    return YUL.Expression.functionCall(FunctionCall("log1", [.literal(.num(0)),
-                                                             .literal(.num(totalSize)),
-                                                             .literal(.hex("0x\(eventHash)"))]))
+    return YUL.Expression.functionCall(FunctionCall("log1", .literal(.num(0)),
+                                                            .literal(.num(totalSize)),
+                                                            .literal(.hex("0x\(eventHash)"))))
   }
 }

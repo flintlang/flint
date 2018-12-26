@@ -71,7 +71,7 @@ struct IRSubscriptExpression {
     if asLValue {
       return memLocation
     } else {
-      return .functionCall(FunctionCall("sload", [memLocation]))
+      return .functionCall(FunctionCall("sload", memLocation))
     }
   }
 }

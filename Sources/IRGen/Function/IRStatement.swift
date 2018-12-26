@@ -75,10 +75,10 @@ struct IRForStatement {
 
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      return .`for`(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
+      return .for(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
         iterable: arrayIdentifier, functionContext: functionContext))
     case .range(let rangeExpression):
-      return .`for`(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
+      return .for(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
@@ -128,7 +128,7 @@ struct IRForStatement {
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       let keysArrayOffset = IRRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
       let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset,
-        key: .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))
+        key: .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))
       let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
       let dictionaryElementOffset
         = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
@@ -138,17 +138,17 @@ struct IRForStatement {
       fatalError()
     }
 
-    let initialize = Block([.inline("""
+    let initialize = Block(.inline("""
     let \(prefix)i := 0
     let \(prefix)arrLen := \(loadArrLen)
-    """)])
+    """))
 
     let condition = YUL.Expression.functionCall(
-      FunctionCall("lt", [.identifier("\(prefix)i"), .identifier("\(prefix)arrLen")]))
-    let step = Block([
+      FunctionCall("lt", .identifier("\(prefix)i"), .identifier("\(prefix)arrLen")))
+    let step = Block(
       .expression(.assignment(Assignment(["\(prefix)i"],
-        .functionCall(FunctionCall("add", [.identifier("\(prefix)i"), .literal(.num(1))])))))
-    ])
+        .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))))
+    )
 
     let body = functionContext.withNewBlock {
       functionContext.emit(.expression(
@@ -220,14 +220,14 @@ struct IRForStatement {
     let binaryExpression = IRExpression(expression: .binaryExpression(condition))
       .rendered(functionContext: functionContext)
 
-    let initialize = Block([.inline("""
+    let initialize = Block(.inline("""
       let \(initialisation.description)
       let _bound := \(rangeExpression.description)
-    """)])
+    """))
 
-    let step = Block([.inline("""
+    let step = Block(.inline("""
       \(update)
-    """)])
+    """))
 
     let body = functionContext.withNewBlock {
       forStatement.body.forEach { statement in

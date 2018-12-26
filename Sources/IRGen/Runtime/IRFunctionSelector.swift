@@ -127,8 +127,7 @@ struct IRTypeStateChecks {
     }
 
     if !checks.isEmpty {
-      return .inline(
-        """
+      return .inline("""
       let _flintStateCheck := 0
       \(checks.joined(separator: "\n"))
       if eq(_flintStateCheck, 0) { revert(0, 0) }

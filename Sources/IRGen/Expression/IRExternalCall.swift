@@ -107,26 +107,26 @@ struct IRExternalCall {
       VariableDeclaration([(callInput, .any)], IRRuntimeFunction.allocateMemory(size: inputSize))
     )))
     functionContext.emit(.expression(.functionCall(
-      FunctionCall("mstore8", [.identifier(callInput), .literal(.hex("0x\(functionSelector[0])"))])
+      FunctionCall("mstore8", .identifier(callInput), .literal(.hex("0x\(functionSelector[0])")))
     )))
     functionContext.emit(.expression(.functionCall(
-      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(1))])),
-      .literal(.hex("0x\(functionSelector[1])"))])
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(1)))),
+                              .literal(.hex("0x\(functionSelector[1])")))
     )))
     functionContext.emit(.expression(.functionCall(
-      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(2))])),
-      .literal(.hex("0x\(functionSelector[2])"))])
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(2)))),
+                              .literal(.hex("0x\(functionSelector[2])")))
     )))
     functionContext.emit(.expression(.functionCall(
-      FunctionCall("mstore8", [.functionCall(FunctionCall("add", [.identifier(callInput), .literal(.num(3))])),
-      .literal(.hex("0x\(functionSelector[3])"))])
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(3)))),
+                              .literal(.hex("0x\(functionSelector[3])")))
     )))
 
     var currentPosition = 4
     slots.forEach {
       functionContext.emit(.expression(.functionCall(
-        FunctionCall("mstore", [.functionCall(FunctionCall("add",
-                                              [.identifier(callInput), .literal(.num(currentPosition))])), $0])
+        FunctionCall("mstore", .functionCall(FunctionCall("add",
+                                             .identifier(callInput), .literal(.num(currentPosition)))), $0)
       )))
       currentPosition += 32
     }
@@ -136,7 +136,7 @@ struct IRExternalCall {
     )))
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call", [
+      VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call",
         gasExpression,
         addressExpression,
         valueExpression,
@@ -144,11 +144,11 @@ struct IRExternalCall {
         .literal(.num(inputSize)),
         .identifier(callOutput),
         .literal(.num(outputSize))
-      ])))
+      )))
     )))
 
     functionContext.emit(.expression(.assignment(
-      Assignment([callOutput], .functionCall(FunctionCall("mload", [.identifier(callOutput)])))
+      Assignment([callOutput], .functionCall(FunctionCall("mload", .identifier(callOutput))))
     )))
 
     switch externalCall.mode {

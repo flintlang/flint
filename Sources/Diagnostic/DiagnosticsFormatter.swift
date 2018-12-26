@@ -5,9 +5,9 @@
 //  Created by Franklin Schrans on 1/4/18.
 //
 
-import Foundation
 import Rainbow
 import Source
+import Utils
 
 /// Formats error and warning messages.
 public struct DiagnosticsFormatter {
@@ -105,12 +105,5 @@ public struct DiagnosticsFormatter {
     return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) +
         String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) +
         String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
-  }
-}
-
-fileprivate extension String {
-  func indented(by level: Int) -> String {
-    let lines = components(separatedBy: "\n")
-    return lines.joined(separator: "\n" + String(repeating: " ", count: level))
   }
 }
