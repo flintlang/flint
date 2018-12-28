@@ -7,34 +7,19 @@
 
 import AST
 import Lexer
-
-struct ExpressionFragment {
-  let preamble: String
-  let expression: String
-
-  init(pre preamble: String, _ expression: String) {
-    self.preamble = preamble
-    self.expression = expression
-  }
-
-  func rendered() -> String {
-    return "\(preamble)\n\(expression)"
-  }
-}
+import YUL
 
 /// Generates code for an expression.
 struct IRExpression {
-  var expression: Expression
+  var expression: AST.Expression
   var asLValue: Bool
 
-  init(expression: Expression, asLValue: Bool = false) {
+  init(expression: AST.Expression, asLValue: Bool = false) {
     self.expression = expression
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
-    let preamble = ""
-
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     switch expression {
     case .inoutExpression(let inoutExpression):
       return IRExpression(expression: inoutExpression.expression, asLValue: true)
@@ -55,23 +40,22 @@ struct IRExpression {
     case .externalCall(let externalCall):
       return IRExternalCall(externalCall: externalCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):
-      return ExpressionFragment(pre: preamble, IRIdentifier(identifier: identifier, asLValue: asLValue)
-        .rendered(functionContext: functionContext))
+      return IRIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
-      return ExpressionFragment(pre: preamble, IRVariableDeclaration(variableDeclaration: variableDeclaration)
-        .rendered(functionContext: functionContext))
+      return IRVariableDeclaration(variableDeclaration: variableDeclaration)
+        .rendered(functionContext: functionContext)
     case .literal(let literal):
-      return ExpressionFragment(pre: preamble, IRLiteralToken(literalToken: literal).rendered())
+      return .literal(IRLiteralToken(literalToken: literal).rendered())
     case .arrayLiteral(let arrayLiteral):
       for e in arrayLiteral.elements {
         guard case .arrayLiteral(_) = e else {
           fatalError("Cannot render non-empty array literals yet")
         }
       }
-      return ExpressionFragment(pre: preamble, "0")
+      return .literal(Literal.num(0))
     case .dictionaryLiteral(let dictionaryLiteral):
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
-      return ExpressionFragment(pre: preamble, "0")
+      return .literal(Literal.num(0))
     case .self(let `self`):
       return IRSelf(selfToken: self, asLValue: asLValue)
         .rendered(functionContext: functionContext)
@@ -79,15 +63,12 @@ struct IRExpression {
       return IRSubscriptExpression(subscriptExpression: subscriptExpression,
                                    asLValue: asLValue).rendered(functionContext: functionContext)
     case .sequence(let expressions):
-      let (p, c) = expressions.reduce(("", ""), {
-        let pre: String = $0.0
-        let code: String = $0.1
-        let e = IRExpression(expression: $1, asLValue: asLValue).rendered(functionContext: functionContext)
-        return (pre + "\n" + e.preamble, code + "\n" + e.expression)
-      })
-      return ExpressionFragment(pre: p, c)
+      return .inline(expressions.map({ expression in
+        return IRExpression(expression: expression, asLValue: asLValue)
+          .rendered(functionContext: functionContext).description
+      }).joined(separator: "\n"))
     case .rawAssembly(let assembly, _):
-      return ExpressionFragment(pre: preamble, assembly)
+      return .inline(assembly)
     case .range: fatalError("Range shouldn't be rendered directly")
     }
 

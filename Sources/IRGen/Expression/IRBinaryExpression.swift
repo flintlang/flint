@@ -5,6 +5,7 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a binary expression.
 struct IRBinaryExpression {
@@ -16,7 +17,7 @@ struct IRBinaryExpression {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
         return IRFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
@@ -25,40 +26,32 @@ struct IRBinaryExpression {
         .rendered(functionContext: functionContext)
     }
 
+    if case .equal = binaryExpression.opToken {
+      return IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
+        .rendered(functionContext: functionContext)
+    }
+
     let lhs = IRExpression(expression: binaryExpression.lhs, asLValue: asLValue)
       .rendered(functionContext: functionContext)
     let rhs = IRExpression(expression: binaryExpression.rhs, asLValue: asLValue)
       .rendered(functionContext: functionContext)
 
-    let preamble = lhs.preamble + "\n" + rhs.preamble
-    let lhsExp = lhs.expression
-    let rhsExp = rhs.expression
-
-    let code: String
     switch binaryExpression.opToken {
-    case .equal:
-      let assign = IRAssignment(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs)
-        .rendered(functionContext: functionContext)
-//      preamble += "\n" + assign.preamble
-      code = assign.expression
-    case .plus:
-      code = IRRuntimeFunction.add(a: lhsExp, b: rhsExp)
-    case .overflowingPlus: code = "add(\(lhsExp), \(rhsExp))"
-    case .minus: code = IRRuntimeFunction.sub(a: lhsExp, b: rhsExp)
-    case .overflowingMinus: code = "sub(\(lhsExp), \(rhsExp))"
-    case .times: code = IRRuntimeFunction.mul(a: lhsExp, b: rhsExp)
-    case .overflowingTimes: code = "mul(\(lhsExp), \(rhsExp))"
-    case .divide: code = IRRuntimeFunction.div(a: lhsExp, b: rhsExp)
-    case .closeAngledBracket: code = "gt(\(lhsExp), \(rhsExp))"
-    case .openAngledBracket: code = "lt(\(lhsExp), \(rhsExp))"
-    case .doubleEqual: code = "eq(\(lhsExp), \(rhsExp))"
-    case .notEqual: code = "iszero(eq(\(lhsExp), \(rhsExp)))"
-    case .or: code = "or(\(lhsExp), \(rhsExp))"
-    case .and: code = "and(\(lhsExp), \(rhsExp))"
-    case .power: code = IRRuntimeFunction.power(b: lhsExp, e: rhsExp)
+    case .plus: return IRRuntimeFunction.add(a: lhs, b: rhs)
+    case .overflowingPlus: return .functionCall(FunctionCall("add", lhs, rhs))
+    case .minus: return IRRuntimeFunction.sub(a: lhs, b: rhs)
+    case .overflowingMinus: return .functionCall(FunctionCall("sub", lhs, rhs))
+    case .times: return IRRuntimeFunction.mul(a: lhs, b: rhs)
+    case .overflowingTimes: return .functionCall(FunctionCall("mul", lhs, rhs))
+    case .divide: return IRRuntimeFunction.div(a: lhs, b: rhs)
+    case .closeAngledBracket: return .functionCall(FunctionCall("gt", lhs, rhs))
+    case .openAngledBracket: return .functionCall(FunctionCall("lt", lhs, rhs))
+    case .doubleEqual: return .functionCall(FunctionCall("eq", lhs, rhs))
+    case .notEqual: return .functionCall(FunctionCall("iszero", .functionCall(FunctionCall("eq", lhs, rhs))))
+    case .or: return .functionCall(FunctionCall("or", lhs, rhs))
+    case .and: return .functionCall(FunctionCall("and", lhs, rhs))
+    case .power: return IRRuntimeFunction.power(b: lhs, e: rhs)
     default: fatalError("opToken not supported")
     }
-
-    return ExpressionFragment(pre: preamble, code)
   }
 }

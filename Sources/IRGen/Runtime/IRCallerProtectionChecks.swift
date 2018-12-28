@@ -40,7 +40,7 @@ struct IRCallerProtectionChecks {
         let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
         // swiftlint:enable line_length
         let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
-        let check = "\(renderedFunctionCall.preamble)\neq(caller(), \(renderedFunctionCall.expression))"
+        let check = "eq(caller(), \(renderedFunctionCall.description))"
         return "\(variableName) := add(\(variableName), \(check))"
       case .functionType(parameters: [.basicType(.address)], result: .basicType(.bool)):
         var identifier = callerProtection.identifier
@@ -50,7 +50,7 @@ struct IRCallerProtectionChecks {
         // swiftlint:disable line_length
         let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [FunctionArgument(.rawAssembly("caller()", resultType: .basicType(.address)))], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
         let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
-        return "\(renderedFunctionCall.preamble)\n\(variableName) := add(\(variableName), \(renderedFunctionCall.expression))"
+        return "\(variableName) := add(\(variableName), \(renderedFunctionCall.description))"
         // swiftlint:enable line_length
       case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in

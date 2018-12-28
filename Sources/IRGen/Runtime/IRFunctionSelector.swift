@@ -8,12 +8,13 @@
 import AST
 import Lexer
 import ABI
+import YUL
 
 /// Runtime code in IR which determines which function to call based on the Ethereum's transaction payload.
 struct IRFunctionSelector {
   var fallback: SpecialDeclaration?
   var functions: [IRFunction]
-  var enclosingType: Identifier
+  var enclosingType: AST.Identifier
   var environment: Environment
 
   func rendered() -> String {
@@ -85,15 +86,12 @@ struct IRFunctionSelector {
     if let resultType = function.resultCanonicalType {
       switch resultType {
       case .address, .uint256, .bytes32:
-        return typeStateChecks.preamble + "\n" +
-          typeStateChecks.expression + "\n" + callerProtectionChecks + "\n" +
+        return typeStateChecks.description + "\n" + callerProtectionChecks + "\n" +
           IRRuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    // swiftlint:disable line_length
-    return "\(typeStateChecks.preamble)\n\(typeStateChecks.expression)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
-    // swiftlint:enable line_length
+    return "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
   }
 }
 
@@ -101,8 +99,7 @@ struct IRFunctionSelector {
 struct IRTypeStateChecks {
   var typeStates: [TypeState]
 
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> ExpressionFragment {
-    var preamble = [String]()
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 
@@ -113,9 +110,9 @@ struct IRTypeStateChecks {
                                                    enclosingTypeName: enclosingType,
                                                    isInStructFunction: false))
 
-      let stateVariable: Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
+      let stateVariable: AST.Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
                                                              sourceLocation: .DUMMY))
-      let selfState: Expression = .binaryExpression(BinaryExpression(
+      let selfState: AST.Expression = .binaryExpression(BinaryExpression(
         lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
         op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
         rhs: stateVariable))
@@ -125,23 +122,18 @@ struct IRTypeStateChecks {
                                                    enclosingTypeName: enclosingType,
                                                    isInStructFunction: false))
 
-      let check = IRRuntimeFunction.isMatchingTypeState(stateValue.expression, stateVariableRendered.expression)
-      preamble.append(stateValue.preamble)
-      preamble.append(stateVariableRendered.preamble)
-
+      let check = IRRuntimeFunction.isMatchingTypeState(stateValue.description, stateVariableRendered.description)
       return "_flintStateCheck := add(_flintStateCheck, \(check))"
     }
 
     if !checks.isEmpty {
-      return ExpressionFragment(
-        pre: preamble.joined(separator: "\n"),
-        """
+      return .inline("""
       let _flintStateCheck := 0
       \(checks.joined(separator: "\n"))
       if eq(_flintStateCheck, 0) { revert(0, 0) }
-      """ + "\n")
+      """)
     }
 
-    return ExpressionFragment(pre: "", "")
+    return .noop
   }
 }

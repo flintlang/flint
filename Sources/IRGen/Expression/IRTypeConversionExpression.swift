@@ -6,11 +6,12 @@
 //
 
 import AST
+import YUL
 
 struct IRTypeConversionExpression {
   let typeConversionExpression: TypeConversionExpression
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     // Is this an upcast or a downcast?
     let originalType = functionContext.environment.type(
       of: typeConversionExpression.expression,
@@ -22,19 +23,17 @@ struct IRTypeConversionExpression {
     let originalTypeInformation = typeInformation(type: originalType)
     let targetTypeInformation = typeInformation(type: targetType)
 
-    let expressionCode = IRExpression(expression: typeConversionExpression.expression)
+    let expressionIr = IRExpression(expression: typeConversionExpression.expression)
       .rendered(functionContext: functionContext)
 
     // If the number of bits is increasing or staying the same, we don't have to make any checks.
     if originalTypeInformation.size <= targetTypeInformation.size {
-      return expressionCode
+      return expressionIr
     }
 
     // The maximum value of the target type
     let targetMax = IRTypeConversionExpression.maximumValue[targetTypeInformation.size]!
-    let code = IRRuntimeFunction.revertIfGreater(value: expressionCode.expression, max: targetMax)
-
-    return ExpressionFragment(pre: expressionCode.preamble, code)
+    return IRRuntimeFunction.revertIfGreater(value: expressionIr, max: .literal(.hex(targetMax)))
   }
 
   private struct TypeInformation {

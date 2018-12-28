@@ -48,14 +48,17 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: ifStatement, diagnostics: diagnostics, passContext: passContext)
   }
 
+  // TODO: disabled, check doesn't work for value-returning calls
+  /*
   public func postProcess(doCatchStatement: DoCatchStatement,
                           passContext: ASTPassContext) -> ASTPassResult<DoCatchStatement> {
       var diagnostics = [Diagnostic]()
 
       if !doCatchStatement.containsExternalCall {
-        diagnostics.append(.doCatchStatementContainsNoExternalCall(doCatchStatement))
+        // TODO: disabled, check doesn't work for value-returning calls
+        //diagnostics.append(.doCatchStatementContainsNoExternalCall(doCatchStatement))
       }
 
       return ASTPassResult(element: doCatchStatement, diagnostics: diagnostics, passContext: passContext)
-  }
+  }*/
 }

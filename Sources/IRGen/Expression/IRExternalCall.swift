@@ -5,15 +5,16 @@
 //  Created by Yicheng Luo on 11/14/18.
 //
 import AST
+import YUL
 
 /// Generates code for an external call.
 struct IRExternalCall {
   let externalCall: ExternalCall
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     // Hyper-parameter defaults.
-    var gasExpression = ExpressionFragment(pre: "", "2300")
-    var valueExpression = ExpressionFragment(pre: "", "0")
+    var gasExpression = YUL.Expression.literal(.num(2300))
+    var valueExpression = YUL.Expression.literal(.num(0))
 
     // Hyper-parameters specified in the external call.
     for parameter in externalCall.hyperParameters {
@@ -54,8 +55,8 @@ struct IRExternalCall {
     // - function selector (4 bytes of Keccak-256 hash of the signature)
     // - static data
     // - dynamic data
-    var staticSlots: [ExpressionFragment] = []
-    var dynamicSlots: [ExpressionFragment] = []
+    var staticSlots: [YUL.Expression] = []
+    var dynamicSlots: [YUL.Expression] = []
 
     // This could be staticSize * 32, but this loop is necessary once
     // we have e.g. fixed-length arrays in external trait types.
@@ -76,9 +77,9 @@ struct IRExternalCall {
         // String is basic in Flint (in stack memory) but not static in Solidity
         // Flint only supports <32 byte strings, however, because they are in
         // stack, not in memory.
-        staticSlots.append(ExpressionFragment(pre: "", "\(staticSize + dynamicSize)"))
+        staticSlots.append(YUL.Expression.literal(.num(staticSize + dynamicSize)))
         // TODO: figure out the actual length of the string at runtime (flintrocks issue #133)
-        dynamicSlots.append(ExpressionFragment(pre: "", "32"))
+        dynamicSlots.append(YUL.Expression.literal(.num(32)))
         dynamicSlots.append(IRExpression(expression: parameter.expression, asLValue: false)
           .rendered(functionContext: functionContext))
         dynamicSize += 32
@@ -90,45 +91,73 @@ struct IRExternalCall {
       }
     }
 
+    let callInput = functionContext.freshVariable()
+
     // Render input stack storage.
     let inputSize = 4 + staticSize + dynamicSize
-    var currentPosition = 4
     let slots = staticSlots + dynamicSlots
-    let argumentPreambles = slots.map { $0.preamble }
-    let argumentExpressions = slots.map { (slot: ExpressionFragment) -> String in
-      let storedPosition = currentPosition
-      currentPosition += 32
-      return "mstore(add(flint$callInput, \(storedPosition)), \(slot.expression))"
-    }
 
     // The output is simply memory suitable for the declared return type.
     let outputSize = 32
 
-    return ExpressionFragment(
-        pre: """
-        \(gasExpression.preamble)
-        \(valueExpression.preamble)
-        \(addressExpression.preamble)
-        \(argumentPreambles.joined(separator: "\n"))
-        let flint$callInput := flint$allocateMemory(\(inputSize))
-        mstore8(flint$callInput, 0x\(functionSelector[0]))
-        mstore8(add(flint$callInput, 1), 0x\(functionSelector[1]))
-        mstore8(add(flint$callInput, 2), 0x\(functionSelector[2]))
-        mstore8(add(flint$callInput, 3), 0x\(functionSelector[3]))
-        \(argumentExpressions.joined(separator: "\n"))
-        let flint$callOutput := flint$allocateMemory(\(outputSize))
-        let flint$callSuccess := call(
-            \(gasExpression.expression),
-            \(addressExpression.expression),
-            \(valueExpression.expression),
-            flint$callInput,
-            \(inputSize),
-            flint$callOutput,
-            \(outputSize)
-          )
-        flint$callOutput := mload(flint$callOutput)
-        """,
-        "flint$callOutput"
-      )
+    let callSuccess = functionContext.freshVariable()
+    let callOutput = functionContext.freshVariable()
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callInput, .any)], IRRuntimeFunction.allocateMemory(size: inputSize))
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", .identifier(callInput), .literal(.hex("0x\(functionSelector[0])")))
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(1)))),
+                              .literal(.hex("0x\(functionSelector[1])")))
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(2)))),
+                              .literal(.hex("0x\(functionSelector[2])")))
+    )))
+    functionContext.emit(.expression(.functionCall(
+      FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(3)))),
+                              .literal(.hex("0x\(functionSelector[3])")))
+    )))
+
+    var currentPosition = 4
+    slots.forEach {
+      functionContext.emit(.expression(.functionCall(
+        FunctionCall("mstore", .functionCall(FunctionCall("add",
+                                             .identifier(callInput), .literal(.num(currentPosition)))), $0)
+      )))
+      currentPosition += 32
+    }
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callOutput, .any)], IRRuntimeFunction.allocateMemory(size: outputSize))
+    )))
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call",
+        gasExpression,
+        addressExpression,
+        valueExpression,
+        .identifier(callInput),
+        .literal(.num(inputSize)),
+        .identifier(callOutput),
+        .literal(.num(outputSize))
+      )))
+    )))
+
+    functionContext.emit(.expression(.assignment(
+      Assignment([callOutput], .functionCall(FunctionCall("mload", .identifier(callOutput))))
+    )))
+
+    switch externalCall.mode {
+    case .normal:
+      return .catchable(value: .identifier(callOutput), success: .identifier(callSuccess))
+    case .returnsGracefullyOptional:
+      fatalError("call? not implemented")
+    case .isForced:
+      return .identifier(callOutput)
+    }
   }
 }

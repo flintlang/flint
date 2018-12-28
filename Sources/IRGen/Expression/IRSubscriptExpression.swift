@@ -5,13 +5,14 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a subscript expression.
 struct IRSubscriptExpression {
   var subscriptExpression: SubscriptExpression
   var asLValue: Bool
 
-  func baseIdentifier(_ baseExpression: Expression) -> AST.Identifier? {
+  func baseIdentifier(_ baseExpression: AST.Expression) -> AST.Identifier? {
     if case .identifier(let identifier) = baseExpression {
       return identifier
     }
@@ -22,15 +23,13 @@ struct IRSubscriptExpression {
   }
 
   func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int,
-                           functionContext: FunctionContext) -> (String, String) {
+                           functionContext: FunctionContext) -> YUL.Expression {
     let indexExpressionCode = IRExpression(expression: subExpr.indexExpression)
       .rendered(functionContext: functionContext)
-    let preamble = indexExpressionCode.preamble
-
     let type = functionContext.environment.type(of: subExpr.baseExpression,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
-    let runtimeFunc: (String, String) -> String
+    let runtimeFunc: (YUL.Expression, YUL.Expression) -> YUL.Expression
 
     switch type {
     case .arrayType:
@@ -45,19 +44,19 @@ struct IRSubscriptExpression {
 
     switch subExpr.baseExpression {
     case .identifier:
-      return (preamble, runtimeFunc(String(baseOffset), indexExpressionCode.expression))
+      return runtimeFunc(.literal(.num(baseOffset)), indexExpressionCode)
     case .subscriptExpression(let newBase):
       let e = nestedStorageOffset(subExpr: newBase,
                           baseOffset: baseOffset,
                           functionContext: functionContext)
 
-      return (preamble + "\n" + e.0, runtimeFunc(e.1, indexExpressionCode.expression))
+      return runtimeFunc(e, indexExpressionCode)
     default:
       fatalError("Subscript expression has an invalid type")
     }
   }
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     guard let identifier = baseIdentifier(.subscriptExpression(subscriptExpression)),
       let enclosingType = identifier.enclosingType,
       let baseOffset = functionContext.environment.propertyOffset(for: identifier.name,
@@ -65,14 +64,14 @@ struct IRSubscriptExpression {
         fatalError("Arrays and dictionaries cannot be defined as local variables yet.")
     }
 
-    let (preamble, memLocation): (String, String) = nestedStorageOffset(subExpr: subscriptExpression,
-                                                  baseOffset: baseOffset,
-                                                  functionContext: functionContext)
+    let memLocation = nestedStorageOffset(subExpr: subscriptExpression,
+                                          baseOffset: baseOffset,
+                                          functionContext: functionContext)
 
     if asLValue {
-      return ExpressionFragment(pre: preamble, memLocation)
+      return memLocation
     } else {
-      return ExpressionFragment(pre: preamble, "sload(\(memLocation))")
+      return .functionCall(FunctionCall("sload", memLocation))
     }
   }
 }

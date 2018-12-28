@@ -28,7 +28,7 @@ struct IRContractInitializer {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return initializerDeclaration.explicitParameters.map {
-        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc)
+        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
   }
 

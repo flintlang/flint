@@ -8,15 +8,17 @@
 import AST
 import CryptoSwift
 import Lexer
+import YUL
 
 /// Generates code for a statement.
 struct IRStatement {
-  var statement: Statement
+  var statement: AST.Statement
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
     switch statement {
     case .expression(let expression):
-      return IRExpression(expression: expression, asLValue: false).rendered(functionContext: functionContext).rendered()
+      return .expression(IRExpression(expression: expression, asLValue: false)
+        .rendered(functionContext: functionContext))
     case .ifStatement(let ifStatement):
       return IRIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)
     case .returnStatement(let returnStatement):
@@ -37,44 +39,29 @@ struct IRStatement {
 struct IRIfStatement {
   var ifStatement: IfStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
-    let condition0 = IRExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+    let condition = IRExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
 
     let functionContext = functionContext
     functionContext.scopeContext = ifStatement.ifBodyScopeContext!
 
-    let body = ifStatement.body.map { statement in
-      return IRStatement(statement: statement).rendered(functionContext: functionContext)
-      }.joined(separator: "\n")
-    let ifCode: String
-
-    // TODO fixme for using some weird code
-    ifCode = """
-    \(condition0.preamble)
-    switch \(condition0.expression)
-    case 1 {
-      \(body.indented(by: 2))
+    let body = functionContext.withNewBlock {
+      ifStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
     }
-    """
-
-    var elseCode = ""
 
     if !ifStatement.elseBody.isEmpty {
       functionContext.scopeContext = ifStatement.elseBodyScopeContext!
-      let body = ifStatement.elseBody.map { statement in
-        if case .returnStatement(_) = statement {
-          fatalError("Return statements in else blocks are not supported yet")
+      let elseBody = functionContext.withNewBlock {
+        ifStatement.elseBody.forEach { statement in
+          functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
         }
-        return IRStatement(statement: statement).rendered(functionContext: functionContext)
-        }.joined(separator: "\n")
-      elseCode = """
-      default {
-        \(body.indented(by: 2))
       }
-      """
+      return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)], default: elseBody))
     }
 
-    return ifCode + "\n" + elseCode
+    return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)]))
   }
 }
 
@@ -82,100 +69,100 @@ struct IRIfStatement {
 struct IRForStatement {
   var forStatement: ForStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
     let functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
 
-    let setup: String
-
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):
-      setup = generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
-        iterable: arrayIdentifier, functionContext: functionContext)
+      return .for(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
+        iterable: arrayIdentifier, functionContext: functionContext))
     case .range(let rangeExpression):
-      setup = generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext)
+      return .for(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
-
-    let body = forStatement.body.map { statement in
-      return IRStatement(statement: statement).rendered(functionContext: functionContext)
-      }.joined(separator: "\n")
-
-    return """
-    for \(setup)
-      \(body.indented(by: 2))
-    }
-    """
   }
 
-  func generateArraySetupCode(prefix: String, iterable: Identifier, functionContext: FunctionContext) -> String {
+  func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> ForLoop {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
-    let offset: String
+    let offset: YUL.Expression
     if !isLocal,
       let intOffset = functionContext.environment.propertyOffset(for: iterable.name,
                                                                  enclosingType: functionContext.enclosingTypeName) {
       // Is contract array
-        offset = String(intOffset)
+      offset = .literal(.num(intOffset))
     } else if isLocal {
-      offset = "_\(iterable.name)"
+      offset = .identifier("_\(iterable.name)")
     } else {
       fatalError("Couldn't find offset for iterable")
     }
 
-    let loadArrLen: String
-    let toAssign: String
+    let loadArrLen: YUL.Expression
+    let toAssign: YUL.Expression
 
     let type = functionContext.environment.type(of: iterable.name,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
     switch type {
     case .arrayType:
-      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(arrayOffset: offset, index: "\(prefix)i")
+      let arrayElementOffset = IRRuntimeFunction.storageArrayOffset(
+        arrayOffset: offset, index: .identifier("\(prefix)i"))
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       switch forStatement.variable.type.rawType {
       case .arrayType, .fixedSizeArrayType:
-        toAssign = String(arrayElementOffset)
+        toAssign = arrayElementOffset
       default:
         toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
       }
 
     case .fixedSizeArrayType:
       let typeSize = functionContext.environment.size(of: type)
-      loadArrLen = String(typeSize)
-      let arrayElementOffset =
-        IRRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: offset, index: "\(prefix)i", arraySize: typeSize)
+      loadArrLen = .literal(.num(typeSize))
+      let arrayElementOffset = IRRuntimeFunction.storageFixedSizeArrayOffset(
+        arrayOffset: offset, index: .identifier("\(prefix)i"), arraySize: typeSize)
       toAssign = IRRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
 
     case .dictionaryType:
       loadArrLen = IRRuntimeFunction.load(address: offset, inMemory: false)
       let keysArrayOffset = IRRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
-      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset, key: "add(\(prefix)i, 1)")
+      let keyOffset = IRRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset,
+        key: .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))
       let key = IRRuntimeFunction.load(address: keyOffset, inMemory: false)
-      let dictionaryElementOffset = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
+      let dictionaryElementOffset
+        = IRRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
       toAssign = IRRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
 
     default:
       fatalError()
     }
 
-    let variableUse = IRAssignment(lhs: .identifier(forStatement.variable.identifier),
-                                   rhs: .rawAssembly(toAssign, resultType: nil))
-      .rendered(functionContext: functionContext, asTypeProperty: false).rendered()
-
-    return """
-    {
+    let initialize = Block(.inline("""
     let \(prefix)i := 0
     let \(prefix)arrLen := \(loadArrLen)
-    } lt(\(prefix)i, \(prefix)arrLen) { \(prefix)i := add(\(prefix)i, 1) } {
-      let \(variableUse)
-    """
+    """))
+
+    let condition = YUL.Expression.functionCall(
+      FunctionCall("lt", .identifier("\(prefix)i"), .identifier("\(prefix)arrLen")))
+    let step = Block(
+      .expression(.assignment(Assignment(["\(prefix)i"],
+        .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))))
+    )
+
+    let body = functionContext.withNewBlock {
+      functionContext.emit(.expression(
+        .variableDeclaration(VariableDeclaration([(forStatement.variable.identifier.name.mangled, .any)], toAssign))))
+      forStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
+    }
+
+    return ForLoop(initialize, condition, step, body)
   }
 
-  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> String {
+  func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> ForLoop {
     // Iterating over a range
-
     // Check valid range
     guard case .literal(let rangeStart) = iterable.initial,
       case .literal(let rangeEnd) = iterable.bound else {
@@ -203,13 +190,13 @@ struct IRForStatement {
                                      rhs: .identifier(
                                       Identifier(identifierToken: Token(kind: .identifier("bound"),
                                                                         sourceLocation: forStatement.sourceLocation))))
-    let change: Expression = .binaryExpression(
+    let change: AST.Expression = .binaryExpression(
       BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
                        op: Token(kind: changeToken, sourceLocation: forStatement.sourceLocation),
                        rhs: .literal(Token(kind: .literal(.decimal(.integer(1))),
                                            sourceLocation: forStatement.sourceLocation))))
     let update = IRAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change)
-      .rendered(functionContext: functionContext, asTypeProperty: false).rendered()
+      .rendered(functionContext: functionContext, asTypeProperty: false).description
 
     // Change <= into (< || ==)
     if [.lessThanOrEqual, .greaterThanOrEqual].contains(condition.opToken) {
@@ -233,12 +220,22 @@ struct IRForStatement {
     let binaryExpression = IRExpression(expression: .binaryExpression(condition))
       .rendered(functionContext: functionContext)
 
-    return """
-    {
-    let \(initialisation.expression)
-    let _bound := \(rangeExpression.expression)
-    } \(binaryExpression.expression) { \(update) } {
-    """
+    let initialize = Block(.inline("""
+      let \(initialisation.description)
+      let _bound := \(rangeExpression.description)
+    """))
+
+    let step = Block(.inline("""
+      \(update)
+    """))
+
+    let body = functionContext.withNewBlock {
+      forStatement.body.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      }
+    }
+
+    return ForLoop(initialize, binaryExpression, step, body)
   }
 }
 
@@ -246,13 +243,13 @@ struct IRForStatement {
 struct IRReturnStatement {
   var returnStatement: ReturnStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
     guard let expression = returnStatement.expression else {
-      return ""
+      return .inline("")
     }
 
     let renderedExpression = IRExpression(expression: expression).rendered(functionContext: functionContext)
-    return "\(renderedExpression.preamble)\n\(IRFunction.returnVariableName) := \(renderedExpression.expression)"
+    return .inline("\(IRFunction.returnVariableName) := \(renderedExpression.description)")
   }
 }
 
@@ -260,22 +257,22 @@ struct IRReturnStatement {
 struct IRBecomeStatement {
   var becomeStatement: BecomeStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
     let sl = becomeStatement.sourceLocation
-    let stateVariable: Expression = .identifier(
+    let stateVariable: AST.Expression = .identifier(
       Identifier(name: IRContract.stateVariablePrefix + functionContext.enclosingTypeName,
                  sourceLocation: .DUMMY))
-    let selfState: Expression = .binaryExpression(
+    let selfState: AST.Expression = .binaryExpression(
       BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: sl)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: sl),
                        rhs: stateVariable))
 
-    let assignState: Expression = .binaryExpression(
+    let assignState: AST.Expression = .binaryExpression(
       BinaryExpression(lhs: selfState,
                        op: Token(kind: .punctuation(.equal), sourceLocation: sl),
                        rhs: becomeStatement.expression))
 
-    return IRExpression(expression: assignState).rendered(functionContext: functionContext).rendered()
+    return .inline(IRExpression(expression: assignState).rendered(functionContext: functionContext).description)
   }
 }
 
@@ -283,41 +280,23 @@ struct IRBecomeStatement {
 struct IREmitStatement {
   var emitStatement: EmitStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
-    return IRFunctionCall(functionCall: emitStatement.functionCall)
-      .rendered(functionContext: functionContext).rendered()
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+    return .inline(IRFunctionCall(functionCall: emitStatement.functionCall)
+      .rendered(functionContext: functionContext).description)
   }
 }
 
 struct IRDoCatchStatement {
   var doCatchStatement: DoCatchStatement
 
-  func rendered(functionContext: FunctionContext) -> String {
-    functionContext.push(doCatch: doCatchStatement)
-    let code = doCatchStatement.doBody.reversed().reduce("", { acc, statement in
-      switch statement {
-      case .expression(.functionCall):
-        var elseCode = ""
-        if let elseBlock = functionContext.top {
-          elseCode = elseBlock.catchBody.map { statement in
-            return IRStatement(statement: statement).rendered(functionContext: functionContext)
-          }.joined(separator: "\n")
-        } else {
-          elseCode = ""
-        }
-
-        return """
-        if (true) {
-          \(acc.indented(by: 2))
-        } else {
-          \(elseCode.indented(by: 2))
-        }
-        """
-      default:
-        return IRStatement(statement: statement).rendered(functionContext: functionContext) + "\n" + acc
+  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+    functionContext.pushDoCatch(doCatchStatement)
+    let ret: YUL.Statement = .block(functionContext.withNewBlock {
+      doCatchStatement.doBody.forEach { statement in
+        functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
       }
     })
-    functionContext.pop()
-    return code
+    functionContext.popDoCatch()
+    return ret
   }
 }

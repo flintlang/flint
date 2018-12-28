@@ -5,23 +5,21 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for an event call.
 struct IREventCall {
-  var eventCall: FunctionCall
+  var eventCall: AST.FunctionCall
   var eventDeclaration: EventDeclaration
 
-  func rendered(functionContext: FunctionContext) -> ExpressionFragment {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     let types = eventDeclaration.variableDeclarations.map { $0.type }
 
-    var preambles = [String]()
-    var stores = [String]()
     var memoryOffset = 0
 
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = IRExpression(expression: argument.expression).rendered(functionContext: functionContext)
-      preambles.append(argument.preamble)
-      stores.append("mstore(\(memoryOffset), \(argument.expression))")
+      functionContext.emit(.expression(.functionCall(FunctionCall("mstore", .literal(.num(memoryOffset)), argument))))
       memoryOffset += functionContext.environment.size(of: types[i].rawType) * EVM.wordSize
     }
 
@@ -31,13 +29,8 @@ struct IREventCall {
       }.joined(separator: ",")
 
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
-    let log = "log1(0, \(totalSize), 0x\(eventHash))"
-
-    return ExpressionFragment(
-      pre: preambles.joined(separator: "\n"),
-      """
-      \(stores.joined(separator: "\n"))
-      \(log)
-      """)
+    return YUL.Expression.functionCall(FunctionCall("log1", .literal(.num(0)),
+                                                            .literal(.num(totalSize)),
+                                                            .literal(.hex("0x\(eventHash)"))))
   }
 }
