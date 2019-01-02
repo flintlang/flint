@@ -6,24 +6,98 @@ Even though the [Ethereum](https://www.ethereum.org/) platform requires smart co
 
 Flint changes that, as a new programming language built for easily writing safe Ethereum smart contracts. Flint is approachable to both experienced and new Ethereum developers, and presents a variety of security features. The core of the syntax is based around [the Swift language](https://swift.org/).
 
-For a quick start, please have a look at the [Installation] section first, followed by the [Example] section.
+For a quick start, please have a look at the [Installation](#installation) section first, followed by the [Example](#example) section.
 
 # Table of Contents
 
- - **Getting started**
-   - Installation
-     - Docker
-     - Installing `solc`, the Solidity compiler
-     - Binary packages
-     - Building from source
-   - Example
-   - IDE integration
-     - VS Code
-     - Vim
-     - Atom
-   - Compilation
- - **Language guide**
- - **Standard library**
+ - [**Getting started**](#getting-started)
+   - [Installation](#installation)
+     - [Docker](#docker)
+     - [Installing `solc`, the Solidity compiler](#installing-solc-the-solidity-compiler)
+     - [Binary packages](#binary-packages)
+     - [Building from source](#building-from-source)
+   - [Example](#example)
+     - [Creating a simple contract](#creating-a-simple-contract)
+     - [Compiling `Counter`](#compiling-counter)
+     - [Testing `Counter`](#testing-counter)
+     - [Deploying `Counter`](#deploying-counter)
+   - [IDE integration](#ide-integration)
+     - [VS Code](#vs-code)
+     - [Vim](#vim)
+     - [Atom](#atom)
+   - [Compilation](#compilation)
+ - [**Language guide**](#language-guide-1)
+   - [File structure](#file-structure)
+     - [Comments](#comments)
+   - [Types](#types)
+     - [Basic types](#basic-types)
+     - [Dynamic types](#dynamic-types)
+     - [Range types](#range-types)
+     - [Solidity types](#solidity-types)
+   - [Constants and variables](#constants-and-variables)
+   - [Functions](#functions)
+     - [Function attributes](#function-attributes)
+     - [Function modifiers](#function-modifiers)
+     - [Function parameters](#function-parameters)
+     - [Return values](#return-values)
+     - [Initialisers](#initialisers)
+     - [Payable](#payable)
+     - [Fallback](#fallback)
+   - [Structs](#structs)
+     - [Declaration](#declaration)
+     - [Instances](#instances)
+     - [Accessing properties/functions](#accessing-propertiesfunctions)
+     - [Structs as function arguments](#structs-as-function-arguments)
+   - [Contracts](#contracts)
+     - [Declaration](#declaration-1)
+     - [Type states](#type-states)
+     - [Protection blocks](#protection-blocks)
+       - [Caller group](#caller-group)
+       - [Caller group variable](#caller-group-variable)
+       - [Type state protection](#type-state-protection)
+       - [Static checking](#static-checking)
+       - [Dynamic checking](#dynamic-checking)
+       - [Multiple protections](#multiple-protections)
+     - [Visibility modifiers](#visibility-modifiers)
+     - [Events](#events)
+   - [Traits](#traits)
+     - [Struct traits](#struct-traits)
+     - [Contract traits](#contract-traits)
+   - [Expressions](#expressions)
+     - [Function calls](#function-calls)
+   - [Literals](#literals)
+     - [Integer literals](#integer-literals)
+     - [Address literals](#address-literals)
+     - [Boolean literals](#boolean-literals)
+     - [String literals](#string-literals)
+     - [List literals](#list-literals)
+     - [Dictionary literals](#dictionary-literals)
+   - [Operators](#operators)
+     - [Arithmetic operators](#arithmetic-operators)
+     - [Boolean operators](#boolean-operators)
+   - [Statements](#statements)
+     - [Variable/constant declaration and assignment](#variableconstant-declaration-and-assignment)
+       - [Compound assignment](#compound-assignment)
+     - [Loops](#loops)
+     - [Conditionals](#conditionals)
+       - [Else clauses](#else-clauses)
+     - [Become statements](#become-statements)
+     - [Return statements](#return-statements)
+     - [Do-catch statements](#do-catch-blocks)
+   - [External calls](#external-calls)
+     - [Specifying the interface](#specifying-the-interface)
+     - [Creating an instance](#creating-an-instance)
+     - [Calling functions](#calling-functions)
+     - [Specifying hyper-parameters](#specifying-hyper-parameters)
+     - [Casting to and from Solidity types](#casting-to-and-from-solidity-types)
+   - [Enumerations](#enumerations)
+     - [Associated values](#associated-values)
+ - [**Standard library**](#standard-library)
+   - [Assets](#assets)
+   - [Global functions](#global-functions)
+     - [Assertions](#assertions)
+     - [Fatal error](#fatal-error)
+     - [Send](#send)
 
 ---
 
@@ -1805,11 +1879,17 @@ The `transfer` functions are declared in the `Asset` trait and are inherited aut
 
 ## Global Functions
 
+Global functions in the standard library are special function which can be called from any contract, struct, or contract group.
+
 ### Assertions
 
 Assertions are checks that happen at runtime. They are used to ensure an essential condition is satisfied before executing any further code. If the boolean condition evaluates to `true` then the execution continues as usual. Otherwise the transaction is reverted.
 
-It is a global function accessible from any contract or contract group:
+```swift
+assert(<expr>)
+```
+
+Example:
 
 ```swift
 assert(x == 2)
