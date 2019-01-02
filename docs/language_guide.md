@@ -26,6 +26,7 @@ For a quick start, please have a look at the [Installation](#installation) secti
      - [Vim](#vim)
      - [Atom](#atom)
    - [Compilation](#compilation)
+   - [Remix integration](#remix-integration)
  - [**Language guide**](#language-guide-1)
    - [File structure](#file-structure)
      - [Comments](#comments)
@@ -72,6 +73,7 @@ For a quick start, please have a look at the [Installation](#installation) secti
      - [String literals](#string-literals)
      - [List literals](#list-literals)
      - [Dictionary literals](#dictionary-literals)
+     - [Self](#self)
    - [Operators](#operators)
      - [Arithmetic operators](#arithmetic-operators)
      - [Boolean operators](#boolean-operators)
@@ -105,7 +107,7 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
 ## Installation
 
-The first step before using the Flint compiler is to install it. The simplest way is to [use Docker]. Otherwise, the [binary packages] and [building from source] require [`solc` to be installed first].
+The first step before using the Flint compiler is to install it. The simplest way is to [use Docker](#docker). Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
 
 ### Docker
 
@@ -208,7 +210,7 @@ $ flintc main.flint --emit-ir --ir-output bin
 
 Even though `Counter` is extremely simple, we should test it against some unit tests before deploying it to the Ethereum network – this practice is crucial when developing proper contracts.
 
-During early iterations, it may be useful to debug a contract directly with the Remix IDE. This is detailed in a [separate section].
+During early iterations, it may be useful to debug a contract directly with the Remix IDE. This is detailed in a [separate section](#remix-integration).
 
 Writing unit tests for Solidity (and hence Flint) contracts is possible with the Truffle framework. We can create a `test.js` file with the unit tests:
 
@@ -274,7 +276,7 @@ Since Flint produces Solidity contracts, they can be deployed by following a sta
 
 ## IDE integration
 
-The Flint compiler has options to integrate with [VS Code], [Vim], and [Atom], although Vim and Atom only support syntax highlighting, not inline error / warning display.
+The Flint compiler has options to integrate with [VS Code](#vs-code), [Vim](#vim), and [Atom](#atom), although Vim and Atom only support syntax highlighting, not inline error / warning display.
 
 ### VS Code
 
@@ -320,11 +322,24 @@ There are more command-line options available in `flintc`. To show a full listin
 $ flintc --help
 ```
 
+## Remix integration
+
+[Remix](https://remix.ethereum.org/) is an online IDE for testing Solidity smart contracts. Flint contracts can also be tested in Remix, by compiling Flint to Solidity. In this example, we are going to test the `Counter` contract from the [example section](#example)
+
+After [compiling](#compilation) the `Counter` contract, we can obtain the Solidity program in the file `bin/main/Counter.sol`. To interact with this contract in Remix:
+
+ 1. Copy the contents of `bin/main/Counter.sol` and paste the code into Remix.
+ 2. Press the red Create button under the Run tab in the right sidebar.
+ 3. You should now see your deployed contract below. Click on the copy button on the right of `Counter` to copy the address of the deployed contract.
+ 4. Select `_InterfaceMyContract` from the dropdown above the Create button.
+ 5. Paste the contract address (from step 3) into the "Load contract from Address" field, and press the At Address button.
+ 6. You should now see the public functions declared by your contract (`getValue`, `hit`). Red buttons indicate the functions are mutating, whereas blue indicated non-mutating. You should now be able to call the contract's functions.
+
 # Language guide
 
 ## File structure
 
-Flint files consist of one [contract declaration], and optionally [struct declarations], [trait declarations], [external contract declarations], and/or [enumerations].
+Flint files consist of one [contract declaration](#contracts), and optionally [struct declarations](#structs), [trait declarations](#traits), [external contract declarations](#external-calls), and/or [enumerations](#enumerations).
 
 ### Comments
 
@@ -332,7 +347,7 @@ Comments may be used throughout the source code. Comments are started with a dou
 
 ## Types
 
-Flint is a statically-typed language with a simple type system, with basic support for subtyping through [traits].
+Flint is a statically-typed language with a simple type system, with basic support for subtyping through [traits](#traits).
 
  > **Planned feature**
  > 
@@ -357,7 +372,7 @@ Flint is a type-safe language. A type safe language encourages clarity about the
 | Dynamic-size list | `[T]` | A list of elements of type `T`. Elements can be added to it or removed from it. |
 | Fixed-size list | `T[n]` | A list containing `n` elements of type `T`. It cannot have a different number of elements than its declared capacity `n`. |
 | Dictionary | `[K: V]` | Dynamic-size mappings from one key type `K` to a value type `V`. Each stored key of type `K` is associated with one value of type `V`. |
-| Structs | | Structs, including [user-defined structs]. |
+| Structs | | Structs, including [user-defined structs](#structs). |
 
 ### Range types
 
@@ -381,7 +396,7 @@ for let i: Int in (0...5) {
 
 ### Solidity types
 
-When specifying an [external interface], Solidity types must be used. The types usable in Flint are:
+When specifying an [external interface](#external-calls), Solidity types must be used. The types usable in Flint are:
 
  - `int8`, `int16`, `int24`, ... `int256` (all multiples of 8 bits)
  - `uint8`, `uint16`, `uint24`, ... `uint256` (all multiples of 8 bits)
@@ -390,11 +405,11 @@ When specifying an [external interface], Solidity types must be used. The types 
  - `bool`
  - `bytes32`
 
-See [casting] for more information.
+See [casting](#casting-to-and-from-solidity-types) for more information.
 
 ## Constants and variables
 
-Constants and variables associate a name with a value of a particular [type]. The value of a constant cannot be changed once it is set, whereas a variable can be set to a different value with assignment statements.
+Constants and variables associate a name with a value of a particular [type](#types). The value of a constant cannot be changed once it is set, whereas a variable can be set to a different value with assignment statements.
 
 Constants and variables of a contract are its state properties. They are data stored in the EVM storage, and even though they are not directly modifiable, they are publicly visible, so they should never hold private or sensitive data.
 
@@ -406,7 +421,7 @@ To declare a constant with the name `<name>` of the type `<type>` with the initi
 let <name>: <type> = <expression>
 ```
 
-The expression is evaluated once, when the declaration is executed. The expression can be complex, or just a simple [literal]. Examples:
+The expression is evaluated once, when the declaration is executed. The expression can be complex, or just a simple [literal](#literals). Examples:
 
 ```swift
 let unity: Int = 1
@@ -423,7 +438,7 @@ let <name>: <type>
 
 Similarly to Swift, a constant with no initial value cannot be used until it has been assigned a value, and once the value has been assigned, it cannot be changed.
 
-To declare a variable with the name `<name>` of the type `<type>` with the initial value being the result of `<expression>` (see [expressions]), the syntax is the same, but `var` is used instead of `let`:
+To declare a variable with the name `<name>` of the type `<type>` with the initial value being the result of `<expression>` (see [expressions](#expressions)), the syntax is the same, but `var` is used instead of `let`:
 
 ```swift
 var <name>: <type> = <expression>
@@ -442,7 +457,7 @@ The value of a variable or a constant can be used in expressions once it is decl
 
 Functions are self-contained blocks of code that perform a specific task, which is called using its identifier. They are defined with the keyword `func` followed by the identifier and the set of parameters and optional return type:
 
-To declare a function with the name `<name>` returning a value of type `<type>`, taking the list of [parameters `<parameters>`], optionally with [modifiers `<modifiers>`] and [attributes `<attributes>`]:
+To declare a function with the name `<name>` returning a value of type `<type>`, taking the list of [parameters `<parameters>`](#function-parameters), optionally with [modifiers `<modifiers>`](#function-modifiers) and [attributes `<attributes>`](#function-attributes):
 
 ```swift
 <attributes>
@@ -462,7 +477,7 @@ Some functions do not return a value:
 
 ### Function attributes
 
-Attributes annotate functions as having special properties. Currently the only example of this is `@payable`. For more information, see [payable].
+Attributes annotate functions as having special properties. Currently the only example of this is `@payable`. For more information, see [payable](#payable).
 
 ### Function modifiers
 
@@ -518,9 +533,9 @@ Each parameter has the syntax:
 <modifiers> <name>: <type modifiers> <type>
 ```
 
-Currently the only possible (optional) `<modifier>` is `implicit`. See [payable] for more information. The only possible (optional) `<type modifier>` is `inout`. See [inout] for more information.
+Currently the only possible (optional) `<modifier>` is `implicit`. See [payable](#payable) for more information. The only possible (optional) `<type modifier>` is `inout`. See [inout](#structs-as-function-arguments) for more information.
 
-Below is a function that [mutates] the dictionary of peoples' names to add the key/value pair of the caller's address and the given name. If the parameter `name` is not provided to the function call, then the default value of `"John Doe"` will be used. For more information about callers, see [caller bindings].
+Below is a function that [mutates](#function-modifiers) the dictionary of peoples' names to add the key/value pair of the caller's address and the given name. If the parameter `name` is not provided to the function call, then the default value of `"John Doe"` will be used. For more information about callers, see [caller bindings](#caller-group-variable).
 
 ```swift
 contract AddressBook {
@@ -632,7 +647,7 @@ Example:
 let someRectangle: Rectangle = Rectangle()
 ```
 
-When an instance is created, it is initialised with its initial values – in this case a width and heigth of `0`. This process can also be done manually using an [initialiser]. You can access the properties of the current struct with the special keyword `self`.
+When an instance is created, it is initialised with its initial values – in this case a width and heigth of `0`. This process can also be done manually using an [initialiser](#initialisers). You can access the properties of the current struct with the special keyword `self`.
 
 Example:
 
@@ -848,9 +863,9 @@ The remaining parts of a contract are its protection blocks. While traditional c
 
 In Flint, functions of a contract are declared within protection blocks, which restrict when the enclosed functions are allowed to be called.
 
-There are two elements to protection blocks, the [caller group] and the optional [type state protection]  (see [type states] for more detail).
+There are two elements to protection blocks, the [caller group](#caller-group) and the optional [type state protection](#type-state-protection) (see [type states](#type-states) for more detail).
 
-A minimal protection block of contract `<contract-name>` with the [caller group] `<caller-group>` is declared as:
+A minimal protection block of contract `<contract-name>` with the [caller group](#caller-group) `<caller-group>` is declared as:
 
 ```swift
 <contract-name> :: (<caller-group>) {
@@ -858,7 +873,7 @@ A minimal protection block of contract `<contract-name>` with the [caller group]
 }
 ```
 
-The caller can optionally be captured into a variable (see [caller group variable]):
+The caller can optionally be captured into a variable (see [caller group variable](#caller-group-variable)):
 
 ```swift
 <contract-name> :: <variable> <- (<caller-group>) {
@@ -866,7 +881,7 @@ The caller can optionally be captured into a variable (see [caller group variabl
 }
 ```
 
-The protection block can optionally also check that the contract is in a given [type state]  (see [type state protection]):
+The protection block can optionally also check that the contract is in a given [type state](#type-states) (see [type state protection](#type-state-protection)):
 
 ```swift
 <contract-name> @(<type-state>) :: (<caller-group>) {
@@ -1134,7 +1149,7 @@ Contracts or structs can conform to multiple traits. The Flint compiler enforces
 
  > **Planned feature**
  > 
- > In the future, the Flint standard library will include traits providing common functionality to contracts (`Ownable`, `Burnable`, `MultiSig`, `Pausable`, `ERC20`, `ERC721`, etc.) and structs (`Transferable`, `RawValued`, `Describable` etc.). It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets] and Numerics.
+ > In the future, the Flint standard library will include traits providing common functionality to contracts (`Ownable`, `Burnable`, `MultiSig`, `Pausable`, `ERC20`, `ERC721`, etc.) and structs (`Transferable`, `RawValued`, `Describable` etc.). It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [assets](#assets) and Numerics.
 
 ### Struct traits
 
@@ -1283,14 +1298,15 @@ The expressions available in Flint are:
 
 | Name | Syntax | Description |
 | --- | --- | --- |
-| Literal | `1`, `"hello"`, `false`, etc. | Constant value; see [literals]. |
-| Range | `<expr-1>..<<expr-2>`, `<expr-1>...<expr-2>` | See [ranges]. |
-| Binary expression | `<expr-1> <op> <expr-2>` | A binary operation `<op>` applied to the expressions `<expr-1>` and `<expr-2>`; see [operators]. |
+| Literal | `1`, `"hello"`, `false`, etc. | Constant value; see [literals](#literals). |
+| Range | `<expr-1>..<<expr-2>`, `<expr-1>...<expr-2>` | See [ranges](#range-types). |
+| Binary expression | `<expr-1> <op> <expr-2>` | A binary operation `<op>` applied to the expressions `<expr-1>` and `<expr-2>`; see [operators](#operators). |
 | Function call | `<function-name>(<param-1>: <expr-1>, <param-2>: <expr-2>, ...)` | Call to the function `<function-name>` with the results of the given expressions `<expr-1,2,...>` as parameters. |
 | Dot access | `<expr-1>.<field>` | Access to the `<field>` field (variable, constant, function) or the result of `<expr-1>`. |
 | Index / key access | `<expr-1>[<expr-2>]` | Access to the given key of a list or dictionary. |
-| External call | `call <external-contract>.<function-name>(<param-1>: <expr-1>, <param-2>: <expr-2>, ...)` | Call to the function of an external contract; see [external calls]. |
-| Type cast | `<expr> as! <type>` | Forced cast of the result of `<expr>` to `<type>`; see [external calls]. |
+| External call | `call <external-contract>.<function-name>(<param-1>: <expr-1>, <param-2>: <expr-2>, ...)` | Call to the function of an external contract; see [external calls](#external-calls). |
+| Type cast | `<expr> as! <type>` | Forced cast of the result of `<expr>` to `<type>`; see [casting to and from Solidity types](#casting-to-and-from-solidity-types). |
+| Attempt | `try? <call>`, `try! <call>` | Attempt to call a function in a different protection block, see [dynamic checking](#dynamic-checking). |
 
 ### Function calls
 
@@ -1359,6 +1375,10 @@ Dictionary literals (Flint type `[T: U]` for some Flint types `T` and `U`) curre
  > 
  > In the future, Flint will have non-empty dictionary literals written as `[x: a, y: b, z: c, ...]` where `x`, `y`, `z`, etc. are literals of type `T` and `a`, `b`, `c`, etc. are literals of type `U`.
 
+### Self
+
+The special keyword `self` refers to the current struct instance or contract containing the current function.
+
 ## Operators
 
 An operator is a special symbol used to check, change, or combine values. Flint supports common Swift operators and attempts to eliminate common coding errors.
@@ -1424,7 +1444,7 @@ Statements control the execution of code in a function, enable looping, conditio
 
 ### Variable/constant declaration and assignment
 
-Declaration of variables and constants is a statement (see [variables and constants]). Syntax:
+Declaration of variables and constants is a statement (see [variables and constants](#constants-and-variables)). Syntax:
 
 ```swift
 let <name>: <type> = <expression>
@@ -1452,7 +1472,7 @@ x = x + 5
 
 ### Loops
 
-`for-in` loops can be used to iterate over sequence. Currently this supports lists, dictionary values and [ranges]. Syntax:
+`for-in` loops can be used to iterate over sequence. Currently this supports lists, dictionary values and [ranges](#range-types). Syntax:
 
 ```swift
 for let <variable-name>: <type> in <sequence> {
@@ -1522,7 +1542,7 @@ if x == 2 {
 
 (Contract-specific.)
 
-The `become` statement can be used to change the type state (see [type states]) of the current contract. The execution of code is terminated after a `become` statement is executed, and the contract will then transition to the specified type state. Syntax:
+The `become` statement can be used to change the type state (see [type states](#type-states)) of the current contract. The execution of code is terminated after a `become` statement is executed, and the contract will then transition to the specified type state. Syntax:
 
 ```swift
 become <type-state>
@@ -1548,7 +1568,7 @@ Semaphore @(Green) :: (any) {
 
 ### Return statements
 
-A `return` statement can be used to provide the output value of a function with a declared return type (see [functions]). Syntax:
+A `return` statement can be used to provide the output value of a function with a declared return type (see [functions](#functions)). Syntax:
 
 ```swift
 return <expression>
@@ -1566,7 +1586,7 @@ Semaphore @(Red) :: (any) {
 
 ### Do-catch blocks
 
-`do-catch` blocks can be used to handle errors in execution in a controlled manner. Currently, the only supported error is an external call error (see [external calls]). Syntax:
+`do-catch` blocks can be used to handle errors in execution in a controlled manner. Currently, the only supported error is an external call error (see [external calls](#external-calls)). Syntax:
 
 ```swift
 do {
@@ -1599,7 +1619,7 @@ external trait <trait-name> {
 }
 ```
 
-The functions declared inside an external trait may not include any modifiers, and their parameters and return types (if used) must be specified using [Solidity types].
+The functions declared inside an external trait may not include any modifiers, and their parameters and return types (if used) must be specified using [Solidity types](#solidity-types).
 
 Currently, deploying contracts from within Flint code is not supported, so neither initialisers nor fallbacks can be provided in external traits.
 
@@ -1699,7 +1719,7 @@ X :: (any) {
 
 ### Casting to and from Solidity types
 
-Since the types of external contract function parameters and return values are specified using [Solidity types], values must be converted before they are used for an external call. This is facilitated using the type casting expression.
+Since the types of external contract function parameters and return values are specified using [Solidity types](#solidity-types), values must be converted before they are used for an external call. This is facilitated using the type casting expression.
 
 Example:
 
@@ -1909,4 +1929,4 @@ if x == 2 {
 
 ### Send
 
-`send(address: Address, value: inout Wei)` sends the `value` Wei to the Ethereum address `address`, and clears the contents of `value`. It is a simpler way to perform a money transfer compared to [external calls], but it does not allow e.g. specifying function parameters.
+`send(address: Address, value: inout Wei)` sends the `value` Wei to the Ethereum address `address`, and clears the contents of `value`. It is a simpler way to perform a money transfer compared to [external calls](#external-calls), but it does not allow e.g. specifying function parameters.
