@@ -12,6 +12,7 @@ import Lexer
 import Parser
 import SemanticAnalyzer
 import TypeChecker
+import Verifier
 import Optimizer
 import IRGen
 
@@ -61,6 +62,7 @@ struct Compiler {
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
       TypeChecker(),
+      Verifier(),
       Optimizer(),
       IRPreprocessor()
     ]
