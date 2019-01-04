@@ -1,19 +1,18 @@
+//procedure test_Inconsistent_Assumptions()
+//{
+//  assert false;
+//}
+
 type Address;
 const NullAddress: Address;
 
 type Wei = int;
 
-// TODO - specification from perspective of contract -> money in + money out == current
-// TODO - specification from perspective of user -> (money put in + transfers == money get out)
-// TODO   - eg, manager, account
+var sentWei: Wei; // Track Wei sent by contract
+var receivedWei: Wei; // Track Wei received by contract
+var contractWei: Wei; // Track amount of Wei in contract
 
-// procedure Wei.Transfer(in: Wei, out: Wei) returns (newOut: Wei)
-//   requires (in >= Wei.New(0) && out >= Wei.New(0));
-//   ensures (newOut == in + out);
-//   ensures (newOut >= Wei.New(0));
-// {
-//   newOut := in + out;
-// }
+var caller: Address;
 
 function Wei.New(value: int) returns (result: Wei);
 axiom (forall i, j: int :: i >= 0 && j >= 0 && i == j <==> Wei.New(i) == Wei.New(j));
@@ -36,23 +35,31 @@ var lastIndex_Bank: int;
 
 var totalDonations_Bank: Wei;
 
-var caller: Address;
-
-// procedure test_Inconsistent_Assumptions()
-// {
-//   assert false;
-// }
-
 procedure init_Bank(manager: Address)
+  // Required for sentWei >= old(sentWei) etc...
+  requires (sentWei == Wei.New(0));
+  requires (receivedWei == Wei.New(0));
+  requires (contractWei == Wei.New(0));
+
   modifies manager_Bank;
   modifies balances_Bank;
   modifies accounts_Bank;
   modifies lastIndex_Bank;
   modifies totalDonations_Bank;
+  modifies sentWei;
+  modifies receivedWei;
+  modifies contractWei;
 
   // contract invariant - Wei:
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   manager_Bank := manager;
 
@@ -60,18 +67,36 @@ procedure init_Bank(manager: Address)
   accounts_Bank := ArrayAddress.Empty();
   lastIndex_Bank := 0;
   totalDonations_Bank := Wei.New(0);
+
+  sentWei := Wei.New(0);
+  receivedWei := Wei.New(0);
+  contractWei := Wei.New(0);
 }
 
 procedure register_Bank()
   // requires invariant:
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   modifies accounts_Bank;
   modifies lastIndex_Bank;
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   accounts_Bank[lastIndex_Bank] := caller;
   lastIndex_Bank := lastIndex_Bank + 1;
@@ -81,10 +106,24 @@ procedure getManager_Bank() returns (result: Address)
   // requires invariant:
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   result := manager_Bank;
 }
@@ -96,18 +135,33 @@ procedure donate_Bank(value: Wei)
   // requires invariant:
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   modifies totalDonations_Bank;
+  modifies receivedWei;
+  modifies contractWei;
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
-  //call totalDonations_Bank_1 := Wei.Transfer(value, totalDonations_Bank);
-  //value_1 := Wei.New(0);
-  // Check transfer - not strictly needed (Wei.Transfer gives this directly)
-  //assert (value_1 == 0);
-  //assert (totalDonations_Bank_1 == value + totalDonations_Bank);
+  // From input
+  receivedWei := receivedWei + value;
+  // Add received money to contract
+  contractWei := contractWei + value;
 
   totalDonations_Bank := totalDonations_Bank + value;
 }
@@ -119,11 +173,28 @@ procedure freeDeposit_Bank(account: Address, amount: int)
   // requires invariant:
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   modifies balances_Bank;
+  modifies contractWei;
+  modifies receivedWei;
+
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   var w: Wei;
   // Added if stmt, not in Bank.flint, to pass verification
@@ -133,12 +204,14 @@ procedure freeDeposit_Bank(account: Address, amount: int)
     // No negative money
     assert (amount >= 0);
     w := Wei.New(amount);
+    // Allocate money for contract (Wei.New())
+    contractWei := contractWei + w;
+    // FIXED - pretend money was received by contract
+    receivedWei := receivedWei + w;
 
-    // Do the transfer - are these asserts needed?
+    // Do the transfer
     assert (w >= Wei.New(0));
     assert (balances_Bank[account] >= Wei.New(0));
-
-    //call balances_Bank_1_account := Wei.Transfer(w, balances_Bank[account]);
 
     // transfer
     balances_Bank[account] := balances_Bank[account] + w;
@@ -151,17 +224,38 @@ procedure clear_Bank(account: Address)
   // requires contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   modifies balances_Bank;
+  modifies contractWei;
+  modifies sentWei;
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
-  ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei /type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
-  // Can't create/destroy money Wei.New(state, value) - state == int, which increases / decreases, on Wei.Transfer(state, in, out)..
+  contractWei := contractWei + 0; // Wei(0)
+  // Can't create/destroy money
+  contractWei := contractWei - balances_Bank[account]; // balances[account] = Wei(0) - dangerous assignment
+  // FIXED - pretend contract sent money somewhere
+  sentWei := sentWei + balances_Bank[account] - Wei.New(0);
   // No negative money
   assert (0 >= 0);
-  balances_Bank[account] := Wei.New(0); // TODO: This should fail a money/created destroyed test - overriding money
+  balances_Bank[account] := Wei.New(0);
+
 }
 
 procedure getDonations_Bank() returns (result: int)
@@ -169,10 +263,22 @@ procedure getDonations_Bank() returns (result: int)
   // ensures contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   // cast total donations to raw values
   result := totalDonations_Bank;
@@ -183,10 +289,22 @@ procedure getBalance_Bank() returns (result: int)
   // requires contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   var account: Address;
   account := caller;
@@ -198,25 +316,34 @@ procedure transfer_Bank(amount: int, destination: Address)
   // requires contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
 
   modifies balances_Bank;
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   var account: Address;
   account := caller;
 
-  // PREVIOUSLY NO CHECK ON IF AMOUNT IS NEGATIVE - invariant caught this
-  if (amount < 0) {
-    assume false; // throw exception
-  }
-
   // Transfer
-  assume (balances_Bank[account] >= amount); // This is provided by Asset transfer
+  // This is provided by Wei.transfer
+  assume (balances_Bank[account] >= amount);
+  assume (amount >= 0);
   balances_Bank[account] := balances_Bank[account] - amount;
-  balances_Bank[destination] := amount;
+  balances_Bank[destination] := balances_Bank[destination] + amount;
 }
 
 procedure deposit_Bank(value: Wei)
@@ -225,42 +352,83 @@ procedure deposit_Bank(value: Wei)
   // requires contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
 
   modifies balances_Bank;
+  modifies contractWei;
+  modifies receivedWei;
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   var account: Address;
-  var value_1: Wei;
   account := caller;
-  value_1 := value;
+
+  // From input
+  receivedWei := receivedWei + value;
+  // Add received money to contract
+  contractWei := contractWei + value;
+
   // Transfer
   balances_Bank[account] := balances_Bank[account] + value;
-  value_1 := Wei.New(0);
 }
 
 procedure withdraw_Bank(amount: int)
   requires (exists x: int :: caller == accounts_Bank[x]);
-  requires balances_Bank[caller] >= amount;
   // requires contract invariant holds
   requires (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   requires (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  requires (sentWei >= Wei.New(0));
+  requires (receivedWei >= Wei.New(0));
+  requires (contractWei >= Wei.New(0));
+  requires (contractWei == receivedWei - sentWei);
+  requires (forall a: Address :: contractWei >= balances_Bank[a]); // required for subtraction of contractWei
+  requires (contractWei >= totalDonations_Bank); // required for subtraction of contractWei
 
   modifies balances_Bank;
+  modifies contractWei;
+  modifies sentWei;
 
   // ensures contract invariant holds
   ensures (totalDonations_Bank >= Wei.New(0)); // Provided by Wei type of totalDonations
   ensures (forall a: Address :: balances_Bank[a] >= Wei.New(0)); // Provided by Wei type of balances
+  // To ensure no money is lost
+  ensures (sentWei >= Wei.New(0));
+  ensures (sentWei >= old(sentWei));
+  ensures (receivedWei >= Wei.New(0));
+  ensures (receivedWei >= old(receivedWei));
+  ensures (contractWei >= Wei.New(0));
+  ensures (contractWei == receivedWei - sentWei);
 {
   var account: Address;
   var w: Wei;
   account := caller;
 
-  assume (balances_Bank[account] >= amount);
-  balances_Bank[account] := balances_Bank[account] - amount;
-  w := Wei.New(amount);
+  assert (0 >= 0); // no negative money
+  w := Wei.New(0);
+  contractWei := contractWei + w; // Create money for Wei.New(0)
 
-  // TODO Send money to recipient
+  // provided by Wei.transfer
+  assume (balances_Bank[account] >= amount);
+  assume (amount >= 0);
+  // Transfer wei
+  balances_Bank[account] := balances_Bank[account] - amount;
+  w := w + amount;
+
+  // Send w to account
+  contractWei := contractWei - w;
+  sentWei := sentWei + w;
 }
