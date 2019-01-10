@@ -21,4 +21,5 @@ lint:
 	swiftlint lint
 
 generate:
+	cd utils/codegen && npm install && cd ../../
 	./utils/codegen/codegen.js
