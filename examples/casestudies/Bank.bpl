@@ -96,6 +96,7 @@ procedure register_Bank()
   ensures (receivedWei >= Wei.New(0));
   ensures (receivedWei >= old(receivedWei));
   ensures (contractWei >= Wei.New(0));
+  // TODO: Do I need this? ^^ I'm not trying to prove how much money the contract holds
   ensures (contractWei == receivedWei - sentWei);
 {
   accounts_Bank[lastIndex_Bank] := caller;
