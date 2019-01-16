@@ -27,6 +27,10 @@ public class DiagnosticPool {
   public func append(_ diagnostic: Diagnostic) {
     diagnostics.append(diagnostic)
   }
+    
+  public func appendAll(_ additions : [Diagnostic]) {
+        diagnostics.append(contentsOf: additions)
+  }
 
   public func empty() {
     diagnostics = []
