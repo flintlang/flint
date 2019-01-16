@@ -94,6 +94,6 @@ let package = Package(
         dependencies: ["FileCheck", "Commander"]),
     .target(
         name: "LSP",
-        dependencies: [])
+        dependencies: ["Diagnostic"])
     ]
 )
