@@ -8,8 +8,7 @@ let package = Package(
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
     .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
     .package(url: "https://github.com/kylef/Commander", from: "0.8.0"),
-    .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
-    .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
+    .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"), .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1")
   ],
   targets: [
@@ -18,7 +17,7 @@ let package = Package(
       dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
     .target(
       name: "dev_version",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP"]),
     .target(
       name: "Source",
       dependencies: []
@@ -92,7 +91,9 @@ let package = Package(
         dependencies: ["LiteSupport", "Rainbow", "Symbolic"]),
     .target(
         name: "file-check",
-        dependencies: ["FileCheck", "Commander"])
-
+        dependencies: ["FileCheck", "Commander"]),
+    .target(
+        name: "LSP",
+        dependencies: [])
     ]
 )
