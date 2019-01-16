@@ -4,6 +4,10 @@ all: generate
 
 .PHONY: all release zip test lint generate
 
+run: 
+	swift build
+	./.build/debug/dev_version
+
 release: generate
 	swift build	-c release --static-swift-stdlib
 	cp -r stdlib .build/release/
