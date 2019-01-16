@@ -20,7 +20,7 @@ func main() {
     
     //let compilationOutcome: CompilationOutcome
     do {
-    print("this is the first time running")
+    //print("this is the first time running")
       let c = Compiler(
         inputFiles: inputFiles,
         stdlibFiles: StandardLibrary.default.files,
@@ -34,8 +34,8 @@ func main() {
         try c.ide_compile()
         let diag = c.diagnostics
         // I want a line here that converts everything to json inih
-        print("hiii")
-        try c.diagnostics.display()
+        //print("hiii")
+        //try c.diagnostics.display()
         let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
         
         
