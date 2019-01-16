@@ -1,4 +1,4 @@
-public struct LSPDiagnostic {
+public struct LSPDiagnostic : Codable {
     
     private var Range : LSPRange
       
