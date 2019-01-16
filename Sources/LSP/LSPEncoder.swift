@@ -1,4 +1,5 @@
 import Diagnostic
+import Foundation
 
 private let SourceMessage : String = "LSP LANGUAGE SERVER"
 
@@ -18,8 +19,13 @@ private func convertFlintDiagToLspDiag(_ diagnostic: Diagnostic) -> LSPDiagnosti
     
 }
 
-public func convertFlintDiagToLspDiagJson(_ diagnostics : [Diagnostic]) -> String {
-   return ""
+public func convertFlintDiagToLspDiagJson(_ diagnostics : [Diagnostic]) throws -> String {
+    let lspDiags : [LSPDiagnostic] = convertFlintDiagnosticsToLspDiagnostics(diagnostics)
+    
+    let encoder = JSONEncoder()
+    let json = try encoder.encode(lspDiags)
+    
+    return String(data: json, encoding: .utf8)!
 }
 
 private func convertFlintDiagnosticsToLspDiagnostics(_ diagnostics: [Diagnostic]) -> [LSPDiagnostic] {
