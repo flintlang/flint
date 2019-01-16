@@ -47,10 +47,6 @@ func main() {
     }
 }
 
-
-
-main()
-
 func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
   let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "Invalid file: '\(file.path)'.")
   // swiftlint:disable force_try
@@ -98,4 +94,4 @@ func exitWithSolcNotInstalledDiagnostic() -> Never {
   exit(1)
 }
 
-//main()
+main()
