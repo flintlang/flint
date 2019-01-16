@@ -13,6 +13,7 @@ import Parser
 import SemanticAnalyzer
 import TypeChecker
 import Optimizer
+import LSP
 import IRGen
 
 /// Runs the different stages of the compiler.
