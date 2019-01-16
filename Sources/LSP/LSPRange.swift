@@ -1,5 +1,5 @@
-public struct LSPRange {
-    private struct Position
+public struct LSPRange : Codable {
+    private struct Position : Codable
     {
         private var LineNum : Int
         private var ColumnNum : Int
