@@ -1,8 +1,8 @@
 public struct LSPDiagnostic {
     
-    private var range : LSPRange
+    private var Range : LSPRange
     
-    private enum Severity: Int
+    private enum SeverityTypes: Int
     {
         case Error = 1
         case Warning = 2
@@ -10,12 +10,24 @@ public struct LSPDiagnostic {
         case Hint = 4
     }
     
-    private var code : String?
+    private var Severity: SeverityTypes
     
-    private var source : String?
+    private var Code : String?
     
-    private var message : String
+    private var Source : String?
+    
+    private var Message : String
     
     private var RelatedInformation : [LSPDiagnosticRelatedInformation]
+    
+    init(range: LSPRange, severity: SeverityTypes, code: String?, source: String?, message: String, relatedInfo: [LSPDiagnosticRelatedInformation]) {
+        
+        Range = range
+        Severity = severity
+        Code = code
+        Source = source
+        Message = message
+        Related = relatedInfo
+    }
     
 }
