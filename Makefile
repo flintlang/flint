@@ -4,6 +4,9 @@ all: generate
 
 .PHONY: all release zip test lint generate
 
+xcode:
+	swift package generate-xcodeproj
+
 run: 
 	swift build
 	./.build/debug/dev_version
