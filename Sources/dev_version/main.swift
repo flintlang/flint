@@ -6,44 +6,36 @@ import Diagnostic
 /// The main function for the compiler.
 
 func main() {
-    let inputFiles = [URL(string: "sd")]
+    let inputFiles : [URL] = [URL(fileURLWithPath:"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/test.flint")]
 
-    let outputDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin")
-    do {
-      try FileManager.default.createDirectory(atPath: outputDirectory.path,
-                                              withIntermediateDirectories: true,
-                                              attributes: nil)
-    } catch {
-      exitWithDirectoryNotCreatedDiagnostic(outputDirectory: outputDirectory)
-    }
+//    let outDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("bin")
+//    do {
+//      try FileManager.default.createDirectory(atPath: outputDirectory.path,
+//                                              withIntermediateDirectories: true,
+//                                              attributes: nil)
+//    } catch {
+//      exitWithDirectoryNotCreatedDiagnostic(outputDirectory: outputDirectory)
+//    }
     
-    if lsp {
-        let x = Compiler(
-            inputFiles: inputFiles,
-            stdlibFiles: StandardLibrary.default.files,
-            outputDirectory: outputDirectory,
-            dumpAST: dumpAST,
-            emitBytecode: emitBytecode,
-            diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
-                                        quiet: quiet,
-                                        sourceContext: SourceContext(sourceFiles: inputFiles))
-            ).lsp_compile()
-        print("{test: \"dsfs\", test1: \"ddsfds\"}")
-        exit(0)
-    }
-
-    let compilationOutcome: CompilationOutcome
+    //let compilationOutcome: CompilationOutcome
     do {
-      compilationOutcome = try Compiler(
+    print("this is the first time running")
+      let c = Compiler(
         inputFiles: inputFiles,
         stdlibFiles: StandardLibrary.default.files,
-        outputDirectory: outputDirectory,
-        dumpAST: dumpAST,
-        emitBytecode: emitBytecode,
-        diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
-                                    quiet: quiet,
-                                    sourceContext: SourceContext(sourceFiles: inputFiles))
-      ).compile()
+        outputDirectory: URL(string: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/bin")!,
+        dumpAST: false,
+        emitBytecode: false,
+        diagnostics: DiagnosticPool(shouldVerify: false,
+                                    quiet: false,
+                                    sourceContext: SourceContext(sourceFiles: inputFiles)))
+        
+        try c.ide_compile()
+        let diag = c.diagnostics
+        // I want a line here that converts everything to json inih
+        print("hiii")
+        try c.diagnostics.display()
+        //print(diag)
     } catch let err {
       let diagnostic = Diagnostic(severity: .error,
                                   sourceLocation: nil,
@@ -54,6 +46,10 @@ func main() {
       exit(1)
     }
 }
+
+
+
+main()
 
 func exitWithFileNotFoundDiagnostic(file: URL) -> Never {
   let diagnostic = Diagnostic(severity: .error, sourceLocation: nil, message: "Invalid file: '\(file.path)'.")
@@ -102,4 +98,4 @@ func exitWithSolcNotInstalledDiagnostic() -> Never {
   exit(1)
 }
 
-main()
+//main()

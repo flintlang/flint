@@ -35,8 +35,52 @@ struct Compiler {
     return stdlibTokens + userTokens
   }
     
-  func lsp_compile() -> String {
-    return "TEST"
+  func ide_compile() throws
+  {
+    let tokens = try tokenizeFiles()
+
+    // Turn the tokens into an Abstract Syntax Tree (AST).
+    let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+    
+    // add all parser diagnostics to the pool of diagnistics
+    
+    diagnostics.appendAll(parserDiagnostics)
+    
+//    if let failed = try diagnostics.checkpoint(parserDiagnostics) {
+//        if failed {
+//            exitWithFsailure()
+//        }
+//        exit(0)
+//    }
+    
+    // at this point lets make it such that
+    // only when we have a
+    guard let ast = parserAST else {
+        return
+    }
+    
+    let astPasses: [ASTPass] = [
+        SemanticAnalyzer(),
+        TypeChecker(),
+        Optimizer(),
+        IRPreprocessor()
+    ]
+    
+    //\\<->//\\<->//\\ Run all of the passes.
+    let passRunnerOutcome = ASTPassRunner(ast: ast)
+        .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    
+    // add semantic diagnostics
+    diagnostics.appendAll(passRunnerOutcome.diagnostics)
+//    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+//        if failed {
+//            exitWithFailure()
+//        }
+//        exit(0)
+//    }
+    
+    // all the diagnostics have been added
+    return
   }
 
   func compile() throws -> CompilationOutcome {

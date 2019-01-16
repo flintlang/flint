@@ -25,7 +25,8 @@ struct StandardLibrary {
       fatalError("Unable to get SymbolInfo for \(#dsohandle)")
     }
 
-    let url = path.deletingLastPathComponent().appendingPathComponent("stdlib")
+    //let url = path.deletingLastPathComponent().appendingPathComponent("stdlib")
+    let url = URL(string: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/stdlib")!
     guard FileManager.default.fileExists(atPath: url.path) else {
       fatalError("Unable to find stdlib.")
     }
