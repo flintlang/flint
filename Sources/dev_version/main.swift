@@ -36,6 +36,12 @@ func main() {
         // I want a line here that converts everything to json inih
         print("hiii")
         try c.diagnostics.display()
+        let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
+        
+        
+        print(json)
+        
+        //LSP.convertFlintDiagToLspDiagJson(diag)
         //print(diag)
     } catch let err {
       let diagnostic = Diagnostic(severity: .error,
