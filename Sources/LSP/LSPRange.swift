@@ -1,12 +1,12 @@
 public struct LSPRange : Codable {
     private struct Position : Codable
     {
-        private var LineNum : Int
-        private var ColumnNum : Int
+        private var Line : Int
+        private var Character : Int
         
         init(lineNum: Int, columnNum: Int) {
-            LineNum = lineNum
-            ColumnNum = columnNum
+            Line = lineNum
+            Character = columnNum
         }
     }
     
