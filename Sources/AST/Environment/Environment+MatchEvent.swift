@@ -23,8 +23,8 @@ extension Environment {
 
     if let events = types[enclosingType]?.allEvents[functionCall.identifier.name] {
       for candidate in events {
-        guard areArgumentsCompatible(source: functionCall.arguments,
-                                     target: candidate,
+        guard areArgumentsCompatible(source: candidate,
+                                     target: functionCall.arguments,
                                      enclosingType: enclosingType,
                                      scopeContext: scopeContext) else {
             candidates.append(candidate)

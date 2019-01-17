@@ -52,7 +52,7 @@ struct IRFunction {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return functionDeclaration.explicitParameters.map {
-        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc)
+        IRIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
   }
 
@@ -153,20 +153,19 @@ struct IRFunctionBody {
     where S.Element == AST.Statement, S.Index == Int {
     guard !statements.isEmpty else { return "" }
     var statements = statements
-    let first = statements.removeFirst()
-    let firstCode = IRStatement(statement: first).rendered(functionContext: functionContext)
-    let restCode = renderBody(statements, functionContext: functionContext)
-
-    if case .ifStatement(let ifStatement) = first, ifStatement.endsWithReturnStatement {
-      let defaultCode = """
-
-      default {
-      \(restCode.indented(by: 2))
+    var emitLastBrace = false
+    while !statements.isEmpty {
+      let statement = statements.removeFirst()
+      functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
+      if case .ifStatement(let ifStatement) = statement, ifStatement.endsWithReturnStatement {
+        functionContext.emit(.inline("default {"))
+        emitLastBrace = true
       }
-      """
-      return firstCode + (restCode.isEmpty ? "" : defaultCode)
-    } else {
-      return firstCode + (restCode.isEmpty ? "" : "\n" + restCode)
     }
+    if emitLastBrace {
+      functionContext.emit(.inline("}"))
+    }
+    return functionContext.finalise()
   }
+
 }

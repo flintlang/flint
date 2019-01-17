@@ -1,0 +1,13 @@
+// RUN: %flintc %s --verify
+
+contract Events {
+  event eventA(addr: Address, x: Int)
+}
+
+Events :: caller <- (any) {
+  public init() {}
+
+  public func A() {
+    emit 2 + 2 // expected-error {{Expected identifier}}
+  }
+}

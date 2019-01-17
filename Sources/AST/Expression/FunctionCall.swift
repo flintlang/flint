@@ -16,7 +16,10 @@ public struct FunctionCall: ASTNode {
 
   public var mangledIdentifier: String?
 
-  public init(identifier: Identifier, arguments: [FunctionArgument], closeBracketToken: Token, isAttempted: Bool) {
+  public init(identifier: Identifier,
+              arguments: [FunctionArgument],
+              closeBracketToken: Token,
+              isAttempted: Bool) {
     self.identifier = identifier
     self.arguments = arguments
     self.closeBracketToken = closeBracketToken

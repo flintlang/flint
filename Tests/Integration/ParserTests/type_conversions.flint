@@ -1,0 +1,342 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+Foo :: (any) {
+  func foo() {
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x1"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             token: literal 1
+    // CHECK-AST:           )
+    // CHECK-AST:           as
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x1: Int = 1 as Int
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x2"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             Identifier (
+    // CHECK-AST:               token: identifier "x1"
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:           as
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x2: String = x1 as String
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x3"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             Identifier (
+    // CHECK-AST:               token: identifier "x2"
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:           as?
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x3: Int = x2 as? Int
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x4"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             Identifier (
+    // CHECK-AST:               token: identifier "x3"
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:           as!
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x4: String = x3 as! String
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x5"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             Identifier (
+    // CHECK-AST:               token: identifier "x4"
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:           as!
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x5: Int = x4 as! Int
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x6"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         TypeConversionExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             Identifier (
+    // CHECK-AST:               token: identifier "x5"
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:           as?
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type String
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x6: String = x5 as? String
+
+    // CHECK-AST: Statement (
+    // CHECK-AST:   Expression (
+    // CHECK-AST:     BinaryExpression (
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         VariableDeclaration (
+    // CHECK-AST:           token: let
+    // CHECK-AST:           Identifier (
+    // CHECK-AST:             token: identifier "x7"
+    // CHECK-AST:           )
+    // CHECK-AST:           Type (
+    // CHECK-AST:             BasicType (
+    // CHECK-AST:               built-in type Int
+    // CHECK-AST:             )
+    // CHECK-AST:             Generic Arguments (
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:       token: =
+    // CHECK-AST:       Expression (
+    // CHECK-AST:         BracketedExpression (
+    // CHECK-AST:           Expression (
+    // CHECK-AST:             TypeConversionExpression (
+    // CHECK-AST:               Expression (
+    // CHECK-AST:                 BracketedExpression (
+    // CHECK-AST:                   Expression (
+    // CHECK-AST:                     BracketedExpression (
+    // CHECK-AST:                       Expression (
+    // CHECK-AST:                         BracketedExpression (
+    // CHECK-AST:                           Expression (
+    // CHECK-AST:                             BracketedExpression (
+    // CHECK-AST:                               Expression (
+    // CHECK-AST:                                 token: literal 1
+    // CHECK-AST:                               )
+    // CHECK-AST:                             )
+    // CHECK-AST:                           )
+    // CHECK-AST:                         )
+    // CHECK-AST:                       )
+    // CHECK-AST:                     )
+    // CHECK-AST:                   )
+    // CHECK-AST:                 )
+    // CHECK-AST:               )
+    // CHECK-AST:               as?
+    // CHECK-AST:               Type (
+    // CHECK-AST:                 BasicType (
+    // CHECK-AST:                   built-in type String
+    // CHECK-AST:                 )
+    // CHECK-AST:                 Generic Arguments (
+    // CHECK-AST:                 )
+    // CHECK-AST:               )
+    // CHECK-AST:             )
+    // CHECK-AST:           )
+    // CHECK-AST:         )
+    // CHECK-AST:       )
+    // CHECK-AST:     )
+    // CHECK-AST:   )
+    // CHECK-AST: )
+    let x7: Int = (((((1)))) as? String)
+
+    // CHECK-AST:  Statement (
+    // CHECK-AST:    Expression (
+    // CHECK-AST:      FunctionCall (
+    // CHECK-AST:        Identifier (
+    // CHECK-AST:          token: identifier "bar"
+    // CHECK-AST:        )
+    // CHECK-AST:        FunctionArgument (
+    // CHECK-AST:          Identifier (
+    // CHECK-AST:            token: identifier "param"
+    // CHECK-AST:          )
+    // CHECK-AST:          Expression (
+    // CHECK-AST:            TypeConversionExpression (
+    // CHECK-AST:              Expression (
+    // CHECK-AST:                Identifier (
+    // CHECK-AST:                  token: identifier "x7"
+    // CHECK-AST:                )
+    // CHECK-AST:              )
+    // CHECK-AST:              as!
+    // CHECK-AST:              Type (
+    // CHECK-AST:                SolidityType (
+    // CHECK-AST:                  solidity type int136
+    // CHECK-AST:                )
+    // CHECK-AST:                Generic Arguments (
+    // CHECK-AST:                )
+    // CHECK-AST:              )
+    // CHECK-AST:            )
+    // CHECK-AST:          )
+    // CHECK-AST:        )
+    // CHECK-AST:        token: )
+    // CHECK-AST:      )
+    // CHECK-AST:    )
+    bar(param: x7 as! int136)
+  }
+}

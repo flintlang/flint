@@ -1,0 +1,35 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelDeclaration (
+// CHECK-AST:   TraitDeclaration (
+// CHECK-AST:     token: struct
+// CHECK-AST:     Identifier (
+// CHECK-AST:       token: identifier "MyTrait"
+// CHECK-AST:     )
+struct trait MyTrait {
+
+// CHECK-AST:   FunctionSignatureDeclaration (
+// CHECK-AST:     token: func
+// CHECK-AST:       Identifier (
+// CHECK-AST:         token: identifier "transfer"
+// CHECK-AST:       )
+// CHECK-AST:       Parameter (
+// CHECK-AST:         Identifier (
+// CHECK-AST:           token: identifier "quantity"
+// CHECK-AST:         )
+// CHECK-AST:         inout
+// CHECK-AST:         Type (
+// CHECK-AST:           inout type (
+// CHECK-AST:             Self type (
+// CHECK-AST:             )
+// CHECK-AST:           )
+// CHECK-AST:           Generic Arguments (
+// CHECK-AST:           )
+// CHECK-AST:         )
+// CHECK-AST:       )
+// CHECK-AST:       token: )
+// CHECK-AST:     )
+// CHECK-AST:   )
+    func transfer(quantity: inout Self)
+}
+                                

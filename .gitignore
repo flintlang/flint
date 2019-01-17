@@ -1,11 +1,17 @@
 .DS_Store
 /.build
-/.derived-sources
+/.derived-tests
 /Packages
 /*.xcodeproj
 /node_modules
-Package.resolved
+
+*.sol
+!sol_emitter.sol
+!sol_external.sol
+*.swp
 
 bin/
 contracts/
 build/
+
+*.generated.swift

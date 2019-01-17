@@ -139,7 +139,20 @@ extension Parser {
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
 
-      let parameter = Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken)
+      var assignedExpression: Expression?
+
+      if currentToken?.kind == .punctuation(.equal) {
+        _ = try consume(.punctuation(.equal), or: .expectedValidOperator(at: latestSource))
+
+        if let upTo = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
+          assignedExpression = try parseExpression(upTo: upTo)
+        }
+      }
+
+      let parameter = Parameter(identifier: identifier,
+                                type: typeAnnotation.type,
+                                implicitToken: implicitToken,
+                                assignedExpression: assignedExpression)
       parameters.append(parameter)
       if currentIndex < closingIndex {
         try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
@@ -216,6 +229,10 @@ extension Parser {
       // The type is declared inout (valid only for function parameters).
       let type = try parseType()
       return Type(ampersandToken: inoutToken, inoutType: type)
+    }
+
+    if let selfTypeToken = attempt(try consume(Token.Kind.selfType, or: .dummy())) {
+        return Type(inferredType: .selfType, identifier: Identifier(identifierToken: selfTypeToken))
     }
 
     let identifier = try parseIdentifier()

@@ -93,4 +93,14 @@ extension Diagnostic {
                       message: "Cannot convert expression of type '\(actualType.name)' to expected " +
                                "subscript type '\(expectedType.name)'")
   }
+
+  static func gasParameterWithWrongType(_ gasParameter: FunctionArgument) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: gasParameter.sourceLocation,
+      message: "'gas' hyper-parameter of an external call must be of type Int")
+  }
+
+  static func valueParameterWithWrongType(_ valueParameter: FunctionArgument) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: valueParameter.sourceLocation,
+      message: "'value' hyper-parameter of an external call must be of type Wei")
+  }
 }
