@@ -38,8 +38,8 @@ let package = Package(
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
     .package(url: "https://github.com/theguild/json-swift.git", from: "4.0.0"),
-    .package(url: "https://github.com/flintrocks/swift-lsp.git", .branch("master")),
-    .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/flintlang/swift-lsp.git", .branch("master")),
+    .package(url: "https://github.com/flintlang/Cuckoo.git", .branch("master")),
   ],
   targets: [
     // MARK: Source -

@@ -84,7 +84,7 @@
       },
       {
         "package": "LanguageServerProtocol",
-        "repositoryURL": "https://github.com/flintrocks/swift-lsp.git",
+        "repositoryURL": "https://github.com/flintlang/swift-lsp.git",
         "state": {
           "branch": "master",
           "revision": "8b3b94f19d93b542be81312c62fc2b25fc0c3e58",
