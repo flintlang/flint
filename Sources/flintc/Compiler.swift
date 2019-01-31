@@ -23,6 +23,8 @@ struct Compiler {
   var outputDirectory: URL
   var dumpAST: Bool
   var emitBytecode: Bool
+  var dumpVerifierIR: Bool
+  var skipVerifier: Bool
   var diagnostics: DiagnosticPool
 
   var sourceContext: SourceContext {
@@ -62,7 +64,6 @@ struct Compiler {
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
       TypeChecker(),
-      Verifier(),
       Optimizer(),
       IRPreprocessor()
     ]
@@ -75,6 +76,21 @@ struct Compiler {
         exitWithFailure()
       }
       exit(0)
+    }
+
+    if !skipVerifier {
+      let (verified, errors) = Verifier(dumpVerifierIR: dumpVerifierIR,
+                             boogieLocation: "boogie/Binaries/Boogie.exe",
+                             monoLocation: "/usr/bin/mono",
+                             topLevelModule: passRunnerOutcome.element,
+                             environment: passRunnerOutcome.environment).verify()
+      if verified {
+        print("Verified!")
+      } else {
+        print("Not verified")
+        print(errors.reduce("", {x, y in x + "\n" + y}))
+        exitWithFailure()
+      }
     }
 
     // Generate YUL IR code.

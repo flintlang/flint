@@ -252,7 +252,7 @@ procedure clear_Bank(account: Address)
   // Can't create/destroy money
   contractWei := contractWei - balances_Bank[account]; // balances[account] = Wei(0) - dangerous assignment
   // FIXED - pretend contract sent money somewhere
-  sentWei := sentWei + balances_Bank[account] - Wei.New(0);
+  //sentWei := sentWei + balances_Bank[account] - Wei.New(0);
   // No negative money
   assert (0 >= 0);
   balances_Bank[account] := Wei.New(0);

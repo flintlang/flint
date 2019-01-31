@@ -1,35 +1,51 @@
 import AST
+import Lexer
 import Diagnostic
 import Foundation
 
-public class Verifier: ASTPass {
-  public init() {}
+public class Verifier {
+  private let boogieLocation: String
+  private let monoLocation: String
+  private let dumpVerifierIR: Bool
+  private var boogieTranslator: BoogieTranslator
 
-  public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-    let diagnostics = [Diagnostic]()
-    let environment = passContext.environment!
-
-    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: diagnostics, passContext: passContext)
+  public init(dumpVerifierIR: Bool, boogieLocation: String,
+              monoLocation: String, topLevelModule: TopLevelModule,
+              environment: Environment) {
+    self.boogieLocation = boogieLocation
+    self.monoLocation = monoLocation
+    self.dumpVerifierIR = dumpVerifierIR
+    self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
+                                             environment: environment)
   }
 
-  public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration,
-                          passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
-
-    executeBoogie(monoLocation: "/usr/bin/mono",
-                  boogieLocation: "boogie/Binaries/Boogie.exe",
-                  bplFileLocation: "examples/casestudies/Bank.bpl")
-
-    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+  public func verify() -> (verified: Bool, errors: [String]) {
+    let translation = boogieTranslator.translate()
+    if dumpVerifierIR {
+      print(translation)
+    }
+    let errors = executeBoogie(boogie: translation)
+    return (errors.count == 0, errors)
   }
 
-  private func executeBoogie(monoLocation: String, boogieLocation: String, bplFileLocation: String) {
+  private func executeBoogie(boogie: String) -> [String] {
+
+    let uniqueFileName = UUID().uuidString + ".bpl"
+    let tempBoogieFile = URL(fileURLWithPath: NSTemporaryDirectory(),
+                             isDirectory: true).appendingPathComponent(uniqueFileName)
+    do {
+      // Safely force unwrap as Swift uses unicode internally
+      try boogie.data(using: .utf8)!.write(to: tempBoogieFile, options: [.atomic])
+    } catch {
+      return ["\(error)"]
+    }
+
     // Create a Task instance
     let task = Process()
 
     // Set the task parameters
     task.launchPath = monoLocation
-    task.arguments = [boogieLocation, bplFileLocation]
+    task.arguments = [boogieLocation, tempBoogieFile.absoluteString]
 
     // Create a Pipe and make the task
     // put all the output there
@@ -44,21 +60,24 @@ public class Verifier: ASTPass {
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     let uncheckedOutput = String(data: data, encoding: String.Encoding.utf8)
     if uncheckedOutput == nil {
-      // TODO: Throw error - and show to user
+      return ["Error during verification, could not decode verifier output"]
     }
 
     let output = uncheckedOutput!
 
     if task.terminationStatus != 0 {
-      // TODO: throw error
-      print(output)
+      return ["Error during verification, verifier terminated with non-zero exit code", output]
     }
 
-    if output.range(of: "error") == nil { // TODO: Doesn't work in detecting errors ie: 0 errors were found
-      print("Verified")
-    } else {
-      print("Not verified")
-    }
+    return extractBoogieErrors(boogieOutput: output)
+  }
+
+  private func extractBoogieErrors(boogieOutput: String) -> [String] {
+    // TODO: Implement
+    // TODO: Searching for error doesn't always work in detecting errors
+    // ie: 0 errors were found
+    //boogieOutput.range(of: "error") == nil
+    return []
   }
 }
 // swiftlint:enable all

@@ -24,7 +24,8 @@ test: lint release
 lint:
 	swiftlint lint
 
-generate:
+generate: Sources/AST/ASTPass/ASTPass.template.swift
+Sources/AST/ASTPass/ASTPass.template.swift:
 	cd utils/codegen && npm install && cd ../..
 	./utils/codegen/codegen.js
 

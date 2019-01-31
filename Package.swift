@@ -72,7 +72,8 @@ let package = Package(
       dependencies: [
         "Source",
         "Diagnostic",
-        "AST"
+        "AST",
+        "Lexer"
       ]
     ),
     .target(
