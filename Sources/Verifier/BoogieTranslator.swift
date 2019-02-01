@@ -4,6 +4,7 @@ import Foundation
 
 struct BoogieTranslator {
   // TODO: Need to parse contract invariants
+  // TODO: Need to handle scoping issues -> local variables with same name as global ones
 
   /*
   // invariants which need to hold on each function pre + post condition
@@ -238,22 +239,49 @@ struct BoogieTranslator {
     switch expression {
       // Look for variable declaration and assignment
     case .binaryExpression(let binaryExpression):
-      if binaryExpression.opToken == .equal {
+      if binaryExpression.opToken.isAssignment {
         switch binaryExpression.lhs {
         case .variableDeclaration(let variableDeclaration):
+          // Assigning and declaring a local variable
           let name = variableDeclaration.identifier.name
           // Make sure to declare variable at start of function
           addCurrentFunctionVariableDeclaration(variableDeclaration)
-          return [.assignment(BExpression.identifier(name), process(binaryExpression.rhs))]
+          return [.assignment(.identifier(name), process(binaryExpression.rhs))]
+
+        case .identifier(let identifier):
+          let name = identifier.name
+          switch binaryExpression.opToken {
+          case .plusEqual:
+            return [.assignment(.identifier(name), .add(.identifier(name), process(binaryExpression.rhs)))]
+          case .minusEqual:
+            return [.assignment(.identifier(name), .subtract(.identifier(name), process(binaryExpression.rhs)))]
+          case .timesEqual:
+            return [.assignment(.identifier(name), .multiply(.identifier(name), process(binaryExpression.rhs)))]
+          case .divideEqual:
+            return [.assignment(.identifier(name), .divide(.identifier(name), process(binaryExpression.rhs)))]
+          case .equal:
+            return [.assignment(.identifier(name), process(binaryExpression.rhs))]
+          default:
+            print("Unknown assignment operator used in binary operator \(binaryExpression.opToken)")
+            fatalError()
+          }
 
         default:
-          // Not declaring a local variable
-          break
+            return [.assignment(process(binaryExpression.lhs), process(binaryExpression.rhs))]
         }
       }
 
-      // Not declaring a local variable
+      // Not declaring or assigning a variable
       return [.expression(process(binaryExpression))]
+
+    case .variableDeclaration(let variableDeclaration):
+      let name = variableDeclaration.identifier.name
+      // Make sure to declare variable at start of function
+      addCurrentFunctionVariableDeclaration(variableDeclaration)
+      return []
+
+    case .bracketedExpression(let bracketedExpression):
+      return process(bracketedExpression.expression)
 
     case .functionCall(let functionCall):
       //TODO: Implement -> asserts -> if external call.
@@ -274,6 +302,13 @@ struct BoogieTranslator {
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression)
+
+    case .bracketedExpression(let bracketedExpression):
+      return process(bracketedExpression.expression)
+
+    case .subscriptExpression(let subscriptExpression):
+      return .mapRead(process(subscriptExpression.baseExpression),
+                      process(subscriptExpression.indexExpression))
 
     case .literal(let token):
       switch token.kind {
@@ -308,15 +343,21 @@ struct BoogieTranslator {
       print("Not implemented translating raw assembly")
       fatalError()
 
+    case .`self`:
+      print("Not translating 'self', no equivalent")
+      fatalError()
+
       /*
       // TODO: Implement expressions
     case inoutExpression(InoutExpression)
-    case `self`(Token)
-    case bracketedExpression(BracketedExpression)
-    case subscriptExpression(SubscriptExpression)
     case attemptExpression(AttemptExpression)
     case sequence([Expression])
     case range(RangeExpression)
+
+    // TODO:
+    //case arrayLiteral(ArrayLiteral)
+    //case dictionaryLiteral(DictionaryLiteral)
+
       */
 
     default:
@@ -325,10 +366,60 @@ struct BoogieTranslator {
   }
 
   private mutating func process(_ binaryExpression: BinaryExpression) -> BExpression {
-    let lhs: BExpression = process(binaryExpression.lhs)
-    let rhs: BExpression = process(binaryExpression.rhs)
-    switch binaryExpression.op.kind {
+    let lhs = binaryExpression.lhs
+    let rhs = binaryExpression.rhs
+    switch binaryExpression.opToken {
+    case .dot:
+      // TODO: Need to think carefully here -> Structs or fields (array size..)
+      switch lhs {
+      case .`self`:
+        // TODO: What about clashing global and local variable names?
+        return process(rhs)
+      default:
+        return process(rhs)
+      }
+
+    //TODO Handle unsafe operators
+    case .plus:
+      return .add(process(lhs), process(rhs))
+    //case .overflowingPlus:
+    case .minus:
+      return .subtract(process(lhs), process(rhs))
+    //case .overflowingMinus:
+    case .times:
+      return .multiply(process(lhs), process(rhs))
+    //case .overflowingTimes:
+    //case .power:
+    case .divide:
+      return .divide(process(lhs), process(rhs))
+
+    // Comparisons
+    case .doubleEqual:
+      return .equals(process(lhs), process(rhs))
+    case .notEqual:
+      return .not(.equals(process(lhs), process(rhs)))
+    case .lessThanOrEqual:
+      return .or(.lessThan(process(lhs), process(rhs)), .equals(process(lhs), process(rhs)))
+    case .greaterThanOrEqual:
+      return .not(.lessThan(process(lhs), process(rhs)))
+    case .or:
+      return .or(process(lhs), process(rhs))
+    case .and:
+      return .and(process(lhs), process(rhs))
+
+    /*
+    // Assignments
+    // TODO: Can nest these!
+    case .equal:
+    case .plusEqual:
+    case .minusEqual:
+    case .timesEqual:
+    case .divideEqual:
+      */
+
+
       /*
+      //TODO: Handle
     case .at:
     case .arrow:
     case .leftArrow:
@@ -338,44 +429,20 @@ struct BoogieTranslator {
     case .openAngledBracket:
     case .closeAngledBracket:
 
-    case .plus:
-    case .overflowingPlus:
-    case .minus:
-    case .overflowingMinus:
-    case .times:
-    case .overflowingTimes:
-    case .power:
-    case .divide:
-    case .dot:
     case .dotdot:
     case .ampersand:
     case .bang:
     case .question:
-`
-    // Assignments
-    case .equal:
-    case .plusEqual:
-    case .minusEqual:
-    case .timesEqual:
-    case .divideEqual:
 
     // Ranges
     case .halfOpenRange:
     case .closedRange:
-
-    // Comparisons
-    case .doubleEqual:
-    case .notEqual:
-    case .lessThanOrEqual:
-    case .greaterThanOrEqual:
-    case .or:
-    case .and:
       */
     default:
       break
     }
 
-    return .add(lhs, rhs)
+    return BExpression.add(process(lhs), process(rhs))
   }
 
   private mutating func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
