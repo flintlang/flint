@@ -59,19 +59,20 @@ struct BoogieTranslator {
     currentContract = contractDeclaration.identifier.name
 
     var declarations = [BTopLevelDeclaration]()
-    for case .variableDeclaration(let variableDeclaration) in contractDeclaration.members {
+    for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = variableDeclaration.identifier.name
       let type = convertType(variableDeclaration.type)
-      declarations.append(BTopLevelDeclaration.variableDeclaration(
-        BVariableDeclaration(name: name, type: type)))
-
+      declarations.append(.variableDeclaration(BVariableDeclaration(name: name,
+                                                                    type: type)))
+      // Record assignment to put in constructor procedure
       let assignedExpression = variableDeclaration.assignedExpression == nil
         ? defaultValue(type) : process(variableDeclaration.assignedExpression!)
       if contractConstructorInitialisations[currentContract!] == nil {
         contractConstructorInitialisations[currentContract!] = []
       }
-      contractConstructorInitialisations[currentContract!]!.append(BStatement.assignment(BExpression.identifier(name),
-                                                                      assignedExpression))
+      contractConstructorInitialisations[currentContract!]!.append(
+        .assignment(.identifier(name), assignedExpression)
+      )
     }
 
     currentContract = nil
@@ -118,7 +119,7 @@ struct BoogieTranslator {
         let processedBody = body.flatMap({x in process(x)})
 
         // Constructor
-        declarations.append(BTopLevelDeclaration.procedureDeclaration(BProcedureDeclaration(
+        declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: currentFunction!,
           returnType: nil,
           returnName: nil,
@@ -141,7 +142,7 @@ struct BoogieTranslator {
         let name = functionDeclaration.name
         let signature = functionDeclaration.signature
 
-        declarations.append(BTopLevelDeclaration.procedureDeclaration(BProcedureDeclaration(
+        declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: "\(name)_\(contractBehaviorDeclaration.contractIdentifier.name)",
           returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
           returnName: signature.resultType == nil ? nil : "result", // TODO: check no conflicts with other variables
@@ -180,9 +181,9 @@ struct BoogieTranslator {
       var statements = [BStatement]()
       if let expression = returnStatement.expression {
          // TODO: Get result variable
-        statements.append(BStatement.assignment(BExpression.identifier("result"), process(expression)))
+        statements.append(.assignment(.identifier("result"), process(expression)))
       }
-      statements.append(BStatement.returnStatement)
+      statements.append(.returnStatement)
       return statements
 
     case .becomeStatement(let becomeStatement):
@@ -190,16 +191,17 @@ struct BoogieTranslator {
       return []
 
     case .ifStatement(let ifStatement):
-      return [BStatement.ifStatement(BIfStatement(condition: process(ifStatement.condition),
-                                                  trueCase: ifStatement.body.flatMap({x in process(x)}),
-                                                  falseCase: ifStatement.elseBody.flatMap({x in process(x)})))]
+      return [.ifStatement(BIfStatement(condition: process(ifStatement.condition),
+                                        trueCase: ifStatement.body.flatMap({x in process(x)}),
+                                        falseCase: ifStatement.elseBody.flatMap({x in process(x)})))]
 
     case .forStatement(let forStatement):
-      // TODO: Variable declared here
-      // TODO: Append increment to end of body
-      return [BStatement.whileStatement(BWhileStatement(condition: process(forStatement.iterable),
-                                                  body: forStatement.body.flatMap({x in process(x)}),
-                                                  invariants: []))] // TODO: invariants
+      // TODO: Move to next item -> depends on what we are incrementing
+
+      addCurrentFunctionVariableDeclaration(forStatement.variable)
+      return [.whileStatement(BWhileStatement(condition: process(forStatement.iterable),
+                                                body: forStatement.body.flatMap({x in process(x)}),
+                                                invariants: []))] // TODO: invariants
 
     case .emitStatement(let emitStatement):
       // Ignore emit statements
@@ -215,17 +217,9 @@ struct BoogieTranslator {
         switch binaryExpression.lhs {
         case .variableDeclaration(let variableDeclaration):
           let name = variableDeclaration.identifier.name
-          let type = convertType(variableDeclaration.type)
-          // Declared local expressions don't have assigned expressions
-          assert(variableDeclaration.assignedExpression == nil)
-
           // Make sure to declare variable at start of function
-          if functionVariableDeclarations[currentFunction!] == nil {
-            functionVariableDeclarations[currentFunction!] = []
-          }
-          functionVariableDeclarations[currentFunction!]!.append(BVariableDeclaration(name: name, type: type))
-
-          return [BStatement.assignment(BExpression.identifier(name), process(binaryExpression.rhs))]
+          addCurrentFunctionVariableDeclaration(variableDeclaration)
+          return [.assignment(BExpression.identifier(name), process(binaryExpression.rhs))]
 
         default:
           // Not declaring a local variable
@@ -234,7 +228,7 @@ struct BoogieTranslator {
       }
 
       // Not declaring a local variable
-      return [BStatement.expression(process(binaryExpression))]
+      return [.expression(process(binaryExpression))]
 
     case .functionCall(let functionCall):
       //TODO: Implement -> asserts -> if external call.
@@ -247,7 +241,7 @@ struct BoogieTranslator {
     //case dictionaryLiteral(DictionaryLiteral)
 
     default:
-      return [BStatement.expression(process(expression))]
+      return [.expression(process(expression))]
     }
   }
 
@@ -255,7 +249,7 @@ struct BoogieTranslator {
   private mutating func process(_ expression: Expression) -> BExpression {
     switch expression {
     case .identifier(let identifier):
-      return BExpression.identifier(identifier.name)
+      return .identifier(identifier.name)
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression)
@@ -265,14 +259,14 @@ struct BoogieTranslator {
       case .literal(let literal):
           switch literal {
           case .boolean(let booleanLiteral):
-            return BExpression.boolean(booleanLiteral == Token.Kind.BooleanLiteral.`true`)
+            return .boolean(booleanLiteral == Token.Kind.BooleanLiteral.`true`)
 
           case .decimal(let decimalLiteral):
             switch decimalLiteral {
             case .integer(let i):
-              return BExpression.integer(i)
+              return .integer(i)
             case .real(let b, let f):
-              return BExpression.real(b, f)
+              return .real(b, f)
             }
 
           case .string(let string):
@@ -360,7 +354,20 @@ struct BoogieTranslator {
       break
     }
 
-    return BExpression.add(lhs, rhs)
+    return .add(lhs, rhs)
+  }
+
+  private mutating func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
+    let name = vDeclaration.identifier.name
+    let type = convertType(vDeclaration.type)
+    // Declared local expressions don't have assigned expressions
+    assert(vDeclaration.assignedExpression == nil)
+
+    let bvDeclaration = BVariableDeclaration(name: name, type: type)
+    if functionVariableDeclarations[currentFunction!] == nil {
+      functionVariableDeclarations[currentFunction!] = []
+    }
+    functionVariableDeclarations[currentFunction!]!.append(bvDeclaration)
   }
 
   private func convertType(_ type: Type) -> BType {
@@ -370,9 +377,9 @@ struct BoogieTranslator {
   private func convertType(_ type: RawType) -> BType {
     func convertBasicType(_ bType: RawType.BasicType) -> BType {
       switch bType {
-      case .address: return BType.userDefined("Address")
-      case .int: return BType.int
-      case .bool: return BType.boolean
+      case .address: return .userDefined("Address")
+      case .int: return .int
+      case .bool: return .boolean
       default:
         print("not implemented conversion for basic type: \(type)")
         fatalError()
@@ -382,7 +389,7 @@ struct BoogieTranslator {
     func convertStdlibType(_ sType: RawType.StdlibType) -> BType {
       switch sType {
       case .wei:
-        return BType.userDefined("Wei") //TODO: What about assets? Make this non-primitive?
+        return .userDefined("Wei") //TODO: What about assets? Make this non-primitive?
       }
     }
 
@@ -394,7 +401,7 @@ struct BoogieTranslator {
     case .dictionaryType(let keyType, let valueType):
       return BType.map(convertType(keyType), convertType(valueType))
     case .arrayType(let type):
-      return BType.map(BType.int, convertType(type))
+      return .map(.int, convertType(type))
     default:
       print("not implemented conversion for type: \(type)")
       fatalError()
@@ -403,12 +410,12 @@ struct BoogieTranslator {
 
   private func defaultValue(_ type: BType) -> BExpression {
     switch type {
-    case .int: return BExpression.integer(0)
-    case .real: return BExpression.real(0, 0)
-    case .boolean: return BExpression.boolean(false) // TODO: Is this the default bool value?
+    case .int: return .integer(0)
+    case .real: return .real(0, 0)
+    case .boolean: return .boolean(false) // TODO: Is this the default bool value?
 
     default:
-      return BExpression.integer(0)
+      return .integer(0)
     }
   }
 }

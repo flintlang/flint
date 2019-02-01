@@ -2,7 +2,7 @@ struct BTopLevelProgram: CustomStringConvertible {
   let declarations: [BTopLevelDeclaration]
 
   var description: String {
-    return declarations.reduce("", {x, y in "\(x)\n\(y)"})
+    return declarations.reduce("", {x, y in "\(x)\n\n\(y)"})
   }
 }
 
