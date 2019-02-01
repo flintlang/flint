@@ -209,22 +209,32 @@ struct BoogieTranslator {
 
   private mutating func process(_ expression: Expression) -> [BStatement] {
     switch expression {
-    // TODO: Variable declarations are within binaryExpressions
-      // Therefore, inspect binaryExpression to see if it's a binary Expression?
-    // case .binaryExpression(let variableDeclaration):
-    case .variableDeclaration(let variableDeclaration):
-      let name = variableDeclaration.identifier.name
-      let type = convertType(variableDeclaration.type)
-      let assignedExpression = variableDeclaration.assignedExpression == nil
-        ? defaultValue(type) : process(variableDeclaration.assignedExpression!)
+      // Look for variable declaration and assignment
+    case .binaryExpression(let binaryExpression):
+      if binaryExpression.opToken == .equal {
+        switch binaryExpression.lhs {
+        case .variableDeclaration(let variableDeclaration):
+          let name = variableDeclaration.identifier.name
+          let type = convertType(variableDeclaration.type)
+          // Declared local expressions don't have assigned expressions
+          assert(variableDeclaration.assignedExpression == nil)
 
-      // Make sure to declare variable at start of function
-      if functionVariableDeclarations[currentFunction!] == nil {
-        functionVariableDeclarations[currentFunction!] = []
+          // Make sure to declare variable at start of function
+          if functionVariableDeclarations[currentFunction!] == nil {
+            functionVariableDeclarations[currentFunction!] = []
+          }
+          functionVariableDeclarations[currentFunction!]!.append(BVariableDeclaration(name: name, type: type))
+
+          return [BStatement.assignment(BExpression.identifier(name), process(binaryExpression.rhs))]
+
+        default:
+          // Not declaring a local variable
+          break
+        }
       }
-      functionVariableDeclarations[currentFunction!]!.append(BVariableDeclaration(name: name, type: type))
 
-      return [BStatement.assignment(BExpression.identifier(name), assignedExpression)]
+      // Not declaring a local variable
+      return [BStatement.expression(process(binaryExpression))]
 
     case .functionCall(let functionCall):
       //TODO: Implement -> asserts -> if external call.
