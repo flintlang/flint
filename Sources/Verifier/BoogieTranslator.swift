@@ -126,8 +126,8 @@ struct BoogieTranslator {
           preConditions: [], // TODO [BFirstOrderProperty]
           postConditions: [], // TODO [BFirstOrderProperty]
           modifies: [], // TODO [BModifiesDeclaration]
-          statements: (processedBody + (specialDeclaration.isInit ?
-                                        contractConstructorInitialisations[currentContract!] ?? [] : [])),
+          statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[currentContract!] ?? [] : [])
+                       + processedBody),
           variables: functionVariableDeclarations[currentFunction!] ?? []
           )))
 
