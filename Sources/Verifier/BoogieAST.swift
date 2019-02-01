@@ -84,10 +84,11 @@ struct BProcedureDeclaration: CustomStringConvertible {
     let preString = preConditions.reduce("", {x, y in "\(x)\nrequires(\(y));"})
     let postString = postConditions.reduce("", {x, y in "\(x)\nensures(\(y));"})
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
-    let returnComponent = returnType == nil ? " " : " returns (\(returnName!): \(returnType!))"
+    let returnString = returnType == nil ? " " : " returns (\(returnName!): \(returnType!))"
+    let variablesString = variables.map({(x) -> String in return x.description}).joined(separator: "\n")
 
     return """
-    procedure \(name)(\(parameterString))\(returnComponent)
+    procedure \(name)(\(parameterString))\(returnString)
       // Pre-Conditions
       \(preString)
       // Modifies
@@ -95,6 +96,8 @@ struct BProcedureDeclaration: CustomStringConvertible {
       // Post-Conditions
       \(postString)
     {
+    \(variablesString)
+
     \(statementsString)
     }
     """
@@ -140,21 +143,21 @@ enum BStatement: CustomStringConvertible {
     case .assertStatement(let assertion): return "assert (\(assertion));"
     case .assume(let assumption): return "assume (\(assumption));"
     case .havoc(let identifier): return "havoc \(identifier);"
-    case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs)"
+    case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs);"
     case .callProcedure(let returnedValues, let functionName, let arguments):
-      var argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
+      let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
       var returnValuesComponent = ""
       if returnedValues.count > 0 {
         returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
       }
 
-      return "call \(returnValuesComponent) \(functionName) (\(argumentComponent))"
+      return "call \(returnValuesComponent) \(functionName) (\(argumentComponent));"
     case .callForallProcedure(let functionName, let arguments):
       var argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
 
-      return "call forall \(functionName) (\(argumentComponent))"
+      return "call forall \(functionName) (\(argumentComponent));"
     case .breakStatement: return "break;"
-    case .returnStatement: return "return"
+    case .returnStatement: return "return;"
     }
   }
 }
@@ -176,7 +179,8 @@ indirect enum BExpression: CustomStringConvertible {
   case negate(BExpression)
   case mapRead(BExpression, BExpression)
   case boolean(Bool)
-  case number(Int)//Account for reals/floats
+  case integer(Int)
+  case real(Int, Int)
   case identifier(String)
   case old(BExpression)
   case quantifier(BQuantifier, [BParameterDeclaration], BExpression)
@@ -200,11 +204,13 @@ indirect enum BExpression: CustomStringConvertible {
     case .negate(let expression): return "(-\(expression))"
     case .mapRead(let map, let key): return "\(map)[\(key)]"
     case .boolean(let bool): return "\(bool)"
-    case .number(let int): return "\(int)"
+    case .integer(let int): return "\(int)"
+    case .real(let b, let f): return "\(b).\(f)"
     case .identifier(let string): return string
     case .old(let expression): return "old(\(expression))"
     case .quantifier(let quantifier, let parameterDeclaration, let expression):
-      let parameterDeclarationComponent = parameterDeclaration.map({(x) -> String in x.description}).joined(separator: ", ")
+      let parameterDeclarationComponent
+        = parameterDeclaration.map({(x) -> String in x.description}).joined(separator: ", ")
       return "(\(quantifier) \(parameterDeclarationComponent) :: \(expression))"
     case .functionApplication(let functionName, let arguments):
       let argumentsComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
