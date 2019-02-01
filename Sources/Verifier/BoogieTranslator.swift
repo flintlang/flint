@@ -15,6 +15,8 @@ struct BoogieTranslator {
   private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
   private var currentFunction: String?
   private var currentContract: String?
+  private var contractStateVariable = [String: String]()
+  private var contractStateVariableStates = [String: [String: Int]]()
 
   private var contractConstructorInitialisations = [String: [BStatement]]()
 
@@ -75,6 +77,18 @@ struct BoogieTranslator {
       )
     }
 
+    let stateVariableName = generateStateVariable()
+    contractStateVariable[currentContract!] = stateVariableName
+    // Declare contract state variable
+    declarations.append(.variableDeclaration(BVariableDeclaration(name: stateVariableName,
+                                                                                      type: .int)))
+
+    contractStateVariableStates[currentContract!] = [String: Int]()
+    for typeState in contractDeclaration.states {
+      contractStateVariableStates[currentContract!]![typeState.name]
+        = contractStateVariableStates[currentContract!]!.count
+    }
+
     currentContract = nil
     return declarations
   }
@@ -105,8 +119,10 @@ struct BoogieTranslator {
   private mutating func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
     currentContract = contractBehaviorDeclaration.contractIdentifier.name
 
-    _ = contractBehaviorDeclaration.states // TODO: Type states
-    _ = contractBehaviorDeclaration.callerProtections // TODO: Caller capabilities
+    // TODO: Use type states, to generate pre-conditions
+    _ = contractBehaviorDeclaration.states
+    // TODO: Use caller capabilities
+    _ = contractBehaviorDeclaration.callerProtections
     var declarations = [BTopLevelDeclaration]()
 
     for member in contractBehaviorDeclaration.members {
@@ -187,8 +203,17 @@ struct BoogieTranslator {
       return statements
 
     case .becomeStatement(let becomeStatement):
-      // TODO: set state variable
-      return []
+      let stateVariable = getStateVariable()
+      let stateValue: Int
+      switch becomeStatement.expression {
+      case .identifier(let identifier):
+         stateValue = getStateVariableValue(identifier.name)
+      default:
+        print("Unknown expression in becomeStatement \(becomeStatement.expression)")
+        fatalError()
+      }
+
+      return [.assignment(.identifier(stateVariable), .integer(stateValue))]
 
     case .ifStatement(let ifStatement):
       return [.ifStatement(BIfStatement(condition: process(ifStatement.condition),
@@ -235,10 +260,6 @@ struct BoogieTranslator {
       // TODO: If value was used in expression, need to create a variable and have it use it.
       // Create mapping from functionName to return variable?
       return []
-
-    // TODO:
-    //case arrayLiteral(ArrayLiteral)
-    //case dictionaryLiteral(DictionaryLiteral)
 
     default:
       return [.expression(process(expression))]
@@ -299,7 +320,7 @@ struct BoogieTranslator {
       */
 
     default:
-      return BExpression.integer(0)
+      return .integer(0)
     }
   }
 
@@ -368,6 +389,18 @@ struct BoogieTranslator {
       functionVariableDeclarations[currentFunction!] = []
     }
     functionVariableDeclarations[currentFunction!]!.append(bvDeclaration)
+  }
+
+  private func getStateVariable() -> String {
+    return contractStateVariable[currentContract!]!
+  }
+
+  private func getStateVariableValue(_ identifier: String) -> Int {
+    return contractStateVariableStates[currentContract!]![identifier]!
+  }
+
+  private func generateStateVariable() -> String {
+    return "stateVariable_\(currentContract!)"
   }
 
   private func convertType(_ type: Type) -> BType {
