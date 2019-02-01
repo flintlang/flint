@@ -63,27 +63,27 @@ struct Compiler {
     // The AST passes to run sequentially.
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
-      TypeChecker(),
-      Optimizer(),
-      IRPreprocessor()
+      TypeChecker()
     ]
 
-    // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast)
+    // AST Pass 1
+    let semanticsPassRunnerOutcome = ASTPassRunner(ast: ast)
       .run(passes: astPasses, in: environment, sourceContext: sourceContext)
-    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+    if let failed = try diagnostics.checkpoint(semanticsPassRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
       }
       exit(0)
     }
 
+    // AST Verification
     if !skipVerifier {
       let (verified, errors) = Verifier(dumpVerifierIR: dumpVerifierIR,
                              boogieLocation: "boogie/Binaries/Boogie.exe",
                              monoLocation: "/usr/bin/mono",
-                             topLevelModule: passRunnerOutcome.element,
-                             environment: passRunnerOutcome.environment).verify()
+                             topLevelModule: semanticsPassRunnerOutcome.element,
+                             environment: semanticsPassRunnerOutcome.environment).verify()
+
       if verified {
         print("Verified!")
       } else {
@@ -93,8 +93,24 @@ struct Compiler {
       }
     }
 
+    // AST Pass 2
+    let irGenerationPasses: [ASTPass] = [
+      Optimizer(),
+      IRPreprocessor()
+    ]
+
+    let irPassRunnerOutcome = ASTPassRunner(ast: semanticsPassRunnerOutcome.element)
+      .run(passes: irGenerationPasses, in: semanticsPassRunnerOutcome.environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(irPassRunnerOutcome.diagnostics) {
+      if failed {
+        exitWithFailure()
+      }
+      exit(0)
+    }
+
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+    let irCode = IRCodeGenerator(topLevelModule: irPassRunnerOutcome.element,
+                                 environment: irPassRunnerOutcome.environment)
       .generateCode()
 
     // Compile the YUL IR code using solc.
