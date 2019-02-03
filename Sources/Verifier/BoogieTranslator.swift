@@ -63,13 +63,13 @@ struct BoogieTranslator {
 
     var declarations = [BTopLevelDeclaration]()
     for variableDeclaration in contractDeclaration.variableDeclarations {
-      let name = variableDeclaration.identifier.name
+      let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
       let type = convertType(variableDeclaration.type)
       declarations.append(.variableDeclaration(BVariableDeclaration(name: name,
                                                                     type: type)))
       // Record assignment to put in constructor procedure
       let assignedExpression = variableDeclaration.assignedExpression == nil
-        ? defaultValue(type) : process(variableDeclaration.assignedExpression!)
+        ? defaultValue(type) : process(variableDeclaration.assignedExpression!).0
       if contractConstructorInitialisations[currentContract!] == nil {
         contractConstructorInitialisations[currentContract!] = []
       }
@@ -184,7 +184,7 @@ struct BoogieTranslator {
   }
 
   private func process(_ parameter: Parameter) -> BParameterDeclaration {
-    return BParameterDeclaration(name: parameter.identifier.name,
+    return BParameterDeclaration(name: translateIdentifierName(parameter.identifier.name),
                                  type: convertType(parameter.type))
   }
 
@@ -192,13 +192,21 @@ struct BoogieTranslator {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
-      return process(expression)
+      let (bExpression, statements) = process(expression)
+      switch bExpression {
+      case BExpression.identifier, BExpression.mapRead:
+        return statements
+      default:
+        return statements + [.expression(bExpression)]
+      }
 
     case .returnStatement(let returnStatement):
       var statements = [BStatement]()
       if let expression = returnStatement.expression {
-         // TODO: Get result variable
-        statements.append(.assignment(.identifier("result"), process(expression)))
+        let (translatedExpr, preStatements) = process(expression)
+        statements += preStatements
+        // TODO: Work out result variable name
+        statements.append(.assignment(.identifier("result"), translatedExpr))
       }
       statements.append(.returnStatement)
       return statements
@@ -213,92 +221,78 @@ struct BoogieTranslator {
         print("Unknown expression in becomeStatement \(becomeStatement.expression)")
         fatalError()
       }
-
       return [.assignment(.identifier(stateVariable), .integer(stateValue))]
 
     case .ifStatement(let ifStatement):
-      return [.ifStatement(BIfStatement(condition: process(ifStatement.condition),
-                                        trueCase: ifStatement.body.flatMap({x in process(x)}),
-                                        falseCase: ifStatement.elseBody.flatMap({x in process(x)})))]
+      let (condExpr, condStmt) = process(ifStatement.condition)
+      return condStmt + [
+        .ifStatement(BIfStatement(condition: condExpr,
+                                  trueCase: ifStatement.body.flatMap({x in process(x)}),
+                                  falseCase: ifStatement.elseBody.flatMap({x in process(x)}))
+        )]
 
     case .forStatement(let forStatement):
+      let (iterableExpr, condStmt) = process(forStatement.iterable) //TODO: Need to work on this
       // TODO: Move to next item -> depends on what we are incrementing
-
       addCurrentFunctionVariableDeclaration(forStatement.variable)
-      return [.whileStatement(BWhileStatement(condition: process(forStatement.iterable),
-                                                body: forStatement.body.flatMap({x in process(x)}),
-                                                invariants: []))] // TODO: invariants
+      return condStmt + [
+        .whileStatement(BWhileStatement(
+          //TODO: This won't work, this iterable with produce items or something
+          condition: iterableExpr,
+          body: forStatement.body.flatMap({x in process(x)}),
+          invariants: []) // TODO: invariants
+        )]
 
-    case .emitStatement(let emitStatement):
+    case .emitStatement:
       // Ignore emit statements
       return []
     }
   }
 
-  private mutating func process(_ expression: Expression) -> [BStatement] {
+  private mutating func process(_ expression: Expression) -> (BExpression, [BStatement]) {
     switch expression {
-      // Look for variable declaration and assignment
-    case .binaryExpression(let binaryExpression):
-      if binaryExpression.opToken.isAssignment {
-        switch binaryExpression.lhs {
-        case .variableDeclaration(let variableDeclaration):
-          // Assigning and declaring a local variable
-          let name = variableDeclaration.identifier.name
-          // Make sure to declare variable at start of function
-          addCurrentFunctionVariableDeclaration(variableDeclaration)
-          return [.assignment(.identifier(name), process(binaryExpression.rhs))]
-
-        case .identifier(let identifier):
-          let name = identifier.name
-          switch binaryExpression.opToken {
-          case .plusEqual:
-            return [.assignment(.identifier(name), .add(.identifier(name), process(binaryExpression.rhs)))]
-          case .minusEqual:
-            return [.assignment(.identifier(name), .subtract(.identifier(name), process(binaryExpression.rhs)))]
-          case .timesEqual:
-            return [.assignment(.identifier(name), .multiply(.identifier(name), process(binaryExpression.rhs)))]
-          case .divideEqual:
-            return [.assignment(.identifier(name), .divide(.identifier(name), process(binaryExpression.rhs)))]
-          case .equal:
-            return [.assignment(.identifier(name), process(binaryExpression.rhs))]
-          default:
-            print("Unknown assignment operator used in binary operator \(binaryExpression.opToken)")
-            fatalError()
-          }
-
-        default:
-            return [.assignment(process(binaryExpression.lhs), process(binaryExpression.rhs))]
-        }
-      }
-
-      // Not declaring or assigning a variable
-      return [.expression(process(binaryExpression))]
-
     case .variableDeclaration(let variableDeclaration):
-      let name = variableDeclaration.identifier.name
+      let name = translateIdentifierName(variableDeclaration.identifier.name)
       // Make sure to declare variable at start of function
       addCurrentFunctionVariableDeclaration(variableDeclaration)
-      return []
-
-    case .bracketedExpression(let bracketedExpression):
-      return process(bracketedExpression.expression)
+      return (.identifier(name), //TODO: Want to avoid using comments .comment("Variable declaration: \(name)"),
+              [])
 
     case .functionCall(let functionCall):
-      //TODO: Implement -> asserts -> if external call.
-      // TODO: If value was used in expression, need to create a variable and have it use it.
-      // Create mapping from functionName to return variable?
-      return []
+      //TODO: Assert that contract invariant holds
+      let functionName = translateGlobalIdentifierName(functionCall.identifier.name)
+      var argumentExpressions = [BExpression]()
+      var argumentsStatements = [BStatement]()
+      for arg in functionCall.arguments {
+        let (expr, stmts) = process(arg.expression)
+        argumentExpressions.append(expr)
+        argumentsStatements += stmts
+      }
 
-    default:
-      return [.expression(process(expression))]
-    }
-  }
+      if false {//let btype = functionReturnType[functionName] { // TODO: Look in environment to get function return type
+        // Function returns a value
+        let returnValueVariable = generateFunctionReturnValueName() // Variable to hold return value
+        let returnValue = BExpression.identifier(returnValueVariable)
+        let functionCall = BStatement.callProcedure([returnValueVariable],
+                                                     functionName,
+                                                     argumentExpressions)
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
+                                                                   type: BType.int))//btype))
+        argumentsStatements.append(functionCall)
+        return (returnValue, argumentsStatements)
+      } else {
+        // Function doesn't return a value
+        // Can assume can't be called as part of a nested expression, as it has no
+        // return value -> Is this true? TODO - test
+        argumentsStatements.append(.callProcedure([], functionName, argumentExpressions))
+        // TODO: Don't like this comment approach
+        // - it's dirty, would like to not have to return BExpression - return BExpression? ?
+        return (.comment("Called \(functionName), function with void return type"),
+                argumentsStatements)
+      }
 
-  // TODO: This function is absolutely vile
-  private mutating func process(_ expression: Expression) -> BExpression {
-    switch expression {
     case .identifier(let identifier):
-      return .identifier(identifier.name)
+      return (.identifier(translateIdentifierName(identifier.name)), [])
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression)
@@ -307,37 +301,12 @@ struct BoogieTranslator {
       return process(bracketedExpression.expression)
 
     case .subscriptExpression(let subscriptExpression):
-      return .mapRead(process(subscriptExpression.baseExpression),
-                      process(subscriptExpression.indexExpression))
+      let (subExpr, subStmts) = process(subscriptExpression.baseExpression)
+      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
+      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
 
     case .literal(let token):
-      switch token.kind {
-      case .literal(let literal):
-          switch literal {
-          case .boolean(let booleanLiteral):
-            return .boolean(booleanLiteral == Token.Kind.BooleanLiteral.`true`)
-
-          case .decimal(let decimalLiteral):
-            switch decimalLiteral {
-            case .integer(let i):
-              return .integer(i)
-            case .real(let b, let f):
-              return .real(b, f)
-            }
-
-          case .string(let string):
-            // TODO: Implement strings
-            print("Not implemented translating strings")
-            fatalError()
-          case .address(let address):
-            // TODO: Implement addresses
-            print("Not implemented translating addresses")
-            fatalError()
-          }
-      default:
-        print("Not implemented handling other literals")
-        fatalError()
-      }
+      return (process(token), [])
 
     case .rawAssembly:
       print("Not implemented translating raw assembly")
@@ -347,76 +316,131 @@ struct BoogieTranslator {
       print("Not translating 'self', no equivalent")
       fatalError()
 
-      /*
+    case .arrayLiteral:
+      // Assign temp identifier empty array -> based on type
+      // assign expression to corresponding index
+      // return tempArray identifier
+
+      //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
+      //                                      type: arrayType)
+      //return (.identifier(tempLiteralVariableName), assignmentStmts)
+      return (.identifier("tmpLiteral"), [])
+
+    case .dictionaryLiteral:
+      // Assign temp identifier empty array -> based on type
+      // assign expression to corresponding index
+      // return tempArray identifier
+      //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
+      //                                      type: dictionaryType)
+      //return (.identifier(tempLiteralVariableName), assignmentStmts)
+      return (.identifier("tmpLiteral"), [])
+
       // TODO: Implement expressions
-    case inoutExpression(InoutExpression)
-    case attemptExpression(AttemptExpression)
-    case sequence([Expression])
-    case range(RangeExpression)
-
-    // TODO:
-    //case arrayLiteral(ArrayLiteral)
-    //case dictionaryLiteral(DictionaryLiteral)
-
+    /*
+    case .inoutExpression(let inoutExpression):
+    case .attemptExpression(let attemptExpression):
+    case .sequence(let expressions: [Expression]):
+    case .range(let rangeExpression):
       */
 
     default:
-      return .integer(0)
+      print("Not implemented translating \(expression.description)")
+      fatalError()
     }
   }
 
-  private mutating func process(_ binaryExpression: BinaryExpression) -> BExpression {
+  private func process(_ token: Token) -> BExpression {
+    switch token.kind {
+    case .literal(let literal):
+      return process(literal)
+    default:
+      print("Not implemented handling other literals")
+      fatalError()
+    }
+  }
+
+  private func process(_ literal: Token.Kind.Literal) -> BExpression {
+    switch literal {
+    case .boolean(let booleanLiteral):
+      return .boolean(booleanLiteral == Token.Kind.BooleanLiteral.`true`)
+
+    case .decimal(let decimalLiteral):
+      switch decimalLiteral {
+      case .integer(let i):
+        return .integer(i)
+      case .real(let b, let f):
+        return .real(b, f)
+      }
+
+    case .string:
+      // TODO: Implement strings
+      print("Not implemented translating strings")
+      fatalError()
+    case .address:
+      // TODO: Implement addresses
+      print("Not implemented translating addresses")
+      fatalError()
+    }
+  }
+
+  private mutating func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
+    let (rhsExpr, rhsStmts) = process(rhs)
+    let (lhsExpr, lhsStmts) = process(lhs)
+
     switch binaryExpression.opToken {
     case .dot:
       // TODO: Need to think carefully here -> Structs or fields (array size..)
       switch lhs {
       case .`self`:
         // TODO: What about clashing global and local variable names?
-        return process(rhs)
+        return (rhsExpr, rhsStmts)
       default:
-        return process(rhs)
+        return (rhsExpr, rhsStmts)
       }
 
-    //TODO Handle unsafe operators
+    case .equal:
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, rhsExpr)])
+    case .plusEqual:
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .add(lhsExpr, rhsExpr))])
+    case .minusEqual:
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .subtract(lhsExpr, rhsExpr))])
+    case .timesEqual:
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .multiply(lhsExpr, rhsExpr))])
+    case .divideEqual:
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .divide(lhsExpr, rhsExpr))])
+
     case .plus:
-      return .add(process(lhs), process(rhs))
-    //case .overflowingPlus:
+      return (.add(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
     case .minus:
-      return .subtract(process(lhs), process(rhs))
-    //case .overflowingMinus:
+      return (.subtract(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
     case .times:
-      return .multiply(process(lhs), process(rhs))
-    //case .overflowingTimes:
-    //case .power:
+      return (.multiply(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
     case .divide:
-      return .divide(process(lhs), process(rhs))
+      return (.divide(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+
+    //TODO Handle unsafe operators
+    //case .overflowingPlus:
+    //case .overflowingMinus:
+    //case .overflowingTimes:
+
+    //TODO: Handle power operator
+    //case .power:
 
     // Comparisons
     case .doubleEqual:
-      return .equals(process(lhs), process(rhs))
+      return (.equals(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
     case .notEqual:
-      return .not(.equals(process(lhs), process(rhs)))
+      return (.not(.equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
     case .lessThanOrEqual:
-      return .or(.lessThan(process(lhs), process(rhs)), .equals(process(lhs), process(rhs)))
+      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
     case .greaterThanOrEqual:
-      return .not(.lessThan(process(lhs), process(rhs)))
+      return (.not(.lessThan(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
     case .or:
-      return .or(process(lhs), process(rhs))
+      return (.or(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
     case .and:
-      return .and(process(lhs), process(rhs))
-
-    /*
-    // Assignments
-    // TODO: Can nest these!
-    case .equal:
-    case .plusEqual:
-    case .minusEqual:
-    case .timesEqual:
-    case .divideEqual:
-      */
-
+      return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
 
       /*
       //TODO: Handle
@@ -439,35 +463,76 @@ struct BoogieTranslator {
     case .closedRange:
       */
     default:
-      break
+      print("Unknown binary operator used \(binaryExpression.opToken)")
+      fatalError()
     }
-
-    return BExpression.add(process(lhs), process(rhs))
   }
 
   private mutating func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
-    let name = vDeclaration.identifier.name
+    let name = translateIdentifierName(vDeclaration.identifier.name)
     let type = convertType(vDeclaration.type)
     // Declared local expressions don't have assigned expressions
     assert(vDeclaration.assignedExpression == nil)
 
-    let bvDeclaration = BVariableDeclaration(name: name, type: type)
-    if functionVariableDeclarations[currentFunction!] == nil {
-      functionVariableDeclarations[currentFunction!] = []
+    addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: name, type: type))
+  }
+
+  private mutating func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
+    if let functionName = currentFunction {
+      if functionVariableDeclarations[functionName] == nil {
+        functionVariableDeclarations[functionName] = []
+      }
+      functionVariableDeclarations[functionName]!.append(bvDeclaration)
+    } else {
+      print("Error cannot add variable declaration to function: \(bvDeclaration), not currently translating a function")
+      fatalError()
     }
-    functionVariableDeclarations[currentFunction!]!.append(bvDeclaration)
   }
 
   private func getStateVariable() -> String {
-    return contractStateVariable[currentContract!]!
+    if let contractName = currentContract {
+      return contractStateVariable[contractName]!
+    }
+    print("Error cannot get contract state variable, not currently translating a contract")
+    fatalError()
   }
 
   private func getStateVariableValue(_ identifier: String) -> Int {
-    return contractStateVariableStates[currentContract!]![identifier]!
+    if let contractName = currentContract {
+      return contractStateVariableStates[contractName]![identifier]!
+    }
+    print("Error cannot get contract state variable value \(identifier), not currently translating a contract")
+    fatalError()
   }
 
   private func generateStateVariable() -> String {
-    return "stateVariable_\(currentContract!)"
+    if let contractName = currentContract {
+      return "stateVariable_\(contractName)"
+    }
+    print("Error cannot generate contract state variable, not currently translating a contract")
+    fatalError()
+  }
+
+  private func generateFunctionReturnValueName() -> String {
+    //TODO: generate different name for each function call
+    return "testTempVariable"
+  }
+
+  private func translateIdentifierName(_ name: String) -> String {
+    if let functionName = currentFunction {
+      // FUnction name already has contract scope (eg. funcA_ContractA
+      return name + "_\(functionName)"
+    }
+    print("Error cannot translate identifier: \(name), not translating contract")
+    fatalError()
+  }
+
+  private func translateGlobalIdentifierName(_ name: String) -> String {
+    if let contractName = currentContract {
+      return name + "_\(contractName)"
+    }
+    print("Error cannot translate global identifier: \(name), not translating contract")
+    fatalError()
   }
 
   private func convertType(_ type: Type) -> BType {

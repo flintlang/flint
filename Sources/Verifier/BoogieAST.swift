@@ -151,9 +151,9 @@ enum BStatement: CustomStringConvertible {
         returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
       }
 
-      return "call \(returnValuesComponent) \(functionName) (\(argumentComponent));"
+      return "call \(returnValuesComponent) \(functionName)(\(argumentComponent));"
     case .callForallProcedure(let functionName, let arguments):
-      var argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
+      let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
 
       return "call forall \(functionName) (\(argumentComponent));"
     case .breakStatement: return "break;"
@@ -185,6 +185,7 @@ indirect enum BExpression: CustomStringConvertible {
   case old(BExpression)
   case quantifier(BQuantifier, [BParameterDeclaration], BExpression)
   case functionApplication(String, [BExpression])
+  case comment(String) //TODO: Get rid of this maybe
 
   var description: String {
     switch self {
@@ -208,6 +209,7 @@ indirect enum BExpression: CustomStringConvertible {
     case .real(let b, let f): return "\(b).\(f)"
     case .identifier(let string): return string
     case .old(let expression): return "old(\(expression))"
+    case .comment(let comment): return "// \(comment)"
     case .quantifier(let quantifier, let parameterDeclaration, let expression):
       let parameterDeclarationComponent
         = parameterDeclaration.map({(x) -> String in x.description}).joined(separator: ", ")
@@ -261,6 +263,7 @@ struct BWhileStatement: CustomStringConvertible {
     let bodyComponent = body.map({(x) -> String in x.description}).joined(separator: "\n")
     return """
     while(\(condition))
+    // Loop invariants
     \(invariantComponent)
     {
       \(bodyComponent)
