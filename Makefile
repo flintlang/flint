@@ -9,7 +9,7 @@ xcode:
 
 run: 
 	swift build
-	./.build/debug/dev_version
+	swift run dev_version
 
 release: generate
 	swift build	-c release --static-swift-stdlib
