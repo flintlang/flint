@@ -171,6 +171,7 @@ indirect enum BExpression: CustomStringConvertible {
   case and(BExpression, BExpression)
   case equals(BExpression, BExpression)
   case lessThan(BExpression, BExpression)
+  case greaterThan(BExpression, BExpression)
   case concat(BExpression, BExpression)
   case add(BExpression, BExpression)
   case subtract(BExpression, BExpression)
@@ -197,6 +198,7 @@ indirect enum BExpression: CustomStringConvertible {
     case .and(let lhs, let rhs): return "(\(lhs) && \(rhs))"
     case .equals(let lhs, let rhs): return "(\(lhs) == \(rhs))"
     case .lessThan(let lhs, let rhs): return "(\(lhs) < \(rhs))"
+    case .greaterThan(let lhs, let rhs): return "(\(lhs) > \(rhs))"
     case .concat(let lhs, let rhs): return "(\(lhs) ++ \(rhs))"
     case .add(let lhs, let rhs): return "(\(lhs) + \(rhs))"
     case .subtract(let lhs, let rhs): return "(\(lhs) - \(rhs))"

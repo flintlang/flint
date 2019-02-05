@@ -88,7 +88,7 @@ struct Compiler {
         print("Verified!")
       } else {
         print("Not verified")
-        print(errors.reduce("", {x, y in x + "\n" + y}))
+        print(errors.reduce("", {x, y in x + "\n\(y.0), \(y.1)"}))
         exitWithFailure()
       }
     }
