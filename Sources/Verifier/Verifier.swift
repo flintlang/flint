@@ -37,7 +37,7 @@ public class Verifier {
       // Safely force unwrap as Swift uses unicode internally
       try boogie.data(using: .utf8)!.write(to: tempBoogieFile, options: [.atomic])
     } catch {
-      return ["\(error)"]
+      return ["Error writing boogie to file: \(error)"]
     }
 
     // Create a Task instance
@@ -45,7 +45,7 @@ public class Verifier {
 
     // Set the task parameters
     task.launchPath = monoLocation
-    task.arguments = [boogieLocation, tempBoogieFile.absoluteString]
+    task.arguments = [boogieLocation, tempBoogieFile.path]
 
     // Create a Pipe and make the task
     // put all the output there
@@ -77,7 +77,7 @@ public class Verifier {
     // TODO: Searching for error doesn't always work in detecting errors
     // ie: 0 errors were found
     //boogieOutput.range(of: "error") == nil
-    return []
+    return [boogieOutput]
   }
 }
 // swiftlint:enable all
