@@ -40,6 +40,7 @@ private func convertFlintDiagnosticsToLspDiagnostics(_ diagnostics: [Diagnostic]
     return lspDiagnostics
 }
 
+// check this function to ensure that the different ranges are safe
 private func makeLSPRange(_ diagnostic: Diagnostic) -> LSPRange {
     let diag = diagnostic.sourceLocation!
     let startLine = diag.line
