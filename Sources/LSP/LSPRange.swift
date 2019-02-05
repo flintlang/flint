@@ -13,8 +13,8 @@ public struct LSPRange : Codable {
     private var Start : Position
     private var End : Position
     
-    init(startLineNum: Int, startColumNum: Int, endLineNum: Int, endColumnNum: Int) {
-        Start = Position(lineNum: startLineNum, columnNum: startColumNum)
+    init(startLineNum: Int, startColumnNum: Int, endLineNum: Int, endColumnNum: Int) {
+        Start = Position(lineNum: startLineNum, columnNum: startColumnNum)
         End = Position(lineNum: endLineNum, columnNum: endColumnNum)
     }
 }
