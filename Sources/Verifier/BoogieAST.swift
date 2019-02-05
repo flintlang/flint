@@ -96,8 +96,10 @@ struct BProcedureDeclaration: CustomStringConvertible {
       // Post-Conditions
       \(postString)
     {
+    // Local variable declarations
     \(variablesString)
 
+    // \(name)'s implementation
     \(statementsString)
     }
     """
@@ -185,7 +187,7 @@ indirect enum BExpression: CustomStringConvertible {
   case old(BExpression)
   case quantifier(BQuantifier, [BParameterDeclaration], BExpression)
   case functionApplication(String, [BExpression])
-  case comment(String) //TODO: Get rid of this maybe
+  case nop
 
   var description: String {
     switch self {
@@ -209,7 +211,7 @@ indirect enum BExpression: CustomStringConvertible {
     case .real(let b, let f): return "\(b).\(f)"
     case .identifier(let string): return string
     case .old(let expression): return "old(\(expression))"
-    case .comment(let comment): return "// \(comment)"
+    case .nop: return "// nop"
     case .quantifier(let quantifier, let parameterDeclaration, let expression):
       let parameterDeclarationComponent
         = parameterDeclaration.map({(x) -> String in x.description}).joined(separator: ", ")

@@ -4,7 +4,6 @@ import Foundation
 
 struct BoogieTranslator {
   // TODO: Need to parse contract invariants
-  // TODO: Need to handle scoping issues -> local variables with same name as global ones
 
   /*
   // invariants which need to hold on each function pre + post condition
@@ -14,6 +13,7 @@ struct BoogieTranslator {
   private let topLevelModule: TopLevelModule
   private let environment: Environment
   private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
+  private var functionReturnVariableName = [String: String]()
   private var currentFunction: String?
   private var currentContract: String?
   private var contractStateVariable = [String: String]()
@@ -65,8 +65,12 @@ struct BoogieTranslator {
     for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
       let type = convertType(variableDeclaration.type)
-      declarations.append(.variableDeclaration(BVariableDeclaration(name: name,
-                                                                    type: type)))
+
+      // Some variables require shadow variables, eg dictionaries need an array of keys
+      for bvariableDeclaration in generateVariables(variableDeclaration) {
+        declarations.append(.variableDeclaration(bvariableDeclaration))
+      }
+
       // Record assignment to put in constructor procedure
       let assignedExpression = variableDeclaration.assignedExpression == nil
         ? defaultValue(type) : process(variableDeclaration.assignedExpression!).0
@@ -82,7 +86,7 @@ struct BoogieTranslator {
     contractStateVariable[currentContract!] = stateVariableName
     // Declare contract state variable
     declarations.append(.variableDeclaration(BVariableDeclaration(name: stateVariableName,
-                                                                                      type: .int)))
+                                                                  type: .int)))
 
     contractStateVariableStates[currentContract!] = [String: Int]()
     for typeState in contractDeclaration.states {
@@ -162,7 +166,7 @@ struct BoogieTranslator {
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: "\(name)_\(contractBehaviorDeclaration.contractIdentifier.name)",
           returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
-          returnName: signature.resultType == nil ? nil : "result", // TODO: check no conflicts with other variables
+          returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
           parameters: parameters.map({x in process(x)}),
           preConditions: [], // TODO [BFirstOrderProperty]
           postConditions: [], // TODO [BFirstOrderProperty]
@@ -192,21 +196,22 @@ struct BoogieTranslator {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
-      let (bExpression, statements) = process(expression)
+      var (bExpression, statements) = process(expression)
       switch bExpression {
-      case BExpression.identifier, BExpression.mapRead:
-        return statements
+      case BExpression.identifier, BExpression.mapRead, BExpression.nop:
+        break
       default:
-        return statements + [.expression(bExpression)]
+        statements.append(.expression(bExpression))
       }
+      return statements
 
     case .returnStatement(let returnStatement):
       var statements = [BStatement]()
       if let expression = returnStatement.expression {
         let (translatedExpr, preStatements) = process(expression)
         statements += preStatements
-        // TODO: Work out result variable name
-        statements.append(.assignment(.identifier("result"), translatedExpr))
+        statements.append(.assignment(.identifier(getFunctionReturnVariable()),
+                                      translatedExpr))
       }
       statements.append(.returnStatement)
       return statements
@@ -232,12 +237,20 @@ struct BoogieTranslator {
         )]
 
     case .forStatement(let forStatement):
-      let (iterableExpr, condStmt) = process(forStatement.iterable) //TODO: Need to work on this
-      // TODO: Move to next item -> depends on what we are incrementing
+      let (iterableExpr, condStmt) = process(forStatement.iterable)
+      //TODO: Handle iterable. Move to next item -> depends on what we are incrementing
+
+      // if iterable is:
+      //  - array
+      //    - iterate through
+      //  - dict
+      //    - shadow keys array
+      //  - range
+      //    - iterate through
+
       addCurrentFunctionVariableDeclaration(forStatement.variable)
       return condStmt + [
         .whileStatement(BWhileStatement(
-          //TODO: This won't work, this iterable with produce items or something
           condition: iterableExpr,
           body: forStatement.body.flatMap({x in process(x)}),
           invariants: []) // TODO: invariants
@@ -253,10 +266,12 @@ struct BoogieTranslator {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
-      // Make sure to declare variable at start of function
-      addCurrentFunctionVariableDeclaration(variableDeclaration)
-      return (.identifier(name), //TODO: Want to avoid using comments .comment("Variable declaration: \(name)"),
-              [])
+
+      // Some variable types require shadow variables, eg dictionaries (array of keys)
+      for declaration in generateVariables(variableDeclaration) {
+        addCurrentFunctionVariableDeclaration(declaration)
+      }
+      return (.identifier(name), [])
 
     case .functionCall(let functionCall):
       //TODO: Assert that contract invariant holds
@@ -285,10 +300,7 @@ struct BoogieTranslator {
         // Can assume can't be called as part of a nested expression, as it has no
         // return value -> Is this true? TODO - test
         argumentsStatements.append(.callProcedure([], functionName, argumentExpressions))
-        // TODO: Don't like this comment approach
-        // - it's dirty, would like to not have to return BExpression - return BExpression? ?
-        return (.comment("Called \(functionName), function with void return type"),
-                argumentsStatements)
+        return (.nop, argumentsStatements)
       }
 
     case .identifier(let identifier):
@@ -313,10 +325,10 @@ struct BoogieTranslator {
       fatalError()
 
     case .`self`:
-      print("Not translating 'self', no equivalent")
-      fatalError()
+      return (.nop, [])
 
     case .arrayLiteral:
+      //TODO:
       // Assign temp identifier empty array -> based on type
       // assign expression to corresponding index
       // return tempArray identifier
@@ -324,16 +336,17 @@ struct BoogieTranslator {
       //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
       //                                      type: arrayType)
       //return (.identifier(tempLiteralVariableName), assignmentStmts)
-      return (.identifier("tmpLiteral"), [])
+      return (.identifier("arrayLiteral"), [])
 
     case .dictionaryLiteral:
+      //TODO:
       // Assign temp identifier empty array -> based on type
       // assign expression to corresponding index
       // return tempArray identifier
       //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
       //                                      type: dictionaryType)
       //return (.identifier(tempLiteralVariableName), assignmentStmts)
-      return (.identifier("tmpLiteral"), [])
+      return (.identifier("dictionaryLiteral"), [])
 
       // TODO: Implement expressions
     /*
@@ -374,10 +387,12 @@ struct BoogieTranslator {
 
     case .string:
       // TODO: Implement strings
+      // Create const string for this literal -> const normalisedString: String;
       print("Not implemented translating strings")
       fatalError()
     case .address:
       // TODO: Implement addresses
+      // Create const address -> for this literal -> const normalisedAddress: Address;
       print("Not implemented translating addresses")
       fatalError()
     }
@@ -391,11 +406,14 @@ struct BoogieTranslator {
 
     switch binaryExpression.opToken {
     case .dot:
-      // TODO: Need to think carefully here -> Structs or fields (array size..)
       switch lhs {
       case .`self`:
-        // TODO: What about clashing global and local variable names?
+        // self.A, means get the A in the contract, not the local declaration
+
+        //translateGlobalIdentifierName()
         return (rhsExpr, rhsStmts)
+
+      // TODO: Implement for struct fields and methods (eg array size..)
       default:
         return (rhsExpr, rhsStmts)
       }
@@ -489,6 +507,29 @@ struct BoogieTranslator {
     }
   }
 
+  private func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
+    // If currently in a function, then generate name with function in it
+    // If in contractDeclaration, then generate name with only contract in it
+    let name: String = currentFunction == nil ?
+      translateGlobalIdentifierName(variableDeclaration.identifier.name)
+      : translateIdentifierName(variableDeclaration.identifier.name)
+
+    var declarations = [BVariableDeclaration]()
+    let type = convertType(variableDeclaration.type)
+
+    // TODO: Bounded array, then create array size variable
+    switch type {
+    case .map(let keyType, let valueType):
+      declarations.append(BVariableDeclaration(name: "keys_\(name)", type: .map(.int, keyType)))
+      declarations.append(BVariableDeclaration(name: "values_\(name)", type: .map(.int, valueType)))
+    default:
+      break
+    }
+
+    declarations.append(BVariableDeclaration(name: name, type: type))
+    return declarations
+  }
+
   private func getStateVariable() -> String {
     if let contractName = currentContract {
       return contractStateVariable[contractName]!
@@ -513,14 +554,37 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func generateFunctionReturnValueName() -> String {
-    //TODO: generate different name for each function call
+  private mutating func generateFunctionReturnVariable() -> String {
+    if let functionName = currentFunction {
+      // TODO: Check against all declared variables in the function
+      let returnVariable = "result_variable_\(functionName)"
+      functionReturnVariableName[functionName] = returnVariable
+      return returnVariable
+    }
+    print("Cannot generate function return variable, not currently in a function")
+    fatalError()
+  }
+
+  private func getFunctionReturnVariable() -> String {
+    if let functionName = currentFunction {
+      if let returnVariable = functionReturnVariableName[functionName] {
+        return returnVariable
+      }
+      print("Could not find return variables for function \(functionName)")
+      fatalError()
+    }
+    print("Could not find return variable not currently in a function")
+    fatalError()
+  }
+
+  private mutating func generateFunctionReturnValueName() -> String {
+    //TODO: Check against all declared variables in the function
     return "testTempVariable"
   }
 
   private func translateIdentifierName(_ name: String) -> String {
     if let functionName = currentFunction {
-      // FUnction name already has contract scope (eg. funcA_ContractA
+      // Function name already has contract scope (eg. funcA_ContractA
       return name + "_\(functionName)"
     }
     print("Error cannot translate identifier: \(name), not translating contract")
