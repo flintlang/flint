@@ -41,8 +41,17 @@ private func convertFlintDiagnosticsToLspDiagnostics(_ diagnostics: [Diagnostic]
 }
 
 private func makeLSPRange(_ diagnostic: Diagnostic) -> LSPRange {
-    let x : LSPRange = LSPRange(startLineNum: 1, startColumNum: 10, endLineNum: 1, endColumnNum: 15)
-    return x
+    let diag = diagnostic.sourceLocation!
+    let startLine = diag.line
+    let startChar = diag.column
+    let endLine = diag.line
+    let length = diag.length
+    let endChar = length + diag.column
+    let range : LSPRange = LSPRange(startLineNum: startLine - 1,
+                                    startColumnNum: startChar,
+                                    endLineNum: endLine - 1,
+                                    endColumnNum: endChar)
+    return range
 }
 
 private func makeLSPCode(_ diagnostic: Diagnostic) -> String? {
