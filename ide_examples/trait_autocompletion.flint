@@ -1,0 +1,11 @@
+struct trait Test
+{
+    func isNamed() -> Bool
+}
+
+
+// IDE should provide a feature to create automatic stub methods of Test1 traits
+struct Test1 : Test
+{
+}
+
