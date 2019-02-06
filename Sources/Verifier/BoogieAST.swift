@@ -129,6 +129,7 @@ enum BStatement: CustomStringConvertible {
   case ifStatement(BIfStatement)
   case whileStatement(BWhileStatement)
   case assertStatement(BExpression)
+  case assertMarker(Int)
   case assume(BExpression)
   case havoc(String)
   case assignment(BExpression, BExpression)
@@ -143,6 +144,7 @@ enum BStatement: CustomStringConvertible {
     case .ifStatement(let ifStatement): return ifStatement.description
     case .whileStatement(let whileStatement): return whileStatement.description
     case .assertStatement(let assertion): return "assert (\(assertion));"
+    case .assertMarker(let id): return "//#ASSERT# \(id)"
     case .assume(let assumption): return "assume (\(assumption));"
     case .havoc(let identifier): return "havoc \(identifier);"
     case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs);"

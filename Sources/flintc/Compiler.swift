@@ -85,11 +85,15 @@ struct Compiler {
                              environment: semanticsPassRunnerOutcome.environment).verify()
 
       if verified {
-        print("Verified!")
+        print("Contract Verified!")
       } else {
-        print("Not verified")
-        print(errors.reduce("", {x, y in x + "\n\(y.0), \(y.1)"}))
-        exitWithFailure()
+        print("Contract not verified")
+        if let failed = try diagnostics.checkpoint(errors) {
+          if failed {
+            exitWithFailure()
+          }
+          exit(0)
+        }
       }
     }
 

@@ -1,4 +1,5 @@
 import AST
+import Source
 import Lexer
 import Diagnostic
 import Foundation
@@ -20,7 +21,7 @@ public class Verifier {
   }
 
   // Verify flint code and return flint line number and suggestion for any error
-  public func verify() -> (verified: Bool, errors: [(Int, String)]) {
+  public func verify() -> (verified: Bool, errors: [Diagnostic]) {
     // Returns the boogie translation and a mapping from Boogie line #'s to flint line #'s
     let (translation, mapping) = boogieTranslator.translate()
     if dumpVerifierIR {
@@ -133,19 +134,25 @@ public class Verifier {
   }
 
   private func resolveBoogieErrors(errors boogieErrors: [BoogieError],
-                                   mapping b2fLineMapping: [Int: Int]) -> [(Int, String)] {
+                                   mapping b2fSourceMapping: [Int: SourceLocation]) -> [Diagnostic] {
 
-    var flintErrors = [(Int, String)]()
+    var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
       case .assertionFailure(let line, _):
-        flintErrors.append((b2fLineMapping[line]!, "Assertion error"))
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: b2fSourceMapping[line]!,
+                                      message: "Could not verify assertion holds"))
       //TODO: Need to determine if it's an 'invariant' error, or actual user
       // supplied pre/post condition failure
       case .preConditionFailure(let line, _):
-        flintErrors.append((b2fLineMapping[line]!, "Pre-Condition error"))
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: b2fSourceMapping[line]!,
+                                      message: "Could not verify pre-condition holds"))
       case .postConditionFailure(let line, _):
-        flintErrors.append((b2fLineMapping[line]!, "Post-Condition error"))
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: b2fSourceMapping[line]!,
+                                      message: "Could not verify post-condition holds"))
       }
     }
     return flintErrors

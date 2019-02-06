@@ -1,0 +1,18 @@
+contract VerifyAsserts  {
+
+}
+
+VerifyAsserts :: (any) {
+  public init() {}
+
+  func testAssert1() {
+    assert (1 == 1)
+    let i: Int = 10
+    let j: Int = 20
+    assert (i == j)
+  }
+
+  func testAssert2() {
+    assert (1 < 1)
+  }
+}
