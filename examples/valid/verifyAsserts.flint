@@ -1,11 +1,12 @@
 contract VerifyAsserts  {
-  var ten: Int = 10
+  //var ten: Int = 10
 }
 
 VerifyAsserts :: (any) {
   public init() {}
 
-  func testAssert1() {
+  func testAssert1()
+  {
     assert (1 == 1)
     var i: Int = 10
     let j: Int = 20
@@ -14,11 +15,13 @@ VerifyAsserts :: (any) {
     assert (i == j)
   }
 
-  func testAssert2() {
+  func testAssert2()
+  {
     assert (1 == 1)
   }
 
-  func testIfStatementAssert(i: Int) {
+  func testIfStatementAssert(i: Int)
+  {
     if i > 0 {
       assert (i >= 1)
     } else {
@@ -26,10 +29,29 @@ VerifyAsserts :: (any) {
     }
   }
 
-  func failingAssertion(j: Int) {
+  func failingAssertion(j: Int)
+  {
     assert (j == 0)
   }
 
+  func testPreConditions()
+    pre (1 == 1)
+  {
+    assert (5 > 2)
+  }
+
+  func testPostConditions()
+    post(1 == 1)
+  {
+
+  }
+
+  func testPrePostConditions()
+    pre (2 == 2)
+    post (1 == 1)
+  {
+
+  }
 //  func testGlobals() {
 //    assert(ten == 10)
 //  }

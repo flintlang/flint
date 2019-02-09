@@ -33,7 +33,7 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
     // Keywords
     case contract, `enum`, `case`, `struct`, `func`, `event`, trait
     case `init`, fallback
-    case `public`, visible, `mutating`
+    case `public`, visible, `mutating`, pre, post
     case `return`, become, `try`, `emit`
     case `if`, `else`, `for`, `in`
     case `self`
@@ -54,6 +54,8 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
       case .func: return "func"
       case .`init`: return "init"
       case .fallback: return "fallback"
+      case .pre: return "pre"
+      case .post: return "post"
       case .self: return "self"
       case .implicit: return "implicit"
       case .inout: return "inout"

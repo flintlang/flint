@@ -86,6 +86,8 @@ public struct Lexer {
     "trait": .trait,
     "init": .init,
     "fallback": .fallback,
+    "pre": .pre,
+    "post": .post,
     "try": .try,
     "mutating": .mutating,
     "return": .return,

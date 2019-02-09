@@ -37,6 +37,7 @@ public struct SpecialSignatureDeclaration: ASTNode {
       modifiers: modifiers,
       identifier: dummyIdentifier,
       parameters: parameters,
+      prePostConditions: [],
       closeBracketToken: closeBracketToken,
       resultType: nil
     )

@@ -172,13 +172,23 @@ struct BoogieTranslator {
         //let name = functionDeclaration.name
         let signature = functionDeclaration.signature
 
+        var preConditions = [BExpression](), postConditions = [BExpression]()
+        for condition in signature.prePostConditions {
+          switch condition {
+          case .pre(let e):
+            preConditions.append(process(e).0) // TODO: Handle += operators and function calls in pre conditions
+          case .post(let e):
+            postConditions.append(process(e).0)
+          }
+        }
+
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: currentFunctionName,
           returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
           returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
           parameters: parameters.map({x in process(x)}),
-          preConditions: [], // TODO [BFirstOrderProperty]
-          postConditions: [], // TODO [BFirstOrderProperty]
+          preConditions: preConditions,
+          postConditions: postConditions,
           modifies: [], // TODO [BModifiesDeclaration]
           statements: body.flatMap({x in process(x)}),
           variables: functionVariableDeclarations[currentFunctionName] ?? []
@@ -613,7 +623,6 @@ struct BoogieTranslator {
                                       scopeContext: scopeContext) {
 
         default: return BType.int
-
         //case .matchedFunction(let functionInformation):
         //case .matchedFunctionWithoutCaller(let callableInformations):
         //case .matchedInitializer(let specialInformation):

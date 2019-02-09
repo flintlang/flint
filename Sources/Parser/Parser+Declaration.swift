@@ -314,15 +314,11 @@ extension Parser {
     guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
       throw raise(.statementSameLine(at: latestSource))
     }
-    let signatureDeclaration: Bool
-    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
-      signatureDeclaration = false
-    } else {
-      signatureDeclaration = true
-    }
+
+    // Check if abstract function
+    let signatureDeclaration = attrs.filter({x in x.kind == .abstract}).count > 0
 
     let first = currentToken?.kind
-
     if .func == first {
       if signatureDeclaration {
         return .functionSignatureDeclaration(
@@ -448,6 +444,32 @@ extension Parser {
     return Type(identifier: identifier)
   }
 
+  func parsePrePostConditions() throws -> [FunctionSignatureDeclaration.PrePostCondition] {
+    var conditions = [FunctionSignatureDeclaration.PrePostCondition]()
+
+    while let condType = currentToken?.kind {
+      switch condType {
+      case .pre:
+        conditions.append(.pre(try parsePrePostCondition()))
+      case .post:
+        conditions.append(.post(try parsePrePostCondition()))
+
+      case .punctuation(.openBrace):
+        return conditions
+
+      default:
+        break
+      }
+    }
+   throw raise(.unexpectedEOF())
+  }
+
+  func parsePrePostCondition() throws -> Expression {
+    let conditionToken = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
+    let expression = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
+    return expression
+  }
+
   func parseFunctionDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionDeclaration {
     let signature = try parseFunctionSignatureDeclaration(attributes: attributes, modifiers: modifiers)
     let (body, closeBraceToken) = try parseCodeBlock()
@@ -466,6 +488,7 @@ extension Parser {
     } else {
       resultType = nil
     }
+    let prePostConditions = try parsePrePostConditions()
 
     return FunctionSignatureDeclaration(
       funcToken: funcToken,
@@ -473,6 +496,7 @@ extension Parser {
       modifiers: modifiers,
       identifier: identifier,
       parameters: parameters,
+      prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken,
       resultType: resultType
     )
