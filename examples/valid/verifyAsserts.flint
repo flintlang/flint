@@ -1,5 +1,5 @@
 contract VerifyAsserts  {
-
+  var ten: Int = 10
 }
 
 VerifyAsserts :: (any) {
@@ -7,12 +7,30 @@ VerifyAsserts :: (any) {
 
   func testAssert1() {
     assert (1 == 1)
-    let i: Int = 10
+    var i: Int = 10
     let j: Int = 20
+    i += 5
+    i += 5
     assert (i == j)
   }
 
   func testAssert2() {
-    assert (1 < 1)
+    assert (1 == 1)
   }
+
+  func testIfStatementAssert(i: Int) {
+    if i > 0 {
+      assert (i >= 1)
+    } else {
+      assert (i <= 0)
+    }
+  }
+
+  func failingAssertion(j: Int) {
+    assert (j == 0)
+  }
+
+//  func testGlobals() {
+//    assert(ten == 10)
+//  }
 }

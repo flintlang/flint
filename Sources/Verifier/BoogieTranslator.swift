@@ -15,8 +15,11 @@ struct BoogieTranslator {
   private let environment: Environment
   private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
   private var functionReturnVariableName = [String: String]()
-  private var currentFunction: String?
-  private var currentContract: String?
+
+  private var currentBehaviourMember: ContractBehaviorMember?
+  private var currentTLD: TopLevelDeclaration?
+  private var currentEnclosingType: RawTypeIdentifier?
+
   private var contractStateVariable = [String: String]()
   private var contractStateVariableStates = [String: [String: Int]]()
   private var flintProofObligationSourceLocation = [Int: SourceLocation]()
@@ -40,31 +43,39 @@ struct BoogieTranslator {
     var declarations = [BTopLevelDeclaration]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .contractDeclaration(contractDeclaration)
       declarations += process(contractDeclaration)
+      self.currentTLD = nil
     }
 
     for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .structDeclaration(structDeclaration)
       declarations += process(structDeclaration)
+      self.currentTLD = nil
     }
 
     for case .enumDeclaration(let enumDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .enumDeclaration(enumDeclaration)
       declarations += process(enumDeclaration)
+      self.currentTLD = nil
     }
 
     for case .traitDeclaration(let traitDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .traitDeclaration(traitDeclaration)
       declarations += process(traitDeclaration)
+      self.currentTLD = nil
     }
 
     for case .contractBehaviorDeclaration(let contractBehaviorDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .contractBehaviorDeclaration(contractBehaviorDeclaration)
       declarations += process(contractBehaviorDeclaration)
+      self.currentTLD = nil
     }
 
     return BTopLevelProgram(declarations: declarations)
   }
 
   private mutating func process(_ contractDeclaration: ContractDeclaration) -> [BTopLevelDeclaration] {
-    currentContract = contractDeclaration.identifier.name
-
     var declarations = [BTopLevelDeclaration]()
     for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
@@ -78,27 +89,26 @@ struct BoogieTranslator {
       // Record assignment to put in constructor procedure
       let assignedExpression = variableDeclaration.assignedExpression == nil
         ? defaultValue(type) : process(variableDeclaration.assignedExpression!).0
-      if contractConstructorInitialisations[currentContract!] == nil {
-        contractConstructorInitialisations[currentContract!] = []
+      if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
+        contractConstructorInitialisations[contractDeclaration.identifier.name] = []
       }
-      contractConstructorInitialisations[currentContract!]!.append(
+      contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
         .assignment(.identifier(name), assignedExpression)
       )
     }
 
-    let stateVariableName = generateStateVariable()
-    contractStateVariable[currentContract!] = stateVariableName
+    let stateVariableName = generateStateVariable(contractDeclaration)
+    contractStateVariable[contractDeclaration.identifier.name] = stateVariableName
     // Declare contract state variable
     declarations.append(.variableDeclaration(BVariableDeclaration(name: stateVariableName,
                                                                   type: .int)))
 
-    contractStateVariableStates[currentContract!] = [String: Int]()
+    contractStateVariableStates[contractDeclaration.identifier.name] = [String: Int]()
     for typeState in contractDeclaration.states {
-      contractStateVariableStates[currentContract!]![typeState.name]
-        = contractStateVariableStates[currentContract!]!.count
+      contractStateVariableStates[contractDeclaration.identifier.name]![typeState.name]
+        = contractStateVariableStates[contractDeclaration.identifier.name]!.count
     }
 
-    currentContract = nil
     return declarations
   }
 
@@ -126,8 +136,6 @@ struct BoogieTranslator {
   }
 
   private mutating func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
-    currentContract = contractBehaviorDeclaration.contractIdentifier.name
-
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
     // TODO: Use caller capabilities
@@ -135,40 +143,37 @@ struct BoogieTranslator {
     var declarations = [BTopLevelDeclaration]()
 
     for member in contractBehaviorDeclaration.members {
+      self.currentBehaviourMember = member
       switch member {
       case .specialDeclaration(let specialDeclaration):
-        currentFunction =
-          "\(specialDeclaration.signature.specialToken)_\(contractBehaviorDeclaration.contractIdentifier.name)"
+        let currentFunctionName = getCurrentFunctionName()!
         let body = specialDeclaration.body
         let parameters = specialDeclaration.signature.parameters
         let processedBody = body.flatMap({x in process(x)})
 
         // Constructor
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
-          name: currentFunction!,
+          name: currentFunctionName,
           returnType: nil,
           returnName: nil,
           parameters: parameters.map({x in process(x)}),
           preConditions: [], // TODO [BFirstOrderProperty]
           postConditions: [], // TODO [BFirstOrderProperty]
           modifies: [], // TODO [BModifiesDeclaration]
-          statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[currentContract!] ?? [] : [])
+          statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()!] ?? [] : [])
                        + processedBody),
-          variables: functionVariableDeclarations[currentFunction!] ?? []
+          variables: functionVariableDeclarations[currentFunctionName] ?? []
           )))
 
-        currentFunction = nil
-
       case .functionDeclaration(let functionDeclaration):
-        currentFunction =
-          "\(functionDeclaration.signature.identifier.name)_\(contractBehaviorDeclaration.contractIdentifier.name)"
+        let currentFunctionName = getCurrentFunctionName()!
         let body = functionDeclaration.body
         let parameters = functionDeclaration.signature.parameters
-        let name = functionDeclaration.name
+        //let name = functionDeclaration.name
         let signature = functionDeclaration.signature
 
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
-          name: "\(name)_\(contractBehaviorDeclaration.contractIdentifier.name)",
+          name: currentFunctionName,
           returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
           returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
           parameters: parameters.map({x in process(x)}),
@@ -176,18 +181,17 @@ struct BoogieTranslator {
           postConditions: [], // TODO [BFirstOrderProperty]
           modifies: [], // TODO [BModifiesDeclaration]
           statements: body.flatMap({x in process(x)}),
-          variables: functionVariableDeclarations[currentFunction!] ?? []
+          variables: functionVariableDeclarations[currentFunctionName] ?? []
           )))
-        currentFunction = nil
 
       default:
         // TODO: Handle functionSignatureDeclaration case
         // TODO: Handle specialFunctionSignatureDeclaration case
         print("found declaration: \(member)")
       }
+      currentBehaviourMember = nil
     }
 
-    currentContract = nil
     return declarations
   }
 
@@ -267,6 +271,8 @@ struct BoogieTranslator {
   }
 
   private mutating func process(_ expression: Expression) -> (BExpression, [BStatement]) {
+    self.currentEnclosingType = expression.enclosingType
+
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
@@ -301,7 +307,7 @@ struct BoogieTranslator {
       let functionName = translateGlobalIdentifierName(rawFunctionName)
 
       //TODO: Assert that contract invariant holds?
-      if false {//let btype = functionReturnType[functionName] { // TODO: Look in environment to get function return type
+      if let returnType = getFunctionReturnBType(functionCall) {
         // Function returns a value
         let returnValueVariable = generateFunctionReturnValueName() // Variable to hold return value
         let returnValue = BExpression.identifier(returnValueVariable)
@@ -309,7 +315,7 @@ struct BoogieTranslator {
                                                      functionName,
                                                      argumentsExpressions)
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
-                                                                   type: BType.int))//btype))
+                                                                   type: returnType))
         argumentsStatements.append(functionCall)
         return (returnValue, argumentsStatements)
       } else {
@@ -377,6 +383,8 @@ struct BoogieTranslator {
       print("Not implemented translating \(expression.description)")
       fatalError()
     }
+
+    self.currentEnclosingType = nil
   }
 
   private func process(_ token: Token) -> BExpression {
@@ -515,7 +523,7 @@ struct BoogieTranslator {
   }
 
   private mutating func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
-    if let functionName = currentFunction {
+    if let functionName = getCurrentFunctionName() {
       if functionVariableDeclarations[functionName] == nil {
         functionVariableDeclarations[functionName] = []
       }
@@ -529,7 +537,7 @@ struct BoogieTranslator {
   private func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
     // If currently in a function, then generate name with function in it
     // If in contractDeclaration, then generate name with only contract in it
-    let name: String = currentFunction == nil ?
+    let name = getCurrentFunctionName() == nil ?
       translateGlobalIdentifierName(variableDeclaration.identifier.name)
       : translateIdentifierName(variableDeclaration.identifier.name)
 
@@ -550,7 +558,7 @@ struct BoogieTranslator {
   }
 
   private func getStateVariable() -> String {
-    if let contractName = currentContract {
+    if let contractName = getCurrentTLDName() {
       return contractStateVariable[contractName]!
     }
     print("Error cannot get contract state variable, not currently translating a contract")
@@ -558,23 +566,20 @@ struct BoogieTranslator {
   }
 
   private func getStateVariableValue(_ identifier: String) -> Int {
-    if let contractName = currentContract {
+    if let contractName = getCurrentTLDName() {
       return contractStateVariableStates[contractName]![identifier]!
     }
     print("Error cannot get contract state variable value \(identifier), not currently translating a contract")
     fatalError()
   }
 
-  private func generateStateVariable() -> String {
-    if let contractName = currentContract {
-      return "stateVariable_\(contractName)"
-    }
-    print("Error cannot generate contract state variable, not currently translating a contract")
-    fatalError()
+  private func generateStateVariable(_ contractDeclaration: ContractDeclaration) -> String {
+    let contractName = contractDeclaration.identifier.name
+    return "stateVariable_\(contractName)"
   }
 
   private mutating func generateFunctionReturnVariable() -> String {
-    if let functionName = currentFunction {
+    if let functionName = getCurrentFunctionName() {
       // TODO: Check against all declared variables in the function
       let returnVariable = "result_variable_\(functionName)"
       functionReturnVariableName[functionName] = returnVariable
@@ -585,7 +590,7 @@ struct BoogieTranslator {
   }
 
   private func getFunctionReturnVariable() -> String {
-    if let functionName = currentFunction {
+    if let functionName = getCurrentFunctionName() {
       if let returnVariable = functionReturnVariableName[functionName] {
         return returnVariable
       }
@@ -596,13 +601,111 @@ struct BoogieTranslator {
     fatalError()
   }
 
+  private func getFunctionReturnBType(_ functionCall: FunctionCall) -> BType? {
+    //TODO: Get current enclosing type
+    /*
+    if let currentType = currentEnclosingType {
+      if let scopeContext = getCurrentFunction().scopeContext {
+        switch environment.matchFunctionCall(functionCall,
+                                      enclosingType: currentType,
+                                      typeStates: getCurrentContractBehaviorDeclaration().states,
+                                      callerProtections: getCurrentContractBehaviorDeclaration().callerProtections,
+                                      scopeContext: scopeContext) {
+
+        default: return BType.int
+
+        //case .matchedFunction(let functionInformation):
+        //case .matchedFunctionWithoutCaller(let callableInformations):
+        //case .matchedInitializer(let specialInformation):
+        //case .matchedFallback(let specialInformation):
+        //case .matchedGlobalFunction(let functionInformation):
+        //case .failure(let candidates):
+        }
+      }
+      print("Cannot get scopeContext from current function")
+    }
+    print("Cannot find function declaration for function call - no enclosing type")
+    fatalError()
+    */
+    return BType.int
+  }
+
   private mutating func generateFunctionReturnValueName() -> String {
     //TODO: Check against all declared variables in the function
     return "testTempVariable"
   }
 
+  private func getCurrentFunctionName() -> String? {
+    if let behaviourDeclarationMember = currentBehaviourMember {
+      var functionName: String
+      switch behaviourDeclarationMember {
+      case .functionDeclaration(let functionDeclaration):
+        functionName = functionDeclaration.signature.identifier.name
+      case .specialDeclaration(let specialDeclaration):
+        functionName = specialDeclaration.signature.specialToken.description
+      case .functionSignatureDeclaration(let functionSignatureDeclaration):
+        functionName = functionSignatureDeclaration.identifier.name
+      case .specialSignatureDeclaration(let specialSignatureDeclaration):
+        functionName = specialSignatureDeclaration.specialToken.description
+      }
+
+      return "\(functionName)_\(getCurrentTLDName()!)"
+    }
+    return nil
+  }
+
+  private func getCurrentContractBehaviorDeclaration() -> ContractBehaviorDeclaration {
+    if let tld = currentTLD {
+      switch tld {
+      case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
+        return contractBehaviorDeclaration
+      default:
+        break
+      }
+    }
+    print("Error cannot get current contract declaration - not in a contract")
+    fatalError()
+  }
+
+  private func getCurrentFunction() -> FunctionDeclaration {
+    if let behaviourDeclarationMember = currentBehaviourMember {
+      switch behaviourDeclarationMember {
+      case .functionDeclaration(let functionDeclaration):
+        return functionDeclaration
+      default:
+        print("Error getting current function - not in a function: \(behaviourDeclarationMember.description)")
+      }
+    }
+    print("Error getting current function - not in a current behaviour declaration")
+    fatalError()
+  }
+
+  private func getCurrentTLDName() -> String? {
+    if let tld = currentTLD {
+      switch tld {
+      case .contractDeclaration(let contractDeclaration):
+        return  contractDeclaration.identifier.name
+
+      case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
+        return contractBehaviorDeclaration.contractIdentifier.name
+      default:
+        break
+
+      /*
+        TODO: Implement
+      case .structDeclaration(let structDeclaration):
+      case .enumDeclaration(let enumDeclaration):
+      case .traitDeclaration(let traitDeclaration):
+        */
+      }
+    }
+
+    print("Error cannot get current contract name: not in a contract")
+    fatalError()
+  }
+
   private func translateIdentifierName(_ name: String) -> String {
-    if let functionName = currentFunction {
+    if let functionName = getCurrentFunctionName() {
       // Function name already has contract scope (eg. funcA_ContractA
       return name + "_\(functionName)"
     }
@@ -611,7 +714,7 @@ struct BoogieTranslator {
   }
 
   private func translateGlobalIdentifierName(_ name: String) -> String {
-    if let contractName = currentContract {
+    if let contractName = getCurrentTLDName() {
       return name + "_\(contractName)"
     }
     print("Error cannot translate global identifier: \(name), not translating contract")
