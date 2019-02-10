@@ -1,5 +1,7 @@
 contract VerifyAsserts  {
-  //var ten: Int = 10
+  let ten: Int = 10
+
+  invariant (10 == 10)
 }
 
 VerifyAsserts :: (any) {

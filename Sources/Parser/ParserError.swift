@@ -93,6 +93,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
                       message: "Expected a trait identifier to conform to")
   }
+  static func expectedInvariantDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'invariant' declaration withing contract")
+  }
 
   // MARK: Enum
   static func expectedEnumDeclarationCaseMember(at sourceLocation: SourceLocation) -> Diagnostic {

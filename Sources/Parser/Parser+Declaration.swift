@@ -311,7 +311,7 @@ extension Parser {
 
     let attrs = try parseAttributes()
     let modifiers = try parseModifiers()
-    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+    guard let _ = indexOfFirstAtCurrentDepth([.newline]) else {
       throw raise(.statementSameLine(at: latestSource))
     }
 
@@ -342,7 +342,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .event, .public, .visible, .mutating, .var, .let:
+      case .event, .public, .visible, .mutating, .var, .let, .invariant:
         members.append(try parseContractMember(enclosingType: enclosingType))
       case .punctuation(.closeBrace):
         return members
@@ -354,11 +354,17 @@ extension Parser {
   }
 
   func parseContractMember(enclosingType: RawTypeIdentifier) throws -> ContractMember {
-
     let first = currentToken?.kind
 
     if first == .event {
       return .eventDeclaration(try parseEventDeclaration())
+
+    } else if first == .invariant {
+      _ = try consume(anyOf: [.invariant], or: .expectedInvariantDeclaration(at: latestSource))
+      guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+        throw raise(.expectedInvariantDeclaration(at: latestSource))
+      }
+      return .invariantDeclaration(try parseExpression(upTo: newLine))
     }
 
     let modifiers = try parseModifiers()
@@ -369,7 +375,6 @@ extension Parser {
                                                            enclosingType: enclosingType,
                                                            upTo: newLine)
     return .variableDeclaration(variableDeclaration)
-
   }
 
   // MARK: Declarations
@@ -465,7 +470,7 @@ extension Parser {
   }
 
   func parsePrePostCondition() throws -> Expression {
-    let conditionToken = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
+    _ = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
     let expression = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
     return expression
   }
