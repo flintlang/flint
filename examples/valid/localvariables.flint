@@ -1,5 +1,6 @@
 contract LocalVariables {
     var is: [Int] = []
+    var ten: Int = 10
 }
 
 LocalVariables :: (any) {
@@ -24,8 +25,10 @@ LocalVariables :: (any) {
 
   public mutating func scoping() {
     var is: Int = 0
-    self.is[0] = 3
+    //self.is[0] = 3
     is = 6
+    let j: Int = self.ten
+    self.ten += 5
   }
 
   public func returnTest1() -> Int {

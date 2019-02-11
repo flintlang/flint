@@ -2,6 +2,7 @@ contract VerifyAsserts  {
   let ten: Int = 10
 
   invariant (10 == 10)
+  invariant (ten == 10)
 }
 
 VerifyAsserts :: (any) {
@@ -17,8 +18,11 @@ VerifyAsserts :: (any) {
     assert (i == j)
   }
 
-  func testAssert2()
+  func testAssert2(ten: Int)
+  pre(ten == 5)
+  pre(self.ten == 10)
   {
+    assert (self.ten != ten)
     assert (1 == 1)
   }
 

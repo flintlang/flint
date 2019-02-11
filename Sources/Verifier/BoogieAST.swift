@@ -52,6 +52,7 @@ struct BAxiomDeclaration: CustomStringConvertible {
 
 struct BVariableDeclaration: CustomStringConvertible {
   let name: String
+  let rawName: String
   let type: BType
 
   var description: String {
@@ -117,6 +118,7 @@ struct BModifiesDeclaration: CustomStringConvertible {
 
 struct BParameterDeclaration: CustomStringConvertible {
   let name: String
+  let rawName: String
   let type: BType
 
   var description: String {
