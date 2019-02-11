@@ -24,6 +24,8 @@ public struct Environment {
 
   // A list of the names of the traits which have been declared in the program.
   var declaredTraits = [Identifier]()
+    
+  public var syntaxErrors : Bool = false
 
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
