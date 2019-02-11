@@ -4,13 +4,6 @@ import Lexer
 import Foundation
 
 struct BoogieTranslator {
-  // TODO: Need to parse contract invariants
-
-  /*
-  // invariants which need to hold on each function pre + post condition
-  private var contractInvariants = [String]()
-  */
-
   private let topLevelModule: TopLevelModule
   private let environment: Environment
   private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
@@ -165,7 +158,7 @@ struct BoogieTranslator {
           modifies: [], // TODO [BModifiesDeclaration]
           statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
                        + processedBody),
-          variables: functionVariableDeclarations[currentFunctionName] ?? []
+          variables: getFunctionVariableDeclarations(name: currentFunctionName)
           )))
 
       case .functionDeclaration(let functionDeclaration):
@@ -199,7 +192,7 @@ struct BoogieTranslator {
           postConditions: postConditions,
           modifies: [], // TODO [BModifiesDeclaration]
           statements: body.flatMap({x in process(x)}),
-          variables: functionVariableDeclarations[currentFunctionName] ?? []
+          variables: getFunctionVariableDeclarations(name: currentFunctionName)
           )))
 
       default:
@@ -327,7 +320,7 @@ struct BoogieTranslator {
       //TODO: Assert that contract invariant holds?
       if let returnType = getFunctionReturnBType(functionCall) {
         // Function returns a value
-        let returnValueVariable = generateFunctionReturnValueName() // Variable to hold return value
+        let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
         let returnValue = BExpression.identifier(returnValueVariable)
         let functionCall = BStatement.callProcedure([returnValueVariable],
                                                      functionName,
@@ -540,12 +533,22 @@ struct BoogieTranslator {
     addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: name, type: type))
   }
 
+  private mutating func getFunctionVariableDeclarations(name: String) -> [BVariableDeclaration] {
+    if functionVariableDeclarations[name] == nil {
+      functionVariableDeclarations[name] = []
+    }
+    return functionVariableDeclarations[name]!
+  }
+
+  private mutating func setFunctionVariableDeclarations(name: String, declarations: [BVariableDeclaration]) {
+    functionVariableDeclarations[name] = declarations
+  }
+
   private mutating func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
     if let functionName = getCurrentFunctionName() {
-      if functionVariableDeclarations[functionName] == nil {
-        functionVariableDeclarations[functionName] = []
-      }
-      functionVariableDeclarations[functionName]!.append(bvDeclaration)
+      var variableDeclarations = getFunctionVariableDeclarations(name: functionName)
+      variableDeclarations.append(bvDeclaration)
+      setFunctionVariableDeclarations(name: functionName, declarations: variableDeclarations)
     } else {
       print("Error cannot add variable declaration to function: \(bvDeclaration), not currently translating a function")
       fatalError()
@@ -590,8 +593,7 @@ struct BoogieTranslator {
 
   private mutating func generateFunctionReturnVariable() -> String {
     if let functionName = getCurrentFunctionName() {
-      // TODO: Check against all declared variables in the function
-      let returnVariable = "result_variable_\(functionName)"
+      let returnVariable = generateRandomIdentifier(prefix: "result_variable_\(functionName)_")
       functionReturnVariableName[functionName] = returnVariable
       return returnVariable
     }
@@ -639,9 +641,34 @@ struct BoogieTranslator {
     return BType.int
   }
 
-  private mutating func generateFunctionReturnValueName() -> String {
-    //TODO: Check against all declared variables in the function
-    return "testTempVariable"
+  private func randomIdentifier(`prefix`: String = "i") -> String {
+    return `prefix` + randomString(length: 10) // 10 random characters feels random enough
+  }
+
+  private func randomString(length: Int) -> String {
+      let alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+      var s = ""
+      for _ in 0..<length {
+        let r = Int.random(in: 0..<alphabet.count)
+        s += String(alphabet[alphabet.index(alphabet.startIndex, offsetBy: r)])
+      }
+
+    return s
+  }
+
+  private mutating func generateRandomIdentifier(prefix: String) -> String {
+    if let functionName = getCurrentFunctionName() {
+      let variableDeclarations = getFunctionVariableDeclarations(name: functionName)
+      let returnIdentifier = randomIdentifier(prefix: prefix)
+
+      for declaration in variableDeclarations
+        where declaration.name == returnIdentifier {
+        return generateRandomIdentifier(prefix: prefix)
+      }
+      return returnIdentifier
+    }
+    print("Could not generate function return value name, not currently in function")
+    fatalError()
   }
 
   private func getCurrentFunctionName() -> String? {

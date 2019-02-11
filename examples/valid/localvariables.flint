@@ -27,4 +27,17 @@ LocalVariables :: (any) {
     self.is[0] = 3
     is = 6
   }
+
+  public func returnTest1() -> Int {
+    return 0
+  }
+
+  public func returnTest2() -> Int {
+    let i: Int = 10
+    return i
+  }
+
+  public func returnTest3(para: Int) -> Int {
+    return para
+  }
 }
