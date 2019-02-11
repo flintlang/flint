@@ -49,6 +49,13 @@ struct Compiler {
         return
     }
     
+    // stop parsing if any syntax errors are detected
+    if (environment.syntaxErrors)
+    {
+        return
+    }
+    
+    
     let astPasses: [ASTPass] = [
         SemanticAnalyzer(),
         TypeChecker(),
