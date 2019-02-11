@@ -87,7 +87,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '->'")
   }
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation. A type annotation should be of the form '<var> : <type>'")
   }
   static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
