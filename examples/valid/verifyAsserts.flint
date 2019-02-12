@@ -1,8 +1,4 @@
 contract VerifyAsserts  {
-  let ten: Int = 10
-
-  invariant (10 == 10)
-  invariant (ten == 10)
 }
 
 VerifyAsserts :: (any) {
@@ -19,10 +15,7 @@ VerifyAsserts :: (any) {
   }
 
   func testAssert2(ten: Int)
-  pre(ten == 5)
-  pre(self.ten == 10)
   {
-    assert (self.ten != ten)
     assert (1 == 1)
   }
 
@@ -39,26 +32,4 @@ VerifyAsserts :: (any) {
   {
     assert (j == 0)
   }
-
-  func testPreConditions()
-    pre (1 == 1)
-  {
-    assert (5 > 2)
-  }
-
-  func testPostConditions()
-    post(1 == 1)
-  {
-
-  }
-
-  func testPrePostConditions()
-    pre (2 == 2)
-    post (1 == 1)
-  {
-
-  }
-//  func testGlobals() {
-//    assert(ten == 10)
-//  }
 }
