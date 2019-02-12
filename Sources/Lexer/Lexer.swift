@@ -18,7 +18,7 @@ public struct Lexer {
 
   var isFromStdlib: Bool
   
-  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer : Bool = true, sourceCode: String = "") throws
+  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer : Bool = false, sourceCode: String = "") throws
     {
     self.sourceFile = sourceFile
         
