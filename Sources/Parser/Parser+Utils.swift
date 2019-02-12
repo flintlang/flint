@@ -34,10 +34,13 @@ extension Parser {
     currentIndex += 1
     var kind = currentToken?.kind
         
-	while (checkExistence(syncSet, kind!) &&  currentToken != nil)
+	while (!checkExistence(syncSet, kind!) &&  currentToken != nil)
 	{
 		currentIndex += 1
-		kind = currentToken?.kind
+        if (currentToken != nil)
+        {
+            kind = currentToken?.kind
+        }
 	}
 
 	if let _ = currentToken {
