@@ -6,19 +6,33 @@ import Foundation
 struct BoogieTranslator {
   private let topLevelModule: TopLevelModule
   private let environment: Environment
+  // Variables declared in each function
   private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
+  // Procedure paramters
   private var functionParameters = [String: [BParameterDeclaration]]()
+  // Name of procedure return variable
   private var functionReturnVariableName = [String: String]()
+  // Global variables modified in each procedure
+  private var functionGlobalModifications = [String: [String]]()
 
+  // Source location that each proof oligation corresponds to
   private var flintProofObligationSourceLocation = [Int: SourceLocation]()
 
+  // Current behaviour member - function / special / signature declaration ..
   private var currentBehaviourMember: ContractBehaviorMember?
+  // Current top level declaration - contract behaviour / trait / struct ..
   private var currentTLD: TopLevelDeclaration?
 
+  // Name of state variable for each contract
   private var contractStateVariable = [String: String]()
+  // Mapping of each state name, for each contract state variable
   private var contractStateVariableStates = [String: [String: Int]]()
+  // Statements to be placed in the constructor of the contract
   private var contractConstructorInitialisations = [String: [BStatement]]()
+
+  // Name of global variables in the contract
   private var contractGlobalVariables = [String: [String]]()
+  // List of invariants for each contract
   private var contractInvariants = [String: [BExpression]]()
 
   public init(topLevelModule: TopLevelModule, environment: Environment) {
