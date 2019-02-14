@@ -28,8 +28,12 @@ extension Parser {
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
     try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
     guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
+      // instead of doing this I can just sync at the next open curly brace
+      // and keep going
       throw raise(.expectedCloseParen(at: latestSource))
     }
+    // I guess if this parse identifer list fails
+    // then I either sync at the first open bracket of a contract declaration
     let identifiers = try parseIdentifierList(upTo: closingIndex)
     let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
 
@@ -197,16 +201,19 @@ extension Parser {
       if attempt(try consume(.punctuation(.colon), or: .expectedColonDictionaryLiteral(at: latestSource))) != nil {
         // The type is a dictionary type.
         let valueType = try parseType()
-        let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                  or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
+        let syncSet : [Token.Kind] = [.punctuation(.equal), .newline]
+        let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                                  or: .expectedCloseSquareDictionaryLiteral(at: latestSource), syncSet)
         return Type(openSquareBracketToken: openSquareBracketToken,
                     dictionaryWithKeyType: keyType,
                     valueType: valueType,
                     closeSquareBracketToken: closeSquareBracketToken)
       }
+      let syncSet : [Token.Kind] = [.punctuation(.equal), .newline]
 
-      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                or: .expectedCloseSquareArrayType(at: latestSource))
+      let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                        or: .expectedCloseSquareArrayType(at: latestSource), syncSet)
+        
       return Type(openSquareBracketToken: openSquareBracketToken,
                   arrayWithElementType: keyType,
                   closeSquareBracketToken: closeSquareBracketToken)
