@@ -239,8 +239,11 @@ extension Parser {
         throw raise(.expectedIntegerInFixedArrayType(at: latestSource))
       }
 
-      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                or: .expectedCloseSquareArrayType(at: latestSource))
+      let syncSet : [Token.Kind] = [.punctuation(.equal), .newline]
+        
+      let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                                     or: .expectedCloseSquareArrayType(at: latestSource), syncSet)
+
       return Type(fixedSizeArrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
     }
 
