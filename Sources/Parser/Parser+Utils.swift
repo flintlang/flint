@@ -32,17 +32,9 @@ extension Parser {
     currentIndex -= 1
     let prevToken = currentToken
     currentIndex += 1
-    var kind = currentToken?.kind
         
-	while (!checkExistence(syncSet, kind!) &&  currentToken != nil)
-	{
-		currentIndex += 1
-        if (currentToken != nil)
-        {
-            kind = currentToken?.kind
-        }
-	}
-
+    sync(syncSet)
+        
 	if let _ = currentToken {
         diagnostics.append(diagnostic)
 	    return prevToken!
@@ -61,6 +53,18 @@ extension Parser {
 
     return first
   }
+    
+    func sync(_ syncSet: [Token.Kind])  {
+        var kind = currentToken?.kind
+        while (!checkExistence(syncSet, kind!) &&  currentToken != nil)
+        {
+            currentIndex += 1
+            if (currentToken != nil)
+            {
+                kind = currentToken?.kind
+            }
+        }
+    }
     
     func checkExistence(_ set: [Token.Kind], _ kind: Token.Kind) -> Bool {
         for tok in set {
