@@ -1,0 +1,5 @@
+// contract
+contract abc (Test1, Test2)  {
+   var y  : Int = 10
+}
+
