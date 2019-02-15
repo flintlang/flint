@@ -266,7 +266,11 @@ extension Parser {
   func parseTypeAnnotation() throws -> TypeAnnotation {
     // if sync is required i.e. colon token is malformed then the returned
     // token is the last valid token before the colonToken
-    let syncSet: [Token.Kind] = [Token.Kind.identifier("n/a"), .punctuation(.openSquareBracket)]
+    let syncSet: [Token.Kind] = [Token.Kind.identifier("Int"),
+                                 .punctuation(.openSquareBracket),
+                                 Token.Kind.identifier("String"),
+                                 Token.Kind.identifier("Address"),
+                                 Token.Kind.identifier("Bool")]
     let colonToken = try tryConsume(.punctuation(.colon), or: .expectedTypeAnnotation(at: latestSource), syncSet)
 
     let type = try parseType()
