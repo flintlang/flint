@@ -270,7 +270,8 @@ extension Parser {
                                  .punctuation(.openSquareBracket),
                                  Token.Kind.identifier("String"),
                                  Token.Kind.identifier("Address"),
-                                 Token.Kind.identifier("Bool")]
+                                 Token.Kind.identifier("Bool"),
+                                 .newline]
     let colonToken = try tryConsume(.punctuation(.colon), or: .expectedTypeAnnotation(at: latestSource), syncSet)
 
     let type = try parseType()

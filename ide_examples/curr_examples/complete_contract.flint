@@ -1,0 +1,53 @@
+// contract
+contract abc (Test1 ,Test2)  {
+   // I can handle mistype annotations
+   // I can handle it with the var declarations
+   // I can handle 
+   // let z : [Int: Int = [:]
+   let z  : [Int: Int] = [:]
+   let x  : Int[10] = []
+   let x1 : [Int] = []
+   var y  : Int = 10
+
+   event ev {
+     let zx : Int = 0
+   }
+}
+
+// enums
+enum Numbers : Int {
+  case north
+}
+
+// structs
+struct test {
+}
+
+abc @(Test1) :: caller <- (any) {
+
+  // function
+  public init() {
+      become Test1
+  }
+
+  // function with keyword
+  // maybe look at things like payable
+  // and try catch those sort of syntax errors
+  // this is a way of deciding waht errors I want to catch
+  // function bodies should have let decls + var decls
+  mutating func tests(i:Int, i1: Int) -> Int { 
+     // if statements
+     var x:Int = 1
+     for let name:Int in x1 {}
+     for let i3:Int in (0..<10) {}
+     x = 2
+     self.y = 0
+     // kets think what type of expressions can i have
+     return 0
+  } 
+
+}
+
+
+// contract behaviour with type state and also binding callers to a variable
+// im guessing things like that are expressions
