@@ -423,26 +423,38 @@ struct BoogieTranslator {
     case .`self`:
       return (.nop, [])
 
-    case .arrayLiteral:
-      //TODO:
-      // Assign temp identifier empty array -> based on type
-      // assign expression to corresponding index
-      // return tempArray identifier
+    case .arrayLiteral(let arrayLiteral):
+      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
+                                                                 rawName: literalVariableName,
+                                                                 //TODO: Get actual type of array
+                                                                 type: .map(.int, .int)))
+      var assignmentStmts = [BStatement]()
+      var counter = 0
+      for expression in arrayLiteral.elements {
+        let (bexpr, preStatements) = process(expression)
+        assignmentStmts += preStatements
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
+        counter += 1
+      }
+      return (.identifier(literalVariableName), assignmentStmts)
 
-      //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
-      //                                      type: arrayType)
-      //return (.identifier(tempLiteralVariableName), assignmentStmts)
-      return (.identifier("arrayLiteral"), [])
+    case .dictionaryLiteral(let dictionaryLiteral):
+      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
+                                                                 rawName: literalVariableName,
+                                                                 //TODO: Get actual type of array
+                                                                 type: .map(.int, .int)))
+      var assignmentStmts = [BStatement]()
+      for entry in dictionaryLiteral.elements {
+        let (bKeyExpr, bKeyPreStatements) = process(entry.key)
+        let (bValueExpr, bValuePreStatements) = process(entry.value)
+        assignmentStmts += bKeyPreStatements
+        assignmentStmts += bValuePreStatements
 
-    case .dictionaryLiteral:
-      //TODO:
-      // Assign temp identifier empty array -> based on type
-      // assign expression to corresponding index
-      // return tempArray identifier
-      //addCurrentFunctionVariableDeclaration(name: tempLiteralVariableName,
-      //                                      type: dictionaryType)
-      //return (.identifier(tempLiteralVariableName), assignmentStmts)
-      return (.identifier("dictionaryLiteral"), [])
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
+      }
+      return (.identifier(literalVariableName), assignmentStmts)
 
       // TODO: Implement expressions
     /*
@@ -778,6 +790,14 @@ struct BoogieTranslator {
       }
 
       return "\(functionName)_\(getCurrentTLDName())"
+    }
+    if let contractDeclaration = currentTLD {
+      switch contractDeclaration {
+      case .contractDeclaration(let contractDeclaration):
+        // Assume we are in a constructor since we are not in a contractBehaviourMember
+        return "init_\(contractDeclaration.identifier.name)"
+      default: break
+      }
     }
     return nil
   }
