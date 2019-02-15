@@ -33,7 +33,7 @@ struct BoogieTranslator {
   // Name of global variables in the contract
   private var contractGlobalVariables = [String: [String]]()
   // List of invariants for each contract
-  private var contractInvariants = [String: [BExpression]]()
+  private var contractInvariants = [String: [BProofObligation]]()
 
   public init(topLevelModule: TopLevelModule, environment: Environment) {
     self.topLevelModule = topLevelModule
@@ -98,18 +98,30 @@ struct BoogieTranslator {
       }
 
       // Record assignment to put in constructor procedure
-      let assignedExpression = variableDeclaration.assignedExpression == nil
-        ? defaultValue(type) : process(variableDeclaration.assignedExpression!).0
+      let (assignedExpression, preStatements) = variableDeclaration.assignedExpression == nil
+        ? (defaultValue(type), []) : process(variableDeclaration.assignedExpression!)
       if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
         contractConstructorInitialisations[contractDeclaration.identifier.name] = []
       }
+      contractConstructorInitialisations[contractDeclaration.identifier.name]! += preStatements
       contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
         .assignment(.identifier(name), assignedExpression)
       )
     }
 
-    contractInvariants[contractDeclaration.identifier.name]
-      = contractDeclaration.invariantDeclarations.map({ process($0).0 }) // TODO: Handle usage of += 1
+    // TODO: Handle usage of += 1 and preStmts
+    var invariantDeclarations = [BProofObligation]()
+    for declaration in contractDeclaration.invariantDeclarations {
+      //Invariants are turned into both pre and post conditions
+      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+                                                    mark: declaration.sourceLocation.line,
+                                                    obligationType: .preCondition))
+      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+                                                    mark: declaration.sourceLocation.line,
+                                                    obligationType: .postCondition))
+      flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
+    }
+    contractInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
     let stateVariableName = generateStateVariable(contractDeclaration)
     contractStateVariable[contractDeclaration.identifier.name] = stateVariableName
@@ -172,14 +184,18 @@ struct BoogieTranslator {
         let bParameters = parameters.map({x in process(x)})
         setFunctionParameters(name: currentFunctionName, parameters: bParameters)
 
+        // Constructor has no pre-conditions
+        // - and constructor must setup invariant
+        let postConditions = (contractInvariants[getCurrentTLDName()] ?? [])
+          .filter({$0.obligationType != .preCondition})
+
         // Constructor
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: currentFunctionName,
           returnType: nil,
           returnName: nil,
           parameters: bParameters,
-          preConditions: [],
-          postConditions: contractInvariants[getCurrentTLDName()] ?? [], // Constructor must setup invariant
+          prePostConditions: postConditions,
           //TODO: Only specify actually modified variables
           modifies: contractGlobalVariables[getCurrentTLDName()]!.map({ BModifiesDeclaration(variable: $0) }),
           statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
@@ -197,28 +213,33 @@ struct BoogieTranslator {
         let bParameters = parameters.map({x in process(x)})
         setFunctionParameters(name: currentFunctionName, parameters: bParameters)
 
-       var preConditions = [BExpression](), postConditions = [BExpression]()
+        var prePostConditions = [BProofObligation]()
+        // TODO: Handle += operators and function calls in pre conditions
         for condition in signature.prePostConditions {
           switch condition {
           case .pre(let e):
-            preConditions.append(process(e).0) // TODO: Handle += operators and function calls in pre conditions
+            prePostConditions.append(BProofObligation(expression: process(e).0,
+                                                      mark: e.sourceLocation.line,
+                                                      obligationType: .preCondition))
+            flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
           case .post(let e):
-            postConditions.append(process(e).0)
+            prePostConditions.append(BProofObligation(expression: process(e).0,
+                                                      mark: e.sourceLocation.line,
+                                                      obligationType: .postCondition))
+            flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
           }
         }
 
-        // Constructor must hold invariant
+        // Procedure must hold invariant
         let invariants = contractInvariants[getCurrentTLDName()] ?? []
-        preConditions += invariants
-        postConditions += invariants
+        prePostConditions += invariants
 
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
           name: currentFunctionName,
           returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
           returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
           parameters: bParameters,
-          preConditions: preConditions,
-          postConditions: postConditions,
+          prePostConditions: prePostConditions,
           modifies: [], // TODO [BModifiesDeclaration]
           statements: body.flatMap({x in process(x)}),
           variables: getFunctionVariableDeclarations(name: currentFunctionName)
@@ -339,8 +360,9 @@ struct BoogieTranslator {
         assert (argumentsExpressions.count == 1)
         let flintLine = functionCall.identifier.sourceLocation.line
         flintProofObligationSourceLocation[flintLine] = functionCall.sourceLocation
-        argumentsStatements.append(.assertMarker(flintLine))
-        argumentsStatements.append(.assertStatement(argumentsExpressions[0]))
+        argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
+                                                                     mark: flintLine,
+                                                                     obligationType: .assertion)))
         return (.nop, argumentsStatements)
       }
 
@@ -879,11 +901,11 @@ struct BoogieTranslator {
                                .components(separatedBy: "\n")
     var boogieLine = 1 // Boogie starts counting lines from 1
     for line in lines {
-      // Pre increment because assert markers precede asserts
+      // Pre increment because assert markers precede asserts and pre/post condits
       boogieLine += 1
 
       // Look for ASSERT markers
-      let matches = line.groups(for: "//#ASSERT# ([0-9]+)")
+      let matches = line.groups(for: "// #MARKER# ([0-9]+)")
       if matches.count == 1 {
         // Extract line number
         mapping[boogieLine] = flintProofObligationSourceLocation[Int(matches[0][1])!]!

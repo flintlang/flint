@@ -89,8 +89,11 @@ public class Verifier {
     Execution trace:
         examples/casestudies/Bank.bpl(251,15): anon0
 
-        Boogie program verifier finished with 10 verified, 1 error
+    test.bpl(186,1): Error BP5001: This assertion might not hold.
+    Execution trace:
+       test.bpl(186,1): anon0
 
+    Boogie program verifier finished with 10 verified, 1 error
     */
     var lines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
                                .components(separatedBy: "\n")
@@ -99,7 +102,7 @@ public class Verifier {
     var errors = [BoogieError]()
     for line in lines {
       // Look for tuple followed by "Error"
-      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): Error")
+      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location)")
       switch matches.count {
       case 0:
         break
@@ -123,10 +126,10 @@ public class Verifier {
       return .assertionFailure(lineNumber, line)
 
     } else if line.contains("postcondition") {
-      return .assertionFailure(lineNumber, line)
+      return .postConditionFailure(lineNumber, line)
 
     } else if line.contains("precondition") {
-      return .assertionFailure(lineNumber, line)
+      return .preConditionFailure(lineNumber, line)
     }
 
     print("Couldn't determine type of verification failure: \(line)")
@@ -143,8 +146,6 @@ public class Verifier {
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: b2fSourceMapping[line]!,
                                       message: "Could not verify assertion holds"))
-      //TODO: Need to determine if it's an 'invariant' error, or actual user
-      // supplied pre/post condition failure
       case .preConditionFailure(let line, _):
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: b2fSourceMapping[line]!,

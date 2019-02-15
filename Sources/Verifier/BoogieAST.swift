@@ -68,13 +68,37 @@ struct BTypeDeclaration: CustomStringConvertible {
   }
 }
 
+enum BProofObligationType: CustomStringConvertible {
+  case assertion
+  case preCondition
+  case postCondition
+
+  var description: String {
+    switch self {
+    case .assertion: return "assert"
+    case .preCondition: return "requires"
+    case .postCondition: return "ensures"
+    }
+  }
+}
+
+struct BProofObligation: CustomStringConvertible {
+  let expression: BExpression
+  let mark: Int
+  let obligationType: BProofObligationType
+
+  var description: String {
+    let markLine = "// #MARKER# \(mark)"
+    return "\(markLine)\n\(obligationType) (\(expression))"
+  }
+}
+
 struct BProcedureDeclaration: CustomStringConvertible {
   let name: String
   let returnType: BType?
   let returnName: String?
   let parameters: [BParameterDeclaration]
-  let preConditions: [BExpression]
-  let postConditions: [BExpression]
+  let prePostConditions: [BProofObligation]
   let modifies: [BModifiesDeclaration]
   let statements: [BStatement]
   let variables: [BVariableDeclaration]
@@ -82,20 +106,17 @@ struct BProcedureDeclaration: CustomStringConvertible {
   var description: String {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
     let statementsString = statements.reduce("", {x, y in "\(x)\n\(y)"})
-    let preString = preConditions.reduce("", {x, y in "\(x)\nrequires(\(y));"})
-    let postString = postConditions.reduce("", {x, y in "\(x)\nensures(\(y));"})
+    let prePostString = prePostConditions.reduce("", {x, y in "\(x)\n\(y);"})
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
     let returnString = returnType == nil ? " " : " returns (\(returnName!): \(returnType!))"
     let variablesString = variables.map({(x) -> String in return x.description}).joined(separator: "\n")
 
     return """
     procedure \(name)(\(parameterString))\(returnString)
-      // Pre-Conditions
-      \(preString)
+      // Pre/Post Conditions
+      \(prePostString)
       // Modifies
       \(modifiesString)
-      // Post-Conditions
-      \(postString)
     {
     // Local variable declarations
     \(variablesString)
@@ -130,8 +151,7 @@ enum BStatement: CustomStringConvertible {
   case expression(BExpression)
   case ifStatement(BIfStatement)
   case whileStatement(BWhileStatement)
-  case assertStatement(BExpression)
-  case assertMarker(Int)
+  case assertStatement(BProofObligation)
   case assume(BExpression)
   case havoc(String)
   case assignment(BExpression, BExpression)
@@ -145,8 +165,7 @@ enum BStatement: CustomStringConvertible {
     case .expression(let expression): return expression.description
     case .ifStatement(let ifStatement): return ifStatement.description
     case .whileStatement(let whileStatement): return whileStatement.description
-    case .assertStatement(let assertion): return "assert (\(assertion));"
-    case .assertMarker(let id): return "//#ASSERT# \(id)"
+    case .assertStatement(let assertion): return assertion.description
     case .assume(let assumption): return "assume (\(assumption));"
     case .havoc(let identifier): return "havoc \(identifier);"
     case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs);"

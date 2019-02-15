@@ -11,24 +11,29 @@ VerifyPrePostConditions :: (any) {
   func testPreConditions()
     pre (1 == 1)
   {
-    assert (5 > 2)
+    assert (4 > 2)
   }
 
   func testPostConditions()
     post(1 == 1)
   {
-
   }
 
   func testPrePostConditions()
     pre (2 == 2)
     post (1 == 1)
   {
+  }
 
+  func testParamsPreConditions(input: Int, increment: Int)
+    pre (input == 10)
+  {
+    let input2: Int = input + increment
+    assert (input2 == 10 + increment)
   }
 
   func testGlobals() {
-    assert(ten == 10)
+    assert(ten != 10)
   }
 
   func testInconsistentPre()
