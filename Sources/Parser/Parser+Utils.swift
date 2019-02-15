@@ -33,18 +33,9 @@ extension Parser {
     let prevToken = currentToken
     currentIndex += 1
         
-    sync(syncSet)
+    return try sync(syncSet, diagnostic, prevToken!)
         
-	if let _ = currentToken {
-        diagnostics.append(diagnostic)
-	    return prevToken!
-	} else {
-            // we have consumed all of the input
-            // exit parsing
-            throw raise(diagnostic)
-	}         
     }
-
     currentIndex += 1
 
     if consumingTrailingNewlines {
@@ -53,8 +44,8 @@ extension Parser {
 
     return first
   }
-    
-    func sync(_ syncSet: [Token.Kind])  {
+    @discardableResult
+    func sync(_ syncSet: [Token.Kind], _ diagnostic : Diagnostic, _ prevToken: Token) throws -> Token  {
         var kind = currentToken?.kind
         while (!checkExistence(syncSet, kind!) &&  currentToken != nil)
         {
@@ -63,6 +54,15 @@ extension Parser {
             {
                 kind = currentToken?.kind
             }
+        }
+        
+        if let _ = currentToken {
+            diagnostics.append(diagnostic)
+            return prevToken
+        } else {
+            // we have consumed all of the input
+            // exit parsing
+            throw raise(diagnostic)
         }
     }
     

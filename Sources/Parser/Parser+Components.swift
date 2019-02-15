@@ -26,18 +26,21 @@ extension Parser {
   }
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
-    try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
-    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      // instead of doing this I can just sync at the next open curly brace
-      // and keep going
-      throw raise(.expectedCloseParen(at: latestSource))
+    let openBracketToken = try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
+    
+    if let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]){
+        let identifiers = try parseIdentifierList(upTo: closingIndex)
+        let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
+        return (identifiers, closeBracketToken)
+    } else {
+        let syncSet : [Token.Kind] = [.punctuation(.openBrace),
+                                      .newline
+                                     ]
+        let prevToken = try sync(syncSet, .expectedTypeStateCloseParen(at: latestSource), openBracketToken)
+        return (
+            [Identifier(identifierToken: Token(kind: Token.Kind.identifier("ERROR"), sourceLocation: latestSource))],
+            prevToken)
     }
-    // I guess if this parse identifer list fails
-    // then I either sync at the first open bracket of a contract declaration
-    let identifiers = try parseIdentifierList(upTo: closingIndex)
-    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
-
-    return (identifiers, closeBracketToken)
   }
 
   func parseIdentifierList(upTo closingIndex: Int) throws -> [Identifier] {
