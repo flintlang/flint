@@ -61,6 +61,7 @@ struct IRExpression {
     case .rawAssembly(let assembly, _):
       return assembly
     case .range: fatalError("Range shouldn't be rendered directly")
+    case .emptyExpr: fatalError("EMPTY EXPR")
     }
   }
 }
