@@ -76,6 +76,26 @@ extension Parser {
         return false
     }
     
+    func syncNewLine(diagnostic : Diagnostic) throws {
+        // add the new diagnostics
+        diagnostics.append(diagnostic)
+        while (true) {
+            let tok = currentToken
+            if (tok == nil)
+            {
+                throw raise(diagnostic)
+            }
+            
+            if (tok!.kind == .newline)
+            {
+                consumeNewLines()
+                return
+            }
+            currentIndex += 1
+        }
+        
+    }
+    
   /// Consumes the given token from the given list, i.e. discard it and move on to the next one. Throws if the current
   /// token being processed isn't equal to the given token.
   ///
