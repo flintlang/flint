@@ -14,6 +14,8 @@ struct BoogieTranslator {
   private var functionReturnVariableName = [String: String]()
   // Global variables modified in each procedure
   private var functionGlobalModifications = [String: [String]]()
+  // Empty Map Properties, for each type
+  private var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
 
   // Source location that each proof oligation corresponds to
   private var flintProofObligationSourceLocation = [Int: SourceLocation]()
@@ -80,7 +82,16 @@ struct BoogieTranslator {
       self.currentTLD = nil
     }
 
-    return BTopLevelProgram(declarations: declarations)
+    let propertyDeclarations: [BTopLevelDeclaration]
+      = emptyMapProperties.map({ arg in
+                                     let (_, v) = arg
+                                     let funcDec: BFunctionDeclaration = v.0
+                                     let axDec: BAxiomDeclaration = v.1
+                                     return [BTopLevelDeclaration.functionDeclaration(funcDec),
+                                             BTopLevelDeclaration.axiomDeclaration(axDec)]
+                                   }).reduce([], +)
+
+    return BTopLevelProgram(declarations: propertyDeclarations + declarations)
   }
 
   private mutating func process(_ contractDeclaration: ContractDeclaration) -> [BTopLevelDeclaration] {
@@ -791,14 +802,6 @@ struct BoogieTranslator {
 
       return "\(functionName)_\(getCurrentTLDName())"
     }
-    if let contractDeclaration = currentTLD {
-      switch contractDeclaration {
-      case .contractDeclaration(let contractDeclaration):
-        // Assume we are in a constructor since we are not in a contractBehaviourMember
-        return "init_\(contractDeclaration.identifier.name)"
-      default: break
-      }
-    }
     return nil
   }
 
@@ -903,14 +906,35 @@ struct BoogieTranslator {
     }
   }
 
-  private func defaultValue(_ type: BType) -> BExpression {
+  private mutating func defaultValue(_ type: BType) -> BExpression {
     switch type {
     case .int: return .integer(0)
     case .real: return .real(0, 0)
     case .boolean: return .boolean(false) // TODO: Is this the default bool value?
+    case .userDefined:
+      print("Can't translate default value for user defined type yet")
+      fatalError()
+    case .map(let t1, let t2):
+      if let properties = emptyMapProperties[type] {
+        return .functionApplication(properties.2, [])
+      }
 
-    default:
-      return .integer(0)
+      let t2Default = defaultValue(t2)
+      let emptyMapPropertyName = "Map_\(type.nameSafe).Empty"
+      let emptyMapPropertyFunction: BFunctionDeclaration =
+      BFunctionDeclaration(name: emptyMapPropertyName,
+                           returnType: type,
+                           returnName: "result",
+                           parameters: [])
+      let emptyMapPropertyAxiom: BAxiomDeclaration = BAxiomDeclaration(proposition:
+       .quantified(.forall,
+                   [BParameterDeclaration(name: "i", rawName: "i", type: t1)],
+                   .equals(.mapRead(.functionApplication(emptyMapPropertyName, []), .identifier("i")), t2Default))
+      )
+
+      emptyMapProperties[type] = (emptyMapPropertyFunction, emptyMapPropertyAxiom, emptyMapPropertyName)
+
+      return .functionApplication(emptyMapPropertyName, [])
     }
   }
 

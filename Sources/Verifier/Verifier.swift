@@ -102,7 +102,7 @@ public class Verifier {
     var errors = [BoogieError]()
     for line in lines {
       // Look for tuple followed by "Error"
-      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location|Error: undeclared)")
+      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location|Error:)")
       switch matches.count {
       case 0:
         break

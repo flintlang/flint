@@ -209,7 +209,7 @@ indirect enum BExpression: CustomStringConvertible {
   case real(Int, Int)
   case identifier(String)
   case old(BExpression)
-  case quantifier(BQuantifier, [BParameterDeclaration], BExpression)
+  case quantified(BQuantifier, [BParameterDeclaration], BExpression)
   case functionApplication(String, [BExpression])
   case nop
 
@@ -237,7 +237,7 @@ indirect enum BExpression: CustomStringConvertible {
     case .identifier(let string): return string
     case .old(let expression): return "old(\(expression))"
     case .nop: return "// nop"
-    case .quantifier(let quantifier, let parameterDeclaration, let expression):
+    case .quantified(let quantifier, let parameterDeclaration, let expression):
       let parameterDeclarationComponent
         = parameterDeclaration.map({(x) -> String in x.description}).joined(separator: ", ")
       return "(\(quantifier) \(parameterDeclarationComponent) :: \(expression))"
@@ -299,7 +299,7 @@ struct BWhileStatement: CustomStringConvertible {
   }
 }
 
-indirect enum BType: CustomStringConvertible {
+indirect enum BType: CustomStringConvertible, Hashable {
   case int
   case real
   case boolean
@@ -314,5 +314,19 @@ indirect enum BType: CustomStringConvertible {
     case .userDefined(let type): return type
     case .map(let type1, let type2): return "[\(type1)]\(type2)" //TODO: Wrong format, needs to be [int][int]int .., not [[int]int]int
     }
+  }
+
+  var nameSafe: String {
+    switch self {
+    case .int: return "int"
+    case .real: return "real"
+    case .boolean: return "bool"
+    case .userDefined(let type): return type
+    case .map(let type1, let type2): return "\(type1.nameSafe)_\(type2.nameSafe)"
+    }
+  }
+
+  var hashValue: Int {
+    return self.description.hashValue
   }
 }
