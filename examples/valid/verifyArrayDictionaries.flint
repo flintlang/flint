@@ -1,0 +1,23 @@
+contract Array {
+  var as: [Int]
+  var bs: [Int: Int]
+
+  var cs: [[Int]]
+}
+
+Array :: (any) {
+  public init() {
+    as = []
+    bs = [:]
+    cs = []
+  }
+
+  public mutating func arrayLiteral() {
+    as[0] = 3
+    bs[10] = 5
+    cs[0] = []
+    cs[0][0] = 0
+
+    //let b: [[Int]] = []
+  }
+}
