@@ -3,8 +3,8 @@ contract Array {
   var bs: [Int: Int]
 
   var cs: [[Int]]
-  var ds: [[[Int]]] = []
-  var es: [Int: [[Int]]] = [:]
+  var ds: [[[Int]]]// = []
+  var es: [Int: [[Int]]]// = [:]
 }
 
 Array :: (any) {
@@ -12,7 +12,8 @@ Array :: (any) {
     as = []
     bs = [:]
     cs = []
-
+    ds = []
+    es = [:]
   }
 
   public mutating func arrayLiteral() {

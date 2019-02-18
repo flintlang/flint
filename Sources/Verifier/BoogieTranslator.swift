@@ -379,7 +379,11 @@ struct BoogieTranslator {
 
       let functionName = translateGlobalIdentifierName(rawFunctionName)
 
-      //TODO: Assert that contract invariant holds?
+      // TODO: Assert that contract invariant holds
+      // TODO: Need to link the failing assert to the invariant =>
+      //  error msg: Can't call function, the contract invariant does not hold at this point
+      //argumentsStatements += (contractInvariants[getCurrentTLDName()] ?? []).map({ .assertStatement($0) })
+
       if let returnType = getFunctionReturnBType(functionCall) {
         // Function returns a value
         let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
@@ -394,8 +398,8 @@ struct BoogieTranslator {
         return (returnValue, argumentsStatements)
       } else {
         // Function doesn't return a value
-        // Can assume can't be called as part of a nested expression, as it has no
-        // return value -> Is this true? TODO - test
+        // Can assume can't be called as part of a nested expression,
+        // has return type Void
         argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions))
         return (.nop, argumentsStatements)
       }
@@ -721,39 +725,56 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func getFunctionReturnBType(_ functionCall: FunctionCall) -> BType? {
+  private mutating func getFunctionReturnBType(_ functionCall: FunctionCall) -> BType? {
     //TODO: Get type of calling function
-    /*
-    let currentType = getCurrentTLDName() // TODO: This only works for functions within the same contract?
+    let currentType = getCurrentTLDName() // TODO: Does this only works for functions within the same contract?
     if let scopeContext = getCurrentFunction().scopeContext {
       let callerProtections = getCurrentContractBehaviorDeclaration().callerProtections
       let typeStates = getCurrentContractBehaviorDeclaration().states
-      switch environment.matchFunctionCall(functionCall,
-                                           enclosingType: currentType,
-                                           typeStates: typeStates,
-                                           callerProtections: callerProtections,
-                                           scopeContext: scopeContext) {
-
+      let matchedCall = environment.matchFunctionCall(functionCall,
+                                                      enclosingType: currentType,
+                                                      typeStates: typeStates,
+                                                      callerProtections: callerProtections,
+                                                      scopeContext: scopeContext)
+      var returnType: RawType
+      switch matchedCall {
       case .matchedFunction(let functionInformation):
-        return convertType(functionInformation.resultType)
+        returnType = functionInformation.resultType
 
       case .matchedGlobalFunction(let functionInformation):
-        return convertType(functionInformation.resultType)
+        returnType = functionInformation.resultType
 
-      case .failure:
-        return nil
+      case .matchedFunctionWithoutCaller(let callableInformations):
+        //TODO: No idea what this means
+        print("Matched function without caller?")
+        print(callableInformations)
+        fatalError()
 
-      default: break
+      case .matchedInitializer(let specialInformation):
+        // TODO: Handle structs?
+        print("Handle structs / init calls")
+        print(specialInformation)
+        fatalError()
 
-      //case .matchedFunctionWithoutCaller(let callableInformations):
-      //case .matchedInitializer(let specialInformation):
-      //case .matchedFallback(let specialInformation):
+      case .matchedFallback(let specialInformation):
+        //TODO: Handle fallback functions
+        print("Handle fallback calls")
+        print(specialInformation)
+        fatalError()
+
+      default:
+        print("could not find function for call: \(functionCall)")
+        fatalError()
       }
+
+      // Handle void function -> return nil
+      if returnType == RawType.basicType(.void) {
+        return nil
+      }
+      return convertType(returnType)
     }
     print("Cannot get scopeContext from current function")
     fatalError()
-    */
-    return BType.int
   }
 
   private func randomIdentifier(`prefix`: String = "i") -> String {

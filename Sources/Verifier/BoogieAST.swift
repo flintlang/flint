@@ -312,7 +312,7 @@ indirect enum BType: CustomStringConvertible, Hashable {
     case .real: return "real"
     case .boolean: return "bool"
     case .userDefined(let type): return type
-    case .map(let type1, let type2): return "[\(type1)]\(type2)" //TODO: Wrong format, needs to be [int][int]int .., not [[int]int]int
+    case .map(let type1, let type2): return "[\(type1)]\(type2)"
     }
   }
 
