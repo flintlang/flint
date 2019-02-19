@@ -192,6 +192,8 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .specialDeclaration(let specialDeclaration):
       self.dump(specialDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
     }
   }
 

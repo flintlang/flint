@@ -36,6 +36,8 @@ struct BoogieTranslator {
   private var contractGlobalVariables = [String: [String]]()
   // List of invariants for each contract
   private var contractInvariants = [String: [BProofObligation]]()
+  //List of invariants for each struct
+  private var structInvariants = [String: [BProofObligation]]()
 
   public init(topLevelModule: TopLevelModule, environment: Environment) {
     self.topLevelModule = topLevelModule
@@ -163,17 +165,60 @@ struct BoogieTranslator {
     return []
   }
 
-  private func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
-    /*
-    for member in structDeclaration.members {
-      switch member {
-      case .variableDeclaration(let variableDeclaration):
-      case .functionDeclaration...
+  private mutating func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
+    var declarations = [BTopLevelDeclaration]()
+    var structVariables = [String]()
+
+    for variableDeclaration in structDeclaration.variableDeclarations {
+      let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
+      let type = convertType(variableDeclaration.type)
+
+      // TODO: Some variables require shadow variables, eg dictionaries need an array of keys
+      declarations.append(.variableDeclaration(BVariableDeclaration(name: name,
+                                                                    rawName: variableDeclaration.identifier.name,
+                                                                    type: .map(.int, type))))
+
+      /* TODO: Struct variable assignment
+      // Record assignment to put in constructor procedure
+      let (assignedExpression, preStatements) = variableDeclaration.assignedExpression == nil
+        ? (defaultValue(type), []) : process(variableDeclaration.assignedExpression!)
+      if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
+        contractConstructorInitialisations[contractDeclaration.identifier.name] = []
       }
+      contractConstructorInitialisations[contractDeclaration.identifier.name]! += preStatements
+      contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
+        .assignment(.identifier(name), assignedExpression)
+      )
+      */
+    }
+
+    // TODO: Handle usage of += 1 and preStmts
+    var invariantDeclarations = [BProofObligation]()
+    for declaration in structDeclaration.invariantDeclarations {
+      //Invariants are turned into both pre and post conditions
+      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+                                                    mark: declaration.sourceLocation.line,
+                                                    obligationType: .preCondition))
+      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+                                                    mark: declaration.sourceLocation.line,
+                                                    obligationType: .postCondition))
+      flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
+    }
+    structInvariants[structDeclaration.identifier.name] = invariantDeclarations
+
+    /*
+    TODO: Handle function declarations
+    for functionDeclaration in structDeclaration.functionDeclarations {
+      self.currentBehaviourMember = .functionDeclaration(functionDeclaration)
+      declarations.append(process(functionDeclaration))
+      self.currentBehaviourMember = nil
+    }
+
+    for specialDeclaration in structDeclaration.specialDeclarations {
     }
     */
-    // TODO:
-    return []
+
+    return declarations
   }
 
   private mutating func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
@@ -215,56 +260,61 @@ struct BoogieTranslator {
           )))
 
       case .functionDeclaration(let functionDeclaration):
-        let currentFunctionName = getCurrentFunctionName()!
-        let body = functionDeclaration.body
-        let parameters = functionDeclaration.signature.parameters
-        //let name = functionDeclaration.name
-        let signature = functionDeclaration.signature
-
-        let bParameters = parameters.map({x in process(x)})
-        setFunctionParameters(name: currentFunctionName, parameters: bParameters)
-
-        var prePostConditions = [BProofObligation]()
-        // TODO: Handle += operators and function calls in pre conditions
-        for condition in signature.prePostConditions {
-          switch condition {
-          case .pre(let e):
-            prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                      mark: e.sourceLocation.line,
-                                                      obligationType: .preCondition))
-            flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
-          case .post(let e):
-            prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                      mark: e.sourceLocation.line,
-                                                      obligationType: .postCondition))
-            flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
-          }
-        }
-
-        // Procedure must hold invariant
-        let invariants = contractInvariants[getCurrentTLDName()] ?? []
-        prePostConditions += invariants
-
-        declarations.append(.procedureDeclaration(BProcedureDeclaration(
-          name: currentFunctionName,
-          returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
-          returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
-          parameters: bParameters,
-          prePostConditions: prePostConditions,
-          modifies: [], // TODO [BModifiesDeclaration]
-          statements: body.flatMap({x in process(x)}),
-          variables: getFunctionVariableDeclarations(name: currentFunctionName)
-          )))
+        declarations.append(process(functionDeclaration))
 
       default:
         // TODO: Handle functionSignatureDeclaration case
         // TODO: Handle specialFunctionSignatureDeclaration case
         print("found declaration: \(member)")
       }
-      currentBehaviourMember = nil
+      self.currentBehaviourMember = nil
     }
 
     return declarations
+  }
+
+  private mutating func process(_ functionDeclaration: FunctionDeclaration) -> BTopLevelDeclaration {
+    let currentFunctionName = getCurrentFunctionName()!
+    let body = functionDeclaration.body
+    let parameters = functionDeclaration.signature.parameters
+    //let name = functionDeclaration.name
+    let signature = functionDeclaration.signature
+
+    let bParameters = parameters.map({x in process(x)})
+    setFunctionParameters(name: currentFunctionName, parameters: bParameters)
+
+    var prePostConditions = [BProofObligation]()
+    // TODO: Handle += operators and function calls in pre conditions
+    for condition in signature.prePostConditions {
+      switch condition {
+      case .pre(let e):
+        prePostConditions.append(BProofObligation(expression: process(e).0,
+                                                  mark: e.sourceLocation.line,
+                                                  obligationType: .preCondition))
+        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
+      case .post(let e):
+        prePostConditions.append(BProofObligation(expression: process(e).0,
+                                                  mark: e.sourceLocation.line,
+                                                  obligationType: .postCondition))
+        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
+      }
+    }
+
+    // Procedure must hold invariant
+    let invariants = contractInvariants[getCurrentTLDName()] ?? []
+    prePostConditions += invariants
+
+    return .procedureDeclaration(BProcedureDeclaration(
+      name: currentFunctionName,
+      returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
+      returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
+      parameters: bParameters,
+      prePostConditions: prePostConditions,
+      modifies: [], // TODO [BModifiesDeclaration]
+      statements: body.flatMap({x in process(x)}),
+      variables: getFunctionVariableDeclarations(name: currentFunctionName)
+      ))
+
   }
 
   private func process(_ parameter: Parameter) -> BParameterDeclaration {
@@ -431,6 +481,9 @@ struct BoogieTranslator {
     case .literal(let token):
       return (process(token), [])
 
+    case .inoutExpression(let inoutExpression):
+      return process(inoutExpression.expression) // TODO: Consider cases where we need to do pass by reference
+
     case .rawAssembly:
       print("Not implemented translating raw assembly")
       fatalError()
@@ -473,7 +526,6 @@ struct BoogieTranslator {
 
       // TODO: Implement expressions
     /*
-    case .inoutExpression(let inoutExpression):
     case .attemptExpression(let attemptExpression):
     case .sequence(let expressions: [Expression]):
     case .range(let rangeExpression):
@@ -860,12 +912,13 @@ struct BoogieTranslator {
 
       case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
         return contractBehaviorDeclaration.contractIdentifier.name
+      case .structDeclaration(let structDeclaration):
+        return structDeclaration.identifier.name
+
       default:
         break
-
       /*
         TODO: Implement
-      case .structDeclaration(let structDeclaration):
       case .enumDeclaration(let enumDeclaration):
       case .traitDeclaration(let traitDeclaration):
         */
@@ -908,7 +961,7 @@ struct BoogieTranslator {
     func convertStdlibType(_ sType: RawType.StdlibType) -> BType {
       switch sType {
       case .wei:
-        return .userDefined("Wei") //TODO: What about assets? Make this non-primitive?
+        return .int
       }
     }
 
@@ -921,6 +974,8 @@ struct BoogieTranslator {
       return BType.map(convertType(keyType), convertType(valueType))
     case .arrayType(let type):
       return .map(.int, convertType(type))
+    case .inoutType(let type):
+      return convertType(type)
     default:
       print("not implemented conversion for type: \(type)")
       fatalError()

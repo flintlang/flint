@@ -293,6 +293,10 @@ public struct ASTVisitor {
       processResult.element =
         .specialDeclaration(processResult.combining(visit(specialDeclaration,
                                                           passContext: processResult.passContext)))
+    case .invariantDeclaration(let expression):
+      processResult.element =
+        .invariantDeclaration(processResult.combining(visit(expression,
+                                                            passContext: processResult.passContext)))
     }
 
     let postProcessResult = pass.postProcess(structMember: processResult.element,

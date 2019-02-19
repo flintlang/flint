@@ -21,6 +21,14 @@ public struct StructDeclaration: ASTNode {
     }
   }
 
+  public var invariantDeclarations: [Expression] {
+    return members.compactMap({ if case .invariantDeclaration(let expression) = $0 {
+        return expression
+      }
+      return nil
+    })
+  }
+
   public var functionDeclarations: [FunctionDeclaration] {
     return members.compactMap { member in
       guard case .functionDeclaration(let functionDeclaration) = member else { return nil }

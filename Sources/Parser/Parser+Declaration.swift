@@ -185,6 +185,12 @@ extension Parser {
       } else if first == .init || first == .fallback {
         let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
         members.append(.specialDeclaration(decl))
+      } else if first == .invariant {
+        _ = try consume(anyOf: [.invariant], or: .expectedInvariantDeclaration(at: latestSource))
+        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+          throw raise(.expectedInvariantDeclaration(at: latestSource))
+        }
+        members.append(.invariantDeclaration(try parseExpression(upTo: newLine)))
       } else if first == .var || first == .let,
         attrs.isEmpty {
         guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
