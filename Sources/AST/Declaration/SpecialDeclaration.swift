@@ -33,6 +33,7 @@ public struct SpecialDeclaration: ASTNode {
       modifiers: signature.modifiers,
       identifier: dummyIdentifier,
       parameters: signature.parameters,
+      prePostConditions: [],
       closeBracketToken: signature.closeBracketToken,
       resultType: nil)
 

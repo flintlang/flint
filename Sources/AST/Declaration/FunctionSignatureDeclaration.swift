@@ -18,6 +18,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   public var modifiers: [Token]
   public var identifier: Identifier
   public var parameters: [Parameter]
+  public var prePostConditions: [PrePostCondition]
   public var closeBracketToken: Token
   public var resultType: Type?
 
@@ -33,6 +34,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
               modifiers: [Token],
               identifier: Identifier,
               parameters: [Parameter],
+              prePostConditions: [PrePostCondition],
               closeBracketToken: Token,
               resultType: Type?) {
     self.funcToken = funcToken
@@ -40,6 +42,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
     self.modifiers = modifiers
     self.identifier = identifier
     self.parameters = parameters
+    self.prePostConditions = prePostConditions
     self.closeBracketToken = closeBracketToken
     self.resultType = resultType
   }
@@ -57,6 +60,11 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
       lhs.parameters.map({ $0.identifier.name }) == rhs.parameters.map({ $0.identifier.name }) &&
       lhs.parameters.map({ $0.type.rawType }) == rhs.parameters.map({ $0.type.rawType }) &&
       lhs.parameters.map({ $0.isInout }) == rhs.parameters.map({ $0.isInout })
+  }
+
+  public enum PrePostCondition {
+    case pre(Expression)
+    case post(Expression)
   }
 
   // MARK: - ASTNode

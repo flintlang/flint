@@ -73,6 +73,7 @@ extension Parser {
 
       // Try to parse a bracketed expression.
       return .bracketedExpression(try parseBracketedExpression())
+
     }
     if case .punctuation(.openSquareBracket) = first {
       // Check for a dictionary by descending into the open bracket and looking for a colon

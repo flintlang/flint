@@ -192,6 +192,8 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .specialDeclaration(let specialDeclaration):
       self.dump(specialDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
     }
   }
 
@@ -201,6 +203,8 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
     }
   }
 

@@ -77,6 +77,7 @@ public struct TopLevelModule: ASTNode {
                                                          ],
                                                          identifier: identifier,
                                                          parameters: parameters,
+                                                         prePostConditions: [],
                                                          closeBracketToken: dummyCloseToken,
                                                          resultType: resultType)
 
@@ -116,6 +117,7 @@ public struct TopLevelModule: ASTNode {
                                                           ],
                                                           identifier: identifier,
                                                           parameters: parameters + [valueParameter],
+                                                          prePostConditions: [],
                                                           closeBracketToken: dummyCloseToken,
                                                           resultType: nil)
 

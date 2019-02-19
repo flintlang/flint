@@ -25,6 +25,14 @@ public struct ContractDeclaration: ASTNode {
     })
   }
 
+  public var invariantDeclarations: [Expression] {
+    return members.compactMap({ if case .invariantDeclaration(let expression) = $0 {
+        return expression
+      }
+      return nil
+    })
+  }
+
   public var isStateful: Bool {
     return !states.isEmpty
   }

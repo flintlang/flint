@@ -1,0 +1,35 @@
+for-in
+  - array
+  - dict values
+  - ranges => create arrays containing range
+
+if-else  => use if else
+
+structs
+  - fields => split struct into arrays for each field. Struct reference now becomes an index intor the field arrays
+  - methods => re-write methods to take struct (index) as first parameter and replace struct.method() to method(struct)
+
+
+contracts
+  - constants => boogie const
+  - variables => boogie vars
+
+operations
+  - +, -, *, ** throw overflow errors => do not need to consider as the contract will abort
+  - &+, &-, &* - no overflow errors => allow the variables to overflow (perhaps add logic to detect and handle overflow if Boogie would error)
+
+assets => not sure
+
+caller capabilities => requires (exists x: int :: caller == users[x]) etc.
+
+@payable => don't need
+
+type states => encode type states as numbers (eg state = 1  -> Preparing) and require that state = 1 at beginning of function declaration
+
+traits => gone at compile time
+
+global functions => implement global functions in boogie. assert => assert. send() - track money received and sent by contract (for spec)
+
+functions => procedures
+
+mutating => not mutation, procedure contains no modifications of gobal values. Mutating must update global state, function must modify one of global values

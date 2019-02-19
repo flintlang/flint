@@ -1,0 +1,9 @@
+contract InconsistentAssumptions {
+  // TODO: Inconsistent axioms
+  // TODO: Inconsistent pre conditions
+  // TODO: Inconsistent invariants conditions
+}
+
+InconsistentAssumptions :: (any) {
+  public init() {}
+}

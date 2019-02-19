@@ -1,0 +1,42 @@
+contract LocalVariables {
+    var ten: Int = 10
+}
+
+LocalVariables :: (any) {
+
+  public init() {}
+
+  public func localVariables() {
+    var i: Int = 10
+    let j: Int = 20
+  }
+
+  public mutating func loop() {
+    var k: Int = 5
+    is[0] = 0
+
+    for let i: Int in is {
+      k += i
+    }
+  }
+
+  public mutating func scoping() {
+    var is: Int = 0
+    is = 6
+    let j: Int = self.ten
+    self.ten += 5
+  }
+
+  public func returnTest1() -> Int {
+    return 0
+  }
+
+  public func returnTest2() -> Int {
+    let i: Int = 10
+    return i
+  }
+
+  public func returnTest3(para: Int) -> Int {
+    return para
+  }
+}

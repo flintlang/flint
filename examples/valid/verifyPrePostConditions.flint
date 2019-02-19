@@ -1,0 +1,45 @@
+contract VerifyPrePostConditions {
+  let ten: Int = 10
+
+  invariant (10 == 10)
+  invariant (ten == 10)
+}
+
+VerifyPrePostConditions :: (any) {
+  public init() {}
+
+  func testPreConditions()
+    pre (1 == 1)
+  {
+    assert (4 > 2)
+  }
+
+  func testPostConditions()
+    post(1 == 1)
+  {
+  }
+
+  func testPrePostConditions()
+    pre (2 == 2)
+    post (1 == 1)
+  {
+  }
+
+  func testParamsPreConditions(input: Int, increment: Int)
+    pre (input == 10)
+  {
+    let input2: Int = input + increment
+    assert (input2 == 10 + increment)
+  }
+
+  func testGlobals() {
+    assert(ten != 10)
+  }
+
+  func testInconsistentPre()
+    pre (ten == 5)
+  {
+    // Pre condition contradicts what the invariant says
+    assert(false)
+  }
+}

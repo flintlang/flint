@@ -93,6 +93,10 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
                       message: "Expected a trait identifier to conform to")
   }
+  static func expectedInvariantDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'invariant' declaration withing contract")
+  }
 
   // MARK: Enum
   static func expectedEnumDeclarationCaseMember(at sourceLocation: SourceLocation) -> Diagnostic {
@@ -105,6 +109,10 @@ extension Diagnostic {
   }
   static func expectedParameterCloseParenthesis(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ')' in parameter")
+  }
+  static func badPrePostConditionDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'pre' or 'post' in function pre/post declaration")
   }
 
   // MARK: Expressions

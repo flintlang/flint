@@ -12,6 +12,7 @@ import Lexer
 import Parser
 import SemanticAnalyzer
 import TypeChecker
+import Verifier
 import Optimizer
 import IRGen
 
@@ -22,6 +23,8 @@ struct Compiler {
   var outputDirectory: URL
   var dumpAST: Bool
   var emitBytecode: Bool
+  var dumpVerifierIR: Bool
+  var skipVerifier: Bool
   var diagnostics: DiagnosticPool
 
   var sourceContext: SourceContext {
@@ -60,15 +63,49 @@ struct Compiler {
     // The AST passes to run sequentially.
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
-      TypeChecker(),
+      TypeChecker()
+    ]
+
+    // AST Pass 1
+    let semanticsPassRunnerOutcome = ASTPassRunner(ast: ast)
+      .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(semanticsPassRunnerOutcome.diagnostics) {
+      if failed {
+        exitWithFailure()
+      }
+      exit(0)
+    }
+
+    // AST Verification
+    if !skipVerifier {
+      let (verified, errors) = Verifier(dumpVerifierIR: dumpVerifierIR,
+                             boogieLocation: "boogie/Binaries/Boogie.exe",
+                             monoLocation: "/usr/bin/mono",
+                             topLevelModule: semanticsPassRunnerOutcome.element,
+                             environment: semanticsPassRunnerOutcome.environment).verify()
+
+      if verified {
+        print("Contract Verified!")
+      } else {
+        print("Contract not verified")
+        if let failed = try diagnostics.checkpoint(errors) {
+          if failed {
+            exitWithFailure()
+          }
+          exit(0)
+        }
+      }
+    }
+
+    // AST Pass 2
+    let irGenerationPasses: [ASTPass] = [
       Optimizer(),
       IRPreprocessor()
     ]
 
-    // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast)
-      .run(passes: astPasses, in: environment, sourceContext: sourceContext)
-    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+    let irPassRunnerOutcome = ASTPassRunner(ast: semanticsPassRunnerOutcome.element)
+      .run(passes: irGenerationPasses, in: semanticsPassRunnerOutcome.environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(irPassRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
       }
@@ -76,7 +113,8 @@ struct Compiler {
     }
 
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+    let irCode = IRCodeGenerator(topLevelModule: irPassRunnerOutcome.element,
+                                 environment: irPassRunnerOutcome.environment)
       .generateCode()
 
     // Compile the YUL IR code using solc.

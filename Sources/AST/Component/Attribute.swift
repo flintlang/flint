@@ -10,7 +10,7 @@ import Lexer
 /// A function attribute, such as `@payable`.
 public struct Attribute: ASTNode {
 
-  var kind: Kind
+  public var kind: Kind
   var atToken: Token
   var identifierToken: Token
 
@@ -25,8 +25,9 @@ public struct Attribute: ASTNode {
     self.identifierToken = identifierToken
   }
 
-  enum Kind: String {
+  public enum Kind: String {
     case payable
+    case abstract
   }
 
   // MARK: - ASTNode
