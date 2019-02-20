@@ -34,10 +34,8 @@ struct BoogieTranslator {
 
   // Name of global variables in the contract
   private var contractGlobalVariables = [String: [String]]()
-  // List of invariants for each contract
-  private var contractInvariants = [String: [BProofObligation]]()
-  //List of invariants for each struct
-  private var structInvariants = [String: [BProofObligation]]()
+  // List of invariants for each tld
+  private var tldInvariants = [String: [BProofObligation]]()
 
   public init(topLevelModule: TopLevelModule, environment: Environment) {
     self.topLevelModule = topLevelModule
@@ -134,7 +132,7 @@ struct BoogieTranslator {
                                                     obligationType: .postCondition))
       flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
     }
-    contractInvariants[contractDeclaration.identifier.name] = invariantDeclarations
+    tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
     let stateVariableName = generateStateVariable(contractDeclaration)
     contractStateVariable[contractDeclaration.identifier.name] = stateVariableName
@@ -166,6 +164,9 @@ struct BoogieTranslator {
   }
 
   private mutating func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
+    // Skip special global struct - too solidity low level - TODO: Is this necessary?
+    if structDeclaration.identifier.name == "Flint$Global" { return [] }
+
     var declarations = [BTopLevelDeclaration]()
     var structVariables = [String]()
 
@@ -204,17 +205,20 @@ struct BoogieTranslator {
                                                     obligationType: .postCondition))
       flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
     }
-    structInvariants[structDeclaration.identifier.name] = invariantDeclarations
+    tldInvariants[getCurrentTLDName()] = invariantDeclarations
 
-    /*
-    TODO: Handle function declarations
+    //TODO: Handle function declarations
     for functionDeclaration in structDeclaration.functionDeclarations {
       self.currentBehaviourMember = .functionDeclaration(functionDeclaration)
       declarations.append(process(functionDeclaration))
       self.currentBehaviourMember = nil
     }
 
+    //TODO: Handle constructor declarations
+    /*
     for specialDeclaration in structDeclaration.specialDeclarations {
+      self.currentBehaviourMember = .specialDeclaration(specialDeclaration)
+      self.currentBehaviourMember = nil
     }
     */
 
@@ -242,7 +246,7 @@ struct BoogieTranslator {
 
         // Constructor has no pre-conditions
         // - and constructor must setup invariant
-        let postConditions = (contractInvariants[getCurrentTLDName()] ?? [])
+        let postConditions = (tldInvariants[getCurrentTLDName()] ?? [])
           .filter({$0.obligationType != .preCondition})
 
         // Constructor
@@ -301,7 +305,7 @@ struct BoogieTranslator {
     }
 
     // Procedure must hold invariant
-    let invariants = contractInvariants[getCurrentTLDName()] ?? []
+    let invariants = tldInvariants[getCurrentTLDName()] ?? []
     prePostConditions += invariants
 
     return .procedureDeclaration(BProcedureDeclaration(
@@ -432,7 +436,7 @@ struct BoogieTranslator {
       // TODO: Assert that contract invariant holds
       // TODO: Need to link the failing assert to the invariant =>
       //  error msg: Can't call function, the contract invariant does not hold at this point
-      //argumentsStatements += (contractInvariants[getCurrentTLDName()] ?? []).map({ .assertStatement($0) })
+      //argumentsStatements += (tldInvariants[getCurrentTLDName()] ?? []).map({ .assertStatement($0) })
 
       if let returnType = getFunctionReturnBType(functionCall) {
         // Function returns a value
@@ -781,8 +785,8 @@ struct BoogieTranslator {
     //TODO: Get type of calling function
     let currentType = getCurrentTLDName() // TODO: Does this only works for functions within the same contract?
     if let scopeContext = getCurrentFunction().scopeContext {
-      let callerProtections = getCurrentContractBehaviorDeclaration().callerProtections
-      let typeStates = getCurrentContractBehaviorDeclaration().states
+      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
       let matchedCall = environment.matchFunctionCall(functionCall,
                                                       enclosingType: currentType,
                                                       typeStates: typeStates,
@@ -803,10 +807,8 @@ struct BoogieTranslator {
         fatalError()
 
       case .matchedInitializer(let specialInformation):
-        // TODO: Handle structs?
-        print("Handle structs / init calls")
-        print(specialInformation)
-        fatalError()
+        // Initialisers do not return values -> although struct inits do = ints
+        return nil
 
       case .matchedFallback(let specialInformation):
         //TODO: Handle fallback functions
@@ -814,8 +816,10 @@ struct BoogieTranslator {
         print(specialInformation)
         fatalError()
 
-      default:
+      case .failure(let candidates):
         print("could not find function for call: \(functionCall)")
+        print(currentType)
+        print(candidates)
         fatalError()
       }
 
@@ -878,16 +882,16 @@ struct BoogieTranslator {
     return nil
   }
 
-  private func getCurrentContractBehaviorDeclaration() -> ContractBehaviorDeclaration {
+  private func getCurrentContractBehaviorDeclaration() -> ContractBehaviorDeclaration? {
     if let tld = currentTLD {
       switch tld {
       case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
         return contractBehaviorDeclaration
       default:
-        break
+        return nil
       }
     }
-    print("Error cannot get current contract declaration - not in a contract")
+    print("Error cannot get current contract declaration - not in any TopLevelDeclaration")
     fatalError()
   }
 
