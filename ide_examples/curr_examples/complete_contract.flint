@@ -48,6 +48,12 @@ abc @(Test1) :: caller <- (any) {
 
 }
 
+abc @(Test2) :: caller <- (any) {
+   func rem() -> Int {
+       return 0
+   }
+}
+
 
 // contract behaviour with type state and also binding callers to a variable
 // im guessing things like that are expressions
