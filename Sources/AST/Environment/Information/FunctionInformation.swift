@@ -13,7 +13,7 @@ public struct FunctionInformation {
   public var isMutating: Bool
   public var isSignature: Bool
 
-  var parameterTypes: [RawType] {
+  public var parameterTypes: [RawType] {
     return declaration.signature.parameters.map { $0.type.rawType }
   }
 

@@ -419,8 +419,9 @@ struct BoogieTranslator {
         argumentsStatements += stmts
       }
 
+      switch rawFunctionName {
       // Special case to handle assert functions
-      if rawFunctionName == "assert" {
+      case "assert":
         // assert that assert function call always has one argument
         assert (argumentsExpressions.count == 1)
         let flintLine = functionCall.identifier.sourceLocation.line
@@ -429,16 +430,25 @@ struct BoogieTranslator {
                                                                      mark: flintLine,
                                                                      obligationType: .assertion)))
         return (.nop, argumentsStatements)
-      }
 
-      let functionName = translateGlobalIdentifierName(rawFunctionName)
+      // Handle fatal error case
+      case "fatalError":
+        argumentsStatements.append(.assume(.boolean(false)))
+        return (.nop, argumentsStatements)
+
+      default: break
+      }
 
       // TODO: Assert that contract invariant holds
       // TODO: Need to link the failing assert to the invariant =>
       //  error msg: Can't call function, the contract invariant does not hold at this point
       //argumentsStatements += (tldInvariants[getCurrentTLDName()] ?? []).map({ .assertStatement($0) })
 
-      if let returnType = getFunctionReturnBType(functionCall) {
+      let (returnType, parameterTypes) = getFunctionTypes(functionCall)
+
+      let functionName = translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }))
+
+      if returnType != RawType.basicType(.void) {
         // Function returns a value
         let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
         let returnValue = BExpression.identifier(returnValueVariable)
@@ -447,7 +457,7 @@ struct BoogieTranslator {
                                                      argumentsExpressions)
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                    rawName: returnValueVariable,
-                                                                   type: returnType))
+                                                                   type: convertType(returnType)))
         argumentsStatements.append(functionCall)
         return (returnValue, argumentsStatements)
       } else {
@@ -781,8 +791,7 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private mutating func getFunctionReturnBType(_ functionCall: FunctionCall) -> BType? {
-    //TODO: Get type of calling function
+  private mutating func getFunctionTypes(_ functionCall: FunctionCall) -> (RawType, [RawType]) {
     let currentType = getCurrentTLDName() // TODO: Does this only works for functions within the same contract?
     if let scopeContext = getCurrentFunction().scopeContext {
       let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
@@ -793,12 +802,15 @@ struct BoogieTranslator {
                                                       callerProtections: callerProtections,
                                                       scopeContext: scopeContext)
       var returnType: RawType
+      var parameterTypes: [RawType]
       switch matchedCall {
       case .matchedFunction(let functionInformation):
         returnType = functionInformation.resultType
+        parameterTypes = functionInformation.parameterTypes
 
       case .matchedGlobalFunction(let functionInformation):
         returnType = functionInformation.resultType
+        parameterTypes = functionInformation.parameterTypes
 
       case .matchedFunctionWithoutCaller(let callableInformations):
         //TODO: No idea what this means
@@ -808,7 +820,9 @@ struct BoogieTranslator {
 
       case .matchedInitializer(let specialInformation):
         // Initialisers do not return values -> although struct inits do = ints
-        return nil
+        print("Haven't implement initializers yet")
+        print(specialInformation)
+        fatalError()
 
       case .matchedFallback(let specialInformation):
         //TODO: Handle fallback functions
@@ -823,11 +837,7 @@ struct BoogieTranslator {
         fatalError()
       }
 
-      // Handle void function -> return nil
-      if returnType == RawType.basicType(.void) {
-        return nil
-      }
-      return convertType(returnType)
+      return (returnType, parameterTypes)
     }
     print("Cannot get scopeContext from current function")
     fatalError()
@@ -866,18 +876,22 @@ struct BoogieTranslator {
   private func getCurrentFunctionName() -> String? {
     if let behaviourDeclarationMember = currentBehaviourMember {
       var functionName: String
+      let parameterTypes: [RawType]
       switch behaviourDeclarationMember {
       case .functionDeclaration(let functionDeclaration):
         functionName = functionDeclaration.signature.identifier.name
+        parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
       case .specialDeclaration(let specialDeclaration):
         functionName = specialDeclaration.signature.specialToken.description
+        parameterTypes = specialDeclaration.signature.parameters.map({ $0.type.rawType })
       case .functionSignatureDeclaration(let functionSignatureDeclaration):
         functionName = functionSignatureDeclaration.identifier.name
+        parameterTypes = functionSignatureDeclaration.parameters.map({ $0.type.rawType })
       case .specialSignatureDeclaration(let specialSignatureDeclaration):
         functionName = specialSignatureDeclaration.specialToken.description
+        parameterTypes = specialSignatureDeclaration.parameters.map({ $0.type.rawType })
       }
-
-      return "\(functionName)_\(getCurrentTLDName())"
+      return translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }))
     }
     return nil
   }
