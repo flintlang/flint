@@ -18,6 +18,7 @@ public struct SpecialSignatureDeclaration: ASTNode {
   public var modifiers: [Token]
   public var parameters: [Parameter]
   public var closeBracketToken: Token
+  public var prePostConditions: [PrePostCondition]
 
   /// The non-implicit parameters of the initializer.
   public var explicitParameters: [Parameter] {
@@ -37,7 +38,7 @@ public struct SpecialSignatureDeclaration: ASTNode {
       modifiers: modifiers,
       identifier: dummyIdentifier,
       parameters: parameters,
-      prePostConditions: [],
+      prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken,
       resultType: nil
     )
@@ -47,11 +48,13 @@ public struct SpecialSignatureDeclaration: ASTNode {
               attributes: [Attribute],
               modifiers: [Token],
               parameters: [Parameter],
+              prePostConditions: [PrePostCondition],
               closeBracketToken: Token) {
     self.specialToken = specialToken
     self.attributes = attributes
     self.modifiers = modifiers
     self.parameters = parameters
+    self.prePostConditions = prePostConditions
     self.closeBracketToken = closeBracketToken
   }
 

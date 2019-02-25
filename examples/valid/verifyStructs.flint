@@ -1,0 +1,38 @@
+contract Test {
+}
+
+struct S {
+  var i: Int
+  var is: [Int] = []
+  var j: Int = 0
+
+  invariant (i > 0)
+
+
+  public init()
+  pre (1==1)
+  {
+    i = 0
+  }
+
+  public mutating func wow()
+    pre(2 == 2)
+  {
+    is[0] = 0
+    j = 1
+  }
+}
+
+Test :: (any) {
+  public init()
+    pre(1==1)
+  {
+  }
+
+  @payable
+  public func t(implicit w: Wei) {
+    let v: Int = w.getRawValue()
+    let s: S = S()
+    let i: Int = s.i
+  }
+}

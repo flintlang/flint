@@ -88,6 +88,7 @@ public struct StructDeclaration: ASTNode {
                                   attributes: [],
                                   modifiers: [],
                                   parameters: [],
+                                  prePostConditions: [],
                                   closeBracketToken: closeBracketToken)
     return SpecialDeclaration(signature: specialSignature,
                               body: [],

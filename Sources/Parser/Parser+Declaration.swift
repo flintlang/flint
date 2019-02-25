@@ -455,8 +455,8 @@ extension Parser {
     return Type(identifier: identifier)
   }
 
-  func parsePrePostConditions() throws -> [FunctionSignatureDeclaration.PrePostCondition] {
-    var conditions = [FunctionSignatureDeclaration.PrePostCondition]()
+  func parsePrePostConditions() throws -> [PrePostCondition] {
+    var conditions = [PrePostCondition]()
 
     while let condType = currentToken?.kind {
       switch condType {
@@ -523,12 +523,14 @@ extension Parser {
                                         modifiers: [Token]) throws -> SpecialSignatureDeclaration {
     let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
     let (parameters, closeBracketToken) = try parseParameters()
+    let prePostConditions = try parsePrePostConditions()
 
     return SpecialSignatureDeclaration(
       specialToken: specialToken,
       attributes: attributes,
       modifiers: modifiers,
       parameters: parameters,
+      prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken
     )
   }

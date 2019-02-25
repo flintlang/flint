@@ -62,11 +62,6 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
       lhs.parameters.map({ $0.isInout }) == rhs.parameters.map({ $0.isInout })
   }
 
-  public enum PrePostCondition {
-    case pre(Expression)
-    case post(Expression)
-  }
-
   // MARK: - ASTNode
   public var description: String {
     let modifierText = modifiers.map({ $0.description }).joined(separator: " ")

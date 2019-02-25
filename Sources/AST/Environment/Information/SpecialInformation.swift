@@ -11,7 +11,7 @@ public struct SpecialInformation {
   public var callerProtections: [CallerProtection]
   public var isSignature: Bool
 
-  var parameterTypes: [RawType] {
+  public var parameterTypes: [RawType] {
     return declaration.signature.parameters.map { $0.type.rawType }
   }
 }

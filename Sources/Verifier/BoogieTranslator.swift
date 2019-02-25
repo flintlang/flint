@@ -4,38 +4,41 @@ import Lexer
 import Foundation
 
 struct BoogieTranslator {
-  private let topLevelModule: TopLevelModule
-  private let environment: Environment
+  let topLevelModule: TopLevelModule
+  let environment: Environment
   // Variables declared in each function
-  private var functionVariableDeclarations = [String: [BVariableDeclaration]]()
+  var functionVariableDeclarations = [String: [BVariableDeclaration]]()
   // Procedure paramters
-  private var functionParameters = [String: [BParameterDeclaration]]()
+  var functionParameters = [String: [BParameterDeclaration]]()
   // Name of procedure return variable
-  private var functionReturnVariableName = [String: String]()
+  var functionReturnVariableName = [String: String]()
   // Global variables modified in each procedure
-  private var functionGlobalModifications = [String: [String]]()
+  var functionGlobalModifications = [String: [String]]()
   // Empty Map Properties, for each type
-  private var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
+  var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
 
   // Source location that each proof oligation corresponds to
-  private var flintProofObligationSourceLocation = [Int: SourceLocation]()
+  var flintProofObligationSourceLocation = [Int: SourceLocation]()
 
   // Current behaviour member - function / special / signature declaration ..
-  private var currentBehaviourMember: ContractBehaviorMember?
+  var currentBehaviourMember: ContractBehaviorMember?
   // Current top level declaration - contract behaviour / trait / struct ..
-  private var currentTLD: TopLevelDeclaration?
+  var currentTLD: TopLevelDeclaration?
 
   // Name of state variable for each contract
-  private var contractStateVariable = [String: String]()
+  var contractStateVariable = [String: String]()
   // Mapping of each state name, for each contract state variable
-  private var contractStateVariableStates = [String: [String: Int]]()
+  var contractStateVariableStates = [String: [String: Int]]()
   // Statements to be placed in the constructor of the contract
-  private var contractConstructorInitialisations = [String: [BStatement]]()
+  var contractConstructorInitialisations = [String: [BStatement]]()
 
   // Name of global variables in the contract
-  private var contractGlobalVariables = [String: [String]]()
+  var contractGlobalVariables = [String: [String]]()
   // List of invariants for each tld
-  private var tldInvariants = [String: [BProofObligation]]()
+  var tldInvariants = [String: [BProofObligation]]()
+
+  // Struct function instance variable
+  var structInstanceVariableName: String?
 
   public init(topLevelModule: TopLevelModule, environment: Environment) {
     self.topLevelModule = topLevelModule
@@ -49,7 +52,7 @@ struct BoogieTranslator {
     return (boogieCode, generateFlint2BoogieMapping(code: boogieCode))
   }
 
-  private mutating func generateAST() -> BTopLevelProgram {
+  mutating func generateAST() -> BTopLevelProgram {
     var declarations = [BTopLevelDeclaration]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
@@ -94,7 +97,7 @@ struct BoogieTranslator {
     return BTopLevelProgram(declarations: propertyDeclarations + declarations)
   }
 
-  private mutating func process(_ contractDeclaration: ContractDeclaration) -> [BTopLevelDeclaration] {
+  mutating func process(_ contractDeclaration: ContractDeclaration) -> [BTopLevelDeclaration] {
     var declarations = [BTopLevelDeclaration]()
     var contractGlobalVariables = [String]()
 
@@ -153,22 +156,21 @@ struct BoogieTranslator {
     return declarations
   }
 
-  private func process(_ enumDeclaration: EnumDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ enumDeclaration: EnumDeclaration) -> [BTopLevelDeclaration] {
     // TODO:
     return []
   }
 
-  private func process(_ traitDeclaration: TraitDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ traitDeclaration: TraitDeclaration) -> [BTopLevelDeclaration] {
     // TODO:
     return []
   }
 
-  private mutating func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
+  mutating func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
     // Skip special global struct - too solidity low level - TODO: Is this necessary?
     if structDeclaration.identifier.name == "Flint$Global" { return [] }
 
     var declarations = [BTopLevelDeclaration]()
-    var structVariables = [String]()
 
     for variableDeclaration in structDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
@@ -193,21 +195,33 @@ struct BoogieTranslator {
       */
     }
 
-    // TODO: Handle usage of += 1 and preStmts
+    // Add nextInstance variable
+    declarations.append(.variableDeclaration(BVariableDeclaration(name: getStructInstanceVariable(),
+                                                                  rawName: getStructInstanceVariable(),
+                                                                  type: .int)))
+
     var invariantDeclarations = [BProofObligation]()
     for declaration in structDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
-      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+      structInstanceVariableName = "i" // TODO: Check that i is unique
+
+      let expr = process(declaration).0 // TODO: Handle usage of += 1 and preStmts
+      let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
+                                                           rawName: structInstanceVariableName!,
+                                                           type: .int)], expr)
+
+      structInstanceVariableName = nil
+
+      invariantDeclarations.append(BProofObligation(expression: inv,
                                                     mark: declaration.sourceLocation.line,
                                                     obligationType: .preCondition))
-      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
+      invariantDeclarations.append(BProofObligation(expression: inv,
                                                     mark: declaration.sourceLocation.line,
                                                     obligationType: .postCondition))
       flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
     }
     tldInvariants[getCurrentTLDName()] = invariantDeclarations
 
-    //TODO: Handle function declarations
     for functionDeclaration in structDeclaration.functionDeclarations {
       self.currentBehaviourMember = .functionDeclaration(functionDeclaration)
       declarations.append(process(functionDeclaration))
@@ -215,17 +229,17 @@ struct BoogieTranslator {
     }
 
     //TODO: Handle constructor declarations
-    /*
     for specialDeclaration in structDeclaration.specialDeclarations {
-      self.currentBehaviourMember = .specialDeclaration(specialDeclaration)
+      let initFunction = specialDeclaration.asFunctionDeclaration
+      self.currentBehaviourMember = .functionDeclaration(initFunction)
+      declarations.append(process(initFunction, isStructInit: true))
       self.currentBehaviourMember = nil
     }
-    */
 
     return declarations
   }
 
-  private mutating func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
+  mutating func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
     // TODO: Use caller capabilities
@@ -239,6 +253,7 @@ struct BoogieTranslator {
         let currentFunctionName = getCurrentFunctionName()!
         let body = specialDeclaration.body
         let parameters = specialDeclaration.signature.parameters
+        // TODO: let userPreConditions = specialDeclaration.signature.prePostConditions.map({ process($0).0 }) // TODO: +=1 etc
         let processedBody = body.flatMap({x in process(x)})
 
         let bParameters = parameters.map({x in process(x)})
@@ -255,7 +270,7 @@ struct BoogieTranslator {
           returnType: nil,
           returnName: nil,
           parameters: bParameters,
-          prePostConditions: postConditions,
+          prePostConditions: postConditions, //+ userPreConditions,
           //TODO: Only specify actually modified variables
           modifies: contractGlobalVariables[getCurrentTLDName()]!.map({ BModifiesDeclaration(variable: $0) }),
           statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
@@ -277,281 +292,14 @@ struct BoogieTranslator {
     return declarations
   }
 
-  private mutating func process(_ functionDeclaration: FunctionDeclaration) -> BTopLevelDeclaration {
-    let currentFunctionName = getCurrentFunctionName()!
-    let body = functionDeclaration.body
-    let parameters = functionDeclaration.signature.parameters
-    //let name = functionDeclaration.name
-    let signature = functionDeclaration.signature
-
-    let bParameters = parameters.map({x in process(x)})
-    setFunctionParameters(name: currentFunctionName, parameters: bParameters)
-
-    var prePostConditions = [BProofObligation]()
-    // TODO: Handle += operators and function calls in pre conditions
-    for condition in signature.prePostConditions {
-      switch condition {
-      case .pre(let e):
-        prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: e.sourceLocation.line,
-                                                  obligationType: .preCondition))
-        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
-      case .post(let e):
-        prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: e.sourceLocation.line,
-                                                  obligationType: .postCondition))
-        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
-      }
-    }
-
-    // Procedure must hold invariant
-    let invariants = tldInvariants[getCurrentTLDName()] ?? []
-    prePostConditions += invariants
-
-    return .procedureDeclaration(BProcedureDeclaration(
-      name: currentFunctionName,
-      returnType: signature.resultType == nil ? nil : convertType(signature.resultType!),
-      returnName: signature.resultType == nil ? nil : generateFunctionReturnVariable(),
-      parameters: bParameters,
-      prePostConditions: prePostConditions,
-      modifies: [], // TODO [BModifiesDeclaration]
-      statements: body.flatMap({x in process(x)}),
-      variables: getFunctionVariableDeclarations(name: currentFunctionName)
-      ))
-
-  }
-
-  private func process(_ parameter: Parameter) -> BParameterDeclaration {
+  func process(_ parameter: Parameter) -> BParameterDeclaration {
     let name = parameter.identifier.name
     return BParameterDeclaration(name: translateIdentifierName(name),
                                  rawName: name,
                                  type: convertType(parameter.type))
   }
 
-  private mutating func process(_ statement: Statement) -> [BStatement] {
-    switch statement {
-    case .expression(let expression):
-      // Expresson can return statements -> assignments, or assertions..
-      var (bExpression, statements) = process(expression)
-      switch bExpression {
-      case BExpression.identifier, BExpression.mapRead, BExpression.nop:
-        break
-      default:
-        statements.append(.expression(bExpression))
-      }
-      return statements
-
-    case .returnStatement(let returnStatement):
-      var statements = [BStatement]()
-      if let expression = returnStatement.expression {
-        let (translatedExpr, preStatements) = process(expression)
-        statements += preStatements
-        statements.append(.assignment(.identifier(getFunctionReturnVariable()),
-                                      translatedExpr))
-      }
-      statements.append(.returnStatement)
-      return statements
-
-    case .becomeStatement(let becomeStatement):
-      let stateVariable = getStateVariable()
-      let stateValue: Int
-      switch becomeStatement.expression {
-      case .identifier(let identifier):
-         stateValue = getStateVariableValue(identifier.name)
-      default:
-        print("Unknown expression in becomeStatement \(becomeStatement.expression)")
-        fatalError()
-      }
-      return [.assignment(.identifier(stateVariable), .integer(stateValue))]
-
-    case .ifStatement(let ifStatement):
-      let (condExpr, condStmt) = process(ifStatement.condition)
-      return condStmt + [
-        .ifStatement(BIfStatement(condition: condExpr,
-                                  trueCase: ifStatement.body.flatMap({x in process(x)}),
-                                  falseCase: ifStatement.elseBody.flatMap({x in process(x)}))
-        )]
-
-    case .forStatement(let forStatement):
-      let (iterableExpr, condStmt) = process(forStatement.iterable)
-      //TODO: Handle iterable. Move to next item -> depends on what we are incrementing
-
-      // if iterable is:
-      //  - array
-      //    - iterate through
-      //  - dict
-      //    - shadow keys array
-      //  - range
-      //    - iterate through
-
-      addCurrentFunctionVariableDeclaration(forStatement.variable)
-      return condStmt + [
-        .whileStatement(BWhileStatement(
-          condition: iterableExpr,
-          body: forStatement.body.flatMap({x in process(x)}),
-          invariants: []) // TODO: invariants
-        )]
-
-    case .emitStatement:
-      // Ignore emit statements
-      return []
-    }
-  }
-
-  private mutating func process(_ expression: Expression) -> (BExpression, [BStatement]) {
-    switch expression {
-    case .variableDeclaration(let variableDeclaration):
-      let name = translateIdentifierName(variableDeclaration.identifier.name)
-
-      // Some variable types require shadow variables, eg dictionaries (array of keys)
-      for declaration in generateVariables(variableDeclaration) {
-        addCurrentFunctionVariableDeclaration(declaration)
-      }
-      return (.identifier(name), [])
-
-    case .functionCall(let functionCall):
-      let rawFunctionName = functionCall.identifier.name
-      var argumentsExpressions = [BExpression]()
-      var argumentsStatements = [BStatement]()
-      for arg in functionCall.arguments {
-        let (expr, stmts) = process(arg.expression)
-        argumentsExpressions.append(expr)
-        argumentsStatements += stmts
-      }
-
-      switch rawFunctionName {
-      // Special case to handle assert functions
-      case "assert":
-        // assert that assert function call always has one argument
-        assert (argumentsExpressions.count == 1)
-        let flintLine = functionCall.identifier.sourceLocation.line
-        flintProofObligationSourceLocation[flintLine] = functionCall.sourceLocation
-        argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
-                                                                     mark: flintLine,
-                                                                     obligationType: .assertion)))
-        return (.nop, argumentsStatements)
-
-      // Handle fatal error case
-      case "fatalError":
-        argumentsStatements.append(.assume(.boolean(false)))
-        return (.nop, argumentsStatements)
-
-      default: break
-      }
-
-      // TODO: Assert that contract invariant holds
-      // TODO: Need to link the failing assert to the invariant =>
-      //  error msg: Can't call function, the contract invariant does not hold at this point
-      //argumentsStatements += (tldInvariants[getCurrentTLDName()] ?? []).map({ .assertStatement($0) })
-
-      let (returnType, parameterTypes) = getFunctionTypes(functionCall)
-
-      let functionName = translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }))
-
-      if returnType != RawType.basicType(.void) {
-        // Function returns a value
-        let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
-        let returnValue = BExpression.identifier(returnValueVariable)
-        let functionCall = BStatement.callProcedure([returnValueVariable],
-                                                     functionName,
-                                                     argumentsExpressions)
-        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
-                                                                   rawName: returnValueVariable,
-                                                                   type: convertType(returnType)))
-        argumentsStatements.append(functionCall)
-        return (returnValue, argumentsStatements)
-      } else {
-        // Function doesn't return a value
-        // Can assume can't be called as part of a nested expression,
-        // has return type Void
-        argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions))
-        return (.nop, argumentsStatements)
-      }
-
-    case .identifier(let identifier):
-      if let currentFunctionName = getCurrentFunctionName(),
-         getFunctionVariableDeclarations(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 ||
-          getFunctionParameters(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 {
-
-        return (.identifier(translateIdentifierName(identifier.name)), [])
-      }
-      return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
-
-    case .binaryExpression(let binaryExpression):
-      return process(binaryExpression)
-
-    case .bracketedExpression(let bracketedExpression):
-      return process(bracketedExpression.expression)
-
-    case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts) = process(subscriptExpression.baseExpression)
-      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
-      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
-
-    case .literal(let token):
-      return (process(token), [])
-
-    case .inoutExpression(let inoutExpression):
-      return process(inoutExpression.expression) // TODO: Consider cases where we need to do pass by reference
-
-    case .rawAssembly:
-      print("Not implemented translating raw assembly")
-      fatalError()
-
-    case .`self`:
-      return (.nop, [])
-
-    case .arrayLiteral(let arrayLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 //TODO: Get actual type of array
-                                                                 type: .map(.int, .int)))
-      var assignmentStmts = [BStatement]()
-      var counter = 0
-      for expression in arrayLiteral.elements {
-        let (bexpr, preStatements) = process(expression)
-        assignmentStmts += preStatements
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
-        counter += 1
-      }
-      return (.identifier(literalVariableName), assignmentStmts)
-
-    case .dictionaryLiteral(let dictionaryLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 //TODO: Get actual type of array
-                                                                 type: .map(.int, .int)))
-      var assignmentStmts = [BStatement]()
-      for entry in dictionaryLiteral.elements {
-        let (bKeyExpr, bKeyPreStatements) = process(entry.key)
-        let (bValueExpr, bValuePreStatements) = process(entry.value)
-        assignmentStmts += bKeyPreStatements
-        assignmentStmts += bValuePreStatements
-
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
-      }
-      return (.identifier(literalVariableName), assignmentStmts)
-
-      // TODO: Implement expressions
-    /*
-    case .attemptExpression(let attemptExpression):
-    case .sequence(let expressions: [Expression]):
-    case .range(let rangeExpression):
-      */
-
-    default:
-      print("Not implemented translating \(expression.description)")
-      fatalError()
-    }
-  }
-
-  private func process(_ token: Token) -> BExpression {
+  func process(_ token: Token) -> BExpression {
     switch token.kind {
     case .literal(let literal):
       return process(literal)
@@ -561,7 +309,7 @@ struct BoogieTranslator {
     }
   }
 
-  private func process(_ literal: Token.Kind.Literal) -> BExpression {
+  func process(_ literal: Token.Kind.Literal) -> BExpression {
     switch literal {
     case .boolean(let booleanLiteral):
       return .boolean(booleanLiteral == Token.Kind.BooleanLiteral.`true`)
@@ -587,147 +335,7 @@ struct BoogieTranslator {
     }
   }
 
-  private mutating func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
-    let lhs = binaryExpression.lhs
-    let rhs = binaryExpression.rhs
-    let (rhsExpr, rhsStmts) = process(rhs)
-    let (lhsExpr, lhsStmts) = process(lhs)
-
-    switch binaryExpression.opToken {
-    case .dot:
-      switch lhs {
-      case .`self`:
-        // self.A, means get the A in the contract, not the local declaration
-
-        switch rhs {
-        case .identifier(let identifier):
-          return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
-          // TODO: Implement for arrays
-        default: break
-        }
-        print(rhs.description)
-        fatalError()
-        //return (rhsExpr, rhsStmts)
-
-      // TODO: Implement for struct fields and methods (eg array size..)
-      default:
-        return (rhsExpr, rhsStmts)
-      }
-
-    case .equal:
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, rhsExpr)])
-    case .plusEqual:
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .add(lhsExpr, rhsExpr))])
-    case .minusEqual:
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .subtract(lhsExpr, rhsExpr))])
-    case .timesEqual:
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .multiply(lhsExpr, rhsExpr))])
-    case .divideEqual:
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .divide(lhsExpr, rhsExpr))])
-
-    case .plus:
-      return (.add(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .minus:
-      return (.subtract(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .times:
-      return (.multiply(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .divide:
-      return (.divide(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-
-    //TODO Handle unsafe operators
-    //case .overflowingPlus:
-    //case .overflowingMinus:
-    //case .overflowingTimes:
-
-    //TODO: Handle power operator
-    //case .power:
-
-    // Comparisons
-    case .doubleEqual:
-      return (.equals(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .notEqual:
-      return (.not(.equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
-    case .openAngledBracket:
-      return (.lessThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .closeAngledBracket:
-      return (.greaterThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .lessThanOrEqual:
-      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
-    case .greaterThanOrEqual:
-      return (.not(.lessThan(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
-    case .or:
-      return (.or(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-    case .and:
-      return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
-
-      /*
-      //TODO: Handle
-    case .at:
-    case .arrow:
-    case .leftArrow:
-    case .comma:
-    case .semicolon:
-    case .doubleSlash:
-    case .dotdot:
-    case .ampersand:
-    case .bang:
-    case .question:
-
-    // Ranges
-    case .halfOpenRange:
-    case .closedRange:
-      */
-    default:
-      print("Unknown binary operator used \(binaryExpression.opToken)")
-      fatalError()
-    }
-  }
-
-  private mutating func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
-    let name = translateIdentifierName(vDeclaration.identifier.name)
-    let type = convertType(vDeclaration.type)
-    // Declared local expressions don't have assigned expressions
-    assert(vDeclaration.assignedExpression == nil)
-
-    addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: name,
-                                                               rawName: vDeclaration.identifier.name,
-                                                               type: type))
-  }
-
-  private mutating func getFunctionParameters(name: String) -> [BParameterDeclaration] {
-    if functionParameters[name] == nil {
-      functionParameters[name] = []
-    }
-    return functionParameters[name]!
-  }
-
-  private mutating func setFunctionParameters(name: String, parameters: [BParameterDeclaration]) {
-    functionParameters[name] = parameters
-  }
-
-  private mutating func getFunctionVariableDeclarations(name: String) -> [BVariableDeclaration] {
-    if functionVariableDeclarations[name] == nil {
-      functionVariableDeclarations[name] = []
-    }
-    return functionVariableDeclarations[name]!
-  }
-
-  private mutating func setFunctionVariableDeclarations(name: String, declarations: [BVariableDeclaration]) {
-    functionVariableDeclarations[name] = declarations
-  }
-
-  private mutating func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
-    if let functionName = getCurrentFunctionName() {
-      var variableDeclarations = getFunctionVariableDeclarations(name: functionName)
-      variableDeclarations.append(bvDeclaration)
-      setFunctionVariableDeclarations(name: functionName, declarations: variableDeclarations)
-    } else {
-      print("Error cannot add variable declaration to function: \(bvDeclaration), not currently translating a function")
-      fatalError()
-    }
-  }
-
-  private func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
+  func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
     // If currently in a function, then generate name with function in it
     // If in contractDeclaration, then generate name with only contract in it
     let name = getCurrentFunctionName() == nil ?
@@ -756,98 +364,24 @@ struct BoogieTranslator {
     return declarations
   }
 
-  private func getStateVariable() -> String {
+  func getStateVariable() -> String {
     return contractStateVariable[getCurrentTLDName()]!
   }
 
-  private func getStateVariableValue(_ identifier: String) -> Int {
+  func getStateVariableValue(_ identifier: String) -> Int {
     return contractStateVariableStates[getCurrentTLDName()]![identifier]!
   }
 
-  private func generateStateVariable(_ contractDeclaration: ContractDeclaration) -> String {
+  func generateStateVariable(_ contractDeclaration: ContractDeclaration) -> String {
     let contractName = contractDeclaration.identifier.name
     return "stateVariable_\(contractName)"
   }
 
-  private mutating func generateFunctionReturnVariable() -> String {
-    if let functionName = getCurrentFunctionName() {
-      let returnVariable = generateRandomIdentifier(prefix: "result_variable_\(functionName)_")
-      functionReturnVariableName[functionName] = returnVariable
-      return returnVariable
-    }
-    print("Cannot generate function return variable, not currently in a function")
-    fatalError()
-  }
-
-  private func getFunctionReturnVariable() -> String {
-    if let functionName = getCurrentFunctionName() {
-      if let returnVariable = functionReturnVariableName[functionName] {
-        return returnVariable
-      }
-      print("Could not find return variables for function \(functionName)")
-      fatalError()
-    }
-    print("Could not find return variable not currently in a function")
-    fatalError()
-  }
-
-  private mutating func getFunctionTypes(_ functionCall: FunctionCall) -> (RawType, [RawType]) {
-    let currentType = getCurrentTLDName() // TODO: Does this only works for functions within the same contract?
-    if let scopeContext = getCurrentFunction().scopeContext {
-      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
-      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-      let matchedCall = environment.matchFunctionCall(functionCall,
-                                                      enclosingType: currentType,
-                                                      typeStates: typeStates,
-                                                      callerProtections: callerProtections,
-                                                      scopeContext: scopeContext)
-      var returnType: RawType
-      var parameterTypes: [RawType]
-      switch matchedCall {
-      case .matchedFunction(let functionInformation):
-        returnType = functionInformation.resultType
-        parameterTypes = functionInformation.parameterTypes
-
-      case .matchedGlobalFunction(let functionInformation):
-        returnType = functionInformation.resultType
-        parameterTypes = functionInformation.parameterTypes
-
-      case .matchedFunctionWithoutCaller(let callableInformations):
-        //TODO: No idea what this means
-        print("Matched function without caller?")
-        print(callableInformations)
-        fatalError()
-
-      case .matchedInitializer(let specialInformation):
-        // Initialisers do not return values -> although struct inits do = ints
-        print("Haven't implement initializers yet")
-        print(specialInformation)
-        fatalError()
-
-      case .matchedFallback(let specialInformation):
-        //TODO: Handle fallback functions
-        print("Handle fallback calls")
-        print(specialInformation)
-        fatalError()
-
-      case .failure(let candidates):
-        print("could not find function for call: \(functionCall)")
-        print(currentType)
-        print(candidates)
-        fatalError()
-      }
-
-      return (returnType, parameterTypes)
-    }
-    print("Cannot get scopeContext from current function")
-    fatalError()
-  }
-
-  private func randomIdentifier(`prefix`: String = "i") -> String {
+  func randomIdentifier(`prefix`: String = "i") -> String {
     return `prefix` + randomString(length: 10) // 10 random characters feels random enough
   }
 
-  private func randomString(length: Int) -> String {
+  func randomString(length: Int) -> String {
       let alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
       var s = ""
       for _ in 0..<length {
@@ -858,7 +392,7 @@ struct BoogieTranslator {
     return s
   }
 
-  private mutating func generateRandomIdentifier(prefix: String) -> String {
+  mutating func generateRandomIdentifier(prefix: String) -> String {
     if let functionName = getCurrentFunctionName() {
       let variableDeclarations = getFunctionVariableDeclarations(name: functionName)
       let returnIdentifier = randomIdentifier(prefix: prefix)
@@ -873,30 +407,7 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func getCurrentFunctionName() -> String? {
-    if let behaviourDeclarationMember = currentBehaviourMember {
-      var functionName: String
-      let parameterTypes: [RawType]
-      switch behaviourDeclarationMember {
-      case .functionDeclaration(let functionDeclaration):
-        functionName = functionDeclaration.signature.identifier.name
-        parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
-      case .specialDeclaration(let specialDeclaration):
-        functionName = specialDeclaration.signature.specialToken.description
-        parameterTypes = specialDeclaration.signature.parameters.map({ $0.type.rawType })
-      case .functionSignatureDeclaration(let functionSignatureDeclaration):
-        functionName = functionSignatureDeclaration.identifier.name
-        parameterTypes = functionSignatureDeclaration.parameters.map({ $0.type.rawType })
-      case .specialSignatureDeclaration(let specialSignatureDeclaration):
-        functionName = specialSignatureDeclaration.specialToken.description
-        parameterTypes = specialSignatureDeclaration.parameters.map({ $0.type.rawType })
-      }
-      return translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }))
-    }
-    return nil
-  }
-
-  private func getCurrentContractBehaviorDeclaration() -> ContractBehaviorDeclaration? {
+  func getCurrentContractBehaviorDeclaration() -> ContractBehaviorDeclaration? {
     if let tld = currentTLD {
       switch tld {
       case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
@@ -909,20 +420,7 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func getCurrentFunction() -> FunctionDeclaration {
-    if let behaviourDeclarationMember = currentBehaviourMember {
-      switch behaviourDeclarationMember {
-      case .functionDeclaration(let functionDeclaration):
-        return functionDeclaration
-      default:
-        print("Error getting current function - not in a function: \(behaviourDeclarationMember.description)")
-      }
-    }
-    print("Error getting current function - not in a current behaviour declaration")
-    fatalError()
-  }
-
-  private func getCurrentTLDName() -> String {
+  func getCurrentTLDName() -> String {
     if let tld = currentTLD {
       switch tld {
       case .contractDeclaration(let contractDeclaration):
@@ -947,7 +445,7 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func translateIdentifierName(_ name: String) -> String {
+  func translateIdentifierName(_ name: String) -> String {
     if let functionName = getCurrentFunctionName() {
       // Function name already has contract scope (eg. funcA_ContractA
       return name + "_\(functionName)"
@@ -956,15 +454,18 @@ struct BoogieTranslator {
     fatalError()
   }
 
-  private func translateGlobalIdentifierName(_ name: String) -> String {
+  func translateGlobalIdentifierName(_ name: String, tld owningTld: String? = nil) -> String {
+    if let tld = owningTld {
+      return name + "_\(tld)"
+    }
     return name + "_\(getCurrentTLDName())"
   }
 
-  private func convertType(_ type: Type) -> BType {
+  func convertType(_ type: Type) -> BType {
     return convertType(type.rawType)
   }
 
-  private func convertType(_ type: RawType) -> BType {
+  func convertType(_ type: RawType) -> BType {
     func convertBasicType(_ bType: RawType.BasicType) -> BType {
       switch bType {
       case .address: return .userDefined("Address")
@@ -994,13 +495,15 @@ struct BoogieTranslator {
       return .map(.int, convertType(type))
     case .inoutType(let type):
       return convertType(type)
+    case .userDefinedType:
+      return .int
     default:
       print("not implemented conversion for type: \(type)")
       fatalError()
     }
   }
 
-  private mutating func defaultValue(_ type: BType) -> BExpression {
+  mutating func defaultValue(_ type: BType) -> BExpression {
     switch type {
     case .int: return .integer(0)
     case .real: return .real(0, 0)
@@ -1032,7 +535,7 @@ struct BoogieTranslator {
     }
   }
 
-  private func generateFlint2BoogieMapping(code: String) -> [Int: SourceLocation] {
+  func generateFlint2BoogieMapping(code: String) -> [Int: SourceLocation] {
     var mapping = [Int: SourceLocation]()
 
     let lines = code.trimmingCharacters(in: .whitespacesAndNewlines)
