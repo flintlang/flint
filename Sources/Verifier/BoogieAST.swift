@@ -108,7 +108,13 @@ struct BProcedureDeclaration: CustomStringConvertible {
     let statementsString = statements.reduce("", {x, y in "\(x)\n\(y)"})
     let prePostString = prePostConditions.reduce("", {x, y in "\(x)\n\(y);"})
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
-    let returnString = returnType == nil ? " " : " returns (\(returnName!): \(returnType!))"
+    var returnString: String
+    if let type = returnType {
+      assert (returnName != nil)
+      returnString = " returns (\(returnName!): \(type))"
+    } else {
+      returnString = ""
+    }
     let variablesString = variables.map({(x) -> String in return x.description}).joined(separator: "\n")
 
     return """
