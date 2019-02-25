@@ -11,10 +11,10 @@ import Lexer
 public struct Environment {
   /// Information about each type (contracts, structs and traits) which the program define, such as its properties and
   /// functions.
-  var types = [RawTypeIdentifier: TypeInformation]()
+  public var types = [RawTypeIdentifier: TypeInformation]()
 
   /// A list of the names of the contracts which have been declared in the program.
-  var declaredContracts = [Identifier]()
+  public var declaredContracts = [Identifier]()
 
   /// A list of the names of the structs which have been declared in the program.
   var declaredStructs = [Identifier]()
