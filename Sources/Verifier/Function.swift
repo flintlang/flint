@@ -175,7 +175,7 @@ extension BoogieTranslator {
   }
 
   mutating func handleFunctionCall(_ functionCall: FunctionCall,
-                                   structInstance: BExpression?,
+                                   structInstance: BExpression? = nil,
                                    owningType: String? = nil) -> (BExpression, [BStatement]) {
     let rawFunctionName = functionCall.identifier.name
     var argumentsExpressions = [BExpression]()

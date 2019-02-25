@@ -183,80 +183,7 @@ extension BoogieTranslator {
 
     switch binaryExpression.opToken {
     case .dot:
-      switch lhs {
-      case .`self`:
-        // self.A, means get the A in the contract, not the local declaration
-
-        switch rhs {
-        case .identifier(let identifier):
-          return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
-          // TODO: Implement for arrays
-        default: break
-        }
-        print(rhs.description)
-        fatalError()
-        //return (rhsExpr, rhsStmts)
-
-      // For struct fields and methods (eg array size..)
-      default:
-        // Need to determine type of lhs, to work out which struct we refer to
-        let currentType = getCurrentTLDName()
-        if let scopeContext = getCurrentFunction().scopeContext {
-          let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
-          let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-
-          let lhsType = environment.type(of: lhs,
-                                         enclosingType: currentType,
-                                         typeStates: typeStates,
-                                         callerProtections: callerProtections,
-                                         scopeContext: scopeContext)
-          // Is type of lhs a struct
-          switch lhsType {
-          case .stdlibType(.wei):
-            switch rhs {
-            // TODO: Struct field
-            //case .identifier(let identifier):
-
-            // Struct method
-            case .functionCall(let functionCall):
-              let (lhsExpr, lhsStmts) = process(lhs)
-              let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
-                                                                           structInstance: lhsExpr,
-                                                                           owningType: "Wei")
-              return (functionCallEx, lhsStmts + functionCallStmts)
-
-            default:
-              break
-            }
-
-          case .userDefinedType(let structName):
-            switch rhs {
-            // TODO: Struct field
-            //case .identifier(let identifier):
-
-            // Struct method
-            case .functionCall(let functionCall):
-              let (lhsExpr, lhsStmts) = process(lhs)
-              let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
-                                                                           structInstance: lhsExpr,
-                                                                           owningType: structName)
-              return (functionCallEx, lhsStmts + functionCallStmts)
-
-            default:
-              break
-            }
-          default:
-            print("lhs Type")
-            print(lhsType)
-            break
-          }
-          let (rhsExpr, rhsStmts) = process(rhs)
-          return (rhsExpr, rhsStmts)
-        }
-        print("couldn't get scope context of current function - used to determine if accessing struct property")
-        fatalError()
-      }
-
+      return processDotBinaryExpression(binaryExpression, [])
     case .equal:
       let (rhsExpr, rhsStmts) = process(rhs)
       let (lhsExpr, lhsStmts) = process(lhs)
@@ -360,4 +287,146 @@ extension BoogieTranslator {
     }
   }
 
+  private mutating func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
+                                                   _ seenFields: [(BExpression, [BStatement])]) -> (BExpression, [BStatement]) {
+    let lhs = binaryExpression.lhs
+    let rhs = binaryExpression.rhs
+
+    switch lhs {
+    case .`self`:
+      // self.A, means get the A in the contract, not the local declaration
+
+      switch rhs {
+      case .identifier(let identifier):
+        return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
+        // TODO: Implement for arrays
+      case .functionCall(let functionCall):
+        return handleFunctionCall(functionCall,
+                                  structInstance: self.structInstanceVariableName == nil ? nil :
+                                    .identifier(self.structInstanceVariableName!))
+      default: break
+      }
+      print(rhs.description)
+      fatalError()
+
+    default: break
+    }
+
+    // For struct fields and methods (eg array size..)
+    // Need to determine type of lhs, to work out which struct we refer to
+    let currentType = getCurrentTLDName()
+    guard let scopeContext = getCurrentFunction().scopeContext else {
+      print("couldn't get scope context of current function - used to determine if accessing struct property")
+      fatalError()
+    }
+
+    let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+    let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+
+    let lhsType = environment.type(of: lhs,
+                                   enclosingType: currentType,
+                                   typeStates: typeStates,
+                                   callerProtections: callerProtections,
+                                   scopeContext: scopeContext)
+    // Is type of lhs a struct
+    switch lhsType {
+    case .stdlibType(.wei):
+      switch rhs {
+      // TODO: Struct field
+      //case .identifier(let identifier):
+
+      // Struct method
+      case .functionCall(let functionCall):
+        let (lhsExpr, lhsStmts) = process(lhs)
+        let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
+                                                                     structInstance: lhsExpr,
+                                                                     owningType: "Wei")
+        return (functionCallEx, lhsStmts + functionCallStmts)
+
+      default:
+        return process(rhs)
+        print("Don't know how to handle this expression on Wei type \(rhs)")
+        fatalError()
+      }
+
+    case .userDefinedType(let structName):
+      switch rhs {
+      case .binaryExpression(let binaryEx) where binaryEx.opToken == .dot:
+        // TODO: Translate the lhs correctly -> need to reference the field for correct struct
+        let procLhs = process(binaryEx.lhs)
+        return processDotBinaryExpression(binaryEx, seenFields + [procLhs])
+
+      // Struct method
+      case .functionCall(let functionCall):
+        let (lhsExpr, lhsStmts) = process(lhs)
+
+        /*
+        // pop first element -> this is the struct instance index
+        // reverse LhsDot Dependancies
+        // build the dependancies
+        // to solve this: j.s.i.k.l -> l[k[i[s[j]]]]
+
+        if seenFields.count > 0 {
+          var seenFieldsStmts = [BStatement]()
+          var buildingMap structInstance = seenFields.remove(at: 0)
+          seenFields.reverse()
+
+          while seenFields.count > 0 {
+            let e, sms = seenFields.remove(at: 0)
+            buildingMap = .mapRead(e, buildingMap)
+            seenFieldsStmts += sms
+          }
+          seenFieldsStmts.reverse() // Keep semantics of left to right execution order
+          return (.mapRead(.identifier(structField), .mapRead(lhsExpr, buildingMap)),
+                  seenFieldsStmts + lhsStmts)
+        } else {
+          return (.mapRead(.identifier(structField), lhsExpr), lhsStmts)
+        }
+        */
+
+        let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
+                                                                     structInstance: lhsExpr,
+                                                                     owningType: structName)
+        return (functionCallEx, lhsStmts + functionCallStmts)
+
+      // Accessing struct field
+      case .identifier(let identifier):
+        // translate identifier into equivalent struct field
+        // use processed lhs to index into the field
+        let structField = translateGlobalIdentifierName(identifier.name, tld: structName)
+        let (lhsExpr, lhsStmts) = process(lhs)
+
+        // pop first element -> this is the struct instance index
+        // reverse LhsDot Dependancies
+        // build the dependancies
+        // to solve this: j.s.i.k.l -> l[k[i[s[j]]]]
+
+        if seenFields.count > 0 {
+          var fieldsLeft = seenFields
+          let (firstExpr, firstStmts) = fieldsLeft.removeFirst()
+
+          var buildingMap = firstExpr
+          var seenFieldsStmts: [BStatement] = firstStmts
+          fieldsLeft.reverse()
+
+          while fieldsLeft.count > 0 {
+            let (e, sms) = fieldsLeft.removeFirst()
+            buildingMap = .mapRead(e, buildingMap)
+            seenFieldsStmts += sms
+          }
+          seenFieldsStmts.reverse() // Keep semantics of left to right execution order
+          return (.mapRead(.identifier(structField), .mapRead(lhsExpr, buildingMap)),
+                  seenFieldsStmts + lhsStmts)
+        } else {
+          return (.mapRead(.identifier(structField), lhsExpr), lhsStmts)
+        }
+      default:
+        print("Don't know how to handle this expression on a user defined type \(rhs)")
+        fatalError()
+      }
+    default:
+      print("Unknown type used with `dot` operator \(lhsType)")
+      fatalError()
+    }
+  }
 }

@@ -1,6 +1,14 @@
 contract Test {
 }
 
+struct J {
+  var s: S
+
+  public init(s: inout S) {
+    self.s = s
+  }
+}
+
 struct S {
   var i: Int
   var is: [Int] = []
@@ -34,5 +42,8 @@ Test :: (any) {
     let v: Int = w.getRawValue()
     let s: S = S()
     let i: Int = s.i
+
+    let j: J = J(&s)
+    let k: Int = j.s.i
   }
 }
