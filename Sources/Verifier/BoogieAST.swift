@@ -99,7 +99,7 @@ struct BProcedureDeclaration: CustomStringConvertible {
   let returnName: String?
   let parameters: [BParameterDeclaration]
   let prePostConditions: [BProofObligation]
-  let modifies: [BModifiesDeclaration]
+  let modifies: Set<BModifiesDeclaration>
   let statements: [BStatement]
   let variables: [BVariableDeclaration]
 
@@ -107,7 +107,9 @@ struct BProcedureDeclaration: CustomStringConvertible {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
     let statementsString = statements.reduce("", {x, y in "\(x)\n\(y)"})
     let prePostString = prePostConditions.reduce("", {x, y in "\(x)\n\(y);"})
+
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
+
     var returnString: String
     if let type = returnType {
       assert (returnName != nil)
@@ -134,12 +136,16 @@ struct BProcedureDeclaration: CustomStringConvertible {
   }
 }
 
-struct BModifiesDeclaration: CustomStringConvertible {
+struct BModifiesDeclaration: CustomStringConvertible, Hashable {
   // Name of global variable being modified
   let variable: String
 
   var description: String {
     return "modifies \(variable);"
+  }
+
+  var hashValue: Int {
+    return variable.hashValue
   }
 }
 

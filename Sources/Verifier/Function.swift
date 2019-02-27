@@ -40,7 +40,7 @@ extension BoogieTranslator {
     return nil
   }
 
-   func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
+  func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
     let name = translateIdentifierName(vDeclaration.identifier.name)
     let type = convertType(vDeclaration.type)
     // Declared local expressions don't have assigned expressions
@@ -49,6 +49,14 @@ extension BoogieTranslator {
     addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: name,
                                                                rawName: vDeclaration.identifier.name,
                                                                type: type))
+  }
+
+  func addFunctionGlobalVariableReference(referenced: String) {
+      if let functionName = getCurrentFunctionName() {
+        var modifies = functionReferencedGlobalVariables[functionName] ?? Set<BModifiesDeclaration>()
+        modifies.insert(BModifiesDeclaration(variable: referenced))
+        functionReferencedGlobalVariables[functionName] = modifies
+      }
   }
 
   func getStructInstanceVariable() -> String {
@@ -220,12 +228,20 @@ extension BoogieTranslator {
     let functionName: String
 
     if isInit {
-      // When calling struct constructors, need to identify this special function call and set the owning type to the Struct
+      // When calling struct constructors, need to identify this special
+      // function call and set the owning type to the Struct
       functionName = translateGlobalIdentifierName("init" + parameterTypes.reduce("", { $0 + $1.name }),
                                                        tld: rawFunctionName)
     } else {
       functionName = translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }),
                                                        tld: owningType)
+    }
+
+    // Add function call to current function's function calls
+    if let curFunctionName = getCurrentFunctionName() {
+     var functionCalls = functionFunctionCalls[curFunctionName] ?? []
+     functionCalls.insert(functionName)
+     functionFunctionCalls[curFunctionName] = functionCalls
     }
 
     if returnType != RawType.basicType(.void) {
@@ -340,7 +356,8 @@ extension BoogieTranslator {
       returnName: returnName,
       parameters: bParameters,
       prePostConditions: prePostConditions,
-      modifies: [], // TODO [BModifiesDeclaration]
+      // TODO: Fix, only put the variables actually referenced
+      modifies: functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)}),
       statements: bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName)
       ))

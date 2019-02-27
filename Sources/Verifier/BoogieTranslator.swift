@@ -12,8 +12,11 @@ class BoogieTranslator {
   var functionParameters = [String: [BParameterDeclaration]]()
   // Name of procedure return variable
   var functionReturnVariableName = [String: String]()
+  // TODO: Use these two \/ to determine which actually need modifies clause
   // Global variables modified in each procedure
-  var functionGlobalModifications = [String: [String]]()
+  var functionReferencedGlobalVariables = [String: Set<BModifiesDeclaration>]()
+  // What functions does a function call
+  var functionFunctionCalls = [String: Set<String>]()
   // Empty Map Properties, for each type
   var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
 
@@ -272,7 +275,7 @@ class BoogieTranslator {
           parameters: bParameters,
           prePostConditions: postConditions, //+ userPreConditions,
           //TODO: Only specify actually modified variables
-          modifies: contractGlobalVariables[getCurrentTLDName()]!.map({ BModifiesDeclaration(variable: $0) }),
+          modifies: Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!.map({ BModifiesDeclaration(variable: $0) })),
           statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
                        + processedBody),
           variables: getFunctionVariableDeclarations(name: currentFunctionName)

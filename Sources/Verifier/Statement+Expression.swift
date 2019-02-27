@@ -88,24 +88,7 @@ extension BoogieTranslator {
                                   .identifier(self.structInstanceVariableName!))
 
     case .identifier(let identifier):
-      // See if identifier is a local variable
-      if let currentFunctionName = getCurrentFunctionName(),
-         getFunctionVariableDeclarations(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 ||
-          getFunctionParameters(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 {
-
-        return (.identifier(translateIdentifierName(identifier.name)), [])
-      }
-
-      // Currently in a struct, referring to a 'global' variable
-      if let currentStructInstanceVariable = structInstanceVariableName {
-        return (.mapRead(.identifier(translateGlobalIdentifierName(identifier.name)),
-                         .identifier(currentStructInstanceVariable)), [])
-      }
-      return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
+      return processIdentifier(identifier, localContext: true)
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression)
@@ -299,7 +282,8 @@ extension BoogieTranslator {
 
       switch rhs {
       case .identifier(let identifier):
-        return (.identifier(translateGlobalIdentifierName(identifier.name)), [])
+        return processIdentifier(identifier, localContext: false)
+
         // TODO: Implement for arrays
       case .functionCall(let functionCall):
         return handleFunctionCall(functionCall,
@@ -353,8 +337,9 @@ extension BoogieTranslator {
     switch access {
     // Final accesses of dot chain \/ \/ \/
     case .identifier(let identifier):
-      let lhsExpr = BExpression.identifier(translateGlobalIdentifierName(identifier.name,
-                                                                         tld: structName))
+      let translatedIdentifier = translateGlobalIdentifierName(identifier.name, tld: structName)
+      addFunctionGlobalVariableReference(referenced: translatedIdentifier)
+      let lhsExpr = BExpression.identifier(translatedIdentifier)
       return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
 
     case .subscriptExpression(let subscriptExpression):
@@ -408,7 +393,7 @@ extension BoogieTranslator {
                                                 access: binaryEx.rhs)
 
       let holyIdentifier = handleNestedStructAccess(structName: structName,
-                                                                 access: binaryEx.lhs)
+                                                    access: binaryEx.lhs)
       return ({ structInstance in
                 let (holyIdentifier, holyIdentifierStmts) = holyIdentifier(structInstance)
                 let (holyExpr, holyExprStmts) = holyAccess(holyIdentifier)
@@ -419,5 +404,29 @@ extension BoogieTranslator {
       print("Not implemented nested dot access of: \(access), yet")
       fatalError()
     }
+  }
+
+  private func processIdentifier(_ identifier: Identifier, localContext: Bool = true) -> (BExpression, [BStatement]) {
+      // See if identifier is a local variable
+      if localContext,
+         let currentFunctionName = getCurrentFunctionName(),
+         getFunctionVariableDeclarations(name: currentFunctionName)
+           .filter({ $0.rawName == identifier.name })
+           .count > 0 ||
+          getFunctionParameters(name: currentFunctionName)
+           .filter({ $0.rawName == identifier.name })
+           .count > 0 {
+
+        return (.identifier(translateIdentifierName(identifier.name)), [])
+      }
+      let translatedIdentifier = translateGlobalIdentifierName(identifier.name)
+      addFunctionGlobalVariableReference(referenced: translatedIdentifier)
+
+      // Currently in a struct, referring to a 'global' variable
+      if let currentStructInstanceVariable = structInstanceVariableName {
+        return (.mapRead(.identifier(translatedIdentifier),
+                         .identifier(currentStructInstanceVariable)), [])
+      }
+      return (.identifier(translatedIdentifier), [])
   }
 }

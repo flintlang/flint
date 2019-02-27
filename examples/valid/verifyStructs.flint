@@ -40,12 +40,12 @@ Test :: (any) {
   }
 
   @payable
-  public mutating func t(implicit w: Wei) {
+  public func t(implicit w: Wei) {
     let v: Int = w.getRawValue()
     let s: S = S()
     let i: Int = s.i
 
     let j: J = J(&s)
-    let k: Int = j.ss[0].is[1]
+    let k: Int = j.ss[i+=1].is[1]
   }
 }
