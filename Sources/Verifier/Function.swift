@@ -40,7 +40,7 @@ extension BoogieTranslator {
     return nil
   }
 
-  mutating func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
+   func addCurrentFunctionVariableDeclaration(_ vDeclaration: VariableDeclaration) {
     let name = translateIdentifierName(vDeclaration.identifier.name)
     let type = convertType(vDeclaration.type)
     // Declared local expressions don't have assigned expressions
@@ -62,29 +62,29 @@ extension BoogieTranslator {
     return "structInstance" // TODO: Generate dynamically?
   }
 
-  mutating func getFunctionParameters(name: String) -> [BParameterDeclaration] {
+   func getFunctionParameters(name: String) -> [BParameterDeclaration] {
     if functionParameters[name] == nil {
       functionParameters[name] = []
     }
     return functionParameters[name]!
   }
 
-  mutating func setFunctionParameters(name: String, parameters: [BParameterDeclaration]) {
+   func setFunctionParameters(name: String, parameters: [BParameterDeclaration]) {
     functionParameters[name] = parameters
   }
 
-  mutating func getFunctionVariableDeclarations(name: String) -> [BVariableDeclaration] {
+   func getFunctionVariableDeclarations(name: String) -> [BVariableDeclaration] {
     if functionVariableDeclarations[name] == nil {
       functionVariableDeclarations[name] = []
     }
     return functionVariableDeclarations[name]!
   }
 
-  mutating func setFunctionVariableDeclarations(name: String, declarations: [BVariableDeclaration]) {
+   func setFunctionVariableDeclarations(name: String, declarations: [BVariableDeclaration]) {
     functionVariableDeclarations[name] = declarations
   }
 
-  mutating func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
+   func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
     if let functionName = getCurrentFunctionName() {
       var variableDeclarations = getFunctionVariableDeclarations(name: functionName)
       variableDeclarations.append(bvDeclaration)
@@ -95,7 +95,7 @@ extension BoogieTranslator {
     }
   }
 
-  mutating func generateFunctionReturnVariable() -> String {
+   func generateFunctionReturnVariable() -> String {
     if let functionName = getCurrentFunctionName() {
       let returnVariable = generateRandomIdentifier(prefix: "result_variable_\(functionName)_")
       functionReturnVariableName[functionName] = returnVariable
@@ -117,7 +117,7 @@ extension BoogieTranslator {
     fatalError()
   }
 
-  mutating func getFunctionTypes(_ functionCall: FunctionCall,
+   func getFunctionTypes(_ functionCall: FunctionCall,
                                  enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
     let currentType = enclosingType == nil ? getCurrentTLDName() : enclosingType!
     if let scopeContext = getCurrentFunction().scopeContext {
@@ -174,7 +174,7 @@ extension BoogieTranslator {
     fatalError()
   }
 
-  mutating func handleFunctionCall(_ functionCall: FunctionCall,
+   func handleFunctionCall(_ functionCall: FunctionCall,
                                    structInstance: BExpression? = nil,
                                    owningType: String? = nil) -> (BExpression, [BStatement]) {
     let rawFunctionName = functionCall.identifier.name
@@ -249,8 +249,8 @@ extension BoogieTranslator {
     }
   }
 
-  mutating func process(_ functionDeclaration: FunctionDeclaration,
-                        isStructInit: Bool = false) -> BTopLevelDeclaration {
+   func process(_ functionDeclaration: FunctionDeclaration,
+                isStructInit: Bool = false) -> BTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
     let parameters = functionDeclaration.signature.parameters

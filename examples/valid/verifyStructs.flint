@@ -3,9 +3,11 @@ contract Test {
 
 struct J {
   var s: S
+  var ss: [Int: S]
 
   public init(s: inout S) {
     self.s = s
+    self.ss = [:]
   }
 }
 
@@ -38,12 +40,12 @@ Test :: (any) {
   }
 
   @payable
-  public func t(implicit w: Wei) {
+  public mutating func t(implicit w: Wei) {
     let v: Int = w.getRawValue()
     let s: S = S()
     let i: Int = s.i
 
     let j: J = J(&s)
-    let k: Int = j.s.i
+    let k: Int = j.ss[0].is[1]
   }
 }

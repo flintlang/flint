@@ -1,7 +1,7 @@
 import AST
 
 extension BoogieTranslator {
-  mutating func process(_ statement: Statement) -> [BStatement] {
+   func process(_ statement: Statement) -> [BStatement] {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
@@ -71,7 +71,7 @@ extension BoogieTranslator {
     }
   }
 
-  mutating func process(_ expression: Expression) -> (BExpression, [BStatement]) {
+   func process(_ expression: Expression) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
@@ -177,7 +177,7 @@ extension BoogieTranslator {
     }
   }
 
-  mutating func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
+   func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
@@ -287,8 +287,9 @@ extension BoogieTranslator {
     }
   }
 
-  private mutating func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
-                                                   _ seenFields: [(BExpression, [BStatement])]) -> (BExpression, [BStatement]) {
+  private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
+                                          _ seenFields: [(BExpression, [BStatement])]) -> (BExpression, [BStatement]) {
+
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
@@ -306,23 +307,20 @@ extension BoogieTranslator {
                                     .identifier(self.structInstanceVariableName!))
       default: break
       }
-      print(rhs.description)
+      print("Unknown rhs to self. expression \(rhs.description)")
       fatalError()
 
     default: break
     }
 
     // For struct fields and methods (eg array size..)
-    // Need to determine type of lhs, to work out which struct we refer to
     let currentType = getCurrentTLDName()
     guard let scopeContext = getCurrentFunction().scopeContext else {
       print("couldn't get scope context of current function - used to determine if accessing struct property")
       fatalError()
     }
-
     let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
     let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-
     let lhsType = environment.type(of: lhs,
                                    enclosingType: currentType,
                                    typeStates: typeStates,
@@ -331,101 +329,94 @@ extension BoogieTranslator {
     // Is type of lhs a struct
     switch lhsType {
     case .stdlibType(.wei):
-      switch rhs {
-      // TODO: Struct field
-      //case .identifier(let identifier):
-
-      // Struct method
-      case .functionCall(let functionCall):
-        let (lhsExpr, lhsStmts) = process(lhs)
-        let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
-                                                                     structInstance: lhsExpr,
-                                                                     owningType: "Wei")
-        return (functionCallEx, lhsStmts + functionCallStmts)
-
-      default:
-        return process(rhs)
-        print("Don't know how to handle this expression on Wei type \(rhs)")
-        fatalError()
-      }
+      let holyAccesses = handleNestedStructAccess(structName: "Wei",
+                                                  access: rhs)
+      let (lExpr, lStmts) = process(lhs)
+      let (finalExpr, holyStmts) = holyAccesses(lExpr)
+      return (finalExpr, lStmts + holyStmts)
 
     case .userDefinedType(let structName):
-      switch rhs {
-      case .binaryExpression(let binaryEx) where binaryEx.opToken == .dot:
-        // TODO: Translate the lhs correctly -> need to reference the field for correct struct
-        let procLhs = process(binaryEx.lhs)
-        return processDotBinaryExpression(binaryEx, seenFields + [procLhs])
-
-      // Struct method
-      case .functionCall(let functionCall):
-        let (lhsExpr, lhsStmts) = process(lhs)
-
-        /*
-        // pop first element -> this is the struct instance index
-        // reverse LhsDot Dependancies
-        // build the dependancies
-        // to solve this: j.s.i.k.l -> l[k[i[s[j]]]]
-
-        if seenFields.count > 0 {
-          var seenFieldsStmts = [BStatement]()
-          var buildingMap structInstance = seenFields.remove(at: 0)
-          seenFields.reverse()
-
-          while seenFields.count > 0 {
-            let e, sms = seenFields.remove(at: 0)
-            buildingMap = .mapRead(e, buildingMap)
-            seenFieldsStmts += sms
-          }
-          seenFieldsStmts.reverse() // Keep semantics of left to right execution order
-          return (.mapRead(.identifier(structField), .mapRead(lhsExpr, buildingMap)),
-                  seenFieldsStmts + lhsStmts)
-        } else {
-          return (.mapRead(.identifier(structField), lhsExpr), lhsStmts)
-        }
-        */
-
-        let (functionCallEx, functionCallStmts) = handleFunctionCall(functionCall,
-                                                                     structInstance: lhsExpr,
-                                                                     owningType: structName)
-        return (functionCallEx, lhsStmts + functionCallStmts)
-
-      // Accessing struct field
-      case .identifier(let identifier):
-        // translate identifier into equivalent struct field
-        // use processed lhs to index into the field
-        let structField = translateGlobalIdentifierName(identifier.name, tld: structName)
-        let (lhsExpr, lhsStmts) = process(lhs)
-
-        // pop first element -> this is the struct instance index
-        // reverse LhsDot Dependancies
-        // build the dependancies
-        // to solve this: j.s.i.k.l -> l[k[i[s[j]]]]
-
-        if seenFields.count > 0 {
-          var fieldsLeft = seenFields
-          let (firstExpr, firstStmts) = fieldsLeft.removeFirst()
-
-          var buildingMap = firstExpr
-          var seenFieldsStmts: [BStatement] = firstStmts
-          fieldsLeft.reverse()
-
-          while fieldsLeft.count > 0 {
-            let (e, sms) = fieldsLeft.removeFirst()
-            buildingMap = .mapRead(e, buildingMap)
-            seenFieldsStmts += sms
-          }
-          seenFieldsStmts.reverse() // Keep semantics of left to right execution order
-          return (.mapRead(.identifier(structField), .mapRead(lhsExpr, buildingMap)),
-                  seenFieldsStmts + lhsStmts)
-        } else {
-          return (.mapRead(.identifier(structField), lhsExpr), lhsStmts)
-        }
-      default:
-        print("Don't know how to handle this expression on a user defined type \(rhs)")
-        fatalError()
-      }
+      // Return function which returns BExpr to access field
+      let holyAccesses = handleNestedStructAccess(structName: structName,
+                                                  access: rhs)
+      let (lExpr, lStmts) = process(lhs)
+      let (finalExpr, holyStmts) = holyAccesses(lExpr)
+      return (finalExpr, lStmts + holyStmts)
     default:
       print("Unknown type used with `dot` operator \(lhsType)")
+      fatalError()
+    }
+  }
+
+  private  func handleNestedStructAccess(structName: String,
+                                         access: Expression) -> ((BExpression) -> (BExpression, [BStatement])) {
+    switch access {
+    // Final accesses of dot chain \/ \/ \/
+    case .identifier(let identifier):
+      let lhsExpr = BExpression.identifier(translateGlobalIdentifierName(identifier.name,
+                                                                         tld: structName))
+      return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
+
+    case .subscriptExpression(let subscriptExpression):
+      guard let accessEnclosingType = access.enclosingType else {
+        print("Unable to get enclosing type of struct access \(access)")
+        fatalError()
+      }
+      let holyBase = handleNestedStructAccess(structName: accessEnclosingType,
+                                              access: subscriptExpression.baseExpression)
+      let (indexExpr, indexStmts) = process(subscriptExpression.indexExpression)
+
+      return ({ structInstance in
+                let (holyExpr, holyStmts) = holyBase(structInstance)
+                return (.mapRead(holyExpr, indexExpr), holyStmts + indexStmts)
+              })
+
+    case .functionCall(let functionCall):
+      return ({ structInstance in self.handleFunctionCall(functionCall,
+                                                          structInstance: structInstance,
+                                                          owningType: structName) })
+
+    // Accessing another struct field \/ \/ \/
+    case .binaryExpression(let binaryEx) where binaryEx.opToken == .dot:
+      let currentType = getCurrentTLDName()
+      guard let scopeContext = getCurrentFunction().scopeContext else {
+        print("couldn't get scope context of current function - used to determine if accessing struct property")
+        fatalError()
+      }
+      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+      let lhsType = environment.type(of: binaryEx.lhs,
+                                     enclosingType: currentType,
+                                     typeStates: typeStates,
+                                     callerProtections: callerProtections,
+                                     scopeContext: scopeContext)
+
+      let accessEnclosingType: String
+      switch lhsType {
+      case .stdlibType(.wei):
+        accessEnclosingType = "Wei"
+
+      case .userDefinedType(let structName):
+        // Return function which returns BExpr to access field
+        accessEnclosingType = structName
+      default:
+        print("Unknown enclosing type: \(lhsType)")
+        fatalError()
+      }
+
+      let holyAccess = handleNestedStructAccess(structName: accessEnclosingType,
+                                                access: binaryEx.rhs)
+
+      let holyIdentifier = handleNestedStructAccess(structName: structName,
+                                                                 access: binaryEx.lhs)
+      return ({ structInstance in
+                let (holyIdentifier, holyIdentifierStmts) = holyIdentifier(structInstance)
+                let (holyExpr, holyExprStmts) = holyAccess(holyIdentifier)
+                return (holyExpr, holyIdentifierStmts + holyExprStmts)
+              })
+
+    default:
+      print("Not implemented nested dot access of: \(access), yet")
       fatalError()
     }
   }
