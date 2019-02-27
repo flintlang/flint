@@ -406,7 +406,7 @@ class BoogieTranslator {
       }
       return returnIdentifier
     }
-    print("Could not generate function return value name, not currently in function")
+    print("Could not generate function return value name, not currently in function \(prefix)")
     fatalError()
   }
 
@@ -511,9 +511,9 @@ class BoogieTranslator {
     case .int: return .integer(0)
     case .real: return .real(0, 0)
     case .boolean: return .boolean(false) // TODO: Is this the default bool value?
-    case .userDefined:
-      print("Can't translate default value for user defined type yet")
-      fatalError()
+    case .userDefined: return .integer(0) //TODO: Is this right, for eg addresses
+    //  print("Can't translate default value for user defined type yet \(name)")
+    //  fatalError()
     case .map(let t1, let t2):
       if let properties = emptyMapProperties[type] {
         return .functionApplication(properties.2, [])

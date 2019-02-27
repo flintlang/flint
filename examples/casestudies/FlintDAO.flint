@@ -14,25 +14,28 @@ struct Proposal {
   var nay: Int = 0
   var finished: Bool = false
   var success: Bool = false
-  var voted: [Address: Bool] = [:]
+  var voted: [Address: Bool]
 
   mutating init(proposer: Address, payout: Int, recipient: Address) {
     self.proposer = proposer
     self.payout = payout
     self.recipient = recipient
+    self.voted = [:]
   }
 }
 
 contract SimpleDAO (Join, Propose, Vote) {
   var curator: Address
   visible var proposal: Int = 0
-  var proposals: [Proposal] = []
-  var balances: [Address: Wei] = [:]
+  var proposals: [Proposal]
+  var balances: [Address: Wei]
 }
 
 SimpleDAO @(any) :: caller <- (any) {
   public init(curator: Address){
     self.curator = curator
+    proposals = []
+    balances = [:]
     become Join
   }
 

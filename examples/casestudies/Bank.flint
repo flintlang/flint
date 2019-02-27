@@ -1,11 +1,11 @@
 // Contract declarations contain only their state properties.
 contract Bank {
   var manager: Address
-  var balances: [Address: Wei] = [:]
-  var accounts: [Address] = []
+  var balances: [Address: Wei]
+  var accounts: [Address]
   var lastIndex: Int = 0
 
-  var totalDonations: Wei = Wei(0)
+  var totalDonations: Wei
 
   event didCompleteTransfer {
     let from: Address
@@ -18,6 +18,9 @@ contract Bank {
 Bank :: account <- (any) {
   public init(manager: Address) {
     self.manager = manager
+    balances = [:]
+    accounts = []
+    totalDonations = Wei(0)
   }
 
   // Returns the manager's address.

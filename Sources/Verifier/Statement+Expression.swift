@@ -71,7 +71,7 @@ extension BoogieTranslator {
     }
   }
 
-   func process(_ expression: Expression) -> (BExpression, [BStatement]) {
+   func process(_ expression: Expression, localContext: Bool = true) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
@@ -88,7 +88,7 @@ extension BoogieTranslator {
                                   .identifier(self.structInstanceVariableName!))
 
     case .identifier(let identifier):
-      return processIdentifier(identifier, localContext: true)
+      return processIdentifier(identifier, localContext: localContext)
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression)
@@ -97,8 +97,8 @@ extension BoogieTranslator {
       return process(bracketedExpression.expression)
 
     case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts) = process(subscriptExpression.baseExpression)
-      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
+      let (subExpr, subStmts) = process(subscriptExpression.baseExpression, localContext: localContext)
+      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression, localContext: true)
       return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
 
     case .literal(let token):
@@ -279,21 +279,7 @@ extension BoogieTranslator {
     switch lhs {
     case .`self`:
       // self.A, means get the A in the contract, not the local declaration
-
-      switch rhs {
-      case .identifier(let identifier):
-        return processIdentifier(identifier, localContext: false)
-
-        // TODO: Implement for arrays
-      case .functionCall(let functionCall):
-        return handleFunctionCall(functionCall,
-                                  structInstance: self.structInstanceVariableName == nil ? nil :
-                                    .identifier(self.structInstanceVariableName!))
-      default: break
-      }
-      print("Unknown rhs to self. expression \(rhs.description)")
-      fatalError()
-
+      return process(rhs, localContext: false)
     default: break
     }
 
@@ -328,6 +314,8 @@ extension BoogieTranslator {
       return (finalExpr, lStmts + holyStmts)
     default:
       print("Unknown type used with `dot` operator \(lhsType)")
+      print("\(lhs)")
+      print("\(rhs)")
       fatalError()
     }
   }

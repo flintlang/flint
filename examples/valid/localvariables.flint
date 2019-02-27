@@ -1,11 +1,13 @@
 contract LocalVariables {
     var ten: Int = 10
-    var is: [Int] = []
+    var is: [Int]
 }
 
 LocalVariables :: (any) {
 
-  public init() {}
+  public init() {
+    is = []
+  }
 
   public func localVariables() {
     var i: Int = 10

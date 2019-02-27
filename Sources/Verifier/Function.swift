@@ -9,6 +9,8 @@ extension BoogieTranslator {
       switch behaviourDeclarationMember {
       case .functionDeclaration(let functionDeclaration):
         return functionDeclaration
+      case .specialDeclaration(let specialDeclaration):
+        return specialDeclaration.asFunctionDeclaration
       default:
         print("Error getting current function - not in a function: \(behaviourDeclarationMember.description)")
       }
