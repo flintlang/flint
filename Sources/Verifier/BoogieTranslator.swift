@@ -61,6 +61,26 @@ class BoogieTranslator {
     // Add type def for Address
     declarations.append(.typeDeclaration(BTypeDeclaration(name: "Address", alias: .int)))
 
+    // Add global send function
+    // eg. send(address, wei)
+    declarations.append(.procedureDeclaration(
+      BProcedureDeclaration(
+        name: "send",
+        returnType: nil,
+        returnName: nil,
+        parameters: [
+          BParameterDeclaration(name: "address", rawName: "address", type: .userDefined("Address")),
+          BParameterDeclaration(name: "wei", rawName: "wei", type: .int)
+        ],
+        prePostConditions: [], // TODO: Put pre and post conditions on send
+        //TODO: Actually do modifies
+        modifies: functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)}),
+        statements: [], //TODO: Statements
+        variables: [] // TODO: variables
+        )
+      )
+    )
+
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractDeclaration(contractDeclaration)
       // Add caller global variable, for the contract
@@ -257,14 +277,17 @@ class BoogieTranslator {
     _ = contractBehaviorDeclaration.states
 
     let callers = contractBehaviorDeclaration.callerProtections.filter({ !$0.isAny }).map({ $0.identifier })
-    // Need the caller preStatements to handle the case when a function is called
-    let (preCallerPreConds, callerPreStatements) = processCallerCapabilities(callers,
-                                                                             contractBehaviorDeclaration.callerBinding)
+    let binding = contractBehaviorDeclaration.callerBinding
 
     var declarations = [BTopLevelDeclaration]()
 
     for member in contractBehaviorDeclaration.members {
       self.currentBehaviourMember = member
+
+      // Process caller capabilities
+      // Need the caller preStatements to handle the case when a function is called
+      let (preCallerPreConds, callerPreStatements) = processCallerCapabilities(callers, binding)
+
       switch member {
       case .specialDeclaration(let specialDeclaration):
         let currentFunctionName = getCurrentFunctionName()!
@@ -283,8 +306,11 @@ class BoogieTranslator {
           .filter({$0.obligationType != .preCondition})
 
         // Modifies clause
-        let modifiesClause = Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!
-            .map({ BModifiesDeclaration(variable: $0) }))
+        let modifiesClause = functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)})
+
+        //TODO: Actually work out modifies -> might be a step in the right direction
+        //Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!
+        //    .map({ BModifiesDeclaration(variable: $0) }))
 
         // Constructor
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
@@ -360,13 +386,64 @@ class BoogieTranslator {
     }
   }
 
-  //TODO Implement
-  func processCallerCapabilities(_ callerIdentifiers: [Identifier], _ binding: Identifier?) -> ([BProofObligation], [BStatement]) {
-    let callerPreConditions: [BProofObligation] =
-      callerIdentifiers.map({ BProofObligation(expression: BExpression.doubleEqual(BExpression.integer(1), BExpression.integer(1)),
-                                               mark: $0.sourceLocation.line,
-                                               obligationType: BProofObligationType.preCondition) })
-    return (callerPreConditions, [])
+  func processCallerCapabilities(_ callerIdentifiers: [Identifier],
+                                 _ binding: Identifier?
+                                 ) -> ([BProofObligation], [BStatement]) {
+    var preStatements = [BStatement]()
+    if let bindingName = binding?.name {
+      let translatedName = translateIdentifierName(bindingName)
+      // Create local variable (rawName = bindingName) which equals caller
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
+                                                                 rawName: bindingName,
+                                                                 type: .userDefined("Address")))
+      preStatements.append(.assignment(.identifier(translatedName),
+                                       .identifier(translateGlobalIdentifierName("caller"))))
+    }
+
+    var callerPreConditions = [BProofObligation]()
+    for identifier in callerIdentifiers {
+      guard let propertyInformation = environment.property(identifier.name, getCurrentTLDName()) else {
+        print("Couldn't get property information for identifier: \(identifier)")
+        fatalError()
+      }
+
+      let identifierType = propertyInformation.rawType
+
+      // If identifier is a function : -> call and false = assumer false;
+      // if caller is global variable -> type -> map, caller is within it else caller is it.
+      switch identifierType {
+      case .basicType(.address):
+        callerPreConditions.append(
+          BProofObligation(expression: .equals(.identifier(translateGlobalIdentifierName("caller")),
+                                               .identifier(translateGlobalIdentifierName(identifier.name))),
+                           mark: identifier.sourceLocation.line,
+                           obligationType: BProofObligationType.preCondition)
+          )
+        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+      case.arrayType(.basicType(.address)):
+        // eg (exists i: int :: caller == accounts_Bank[i]);
+        let existsExpr: BExpression =
+          .quantified(.exists,
+                      [BParameterDeclaration(name: "i", rawName: "i", type: .int)],
+                      .equals(.identifier(translateGlobalIdentifierName("caller")),
+                              .mapRead(.identifier(translateGlobalIdentifierName(identifier.name)),
+                                       .identifier("i")
+                                      )
+                              )
+                      )
+
+        callerPreConditions.append(
+          BProofObligation(expression: existsExpr,
+                           mark: identifier.sourceLocation.line,
+                           obligationType: BProofObligationType.preCondition)
+          )
+        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+      default:
+        print("Not implemented verification of \(identifierType) caller capabilities yet")
+        fatalError()
+      }
+    }
+    return (callerPreConditions, preStatements)
   }
 
   func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
@@ -583,7 +660,12 @@ class BoogieTranslator {
       let matches = line.groups(for: "// #MARKER# ([0-9]+)")
       if matches.count == 1 {
         // Extract line number
-        mapping[boogieLine] = flintProofObligationSourceLocation[Int(matches[0][1])!]!
+        guard let sourceLocation = flintProofObligationSourceLocation[Int(matches[0][1])!] else {
+          print("Couldn't find marker for proof obligation")
+
+          fatalError()
+        }
+        mapping[boogieLine] = sourceLocation
       }
     }
     return mapping

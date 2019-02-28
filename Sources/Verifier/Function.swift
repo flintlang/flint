@@ -128,7 +128,7 @@ extension BoogieTranslator {
   }
 
    func getFunctionTypes(_ functionCall: FunctionCall,
-                                 enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
+                         enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
     let currentType = enclosingType == nil ? getCurrentTLDName() : enclosingType!
     if let scopeContext = getCurrentFunction().scopeContext {
       let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
@@ -185,8 +185,8 @@ extension BoogieTranslator {
   }
 
    func handleFunctionCall(_ functionCall: FunctionCall,
-                                   structInstance: BExpression? = nil,
-                                   owningType: String? = nil) -> (BExpression, [BStatement]) {
+                           structInstance: BExpression? = nil,
+                           owningType: String? = nil) -> (BExpression, [BStatement]) {
     let rawFunctionName = functionCall.identifier.name
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
@@ -218,6 +218,16 @@ extension BoogieTranslator {
       argumentsStatements.append(.assume(.boolean(false)))
       return (.nop, argumentsStatements)
 
+    case "send":
+      // send calls should have 2 arguments:
+      // send(account, &w)
+      assert (argumentsExpressions.count == 2)
+
+      // Call Boogie send function
+      let functionCall = BStatement.callProcedure([],
+                                                  "send",
+                                                  argumentsExpressions)
+      return (.nop, [functionCall])
     default: break
     }
 

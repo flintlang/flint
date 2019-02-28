@@ -1,7 +1,7 @@
 struct Wei {
   var rawValue: Int
 
-  invariant (rawValue > 0)
+  //invariant (rawValue >= 0)
 
   init(unsafeRawValue: Int) {
     self.rawValue = unsafeRawValue
