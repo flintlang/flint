@@ -58,8 +58,18 @@ class BoogieTranslator {
   func generateAST() -> BTopLevelProgram {
     var declarations = [BTopLevelDeclaration]()
 
+    // Add type def for Address
+    declarations.append(.typeDeclaration(BTypeDeclaration(name: "Address", alias: .int)))
+
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractDeclaration(contractDeclaration)
+      // Add caller global variable, for the contract
+      declarations.append(.variableDeclaration(
+        BVariableDeclaration(name: translateGlobalIdentifierName("caller"),
+                             rawName: translateGlobalIdentifierName("caller"),
+                             type: .userDefined("Address")))
+      )
+
       declarations += process(contractDeclaration)
       self.currentTLD = nil
     }
@@ -242,11 +252,15 @@ class BoogieTranslator {
     return declarations
   }
 
-   func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
-    // TODO: Use caller capabilities
-    _ = contractBehaviorDeclaration.callerProtections
+
+    let callers = contractBehaviorDeclaration.callerProtections.filter({ !$0.isAny }).map({ $0.identifier })
+    // Need the caller preStatements to handle the case when a function is called
+    let (preCallerPreConds, callerPreStatements) = processCallerCapabilities(callers,
+                                                                             contractBehaviorDeclaration.callerBinding)
+
     var declarations = [BTopLevelDeclaration]()
 
     for member in contractBehaviorDeclaration.members {
@@ -256,6 +270,7 @@ class BoogieTranslator {
         let currentFunctionName = getCurrentFunctionName()!
         let body = specialDeclaration.body
         let parameters = specialDeclaration.signature.parameters
+        // TODO: Handle preconditions
         // TODO: let userPreConditions = specialDeclaration.signature.prePostConditions.map({ process($0).0 }) // TODO: +=1 etc
         let processedBody = body.flatMap({x in process(x)})
 
@@ -264,8 +279,12 @@ class BoogieTranslator {
 
         // Constructor has no pre-conditions
         // - and constructor must setup invariant
-        let postConditions = (tldInvariants[getCurrentTLDName()] ?? [])
+        let invariantPostConditions = (tldInvariants[getCurrentTLDName()] ?? [])
           .filter({$0.obligationType != .preCondition})
+
+        // Modifies clause
+        let modifiesClause = Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!
+            .map({ BModifiesDeclaration(variable: $0) }))
 
         // Constructor
         declarations.append(.procedureDeclaration(BProcedureDeclaration(
@@ -273,16 +292,19 @@ class BoogieTranslator {
           returnType: nil,
           returnName: nil,
           parameters: bParameters,
-          prePostConditions: postConditions, //+ userPreConditions,
+          //+ userPreConditions, // TODO: user preconditions for init
+          prePostConditions: preCallerPreConds + invariantPostConditions,
           //TODO: Only specify actually modified variables
-          modifies: Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!.map({ BModifiesDeclaration(variable: $0) })),
-          statements: ((specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
-                       + processedBody),
+          modifies: modifiesClause,
+          statements: (specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
+                       + callerPreStatements + processedBody,
           variables: getFunctionVariableDeclarations(name: currentFunctionName)
           )))
 
       case .functionDeclaration(let functionDeclaration):
-        declarations.append(process(functionDeclaration))
+        declarations.append(process(functionDeclaration,
+                                    preCallerPreConds,
+                                    callerPreStatements))
 
       default:
         // TODO: Handle functionSignatureDeclaration case
@@ -336,6 +358,15 @@ class BoogieTranslator {
       print("Not implemented translating addresses")
       fatalError()
     }
+  }
+
+  //TODO Implement
+  func processCallerCapabilities(_ callerIdentifiers: [Identifier], _ binding: Identifier?) -> ([BProofObligation], [BStatement]) {
+    let callerPreConditions: [BProofObligation] =
+      callerIdentifiers.map({ BProofObligation(expression: BExpression.doubleEqual(BExpression.integer(1), BExpression.integer(1)),
+                                               mark: $0.sourceLocation.line,
+                                               obligationType: BProofObligationType.preCondition) })
+    return (callerPreConditions, [])
   }
 
   func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
@@ -395,7 +426,7 @@ class BoogieTranslator {
     return s
   }
 
-   func generateRandomIdentifier(prefix: String) -> String {
+  func generateRandomIdentifier(prefix: String) -> String {
     if let functionName = getCurrentFunctionName() {
       let variableDeclarations = getFunctionVariableDeclarations(name: functionName)
       let returnIdentifier = randomIdentifier(prefix: prefix)

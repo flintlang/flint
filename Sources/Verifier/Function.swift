@@ -268,7 +268,10 @@ extension BoogieTranslator {
   }
 
    func process(_ functionDeclaration: FunctionDeclaration,
-                isStructInit: Bool = false) -> BTopLevelDeclaration {
+                isStructInit: Bool = false,
+                _ callerPreConds: [BProofObligation] = [],
+                _ callerPreStatements: [BStatement] = []
+                ) -> BTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
     let parameters = functionDeclaration.signature.parameters
@@ -357,10 +360,10 @@ extension BoogieTranslator {
       returnType: returnType,
       returnName: returnName,
       parameters: bParameters,
-      prePostConditions: prePostConditions,
+      prePostConditions: callerPreConds + prePostConditions,
       // TODO: Fix, only put the variables actually referenced
       modifies: functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)}),
-      statements: bStatements,
+      statements: callerPreStatements + bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName)
       ))
 

@@ -93,6 +93,8 @@ public class Verifier {
     Execution trace:
        test.bpl(186,1): anon0
 
+    bank_test.bpl(4,64): error: invalid Function
+
     Boogie program verifier finished with 10 verified, 1 error
     */
     var lines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -102,7 +104,7 @@ public class Verifier {
     var errors = [BoogieError]()
     for line in lines {
       // Look for tuple followed by "Error"
-      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location|Error:)")
+      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location|Error:|error:)")
       switch matches.count {
       case 0:
         break

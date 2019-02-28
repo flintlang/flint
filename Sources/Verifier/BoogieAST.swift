@@ -38,7 +38,7 @@ struct BFunctionDeclaration: CustomStringConvertible {
   var description: String {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
     let returnComponent = returnType == nil ? " " : " returns (\(returnName!): \(returnType!))"
-    return "function \(name)(\(parameterString))\(returnComponent));"
+    return "function \(name)(\(parameterString))\(returnComponent);"
   }
 }
 
@@ -46,7 +46,7 @@ struct BAxiomDeclaration: CustomStringConvertible {
   let proposition: BExpression
 
   var description: String {
-    return "\(proposition)"
+    return "axiom \(proposition);"
   }
 }
 
@@ -62,9 +62,11 @@ struct BVariableDeclaration: CustomStringConvertible {
 
 struct BTypeDeclaration: CustomStringConvertible {
   let name: String
+  let alias: BType?
 
   var description: String {
-    return "type \(name);"
+    let aliasString = alias == nil ? "" : "= \(alias!)"
+    return "type \(name) \(aliasString);"
   }
 }
 
