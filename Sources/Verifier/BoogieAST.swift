@@ -91,7 +91,7 @@ struct BProofObligation: CustomStringConvertible {
 
   var description: String {
     let markLine = "// #MARKER# \(mark)"
-    return "\(markLine)\n\(obligationType) (\(expression))"
+    return "\(markLine)\n\(obligationType) (\(expression))\(obligationType == .assertion ? ";" : "")"
   }
 }
 
