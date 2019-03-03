@@ -114,39 +114,6 @@ extension BoogieTranslator {
     case .`self`:
       return (.nop, [])
 
-    case .arrayLiteral(let arrayLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 //TODO: Get actual type of array
-                                                                 type: .map(.int, .int)))
-      var assignmentStmts = [BStatement]()
-      var counter = 0
-      for expression in arrayLiteral.elements {
-        let (bexpr, preStatements) = process(expression)
-        assignmentStmts += preStatements
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
-        counter += 1
-      }
-      return (.identifier(literalVariableName), assignmentStmts)
-
-    case .dictionaryLiteral(let dictionaryLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 //TODO: Get actual type of array
-                                                                 type: .map(.int, .int)))
-      var assignmentStmts = [BStatement]()
-      for entry in dictionaryLiteral.elements {
-        let (bKeyExpr, bKeyPreStatements) = process(entry.key)
-        let (bValueExpr, bValuePreStatements) = process(entry.value)
-        assignmentStmts += bKeyPreStatements
-        assignmentStmts += bValuePreStatements
-
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
-      }
-      return (.identifier(literalVariableName), assignmentStmts)
-
       // TODO: Implement expressions
     /*
     case .attemptExpression(let attemptExpression):
@@ -168,9 +135,7 @@ extension BoogieTranslator {
     case .dot:
       return processDotBinaryExpression(binaryExpression, [])
     case .equal:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, rhsExpr)])
+      return handleAssignment(lhs, rhs)
     case .plusEqual:
       let (rhsExpr, rhsStmts) = process(rhs)
       let (lhsExpr, lhsStmts) = process(lhs)
@@ -268,6 +233,63 @@ extension BoogieTranslator {
       print("Unknown binary operator used \(binaryExpression.opToken)")
       fatalError()
     }
+  }
+
+  private func handleAssignment(_ lhs: Expression, _ rhs: Expression) -> (BExpression, [BStatement]) {
+    let (lhsExpr, lhsStmts) = process(lhs)
+
+    // For getting type: array dict...
+    let currentType = getCurrentTLDName()
+    guard let scopeContext = getCurrentFunction().scopeContext else {
+      print("couldn't get scope context of current function - used to determine if accessing struct property")
+      fatalError()
+    }
+    let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+    let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+    let lhsType = environment.type(of: lhs,
+                                   enclosingType: currentType,
+                                   typeStates: typeStates,
+                                   callerProtections: callerProtections,
+                                   scopeContext: scopeContext)
+
+    switch rhs {
+    case .arrayLiteral(let arrayLiteral):
+      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
+                                                                 rawName: literalVariableName,
+                                                                 type: convertType(lhsType)))
+      var assignmentStmts = [BStatement]()
+      var counter = 0
+      for expression in arrayLiteral.elements {
+        let (bexpr, preStatements) = process(expression)
+        assignmentStmts += preStatements
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
+        counter += 1
+      }
+      return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
+
+    case .dictionaryLiteral(let dictionaryLiteral):
+      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
+                                                                 rawName: literalVariableName,
+                                                                 type: convertType(lhsType)))
+      var assignmentStmts = [BStatement]()
+      for entry in dictionaryLiteral.elements {
+        let (bKeyExpr, bKeyPreStatements) = process(entry.key)
+        let (bValueExpr, bValuePreStatements) = process(entry.value)
+        assignmentStmts += bKeyPreStatements
+        assignmentStmts += bValuePreStatements
+
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
+      }
+      return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
+
+    default:
+      break
+    }
+
+    let (rhsExpr, rhsStmts) = process(rhs)
+    return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, rhsExpr)])
   }
 
   private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
