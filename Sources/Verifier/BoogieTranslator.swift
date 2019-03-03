@@ -39,6 +39,8 @@ class BoogieTranslator {
   var contractGlobalVariables = [String: [String]]()
   // List of invariants for each tld
   var tldInvariants = [String: [BProofObligation]]()
+  // List of all struct invariants
+  var structInvariants = [BProofObligation]()
 
   // Struct function instance variable
   var structInstanceVariableName: String?
@@ -230,14 +232,19 @@ class BoogieTranslator {
     var invariantDeclarations = [BProofObligation]()
     for declaration in structDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
-      structInstanceVariableName = "i" // TODO: Check that i is unique
+      self.structInstanceVariableName = "i" // TODO: Check that i is unique
 
       let expr = process(declaration).0 // TODO: Handle usage of += 1 and preStmts
+
+      // All allocated structs, i < nextInstance => invariantExpr
       let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
                                                            rawName: structInstanceVariableName!,
-                                                           type: .int)], expr)
+                                                           type: .int)],
+                                       .implies(.lessThan(.identifier(self.structInstanceVariableName!),
+                                                          .identifier(self.getStructInstanceVariable())),
+                                                 expr))
 
-      structInstanceVariableName = nil
+      self.structInstanceVariableName = nil
 
       invariantDeclarations.append(BProofObligation(expression: inv,
                                                     mark: declaration.sourceLocation.line,
@@ -247,7 +254,7 @@ class BoogieTranslator {
                                                     obligationType: .postCondition))
       flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
     }
-    tldInvariants[getCurrentTLDName()] = invariantDeclarations
+    self.structInvariants += invariantDeclarations
 
     for functionDeclaration in structDeclaration.functionDeclarations {
       self.currentBehaviourMember = .functionDeclaration(functionDeclaration)

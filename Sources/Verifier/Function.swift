@@ -326,9 +326,6 @@ extension BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: self.structInstanceVariableName!,
                                                                    rawName: self.structInstanceVariableName!,
                                                                    type: .int))
-        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: nextInstance,
-                                                                   rawName: nextInstance,
-                                                                   type: .int))
         let reserveNextStructInstance: [BStatement] = [
           .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
           .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
@@ -340,7 +337,8 @@ extension BoogieTranslator {
         ]
 
         let structInitPost: BExpression =
-          .lessThan(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
+          .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
+        addFunctionGlobalVariableReference(referenced: nextInstance)
 
         prePostConditions.append(BProofObligation(expression: structInitPost,
                                                   mark: functionDeclaration.sourceLocation.line,

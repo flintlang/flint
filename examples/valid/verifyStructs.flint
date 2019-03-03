@@ -8,6 +8,12 @@ struct J {
   public init(s: inout S) {
     self.s = s
     self.ss = [:]
+    let j: J = J(&s)
+  }
+
+  public init() {
+    self.s = S()
+    self.ss = [:]
   }
 }
 
@@ -16,7 +22,7 @@ struct S {
   var is: [Int] = []
   var j: Int = 0
 
-  //invariant (i > 0)
+  invariant (i > 0)
 
 
   public init()
