@@ -24,6 +24,7 @@ struct Compiler {
   var dumpAST: Bool
   var emitBytecode: Bool
   var dumpVerifierIR: Bool
+  var printVerificationOutput: Bool
   var skipVerifier: Bool
   var diagnostics: DiagnosticPool
 
@@ -79,10 +80,11 @@ struct Compiler {
     // AST Verification
     if !skipVerifier {
       let (verified, errors) = Verifier(dumpVerifierIR: dumpVerifierIR,
-                             boogieLocation: "boogie/Binaries/Boogie.exe",
-                             monoLocation: "/usr/bin/mono",
-                             topLevelModule: semanticsPassRunnerOutcome.element,
-                             environment: semanticsPassRunnerOutcome.environment).verify()
+                                        printVerificationOutput: printVerificationOutput,
+                                        boogieLocation: "boogie/Binaries/Boogie.exe",
+                                        monoLocation: "/usr/bin/mono",
+                                        topLevelModule: semanticsPassRunnerOutcome.element,
+                                        environment: semanticsPassRunnerOutcome.environment).verify()
 
       if verified {
         print("Contract Verified!")

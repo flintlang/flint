@@ -191,10 +191,6 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
 
-    if let instance = structInstance {
-      // instance to pass as first argument
-      argumentsExpressions.append(instance)
-    }
     for arg in functionCall.arguments {
       let (expr, stmts) = process(arg.expression)
       argumentsExpressions.append(expr)
@@ -249,6 +245,11 @@ extension BoogieTranslator {
                                                        tld: owningType)
     }
 
+    if let instance = structInstance, !isInit {
+      // instance to pass as first argument
+      argumentsExpressions.insert(instance, at: 0)
+    }
+
     // Add function call to current function's function calls
     if let curFunctionName = getCurrentFunctionName() {
      var functionCalls = functionFunctionCalls[curFunctionName] ?? []
@@ -279,6 +280,7 @@ extension BoogieTranslator {
 
    func process(_ functionDeclaration: FunctionDeclaration,
                 isStructInit: Bool = false,
+                isInit: Bool = false,
                 _ callerPreConds: [BProofObligation] = [],
                 _ callerPreStatements: [BStatement] = []
                 ) -> BTopLevelDeclaration {
@@ -356,10 +358,12 @@ extension BoogieTranslator {
       }
     }
 
-    let bStatements = body.flatMap({x in process(x)}) + functionPostAmble
+    let bStatements = functionPreAmble + body.flatMap({x in process(x)}) + functionPostAmble
 
     // Procedure must hold invariant
-    let invariants = tldInvariants[getCurrentTLDName()] ?? []
+    let invariants = (tldInvariants[getCurrentTLDName()] ?? [])
+      // drop contract invariants, if init function
+      .filter({!isInit || ($0.obligationType != .preCondition)}) + structInvariants
     prePostConditions += invariants
 
     // About to exit function, reset struct instance variable

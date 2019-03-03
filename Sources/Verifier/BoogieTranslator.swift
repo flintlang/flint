@@ -106,12 +106,6 @@ class BoogieTranslator {
       self.currentTLD = nil
     }
 
-    for case .traitDeclaration(let traitDeclaration) in topLevelModule.declarations {
-      self.currentTLD = .traitDeclaration(traitDeclaration)
-      declarations += process(traitDeclaration)
-      self.currentTLD = nil
-    }
-
     for case .contractBehaviorDeclaration(let contractBehaviorDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractBehaviorDeclaration(contractBehaviorDeclaration)
       declarations += process(contractBehaviorDeclaration)
@@ -261,7 +255,6 @@ class BoogieTranslator {
       self.currentBehaviourMember = nil
     }
 
-    //TODO: Handle constructor declarations
     for specialDeclaration in structDeclaration.specialDeclarations {
       let initFunction = specialDeclaration.asFunctionDeclaration
       self.currentBehaviourMember = .functionDeclaration(initFunction)
@@ -290,42 +283,10 @@ class BoogieTranslator {
 
       switch member {
       case .specialDeclaration(let specialDeclaration):
-        let currentFunctionName = getCurrentFunctionName()!
-        let body = specialDeclaration.body
-        let parameters = specialDeclaration.signature.parameters
-        // TODO: Handle preconditions
-        // TODO: let userPreConditions = specialDeclaration.signature.prePostConditions.map({ process($0).0 }) // TODO: +=1 etc
-        let processedBody = body.flatMap({x in process(x)})
-
-        let bParameters = parameters.map({x in process(x)})
-        setFunctionParameters(name: currentFunctionName, parameters: bParameters)
-
-        // Constructor has no pre-conditions
-        // - and constructor must setup invariant
-        let invariantPostConditions = (tldInvariants[getCurrentTLDName()] ?? [])
-          .filter({$0.obligationType != .preCondition})
-
-        // Modifies clause
-        let modifiesClause = functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)})
-
-        //TODO: Actually work out modifies -> might be a step in the right direction
-        //Set<BModifiesDeclaration>(contractGlobalVariables[getCurrentTLDName()]!
-        //    .map({ BModifiesDeclaration(variable: $0) }))
-
-        // Constructor
-        declarations.append(.procedureDeclaration(BProcedureDeclaration(
-          name: currentFunctionName,
-          returnType: nil,
-          returnName: nil,
-          parameters: bParameters,
-          //+ userPreConditions, // TODO: user preconditions for init
-          prePostConditions: preCallerPreConds + invariantPostConditions,
-          //TODO: Only specify actually modified variables
-          modifies: modifiesClause,
-          statements: (specialDeclaration.isInit ? contractConstructorInitialisations[getCurrentTLDName()] ?? [] : [])
-                       + callerPreStatements + processedBody,
-          variables: getFunctionVariableDeclarations(name: currentFunctionName)
-          )))
+        declarations.append(process(specialDeclaration.asFunctionDeclaration,
+                                    isInit: true,
+                                    preCallerPreConds,
+                                    callerPreStatements))
 
       case .functionDeclaration(let functionDeclaration):
         declarations.append(process(functionDeclaration,

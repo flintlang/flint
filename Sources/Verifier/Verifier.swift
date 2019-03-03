@@ -8,14 +8,19 @@ public class Verifier {
   private let boogieLocation: String
   private let monoLocation: String
   private let dumpVerifierIR: Bool
+  private let printVerificationOutput: Bool
   private var boogieTranslator: BoogieTranslator
 
-  public init(dumpVerifierIR: Bool, boogieLocation: String,
-              monoLocation: String, topLevelModule: TopLevelModule,
+  public init(dumpVerifierIR: Bool,
+              printVerificationOutput: Bool,
+              boogieLocation: String,
+              monoLocation: String,
+              topLevelModule: TopLevelModule,
               environment: Environment) {
     self.boogieLocation = boogieLocation
     self.monoLocation = monoLocation
     self.dumpVerifierIR = dumpVerifierIR
+    self.printVerificationOutput = printVerificationOutput
     self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
                                              environment: environment)
   }
@@ -70,6 +75,9 @@ public class Verifier {
     }
 
     let output = uncheckedOutput!
+    if printVerificationOutput {
+      print(output)
+    }
 
     if task.terminationStatus != 0 {
       print("Error during verification, verifier terminated with non-zero exit code")
