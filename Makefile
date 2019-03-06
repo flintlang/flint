@@ -24,8 +24,9 @@ test: lint release
 lint:
 	swiftlint lint
 
-generate: Sources/AST/ASTPass/ASTPass.template.swift
-Sources/AST/ASTPass/ASTPass.template.swift:
+generate: .derived-sources/AST/ASTPass/ASTPass.swift
+
+.derived-sources/AST/ASTPass/ASTPass.swift: Sources/AST/ASTPass/ASTPass.template.swift
 	cd utils/codegen && npm install && cd ../..
 	./utils/codegen/codegen.js
 
@@ -45,7 +46,8 @@ $(Z3):
 
 clean:
 	-swift package clean
-	-rm -r .build
+	-rm -rf .build
+	-rm -r .derived-sources
 	-rm boogie/Binaries/z3.exe
 	-cd boogie && msbuild Source/Boogie.sln /t:Clean && cd ..
 	-rm boogie/Binaries/*.{dll,pdb,config}
