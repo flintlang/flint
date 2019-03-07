@@ -16,6 +16,7 @@ public struct SpecialSignatureDeclaration: ASTNode {
 
   /// The modifiers associated with the function, such as `public`.
   public var modifiers: [Token]
+  public var mutates: [Identifier]
   public var parameters: [Parameter]
   public var closeBracketToken: Token
   public var prePostConditions: [PrePostCondition]
@@ -36,6 +37,7 @@ public struct SpecialSignatureDeclaration: ASTNode {
       funcToken: specialToken,
       attributes: attributes,
       modifiers: modifiers,
+      mutates: mutates,
       identifier: dummyIdentifier,
       parameters: parameters,
       prePostConditions: prePostConditions,
@@ -47,12 +49,14 @@ public struct SpecialSignatureDeclaration: ASTNode {
   public init(specialToken: Token,
               attributes: [Attribute],
               modifiers: [Token],
+              mutates: [Identifier],
               parameters: [Parameter],
               prePostConditions: [PrePostCondition],
               closeBracketToken: Token) {
     self.specialToken = specialToken
     self.attributes = attributes
     self.modifiers = modifiers
+    self.mutates = mutates
     self.parameters = parameters
     self.prePostConditions = prePostConditions
     self.closeBracketToken = closeBracketToken

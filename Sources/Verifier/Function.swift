@@ -53,14 +53,6 @@ extension BoogieTranslator {
                                                                type: type))
   }
 
-  func addFunctionGlobalVariableReference(referenced: String) {
-      if let functionName = getCurrentFunctionName() {
-        var modifies = functionReferencedGlobalVariables[functionName] ?? Set<BModifiesDeclaration>()
-        modifies.insert(BModifiesDeclaration(variable: referenced))
-        functionReferencedGlobalVariables[functionName] = modifies
-      }
-  }
-
   func getStructInstanceVariable() -> String {
     let structName = getCurrentTLDName()
     return "nextInstance_\(structName)"
@@ -250,13 +242,6 @@ extension BoogieTranslator {
       argumentsExpressions.insert(instance, at: 0)
     }
 
-    // Add function call to current function's function calls
-    if let curFunctionName = getCurrentFunctionName() {
-     var functionCalls = functionFunctionCalls[curFunctionName] ?? []
-     functionCalls.insert(functionName)
-     functionFunctionCalls[curFunctionName] = functionCalls
-    }
-
     if returnType != RawType.basicType(.void) {
       // Function returns a value
       let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
@@ -338,7 +323,6 @@ extension BoogieTranslator {
 
         let structInitPost: BExpression =
           .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
-        addFunctionGlobalVariableReference(referenced: nextInstance)
 
         prePostConditions.append(BProofObligation(expression: structInitPost,
                                                   mark: functionDeclaration.sourceLocation.line,
@@ -364,6 +348,11 @@ extension BoogieTranslator {
       .filter({!isInit || ($0.obligationType != .preCondition)}) + structInvariants
     prePostConditions += invariants
 
+    let modifies = Set<BModifiesDeclaration>(functionDeclaration.mutates.map({
+       BModifiesDeclaration(variable: translateGlobalIdentifierName($0.name,
+                                                                    tld: $0.enclosingType))
+    }))
+
     // About to exit function, reset struct instance variable
     self.structInstanceVariableName = nil
 
@@ -373,11 +362,9 @@ extension BoogieTranslator {
       returnName: returnName,
       parameters: bParameters,
       prePostConditions: callerPreConds + prePostConditions,
-      // TODO: Fix, only put the variables actually referenced
-      modifies: functionReferencedGlobalVariables.values.reduce(Set<BModifiesDeclaration>(), {$0.union($1)}),
+      modifies: modifies,
       statements: callerPreStatements + bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName)
-      ))
-
+    ))
   }
 }

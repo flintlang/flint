@@ -87,6 +87,7 @@ public struct StructDeclaration: ASTNode {
       SpecialSignatureDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation),
                                   attributes: [],
                                   modifiers: [],
+                                  mutates: [],
                                   parameters: [],
                                   prePostConditions: [],
                                   closeBracketToken: closeBracketToken)

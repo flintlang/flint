@@ -31,7 +31,8 @@ struct S {
     i = 1
   }
 
-  public mutating func wow()
+  public func wow()
+    mutates (is)
     pre(2 == 2)
   {
     is[0] = 0

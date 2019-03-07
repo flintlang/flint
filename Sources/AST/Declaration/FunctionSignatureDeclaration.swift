@@ -14,8 +14,9 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   /// The attributes associated with the function, such as `@payable`.
   public var attributes: [Attribute]
 
-  /// The modifiers associted with the function, such as `public` or `mutating.`
+  /// The modifiers associted with the function, such as `public` or `visible.`
   public var modifiers: [Token]
+  public var mutates: [Identifier]
   public var identifier: Identifier
   public var parameters: [Parameter]
   public var prePostConditions: [PrePostCondition]
@@ -32,6 +33,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   public init(funcToken: Token,
               attributes: [Attribute],
               modifiers: [Token],
+              mutates: [Identifier],
               identifier: Identifier,
               parameters: [Parameter],
               prePostConditions: [PrePostCondition],
@@ -40,6 +42,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
+    self.mutates = mutates
     self.identifier = identifier
     self.parameters = parameters
     self.prePostConditions = prePostConditions

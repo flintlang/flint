@@ -402,7 +402,7 @@ extension SemanticAnalyzer {
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty,
       !environment.isConforming(functionDeclaration, in: enclosingType) {
       // The function is declared mutating but its body does not contain any mutating expression.
-      diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
+      diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.identifier.identifierToken))
     }
 
     // Clear the context in preparation for the next time we visit a function declaration.

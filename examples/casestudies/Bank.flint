@@ -24,7 +24,9 @@ Bank :: account <- (any) {
   }
 
   // Returns the manager's address.
-  public mutating func register() {
+  public func register()
+    mutates (accounts, lastIndex)
+  {
     accounts[lastIndex] = account
     lastIndex += 1
   }
@@ -34,7 +36,9 @@ Bank :: account <- (any) {
   }
 
   @payable
-  public mutating func donate(implicit value: Wei) {
+  public func donate(implicit value: Wei)
+    mutates (totalDonations)
+  {
     // This will transfer the funds into totalDonations.
     totalDonations.transfer(&value)
   }
@@ -45,12 +49,16 @@ Bank :: (manager) {
 
   // This function needs to be declared "mutating" as its body mutates
   // the contract's state.
-  public mutating func freeDeposit(account: Address, amount: Int) {
+  public func freeDeposit(account: Address, amount: Int)
+    mutates (balances)
+  {
     var w: Wei = Wei(amount)
     balances[account].transfer(&w)
   }
 
-  public mutating func clear(account: Address) {
+  public func clear(account: Address)
+    mutates (balances)
+  {
     balances[account] = Wei(0)
   }
 
@@ -67,7 +75,9 @@ Bank :: account <- (accounts) {
     return balances[account].getRawValue()
   }
 
-  public mutating func transfer(amount: Int, destination: Address) {
+  public func transfer(amount: Int, destination: Address)
+    mutates (balances)
+  {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
     // Crashes if balances[account] doesn't have enough Wei.
@@ -78,11 +88,15 @@ Bank :: account <- (accounts) {
   }
 
   @payable
-  public mutating func deposit(implicit value: Wei) {
+  public func deposit(implicit value: Wei)
+    mutates(balances)
+  {
     balances[account].transfer(&value)
   }
 
-  public mutating func withdraw(amount: Int) {
+  public func withdraw(amount: Int)
+    mutates(balances)
+  {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
 

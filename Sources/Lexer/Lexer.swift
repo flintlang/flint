@@ -90,7 +90,7 @@ public struct Lexer {
     "post": .post,
     "invariant": .invariant,
     "try": .try,
-    "mutating": .mutating,
+    "mutates": .mutates,
     "return": .return,
     "become": .become,
     "emit": .emit,

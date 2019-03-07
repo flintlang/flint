@@ -22,7 +22,9 @@ struct Wei {
     rawValue = value
   }
 
-  mutating func transfer(source: inout Wei, amount: Int) {
+  func transfer(source: inout Wei, amount: Int)
+    mutates(rawValue)
+  {
     if source.getRawValue() < amount {
       fatalError()
     }
@@ -31,7 +33,9 @@ struct Wei {
     rawValue += amount
   }
 
-  mutating func transfer(source: inout Wei) {
+  func transfer(source: inout Wei)
+    mutates(rawValue)
+  {
     transfer(&source, source.getRawValue())
   }
 

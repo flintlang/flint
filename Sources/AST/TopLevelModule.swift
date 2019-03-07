@@ -75,6 +75,7 @@ public struct TopLevelModule: ASTNode {
                                                          modifiers: [
                                                           Token(kind: .public, sourceLocation: variable.sourceLocation)
                                                          ],
+                                                         mutates: [],
                                                          identifier: identifier,
                                                          parameters: parameters,
                                                          prePostConditions: [],
@@ -111,10 +112,9 @@ public struct TopLevelModule: ASTNode {
                                                           attributes: [],
                                                           modifiers: [
                                                             Token(kind: .public,
-                                                                  sourceLocation: variable.sourceLocation),
-                                                            Token(kind: .mutating,
                                                                   sourceLocation: variable.sourceLocation)
                                                           ],
+                                                          mutates: [],
                                                           identifier: identifier,
                                                           parameters: parameters + [valueParameter],
                                                           prePostConditions: [],

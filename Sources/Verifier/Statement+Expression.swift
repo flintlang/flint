@@ -348,7 +348,6 @@ extension BoogieTranslator {
     // Final accesses of dot chain \/ \/ \/
     case .identifier(let identifier):
       let translatedIdentifier = translateGlobalIdentifierName(identifier.name, tld: structName)
-      addFunctionGlobalVariableReference(referenced: translatedIdentifier)
       let lhsExpr = BExpression.identifier(translatedIdentifier)
       return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
 
@@ -430,7 +429,6 @@ extension BoogieTranslator {
         return (.identifier(translateIdentifierName(identifier.name)), [])
       }
       let translatedIdentifier = translateGlobalIdentifierName(identifier.name)
-      addFunctionGlobalVariableReference(referenced: translatedIdentifier)
 
       // Currently in a struct, referring to a 'global' variable
       if let currentStructInstanceVariable = structInstanceVariableName {

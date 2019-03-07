@@ -302,7 +302,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .func, .init, .fallback, .public, .visible, .mutating, .punctuation(.at):
+      case .func, .init, .fallback, .public, .visible, .punctuation(.at):
         members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
       case .punctuation(.closeBrace):
         return members
@@ -458,6 +458,7 @@ extension Parser {
   func parsePrePostConditions() throws -> [PrePostCondition] {
     var conditions = [PrePostCondition]()
 
+    OUTER:
     while let condType = currentToken?.kind {
       switch condType {
       case .pre:
@@ -469,7 +470,7 @@ extension Parser {
         return conditions
 
       default:
-        break
+        break OUTER
       }
     }
    throw raise(.unexpectedEOF())
@@ -499,12 +500,14 @@ extension Parser {
     } else {
       resultType = nil
     }
+    let mutates = try parseMutates()
     let prePostConditions = try parsePrePostConditions()
 
     return FunctionSignatureDeclaration(
       funcToken: funcToken,
       attributes: attributes,
       modifiers: modifiers,
+      mutates: mutates,
       identifier: identifier,
       parameters: parameters,
       prePostConditions: prePostConditions,
@@ -523,12 +526,14 @@ extension Parser {
                                         modifiers: [Token]) throws -> SpecialSignatureDeclaration {
     let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
     let (parameters, closeBracketToken) = try parseParameters()
+    let mutates = try parseMutates()
     let prePostConditions = try parsePrePostConditions()
 
     return SpecialSignatureDeclaration(
       specialToken: specialToken,
       attributes: attributes,
       modifiers: modifiers,
+      mutates: mutates,
       parameters: parameters,
       prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken
