@@ -339,6 +339,13 @@ extension SemanticAnalyzer {
       diagnostics.append(.invalidReturnTypeInFunction(functionDeclaration))
     }
 
+    // A function can only mutate modifiers which are declared
+    let mutates = signature.mutates
+    for identifier in mutates {
+      // TODO: This is a hack - should add to AST visitor
+      _ = process(identifier: identifier, passContext: passContext)
+    }
+
     let statements = functionDeclaration.body
 
     // Find a statement after the first return/become in the function.

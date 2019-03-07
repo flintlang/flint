@@ -272,7 +272,7 @@ extension BoogieTranslator {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
     let parameters = functionDeclaration.signature.parameters
-    let signature = functionDeclaration.signature
+    var signature = functionDeclaration.signature
     var returnName = signature.resultType == nil ? nil : generateFunctionReturnVariable()
     var returnType = signature.resultType == nil ? nil : convertType(signature.resultType!)
 
@@ -315,6 +315,11 @@ extension BoogieTranslator {
           .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
           .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
         ]
+        // Include nextInstance in modifies
+        var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
+                                        sourceLocation: functionDeclaration.sourceLocation)
+        nextInstanceId.enclosingType = getCurrentTLDName()
+        signature.mutates.append(nextInstanceId)
 
         let returnAllocatedStructInstance: [BStatement] = [
           .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
@@ -348,7 +353,7 @@ extension BoogieTranslator {
       .filter({!isInit || ($0.obligationType != .preCondition)}) + structInvariants
     prePostConditions += invariants
 
-    let modifies = Set<BModifiesDeclaration>(functionDeclaration.mutates.map({
+    let modifies = Set<BModifiesDeclaration>(signature.mutates.map({
        BModifiesDeclaration(variable: translateGlobalIdentifierName($0.name,
                                                                     tld: $0.enclosingType))
     }))

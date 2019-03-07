@@ -97,7 +97,17 @@ extension Parser {
       if first == .punctuation(.comma) {
         try consume(.punctuation(.comma), or: .expectedIdentifier(at: latestSource))
       } else if first != .punctuation(.closeBracket) {
-        mutates.append(try parseIdentifier())
+        var enclosingType: Identifier? = try parseIdentifier()
+        var identifier: Identifier
+        if currentToken?.kind == .punctuation(.dot) {
+          try consume(.punctuation(.dot), or: .expectedIdentifier(at: latestSource))
+          identifier = try parseIdentifier()
+        } else {
+          identifier = enclosingType!
+          enclosingType = nil
+        }
+        identifier.enclosingType = enclosingType?.name
+        mutates.append(identifier)
       } else {
         try consume(.punctuation(.closeBracket), or: .expectedIdentifier(at: latestSource))
         break
