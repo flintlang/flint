@@ -10,6 +10,7 @@ enum BTopLevelDeclaration: CustomStringConvertible {
   case functionDeclaration(BFunctionDeclaration)
   case axiomDeclaration(BAxiomDeclaration)
   case variableDeclaration(BVariableDeclaration)
+  case constDeclaration(BConstDeclaration)
   case typeDeclaration(BTypeDeclaration)
   case procedureDeclaration(BProcedureDeclaration)
 
@@ -21,6 +22,8 @@ enum BTopLevelDeclaration: CustomStringConvertible {
       return "\(bAxiomDeclaration)"
     case .variableDeclaration(let bVariableDeclaration):
       return "\(bVariableDeclaration)"
+    case .constDeclaration(let bConstDeclaration):
+      return "\(bConstDeclaration)"
     case .typeDeclaration(let bTypeDeclaration):
       return "\(bTypeDeclaration)"
     case .procedureDeclaration(let bProcedureDeclaration):
@@ -57,6 +60,17 @@ struct BVariableDeclaration: CustomStringConvertible {
 
   var description: String {
     return "var \(name): \(type);"
+  }
+}
+
+struct BConstDeclaration: CustomStringConvertible {
+  let name: String
+  let rawName: String
+  let type: BType
+  let unique: Bool
+
+  var description: String {
+    return "const \(unique ? "unique" : "") \(name): \(type);"
   }
 }
 

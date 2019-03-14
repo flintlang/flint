@@ -37,6 +37,8 @@ class BoogieTranslator {
   // List of all struct invariants
   var structInvariants = [BProofObligation]()
 
+  var enums = [String]()
+
   // Struct function instance variable
   var structInstanceVariableName: String?
 
@@ -180,8 +182,43 @@ class BoogieTranslator {
   }
 
   func process(_ enumDeclaration: EnumDeclaration) -> [BTopLevelDeclaration] {
-    // TODO:
-    return []
+    //var enumType = enumDeclaration.type
+    let enumName = enumDeclaration.identifier.name
+
+    enums.append(enumName)
+
+    // Declare type EnumName: int;
+    // const var enumCase: EnumName;
+    var axioms = [BTopLevelDeclaration]()
+    axioms.append(.typeDeclaration(BTypeDeclaration(name: enumName, alias: .int)))
+
+    //TODO: Implement for other enum types
+    var counter: Int = 0
+
+    for `case` in enumDeclaration.cases {
+      let caseIdent = `case`.identifier.name
+      //TODO: Do something with caseValue
+      //var caseValue: BExpression
+      if let value = `case`.hiddenValue {
+        switch value {
+        case .literal:
+          // TODO: Assign the actual value of the enum
+          //caseValue = process(token)
+          break
+        default:
+          fatalError("Can't translate enum value with raw expressions")
+        }
+      } else {
+        //caseValue = counter
+        counter += 1
+      }
+
+      axioms.append(.constDeclaration(BConstDeclaration(name: translateGlobalIdentifierName(caseIdent, tld: enumName),
+                                         rawName: enumName,
+                                         type: .userDefined(enumName),
+                                         unique: true)))
+    }
+    return axioms
   }
 
   func process(_ traitDeclaration: TraitDeclaration) -> [BTopLevelDeclaration] {
@@ -503,12 +540,12 @@ class BoogieTranslator {
         return contractBehaviorDeclaration.contractIdentifier.name
       case .structDeclaration(let structDeclaration):
         return structDeclaration.identifier.name
-
+      case .enumDeclaration(let enumDeclaration):
+        return enumDeclaration.identifier.name
       default:
         break
       /*
-        TODO: Implement
-      case .enumDeclaration(let enumDeclaration):
+      TODO: Implement
       case .traitDeclaration(let traitDeclaration):
         */
       }

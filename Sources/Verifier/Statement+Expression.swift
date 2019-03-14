@@ -340,11 +340,30 @@ extension BoogieTranslator {
       let (finalExpr, holyStmts) = holyAccesses(lExpr)
       return (finalExpr, lStmts + holyStmts)
     default:
-      print("Unknown type used with `dot` operator \(lhsType)")
-      print("\(lhs)")
-      print("\(rhs)")
-      fatalError()
+      break
     }
+
+    // Search for enums + identifiers
+    switch lhs {
+    case .identifier(let lIdentifier):
+      if enums.contains(lIdentifier.name) {
+        switch rhs {
+        case .identifier(let rIdentifier):
+          // TODO:
+          return (.identifier(translateGlobalIdentifierName(rIdentifier.name, tld: lIdentifier.name)),
+                  [])
+        default:
+          break
+        }
+      }
+    default:
+      break
+    }
+
+    print("Unknown type used with `dot` operator \(lhsType)")
+    print("\(lhs)")
+    print("\(rhs)")
+    fatalError()
   }
 
   private  func handleNestedStructAccess(structName: String,
