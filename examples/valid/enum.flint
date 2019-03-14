@@ -1,0 +1,18 @@
+enum A: Int {
+  case one
+  case two
+  case three
+}
+
+contract Test {
+}
+
+Test :: (any) {
+  public init() {}
+
+  public func test() {
+    var o: A = A.one
+    var t: A = A.three
+    assert(o != t)
+  }
+}
