@@ -26,6 +26,7 @@ struct Compiler {
   var dumpVerifierIR: Bool
   var printVerificationOutput: Bool
   var skipVerifier: Bool
+  var skipCodeGen: Bool
   var diagnostics: DiagnosticPool
 
   var sourceContext: SourceContext {
@@ -97,6 +98,10 @@ struct Compiler {
           exit(0)
         }
       }
+    }
+
+    if skipCodeGen {
+      exit(0)
     }
 
     // AST Pass 2

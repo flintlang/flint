@@ -12,11 +12,12 @@ func main() {
     Flag("dump-verifier-ir", flag: "d", description: "Emit the representation of the code used by the verifier."),
     Flag("print-verification-output", flag: "o", description: "Emit the verifie's raw verification output"),
     Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),
+    Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
     Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipVerifier, dumpAST, shouldVerify, quiet, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipVerifier, skipCodeGen, dumpAST, shouldVerify, quiet, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -45,6 +46,7 @@ func main() {
         dumpVerifierIR: dumpVerifierIR,
         printVerificationOutput: printVerificationOutput,
         skipVerifier: skipVerifier,
+        skipCodeGen: skipCodeGen,
         diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
                                     quiet: quiet,
                                     sourceContext: SourceContext(sourceFiles: inputFiles))
