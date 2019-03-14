@@ -111,6 +111,7 @@ public struct Lexer {
     "&*": .punctuation(.overflowingTimes),
     "**": .punctuation(.power),
     "/": .punctuation(.divide),
+    "%": .punctuation(.percent),
     "=": .punctuation(.equal),
     "+=": .punctuation(.plusEqual),
     "-=": .punctuation(.minusEqual),

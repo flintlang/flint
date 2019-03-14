@@ -35,7 +35,7 @@ extension TypeChecker {
                                                    expression: .binaryExpression(binaryExpression)))
       }
     case .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes,
-         .power, .divide, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
+         .power, .divide, .percent, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
          .openAngledBracket, .closeAngledBracket, .lessThanOrEqual, .greaterThanOrEqual:
       // Both sides must have type Int.
       if ![lhsType, rhsType].contains(.errorType),

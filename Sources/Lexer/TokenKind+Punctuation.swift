@@ -32,6 +32,7 @@ extension Token.Kind {
     case overflowingTimes = "&*"
     case power            = "**"
     case divide     = "/"
+    case percent    = "%"
     case dot        = "."
     case dotdot     = ".."
     case ampersand  = "&"
@@ -59,7 +60,7 @@ extension Token.Kind {
 
     static var allBinaryOperators: [Punctuation] {
       return [
-        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .equal,
+        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .percent, .equal,
         .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
 
         .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
@@ -92,7 +93,7 @@ extension Token.Kind {
       case .plus, .overflowingPlus: return 20
       case .minus, .overflowingMinus: return 20
       case .times, .overflowingTimes: return 30
-      case .divide: return 30
+      case .divide, .percent: return 30
       case .power: return 31
       case .ampersand: return 35
       case .dot: return 40

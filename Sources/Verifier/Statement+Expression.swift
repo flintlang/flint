@@ -212,6 +212,11 @@ extension BoogieTranslator {
       let (lhsExpr, lhsStmts) = process(lhs)
       return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
 
+    case .percent:
+      let (rhsExpr, rhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts) = process(lhs)
+      return (.modulo(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+
       /*
       //TODO: Handle
     case .at:
