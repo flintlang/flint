@@ -91,12 +91,8 @@ struct Compiler {
         print("Contract Verified!")
       } else {
         print("Contract not verified")
-        if let failed = try diagnostics.checkpoint(errors) {
-          if failed {
-            exitWithFailure()
-          }
-          exit(0)
-        }
+        try diagnostics.checkpoint(errors)
+        exitWithFailure()
       }
     }
 
