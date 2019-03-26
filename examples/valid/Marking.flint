@@ -13,14 +13,18 @@ Marking :: (any) {
 }
 
 Marking :: (lecturer) {
-  public mutating func addMarker(marker: Address) {
+  public func addMarker(marker: Address)
+    mutates (markers, numMarkers)
+  {
     markers[numMarkers] = marker
     numMarkers += 1
   }
 }
 
 Marking :: (markers) {
-  public mutating func assignGrade(student: Address, grade: Int) {
+  public func assignGrade(student: Address, grade: Int)
+    mutates (grades)
+  {
     grades[student] = grade
   }
 }

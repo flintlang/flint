@@ -6,15 +6,20 @@ contract Test {
 }
 
 Test :: caller <- (any) {
-  public init() {
+  public init()
+  {
     self.owner = caller
   }
-  
-  mutating func increaseNumWrites() {
-    self.numWrites += 1 
+
+  func increaseNumWrites()
+    mutates (numWrites)
+  {
+    self.numWrites += 1
   }
 
-  public mutating func write(index: Int, val: Int) {
+  public func write(index: Int, val: Int)
+    mutates (numWrites, arr)
+  {
     arr[index] = val
     increaseNumWrites()
   }
@@ -27,7 +32,9 @@ Test :: caller <- (any) {
     return arr2[index]
   }
 
-  public mutating func write2(index: Int, val: Int) {
+  public func write2(index: Int, val: Int)
+    mutates (arr2, numWrites)
+  {
     arr2[index] = val
     increaseNumWrites()
   }

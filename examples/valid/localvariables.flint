@@ -14,7 +14,9 @@ LocalVariables :: (any) {
     let j: Int = 20
   }
 
-  public mutating func loop() {
+  public func loop()
+    mutates (is)
+  {
     var k: Int = 5
     is[0] = 0
 
@@ -23,7 +25,9 @@ LocalVariables :: (any) {
     //}
   }
 
-  public mutating func scoping() {
+  public func scoping()
+    mutates (ten)
+  {
     var is: Int = 0
     is = 6
     let j: Int = self.ten

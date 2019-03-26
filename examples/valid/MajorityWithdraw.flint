@@ -16,24 +16,28 @@ MajorityWithdraw @(any) :: (any) {
 }
 
 MajorityWithdraw @(Preparing) :: (leader) {
-  public mutating func addParticipant(participant: Address) {
+  public func addParticipant(participant: Address)
+    mutates (participant, numParticipants)
+  {
     participants[numParticipants] = participant
     numParticipants += 1
   }
 
-  public mutating func openVoting() {
+  public func openVoting() {
     become Voting
   }
 }
 
 MajorityWithdraw @(Voting) :: (leader) {
-  public mutating func closeVoting() {
+  public func closeVoting() {
     become Completed
   }
 }
 
 MajorityWithdraw @(Voting) :: participant <- (participants) {
-  public mutating func vote(vote: Bool) {
+  public func vote(vote: Bool)
+    mutates (participantVotes)
+  {
     participantVotes[participant] = vote
   }
 }

@@ -10,7 +10,9 @@ Factorial :: (any) {
     return n * factorial(n - 1)
   }
 
-  public mutating func calculate(n: Int) {
+  public func calculate(n: Int)
+    mutates (value)
+  {
     value = factorial(n)
   }
 

@@ -23,7 +23,9 @@ FlightManager :: caller <- (any) {
   }
 
   @payable
-  mutating public func buy(implicit value: Wei) {
+  public func buy(implicit value: Wei)
+    mutates (amountPaid, numPassengers, numRemainingSeats, passengers)
+  {
     let amountGiven: Int = value.getRawValue()
     assert(amountGiven == ticketPrice)
     assert(numRemainingSeats > 0)
@@ -56,7 +58,8 @@ FlightManager :: caller <- (any) {
 }
 
 FlightManager :: (admin) {
-  mutating public func cancelFlight() {
+  public func cancelFlight()
+  {
     flightInformation.cancelFlight()
   }
 }
@@ -76,7 +79,9 @@ struct FlightInformation {
     self.flightID = flightID
   }
 
-  mutating func cancelFlight() {
+  func cancelFlight()
+    mutates (isCancelled)
+  {
     isCancelled = true
   }
 }

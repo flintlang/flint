@@ -20,8 +20,8 @@ trait ERC20 {
     public func balanceOf(owner: Address) -> Int
     public func allowance(owner: Address, spender: Address) -> Int
 
-    public mutating func transfer(to: Address, value: Int) -> Bool
-    public mutating func approve(spender: Address, value: Int) -> Bool
-    public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool
+    public func transfer(to: Address, value: Int) -> Bool
+    public func approve(spender: Address, value: Int) -> Bool
+    public func transferFrom(from: Address, to: Address, value: Int) -> Bool
   }
 }

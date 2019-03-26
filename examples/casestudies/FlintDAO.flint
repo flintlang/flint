@@ -16,7 +16,7 @@ struct Proposal {
   var success: Bool = false
   var voted: [Address: Bool]
 
-  mutating init(proposer: Address, payout: Int, recipient: Address) {
+  init(proposer: Address, payout: Int, recipient: Address) {
     self.proposer = proposer
     self.payout = payout
     self.recipient = recipient
@@ -39,7 +39,7 @@ SimpleDAO @(any) :: caller <- (any) {
     become Join
   }
 
-  public mutating fallback() {
+  public fallback() {
     fatalError()
   }
 
@@ -59,19 +59,23 @@ SimpleDAO @(any) :: caller <- (any) {
 SimpleDAO @(Join) :: caller <- (any) {
 
   @payable
-  public mutating func join(implicit value: inout Wei) {
+  public func join(implicit value: inout Wei)
+    mutates (balances)
+  {
     balances[caller].transfer(&value)
   }
 }
 
 SimpleDAO @(Join) :: (curator) {
-  public mutating func joinTimeElapsed() {
+  public func joinTimeElapsed() {
     become Propose
   }
 }
 
 SimpleDAO @(Propose) :: caller <- (tokenHolder) {
-  public mutating func newProposal(value: Int, recipient: Address) -> Int {
+  public func newProposal(value: Int, recipient: Address) -> Int
+    mutates (proposals)
+  {
     // Sanity checks omitted to be concise
     let pID: Int = proposals.size + 1;
     proposals[pID] = Proposal(caller, value, recipient)
@@ -86,14 +90,18 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
 }
 
 SimpleDAO @(Propose) :: (curator) {
-  public mutating func beginVote(proposal: Int) {
+  public func beginVote(proposal: Int)
+    mutates (proposal)
+  {
     self.proposal = proposal
     become Vote
   }
 }
 
 SimpleDAO @(Vote) :: caller <- (tokenHolder) {
-  public mutating func vote(approve: Bool) {
+  public func vote(approve: Bool)
+    mutates (proposals)
+  {
     if proposals[proposal].voted[caller] {
       fatalError()
     }
@@ -107,7 +115,9 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
     proposals[proposal].voted[caller] = true
   }
 
-  public mutating func executeProposal() {
+  public func executeProposal()
+    mutates (proposals)
+  {
     if(caller != proposals[proposal].proposer || proposals[proposal].finished) {
       fatalError()
     }

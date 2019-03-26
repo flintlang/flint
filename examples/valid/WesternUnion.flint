@@ -20,7 +20,9 @@ WesternUnion :: (any) {
 }
 
 WesternUnion :: (manager) {
-  public mutating func addCustomer(customer: Address) {
+  public func addCustomer(customer: Address)
+    mutates (customers, numCustomers)
+  {
     customers[numCustomers] = customer
     numCustomers += 1 //Issue if we don't increment numCustomers
   }
@@ -29,12 +31,16 @@ WesternUnion :: (manager) {
 
 WesternUnion :: customer <- (customers) {
   @payable
-  public mutating func deposit(implicit amount: Wei, recipient: Address) {
+  public func deposit(implicit amount: Wei, recipient: Address)
+    mutates (accounts)
+  {
     accounts[recipient].transfer(&amount)
     var a: Wei = Wei(0-1);
   }
 
-  public mutating func withdraw() {
+  public func withdraw()
+    mutates (accounts)
+  {
     var amt: Wei = Wei(&accounts[customer])
     send(customer, &amt)
   }

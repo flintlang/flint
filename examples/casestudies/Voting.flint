@@ -16,7 +16,7 @@ Ballot :: caller <- (any) {
     chairperson = caller
     voters[chairperson] = Voter(weight: 1)
 
-    for proposalName in proposalNames {
+    for let proposalName: String in proposalNames {
       proposals.append(Proposal(name: proposalName))
     }
   }
@@ -24,7 +24,9 @@ Ballot :: caller <- (any) {
 
 Ballot :: (chairperson) {
   // Allow an address to vote.
-  public mutating func giveRightToVote(voter: Address) {
+  public func giveRightToVote(voter: Address)
+    mutates (voters)
+  {
     // Ensure the voter hasn't voted yet, or no
     if voters[voter].hasVoted || voters[voter].votingWeight != 0 {
       fatalError()
@@ -36,7 +38,9 @@ Ballot :: (chairperson) {
 
 Ballot :: voter <- (voters.keys) {
   // Delegate vote to another voter.
-  public mutating func delegate(target: Voter) {
+  public func delegate(target: Voter)
+    mutates (voters, proposals)
+  {
     if voters[voter].hasVoted { fatalError() }
     if voter == target { fatalError() }
     
@@ -59,7 +63,9 @@ Ballot :: voter <- (voters.keys) {
      proposals[votedProposalID].numVotes += voterWeight
   }
 
-  public mutating func vote(proposalID: Int) {
+  public func vote(proposalID: Int)
+    mutates (voters, proposals)
+  {
     if voters[voter].hasVoted { fatalError() }
     voters[voter].hasVoted = true
     voters[voter].votedProposalID = proposalID

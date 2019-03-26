@@ -16,7 +16,9 @@ Array :: (any) {
     es = [:]
   }
 
-  public mutating func arrayLiteral() {
+  public func arrayLiteral()
+    mutates (as, bs, cs)
+  {
     as[0] = 0
     bs[10] = 5
     cs[0] = []

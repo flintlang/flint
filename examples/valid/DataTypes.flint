@@ -12,21 +12,29 @@ Test :: (any) {
     self.p2 = p2
   }
 
-  public mutating func setP1(p1: Address) {
+  public func setP1(p1: Address)
+    mutates (p1)
+  {
     self.p1 = p1
   }
 
-  public mutating func setP2(p2: Address) {
+  public func setP2(p2: Address)
+    mutates (p2)
+  {
     self.p2 = p2
   }
 }
 
 Test :: (p1, p2) {
-  public mutating func setPosition(addr: Address, position: Int) { 
+  public func setPosition(addr: Address, position: Int)
+    mutates (arr)
+  {
     arr[position] = addr
   }
 
-  public mutating func write(pos: Int, value: Int) {
+  public func write(pos: Int, value: Int)
+    mutates (dict)
+  {
     var key: Address = arr[pos]
     dict[key] = value
   }
