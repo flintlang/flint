@@ -4,4 +4,5 @@ enum BoogieError {
   case assertionFailure(Int, String)
   case preConditionFailure(Int, String)
   case postConditionFailure(Int, String)
+  case modifiesFailure(Int, String)
 }

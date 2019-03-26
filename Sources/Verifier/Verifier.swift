@@ -103,6 +103,8 @@ public class Verifier {
 
     bank_test.bpl(4,64): error: invalid Function
 
+    935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
+
     Boogie program verifier finished with 10 verified, 1 error
     */
     var lines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -140,6 +142,9 @@ public class Verifier {
 
     } else if line.contains("precondition") {
       return .preConditionFailure(lineNumber, line)
+
+    } else if line.contains("global variable that is not in the enclosing procedure's modifies clause") {
+      return .modifiesFailure(lineNumber, line)
     }
 
     print("Couldn't determine type of verification failure: \(line)")
@@ -164,6 +169,12 @@ public class Verifier {
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: b2fSourceMapping[line]!,
                                       message: "Could not verify post-condition holds"))
+      case .modifiesFailure(let line, _):
+        // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
+        //flintErrors.append(Diagnostic(severity: .error,
+        //                              sourceLocation: b2fSourceMapping[line]!,
+        //                              message: "Could not verify post-condition holds"))
+        continue
       }
     }
     return flintErrors
