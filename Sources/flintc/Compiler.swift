@@ -62,10 +62,13 @@ struct Compiler {
       exit(0)
     }
 
+    let normaliser = IdentifierNormaliser()
+
     // The AST passes to run sequentially.
     let astPasses: [ASTPass] = [
       SemanticAnalyzer(),
-      TypeChecker()
+      TypeChecker(),
+      CallGraphGenerator(normaliser: normaliser)
     ]
 
     // AST Pass 1
@@ -85,13 +88,15 @@ struct Compiler {
                                         boogieLocation: "boogie/Binaries/Boogie.exe",
                                         monoLocation: "/usr/bin/mono",
                                         topLevelModule: semanticsPassRunnerOutcome.element,
-                                        environment: semanticsPassRunnerOutcome.environment).verify()
+                                        environment: semanticsPassRunnerOutcome.environment,
+                                        sourceContext: sourceContext,
+                                        normaliser: normaliser).verify()
 
       if verified {
         print("Contract Verified!")
       } else {
         print("Contract not verified")
-        try diagnostics.checkpoint(errors)
+        _ = try diagnostics.checkpoint(errors)
         exitWithFailure()
       }
     }

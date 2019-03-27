@@ -4,13 +4,11 @@ struct Wei {
   //invariant (rawValue >= 0)
 
   init(unsafeRawValue: Int)
-    mutates(rawValue)
   {
     self.rawValue = unsafeRawValue
   }
 
   init(source: inout Wei, amount: Int)
-    mutates(rawValue)
   {
     if source.getRawValue() < amount {
       fatalError()
@@ -21,7 +19,6 @@ struct Wei {
   }
 
   init(source: inout Wei)
-    mutates(rawValue)
   {
     let value: Int = source.getRawValue()
     source.rawValue -= value

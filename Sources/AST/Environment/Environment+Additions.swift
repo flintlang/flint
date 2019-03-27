@@ -244,4 +244,10 @@ extension Environment {
   public mutating func setPublicFallback(_ publicFallback: SpecialDeclaration, for type: RawTypeIdentifier) {
     types[type]!.publicFallback = publicFallback
   }
+
+  public mutating func addFunctionCall(caller: String, callee: String) {
+    var existingCalls = callGraph[caller] ?? Set<String>()
+    existingCalls.insert(callee)
+    callGraph[caller] = existingCalls
+  }
 }

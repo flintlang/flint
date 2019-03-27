@@ -16,13 +16,17 @@ public class Verifier {
               boogieLocation: String,
               monoLocation: String,
               topLevelModule: TopLevelModule,
-              environment: Environment) {
+              environment: Environment,
+              sourceContext: SourceContext,
+              normaliser: IdentifierNormaliser) {
     self.boogieLocation = boogieLocation
     self.monoLocation = monoLocation
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
     self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
-                                             environment: environment)
+                                             environment: environment,
+                                             sourceContext: sourceContext,
+                                             normaliser: normaliser)
   }
 
   // Verify flint code and return flint line number and suggestion for any error
@@ -169,7 +173,7 @@ public class Verifier {
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: b2fSourceMapping[line]!,
                                       message: "Could not verify post-condition holds"))
-      case .modifiesFailure(let line, _):
+      case .modifiesFailure://(let line, _):
         // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
         //flintErrors.append(Diagnostic(severity: .error,
         //                              sourceLocation: b2fSourceMapping[line]!,

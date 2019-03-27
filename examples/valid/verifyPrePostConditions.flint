@@ -6,7 +6,7 @@ contract VerifyPrePostConditions {
 }
 
 VerifyPrePostConditions :: (any) {
-  public init() {}
+  public init() { }
 
   func testPreConditions()
     pre (1 == 1)
@@ -32,7 +32,9 @@ VerifyPrePostConditions :: (any) {
     assert (input2 == 10 + increment)
   }
 
-  func testGlobals() {
+  func testGlobals()
+    pre (ten == 5)
+  {
     assert(ten != 10)
   }
 

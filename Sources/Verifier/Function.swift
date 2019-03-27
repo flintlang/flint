@@ -53,13 +53,6 @@ extension BoogieTranslator {
                                                                type: type))
   }
 
-  func getStructInstanceVariable() -> String {
-    let structName = getCurrentTLDName()
-    return "nextInstance_\(structName)"
-    //print("Could not get struct instance variable, not in a TLD")
-    //fatalError()
-  }
-
   func generateStructInstanceVariableName() -> String {
     return "structInstance" // TODO: Generate dynamically?
   }
@@ -230,11 +223,11 @@ extension BoogieTranslator {
     if isInit {
       // When calling struct constructors, need to identify this special
       // function call and set the owning type to the Struct
-      functionName = translateGlobalIdentifierName("init" + parameterTypes.reduce("", { $0 + $1.name }),
-                                                       tld: rawFunctionName)
+      functionName = normaliser.translateGlobalIdentifierName("init" + parameterTypes.reduce("", { $0 + $1.name }),
+                                                              tld: rawFunctionName)
     } else {
-      functionName = translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }),
-                                                       tld: owningType)
+      functionName = normaliser.translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }),
+                                                              tld: owningType ?? getCurrentTLDName())
     }
 
     if let instance = structInstance, !isInit {
@@ -265,7 +258,7 @@ extension BoogieTranslator {
 
    func process(_ functionDeclaration: FunctionDeclaration,
                 isStructInit: Bool = false,
-                isInit: Bool = false,
+                isContractInit: Bool = false,
                 _ callerPreConds: [BProofObligation] = [],
                 _ callerPreStatements: [BStatement] = []
                 ) -> BTopLevelDeclaration {
@@ -298,51 +291,56 @@ extension BoogieTranslator {
 
     var functionPostAmble = [BStatement]()
     var functionPreAmble = [BStatement]()
+
+    if isContractInit {
+      functionPostAmble += contractConstructorInitialisations[getCurrentTLDName()]!
+    }
+
     if let cTld = currentTLD {
-     switch cTld {
-     case .structDeclaration:
-      self.structInstanceVariableName = generateStructInstanceVariableName()
-      if isStructInit {
-        returnType = .int
-        returnName = generateFunctionReturnVariable()
+      switch cTld {
+      case .structDeclaration:
+       self.structInstanceVariableName = generateStructInstanceVariableName()
+       if isStructInit {
+         returnType = .int
+         returnName = generateFunctionReturnVariable()
 
-        let nextInstance = getStructInstanceVariable()
+         let nextInstance = normaliser.generateStructInstanceVariable(structName: getCurrentTLDName())
 
-        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: self.structInstanceVariableName!,
-                                                                   rawName: self.structInstanceVariableName!,
-                                                                   type: .int))
-        let reserveNextStructInstance: [BStatement] = [
-          .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
-          .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
-        ]
-        // Include nextInstance in modifies
-        var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
-                                        sourceLocation: functionDeclaration.sourceLocation)
-        nextInstanceId.enclosingType = getCurrentTLDName()
-        signature.mutates.append(nextInstanceId)
+         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: self.structInstanceVariableName!,
+                                                                    rawName: self.structInstanceVariableName!,
+                                                                    type: .int))
+         let reserveNextStructInstance: [BStatement] = [
+           .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
+           .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
+         ]
+         // Include nextInstance in modifies
+         var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
+                                         sourceLocation: functionDeclaration.sourceLocation)
+         nextInstanceId.enclosingType = getCurrentTLDName()
+         signature.mutates.append(nextInstanceId)
 
-        let returnAllocatedStructInstance: [BStatement] = [
-          .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
-          .returnStatement
-        ]
+         let returnAllocatedStructInstance: [BStatement] = [
+           .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
+           .returnStatement
+         ]
 
-        let structInitPost: BExpression =
-          .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
+         let structInitPost: BExpression =
+           .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
-        prePostConditions.append(BProofObligation(expression: structInitPost,
-                                                  mark: functionDeclaration.sourceLocation.line,
-                                                  obligationType: .postCondition))
-        flintProofObligationSourceLocation[functionDeclaration.sourceLocation.line] = functionDeclaration.sourceLocation
+         prePostConditions.append(BProofObligation(expression: structInitPost,
+                                                   mark: functionDeclaration.sourceLocation.line,
+                                                   obligationType: .postCondition))
+         flintProofObligationSourceLocation[functionDeclaration.sourceLocation.line] = functionDeclaration.sourceLocation
 
-        functionPreAmble += reserveNextStructInstance
-        functionPostAmble += returnAllocatedStructInstance
-      } else {
-        bParameters.append(BParameterDeclaration(name: self.structInstanceVariableName!,
-                                                 rawName: self.structInstanceVariableName!,
-                                                 type: .int))
-      }
-     default: break
-      }
+         functionPreAmble += reserveNextStructInstance
+         functionPostAmble += returnAllocatedStructInstance
+       } else {
+         bParameters.append(BParameterDeclaration(name: self.structInstanceVariableName!,
+                                                  rawName: self.structInstanceVariableName!,
+                                                  type: .int))
+       }
+      default: break
+       }
     }
 
     let bStatements = functionPreAmble + body.flatMap({x in process(x)}) + functionPostAmble
@@ -350,12 +348,25 @@ extension BoogieTranslator {
     // Procedure must hold invariant
     let invariants = (tldInvariants[getCurrentTLDName()] ?? [])
       // drop contract invariants, if init function
-      .filter({!isInit || ($0.obligationType != .preCondition)}) + structInvariants
+      .filter({ !(isContractInit || isStructInit) || ($0.obligationType != .preCondition) }) + structInvariants
     prePostConditions += invariants
 
-    let modifies = Set<BModifiesDeclaration>(signature.mutates.map({
-       BModifiesDeclaration(variable: translateGlobalIdentifierName($0.name,
-                                                                    tld: $0.enclosingType))
+    var modifies = functionDeclaration.mutates.map({
+      // TODO: What happens when you modify a value in another type, eg modify a struct?
+      // TODO: What happens when you modify a array/dict type, which has shadow variables?
+      normaliser.translateGlobalIdentifierName($0.name, tld: getCurrentTLDName())
+    }) + (functionModifiesShadow[currentFunctionName] ?? [])
+
+    if isContractInit {
+      modifies += contractGlobalVariables[getCurrentTLDName()] ?? []
+    }
+
+    if isStructInit {
+      modifies += structGlobalVariables[getCurrentTLDName()] ?? []
+    }
+
+    let modifiesClauses = Set<BModifiesDeclaration>(modifies.map({
+       BModifiesDeclaration(variable: $0)
     }))
 
     // About to exit function, reset struct instance variable
@@ -367,7 +378,7 @@ extension BoogieTranslator {
       returnName: returnName,
       parameters: bParameters,
       prePostConditions: callerPreConds + prePostConditions,
-      modifies: modifies,
+      modifies: modifiesClauses,
       statements: callerPreStatements + bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName)
     ))

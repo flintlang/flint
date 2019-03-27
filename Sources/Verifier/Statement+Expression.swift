@@ -350,7 +350,7 @@ extension BoogieTranslator {
         switch rhs {
         case .identifier(let rIdentifier):
           // TODO:
-          return (.identifier(translateGlobalIdentifierName(rIdentifier.name, tld: lIdentifier.name)),
+          return (.identifier(normaliser.translateGlobalIdentifierName(rIdentifier.name, tld: lIdentifier.name)),
                   [])
         default:
           break
@@ -366,12 +366,12 @@ extension BoogieTranslator {
     fatalError()
   }
 
-  private  func handleNestedStructAccess(structName: String,
-                                         access: Expression) -> ((BExpression) -> (BExpression, [BStatement])) {
+  private func handleNestedStructAccess(structName: String,
+                                        access: Expression) -> ((BExpression) -> (BExpression, [BStatement])) {
     switch access {
     // Final accesses of dot chain \/ \/ \/
     case .identifier(let identifier):
-      let translatedIdentifier = translateGlobalIdentifierName(identifier.name, tld: structName)
+      let translatedIdentifier = normaliser.translateGlobalIdentifierName(identifier.name, tld: structName)
       let lhsExpr = BExpression.identifier(translatedIdentifier)
       return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
 
