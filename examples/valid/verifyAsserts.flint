@@ -28,8 +28,8 @@ VerifyAsserts :: (any) {
     }
   }
 
-  func failingAssertion(j: Int)
-  {
-    assert (j == 0)
-  }
+  //func failingAssertion(j: Int)
+  //{
+  //  assert (j == 0)
+  //}
 }

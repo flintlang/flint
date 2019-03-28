@@ -82,6 +82,7 @@ class BoogieTranslator {
   // If A modifies x and B calls A, B modifies x
   func resolveModifiedShadowVariables() {
     let cfg = self.environment.callGraph
+    print(cfg)
 
     for _ in 0...cfg.keys.count {
       for (considering, calls) in cfg {
@@ -92,7 +93,7 @@ class BoogieTranslator {
         self.functionModifiesShadow[considering] = modifies
       }
     }
-    print(functionModifiesShadow)
+    print(self.functionModifiesShadow)
   }
 
   func generateAST() -> BTopLevelProgram {

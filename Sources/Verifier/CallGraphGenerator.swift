@@ -60,36 +60,42 @@ public class CallGraphGenerator: ASTPass {
     default: break
     }
 
-    if let scopeContext = passContext.scopeContext {
+    if let scopeContext = passContext.scopeContext,
+       let currentFunction = callerFunctionName {
       let matchedCall = environment.matchFunctionCall(functionCall,
                                                       enclosingType: enclosingType,
                                                       typeStates: [],
                                                       callerProtections: [],
                                                       scopeContext: scopeContext)
-      var parameterTypes: [RawType]
-      switch matchedCall {
+      functionCallSwitch: switch matchedCall {
       case .matchedFunction(let functionInformation):
-        parameterTypes = functionInformation.parameterTypes
-
-      case .matchedGlobalFunction(let functionInformation):
-        parameterTypes = functionInformation.parameterTypes
+        let normalisedFunctionName = normaliseFunctionName(functionName: functionCall.identifier.name,
+                                                   parameterTypes: functionInformation.parameterTypes,
+                                                   enclosingType: enclosingType)
+        environment.addFunctionCall(caller: currentFunction, callee: normalisedFunctionName)
+        updatedContext.environment = environment
 
       case .matchedInitializer(let specialInformation):
         // Initialisers do not return values -> although struct inits do = ints
-        // TODO: Assume only for struct initialisers. Need to implement for contract initialisers/fallback functions?
+        // TODO: Assume only for struct initialisers. Need to implement for fallback functions?
 
         // This only works for struct initialisers.
-        parameterTypes = specialInformation.parameterTypes
-        print(currentType)
-        print(enclosingType)
 
-      case .matchedFallback(let specialInformation):
-        //TODO: Handle fallback functions
-        print("Call graph - Handle fallback calls")
-        print(specialInformation)
-        fatalError()
+        let normalisedFunctionName = normaliseFunctionName(functionName: specialInformation.declaration.asFunctionDeclaration.name,
+                                                           parameterTypes: specialInformation.parameterTypes,
+                                                           enclosingType: functionCall.identifier.name)
+        environment.addFunctionCall(caller: currentFunction, callee: normalisedFunctionName)
+        updatedContext.environment = environment
 
       case .failure(let candidates):
+        // Check if event, and resume, else abort
+        switch environment.matchEventCall(functionCall,
+                                          enclosingType: enclosingType,
+                                          scopeContext: scopeContext) {
+        case .failure: break
+        default: break functionCallSwitch
+        }
+
         print("call graph generation - could not find function for call: \(functionCall)")
         print(currentType)
         print(enclosingType)
@@ -99,15 +105,8 @@ public class CallGraphGenerator: ASTPass {
       default:
         print("call graph generation - default: \(functionCall)")
         print(currentType)
+        print(matchedCall)
         fatalError()
-      }
-
-      let normalisedName = normaliseFunctionName(functionName: functionCall.identifier.name,
-                                                 parameterTypes: parameterTypes,
-                                                 enclosingType: enclosingType)
-      if let currentFunction = callerFunctionName {
-        environment.addFunctionCall(caller: currentFunction, callee: normalisedName)
-        updatedContext.environment = environment
       }
     }
 
