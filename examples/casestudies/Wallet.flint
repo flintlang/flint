@@ -4,14 +4,16 @@ contract Wallet {
 }
 
 Wallet :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
     owner = caller
     contents = Wei(0)
   }
 
   @payable
   public func deposit(implicit value: Wei)
-    mutates (contents)
+    mutates (contents, Wei.rawValue)
   {
     // Record the Wei received into the contents state property.
     contents.transfer(&value)
@@ -20,7 +22,7 @@ Wallet :: caller <- (any) {
 
 Wallet :: (owner) {
   public func withdraw(value: Int)
-    mutates (contents, owner)
+    mutates (contents, owner, Wei.rawValue)
   {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.

@@ -1,16 +1,21 @@
 contract MajorityWithdraw (Preparing, Voting, Completed) {
-  var amount: Wei = Wei(0)
+  var amount: Wei
 
-  var participants: [Address] = []
+  var participants: [Address]
   var numParticipants: Int = 0
-  var participantVotes: [Address: Bool] = [:]
+  var participantVotes: [Address: Bool]
 
   let leader: Address
 }
 
 MajorityWithdraw @(any) :: (any) {
-  public init(leader: Address) {
+  public init(leader: Address)
+    mutates (Wei.rawValue)
+  {
     self.leader = leader
+    self.amount = Wei(0)
+    self.participants =  []
+    self.participantVotes = [:]
     become Preparing
   }
 }

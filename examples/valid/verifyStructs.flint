@@ -5,13 +5,16 @@ struct J {
   var s: S
   var ss: [Int: S]
 
-  public init(s: inout S) {
+  public init(s: inout S)
+  {
     self.s = s
     self.ss = [:]
     let j: J = J(&s)
   }
 
-  public init() {
+  public init()
+    mutates (S.i, S.is, S.j)
+  {
     self.s = S()
     self.ss = [:]
   }
@@ -26,7 +29,7 @@ struct S {
 
 
   public init()
-  pre (1==1)
+    pre (1==1)
   {
     self.is = []
     i = 1
@@ -48,7 +51,9 @@ Test :: (any) {
   }
 
   @payable
-  public func t(implicit w: Wei) {
+  public func t(implicit w: Wei)
+    mutates (S.i, S.is, S.j, J.s, J.ss, Wei.rawValue)
+  {
     let v: Int = w.getRawValue()
     let s: S = S()
     let i: Int = s.i

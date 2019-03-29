@@ -352,9 +352,7 @@ extension BoogieTranslator {
     prePostConditions += invariants
 
     var modifies = functionDeclaration.mutates.map({
-      // TODO: What happens when you modify a value in another type, eg modify a struct?
-      // TODO: What happens when you modify a array/dict type, which has shadow variables?
-      normaliser.translateGlobalIdentifierName($0.name, tld: getCurrentTLDName())
+      normaliser.translateGlobalIdentifierName($0.name, tld: $0.enclosingType ?? getCurrentTLDName())
       // Get the global shadow variables, the function modifies - ie. nextInstance_struct
     }) + (functionModifiesShadow[currentFunctionName] ?? [])
 

@@ -5,10 +5,10 @@ contract FlightManager {
   
   var numRemainingSeats: Int
 
-  var passengers: [Address] = []
+  var passengers: [Address]
   var numPassengers: Int = 0
 
-  var amountPaid: [Address: Wei] = [:]
+  var amountPaid: [Address: Wei]
 }
 
 FlightManager :: caller <- (any) {
@@ -20,11 +20,13 @@ FlightManager :: caller <- (any) {
     self.admin = admin
     self.ticketPrice = ticketPrice
     self.numRemainingSeats = numSeats
+    self.passengers = []
+    self.amountPaid = [:]
   }
 
   @payable
   public func buy(implicit value: Wei)
-    mutates (amountPaid, numPassengers, numRemainingSeats, passengers)
+    mutates (amountPaid, numPassengers, numRemainingSeats, passengers, Wei.rawValue)
   {
     let amountGiven: Int = value.getRawValue()
     assert(amountGiven == ticketPrice)

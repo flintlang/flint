@@ -34,14 +34,14 @@ WesternUnion :: (manager) {
 WesternUnion :: customer <- (customers) {
   @payable
   public func deposit(implicit amount: Wei, recipient: Address)
-    mutates (accounts)
+    mutates (accounts, Wei.rawValue)
   {
     accounts[recipient].transfer(&amount)
     var a: Wei = Wei(0-1);
   }
 
   public func withdraw()
-    mutates (accounts)
+    mutates (accounts, Wei.rawValue)
   {
     var amt: Wei = Wei(&accounts[customer])
     send(customer, &amt)

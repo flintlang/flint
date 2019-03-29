@@ -17,7 +17,8 @@ contract Bank {
 // The functions in this block can be called by any user.
 Bank :: account <- (any) {
   public init(manager: Address)
-    mutates(manager, balances, accounts, totalDonations, lastIndex, Wei.rawValue)
+  // Specify Wei.rawValue, as this state is not defined in current contract
+    mutates(Wei.rawValue)
   {
     self.manager = manager
     balances = [:]

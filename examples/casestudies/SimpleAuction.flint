@@ -22,7 +22,9 @@ contract SimpleAuction {
 }
 
 SimpleAuction :: caller <- (any) {
-  public init() {
+  public init()
+    mutates(Wei.rawValue)
+  {
     beneficiary = caller
     highestBidder = caller
     highestBid = Wei(0)
@@ -30,7 +32,7 @@ SimpleAuction :: caller <- (any) {
 
   @payable
   public func bid(implicit value: Wei)
-    mutates (highestBidder)
+    mutates (highestBidder, Wei.rawValue)
   {
     if hasAuctionEnded { fatalError() }
     if value.getRawValue() <= highestBid.getRawValue() { fatalError() }

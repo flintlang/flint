@@ -173,7 +173,8 @@ public class Verifier {
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: b2fSourceMapping[line]!,
                                       message: "Could not verify post-condition holds"))
-      case .modifiesFailure://(let line, _):
+      case .modifiesFailure(let lineNumber, let line):
+        print("modifies failure - on line \(lineNumber): \(line)")
         // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
         //flintErrors.append(Diagnostic(severity: .error,
         //                              sourceLocation: b2fSourceMapping[line]!,

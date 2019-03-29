@@ -60,7 +60,7 @@ SimpleDAO @(Join) :: caller <- (any) {
 
   @payable
   public func join(implicit value: inout Wei)
-    mutates (balances)
+    mutates (balances, Wei.rawValue)
   {
     balances[caller].transfer(&value)
   }
@@ -82,7 +82,9 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
     return pID
   }
 
-  public func leave() {
+  public func leave()
+    mutates (Wei.rawValue)
+  {
     // TODO: BUG! -> Send  should modify Wei asset and thus global variable,
     // requiring mutating keyword
     send(caller, &balances[caller])
@@ -116,7 +118,7 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
   }
 
   public func executeProposal()
-    mutates (proposals)
+    mutates (proposals, Wei.rawValue)
   {
     if(caller != proposals[proposal].proposer || proposals[proposal].finished) {
       fatalError()

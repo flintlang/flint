@@ -7,7 +7,11 @@ struct Proposal {
   var quorum: Int = 0
   var finished: Bool = false
   var success: Bool = false
-  var voted: [Address: Bool] = [:]
+  var voted: [Address: Bool]
+
+  public init() {
+    self.voted = [:]
+  }
 }
 
 contract SimpleDAO (Join, Propose, Vote) {
