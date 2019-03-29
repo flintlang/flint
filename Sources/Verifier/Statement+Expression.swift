@@ -39,13 +39,20 @@ extension BoogieTranslator {
 
     case .ifStatement(let ifStatement):
       let (condExpr, condStmt) = process(ifStatement.condition)
+      let oldCtx = setCurrentScopeContext(ifStatement.ifBodyScopeContext)
+      let trueCase = ifStatement.body.flatMap({x in process(x)})
+      _ = setCurrentScopeContext(ifStatement.elseBodyScopeContext)
+      let falseCase = ifStatement.elseBody.flatMap({x in process(x)})
+      _ = setCurrentScopeContext(oldCtx)
       return condStmt + [
         .ifStatement(BIfStatement(condition: condExpr,
-                                  trueCase: ifStatement.body.flatMap({x in process(x)}),
-                                  falseCase: ifStatement.elseBody.flatMap({x in process(x)}))
+                                  trueCase: trueCase,
+                                  falseCase: falseCase)
         )]
 
     case .forStatement(let forStatement):
+      // Set to new For context
+      let oldCtx = setCurrentScopeContext(forStatement.forBodyScopeContext)
       let (iterableExpr, condStmt) = process(forStatement.iterable)
       //TODO: Handle iterable. Move to next item -> depends on what we are incrementing
 
@@ -57,11 +64,24 @@ extension BoogieTranslator {
       //  - range
       //    - iterate through
 
-      addCurrentFunctionVariableDeclaration(forStatement.variable)
+      //TODO: Generate counter variable, to track current loop iteration
+      // - create invariant, which says it's always increasing
+      // - use to index into iterable - work out how to index into iterable (helper?)
+
+      let name = translateIdentifierName(forStatement.variable.identifier.name)
+      // Some variable types require shadow variables, eg dictionaries (array of keys)
+      for declaration in generateVariables(forStatement.variable) {
+        addCurrentFunctionVariableDeclaration(declaration)
+      }
+
+      let body = forStatement.body.flatMap({x in process(x)})
+
+      // Reset old context
+      _ = setCurrentScopeContext(oldCtx)
       return condStmt + [
         .whileStatement(BWhileStatement(
           condition: iterableExpr,
-          body: forStatement.body.flatMap({x in process(x)}),
+          body: body,
           invariants: []) // TODO: invariants
         )]
 

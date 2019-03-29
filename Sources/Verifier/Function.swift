@@ -115,7 +115,7 @@ extension BoogieTranslator {
    func getFunctionTypes(_ functionCall: FunctionCall,
                          enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
     let currentType = enclosingType == nil ? getCurrentTLDName() : enclosingType!
-    if let scopeContext = getCurrentFunction().scopeContext {
+    if let scopeContext = getCurrentScopeContext() {
       let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
       let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
       let matchedCall = environment.matchFunctionCall(functionCall,
@@ -157,7 +157,7 @@ extension BoogieTranslator {
         fatalError()
 
       case .failure(let candidates):
-        print("could not find function for call: \(functionCall)")
+        print("function - could not find function for call: \(functionCall)")
         print(currentType)
         print(candidates)
         fatalError()
@@ -268,6 +268,7 @@ extension BoogieTranslator {
     var signature = functionDeclaration.signature
     var returnName = signature.resultType == nil ? nil : generateFunctionReturnVariable()
     var returnType = signature.resultType == nil ? nil : convertType(signature.resultType!)
+    let oldCtx = setCurrentScopeContext(functionDeclaration.scopeContext)
 
     var bParameters = [BParameterDeclaration]()
     bParameters += parameters.map({x in process(x)})
@@ -370,6 +371,7 @@ extension BoogieTranslator {
 
     // About to exit function, reset struct instance variable
     self.structInstanceVariableName = nil
+    _ = setCurrentScopeContext(oldCtx)
 
     return .procedureDeclaration(BProcedureDeclaration(
       name: currentFunctionName,

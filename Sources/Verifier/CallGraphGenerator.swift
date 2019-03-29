@@ -54,7 +54,7 @@ public class CallGraphGenerator: ASTPass {
     var updatedContext = passContext
     if passContext.inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
-      updatedContext.scopeContext?.localVariables += [variableDeclaration]
+      updatedContext.scopeContext?.localVariables.append(variableDeclaration)
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: updatedContext)
   }

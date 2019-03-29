@@ -48,6 +48,9 @@ class BoogieTranslator {
 
   var enums = [String]()
 
+  // Current scope context - updated by functions, loops and if statements
+  var currentScopeContext: ScopeContext?
+
   // Struct function instance variable
   var structInstanceVariableName: String?
 
@@ -593,6 +596,16 @@ class BoogieTranslator {
 
     print("Error cannot get current contract name: not in a contract")
     fatalError()
+  }
+
+  func getCurrentScopeContext() -> ScopeContext? {
+    return self.currentScopeContext
+  }
+
+  func setCurrentScopeContext(_ ctx: ScopeContext?) -> ScopeContext? {
+    let old = self.currentScopeContext
+    self.currentScopeContext = ctx
+    return old
   }
 
   func translateIdentifierName(_ name: String) -> String {

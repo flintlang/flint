@@ -515,7 +515,6 @@ public struct ASTVisitor {
     }
 
     processResult.passContext.scopeContext = scopeContext
-
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,

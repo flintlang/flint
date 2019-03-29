@@ -47,7 +47,6 @@ extension Environment {
                                 callerProtections: [CallerProtection],
                                 scopeContext: ScopeContext) -> FunctionCallMatchResult {
     let match: FunctionCallMatchResult = .failure(candidates: [])
-
     let argumentTypes = functionCall.arguments.map {
       type(of: $0.expression, enclosingType: enclosingType, scopeContext: scopeContext)
     }
