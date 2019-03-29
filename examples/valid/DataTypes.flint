@@ -1,7 +1,7 @@
 contract Test {
   var test: Int = 0
-  var dict: [Address: Int] = [:]
-  var arr: Address[10] = []
+  var dict: [Address: Int]
+  var arr: Address[10]
   var p1: Address
   var p2: Address
 }
@@ -10,6 +10,8 @@ Test :: (any) {
   public init(p1: Address, p2: Address) {
     self.p1 = p1
     self.p2 = p2
+    self.arr = []
+    self.dict = [:]
   }
 
   public func setP1(p1: Address)

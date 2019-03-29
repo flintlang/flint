@@ -1,14 +1,16 @@
 contract Marking {
   var lecturer: Address
-  var markers: [Address] = []
+  var markers: [Address]
   var numMarkers: Int = 0
-  
-  var grades: [Address: Int] = [:]
+
+  var grades: [Address: Int]
 }
 
 Marking :: (any) {
   public init(lecturer: Address) {
     self.lecturer = lecturer
+    self.markers = []
+    self.grades = [:]
   }
 }
 

@@ -19,7 +19,7 @@ struct J {
 
 struct S {
   var i: Int
-  var is: [Int] = []
+  var is: [Int]
   var j: Int = 0
 
   invariant (i > 0)
@@ -28,6 +28,7 @@ struct S {
   public init()
   pre (1==1)
   {
+    self.is = []
     i = 1
   }
 

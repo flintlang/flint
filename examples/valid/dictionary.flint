@@ -1,12 +1,15 @@
 contract Dictionary {
-  var storage: [Address: Int] = [:]
+  var storage: [Address: Int]
   var foo: Int = 0
-  var storage2: [Address: Int] = [:]
+  var storage2: [Address: Int]
   var bar: Int = 0
 }
 
 Dictionary :: (any) {
-  public init() {}
+  public init() {
+    self.storage = [:]
+    self.storage2 = [:]
+  }
 
   public func write(addr: Address, value: Int)
     mutates (storage)

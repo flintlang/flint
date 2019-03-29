@@ -122,7 +122,7 @@ extension BoogieTranslator {
       */
 
     default:
-      print("Not implemented translating \(expression.description)")
+      print("Not implemented translating \(expression)")
       fatalError()
     }
   }

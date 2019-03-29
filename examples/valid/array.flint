@@ -1,7 +1,8 @@
 contract Test {
   var owner: Address
-  var arr: Int[4] = []
-  var arr2: Int[10] = []
+  var arr: Int[4]
+  var arr2: Int[10]
+  var arr3: [Int]
   var numWrites: Int = 0
 }
 
@@ -9,6 +10,10 @@ Test :: caller <- (any) {
   public init()
   {
     self.owner = caller
+
+    self.arr = []
+    self.arr2 = []
+    self.arr3 = []
   }
 
   func increaseNumWrites()
@@ -45,5 +50,17 @@ Test :: caller <- (any) {
 
   public func numWrites() -> Int {
     return numWrites
+  }
+
+  public func write3()
+    mutates (arr3)
+  {
+    arr3[0] = 4
+  }
+
+  public func accessOutOfBounds()
+    mutates (arr)
+  {
+    arr[4] = 5
   }
 }

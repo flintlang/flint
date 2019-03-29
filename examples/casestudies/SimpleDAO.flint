@@ -13,14 +13,16 @@ struct Proposal {
 contract SimpleDAO (Join, Propose, Vote) {
   var avaliableMemberSlots: Int = 3
   var proposal: Proposal
-  var members: [Address] = []
-  var balances: [Address: Int] = [:]
+  var members: [Address]
+  var balances: [Address: Int]
   var totalSupply: Int = 0
 }
 
 SimpleDAO @(any) :: (any) {
   public init(){
     proposal = Proposal()
+    self.members = []
+    self.balances = [:]
     become Join
   }
 }

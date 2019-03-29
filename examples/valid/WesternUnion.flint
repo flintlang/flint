@@ -2,20 +2,22 @@ contract WesternUnion {
   // only manager can add customers
   let manager: Address
 
-  var customers: [Address] = []
+  var customers: [Address]
   var numCustomers: Int = 0
 
   //only customers can withdraw money from bank
 
   // customer can only withdraw the amount of money in their account
   // customer cannot withdraw more money than is in their account
-  var accounts: [Address: Wei] = [:]
+  var accounts: [Address: Wei] //= [:]
 }
 
 
 WesternUnion :: (any) {
   public init(manager: Address) {
     self.manager = manager
+    self.customers = []
+    self.accounts = [:]
   }
 }
 

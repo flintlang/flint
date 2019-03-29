@@ -47,8 +47,20 @@ public class CallGraphGenerator: ASTPass {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func process(functionCall: FunctionCall,
-                      passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+  public func process(variableDeclaration: VariableDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
+    // Need to record the local variables, so the matchFunctionCall method works,
+    // correctly resolves function calls with struct types as parameters
+    var updatedContext = passContext
+    if passContext.inFunctionOrInitializer {
+      // We're in a function. Record the local variable declaration.
+      updatedContext.scopeContext?.localVariables += [variableDeclaration]
+    }
+    return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: updatedContext)
+  }
+
+  public func postProcess(functionCall: FunctionCall,
+                          passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var updatedContext = passContext
     var environment = passContext.environment!
     let currentType = passContext.enclosingTypeIdentifier!.name
@@ -92,11 +104,14 @@ public class CallGraphGenerator: ASTPass {
         switch environment.matchEventCall(functionCall,
                                           enclosingType: enclosingType,
                                           scopeContext: scopeContext) {
-        case .failure: break
+        case .failure(let cs):
+          print(cs)
         default: break functionCallSwitch
         }
 
         print("call graph generation - could not find function for call: \(functionCall)")
+        print(scopeContext)
+        print(functionCall)
         print(currentType)
         print(enclosingType)
         print(candidates)
