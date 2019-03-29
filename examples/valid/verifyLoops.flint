@@ -1,0 +1,16 @@
+contract L {
+}
+
+L :: (any) {
+  public init() {}
+
+  public func loopTest() {
+    var is: [Int] = [1,2,3]
+    for let i: Int in is {
+      call(i)
+    }
+  }
+
+  public func call(i: Int) {
+  }
+}
