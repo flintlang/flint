@@ -8,6 +8,33 @@ L :: (any) {
     var is: [Int] = [1,2,3]
     for let i: Int in is {
       call(i)
+      assert (i <= 3)
+    }
+
+    for let j: Int in (0...5) {
+      call(j)
+    }
+
+    var bound: Int = 10
+    for let k: Int in (0..<10) {
+      call(k)
+      assert (k < bound)
+    }
+  }
+
+  func inderectIterable() {
+    var is: [[Int]] = [[1], [2]]
+    for let i: [Int] in is {
+      for let l: Int in i {
+        call(l)
+      }
+    }
+
+    var js: [Int: [Int]] = [:]
+    js[0] = [1,2,3,4]
+    for let j: Int in js[0] {
+      call(j)
+      assert(j<5)
     }
   }
 

@@ -53,36 +53,102 @@ extension BoogieTranslator {
     case .forStatement(let forStatement):
       // Set to new For context
       let oldCtx = setCurrentScopeContext(forStatement.forBodyScopeContext)
-      let (iterableExpr, condStmt) = process(forStatement.iterable)
-      //TODO: Handle iterable. Move to next item -> depends on what we are incrementing
 
-      // if iterable is:
-      //  - array
-      //    - iterate through
-      //  - dict
-      //    - shadow keys array
-      //  - range
-      //    - iterate through
+      let indexName = generateRandomIdentifier(prefix: "loop_index")
+      let index = BExpression.identifier(indexName)
+      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: indexName,
+                                                                 rawName: indexName,
+                                                                 type: .int))
+      let incrementIndex = BStatement.assignment(index, .add(index, .integer(1)))
 
-      //TODO: Generate counter variable, to track current loop iteration
-      // - create invariant, which says it's always increasing
-      // - use to index into iterable - work out how to index into iterable (helper?)
-
-      let name = translateIdentifierName(forStatement.variable.identifier.name)
+      // Create for loop variable
       // Some variable types require shadow variables, eg dictionaries (array of keys)
+      let variableName = translateIdentifierName(forStatement.variable.identifier.name)
+      let loopVariable = BExpression.identifier(variableName)
       for declaration in generateVariables(forStatement.variable) {
         addCurrentFunctionVariableDeclaration(declaration)
       }
 
-      let body = forStatement.body.flatMap({x in process(x)})
+      var initialIndexValue: BExpression
+      var finalIndexValue: BExpression
+      var assignValueToVariable: BStatement
+      // Statements required for the setup of the condition
+      //var condStmts: BStatement
+
+      // if type of iterable is:
+      //  - range
+      //    - index starts at range start, finish at range finish
+      //    - assign value of index
+      //  - array
+      //    - directly index into array, until array size
+      //  - dict //TODO
+      //    - shadow keys array
+
+      switch forStatement.iterable {
+      case .range(let rangeExpression):
+        let (start, _) = process(rangeExpression.initial)
+        let (bound, _) = process(rangeExpression.bound)
+        // Adjust the index update accordingly
+        let inclusive: Bool = rangeExpression.op.kind == .punctuation(.closedRange)
+        if inclusive {
+          finalIndexValue = BExpression.add(bound, .integer(1))
+        } else {
+          finalIndexValue = bound
+        }
+
+        assignValueToVariable = BStatement.assignment(loopVariable, index)
+        initialIndexValue = start
+
+      default:
+        // assume type is array -> index into array
+        // type of dict -> index into dict keys array
+
+        guard let scopeContext = getCurrentScopeContext() else {
+          print("no scope context exists when determining type of loop iterable")
+          fatalError()
+        }
+
+        let iterableType = environment.type(of: forStatement.iterable,
+                                            enclosingType: getCurrentTLDName(),
+                                            scopeContext: scopeContext)
+
+        switch iterableType {
+        case .arrayType:
+          // Array type - the resulting expression is indexable
+          let (iterableExpr, _) = process(forStatement.iterable)
+          let iterableSize = BExpression.integer(10) // TODO: Determine iterable size
+
+          assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableExpr, index))
+          initialIndexValue = BExpression.integer(0)
+          finalIndexValue = iterableSize
+
+        case .dictionaryType: fallthrough
+          // TODO: Implement dictionary type
+        default:
+          print("unknown sequence type used for for-loop iterable \(iterableType)")
+          fatalError()
+        }
+
+      }
+
+      let assignIndexInitialValue = BStatement.assignment(index, initialIndexValue)
+
+      // - create invariant, which says it's always increasing
+      // - use to index into iterable - work out how to index into iterable (helper?)
+      // - assign value of iterable[index] to variable name
+      // - increment index until length of iterable - work out length of iterable
+
+      let body = [assignValueToVariable]
+               + forStatement.body.flatMap({x in process(x)})
+               + [incrementIndex]
 
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
-      return condStmt + [
+      return /*condStmt +*/ [assignIndexInitialValue,
         .whileStatement(BWhileStatement(
-          condition: iterableExpr,
+          condition: .lessThan(index, finalIndexValue),
           body: body,
-          invariants: []) // TODO: invariants
+          invariants: [.lessThan(.old(index), index)])
         )]
 
     case .emitStatement:
@@ -91,7 +157,7 @@ extension BoogieTranslator {
     }
   }
 
-   func process(_ expression: Expression, localContext: Bool = true) -> (BExpression, [BStatement]) {
+  func process(_ expression: Expression, localContext: Bool = true) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
@@ -134,11 +200,13 @@ extension BoogieTranslator {
     case .`self`:
       return (.nop, [])
 
+    // Assumption - can only be used as iterables in for-loops
+    //case .range(let rangeExpression):
+
       // TODO: Implement expressions
     /*
     case .attemptExpression(let attemptExpression):
     case .sequence(let expressions: [Expression]):
-    case .range(let rangeExpression):
       */
 
     default:
@@ -147,7 +215,7 @@ extension BoogieTranslator {
     }
   }
 
-   func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
+  func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
