@@ -1,7 +1,4 @@
-contract L {
-}
-
-L :: (any) {
+struct L {
   public init() {}
 
   public func loopTest() {
@@ -23,7 +20,9 @@ L :: (any) {
   }
 
   func inderectIterable() {
-    var is: [[Int]] = [[1], [2]]
+    var is: [[Int]] = []
+    is[0] = [1]
+    is[1] = [2]
     for let i: [Int] in is {
       for let l: Int in i {
         call(l)
@@ -38,6 +37,44 @@ L :: (any) {
     }
   }
 
-  public func call(i: Int) {
+  // Literal array not implemented yet
+  //func literalLoop() {
+  //  for let j: Int in [1,2,3,4] {
+  //    call(j)
+  //    assert(j<5)
+  //  }
+  //}
+
+  //func dictLoop() {
+  //  var d: [Int: Address] = [:]
+  //  for let v: Address in d {
+  //    call(1, v)
+  //  }
+  //}
+
+  func changeIterationConstruct() {
+    var ks: [[Int]] = []
+    ks[0] = [1,2,3]
+    ks[1] = [2,3,4]
+    var a: Int = 1
+    // I think this is a meaningless loop, what are its semantics?
+    for  let k: Int in ks[a] {
+      a += 1
+    }
   }
+
+  // Can't return array types?
+  //func loopFunctionCall() {
+  //  for let i: Int in getIterable() {
+  //    call(i)
+  //  }
+  //}
+
+  //func getIterable() -> [Int] {
+  //  return [1,2,3,4]
+  //}
+
+  func call(i: Int) { }
+
+  func call(i:  Int, a: Address) { }
 }

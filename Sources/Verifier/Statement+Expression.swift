@@ -81,7 +81,8 @@ extension BoogieTranslator {
       //    - assign value of index
       //  - array
       //    - directly index into array, until array size
-      //  - dict //TODO
+      //  - dict
+      //    - iterate through values of dict
       //    - shadow keys array
 
       switch forStatement.iterable {
@@ -116,14 +117,21 @@ extension BoogieTranslator {
         case .arrayType:
           // Array type - the resulting expression is indexable
           let (iterableExpr, _) = process(forStatement.iterable)
-          let iterableSize = BExpression.integer(10) // TODO: Determine iterable size
+          let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
 
           assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableExpr, index))
           initialIndexValue = BExpression.integer(0)
           finalIndexValue = iterableSize
 
-        case .dictionaryType: fallthrough
-          // TODO: Implement dictionary type
+        case .dictionaryType:
+          // Dictionary type - iterate through the values of the dict, accessed via it's keys
+          let (iterableExpr, _) = process(forStatement.iterable)
+          let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
+
+          assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableExpr, index))
+          initialIndexValue = BExpression.integer(0)
+          finalIndexValue = iterableSize
+
         default:
           print("unknown sequence type used for for-loop iterable \(iterableType)")
           fatalError()
@@ -333,13 +341,13 @@ extension BoogieTranslator {
 
     // For getting type: array dict...
     let currentType = getCurrentTLDName()
-    guard let scopeContext = getCurrentFunction().scopeContext else {
+    guard let scopeContext = getCurrentScopeContext() else {
       print("couldn't get scope context of current function - used to determine if accessing struct property")
       fatalError()
     }
     let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
     let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-    let lhsType = environment.type(of: lhs,
+    let lhsType = environment.type(of: lhs, //TODO: rhs has type of any - need to handle
                                    enclosingType: currentType,
                                    typeStates: typeStates,
                                    callerProtections: callerProtections,
@@ -548,5 +556,28 @@ extension BoogieTranslator {
                          .identifier(currentStructInstanceVariable)), [])
       }
       return (.identifier(translatedIdentifier), [])
+  }
+
+  // Extract the size of the iterable from the shadow variables which store it
+  //TODO: Combine this with process? process(iterableSize = true?) as all the translation is the same, the only difference is that the name has to resolve to size_... and the topmost base is dicarded
+  private func getIterableSizeExpression(iterable: Expression) -> BExpression {
+    switch iterable {
+    case .identifier(let identifier):
+      return BExpression.identifier(normaliser.getArraySizeVariableName(arrayName: identifier.name))
+    case .arrayLiteral(let arrayLiteral):
+      return .integer(arrayLiteral.elements.count)
+    case .dictionaryLiteral(let dictionaryLiteral):
+      return .integer(dictionaryLiteral.elements.count)
+    case .bracketedExpression(let bracketedExpression):
+      return getIterableSizeExpression(iterable: bracketedExpression.expression)
+    case .subscriptExpression(let subscriptExpression):
+      // remove top level base
+      // translate the remainder, but rename the final identifier to size_...
+    //case .binaryExpression(let binaryExpression): // pretty much only dot?
+    default:
+      print("unhandled iterable type \(iterable) to get iterable size")
+      //fatalError()
+    }
+    return BExpression.integer(0)
   }
 }

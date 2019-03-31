@@ -61,6 +61,7 @@ FlightManager :: caller <- (any) {
 
 FlightManager :: (admin) {
   public func cancelFlight()
+    mutates (FlightInformation.isCancelled)
   {
     flightInformation.cancelFlight()
   }

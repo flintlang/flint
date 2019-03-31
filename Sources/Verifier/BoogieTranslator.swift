@@ -501,24 +501,32 @@ class BoogieTranslator {
       : translateIdentifierName(variableDeclaration.identifier.name)
 
     var declarations = [BVariableDeclaration]()
-    let type = convertType(variableDeclaration.type)
 
     // TODO: Bounded array, then create array size variable
-    switch type {
-    case .map(let keyType, let valueType):
-      declarations.append(BVariableDeclaration(name: "keys_\(name)",
-                                               rawName: "keys_\(name)",
+    switch variableDeclaration.type.rawType {
+    case .dictionaryType(let keyType, _):
+      let keyType = convertType(keyType)
+      let keysShadowName = normaliser.getDictKeysVariableName(dictName: name)
+      declarations.append(BVariableDeclaration(name: keysShadowName,
+                                               rawName: keysShadowName,
                                                type: .map(.int, keyType)))
-      declarations.append(BVariableDeclaration(name: "values_\(name)",
-                                               rawName: "values_\(name)",
-                                               type: .map(.int, valueType)))
+      let sizeShadowName = normaliser.getArraySizeVariableName(arrayName: name)
+      declarations.append(BVariableDeclaration(name: sizeShadowName,
+                                               rawName: sizeShadowName,
+                                               type: .int))
+    //case .fixedSizeArrayType: fallthrough
+    case .arrayType:
+      let shadowName = normaliser.getArraySizeVariableName(arrayName: name)
+      declarations.append(BVariableDeclaration(name: shadowName,
+                                               rawName: shadowName,
+                                               type: .int)) // type must be same as vd, but collapase leaf [X]'s into .int
     default:
       break
     }
 
     declarations.append(BVariableDeclaration(name: name,
                                              rawName: variableDeclaration.identifier.name,
-                                             type: type))
+                                             type: convertType(variableDeclaration.type)))
     return declarations
   }
 

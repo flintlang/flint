@@ -21,4 +21,12 @@ public struct IdentifierNormaliser {
   func generateStructInstanceVariable(structName: String) -> String {
     return translateGlobalIdentifierName("nextInstance", tld: structName)
   }
+
+  func getArraySizeVariableName(arrayName: String) -> String {
+    return "size_\(arrayName)"
+  }
+
+  func getDictKeysVariableName(dictName: String) -> String {
+    return "keys_\(dictName)"
+  }
 }
