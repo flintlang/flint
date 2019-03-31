@@ -20,5 +20,5 @@ done;
 
 TOTAL=$(expr $SUCCESS + $FAILURES)
 
-echo -e "\nFailed:$FAILED"
 echo "Totals: $TOTAL - Pass: $SUCCESS, Failed: $FAILURES"
+echo -e "$FAILED"
