@@ -116,10 +116,10 @@ extension BoogieTranslator {
         switch iterableType {
         case .arrayType:
           // Array type - the resulting expression is indexable
-          let (iterableExpr, _) = process(forStatement.iterable)
+          let (indexableExpr, _) = process(forStatement.iterable)
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
 
-          assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableExpr, index))
+          assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(indexableExpr, index))
           initialIndexValue = BExpression.integer(0)
           finalIndexValue = iterableSize
 
@@ -127,8 +127,10 @@ extension BoogieTranslator {
           // Dictionary type - iterate through the values of the dict, accessed via it's keys
           let (iterableExpr, _) = process(forStatement.iterable)
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
+          let iterableKeys = getDictionaryKeysExpression(dict: forStatement.iterable)
 
-          assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableExpr, index))
+          assignValueToVariable = BStatement.assignment(loopVariable,
+                                                        .mapRead(iterableExpr, .mapRead(iterableKeys, index)))
           initialIndexValue = BExpression.integer(0)
           finalIndexValue = iterableSize
 
@@ -136,7 +138,6 @@ extension BoogieTranslator {
           print("unknown sequence type used for for-loop iterable \(iterableType)")
           fatalError()
         }
-
       }
 
       let assignIndexInitialValue = BStatement.assignment(index, initialIndexValue)
@@ -165,7 +166,11 @@ extension BoogieTranslator {
     }
   }
 
-  func process(_ expression: Expression, localContext: Bool = true) -> (BExpression, [BStatement]) {
+  //TODO: access shadow variables
+  func process(_ expression: Expression,
+               localContext: Bool = true,
+               shadowVariablePrefixFunc: ((Int) -> String) = { x in "" },
+               subscriptDepth: Int = 0) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       let name = translateIdentifierName(variableDeclaration.identifier.name)
@@ -182,13 +187,18 @@ extension BoogieTranslator {
                                   .identifier(self.structInstanceVariableName!))
 
     case .identifier(let identifier):
-      return processIdentifier(identifier, localContext: localContext)
+      return (processIdentifier(identifier,
+                                localContext: localContext,
+                                shadowVariablePrefix: shadowVariablePrefixFunc()), [])
 
     case .binaryExpression(let binaryExpression):
-      return process(binaryExpression)
+      return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefixFunc())
 
     case .bracketedExpression(let bracketedExpression):
-      return process(bracketedExpression.expression)
+      return process(bracketedExpression.expression,
+                     localContext: localContext,
+                     subscriptDepth: subscriptDepth,
+                     shadowVariablePrefix: shadowVariablePrefixFunc())
 
     case .subscriptExpression(let subscriptExpression):
       let (subExpr, subStmts) = process(subscriptExpression.baseExpression, localContext: localContext)
@@ -535,49 +545,40 @@ extension BoogieTranslator {
     }
   }
 
-  private func processIdentifier(_ identifier: Identifier, localContext: Bool = true) -> (BExpression, [BStatement]) {
-      // See if identifier is a local variable
-      if localContext,
-         let currentFunctionName = getCurrentFunctionName(),
-         getFunctionVariableDeclarations(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 ||
-          getFunctionParameters(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 {
+  private func processIdentifier(_ identifier: Identifier,
+                                 localContext: Bool = true,
+                                 shadowVariablePrefix: String = "") -> BExpression {
+    // See if identifier is a local variable
+    if localContext,
+       let currentFunctionName = getCurrentFunctionName(),
+       getFunctionVariableDeclarations(name: currentFunctionName)
+         .filter({ $0.rawName == identifier.name })
+         .count > 0 ||
+        getFunctionParameters(name: currentFunctionName)
+         .filter({ $0.rawName == identifier.name })
+         .count > 0 {
 
-        return (.identifier(translateIdentifierName(identifier.name)), [])
-      }
-      let translatedIdentifier = translateGlobalIdentifierName(identifier.name)
+      return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
+    }
+    let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name)
 
-      // Currently in a struct, referring to a 'global' variable
-      if let currentStructInstanceVariable = structInstanceVariableName {
-        return (.mapRead(.identifier(translatedIdentifier),
-                         .identifier(currentStructInstanceVariable)), [])
-      }
-      return (.identifier(translatedIdentifier), [])
+    // Currently in a struct, referring to a 'global' variable
+    if let currentStructInstanceVariable = structInstanceVariableName {
+      return .mapRead(.identifier(translatedIdentifier),
+                       .identifier(currentStructInstanceVariable))
+    }
+    return .identifier(translatedIdentifier)
   }
 
-  // Extract the size of the iterable from the shadow variables which store it
-  //TODO: Combine this with process? process(iterableSize = true?) as all the translation is the same, the only difference is that the name has to resolve to size_... and the topmost base is dicarded
   private func getIterableSizeExpression(iterable: Expression) -> BExpression {
-    switch iterable {
-    case .identifier(let identifier):
-      return BExpression.identifier(normaliser.getArraySizeVariableName(arrayName: identifier.name))
-    case .arrayLiteral(let arrayLiteral):
-      return .integer(arrayLiteral.elements.count)
-    case .dictionaryLiteral(let dictionaryLiteral):
-      return .integer(dictionaryLiteral.elements.count)
-    case .bracketedExpression(let bracketedExpression):
-      return getIterableSizeExpression(iterable: bracketedExpression.expression)
-    case .subscriptExpression(let subscriptExpression):
-      // remove top level base
-      // translate the remainder, but rename the final identifier to size_...
-    //case .binaryExpression(let binaryExpression): // pretty much only dot?
-    default:
-      print("unhandled iterable type \(iterable) to get iterable size")
-      //fatalError()
-    }
-    return BExpression.integer(0)
+    return process(iterable, shadowVariablePrefixFunc: { depth in
+                     return normaliser.getShadowArraySizePrefix(depth: depth)
+                   }).0
+  }
+
+  private func getDictionaryKeysExpression(dict: Expression) -> BExpression {
+    return process(dict, shadowVariablePrefixFunc: { depth in
+                     return normaliser.getShadowDictionaryKeysPrefix(depth: depth)
+                   }).0
   }
 }

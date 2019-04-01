@@ -277,15 +277,11 @@ class BoogieTranslator {
     var declarations = [BTopLevelDeclaration]()
 
     for variableDeclaration in structDeclaration.variableDeclarations {
-      let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
-      let type = convertType(variableDeclaration.type)
-
-      structGlobalVariables.append(name)
-
-      // TODO: Some variables require shadow variables, eg dictionaries need an array of keys
-      declarations.append(.variableDeclaration(BVariableDeclaration(name: name,
-                                                                    rawName: variableDeclaration.identifier.name,
-                                                                    type: .map(.int, type))))
+      // Some variables require shadow variables, eg dictionaries need an array of keys
+      for bvariableDeclaration in generateVariables(variableDeclaration, tldIsStruct: true) {
+        declarations.append(.variableDeclaration(bvariableDeclaration))
+        structGlobalVariables.append(bvariableDeclaration.name)
+      }
 
       /* TODO: Struct variable assignment
       // Record assignment to put in constructor procedure
@@ -493,7 +489,8 @@ class BoogieTranslator {
     return (callerPreConditions, preStatements)
   }
 
-  func generateVariables(_ variableDeclaration: VariableDeclaration) -> [BVariableDeclaration] {
+  func generateVariables(_ variableDeclaration: VariableDeclaration,
+                         tldIsStruct: Bool = false) -> [BVariableDeclaration] {
     // If currently in a function, then generate name with function in it
     // If in contractDeclaration, then generate name with only contract in it
     let name = getCurrentFunctionName() == nil ?
@@ -502,32 +499,70 @@ class BoogieTranslator {
 
     var declarations = [BVariableDeclaration]()
 
-    // TODO: Bounded array, then create array size variable
     switch variableDeclaration.type.rawType {
-    case .dictionaryType(let keyType, _):
-      let keyType = convertType(keyType)
-      let keysShadowName = normaliser.getDictKeysVariableName(dictName: name)
-      declarations.append(BVariableDeclaration(name: keysShadowName,
-                                               rawName: keysShadowName,
-                                               type: .map(.int, keyType)))
-      let sizeShadowName = normaliser.getArraySizeVariableName(arrayName: name)
-      declarations.append(BVariableDeclaration(name: sizeShadowName,
-                                               rawName: sizeShadowName,
-                                               type: .int))
-    //case .fixedSizeArrayType: fallthrough
-    case .arrayType:
-      let shadowName = normaliser.getArraySizeVariableName(arrayName: name)
-      declarations.append(BVariableDeclaration(name: shadowName,
-                                               rawName: shadowName,
-                                               type: .int)) // type must be same as vd, but collapase leaf [X]'s into .int
+    case .dictionaryType, .arrayType, .fixedSizeArrayType:
+      var hole: (BType) -> BType
+      if tldIsStruct {
+        // Structs are a mapping from struct instance to field
+        hole = { x in return .map(.int, x) }
+      } else {
+        hole = { x in return x }
+      }
+
+      declarations += generateIterableShadowVariables(name: name,
+                                                      type: variableDeclaration.type.rawType,
+                                                      hole: hole)
     default:
       break
     }
 
+    let convertedType = convertType(variableDeclaration.type)
     declarations.append(BVariableDeclaration(name: name,
                                              rawName: variableDeclaration.identifier.name,
-                                             type: convertType(variableDeclaration.type)))
+                                             type: tldIsStruct ? .map(.int, convertedType) : convertedType))
     return declarations
+  }
+
+  private func generateIterableShadowVariables(name: String,
+                                               type: RawType,
+                                               depth: Int = 0,
+                                               declarations: [BVariableDeclaration] = [],
+                                               hole: (BType) -> BType) -> [BVariableDeclaration] {
+    var declarations = declarations
+    switch type {
+    case .arrayType(let innerType), .fixedSizeArrayType(let innerType, _):
+      // Create size shadow variable
+      let shadowName = normaliser.getShadowArraySizePrefix(depth: depth) + name
+      declarations.append(BVariableDeclaration(name: shadowName,
+                                               rawName: shadowName,
+                                               type: hole(.int)))
+      return generateIterableShadowVariables(name: name,
+                                             type: innerType,
+                                             depth: depth + 1,
+                                             declarations: declarations,
+                                             // arrays are translated to maps
+                                             hole: { x in .map(.int, x) })
+
+    case .dictionaryType(let keyType, let valueType):
+      // Dict
+      let keyType = convertType(keyType)
+      let keysShadowName = normaliser.getShadowDictionaryKeysPrefix(depth: depth) + name
+      declarations.append(BVariableDeclaration(name: keysShadowName,
+                                               rawName: keysShadowName,
+                                               type: hole(.map(.int, keyType))))
+      let sizeShadowName = normaliser.getShadowArraySizePrefix(depth: depth) + name
+      declarations.append(BVariableDeclaration(name: sizeShadowName,
+                                               rawName: sizeShadowName,
+                                               type: hole(.int)))
+      return generateIterableShadowVariables(name: name,
+                                             type: valueType,
+                                             depth: depth + 1,
+                                             declarations: declarations,
+                                             // dictionaries are translated to maps
+                                             hole: { x in .map(keyType, x) })
+    default:
+      return declarations
+    }
   }
 
   func getStateVariable() -> String {

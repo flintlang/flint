@@ -22,11 +22,11 @@ public struct IdentifierNormaliser {
     return translateGlobalIdentifierName("nextInstance", tld: structName)
   }
 
-  func getArraySizeVariableName(arrayName: String) -> String {
-    return "size_\(arrayName)"
+  func getShadowArraySizePrefix(depth: Int) -> String {
+    return "size_\(depth)_"
   }
 
-  func getDictKeysVariableName(dictName: String) -> String {
-    return "keys_\(dictName)"
+  func getShadowDictionaryKeysPrefix(depth: Int) -> String {
+    return "keys_\(depth)_"
   }
 }
