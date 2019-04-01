@@ -34,8 +34,11 @@ def rebuild():
 #print()
 
 failing_contracts = run_verifier()
-other_options = ['re-check-all', 're-build']
+dump_std_err = False
+other_options = ['re-check-all', 're-build', 'toggle dump stderr']
 while True:
+    print("Dump StdErr = %d" % dump_std_err)
+
     print_failing_selection(failing_contracts + other_options)
 
     selection = int(input("Enter # to debug: "))
@@ -43,9 +46,13 @@ while True:
     if selection < len(failing_contracts):
         (stdout, stderr) = debug_contract(failing_contracts[selection])
         print(stdout)
+        if dump_std_err:
+            print(stderr)
     else:
         selection %= len(failing_contracts)
         if selection == 0:
             failing_contracts = run_verifier()
         elif selection == 1:
             rebuild()
+        elif selection == 2:
+            dump_std_err = not dump_std_err
