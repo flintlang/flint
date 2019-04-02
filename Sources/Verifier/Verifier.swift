@@ -107,6 +107,9 @@ public class Verifier {
 
     bank_test.bpl(4,64): error: invalid Function
 
+    F7DA4749-9924-4C41-972A-8EBF33398B69.bpl(234,1): Error BP5002: A precondition for this call might not hold.
+    F7DA4749-9924-4C41-972A-8EBF33398B69.bpl(292,1): Related location: This is the precondition that might not hold.
+
     935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
     2853A8A3-FF61-4575-95A3-36516B26A887.bpl(317,1): Error BP5004: This loop invariant might not hold on entry.
 
@@ -145,13 +148,20 @@ public class Verifier {
     } else if line.contains("postcondition") {
       return .postConditionFailure(lineNumber, line)
 
-    } else if line.contains("precondition") {
+    } else if line.contains("precondition for this call might not hold") {
+      return .callPreConditionFailure(lineNumber, line)
+
+    } else if line.contains("This is the precondition that might not hold") {
       return .preConditionFailure(lineNumber, line)
 
     } else if line.contains("global variable that is not in the enclosing procedure's modifies clause") {
       return .modifiesFailure(lineNumber, line)
+
     } else if line.contains("loop invariant might not hold on entry") {
-      return .loopInvariantFailure(lineNumber, line)
+      return .loopInvariantEntryFailure(lineNumber, line)
+
+    } else if line.contains("loop invariant might not be maintained by the loop") {
+      return .loopInvariantMaintenanceFailure(lineNumber, line)
     }
 
     print("Couldn't determine type of verification failure: \(line)")
@@ -164,29 +174,65 @@ public class Verifier {
     var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
-      case .assertionFailure(let line, _):
+      case .assertionFailure(let lineNumber, _):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: b2fSourceMapping[line]!,
+                                      sourceLocation: sourceLocation,
                                       message: "Could not verify assertion holds"))
-      case .preConditionFailure(let line, _):
+      case .callPreConditionFailure(let lineNumber, _):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: b2fSourceMapping[line]!,
+                                      sourceLocation: sourceLocation,
+                                      message: "Could not verify pre-condition for this call holds"))
+      case .preConditionFailure(let lineNumber, _):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: sourceLocation,
                                       message: "Could not verify pre-condition holds"))
-      case .postConditionFailure(let line, _):
+      case .postConditionFailure(let lineNumber, _):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: b2fSourceMapping[line]!,
+                                      sourceLocation: sourceLocation,
                                       message: "Could not verify post-condition holds"))
       case .modifiesFailure(let lineNumber, let line):
         print("modifies failure - on line \(lineNumber): \(line)")
+        //guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+        //  print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+        //  fatalError()
+        //}
         // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
         //flintErrors.append(Diagnostic(severity: .error,
-        //                              sourceLocation: b2fSourceMapping[lineNumber]!,
+        //                              sourceLocation: sourceLocation,
         //                              message: "Could not verify post-condition holds"))
         continue
-      case .loopInvariantFailure(let lineNumber, let line):
+      case .loopInvariantEntryFailure(let lineNumber, let line):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: b2fSourceMapping[lineNumber]!,
-                                      message: "Could not verify loop \(line)"))
+                                      sourceLocation: sourceLocation,
+                                      message: "Could not verify entry to the loop \(line)"))
+      case .loopInvariantMaintenanceFailure(let lineNumber, let line):
+        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          fatalError()
+        }
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: sourceLocation,
+                                      message: "Could not verify loop body \(line)"))
       }
     }
     return flintErrors

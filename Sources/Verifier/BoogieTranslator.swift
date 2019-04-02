@@ -117,7 +117,8 @@ class BoogieTranslator {
         prePostConditions: [], // TODO: Put pre and post conditions on send
         modifies: [],
         statements: [], //TODO: Statements
-        variables: [] // TODO: variables
+        variables: [], // TODO: variables
+        sourceLocation: SourceLocation.INVALID
         )
       )
     )
@@ -752,9 +753,13 @@ class BoogieTranslator {
       let matches = line.groups(for: "// #MARKER# ([0-9]+)")
       if matches.count == 1 {
         // Extract line number
-        guard let sourceLocation = flintProofObligationSourceLocation[Int(matches[0][1])!] else {
+        let line = Int(matches[0][1])!
+        if line < 0 { //Invalid
+          continue
+        }
+        guard let sourceLocation = flintProofObligationSourceLocation[line] else {
           print("Couldn't find marker for proof obligation")
-
+          print(line)
           fatalError()
         }
         mapping[boogieLine] = sourceLocation

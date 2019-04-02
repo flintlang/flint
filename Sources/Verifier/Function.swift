@@ -54,7 +54,12 @@ extension BoogieTranslator {
   }
 
   func generateStructInstanceVariableName() -> String {
-    return "structInstance" // TODO: Generate dynamically?
+    if let functionName = getCurrentFunctionName() {
+      let instance = generateRandomIdentifier(prefix: "struct_instance_\(functionName)_")
+      return instance
+    }
+    print("Cannot generate struct instance variable name, not currently in a function")
+    fatalError()
   }
 
    func getFunctionParameters(name: String) -> [BParameterDeclaration] {
@@ -175,6 +180,7 @@ extension BoogieTranslator {
     let rawFunctionName = functionCall.identifier.name
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
+    flintProofObligationSourceLocation[functionCall.sourceLocation.line] = functionCall.sourceLocation
 
     for arg in functionCall.arguments {
       let (expr, stmts) = process(arg.expression)
@@ -207,7 +213,8 @@ extension BoogieTranslator {
       // Call Boogie send function
       let functionCall = BStatement.callProcedure([],
                                                   "send",
-                                                  argumentsExpressions)
+                                                  argumentsExpressions,
+                                                  functionCall.sourceLocation)
       return (.nop, [functionCall])
     default: break
     }
@@ -241,7 +248,8 @@ extension BoogieTranslator {
       let returnValue = BExpression.identifier(returnValueVariable)
       let functionCall = BStatement.callProcedure([returnValueVariable],
                                                    functionName,
-                                                   argumentsExpressions)
+                                                   argumentsExpressions,
+                                                   functionCall.sourceLocation)
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
@@ -251,7 +259,7 @@ extension BoogieTranslator {
       // Function doesn't return a value
       // Can assume can't be called as part of a nested expression,
       // has return type Void
-      argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions))
+      argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions, functionCall.sourceLocation))
       return (.nop, argumentsStatements)
     }
   }
@@ -332,7 +340,7 @@ extension BoogieTranslator {
 
          let returnAllocatedStructInstance: [BStatement] = [
            .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
-           .returnStatement
+           //.returnStatement
          ]
 
          let structInitPost: BExpression =
@@ -400,6 +408,8 @@ extension BoogieTranslator {
     self.structInstanceVariableName = nil
     _ = setCurrentScopeContext(oldCtx)
 
+    // Allow us to identify failing functions
+    flintProofObligationSourceLocation[functionDeclaration.sourceLocation.line] = functionDeclaration.sourceLocation
     return .procedureDeclaration(BProcedureDeclaration(
       name: currentFunctionName,
       returnType: returnType,
@@ -408,7 +418,8 @@ extension BoogieTranslator {
       prePostConditions: callerPreConds + prePostConditions,
       modifies: modifiesClauses,
       statements: callerPreStatements + bStatements,
-      variables: getFunctionVariableDeclarations(name: currentFunctionName)
+      variables: getFunctionVariableDeclarations(name: currentFunctionName),
+      sourceLocation: functionDeclaration.sourceLocation
     ))
   }
 }

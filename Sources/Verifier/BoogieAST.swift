@@ -1,3 +1,5 @@
+import Source
+
 struct BTopLevelProgram: CustomStringConvertible {
   let declarations: [BTopLevelDeclaration]
 
@@ -106,7 +108,7 @@ struct BProofObligation: CustomStringConvertible {
   let obligationType: BProofObligationType
 
   var description: String {
-    let markLine = "// #MARKER# \(mark)"
+    let markLine = marker(mark: mark)
     let endChar = (obligationType == .assertion || obligationType == .loopInvariant) ? ";" : ""
     return "\(markLine)\n\(obligationType) (\(expression))\(endChar)"
   }
@@ -121,6 +123,7 @@ struct BProcedureDeclaration: CustomStringConvertible {
   let modifies: Set<BModifiesDeclaration>
   let statements: [BStatement]
   let variables: [BVariableDeclaration]
+  let sourceLocation: SourceLocation
 
   var description: String {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
@@ -150,9 +153,14 @@ struct BProcedureDeclaration: CustomStringConvertible {
 
     // \(name)'s implementation
     \(statementsString)
+    \(marker(mark: sourceLocation.line))
     }
     """
   }
+}
+
+func marker(mark: Int) -> String {
+  return "// #MARKER# \(mark)"
 }
 
 struct BModifiesDeclaration: CustomStringConvertible, Hashable {
@@ -186,10 +194,9 @@ enum BStatement: CustomStringConvertible {
   case assume(BExpression)
   case havoc(String)
   case assignment(BExpression, BExpression)
-  case callProcedure([String], String, [BExpression])
+  case callProcedure([String], String, [BExpression], SourceLocation)
   case callForallProcedure(String, [BExpression])
   case breakStatement
-  case returnStatement
 
   var description: String {
     switch self {
@@ -200,20 +207,19 @@ enum BStatement: CustomStringConvertible {
     case .assume(let assumption): return "assume (\(assumption));"
     case .havoc(let identifier): return "havoc \(identifier);"
     case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs);"
-    case .callProcedure(let returnedValues, let functionName, let arguments):
+    case .callProcedure(let returnedValues, let functionName, let arguments, let sourceLocation):
       let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
       var returnValuesComponent = ""
       if returnedValues.count > 0 {
         returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
       }
 
-      return "call \(returnValuesComponent) \(functionName)(\(argumentComponent));"
+      return "\(marker(mark: sourceLocation.line))\ncall \(returnValuesComponent) \(functionName)(\(argumentComponent));"
     case .callForallProcedure(let functionName, let arguments):
       let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
 
       return "call forall \(functionName) (\(argumentComponent));"
     case .breakStatement: return "break;"
-    case .returnStatement: return "return;"
     }
   }
 }

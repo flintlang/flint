@@ -3,9 +3,11 @@ enum BoogieError {
 
   case assertionFailure(Int, String)
   case preConditionFailure(Int, String)
+  case callPreConditionFailure(Int, String)
   case postConditionFailure(Int, String)
   case modifiesFailure(Int, String)
-  case loopInvariantFailure(Int, String)
+  case loopInvariantEntryFailure(Int, String)
+  case loopInvariantMaintenanceFailure(Int, String)
 }
 
 public struct IdentifierNormaliser {

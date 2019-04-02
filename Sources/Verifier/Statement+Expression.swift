@@ -22,7 +22,6 @@ extension BoogieTranslator {
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr))
       }
-      statements.append(.returnStatement)
       return statements
 
     case .becomeStatement(let becomeStatement):
@@ -151,7 +150,9 @@ extension BoogieTranslator {
                + forStatement.body.flatMap({x in process(x)})
                + [incrementIndex]
 
-      let loopInvariants = [BProofObligation(expression: .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue)), //.lessThan(.old(index), index),
+      // index should be less than finalIndexValue
+      let loopInvariantExpression: BExpression = .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue))
+      let loopInvariants = [BProofObligation(expression: loopInvariantExpression, //.lessThan(.old(index), index),
                                              mark: forStatement.sourceLocation.line,
                                              obligationType: .loopInvariant)
                            ]
