@@ -88,12 +88,14 @@ enum BProofObligationType: CustomStringConvertible {
   case assertion
   case preCondition
   case postCondition
+  case loopInvariant
 
   var description: String {
     switch self {
     case .assertion: return "assert"
     case .preCondition: return "requires"
     case .postCondition: return "ensures"
+    case .loopInvariant: return "invariant"
     }
   }
 }
@@ -105,7 +107,8 @@ struct BProofObligation: CustomStringConvertible {
 
   var description: String {
     let markLine = "// #MARKER# \(mark)"
-    return "\(markLine)\n\(obligationType) (\(expression))\(obligationType == .assertion ? ";" : "")"
+    let endChar = (obligationType == .assertion || obligationType == .loopInvariant) ? ";" : ""
+    return "\(markLine)\n\(obligationType) (\(expression))\(endChar)"
   }
 }
 
@@ -311,10 +314,10 @@ struct BIfStatement: CustomStringConvertible {
 struct BWhileStatement: CustomStringConvertible {
   let condition: BExpression
   let body: [BStatement]
-  let invariants: [BExpression]
+  let invariants: [BProofObligation]
 
   var description: String {
-    let invariantComponent = invariants.map({(x) -> String in "invariant (\(x.description));"}).joined(separator: "\n")
+    let invariantComponent = invariants.map({ (x) -> String in x.description }).joined(separator: "\n")
     let bodyComponent = body.map({(x) -> String in x.description}).joined(separator: "\n")
     return """
     while(\(condition))

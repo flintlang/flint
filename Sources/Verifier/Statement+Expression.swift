@@ -151,13 +151,19 @@ extension BoogieTranslator {
                + forStatement.body.flatMap({x in process(x)})
                + [incrementIndex]
 
+      let loopInvariants = [BProofObligation(expression: .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue)), //.lessThan(.old(index), index),
+                                             mark: forStatement.sourceLocation.line,
+                                             obligationType: .loopInvariant)
+                           ]
+      flintProofObligationSourceLocation[forStatement.sourceLocation.line] = forStatement.sourceLocation
+
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
       return /*condStmt +*/ [assignIndexInitialValue,
         .whileStatement(BWhileStatement(
           condition: .lessThan(index, finalIndexValue),
           body: body,
-          invariants: [.lessThan(.old(index), index)])
+          invariants: loopInvariants)
         )]
 
     case .emitStatement:
@@ -169,7 +175,7 @@ extension BoogieTranslator {
   //TODO: access shadow variables
   func process(_ expression: Expression,
                localContext: Bool = true,
-               shadowVariablePrefixFunc: ((Int) -> String) = { x in "" },
+               shadowVariablePrefix: (Int) -> String = { x in return "" },
                subscriptDepth: Int = 0) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
@@ -189,19 +195,22 @@ extension BoogieTranslator {
     case .identifier(let identifier):
       return (processIdentifier(identifier,
                                 localContext: localContext,
-                                shadowVariablePrefix: shadowVariablePrefixFunc()), [])
+                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [])
 
     case .binaryExpression(let binaryExpression):
-      return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefixFunc())
+      return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
 
     case .bracketedExpression(let bracketedExpression):
       return process(bracketedExpression.expression,
                      localContext: localContext,
-                     subscriptDepth: subscriptDepth,
-                     shadowVariablePrefix: shadowVariablePrefixFunc())
+                     shadowVariablePrefix: shadowVariablePrefix,
+                     subscriptDepth: subscriptDepth)
 
     case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts) = process(subscriptExpression.baseExpression, localContext: localContext)
+      let (subExpr, subStmts) = process(subscriptExpression.baseExpression,
+                                        localContext: localContext,
+                                        shadowVariablePrefix: shadowVariablePrefix,
+                                        subscriptDepth: subscriptDepth + 1)
       let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression, localContext: true)
       return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
 
@@ -233,13 +242,14 @@ extension BoogieTranslator {
     }
   }
 
-  func process(_ binaryExpression: BinaryExpression) -> (BExpression, [BStatement]) {
+  func process(_ binaryExpression: BinaryExpression,
+               shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
     switch binaryExpression.opToken {
     case .dot:
-      return processDotBinaryExpression(binaryExpression, [])
+      return processDotBinaryExpression(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
     case .equal:
       return handleAssignment(lhs, rhs)
     case .plusEqual:
@@ -377,6 +387,7 @@ extension BoogieTranslator {
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
         counter += 1
       }
+      // TODO: Also implement assignment to size shadow variable
       return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
 
     case .dictionaryLiteral(let dictionaryLiteral):
@@ -393,6 +404,7 @@ extension BoogieTranslator {
 
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
       }
+      // TODO: Also implement assignment to size + keys shadow variable
       return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
 
     default:
@@ -404,7 +416,7 @@ extension BoogieTranslator {
   }
 
   private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
-                                          _ seenFields: [(BExpression, [BStatement])]) -> (BExpression, [BStatement]) {
+                                          shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
 
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
@@ -412,7 +424,7 @@ extension BoogieTranslator {
     switch lhs {
     case .`self`:
       // self.A, means get the A in the contract, not the local declaration
-      return process(rhs, localContext: false)
+      return process(rhs, localContext: false, shadowVariablePrefix: shadowVariablePrefix)
     default: break
     }
 
@@ -433,7 +445,8 @@ extension BoogieTranslator {
     switch lhsType {
     case .stdlibType(.wei):
       let holyAccesses = handleNestedStructAccess(structName: "Wei",
-                                                  access: rhs)
+                                                  access: rhs,
+                                                  shadowVariablePrefix: shadowVariablePrefix)
       let (lExpr, lStmts) = process(lhs)
       let (finalExpr, holyStmts) = holyAccesses(lExpr)
       return (finalExpr, lStmts + holyStmts)
@@ -441,10 +454,23 @@ extension BoogieTranslator {
     case .userDefinedType(let structName):
       // Return function which returns BExpr to access field
       let holyAccesses = handleNestedStructAccess(structName: structName,
-                                                  access: rhs)
+                                                  access: rhs,
+                                                  shadowVariablePrefix: shadowVariablePrefix)
       let (lExpr, lStmts) = process(lhs)
       let (finalExpr, holyStmts) = holyAccesses(lExpr)
       return (finalExpr, lStmts + holyStmts)
+
+    case .arrayType, .dictionaryType:
+      // Check if trying to access .size or .keys fields or arrays/dictionaries
+      switch rhs {
+      case .identifier(let identifier) where identifier.name == "size":
+        // process lhs, to extract the identifier name, and turn into size_...
+        return generateIterableShadowAccess(lhs, shadowPrefix: normaliser.getShadowArraySizePrefix)
+      case .identifier(let identifier) where identifier.name == "keys":
+        // process lhs, to extract the identifier name, and turn into keys_...
+        return generateIterableShadowAccess(lhs, shadowPrefix: normaliser.getShadowDictionaryKeysPrefix)
+      default: break
+      }
     default:
       break
     }
@@ -472,12 +498,37 @@ extension BoogieTranslator {
     fatalError()
   }
 
+  private func generateIterableShadowAccess(_ iterable: Expression,
+                                            shadowPrefix: (Int) -> String,
+                                            depth: Int = 0) -> (BExpression, [BStatement]) {
+    switch iterable {
+    case .identifier(let identifier):
+      return (processIdentifier(identifier, shadowVariablePrefix: shadowPrefix(depth)), [])
+
+    case .subscriptExpression(let subscriptExpression):
+      let (subExpr, subStmts) = generateIterableShadowAccess(subscriptExpression.baseExpression,
+                                                             shadowPrefix: shadowPrefix,
+                                                             depth: depth + 1)
+      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
+      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
+
+    default:
+      print("Can't generate iterable shadow access for \(iterable)")
+      fatalError()
+    }
+  }
+
   private func handleNestedStructAccess(structName: String,
-                                        access: Expression) -> ((BExpression) -> (BExpression, [BStatement])) {
+                                        access: Expression,
+                                        shadowVariablePrefix: (Int) -> String,
+                                        subscriptDepth: Int = 0)
+        -> ((BExpression) -> (BExpression, [BStatement])) {
     switch access {
     // Final accesses of dot chain \/ \/ \/
     case .identifier(let identifier):
-      let translatedIdentifier = normaliser.translateGlobalIdentifierName(identifier.name, tld: structName)
+      let translatedIdentifier = shadowVariablePrefix(subscriptDepth) +
+        normaliser.translateGlobalIdentifierName(identifier.name, tld: structName)
+
       let lhsExpr = BExpression.identifier(translatedIdentifier)
       return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
 
@@ -487,7 +538,9 @@ extension BoogieTranslator {
         fatalError()
       }
       let holyBase = handleNestedStructAccess(structName: accessEnclosingType,
-                                              access: subscriptExpression.baseExpression)
+                                              access: subscriptExpression.baseExpression,
+                                              shadowVariablePrefix: shadowVariablePrefix,
+                                              subscriptDepth: subscriptDepth + 1)
       let (indexExpr, indexStmts) = process(subscriptExpression.indexExpression)
 
       return ({ structInstance in
@@ -529,10 +582,12 @@ extension BoogieTranslator {
       }
 
       let holyAccess = handleNestedStructAccess(structName: accessEnclosingType,
-                                                access: binaryEx.rhs)
+                                                access: binaryEx.rhs,
+                                                shadowVariablePrefix: shadowVariablePrefix)
 
       let holyIdentifier = handleNestedStructAccess(structName: structName,
-                                                    access: binaryEx.lhs)
+                                                    access: binaryEx.lhs,
+                                                    shadowVariablePrefix: shadowVariablePrefix)
       return ({ structInstance in
                 let (holyIdentifier, holyIdentifierStmts) = holyIdentifier(structInstance)
                 let (holyExpr, holyExprStmts) = holyAccess(holyIdentifier)
@@ -571,14 +626,10 @@ extension BoogieTranslator {
   }
 
   private func getIterableSizeExpression(iterable: Expression) -> BExpression {
-    return process(iterable, shadowVariablePrefixFunc: { depth in
-                     return normaliser.getShadowArraySizePrefix(depth: depth)
-                   }).0
+    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix).0
   }
 
   private func getDictionaryKeysExpression(dict: Expression) -> BExpression {
-    return process(dict, shadowVariablePrefixFunc: { depth in
-                     return normaliser.getShadowDictionaryKeysPrefix(depth: depth)
-                   }).0
+    return process(dict, shadowVariablePrefix: normaliser.getShadowDictionaryKeysPrefix).0
   }
 }

@@ -19,7 +19,7 @@ struct L {
     }
   }
 
-  func inderectIterable() {
+  func indirectIterable() {
     var is: [[Int]] = []
     is[0] = [1]
     is[1] = [2]

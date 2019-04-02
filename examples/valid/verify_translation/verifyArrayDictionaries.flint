@@ -16,7 +16,7 @@ Array :: (any) {
     es = [:]
   }
 
-  public func arrayLiteral()
+  func arrayLiteral()
     mutates (as, bs, cs)
   {
     as[0] = 0
@@ -25,5 +25,17 @@ Array :: (any) {
     cs[0][0] = 0
 
     //let b: [[Int]] = []
+  }
+
+  func arrayDictSize() {
+    let asSize: Int = as.size
+    let bsSize: Int = bs.size
+  }
+
+  func dictKeys() {
+    let bsKeys: [Int] = bs.keys
+
+    let esKeys: [Int] = es.keys
+    let esSubSize: Int = es[esKeys[0]].size
   }
 }

@@ -5,6 +5,7 @@ enum BoogieError {
   case preConditionFailure(Int, String)
   case postConditionFailure(Int, String)
   case modifiesFailure(Int, String)
+  case loopInvariantFailure(Int, String)
 }
 
 public struct IdentifierNormaliser {

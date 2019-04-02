@@ -108,6 +108,7 @@ public class Verifier {
     bank_test.bpl(4,64): error: invalid Function
 
     935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
+    2853A8A3-FF61-4575-95A3-36516B26A887.bpl(317,1): Error BP5004: This loop invariant might not hold on entry.
 
     Boogie program verifier finished with 10 verified, 1 error
     */
@@ -118,7 +119,7 @@ public class Verifier {
     var errors = [BoogieError]()
     for line in lines {
       // Look for tuple followed by "Error"
-      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error BP5001|Related location|Error:|error:)")
+      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error (BP[0-9]+)|Related location|Error:|error:)")
       switch matches.count {
       case 0:
         break
@@ -149,6 +150,8 @@ public class Verifier {
 
     } else if line.contains("global variable that is not in the enclosing procedure's modifies clause") {
       return .modifiesFailure(lineNumber, line)
+    } else if line.contains("loop invariant might not hold on entry") {
+      return .loopInvariantFailure(lineNumber, line)
     }
 
     print("Couldn't determine type of verification failure: \(line)")
@@ -177,9 +180,13 @@ public class Verifier {
         print("modifies failure - on line \(lineNumber): \(line)")
         // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
         //flintErrors.append(Diagnostic(severity: .error,
-        //                              sourceLocation: b2fSourceMapping[line]!,
+        //                              sourceLocation: b2fSourceMapping[lineNumber]!,
         //                              message: "Could not verify post-condition holds"))
         continue
+      case .loopInvariantFailure(let lineNumber, let line):
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: b2fSourceMapping[lineNumber]!,
+                                      message: "Could not verify loop \(line)"))
       }
     }
     return flintErrors

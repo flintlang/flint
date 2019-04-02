@@ -38,7 +38,7 @@ class BoogieTranslator {
 
   // Name of global variables in the contract
   var contractGlobalVariables = [String: [String]]()
-  // Name of global variables in struct 
+  // Name of global variables in struct
   var structGlobalVariables = [String: [String]]()
 
   // List of invariants for each tld

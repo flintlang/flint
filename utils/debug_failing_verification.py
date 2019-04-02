@@ -38,10 +38,14 @@ dump_std_err = False
 other_options = ['re-check-all', 're-build', 'toggle dump stderr']
 while True:
     print("Dump StdErr = %d" % dump_std_err)
+    print("# of failing contracts: %d" % len(failing_contracts))
 
     print_failing_selection(failing_contracts + other_options)
 
-    selection = int(input("Enter # to debug: "))
+    rawInput = input("Enter # to debug: ")
+    if len(rawInput) == 0:
+        continue
+    selection = int(rawInput)
 
     if selection < len(failing_contracts):
         (stdout, stderr) = debug_contract(failing_contracts[selection])

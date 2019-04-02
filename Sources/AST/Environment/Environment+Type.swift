@@ -201,9 +201,11 @@ extension Environment {
           } else {
             fatalError()
           }
-        case .dictionaryType:
+        case .dictionaryType(let keyType, _):
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
+          } else if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "keys" {
+            return .arrayType(keyType)
           } else {
             fatalError()
           }
