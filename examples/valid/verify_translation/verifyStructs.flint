@@ -9,11 +9,13 @@ struct J {
   {
     self.s = s
     self.ss = [:]
-    let j: J = J(&s)
+    // Contract fails to verify because of this line
+    //  - nextInstance postCond failure
+    //let j: J = J(&s)
   }
 
   public init()
-    mutates (S.i, S.is, S.j)
+    mutates (S.i, S.is, S.ks, S.j)
   {
     self.s = S()
     self.ss = [:]
@@ -23,6 +25,7 @@ struct J {
 struct S {
   var i: Int
   var is: [Int]
+  var ks: [[[Int]]]
   var j: Int = 0
 
   invariant (i > 0)
@@ -32,11 +35,12 @@ struct S {
     pre (1==1)
   {
     self.is = []
+    self.ks = []
     i = 1
   }
 
   public func wow()
-    mutates (is)
+    mutates (is, j)
     pre(2 == 2)
   {
     is[0] = 0
@@ -52,7 +56,7 @@ Test :: (any) {
 
   @payable
   public func t(implicit w: Wei)
-    mutates (S.i, S.is, S.j, J.s, J.ss, Wei.rawValue)
+    mutates (S.i, S.is, S.j, S.ks, J.s, J.ss, Wei.rawValue)
   {
     let v: Int = w.getRawValue()
     let s: S = S()
@@ -60,5 +64,8 @@ Test :: (any) {
 
     let j: J = J(&s)
     let k: Int = j.ss[i+=1].is[1]
+
+    let size0: Int = j.ss.size
+    let size1: Int = s.ks[0][1].size
   }
 }

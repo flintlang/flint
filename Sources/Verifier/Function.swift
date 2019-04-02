@@ -256,6 +256,16 @@ extension BoogieTranslator {
     }
   }
 
+  private func getIterableTypeDepth(type: RawType, depth: Int = 0) -> Int {
+    switch type {
+    case .arrayType(let type): return getIterableTypeDepth(type: type, depth: depth+1)
+    case .dictionaryType(_, let valueType): return getIterableTypeDepth(type: valueType, depth: depth+1)
+    case .fixedSizeArrayType(let type, _): return getIterableTypeDepth(type: type, depth: depth+1)
+    default:
+      return depth
+    }
+  }
+
    func process(_ functionDeclaration: FunctionDeclaration,
                 isStructInit: Bool = false,
                 isContractInit: Bool = false,
@@ -352,10 +362,27 @@ extension BoogieTranslator {
       .filter({ !(isContractInit || isStructInit) || ($0.obligationType != .preCondition) }) + structInvariants
     prePostConditions += invariants
 
-    var modifies = functionDeclaration.mutates.map({
-      normaliser.translateGlobalIdentifierName($0.name, tld: $0.enclosingType ?? getCurrentTLDName())
-      // Get the global shadow variables, the function modifies - ie. nextInstance_struct
-    }) + (functionModifiesShadow[currentFunctionName] ?? [])
+    var modifies = [String]()
+    for mutates in functionDeclaration.mutates {
+      let enclosingType = mutates.enclosingType ?? getCurrentTLDName()
+      let variableType = environment.type(of: mutates.name, enclosingType: enclosingType)
+      switch variableType {
+      case .arrayType, .dictionaryType:
+        let depthMax = getIterableTypeDepth(type: variableType)
+        for depth in 0..<depthMax {
+          modifies.append(normaliser.getShadowArraySizePrefix(depth: depth) + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
+          if case .dictionaryType = variableType {
+            modifies.append(normaliser.getShadowDictionaryKeysPrefix(depth: depth) + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
+          }
+        }
+      default:
+        break
+      }
+
+      modifies.append(normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
+    }
+    // Get the global shadow variables, the function modifies (but can't be directly expressed by the user) - ie. nextInstance_struct
+    modifies += (functionModifiesShadow[currentFunctionName] ?? [])
 
     if isContractInit {
       modifies += contractGlobalVariables[getCurrentTLDName()] ?? []

@@ -492,7 +492,7 @@ class BoogieTranslator {
   func generateVariables(_ variableDeclaration: VariableDeclaration,
                          tldIsStruct: Bool = false) -> [BVariableDeclaration] {
     // If currently in a function, then generate name with function in it
-    // If in contractDeclaration, then generate name with only contract in it
+    // If in (contract/struct)Declaration, then generate name with only contract in it
     let name = getCurrentFunctionName() == nil ?
       translateGlobalIdentifierName(variableDeclaration.identifier.name)
       : translateIdentifierName(variableDeclaration.identifier.name)
@@ -541,7 +541,7 @@ class BoogieTranslator {
                                              depth: depth + 1,
                                              declarations: declarations,
                                              // arrays are translated to maps
-                                             hole: { x in .map(.int, x) })
+                                             hole: { x in hole(.map(.int, x)) })
 
     case .dictionaryType(let keyType, let valueType):
       // Dict
@@ -559,7 +559,7 @@ class BoogieTranslator {
                                              depth: depth + 1,
                                              declarations: declarations,
                                              // dictionaries are translated to maps
-                                             hole: { x in .map(keyType, x) })
+                                             hole: { x in hole(.map(keyType, x)) })
     default:
       return declarations
     }
@@ -651,8 +651,8 @@ class BoogieTranslator {
     return old
   }
 
-  func translateIdentifierName(_ name: String) -> String {
-    if let functionName = getCurrentFunctionName() {
+  func translateIdentifierName(_ name: String, currentFunctionName: String? = nil) -> String {
+    if let functionName = currentFunctionName ?? getCurrentFunctionName() {
       // Function name already has contract scope (eg. funcA_ContractA
       return name + "_\(functionName)"
     }
@@ -660,8 +660,8 @@ class BoogieTranslator {
     fatalError()
   }
 
-  func translateGlobalIdentifierName(_ name: String) -> String {
-    return name + "_\(getCurrentTLDName())"
+  func translateGlobalIdentifierName(_ name: String, enclosingTLD: String? = nil) -> String {
+    return name + "_\(enclosingTLD ?? getCurrentTLDName())"
   }
 
   func convertType(_ type: Type) -> BType {

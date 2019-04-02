@@ -36,14 +36,11 @@ public class ShadowVariablePass: ASTPass {
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
                                                parameterTypes: parameterTypes,
                                                enclosingType: enclosingType)
-    if let currentFunction = callerFunctionName,
-      specialDeclaration.isInit,
-      passContext.environment!.isStructDeclared(enclosingType) {
-      var currentModifies = modifies[currentFunction] ?? Set<String>()
-      // Struct initialiser modifies next instance
-      currentModifies.insert(normaliser.generateStructInstanceVariable(structName: passContext.enclosingTypeIdentifier!.name))
-      modifies[currentFunction] = currentModifies
-    }
+    if specialDeclaration.isInit,
+       passContext.environment!.isStructDeclared(enclosingType) {
+        // Struct initialiser modifies next instance
+        addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: passContext.enclosingTypeIdentifier!.name))
+      }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -55,11 +52,21 @@ public class ShadowVariablePass: ASTPass {
 
   public func process(becomeStatement: BecomeStatement,
                       passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
-    if let currentFunction = callerFunctionName {
-      var currentModifies = modifies[currentFunction] ?? Set<String>()
-      currentModifies.insert(normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
-    }
+    addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(binaryExpression: BinaryExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+    // Mark that binary expression is assignment
+    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+  }
+
+  public func postProcess(binaryExpression: BinaryExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+    // Unmark that binary expression is assignment
+    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
   private func normaliseFunctionName(functionName: String,
@@ -67,5 +74,13 @@ public class ShadowVariablePass: ASTPass {
                                      enclosingType: String) -> String {
       return normaliser.translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }),
                                                       tld: enclosingType)
+  }
+
+  private func addCurrentFunctionModifies(shadowVariableName: String) {
+    if let currentFunction = callerFunctionName {
+      var currentModifies = modifies[currentFunction] ?? Set<String>()
+      currentModifies.insert(shadowVariableName)
+      modifies[currentFunction] = currentModifies
+    }
   }
 }

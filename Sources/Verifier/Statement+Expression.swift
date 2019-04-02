@@ -172,7 +172,6 @@ extension BoogieTranslator {
     }
   }
 
-  //TODO: access shadow variables
   func process(_ expression: Expression,
                localContext: Bool = true,
                shadowVariablePrefix: (Int) -> String = { x in return "" },
@@ -242,8 +241,9 @@ extension BoogieTranslator {
     }
   }
 
-  func process(_ binaryExpression: BinaryExpression,
-               shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
+  private func process(_ binaryExpression: BinaryExpression,
+                       // Function which generates shadow variable prefix for variable name, (given a depth)
+                       shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
@@ -416,6 +416,9 @@ extension BoogieTranslator {
   }
 
   private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
+                                          enclosingType: String? = nil,
+                                          // For when accessing size/keys
+                                          structInstance: BExpression? = nil,
                                           shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
 
     let lhs = binaryExpression.lhs
@@ -429,7 +432,7 @@ extension BoogieTranslator {
     }
 
     // For struct fields and methods (eg array size..)
-    let currentType = getCurrentTLDName()
+    let currentType = enclosingType ?? getCurrentTLDName()
     guard let scopeContext = getCurrentFunction().scopeContext else {
       print("couldn't get scope context of current function - used to determine if accessing struct property")
       fatalError()
@@ -465,10 +468,20 @@ extension BoogieTranslator {
       switch rhs {
       case .identifier(let identifier) where identifier.name == "size":
         // process lhs, to extract the identifier name, and turn into size_...
-        return generateIterableShadowAccess(lhs, shadowPrefix: normaliser.getShadowArraySizePrefix)
+        return generateIterableShadowAccess(lhs,
+                                            shadowPrefix: normaliser.getShadowArraySizePrefix,
+                                            structInstance: structInstance,
+                                            enclosingStruct: currentType,
+                                            localContext: false
+                                            )
       case .identifier(let identifier) where identifier.name == "keys":
         // process lhs, to extract the identifier name, and turn into keys_...
-        return generateIterableShadowAccess(lhs, shadowPrefix: normaliser.getShadowDictionaryKeysPrefix)
+        return generateIterableShadowAccess(lhs,
+                                            shadowPrefix: normaliser.getShadowDictionaryKeysPrefix,
+                                            structInstance: structInstance,
+                                            enclosingStruct: currentType,
+                                            localContext: false
+                                            )
       default: break
       }
     default:
@@ -500,15 +513,29 @@ extension BoogieTranslator {
 
   private func generateIterableShadowAccess(_ iterable: Expression,
                                             shadowPrefix: (Int) -> String,
-                                            depth: Int = 0) -> (BExpression, [BStatement]) {
+                                            depth: Int = 0,
+                                            structInstance: BExpression? = nil,
+                                            enclosingStruct: String? = nil,
+                                            localContext: Bool = true) -> (BExpression, [BStatement]) {
     switch iterable {
     case .identifier(let identifier):
-      return (processIdentifier(identifier, shadowVariablePrefix: shadowPrefix(depth)), [])
+      let identifier = processIdentifier(identifier,
+                                         localContext: localContext,
+                                         shadowVariablePrefix: shadowPrefix(depth),
+                                         enclosingTLD: enclosingStruct
+                                         )
+      if let instance = structInstance {
+        return (.mapRead(identifier, instance), [])
+      }
+      return (identifier, [])
 
     case .subscriptExpression(let subscriptExpression):
       let (subExpr, subStmts) = generateIterableShadowAccess(subscriptExpression.baseExpression,
                                                              shadowPrefix: shadowPrefix,
-                                                             depth: depth + 1)
+                                                             depth: depth + 1,
+                                                             structInstance: structInstance,
+                                                             enclosingStruct: enclosingStruct,
+                                                             localContext: localContext)
       let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
       return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
 
@@ -524,6 +551,7 @@ extension BoogieTranslator {
                                         subscriptDepth: Int = 0)
         -> ((BExpression) -> (BExpression, [BStatement])) {
     switch access {
+
     // Final accesses of dot chain \/ \/ \/
     case .identifier(let identifier):
       let translatedIdentifier = shadowVariablePrefix(subscriptDepth) +
@@ -553,7 +581,7 @@ extension BoogieTranslator {
                                                           structInstance: structInstance,
                                                           owningType: structName) })
 
-    // Accessing another struct field \/ \/ \/
+    // Accessing another struct field \/ \/ \/ - or what looks like a struct field
     case .binaryExpression(let binaryEx) where binaryEx.opToken == .dot:
       let currentType = getCurrentTLDName()
       guard let scopeContext = getCurrentFunction().scopeContext else {
@@ -577,8 +605,18 @@ extension BoogieTranslator {
         // Return function which returns BExpr to access field
         accessEnclosingType = structName
       default:
-        print("Unknown enclosing type: \(lhsType)")
-        fatalError()
+        // array or dict fields are being accessed (size/keys)
+        // therefore final access in a dot chain
+        return ({ structInstance in
+                  return self.processDotBinaryExpression(binaryEx,
+                                                    enclosingType: structName,
+                                                    structInstance: structInstance,
+                                                    // accessing size/keys, prefix is calculated then
+                                                    shadowVariablePrefix: { _ in "" })
+                })
+
+        //print("Unknown enclosing type: \(lhsType)")
+        //fatalError()
       }
 
       let holyAccess = handleNestedStructAccess(structName: accessEnclosingType,
@@ -600,9 +638,13 @@ extension BoogieTranslator {
     }
   }
 
+  // process Identifier
+  // localContext: whether we are processing from within a function
+  // shadowVariablePrefix: the prefix to use when resolving the identifier name, to get correct shadow variable
   private func processIdentifier(_ identifier: Identifier,
                                  localContext: Bool = true,
-                                 shadowVariablePrefix: String = "") -> BExpression {
+                                 shadowVariablePrefix: String = "",
+                                 enclosingTLD: String? = nil) -> BExpression {
     // See if identifier is a local variable
     if localContext,
        let currentFunctionName = getCurrentFunctionName(),
@@ -615,7 +657,8 @@ extension BoogieTranslator {
 
       return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
     }
-    let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name)
+    let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name,
+                                                                                    enclosingTLD: enclosingTLD)
 
     // Currently in a struct, referring to a 'global' variable
     if let currentStructInstanceVariable = structInstanceVariableName {
