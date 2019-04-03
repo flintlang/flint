@@ -22,6 +22,7 @@ struct Compiler {
   var sourceCode: String
   var stdlibFiles: [URL]
   var diagnostics: DiagnosticPool
+  var typeStateDiagram : Bool
 
   var sourceContext: SourceContext {
     return SourceContext(sourceFiles: sourceFiles, sourceCodeString: sourceCode, isForServer: true)
@@ -43,6 +44,23 @@ struct Compiler {
     // add all parser diagnostics to the pool of diagnistics  
     diagnostics.appendAll(parserDiagnostics)
     
+    
+    // i should check if there are any syntax errors before I do this part - but i want to give some
+    // information back to the user that their program is mesesd up
+    if (typeStateDiagram)
+    {
+        let gs : [Graph] = produce_graphs_from_ev(ev: environment)
+        var dotFiles : [String] = []
+        for g in gs {
+            let dotFile = produce_dot_graph(graph: g)
+            dotFiles.append(dotFile)
+        }
+        for dot in dotFiles {
+            print(dot)
+        }
+        return
+    }
+   
     // only continue if you have no syntax errors? 
     // need to set a flag to tell it not to continue on syntax errors
     guard let ast = parserAST else {
@@ -52,6 +70,9 @@ struct Compiler {
     // stop parsing if any syntax errors are detected
     if (environment.syntaxErrors)
     {
+        let diag = diagnostics
+        let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
+        print(json)
         return
     }
     
@@ -68,6 +89,11 @@ struct Compiler {
 
     // add semantic diagnostics
     diagnostics.appendAll(passRunnerOutcome.diagnostics)
+    
+    // I guess at this point - I need to know that
+    
+    let json = try convertFlintDiagToLspDiagJson(diagnostics.getDiagnostics())
+    print(json)
 
     // all the diagnostics have been added
     return
