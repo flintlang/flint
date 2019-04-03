@@ -7,25 +7,24 @@ import Diagnostic
 /// The main function for the compiler.
 func main() {
     command (
+        Flag("typestate information", flag:"t", description:"Information for typestates"),
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { sourceCode, fileName in
+    { typeStateDiagram, sourceCode, fileName in
         let inputFiles = [URL(fileURLWithPath: fileName)]
         do {
-            //print("this  is the first time running")
             let c = Compiler(
                 sourceFiles: inputFiles,
                 sourceCode: sourceCode,
                 stdlibFiles: StandardLibrary.default.files,
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
-                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
+                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
+                typeStateDiagram: typeStateDiagram)
             
+            // I need a better way of representing the flags
             try c.ide_compile()
-            let diag = c.diagnostics
-            let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
-            print(json)
             
         } catch let err {
             let diagnostic = Diagnostic(severity: .error,
@@ -40,7 +39,7 @@ func main() {
 }
 
 func main_d() throws {
-        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/syntactically_incorrect_let_declaration.flint"
+        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint"
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
         do {
@@ -51,16 +50,14 @@ func main_d() throws {
                 stdlibFiles: StandardLibrary.default.files,
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
-                                            sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
+                                            sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
+                typeStateDiagram : true)
             
             try c.ide_compile()
-            let diag = c.diagnostics
-            let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
-            print(json)
             
         } catch let err {
             let diagnostic = Diagnostic(severity: .error,
-                                        sourceLocation: nil,
+                                        sourceLocation: nil,                        
                                         message: err.localizedDescription)
             // swiftlint:disable force_try
             print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
@@ -69,4 +66,5 @@ func main_d() throws {
         }
 }
 
+//try main_d()
 main()
