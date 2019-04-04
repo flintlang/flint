@@ -55,13 +55,17 @@ struct BAxiomDeclaration: CustomStringConvertible {
   }
 }
 
-struct BVariableDeclaration: CustomStringConvertible {
+struct BVariableDeclaration: CustomStringConvertible, Hashable {
   let name: String
   let rawName: String
   let type: BType
 
   var description: String {
     return "var \(name): \(type);"
+  }
+
+  var hashValue: Int {
+    return self.rawName.hashValue
   }
 }
 
@@ -122,7 +126,7 @@ struct BProcedureDeclaration: CustomStringConvertible {
   let prePostConditions: [BProofObligation]
   let modifies: Set<BModifiesDeclaration>
   let statements: [BStatement]
-  let variables: [BVariableDeclaration]
+  let variables: Set<BVariableDeclaration>
   let sourceLocation: SourceLocation
 
   var description: String {

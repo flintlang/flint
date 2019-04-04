@@ -84,10 +84,20 @@ extension BoogieTranslator {
       //    - iterate through values of dict
       //    - shadow keys array
 
+      var preAmbleStmts = [BStatement]()
+      guard let scopeContext = getCurrentScopeContext() else {
+        print("no scope context exists when determining type of loop iterable")
+        fatalError()
+      }
+      let iterableType = environment.type(of: forStatement.iterable,
+                                          enclosingType: getCurrentTLDName(),
+                                          scopeContext: scopeContext)
+
       switch forStatement.iterable {
       case .range(let rangeExpression):
-        let (start, _) = process(rangeExpression.initial)
-        let (bound, _) = process(rangeExpression.bound)
+        let (start, startStmts) = process(rangeExpression.initial)
+        let (bound, boundStmts) = process(rangeExpression.bound)
+        preAmbleStmts += startStmts + boundStmts
         // Adjust the index update accordingly
         let inclusive: Bool = rangeExpression.op.kind == .punctuation(.closedRange)
         if inclusive {
@@ -99,23 +109,45 @@ extension BoogieTranslator {
         assignValueToVariable = BStatement.assignment(loopVariable, index)
         initialIndexValue = start
 
-      default:
-        // assume type is array -> index into array
-        // type of dict -> index into dict keys array
+      case .arrayLiteral:
+        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: forStatement.iterable,
+                                                                          iterableType: iterableType)
+        preAmbleStmts += iterableStmts
 
-        guard let scopeContext = getCurrentScopeContext() else {
-          print("no scope context exists when determining type of loop iterable")
+        guard case .identifier(let arrayLitIdentifier) = iterableIdentifier else {
+          print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
           fatalError()
         }
 
-        let iterableType = environment.type(of: forStatement.iterable,
-                                            enclosingType: getCurrentTLDName(),
-                                            scopeContext: scopeContext)
+        assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableIdentifier, index))
+        initialIndexValue = BExpression.integer(0)
+        finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
+
+      case .dictionaryLiteral:
+        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: forStatement.iterable,
+                                                                          iterableType: iterableType)
+        preAmbleStmts += iterableStmts
+
+        guard case .identifier(let dictLitIdentifier) = iterableIdentifier else {
+          print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
+          fatalError()
+        }
+
+        let keysExpr = BExpression.identifier(normaliser.getShadowDictionaryKeysPrefix(depth: 0) + dictLitIdentifier)
+        assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(iterableIdentifier,
+                                                                             .mapRead(keysExpr, index)))
+        initialIndexValue = BExpression.integer(0)
+        finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + dictLitIdentifier)
+
+      default:
+        // assume identifier used as iterable: type is array -> index into array
+        // type of dict -> index into dict keys array
 
         switch iterableType {
         case .arrayType:
           // Array type - the resulting expression is indexable
-          let (indexableExpr, _) = process(forStatement.iterable)
+          let (indexableExpr, indexableStmts) = process(forStatement.iterable)
+          preAmbleStmts += indexableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
 
           assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(indexableExpr, index))
@@ -124,7 +156,8 @@ extension BoogieTranslator {
 
         case .dictionaryType:
           // Dictionary type - iterate through the values of the dict, accessed via it's keys
-          let (iterableExpr, _) = process(forStatement.iterable)
+          let (iterableExpr, iterableStmts) = process(forStatement.iterable)
+          preAmbleStmts += iterableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
           let iterableKeys = getDictionaryKeysExpression(dict: forStatement.iterable)
 
@@ -152,7 +185,8 @@ extension BoogieTranslator {
 
       // index should be less than finalIndexValue
       let loopInvariantExpression: BExpression = .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue))
-      let loopInvariants = [BProofObligation(expression: loopInvariantExpression, //.lessThan(.old(index), index),
+      //.lessThan(.old(index), index),
+      let loopInvariants = [BProofObligation(expression: loopInvariantExpression,
                                              mark: forStatement.sourceLocation.line,
                                              obligationType: .loopInvariant)
                            ]
@@ -160,11 +194,12 @@ extension BoogieTranslator {
 
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
-      return /*condStmt +*/ [assignIndexInitialValue,
+      return /*condStmt +*/ preAmbleStmts + [assignIndexInitialValue,
         .whileStatement(BWhileStatement(
           condition: .lessThan(index, finalIndexValue),
           body: body,
-          invariants: loopInvariants)
+          invariants: loopInvariants
+        )
         )]
 
     case .emitStatement:
@@ -175,17 +210,18 @@ extension BoogieTranslator {
 
   func process(_ expression: Expression,
                localContext: Bool = true,
-               shadowVariablePrefix: (Int) -> String = { x in return "" },
+               shadowVariablePrefix: ((Int) -> String)? = nil,
                subscriptDepth: Int = 0) -> (BExpression, [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
-      let name = translateIdentifierName(variableDeclaration.identifier.name)
-
       // Some variable types require shadow variables, eg dictionaries (array of keys)
       for declaration in generateVariables(variableDeclaration) {
         addCurrentFunctionVariableDeclaration(declaration)
       }
-      return (.identifier(name), [])
+      let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
+      return (processIdentifier(variableDeclaration.identifier,
+                                localContext: localContext,
+                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [])
 
     case .functionCall(let functionCall):
       return handleFunctionCall(functionCall,
@@ -193,6 +229,7 @@ extension BoogieTranslator {
                                   .identifier(self.structInstanceVariableName!))
 
     case .identifier(let identifier):
+      let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
       return (processIdentifier(identifier,
                                 localContext: localContext,
                                 shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [])
@@ -244,7 +281,7 @@ extension BoogieTranslator {
 
   private func process(_ binaryExpression: BinaryExpression,
                        // Function which generates shadow variable prefix for variable name, (given a depth)
-                       shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
+                       shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
@@ -358,8 +395,6 @@ extension BoogieTranslator {
   }
 
   private func handleAssignment(_ lhs: Expression, _ rhs: Expression) -> (BExpression, [BStatement]) {
-    let (lhsExpr, lhsStmts) = process(lhs)
-
     // For getting type: array dict...
     let currentType = getCurrentTLDName()
     guard let scopeContext = getCurrentScopeContext() else {
@@ -374,53 +409,154 @@ extension BoogieTranslator {
                                    callerProtections: callerProtections,
                                    scopeContext: scopeContext)
 
-    switch rhs {
+    let (lhsExpr, lhsStmts) = process(lhs)
+    var assignmentStatements = [BStatement]()
+    assignmentStatements += lhsStmts
+    switch lhsType {
+    case .arrayType:
+      let rhsSizeExpr: BExpression
+      if case .arrayLiteral = rhs {
+        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier)]
+        guard case .identifier(let identifier) = iterableIdentifier else {
+          print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
+          fatalError()
+        }
+        rhsSizeExpr = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + identifier)
+      } else {
+        // Assignment between two identifiers of sorts
+        let (rhsExpr, rhsStmts) = process(rhs)
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
+        rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
+      }
+
+      // process shadow variables:
+      //  - size
+      // Get size shadow variable and set equal to iterableIdentifier size shadowvariable
+      let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
+      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr))
+
+    case .dictionaryType:
+      let rhsSizeExpr: BExpression
+      let rhsKeysExpr: BExpression
+      if case .dictionaryLiteral = rhs {
+        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier)]
+        guard case .identifier(let identifier) = iterableIdentifier else {
+          print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
+          fatalError()
+        }
+        rhsSizeExpr = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + identifier)
+        rhsKeysExpr = .identifier(normaliser.getShadowDictionaryKeysPrefix(depth: 0) + identifier)
+      } else {
+        // Assignment between two identifiers of sorts
+        let (rhsExpr, rhsStmts) = process(rhs)
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
+        rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
+        rhsKeysExpr =  getDictionaryKeysExpression(dict: rhs)
+      }
+      // process shadow variables:
+      //  - size
+      //  - keys
+      // Get size + keys shadow variable and set equal to iterableIdentifier size + keys shadowvariable
+      let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
+      let lhsKeysExpr =  getDictionaryKeysExpression(dict: lhs)
+      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr))
+      assignmentStatements.append(.assignment(lhsKeysExpr, rhsKeysExpr))
+
+    default:
+      let (rhsExpr, rhsStmts) = process(rhs)
+      assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
+    }
+
+    return (lhsExpr, assignmentStatements)
+  }
+
+  private func processIterableLiterals(iterable: Expression, iterableType: RawType) -> (BExpression, [BStatement]) {
+    let literalVariableName = generateRandomIdentifier(prefix: "lit_")
+    addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
+                                                               rawName: literalVariableName,
+                                                               type: convertType(iterableType)))
+
+    for shadowVariableDecl in generateIterableShadowVariables(name: literalVariableName, type: iterableType) {
+      addCurrentFunctionVariableDeclaration(shadowVariableDecl)
+    }
+
+    let iterableElementType: RawType
+    switch iterableType {
+    case .arrayType(let inner): iterableElementType = inner
+    case .dictionaryType(_, let keyType): iterableElementType = keyType
+    default: iterableElementType = iterableType
+    }
+
+    var assignmentStmts = [BStatement]()
+    switch iterable {
     case .arrayLiteral(let arrayLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 type: convertType(lhsType)))
-      var assignmentStmts = [BStatement]()
       var counter = 0
       for expression in arrayLiteral.elements {
-        let (bexpr, preStatements) = process(expression)
+        let (bExpr, preStatements): (BExpression, [BStatement])
+        // See if nested literal
+        switch expression {
+        case .arrayLiteral, .dictionaryLiteral:
+          (bExpr, preStatements) = processIterableLiterals(iterable: expression, iterableType: iterableElementType)
+        default:
+          (bExpr, preStatements) = process(expression)
+        }
+
         assignmentStmts += preStatements
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bexpr))
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bExpr))
         counter += 1
       }
-      // TODO: Also implement assignment to size shadow variable
-      return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
+
+      //Shadow variables
+      let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
+        assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName), .integer(counter)))
 
     case .dictionaryLiteral(let dictionaryLiteral):
-      let literalVariableName = generateRandomIdentifier(prefix: "lit_")
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
-                                                                 rawName: literalVariableName,
-                                                                 type: convertType(lhsType)))
-      var assignmentStmts = [BStatement]()
+      var counter = 0
+      let keysShadowVariableName = normaliser.getShadowDictionaryKeysPrefix(depth: 0) + literalVariableName
+      //assignmentStmts.append(.assignment(.identifier(keysShadowVariableName), defaultValue(convertType(iterableType))))
       for entry in dictionaryLiteral.elements {
         let (bKeyExpr, bKeyPreStatements) = process(entry.key)
-        let (bValueExpr, bValuePreStatements) = process(entry.value)
+        let (bValueExpr, bValuePreStatements): (BExpression, [BStatement])
+        // See if nested literal
+        switch entry.value {
+        case .arrayLiteral, .dictionaryLiteral:
+          (bValueExpr, bValuePreStatements) = processIterableLiterals(iterable: entry.value,
+                                                                      iterableType: iterableElementType)
+        default:
+          (bValueExpr, bValuePreStatements) = process(entry.value)
+        }
+
         assignmentStmts += bKeyPreStatements
         assignmentStmts += bValuePreStatements
 
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
+
+        // Shadow variables
+        // Set keys shadow variable to stated dictionary keys
+        assignmentStmts.append(.assignment(.mapRead(.identifier(keysShadowVariableName), .integer(counter)), bKeyExpr))
+
+        counter += 1
       }
-      // TODO: Also implement assignment to size + keys shadow variable
-      return (lhsExpr, lhsStmts + assignmentStmts + [.assignment(lhsExpr, .identifier(literalVariableName))])
+
+      // Shadow variables
+      let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
+      assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName), .integer(counter)))
 
     default:
-      break
+      print("unable to process iterable literal - not an iterable!: \(iterable)")
+      fatalError()
     }
 
-    let (rhsExpr, rhsStmts) = process(rhs)
-    return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, rhsExpr)])
+    return (.identifier(literalVariableName), assignmentStmts)
   }
 
   private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
                                           enclosingType: String? = nil,
                                           // For when accessing size/keys
                                           structInstance: BExpression? = nil,
-                                          shadowVariablePrefix: (Int) -> String) -> (BExpression, [BStatement]) {
+                                          shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement]) {
 
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
@@ -472,17 +608,27 @@ extension BoogieTranslator {
         return generateIterableShadowAccess(lhs,
                                             shadowPrefix: normaliser.getShadowArraySizePrefix,
                                             structInstance: structInstance,
-                                            enclosingStruct: currentType,
-                                            localContext: false
+                                            enclosingStruct: currentType
+                                            //localContext: false
                                             )
       case .identifier(let identifier) where identifier.name == "keys":
         // process lhs, to extract the identifier name, and turn into keys_...
-        return generateIterableShadowAccess(lhs,
-                                            shadowPrefix: normaliser.getShadowDictionaryKeysPrefix,
-                                            structInstance: structInstance,
-                                            enclosingStruct: currentType,
-                                            localContext: false
-                                            )
+        // If you've been asked for size shadow variable, you should return that -> to get size of the keys
+        if let shadowPrefix = shadowVariablePrefix {
+          return generateIterableShadowAccess(lhs,
+                                              shadowPrefix: shadowPrefix,
+                                              structInstance: structInstance,
+                                              enclosingStruct: currentType
+                                              //localContext: false
+                                              )
+        } else {
+          return generateIterableShadowAccess(lhs,
+                                              shadowPrefix: normaliser.getShadowDictionaryKeysPrefix,
+                                              structInstance: structInstance,
+                                              enclosingStruct: currentType
+                                              //localContext: false
+                                              )
+        }
       default: break
       }
     default:
@@ -548,9 +694,11 @@ extension BoogieTranslator {
 
   private func handleNestedStructAccess(structName: String,
                                         access: Expression,
-                                        shadowVariablePrefix: (Int) -> String,
+                                        shadowVariablePrefix: ((Int) -> String)?,
                                         subscriptDepth: Int = 0)
         -> ((BExpression) -> (BExpression, [BStatement])) {
+
+    let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
     switch access {
 
     // Final accesses of dot chain \/ \/ \/
@@ -613,7 +761,7 @@ extension BoogieTranslator {
                                                     enclosingType: structName,
                                                     structInstance: structInstance,
                                                     // accessing size/keys, prefix is calculated then
-                                                    shadowVariablePrefix: { _ in "" })
+                                                    shadowVariablePrefix: shadowVariablePrefix) // trying to fix A = B.keys{ _ in "" })
                 })
 
         //print("Unknown enclosing type: \(lhsType)")

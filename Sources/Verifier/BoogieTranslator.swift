@@ -11,7 +11,7 @@ class BoogieTranslator {
   let normaliser: IdentifierNormaliser
 
   // Variables declared in each function
-  var functionVariableDeclarations = [String: [BVariableDeclaration]]()
+  var functionVariableDeclarations = [String: Set<BVariableDeclaration>]()
   // Procedure paramters
   var functionParameters = [String: [BParameterDeclaration]]()
   // Name of procedure return variable
@@ -507,7 +507,7 @@ class BoogieTranslator {
         // Structs are a mapping from struct instance to field
         hole = { x in return .map(.int, x) }
       } else {
-        hole = { x in return x }
+        hole = { $0 }
       }
 
       declarations += generateIterableShadowVariables(name: name,
@@ -524,11 +524,11 @@ class BoogieTranslator {
     return declarations
   }
 
-  private func generateIterableShadowVariables(name: String,
-                                               type: RawType,
-                                               depth: Int = 0,
-                                               declarations: [BVariableDeclaration] = [],
-                                               hole: (BType) -> BType) -> [BVariableDeclaration] {
+  func generateIterableShadowVariables(name: String,
+                                       type: RawType,
+                                       depth: Int = 0,
+                                       declarations: [BVariableDeclaration] = [],
+                                       hole: (BType) -> BType = { $0 }) -> [BVariableDeclaration] {
     var declarations = declarations
     switch type {
     case .arrayType(let innerType), .fixedSizeArrayType(let innerType, _):

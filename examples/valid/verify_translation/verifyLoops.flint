@@ -29,39 +29,55 @@ struct L {
       }
     }
 
-    var js: [Int: [Int]] = [:]
+    var js: [[Int]] = []
     js[0] = [1,2,3,4]
+    var counter: Int = 0
+    var js0_copy: [Int] = js[0]
+    assert(js0_copy.size == 4)
     for let j: Int in js[0] {
+      assert(j<5)
+      assert(counter >= 0)
+      assert(js[0][counter] == j)
+      //assert(js0_copy.size == js[0].size)
+      //assert(js0_copy[counter] == j)
+      counter += 1
+    }
+  }
+
+  // Literal array not implemented yet
+  func literalLoop() {
+    for let j: Int in [1,2,3,4] {
       call(j)
       assert(j<5)
     }
   }
 
-  // Literal array not implemented yet
-  //func literalLoop() {
-  //  for let j: Int in [1,2,3,4] {
-  //    call(j)
-  //    assert(j<5)
-  //  }
-  //}
-
-  //func dictLoop() {
-  //  var d: [Int: Address] = [:]
-  //  for let v: Address in d {
-  //    call(1, v)
-  //  }
-  //}
-
-  func changeIterationConstruct() {
-    var ks: [[Int]] = []
-    ks[0] = [1,2,3]
-    ks[1] = [2,3,4]
-    var a: Int = 1
-    // I think this is a meaningless loop, what are its semantics?
-    for  let k: Int in ks[a] {
-      a += 1
+  func dictLoop() {
+    var d: [Int: Address] = [:]
+    for let v: Address in d {
+      call(1, v)
     }
   }
+
+  func dictLoop2() {
+    var d: [Int: Int] = [:]
+    d[2] = 4
+    d[4] = 6
+    for let v: Int in d {
+      assert(d[2] == v || d[4] == v)
+    }
+  }
+
+  //func changeIterationConstruct() {
+  //  var ks: [[Int]] = []
+  //  ks[0] = [1,2,3]
+  //  ks[1] = [2,3,4]
+  //  var a: Int = 1
+  //  // I think this is a meaningless loop, what are its semantics?
+  //  for  let k: Int in ks[a] {
+  //    a += 1
+  //  }
+  //}
 
   // Can't return array types?
   //func loopFunctionCall() {
@@ -74,7 +90,21 @@ struct L {
   //  return [1,2,3,4]
   //}
 
+  func test() {
+    var is: [Int] = [1,2,3]
+    assert (is.size == 3)
+
+    var js: [Int: Int] = [:]
+    assert (js.size == 0)
+  }
+
   func call(i: Int) { }
 
   func call(i:  Int, a: Address) { }
+}
+
+contract C {}
+
+C :: (any) {
+  public init() {}
 }

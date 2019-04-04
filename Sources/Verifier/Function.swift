@@ -73,21 +73,21 @@ extension BoogieTranslator {
     functionParameters[name] = parameters
   }
 
-   func getFunctionVariableDeclarations(name: String) -> [BVariableDeclaration] {
+   func getFunctionVariableDeclarations(name: String) -> Set<BVariableDeclaration> {
     if functionVariableDeclarations[name] == nil {
-      functionVariableDeclarations[name] = []
+      functionVariableDeclarations[name] = Set<BVariableDeclaration>()
     }
     return functionVariableDeclarations[name]!
   }
 
-   func setFunctionVariableDeclarations(name: String, declarations: [BVariableDeclaration]) {
+   func setFunctionVariableDeclarations(name: String, declarations: Set<BVariableDeclaration>) {
     functionVariableDeclarations[name] = declarations
   }
 
    func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
     if let functionName = getCurrentFunctionName() {
       var variableDeclarations = getFunctionVariableDeclarations(name: functionName)
-      variableDeclarations.append(bvDeclaration)
+      variableDeclarations.insert(bvDeclaration)
       setFunctionVariableDeclarations(name: functionName, declarations: variableDeclarations)
     } else {
       print("Error cannot add variable declaration to function: \(bvDeclaration), not currently translating a function")

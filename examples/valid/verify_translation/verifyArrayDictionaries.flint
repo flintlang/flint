@@ -38,4 +38,11 @@ Array :: (any) {
     let esKeys: [Int] = es.keys
     let esSubSize: Int = es[esKeys[0]].size
   }
+
+  func growSize() {
+    var as: [Int] = [1,2,3,4]
+    let as_size: Int = as.size
+    as[4] = 5
+    assert(as_size + 1 == as.size)
+  }
 }
