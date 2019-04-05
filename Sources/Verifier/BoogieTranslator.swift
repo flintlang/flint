@@ -181,8 +181,8 @@ class BoogieTranslator {
       }
 
       // Record assignment to put in constructor procedure
-      let (assignedExpression, preStatements) = variableDeclaration.assignedExpression == nil
-        ? (defaultValue(type), []) : process(variableDeclaration.assignedExpression!)
+      let (assignedExpression, preStatements, postStatements) = variableDeclaration.assignedExpression == nil
+        ? (defaultValue(type), [], []) : process(variableDeclaration.assignedExpression!)
       if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
         contractConstructorInitialisations[contractDeclaration.identifier.name] = []
       }
@@ -190,6 +190,7 @@ class BoogieTranslator {
       contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
         .assignment(.identifier(name), assignedExpression)
       )
+      contractConstructorInitialisations[contractDeclaration.identifier.name]! += postStatements
     }
 
     // TODO: Handle usage of += 1 and preStmts
@@ -387,11 +388,16 @@ class BoogieTranslator {
     return declarations
   }
 
-  func process(_ parameter: Parameter) -> BParameterDeclaration {
+  func process(_ parameter: Parameter) -> [BParameterDeclaration] {
     let name = parameter.identifier.name
-    return BParameterDeclaration(name: translateIdentifierName(name),
-                                 rawName: name,
-                                 type: convertType(parameter.type))
+    var declarations = [BParameterDeclaration]()
+    //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
+    //let variables = generateParameters(parameter)
+    declarations.append(BParameterDeclaration(name: translateIdentifierName(name),
+                                              rawName: name,
+                                              type: convertType(parameter.type)))
+
+    return declarations
   }
 
   func process(_ token: Token) -> BExpression {

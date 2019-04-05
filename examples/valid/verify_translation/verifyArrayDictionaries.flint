@@ -39,10 +39,24 @@ Array :: (any) {
     let esSubSize: Int = es[esKeys[0]].size
   }
 
-  func growSize() {
-    var as: [Int] = [1,2,3,4]
-    let as_size: Int = as.size
-    as[4] = 5
-    assert(as_size + 1 == as.size)
+  func growSize(a: Address) {
+    var bs: [Int] = [1,2,3,4]
+    let bs_size_before: Int = bs.size
+    bs[4] = 5
+    assert(bs_size_before + 1 == bs.size)
+
+    var as: [Address: Int] = [:]
+    let as_size_before: Int = as.size
+    as[a] = 5
+    assert(as_size_before + 1 == as.size)
   }
+
+  //func callFuncIterable() {
+  //  iterableParam(self.as, self.bs)
+  //}
+
+  //func iterableParam(as: [Int], bs: [Int: Int]) {
+  //  let aSize: Int = as.size
+  //  let bSize: Int = bs.size
+  //}
 }

@@ -21,23 +21,7 @@ extension BoogieTranslator {
 
   func getCurrentFunctionName() -> String? {
     if let behaviourDeclarationMember = currentBehaviourMember {
-      var functionName: String
-      let parameterTypes: [RawType]
-      switch behaviourDeclarationMember {
-      case .functionDeclaration(let functionDeclaration):
-        functionName = functionDeclaration.signature.identifier.name
-        parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
-      case .specialDeclaration(let specialDeclaration):
-        functionName = specialDeclaration.signature.specialToken.description
-        parameterTypes = specialDeclaration.signature.parameters.map({ $0.type.rawType })
-      case .functionSignatureDeclaration(let functionSignatureDeclaration):
-        functionName = functionSignatureDeclaration.identifier.name
-        parameterTypes = functionSignatureDeclaration.parameters.map({ $0.type.rawType })
-      case .specialSignatureDeclaration(let specialSignatureDeclaration):
-        functionName = specialSignatureDeclaration.specialToken.description
-        parameterTypes = specialSignatureDeclaration.parameters.map({ $0.type.rawType })
-      }
-      return translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }))
+      return normaliser.getFunctionName(function: behaviourDeclarationMember, tld: getCurrentTLDName())
     }
     return nil
   }
@@ -176,16 +160,20 @@ extension BoogieTranslator {
 
    func handleFunctionCall(_ functionCall: FunctionCall,
                            structInstance: BExpression? = nil,
-                           owningType: String? = nil) -> (BExpression, [BStatement]) {
+                           owningType: String? = nil) -> (BExpression, [BStatement], [BStatement]) {
     let rawFunctionName = functionCall.identifier.name
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
+    var argumentPostStmts = [BStatement]()
     flintProofObligationSourceLocation[functionCall.sourceLocation.line] = functionCall.sourceLocation
 
     for arg in functionCall.arguments {
-      let (expr, stmts) = process(arg.expression)
+      let (expr, stmts, postStmts) = process(arg.expression)
       argumentsExpressions.append(expr)
+      //TODO: Type of array/dict -> add those here
+      //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
       argumentsStatements += stmts
+      argumentPostStmts += postStmts
     }
 
     switch rawFunctionName {
@@ -198,12 +186,12 @@ extension BoogieTranslator {
       argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
                                                                    mark: flintLine,
                                                                    obligationType: .assertion)))
-      return (.nop, argumentsStatements)
+      return (.nop, argumentsStatements, argumentPostStmts)
 
     // Handle fatal error case
     case "fatalError":
       argumentsStatements.append(.assume(.boolean(false)))
-      return (.nop, argumentsStatements)
+      return (.nop, argumentsStatements, argumentPostStmts)
 
     case "send":
       // send calls should have 2 arguments:
@@ -215,7 +203,7 @@ extension BoogieTranslator {
                                                   "send",
                                                   argumentsExpressions,
                                                   functionCall.sourceLocation)
-      return (.nop, [functionCall])
+      return (.nop, [functionCall], argumentPostStmts)
     default: break
     }
 
@@ -230,10 +218,10 @@ extension BoogieTranslator {
     if isInit {
       // When calling struct constructors, need to identify this special
       // function call and set the owning type to the Struct
-      functionName = normaliser.translateGlobalIdentifierName("init" + parameterTypes.reduce("", { $0 + $1.name }),
+      functionName = normaliser.translateGlobalIdentifierName("init" + normaliser.flattenTypes(types: parameterTypes),
                                                               tld: rawFunctionName)
     } else {
-      functionName = normaliser.translateGlobalIdentifierName(rawFunctionName + parameterTypes.reduce("", { $0 + $1.name }),
+      functionName = normaliser.translateGlobalIdentifierName(rawFunctionName + normaliser.flattenTypes(types: parameterTypes),
                                                               tld: owningType ?? getCurrentTLDName())
     }
 
@@ -254,13 +242,13 @@ extension BoogieTranslator {
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
       argumentsStatements.append(functionCall)
-      return (returnValue, argumentsStatements)
+      return (returnValue, argumentsStatements, [])
     } else {
       // Function doesn't return a value
       // Can assume can't be called as part of a nested expression,
       // has return type Void
       argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions, functionCall.sourceLocation))
-      return (.nop, argumentsStatements)
+      return (.nop, argumentsStatements, argumentPostStmts)
     }
   }
 
@@ -289,7 +277,7 @@ extension BoogieTranslator {
     let oldCtx = setCurrentScopeContext(functionDeclaration.scopeContext)
 
     var bParameters = [BParameterDeclaration]()
-    bParameters += parameters.map({x in process(x)})
+    bParameters += parameters.flatMap({x in process(x)})
     setFunctionParameters(name: currentFunctionName, parameters: bParameters)
     var prePostConditions = [BProofObligation]()
     // TODO: Handle += operators and function calls in pre conditions

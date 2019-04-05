@@ -5,22 +5,23 @@ extension BoogieTranslator {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
-      var (bExpression, statements) = process(expression)
+      var (bExpression, statements, postStatements) = process(expression)
       switch bExpression {
       case BExpression.identifier, BExpression.mapRead, BExpression.nop:
         break
       default:
         statements.append(.expression(bExpression))
       }
-      return statements
+      return statements + postStatements
 
     case .returnStatement(let returnStatement):
       var statements = [BStatement]()
       if let expression = returnStatement.expression {
-        let (translatedExpr, preStatements) = process(expression)
+        let (translatedExpr, preStatements, postStatements) = process(expression)
         statements += preStatements
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr))
+        statements += postStatements
       }
       return statements
 
@@ -37,7 +38,7 @@ extension BoogieTranslator {
       return [.assignment(.identifier(stateVariable), .integer(stateValue))]
 
     case .ifStatement(let ifStatement):
-      let (condExpr, condStmt) = process(ifStatement.condition)
+      let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition)
       let oldCtx = setCurrentScopeContext(ifStatement.ifBodyScopeContext)
       let trueCase = ifStatement.body.flatMap({x in process(x)})
       _ = setCurrentScopeContext(ifStatement.elseBodyScopeContext)
@@ -47,7 +48,7 @@ extension BoogieTranslator {
         .ifStatement(BIfStatement(condition: condExpr,
                                   trueCase: trueCase,
                                   falseCase: falseCase)
-        )]
+        )] + postCondStmt
 
     case .forStatement(let forStatement):
       // Set to new For context
@@ -85,6 +86,7 @@ extension BoogieTranslator {
       //    - shadow keys array
 
       var preAmbleStmts = [BStatement]()
+      var postAmbleStmts = [BStatement]()
       guard let scopeContext = getCurrentScopeContext() else {
         print("no scope context exists when determining type of loop iterable")
         fatalError()
@@ -95,9 +97,10 @@ extension BoogieTranslator {
 
       switch forStatement.iterable {
       case .range(let rangeExpression):
-        let (start, startStmts) = process(rangeExpression.initial)
-        let (bound, boundStmts) = process(rangeExpression.bound)
+        let (start, startStmts, postStartStmts) = process(rangeExpression.initial)
+        let (bound, boundStmts, postEndStmts) = process(rangeExpression.bound)
         preAmbleStmts += startStmts + boundStmts
+        postAmbleStmts += postStartStmts + postEndStmts
         // Adjust the index update accordingly
         let inclusive: Bool = rangeExpression.op.kind == .punctuation(.closedRange)
         if inclusive {
@@ -110,9 +113,10 @@ extension BoogieTranslator {
         initialIndexValue = start
 
       case .arrayLiteral:
-        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: forStatement.iterable,
-                                                                          iterableType: iterableType)
+        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(iterable: forStatement.iterable,
+                                                                                             iterableType: iterableType)
         preAmbleStmts += iterableStmts
+        postAmbleStmts += iterablePostStmts
 
         guard case .identifier(let arrayLitIdentifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -124,9 +128,10 @@ extension BoogieTranslator {
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
 
       case .dictionaryLiteral:
-        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: forStatement.iterable,
-                                                                          iterableType: iterableType)
+        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(iterable: forStatement.iterable,
+                                                                                             iterableType: iterableType)
         preAmbleStmts += iterableStmts
+        postAmbleStmts += iterablePostStmts
 
         guard case .identifier(let dictLitIdentifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -146,8 +151,9 @@ extension BoogieTranslator {
         switch iterableType {
         case .arrayType:
           // Array type - the resulting expression is indexable
-          let (indexableExpr, indexableStmts) = process(forStatement.iterable)
+          let (indexableExpr, indexableStmts, postIndexableStmts) = process(forStatement.iterable)
           preAmbleStmts += indexableStmts
+          postAmbleStmts += postIndexableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
 
           assignValueToVariable = BStatement.assignment(loopVariable, .mapRead(indexableExpr, index))
@@ -156,8 +162,9 @@ extension BoogieTranslator {
 
         case .dictionaryType:
           // Dictionary type - iterate through the values of the dict, accessed via it's keys
-          let (iterableExpr, iterableStmts) = process(forStatement.iterable)
+          let (iterableExpr, iterableStmts, postIterableStmts) = process(forStatement.iterable)
           preAmbleStmts += iterableStmts
+          postAmbleStmts += postIterableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
           let iterableKeys = getDictionaryKeysExpression(dict: forStatement.iterable)
 
@@ -200,7 +207,7 @@ extension BoogieTranslator {
           body: body,
           invariants: loopInvariants
         )
-        )]
+        )] + postAmbleStmts
 
     case .emitStatement:
       // Ignore emit statements
@@ -211,7 +218,8 @@ extension BoogieTranslator {
   func process(_ expression: Expression,
                localContext: Bool = true,
                shadowVariablePrefix: ((Int) -> String)? = nil,
-               subscriptDepth: Int = 0) -> (BExpression, [BStatement]) {
+               subscriptDepth: Int = 0,
+               beingAssignedTo: Bool = false) -> (BExpression, [BStatement], [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       // Some variable types require shadow variables, eg dictionaries (array of keys)
@@ -221,7 +229,7 @@ extension BoogieTranslator {
       let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
       return (processIdentifier(variableDeclaration.identifier,
                                 localContext: localContext,
-                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [])
+                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [], [])
 
     case .functionCall(let functionCall):
       return handleFunctionCall(functionCall,
@@ -232,7 +240,7 @@ extension BoogieTranslator {
       let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
       return (processIdentifier(identifier,
                                 localContext: localContext,
-                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [])
+                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [], [])
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
@@ -244,15 +252,99 @@ extension BoogieTranslator {
                      subscriptDepth: subscriptDepth)
 
     case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts) = process(subscriptExpression.baseExpression,
-                                        localContext: localContext,
-                                        shadowVariablePrefix: shadowVariablePrefix,
-                                        subscriptDepth: subscriptDepth + 1)
-      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression, localContext: true)
-      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
+      var postAmble = [BStatement]()
+      let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
+                                                      localContext: localContext,
+                                                      shadowVariablePrefix: shadowVariablePrefix,
+                                                      subscriptDepth: subscriptDepth + 1)
+      let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
+      postAmble += subPostStmts + indexPostStmts
+      if beingAssignedTo {
+        // - if index is bigger than size (in arrays)
+        // - or if key is not in keys
+        //  - increment size value + (add to keys, if dict)
+        let currentType = getCurrentTLDName()
+        guard let scopeContext = getCurrentScopeContext() else {
+          print("couldn't get scope context of current function - used for updating shadow variable")
+          fatalError()
+        }
+        let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+        let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+        let baseExpressionType = environment.type(of: subscriptExpression.baseExpression,
+                                                  enclosingType: currentType,
+                                                  typeStates: typeStates,
+                                                  callerProtections: callerProtections,
+                                                  scopeContext: scopeContext)
+        switch baseExpressionType {
+        case .arrayType:
+          // is index bigger than size?
+          let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
+          postAmble.append(.ifStatement(BIfStatement(condition: .not(.lessThan(indxExpr, sizeShadowVariable)),
+                                                     trueCase: [
+                                                       // increment size variable
+                                                       .assignment(sizeShadowVariable,
+                                                                   .add(sizeShadowVariable, .integer(1)))
+                                                     ],
+                                                     falseCase: [])))
+        case .dictionaryType:
+          // does keys contain key? - if so, add it!
+          //counter = 0
+          //containsKey = false
+          //while (counter < size && !containsKey) {
+          //  if keys[counter] == indxExpr {
+          //    containsKeys = true
+          //  }
+          //  counter += 1
+          //}
+          //if !containsKey {
+          //  keys[size] = indxExpr
+          //  size += 1
+          //}
+
+          let counterName = generateRandomIdentifier(prefix: "lit_")
+          let counter = BExpression.identifier(counterName)
+          addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: counterName,
+                                                                     rawName: counterName,
+                                                                     type: .int))
+          let containsKeyName = generateRandomIdentifier(prefix: "lit_")
+          let containsKey = BExpression.identifier(containsKeyName)
+          addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: containsKeyName,
+                                                                     rawName: containsKeyName,
+                                                                     type: .boolean))
+
+          let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
+          let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression)
+
+          let checkingContains =
+            BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
+                                            .not(containsKey)),
+                            body: [
+                              .ifStatement(BIfStatement(condition: .equals(.mapRead(keysShadowVariable, counter),
+                                                                           indxExpr),
+                                                        trueCase: [.assignment(containsKey, .boolean(true))],
+                                                        falseCase: [])),
+                              .assignment(counter, .add(counter, .integer(1)))
+                            ],
+                            invariants: [])
+          let update = BIfStatement(condition: .not(containsKey),
+                                    trueCase: [
+                                      // increment size variable
+                                      .assignment(sizeShadowVariable,
+                                                  .add(sizeShadowVariable, .integer(1)))
+                                    ],
+                                    falseCase: [])
+
+          postAmble.append(.assignment(counter, .integer(0)))
+          postAmble.append(.assignment(containsKey, .boolean(false)))
+          postAmble.append(.whileStatement(checkingContains))
+          postAmble.append(.ifStatement(update))
+        default: break
+        }
+      }
+      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, postAmble)
 
     case .literal(let token):
-      return (process(token), [])
+      return (process(token), [], [])
 
     case .inoutExpression(let inoutExpression):
       return process(inoutExpression.expression) // TODO: Consider cases where we need to do pass by reference
@@ -262,7 +354,7 @@ extension BoogieTranslator {
       fatalError()
 
     case .`self`:
-      return (.nop, [])
+      return (.nop, [], [])
 
     // Assumption - can only be used as iterables in for-loops
     //case .range(let rangeExpression):
@@ -281,7 +373,7 @@ extension BoogieTranslator {
 
   private func process(_ binaryExpression: BinaryExpression,
                        // Function which generates shadow variable prefix for variable name, (given a depth)
-                       shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement]) {
+                       shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement], [BStatement]) {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
@@ -291,38 +383,38 @@ extension BoogieTranslator {
     case .equal:
       return handleAssignment(lhs, rhs)
     case .plusEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .add(lhsExpr, rhsExpr))])
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .add(lhsExpr, rhsExpr))], postRhsStmts + postLhsStmts)
     case .minusEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .subtract(lhsExpr, rhsExpr))])
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .subtract(lhsExpr, rhsExpr))], postRhsStmts + postLhsStmts)
     case .timesEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .multiply(lhsExpr, rhsExpr))])
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .multiply(lhsExpr, rhsExpr))], postRhsStmts + postLhsStmts)
     case .divideEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .divide(lhsExpr, rhsExpr))])
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr, .divide(lhsExpr, rhsExpr))], postRhsStmts + postLhsStmts)
 
     case .plus:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.add(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.add(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .minus:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.subtract(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.subtract(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .times:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.multiply(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.multiply(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .divide:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.divide(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.divide(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
 
     //TODO Handle unsafe operators
     //case .overflowingPlus:
@@ -334,42 +426,42 @@ extension BoogieTranslator {
 
     // Comparisons
     case .doubleEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.equals(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.equals(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .notEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.not(.equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.not(.equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .openAngledBracket:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.lessThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.lessThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .closeAngledBracket:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.greaterThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.greaterThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .lessThanOrEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .greaterThanOrEqual:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.not(.lessThan(lhsExpr, rhsExpr)), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.not(.lessThan(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .or:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.or(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.or(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
     case .and:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
 
     case .percent:
-      let (rhsExpr, rhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts) = process(lhs)
-      return (.modulo(lhsExpr, rhsExpr), lhsStmts + rhsStmts)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+      return (.modulo(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
 
       /*
       //TODO: Handle
@@ -394,7 +486,7 @@ extension BoogieTranslator {
     }
   }
 
-  private func handleAssignment(_ lhs: Expression, _ rhs: Expression) -> (BExpression, [BStatement]) {
+  private func handleAssignment(_ lhs: Expression, _ rhs: Expression) -> (BExpression, [BStatement], [BStatement]) {
     // For getting type: array dict...
     let currentType = getCurrentTLDName()
     guard let scopeContext = getCurrentScopeContext() else {
@@ -409,15 +501,19 @@ extension BoogieTranslator {
                                    callerProtections: callerProtections,
                                    scopeContext: scopeContext)
 
-    let (lhsExpr, lhsStmts) = process(lhs)
     var assignmentStatements = [BStatement]()
+    var postAmbleStmts = [BStatement]()
+
+    let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs, beingAssignedTo: true)
     assignmentStatements += lhsStmts
+    postAmbleStmts += postLhsStmts
     switch lhsType {
     case .arrayType:
       let rhsSizeExpr: BExpression
       if case .arrayLiteral = rhs {
-        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
+        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
         assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier)]
+        postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
           fatalError()
@@ -425,9 +521,10 @@ extension BoogieTranslator {
         rhsSizeExpr = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + identifier)
       } else {
         // Assignment between two identifiers of sorts
-        let (rhsExpr, rhsStmts) = process(rhs)
+        let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
         assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
         rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
+        postAmbleStmts += postRhsStmts
       }
 
       // process shadow variables:
@@ -440,8 +537,9 @@ extension BoogieTranslator {
       let rhsSizeExpr: BExpression
       let rhsKeysExpr: BExpression
       if case .dictionaryLiteral = rhs {
-        let (iterableIdentifier, iterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
+        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
         assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier)]
+        postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
           fatalError()
@@ -450,8 +548,9 @@ extension BoogieTranslator {
         rhsKeysExpr = .identifier(normaliser.getShadowDictionaryKeysPrefix(depth: 0) + identifier)
       } else {
         // Assignment between two identifiers of sorts
-        let (rhsExpr, rhsStmts) = process(rhs)
+        let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
         assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
+        postAmbleStmts += postRhsStmts
         rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
         rhsKeysExpr =  getDictionaryKeysExpression(dict: rhs)
       }
@@ -465,14 +564,15 @@ extension BoogieTranslator {
       assignmentStatements.append(.assignment(lhsKeysExpr, rhsKeysExpr))
 
     default:
-      let (rhsExpr, rhsStmts) = process(rhs)
+      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+      postAmbleStmts += postRhsStmts
       assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr)]
     }
 
-    return (lhsExpr, assignmentStatements)
+    return (lhsExpr, assignmentStatements, postAmbleStmts)
   }
 
-  private func processIterableLiterals(iterable: Expression, iterableType: RawType) -> (BExpression, [BStatement]) {
+  private func processIterableLiterals(iterable: Expression, iterableType: RawType) -> (BExpression, [BStatement], [BStatement]) {
     let literalVariableName = generateRandomIdentifier(prefix: "lit_")
     addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
                                                                rawName: literalVariableName,
@@ -490,21 +590,23 @@ extension BoogieTranslator {
     }
 
     var assignmentStmts = [BStatement]()
+    var postAmbleStmts = [BStatement]()
     switch iterable {
     case .arrayLiteral(let arrayLiteral):
       var counter = 0
       for expression in arrayLiteral.elements {
-        let (bExpr, preStatements): (BExpression, [BStatement])
+        let (bExpr, preStatements, postStmts): (BExpression, [BStatement], [BStatement])
         // See if nested literal
         switch expression {
         case .arrayLiteral, .dictionaryLiteral:
-          (bExpr, preStatements) = processIterableLiterals(iterable: expression, iterableType: iterableElementType)
+          (bExpr, preStatements, postStmts) = processIterableLiterals(iterable: expression, iterableType: iterableElementType)
         default:
-          (bExpr, preStatements) = process(expression)
+          (bExpr, preStatements, postStmts) = process(expression)
         }
 
         assignmentStmts += preStatements
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)), bExpr))
+        postAmbleStmts += postStmts
         counter += 1
       }
 
@@ -517,19 +619,20 @@ extension BoogieTranslator {
       let keysShadowVariableName = normaliser.getShadowDictionaryKeysPrefix(depth: 0) + literalVariableName
       //assignmentStmts.append(.assignment(.identifier(keysShadowVariableName), defaultValue(convertType(iterableType))))
       for entry in dictionaryLiteral.elements {
-        let (bKeyExpr, bKeyPreStatements) = process(entry.key)
-        let (bValueExpr, bValuePreStatements): (BExpression, [BStatement])
+        let (bKeyExpr, bKeyPreStatements, bKeyPostStmts) = process(entry.key)
+        let (bValueExpr, bValuePreStatements, bValuePostStmts): (BExpression, [BStatement], [BStatement])
         // See if nested literal
         switch entry.value {
         case .arrayLiteral, .dictionaryLiteral:
-          (bValueExpr, bValuePreStatements) = processIterableLiterals(iterable: entry.value,
+          (bValueExpr, bValuePreStatements, bValuePostStmts) = processIterableLiterals(iterable: entry.value,
                                                                       iterableType: iterableElementType)
         default:
-          (bValueExpr, bValuePreStatements) = process(entry.value)
+          (bValueExpr, bValuePreStatements, bValuePostStmts) = process(entry.value)
         }
 
         assignmentStmts += bKeyPreStatements
         assignmentStmts += bValuePreStatements
+        postAmbleStmts += bValuePostStmts + bKeyPostStmts
 
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr), bValueExpr))
 
@@ -549,14 +652,14 @@ extension BoogieTranslator {
       fatalError()
     }
 
-    return (.identifier(literalVariableName), assignmentStmts)
+    return (.identifier(literalVariableName), assignmentStmts, postAmbleStmts)
   }
 
   private func processDotBinaryExpression(_ binaryExpression: BinaryExpression,
                                           enclosingType: String? = nil,
                                           // For when accessing size/keys
                                           structInstance: BExpression? = nil,
-                                          shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement]) {
+                                          shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement], [BStatement]) {
 
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
@@ -587,18 +690,18 @@ extension BoogieTranslator {
       let holyAccesses = handleNestedStructAccess(structName: "Wei",
                                                   access: rhs,
                                                   shadowVariablePrefix: shadowVariablePrefix)
-      let (lExpr, lStmts) = process(lhs)
-      let (finalExpr, holyStmts) = holyAccesses(lExpr)
-      return (finalExpr, lStmts + holyStmts)
+      let (lExpr, lStmts, lPostStmts) = process(lhs)
+      let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
+      return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
 
     case .userDefinedType(let structName):
       // Return function which returns BExpr to access field
       let holyAccesses = handleNestedStructAccess(structName: structName,
                                                   access: rhs,
                                                   shadowVariablePrefix: shadowVariablePrefix)
-      let (lExpr, lStmts) = process(lhs)
-      let (finalExpr, holyStmts) = holyAccesses(lExpr)
-      return (finalExpr, lStmts + holyStmts)
+      let (lExpr, lStmts, lPostStmts) = process(lhs)
+      let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
+      return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
 
     case .arrayType, .dictionaryType:
       // Check if trying to access .size or .keys fields or arrays/dictionaries
@@ -643,7 +746,7 @@ extension BoogieTranslator {
         case .identifier(let rIdentifier):
           // TODO:
           return (.identifier(normaliser.translateGlobalIdentifierName(rIdentifier.name, tld: lIdentifier.name)),
-                  [])
+                  [], [])
         default:
           break
         }
@@ -663,7 +766,7 @@ extension BoogieTranslator {
                                             depth: Int = 0,
                                             structInstance: BExpression? = nil,
                                             enclosingStruct: String? = nil,
-                                            localContext: Bool = true) -> (BExpression, [BStatement]) {
+                                            localContext: Bool = true) -> (BExpression, [BStatement], [BStatement]) {
     switch iterable {
     case .identifier(let identifier):
       let identifier = processIdentifier(identifier,
@@ -672,19 +775,19 @@ extension BoogieTranslator {
                                          enclosingTLD: enclosingStruct
                                          )
       if let instance = structInstance {
-        return (.mapRead(identifier, instance), [])
+        return (.mapRead(identifier, instance), [], [])
       }
-      return (identifier, [])
+      return (identifier, [], [])
 
     case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts) = generateIterableShadowAccess(subscriptExpression.baseExpression,
-                                                             shadowPrefix: shadowPrefix,
-                                                             depth: depth + 1,
-                                                             structInstance: structInstance,
-                                                             enclosingStruct: enclosingStruct,
-                                                             localContext: localContext)
-      let (indxExpr, indexStmts) = process(subscriptExpression.indexExpression)
-      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts)
+      let (subExpr, subStmts, subPostStmts) = generateIterableShadowAccess(subscriptExpression.baseExpression,
+                                                                           shadowPrefix: shadowPrefix,
+                                                                           depth: depth + 1,
+                                                                           structInstance: structInstance,
+                                                                           enclosingStruct: enclosingStruct,
+                                                                           localContext: localContext)
+      let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression)
+      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, subPostStmts + indexPostStmts)
 
     default:
       print("Can't generate iterable shadow access for \(iterable)")
@@ -696,7 +799,7 @@ extension BoogieTranslator {
                                         access: Expression,
                                         shadowVariablePrefix: ((Int) -> String)?,
                                         subscriptDepth: Int = 0)
-        -> ((BExpression) -> (BExpression, [BStatement])) {
+        -> ((BExpression) -> (BExpression, [BStatement], [BStatement])) {
 
     let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
     switch access {
@@ -707,7 +810,7 @@ extension BoogieTranslator {
         normaliser.translateGlobalIdentifierName(identifier.name, tld: structName)
 
       let lhsExpr = BExpression.identifier(translatedIdentifier)
-      return ({ structInstance in (.mapRead(lhsExpr, structInstance), []) })
+      return ({ structInstance in (.mapRead(lhsExpr, structInstance), [], []) })
 
     case .subscriptExpression(let subscriptExpression):
       guard let accessEnclosingType = access.enclosingType else {
@@ -718,11 +821,11 @@ extension BoogieTranslator {
                                               access: subscriptExpression.baseExpression,
                                               shadowVariablePrefix: shadowVariablePrefix,
                                               subscriptDepth: subscriptDepth + 1)
-      let (indexExpr, indexStmts) = process(subscriptExpression.indexExpression)
+      let (indexExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression)
 
       return ({ structInstance in
-                let (holyExpr, holyStmts) = holyBase(structInstance)
-                return (.mapRead(holyExpr, indexExpr), holyStmts + indexStmts)
+                let (holyExpr, holyStmts, holyPostStmts) = holyBase(structInstance)
+                return (.mapRead(holyExpr, indexExpr), holyStmts + indexStmts, indexPostStmts + holyPostStmts)
               })
 
     case .functionCall(let functionCall):
@@ -776,9 +879,9 @@ extension BoogieTranslator {
                                                     access: binaryEx.lhs,
                                                     shadowVariablePrefix: shadowVariablePrefix)
       return ({ structInstance in
-                let (holyIdentifier, holyIdentifierStmts) = holyIdentifier(structInstance)
-                let (holyExpr, holyExprStmts) = holyAccess(holyIdentifier)
-                return (holyExpr, holyIdentifierStmts + holyExprStmts)
+                let (holyIdentifier, holyIdentifierStmts, holyIdentifierPostStmts) = holyIdentifier(structInstance)
+                let (holyExpr, holyExprStmts, holyExprPostStmts) = holyAccess(holyIdentifier)
+                return (holyExpr, holyIdentifierStmts + holyExprStmts, holyExprPostStmts + holyIdentifierPostStmts)
               })
 
     default:
