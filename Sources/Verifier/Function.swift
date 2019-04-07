@@ -265,8 +265,8 @@ extension BoogieTranslator {
    func process(_ functionDeclaration: FunctionDeclaration,
                 isStructInit: Bool = false,
                 isContractInit: Bool = false,
-                _ callerPreConds: [BProofObligation] = [],
-                _ callerPreStatements: [BStatement] = []
+                callerProtections: [CallerProtection] = [],
+                callerBinding: Identifier? = nil
                 ) -> BTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
@@ -275,6 +275,13 @@ extension BoogieTranslator {
     var returnName = signature.resultType == nil ? nil : generateFunctionReturnVariable()
     var returnType = signature.resultType == nil ? nil : convertType(signature.resultType!)
     let oldCtx = setCurrentScopeContext(functionDeclaration.scopeContext)
+
+    let callers = callerProtections.filter({ !$0.isAny }).map({ $0.identifier })
+
+    // Process caller capabilities
+    // Need the caller preStatements to handle the case when a function is called
+    let (callerPreConds, callerPreStatements) = processCallerCapabilities(callers, callerBinding)
+
 
     var bParameters = [BParameterDeclaration]()
     bParameters += parameters.flatMap({x in process(x)})

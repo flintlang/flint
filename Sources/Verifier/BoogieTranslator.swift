@@ -353,29 +353,25 @@ class BoogieTranslator {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
 
-    let callers = contractBehaviorDeclaration.callerProtections.filter({ !$0.isAny }).map({ $0.identifier })
-    let binding = contractBehaviorDeclaration.callerBinding
-
     var declarations = [BTopLevelDeclaration]()
+
+    let callerBinding = contractBehaviorDeclaration.callerBinding
+    let callerProtections = contractBehaviorDeclaration.callerProtections
 
     for member in contractBehaviorDeclaration.members {
       self.currentBehaviourMember = member
-
-      // Process caller capabilities
-      // Need the caller preStatements to handle the case when a function is called
-      let (preCallerPreConds, callerPreStatements) = processCallerCapabilities(callers, binding)
 
       switch member {
       case .specialDeclaration(let specialDeclaration):
         declarations.append(process(specialDeclaration.asFunctionDeclaration,
                                     isContractInit: true,
-                                    preCallerPreConds,
-                                    callerPreStatements))
+                                    callerProtections: callerProtections,
+                                    callerBinding: callerBinding))
 
       case .functionDeclaration(let functionDeclaration):
         declarations.append(process(functionDeclaration,
-                                    preCallerPreConds,
-                                    callerPreStatements))
+                                    callerProtections: callerProtections,
+                                    callerBinding: callerBinding))
 
       default:
         // TODO: Handle functionSignatureDeclaration case
@@ -452,12 +448,7 @@ class BoogieTranslator {
 
     var callerPreConditions = [BProofObligation]()
     for identifier in callerIdentifiers {
-      guard let propertyInformation = environment.property(identifier.name, getCurrentTLDName()) else {
-        print("Couldn't get property information for identifier: \(identifier)")
-        fatalError()
-      }
-
-      let identifierType = propertyInformation.rawType
+      let identifierType = environment.type(of: identifier.name, enclosingType: getCurrentTLDName())
 
       // If identifier is a function : -> call and false = assumer false;
       // if caller is global variable -> type -> map, caller is within it else caller is it.
@@ -488,6 +479,33 @@ class BoogieTranslator {
                            obligationType: BProofObligationType.preCondition)
           )
         flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+      case .functionType([.basicType(.address)], .basicType(.bool)):
+        //insert check at start of the function -> if call returns false -> assume false
+        // if call returns false, the contract would have aborted and reverted any changes
+        //  -> placing it back in a valid state so np's
+
+        // generate rand tmp variable to hold result of call
+        let tmpIdentifier = generateRandomIdentifier(prefix: "cc_")
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: tmpIdentifier,
+                                                                   rawName: tmpIdentifier,
+                                                                   type: .boolean))
+        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+
+        let functionName = normaliser.translateGlobalIdentifierName(identifier.name + normaliser.flattenTypes(types: [.basicType(.address)]),
+                                                                    tld: getCurrentTLDName())
+
+        preStatements += [
+            // do call
+            .callProcedure([tmpIdentifier],
+                           functionName,
+                           [.identifier(translateGlobalIdentifierName("caller"))],
+                           identifier.sourceLocation),
+
+            // check result -> if call returns false, assume false
+            .ifStatement(BIfStatement(condition: .not(.identifier(tmpIdentifier)),
+                                      trueCase: [BStatement.assume(.boolean(false))],
+                                      falseCase: []))
+        ]
       default:
         print("Not implemented verification of \(identifierType) caller capabilities yet")
         fatalError()

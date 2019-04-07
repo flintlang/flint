@@ -205,7 +205,7 @@ extension BoogieTranslator {
         .whileStatement(BWhileStatement(
           condition: .lessThan(index, finalIndexValue),
           body: body,
-          invariants: loopInvariants
+          invariants: []//loopInvariants
         )
         )] + postAmbleStmts
 
@@ -673,7 +673,7 @@ extension BoogieTranslator {
 
     // For struct fields and methods (eg array size..)
     let currentType = enclosingType ?? getCurrentTLDName()
-    guard let scopeContext = getCurrentFunction().scopeContext else {
+    guard let scopeContext = getCurrentScopeContext() else {//getCurrentFunction().scopeContext else {
       print("couldn't get scope context of current function - used to determine if accessing struct property")
       fatalError()
     }

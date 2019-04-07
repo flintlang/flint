@@ -74,7 +74,7 @@ SimpleDAO @(Join) :: (curator) {
 
 SimpleDAO @(Propose) :: caller <- (tokenHolder) {
   public func newProposal(value: Int, recipient: Address) -> Int
-    mutates (proposals)
+    mutates (proposals, Proposal.proposer, Proposal.payout, Proposal.recipient, Proposal.yea, Proposal.nay, Proposal.finished, Proposal.success, Proposal.voted)
   {
     // Sanity checks omitted to be concise
     let pID: Int = proposals.size + 1;
@@ -102,7 +102,7 @@ SimpleDAO @(Propose) :: (curator) {
 
 SimpleDAO @(Vote) :: caller <- (tokenHolder) {
   public func vote(approve: Bool)
-    mutates (proposals)
+    mutates (proposals, Proposal.yea, Proposal.nay, Proposal.voted)
   {
     if proposals[proposal].voted[caller] {
       fatalError()
@@ -118,7 +118,7 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
   }
 
   public func executeProposal()
-    mutates (proposals, Wei.rawValue)
+    mutates (proposals, Proposal.finished, Proposal.success, Wei.rawValue)
   {
     if(caller != proposals[proposal].proposer || proposals[proposal].finished) {
       fatalError()
