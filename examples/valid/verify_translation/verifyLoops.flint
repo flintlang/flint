@@ -31,14 +31,21 @@ struct L {
 
     var js: [[Int]] = []
     js[0] = [1,2,3,4]
+    assert(js[0][0] == 1)
+    assert(js[0][1] == 2)
+    assert(js[0][2] == 3)
+    assert(js[0][3] == 4)
     var counter: Int = 0
     var js0_copy: [Int] = js[0]
     assert(js0_copy.size == 4)
+    assert(js[0].size == 4)
     for let j: Int in js[0] {
       assert(j<5)
       assert(counter >= 0)
+      assert(js0_copy.size == js[0].size)
+      assert(counter < js0_copy.size)
+      assert(counter < js[0].size)
       assert(js[0][counter] == j)
-      //assert(js0_copy.size == js[0].size)
       //assert(js0_copy[counter] == j)
       counter += 1
     }

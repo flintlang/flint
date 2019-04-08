@@ -3,8 +3,8 @@
 // ----------------------------------------------------------------------------
 
 contract FlintToken (Minting, MintingFinished) {
-    var balances: [Address: Int] = [:]
-    var allowed: [Address: [Address: Int]] = [:]
+    var balances: [Address: Int]
+    var allowed: [Address: [Address: Int]]
     var totalSupply: Int = 0
     var owner: Address
 
@@ -30,6 +30,8 @@ contract FlintToken (Minting, MintingFinished) {
 FlintToken @(any) :: caller <- (any) {
   public init() {
     self.owner = caller
+    self.balances = [:]
+    self.allowed = [:]
     become Minting
   }
 

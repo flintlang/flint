@@ -7,8 +7,8 @@
 // ----------------------------------------------------------------------------
 
 contract StandardToken {
-    var balances: [Address: Int] = [:]
-    var allowed: [Address: [Address: Int]] = [:]
+    var balances: [Address: Int]
+    var allowed: [Address: [Address: Int]]
     var totalSupply: Int = 0
 
     event Transfer {
@@ -24,7 +24,10 @@ contract StandardToken {
 }
 
 StandardToken :: (any) {
-  public init() {}
+  public init() {
+    balances = [:]
+    allowed = [:]
+  }
 
   // Total number of tokens in existence
   public func totalSupply() -> Int {

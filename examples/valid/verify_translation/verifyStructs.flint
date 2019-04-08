@@ -43,6 +43,8 @@ struct S {
   public func wow()
     mutates (is, j)
     pre(2 == 2)
+    pre (j < 10)
+    post (j < 10)
   {
     is[0] = 0
     j = 1
@@ -65,7 +67,7 @@ Test :: (any) {
     let i: Int = s.i
 
     //Should violate S's invariant
-    s.i = 0
+    //s.i = 0
 
     let j: J = J(&s)
     let k: Int = j.ss[i+=1].is[1]

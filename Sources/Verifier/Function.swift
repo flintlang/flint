@@ -282,10 +282,64 @@ extension BoogieTranslator {
     // Need the caller preStatements to handle the case when a function is called
     let (callerPreConds, callerPreStatements) = processCallerCapabilities(callers, callerBinding)
 
+    var functionPostAmble = [BStatement]()
+    var functionPreAmble = [BStatement]()
+
+    if isContractInit {
+      functionPostAmble += contractConstructorInitialisations[getCurrentTLDName()] ?? []
+    }
+
+    var prePostConditions = [BProofObligation]()
     var bParameters = [BParameterDeclaration]()
     bParameters += parameters.flatMap({x in process(x)})
+    if let cTld = currentTLD {
+      switch cTld {
+      case .structDeclaration:
+        self.structInstanceVariableName = generateStructInstanceVariableName()
+        if isStructInit {
+          returnType = .int
+          returnName = generateFunctionReturnVariable()
+
+          let nextInstance = normaliser.generateStructInstanceVariable(structName: getCurrentTLDName())
+
+          addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: self.structInstanceVariableName!,
+                                                                     rawName: self.structInstanceVariableName!,
+                                                                     type: .int))
+          let reserveNextStructInstance: [BStatement] = [
+            .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
+            .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
+          ]
+          // Include nextInstance in modifies
+          var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
+                                          sourceLocation: functionDeclaration.sourceLocation)
+          nextInstanceId.enclosingType = getCurrentTLDName()
+          signature.mutates.append(nextInstanceId)
+
+          let returnAllocatedStructInstance: [BStatement] = [
+            .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
+            //.returnStatement
+          ]
+
+          let structInitPost: BExpression =
+            .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
+
+          prePostConditions.append(BProofObligation(expression: structInitPost,
+                                                    mark: getMark(functionDeclaration.sourceLocation),
+                                                    obligationType: .postCondition))
+          registerProofObligation(functionDeclaration.sourceLocation)
+
+          functionPreAmble += reserveNextStructInstance
+          functionPostAmble += returnAllocatedStructInstance
+        } else {
+          bParameters.append(BParameterDeclaration(name: self.structInstanceVariableName!,
+                                                   rawName: self.structInstanceVariableName!,
+                                                   type: .int))
+        }
+      default: break
+      }
+    }
     setFunctionParameters(name: currentFunctionName, parameters: bParameters)
-    var prePostConditions = [BProofObligation]()
+
     // TODO: Handle += operators and function calls in pre conditions
     for condition in signature.prePostConditions {
       switch condition {
@@ -300,60 +354,6 @@ extension BoogieTranslator {
                                                   obligationType: .postCondition))
         registerProofObligation(e.sourceLocation)
       }
-    }
-
-    var functionPostAmble = [BStatement]()
-    var functionPreAmble = [BStatement]()
-
-    if isContractInit {
-      functionPostAmble += contractConstructorInitialisations[getCurrentTLDName()] ?? []
-    }
-
-    if let cTld = currentTLD {
-      switch cTld {
-      case .structDeclaration:
-       self.structInstanceVariableName = generateStructInstanceVariableName()
-       if isStructInit {
-         returnType = .int
-         returnName = generateFunctionReturnVariable()
-
-         let nextInstance = normaliser.generateStructInstanceVariable(structName: getCurrentTLDName())
-
-         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: self.structInstanceVariableName!,
-                                                                    rawName: self.structInstanceVariableName!,
-                                                                    type: .int))
-         let reserveNextStructInstance: [BStatement] = [
-           .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
-           .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
-         ]
-         // Include nextInstance in modifies
-         var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
-                                         sourceLocation: functionDeclaration.sourceLocation)
-         nextInstanceId.enclosingType = getCurrentTLDName()
-         signature.mutates.append(nextInstanceId)
-
-         let returnAllocatedStructInstance: [BStatement] = [
-           .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
-           //.returnStatement
-         ]
-
-         let structInitPost: BExpression =
-           .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
-
-         prePostConditions.append(BProofObligation(expression: structInitPost,
-                                                   mark: getMark(functionDeclaration.sourceLocation),
-                                                   obligationType: .postCondition))
-         registerProofObligation(functionDeclaration.sourceLocation)
-
-         functionPreAmble += reserveNextStructInstance
-         functionPostAmble += returnAllocatedStructInstance
-       } else {
-         bParameters.append(BParameterDeclaration(name: self.structInstanceVariableName!,
-                                                  rawName: self.structInstanceVariableName!,
-                                                  type: .int))
-       }
-      default: break
-       }
     }
 
     let bStatements = functionPreAmble + body.flatMap({x in process(x)}) + functionPostAmble

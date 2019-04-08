@@ -205,7 +205,7 @@ extension BoogieTranslator {
         .whileStatement(BWhileStatement(
           condition: .lessThan(index, finalIndexValue),
           body: body,
-          invariants: []//loopInvariants
+          invariants: loopInvariants
         )
         )] + postAmbleStmts
 

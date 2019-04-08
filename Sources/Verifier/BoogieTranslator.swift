@@ -728,6 +728,8 @@ class BoogieTranslator {
       return BType.map(convertType(keyType), convertType(valueType))
     case .arrayType(let type):
       return .map(.int, convertType(type))
+    case .fixedSizeArrayType(let type, let size):
+      return .map(.int, convertType(type))
     case .inoutType(let type):
       return convertType(type)
     case .userDefinedType:
