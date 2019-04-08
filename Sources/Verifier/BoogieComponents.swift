@@ -1,4 +1,5 @@
 import AST
+import Foundation
 
 enum BoogieError {
   // Failure (line number, error string)
@@ -10,6 +11,15 @@ enum BoogieError {
   case modifiesFailure(Int, String)
   case loopInvariantEntryFailure(Int, String)
   case loopInvariantMaintenanceFailure(Int, String)
+}
+
+struct VerifierMappingKey: Hashable {
+  let file: String
+  let flintLine: Int
+
+  var hashValue: Int {
+    return file.hashValue + flintLine ^ 2
+  }
 }
 
 public struct IdentifierNormaliser {

@@ -194,10 +194,10 @@ extension BoogieTranslator {
       let loopInvariantExpression: BExpression = .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue))
       //.lessThan(.old(index), index),
       let loopInvariants = [BProofObligation(expression: loopInvariantExpression,
-                                             mark: forStatement.sourceLocation.line,
+                                             mark: getMark(forStatement.sourceLocation),
                                              obligationType: .loopInvariant)
                            ]
-      flintProofObligationSourceLocation[forStatement.sourceLocation.line] = forStatement.sourceLocation
+      registerProofObligation(forStatement.sourceLocation)
 
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
@@ -673,10 +673,7 @@ extension BoogieTranslator {
 
     // For struct fields and methods (eg array size..)
     let currentType = enclosingType ?? getCurrentTLDName()
-    guard let scopeContext = getCurrentScopeContext() else {//getCurrentFunction().scopeContext else {
-      print("couldn't get scope context of current function - used to determine if accessing struct property")
-      fatalError()
-    }
+    let scopeContext = getCurrentScopeContext() ?? ScopeContext()
     let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
     let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
     let lhsType = environment.type(of: lhs,

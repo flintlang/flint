@@ -9,6 +9,13 @@ struct Proposal {
   var success: Bool = false
   var voted: [Address: Bool]
 
+  invariant (value >= 0)
+  invariant (yesVotes >= 0)
+  invariant (noVotes >= 0)
+  invariant (quorum >= 0)
+  invariant (yesVotes + noVotes == voted.size)
+  invariant (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes))
+
   public init() {
     self.voted = [:]
   }

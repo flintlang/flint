@@ -1,4 +1,5 @@
 contract Test {
+  var s: S
 }
 
 struct J {
@@ -50,17 +51,21 @@ struct S {
 
 Test :: (any) {
   public init()
+    mutates (S.i, S.is, S.j, S.ks)
     pre(1==1)
   {
+    s = S()
   }
 
   @payable
   public func t(implicit w: Wei)
-    mutates (S.i, S.is, S.j, S.ks, J.s, J.ss, Wei.rawValue)
+    mutates (s, S.i, S.is, S.j, S.ks, J.s, J.ss, Wei.rawValue)
   {
     let v: Int = w.getRawValue()
-    let s: S = S()
     let i: Int = s.i
+
+    //Should violate S's invariant
+    s.i = 0
 
     let j: J = J(&s)
     let k: Int = j.ss[i+=1].is[1]

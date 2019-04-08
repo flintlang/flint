@@ -165,7 +165,7 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
-    flintProofObligationSourceLocation[functionCall.sourceLocation.line] = functionCall.sourceLocation
+      registerProofObligation(functionCall.sourceLocation)
 
     for arg in functionCall.arguments {
       let (expr, stmts, postStmts) = process(arg.expression)
@@ -181,10 +181,9 @@ extension BoogieTranslator {
     case "assert":
       // assert that assert function call always has one argument
       assert (argumentsExpressions.count == 1)
-      let flintLine = functionCall.identifier.sourceLocation.line
-      flintProofObligationSourceLocation[flintLine] = functionCall.sourceLocation
+      registerProofObligation(functionCall.identifier.sourceLocation)
       argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
-                                                                   mark: flintLine,
+                                                                   mark: getMark(functionCall.identifier.sourceLocation),
                                                                    obligationType: .assertion)))
       return (.nop, argumentsStatements, argumentPostStmts)
 
@@ -202,7 +201,7 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure([],
                                                   "send",
                                                   argumentsExpressions,
-                                                  functionCall.sourceLocation)
+                                                  getMark(functionCall.sourceLocation))
       return (.nop, [functionCall], argumentPostStmts)
     default: break
     }
@@ -237,7 +236,7 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure([returnValueVariable],
                                                    functionName,
                                                    argumentsExpressions,
-                                                   functionCall.sourceLocation)
+                                                   getMark(functionCall.sourceLocation))
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
@@ -247,7 +246,7 @@ extension BoogieTranslator {
       // Function doesn't return a value
       // Can assume can't be called as part of a nested expression,
       // has return type Void
-      argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions, functionCall.sourceLocation))
+      argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions, getMark(functionCall.sourceLocation)))
       return (.nop, argumentsStatements, argumentPostStmts)
     }
   }
@@ -266,7 +265,8 @@ extension BoogieTranslator {
                 isStructInit: Bool = false,
                 isContractInit: Bool = false,
                 callerProtections: [CallerProtection] = [],
-                callerBinding: Identifier? = nil
+                callerBinding: Identifier? = nil,
+                structInvariants: [BProofObligation] = []
                 ) -> BTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
@@ -282,7 +282,6 @@ extension BoogieTranslator {
     // Need the caller preStatements to handle the case when a function is called
     let (callerPreConds, callerPreStatements) = processCallerCapabilities(callers, callerBinding)
 
-
     var bParameters = [BParameterDeclaration]()
     bParameters += parameters.flatMap({x in process(x)})
     setFunctionParameters(name: currentFunctionName, parameters: bParameters)
@@ -292,14 +291,14 @@ extension BoogieTranslator {
       switch condition {
       case .pre(let e):
         prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: e.sourceLocation.line,
+                                                  mark: getMark(e.sourceLocation),
                                                   obligationType: .preCondition))
-        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
+        registerProofObligation(e.sourceLocation)
       case .post(let e):
         prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: e.sourceLocation.line,
+                                                  mark: getMark(e.sourceLocation),
                                                   obligationType: .postCondition))
-        flintProofObligationSourceLocation[e.sourceLocation.line] = e.sourceLocation
+        registerProofObligation(e.sourceLocation)
       }
     }
 
@@ -342,9 +341,9 @@ extension BoogieTranslator {
            .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
          prePostConditions.append(BProofObligation(expression: structInitPost,
-                                                   mark: functionDeclaration.sourceLocation.line,
+                                                   mark: getMark(functionDeclaration.sourceLocation),
                                                    obligationType: .postCondition))
-         flintProofObligationSourceLocation[functionDeclaration.sourceLocation.line] = functionDeclaration.sourceLocation
+         registerProofObligation(functionDeclaration.sourceLocation)
 
          functionPreAmble += reserveNextStructInstance
          functionPostAmble += returnAllocatedStructInstance
@@ -362,7 +361,7 @@ extension BoogieTranslator {
     // Procedure must hold invariant
     let invariants = (tldInvariants[getCurrentTLDName()] ?? [])
       // drop contract invariants, if init function
-      .filter({ !(isContractInit || isStructInit) || ($0.obligationType != .preCondition) }) + structInvariants
+      .filter({ !(isContractInit || isStructInit) || ($0.obligationType.isPreCondition) }) + structInvariants
     prePostConditions += invariants
 
     var modifies = [String]()
@@ -404,7 +403,7 @@ extension BoogieTranslator {
     _ = setCurrentScopeContext(oldCtx)
 
     // Allow us to identify failing functions
-    flintProofObligationSourceLocation[functionDeclaration.sourceLocation.line] = functionDeclaration.sourceLocation
+    registerProofObligation(functionDeclaration.sourceLocation)
     return .procedureDeclaration(BProcedureDeclaration(
       name: currentFunctionName,
       returnType: returnType,
@@ -414,7 +413,7 @@ extension BoogieTranslator {
       modifies: modifiesClauses,
       statements: callerPreStatements + bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      sourceLocation: functionDeclaration.sourceLocation
+      mark: getMark(functionDeclaration.sourceLocation)
     ))
   }
 }

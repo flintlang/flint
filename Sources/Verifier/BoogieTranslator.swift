@@ -22,7 +22,7 @@ class BoogieTranslator {
   var functionModifiesShadow = [String: Set<String>]()
 
   // Source location that each proof oligation corresponds to
-  var flintProofObligationSourceLocation = [Int: SourceLocation]()
+  var flintProofObligationSourceLocation = [VerifierMappingKey: SourceLocation]()
 
   // Current behaviour member - function / special / signature declaration ..
   var currentBehaviourMember: ContractBehaviorMember?
@@ -43,8 +43,6 @@ class BoogieTranslator {
 
   // List of invariants for each tld
   var tldInvariants = [String: [BProofObligation]]()
-  // List of all struct invariants
-  var structInvariants = [BProofObligation]()
 
   var enums = [String]()
 
@@ -118,10 +116,48 @@ class BoogieTranslator {
         modifies: [],
         statements: [], //TODO: Statements
         variables: [], // TODO: variables
-        sourceLocation: SourceLocation.INVALID
+        mark: getMark(SourceLocation.INVALID)
         )
       )
     )
+
+    var structInvariants = [BProofObligation]()
+    for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .structDeclaration(structDeclaration)
+
+      let enclosingStruct = structDeclaration.identifier.name
+      for declaration in structDeclaration.invariantDeclarations {
+        //Invariants are turned into both pre and post conditions
+        self.structInstanceVariableName = "i" // TODO: Check that i is unique
+
+        let expr = process(declaration).0 // TODO: Handle usage of += 1 and preStmts
+
+        // All allocated structs, i < nextInstance => invariantExpr
+        let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
+                                                             rawName: structInstanceVariableName!,
+                                                             type: .int)],
+                                         .implies(.lessThan(.identifier(self.structInstanceVariableName!),
+                                                            .identifier(normaliser.generateStructInstanceVariable(structName: enclosingStruct))),
+                                                   expr))
+
+        self.structInstanceVariableName = nil
+
+        structInvariants.append(BProofObligation(expression: inv,
+                                                      mark: getMark(declaration.sourceLocation),
+                                                      obligationType: .preCondition))
+        structInvariants.append(BProofObligation(expression: inv,
+                                                      mark: getMark(declaration.sourceLocation),
+                                                      obligationType: .postCondition))
+        registerProofObligation(declaration.sourceLocation)
+      }
+      self.currentTLD = nil
+    }
+
+    for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
+      self.currentTLD = .structDeclaration(structDeclaration)
+      declarations += process(structDeclaration, structInvariants)
+      self.currentTLD = nil
+    }
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractDeclaration(contractDeclaration)
@@ -136,11 +172,6 @@ class BoogieTranslator {
       self.currentTLD = nil
     }
 
-    for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
-      self.currentTLD = .structDeclaration(structDeclaration)
-      declarations += process(structDeclaration)
-      self.currentTLD = nil
-    }
 
     for case .enumDeclaration(let enumDeclaration) in topLevelModule.declarations {
       self.currentTLD = .enumDeclaration(enumDeclaration)
@@ -150,7 +181,7 @@ class BoogieTranslator {
 
     for case .contractBehaviorDeclaration(let contractBehaviorDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractBehaviorDeclaration(contractBehaviorDeclaration)
-      declarations += process(contractBehaviorDeclaration)
+      declarations += process(contractBehaviorDeclaration, structInvariants: structInvariants)
       self.currentTLD = nil
     }
 
@@ -198,12 +229,12 @@ class BoogieTranslator {
     for declaration in contractDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
       invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: declaration.sourceLocation.line,
+                                                    mark: getMark(declaration.sourceLocation),
                                                     obligationType: .preCondition))
       invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: declaration.sourceLocation.line,
+                                                    mark: getMark(declaration.sourceLocation),
                                                     obligationType: .postCondition))
-      flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
+      registerProofObligation(declaration.sourceLocation)
     }
     tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
@@ -271,7 +302,7 @@ class BoogieTranslator {
     return []
   }
 
-   func process(_ structDeclaration: StructDeclaration) -> [BTopLevelDeclaration] {
+   func process(_ structDeclaration: StructDeclaration, _ structInvariantDeclarations: [BProofObligation]) -> [BTopLevelDeclaration] {
     // Skip special global struct - too solidity low level - TODO: Is this necessary?
     if structDeclaration.identifier.name == "Flint$Global" { return [] }
 
@@ -306,50 +337,24 @@ class BoogieTranslator {
                                                                   rawName: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
                                                                   type: .int)))
 
-    var invariantDeclarations = [BProofObligation]()
-    for declaration in structDeclaration.invariantDeclarations {
-      //Invariants are turned into both pre and post conditions
-      self.structInstanceVariableName = "i" // TODO: Check that i is unique
-
-      let expr = process(declaration).0 // TODO: Handle usage of += 1 and preStmts
-
-      // All allocated structs, i < nextInstance => invariantExpr
-      let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
-                                                           rawName: structInstanceVariableName!,
-                                                           type: .int)],
-                                       .implies(.lessThan(.identifier(self.structInstanceVariableName!),
-                                                          .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
-                                                 expr))
-
-      self.structInstanceVariableName = nil
-
-      invariantDeclarations.append(BProofObligation(expression: inv,
-                                                    mark: declaration.sourceLocation.line,
-                                                    obligationType: .preCondition))
-      invariantDeclarations.append(BProofObligation(expression: inv,
-                                                    mark: declaration.sourceLocation.line,
-                                                    obligationType: .postCondition))
-      flintProofObligationSourceLocation[declaration.sourceLocation.line] = declaration.sourceLocation
-    }
-    self.structInvariants += invariantDeclarations
-
     for functionDeclaration in structDeclaration.functionDeclarations {
       self.currentBehaviourMember = .functionDeclaration(functionDeclaration)
-      declarations.append(process(functionDeclaration))
+      declarations.append(process(functionDeclaration, structInvariants: structInvariantDeclarations))
       self.currentBehaviourMember = nil
     }
 
     for specialDeclaration in structDeclaration.specialDeclarations {
       let initFunction = specialDeclaration.asFunctionDeclaration
       self.currentBehaviourMember = .functionDeclaration(initFunction)
-      declarations.append(process(initFunction, isStructInit: true))
+      declarations.append(process(initFunction, isStructInit: true, structInvariants: structInvariantDeclarations))
       self.currentBehaviourMember = nil
     }
 
     return declarations
   }
 
-  func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration,
+               structInvariants: [BProofObligation]) -> [BTopLevelDeclaration] {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
 
@@ -366,12 +371,14 @@ class BoogieTranslator {
         declarations.append(process(specialDeclaration.asFunctionDeclaration,
                                     isContractInit: true,
                                     callerProtections: callerProtections,
-                                    callerBinding: callerBinding))
+                                    callerBinding: callerBinding,
+                                    structInvariants: structInvariants))
 
       case .functionDeclaration(let functionDeclaration):
         declarations.append(process(functionDeclaration,
                                     callerProtections: callerProtections,
-                                    callerBinding: callerBinding))
+                                    callerBinding: callerBinding,
+                                    structInvariants: structInvariants))
 
       default:
         // TODO: Handle functionSignatureDeclaration case
@@ -457,10 +464,10 @@ class BoogieTranslator {
         callerPreConditions.append(
           BProofObligation(expression: .equals(.identifier(translateGlobalIdentifierName("caller")),
                                                .identifier(translateGlobalIdentifierName(identifier.name))),
-                           mark: identifier.sourceLocation.line,
+                           mark: getMark(identifier.sourceLocation),
                            obligationType: BProofObligationType.preCondition)
           )
-        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+        registerProofObligation(identifier.sourceLocation)
       case.arrayType(.basicType(.address)):
         // eg (exists i: int :: caller == accounts_Bank[i]);
         let existsExpr: BExpression =
@@ -475,10 +482,10 @@ class BoogieTranslator {
 
         callerPreConditions.append(
           BProofObligation(expression: existsExpr,
-                           mark: identifier.sourceLocation.line,
+                           mark: getMark(identifier.sourceLocation),
                            obligationType: BProofObligationType.preCondition)
           )
-        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+        registerProofObligation(identifier.sourceLocation)
       case .functionType([.basicType(.address)], .basicType(.bool)):
         //insert check at start of the function -> if call returns false -> assume false
         // if call returns false, the contract would have aborted and reverted any changes
@@ -489,7 +496,7 @@ class BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: tmpIdentifier,
                                                                    rawName: tmpIdentifier,
                                                                    type: .boolean))
-        flintProofObligationSourceLocation[identifier.sourceLocation.line] = identifier.sourceLocation
+        registerProofObligation(identifier.sourceLocation)
 
         let functionName = normaliser.translateGlobalIdentifierName(identifier.name + normaliser.flattenTypes(types: [.basicType(.address)]),
                                                                     tld: getCurrentTLDName())
@@ -499,7 +506,7 @@ class BoogieTranslator {
             .callProcedure([tmpIdentifier],
                            functionName,
                            [.identifier(translateGlobalIdentifierName("caller"))],
-                           identifier.sourceLocation),
+                           getMark(identifier.sourceLocation)),
 
             // check result -> if call returns false, assume false
             .ifStatement(BIfStatement(condition: .not(.identifier(tmpIdentifier)),
@@ -763,6 +770,14 @@ class BoogieTranslator {
     }
   }
 
+  func registerProofObligation(_ sourceLocation: SourceLocation) {
+    flintProofObligationSourceLocation[getMark(sourceLocation)] = sourceLocation
+  }
+
+  func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
+    return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
+  }
+
   func generateFlint2BoogieMapping(code: String) -> [Int: SourceLocation] {
     var mapping = [Int: SourceLocation]()
 
@@ -774,16 +789,19 @@ class BoogieTranslator {
       boogieLine += 1
 
       // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+)")
+      let matches = line.groups(for: "// #MARKER# ([0-9]+) (.*)")
       if matches.count == 1 {
         // Extract line number
         let line = Int(matches[0][1])!
         if line < 0 { //Invalid
           continue
         }
-        guard let sourceLocation = flintProofObligationSourceLocation[line] else {
+        let file: String = matches[0][2]
+        guard let sourceLocation = flintProofObligationSourceLocation[VerifierMappingKey(file: file, flintLine: line)] else {
           print("Couldn't find marker for proof obligation")
+          print(flintProofObligationSourceLocation)
           print(line)
+          print(file)
           fatalError()
         }
         mapping[boogieLine] = sourceLocation
