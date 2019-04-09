@@ -165,7 +165,6 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
-    registerProofObligation(functionCall.sourceLocation)
 
     for arg in functionCall.arguments {
       let (expr, stmts, postStmts) = process(arg.expression)
@@ -181,15 +180,14 @@ extension BoogieTranslator {
     case "assert":
       // assert that assert function call always has one argument
       assert (argumentsExpressions.count == 1)
-      registerProofObligation(functionCall.identifier.sourceLocation)
       argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
-                                                                   mark: getMark(functionCall.identifier.sourceLocation),
+                                                                   mark: registerProofObligation(functionCall.sourceLocation),
                                                                    obligationType: .assertion)))
       return (.nop, argumentsStatements, argumentPostStmts)
 
     // Handle fatal error case
     case "fatalError":
-      argumentsStatements.append(.assume(.boolean(false)))
+      argumentsStatements.append(.assume(.boolean(false), registerProofObligation(functionCall.sourceLocation)))
       return (.nop, argumentsStatements, argumentPostStmts)
 
     case "send":
@@ -198,11 +196,10 @@ extension BoogieTranslator {
       assert (argumentsExpressions.count == 2)
 
       // Call Boogie send function
-      registerProofObligation(functionCall.sourceLocation)
-      let functionCall = BStatement.callProcedure([],
-                                                  "send",
-                                                  argumentsExpressions,
-                                                  getMark(functionCall.sourceLocation))
+      let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
+                                                                 procedureName: "send",
+                                                                 arguments: argumentsExpressions,
+                                                                 mark: registerProofObligation(functionCall.sourceLocation)))
       return (.nop, [functionCall], argumentPostStmts)
     default: break
     }
@@ -234,10 +231,10 @@ extension BoogieTranslator {
       // Function returns a value
       let returnValueVariable = generateRandomIdentifier(prefix: "v_") // Variable to hold return value
       let returnValue = BExpression.identifier(returnValueVariable)
-      let functionCall = BStatement.callProcedure([returnValueVariable],
-                                                   functionName,
-                                                   argumentsExpressions,
-                                                   getMark(functionCall.sourceLocation))
+      let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [returnValueVariable],
+                                                                 procedureName: functionName,
+                                                                 arguments: argumentsExpressions,
+                                                                 mark: registerProofObligation(functionCall.sourceLocation)))
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
@@ -247,7 +244,10 @@ extension BoogieTranslator {
       // Function doesn't return a value
       // Can assume can't be called as part of a nested expression,
       // has return type Void
-      argumentsStatements.append(.callProcedure([], functionName, argumentsExpressions, getMark(functionCall.sourceLocation)))
+      argumentsStatements.append(.callProcedure(BCallProcedure(returnedValues: [],
+                                                               procedureName: functionName,
+                                                               arguments: argumentsExpressions,
+                                                               mark: registerProofObligation(functionCall.sourceLocation))))
       return (.nop, argumentsStatements, argumentPostStmts)
     }
   }
@@ -307,8 +307,12 @@ extension BoogieTranslator {
                                                                      rawName: self.structInstanceVariableName!,
                                                                      type: .int))
           let reserveNextStructInstance: [BStatement] = [
-            .assignment(.identifier(self.structInstanceVariableName!), .identifier(nextInstance)),
-            .assignment(.identifier(nextInstance), .add(.identifier(nextInstance), .integer(1)))
+            .assignment(.identifier(self.structInstanceVariableName!),
+                        .identifier(nextInstance),
+                        registerProofObligation(functionDeclaration.sourceLocation)),
+            .assignment(.identifier(nextInstance),
+                        .add(.identifier(nextInstance), .integer(1)),
+                        registerProofObligation(functionDeclaration.sourceLocation))
           ]
           // Include nextInstance in modifies
           var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
@@ -317,7 +321,9 @@ extension BoogieTranslator {
           signature.mutates.append(nextInstanceId)
 
           let returnAllocatedStructInstance: [BStatement] = [
-            .assignment(.identifier(returnName!), .identifier(self.structInstanceVariableName!)),
+            .assignment(.identifier(returnName!),
+                        .identifier(self.structInstanceVariableName!),
+                        registerProofObligation(functionDeclaration.sourceLocation))
             //.returnStatement
           ]
 
@@ -325,9 +331,8 @@ extension BoogieTranslator {
             .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
           prePostConditions.append(BProofObligation(expression: structInitPost,
-                                                    mark: getMark(functionDeclaration.sourceLocation),
+                                                    mark: registerProofObligation(functionDeclaration.sourceLocation),
                                                     obligationType: .postCondition))
-          registerProofObligation(functionDeclaration.sourceLocation)
 
           functionPreAmble += reserveNextStructInstance
           functionPostAmble += returnAllocatedStructInstance
@@ -346,14 +351,12 @@ extension BoogieTranslator {
       switch condition {
       case .pre(let e):
         prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: getMark(e.sourceLocation),
+                                                  mark: registerProofObligation(e.sourceLocation),
                                                   obligationType: .preCondition))
-        registerProofObligation(e.sourceLocation)
       case .post(let e):
         prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: getMark(e.sourceLocation),
+                                                  mark: registerProofObligation(e.sourceLocation),
                                                   obligationType: .postCondition))
-        registerProofObligation(e.sourceLocation)
       }
     }
 
@@ -403,8 +406,6 @@ extension BoogieTranslator {
     self.structInstanceVariableName = nil
     _ = setCurrentScopeContext(oldCtx)
 
-    // Allow us to identify failing functions
-    registerProofObligation(functionDeclaration.sourceLocation)
     return .procedureDeclaration(BProcedureDeclaration(
       name: currentFunctionName,
       returnType: returnType,
@@ -414,7 +415,7 @@ extension BoogieTranslator {
       modifies: modifiesClauses,
       statements: callerPreStatements + bStatements,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      mark: getMark(functionDeclaration.sourceLocation)
+      mark: registerProofObligation(functionDeclaration.sourceLocation)
     ))
   }
 }

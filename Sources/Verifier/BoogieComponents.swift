@@ -4,26 +4,27 @@ import Foundation
 enum BoogieError {
   // Failure (line number, error string)
 
-  case assertionFailure(Int, String)
-  case preConditionFailure(Int, String)
-  case callPreConditionFailure(Int, String)
-  case postConditionFailure(Int, String)
-  case modifiesFailure(Int, String)
-  case loopInvariantEntryFailure(Int, String)
-  case loopInvariantMaintenanceFailure(Int, String)
+  case assertionFailure(Int) // Location of failing assertion
+  case preConditionFailure(Int, Int) // Location of call; pre-condition
+  case postConditionFailure(Int, Int)  // Location of function; Location of failing post
+
+  //case modifiesFailure(Int, String)
+
+  ////case callPreConditionFailure(Int, String)
+  //case loopInvariantEntryFailure(Int, String)
+  //case loopInvariantMaintenanceFailure(Int, String)
 }
 
 struct VerifierMappingKey: Hashable, CustomStringConvertible {
   let file: String
   let flintLine: Int
-  let callingFunction: String? = nil
 
   var hashValue: Int {
     return file.hashValue + flintLine ^ 2
   }
 
   var description: String {
-  return "// #MARKER# \(flintLine) \(callingFunction ?? "") \(file)"
+  return "// #MARKER# \(flintLine) \(file)"
   }
 }
 

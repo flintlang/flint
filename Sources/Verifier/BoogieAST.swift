@@ -214,39 +214,45 @@ struct BParameterDeclaration: CustomStringConvertible {
   }
 }
 
+struct BCallProcedure: CustomStringConvertible {
+  let returnedValues: [String]
+  let procedureName: String
+  let arguments: [BExpression]
+  let mark: VerifierMappingKey
+
+  var description: String {
+    let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
+    var returnValuesComponent = ""
+    if returnedValues.count > 0 {
+      returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
+    }
+
+    return "\(mark)\ncall \(returnValuesComponent) \(procedureName)(\(argumentComponent));"
+  }
+
+}
+
 enum BStatement: CustomStringConvertible {
-  case expression(BExpression)
+  case expression(BExpression, VerifierMappingKey)
   case ifStatement(BIfStatement)
   case whileStatement(BWhileStatement)
   case assertStatement(BProofObligation)
-  case assume(BExpression)
-  case havoc(String)
-  case assignment(BExpression, BExpression)
-  case callProcedure([String], String, [BExpression], VerifierMappingKey)
-  case callForallProcedure(String, [BExpression])
+  case assume(BExpression, VerifierMappingKey)
+  case havoc(String, VerifierMappingKey)
+  case assignment(BExpression, BExpression, VerifierMappingKey)
+  case callProcedure(BCallProcedure)
   case breakStatement
 
   var description: String {
     switch self {
-    case .expression(let expression): return expression.description
+    case .expression(let expression, let mark): return "\(mark)\n\(expression)"
     case .ifStatement(let ifStatement): return ifStatement.description
     case .whileStatement(let whileStatement): return whileStatement.description
     case .assertStatement(let assertion): return assertion.description
-    case .assume(let assumption): return "assume (\(assumption));"
-    case .havoc(let identifier): return "havoc \(identifier);"
-    case .assignment(let lhs, let rhs): return "\(lhs) := \(rhs);"
-    case .callProcedure(let returnedValues, let functionName, let arguments, let mark):
-      let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
-      var returnValuesComponent = ""
-      if returnedValues.count > 0 {
-        returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
-      }
-
-      return "\(mark)\ncall \(returnValuesComponent) \(functionName)(\(argumentComponent));"
-    case .callForallProcedure(let functionName, let arguments):
-      let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
-
-      return "call forall \(functionName) (\(argumentComponent));"
+    case .assume(let assumption, let mark): return "\(mark)\nassume (\(assumption));"
+    case .havoc(let identifier, let mark): return "\(mark)\nhavoc \(identifier);"
+    case .assignment(let lhs, let rhs, let mark): return "\(mark)\n\(lhs) := \(rhs);"
+    case .callProcedure(let callProcedure): return callProcedure.description
     case .breakStatement: return "break;"
     }
   }
@@ -331,11 +337,13 @@ struct BIfStatement: CustomStringConvertible {
   let condition: BExpression
   let trueCase: [BStatement]
   let falseCase: [BStatement]
+  let mark: VerifierMappingKey
 
   var description: String {
     let trueComponent = trueCase.map({(x) -> String in x.description}).joined(separator: "\n")
     let falseComponent = falseCase.map({(x) -> String in x.description}).joined(separator: "\n")
     return """
+    \(mark)
     if (\(condition)) {
       \(trueComponent)
     } else {
@@ -349,11 +357,13 @@ struct BWhileStatement: CustomStringConvertible {
   let condition: BExpression
   let body: [BStatement]
   let invariants: [BProofObligation]
+  let mark: VerifierMappingKey
 
   var description: String {
     let invariantComponent = invariants.map({ (x) -> String in x.description }).joined(separator: "\n")
     let bodyComponent = body.map({(x) -> String in x.description}).joined(separator: "\n")
     return """
+    \(mark)
     while(\(condition))
     // Loop invariants
     \(invariantComponent)

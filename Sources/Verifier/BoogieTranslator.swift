@@ -116,7 +116,7 @@ class BoogieTranslator {
         modifies: [],
         statements: [], //TODO: Statements
         variables: [], // TODO: variables
-        mark: getMark(SourceLocation.INVALID)
+        mark: registerProofObligation(SourceLocation.INVALID)
         )
       )
     )
@@ -143,12 +143,11 @@ class BoogieTranslator {
         self.structInstanceVariableName = nil
 
         structInvariants.append(BProofObligation(expression: inv,
-                                                      mark: getMark(declaration.sourceLocation),
+                                                      mark: registerProofObligation(declaration.sourceLocation),
                                                       obligationType: .preCondition))
         structInvariants.append(BProofObligation(expression: inv,
-                                                      mark: getMark(declaration.sourceLocation),
+                                                      mark: registerProofObligation(declaration.sourceLocation),
                                                       obligationType: .postCondition))
-        registerProofObligation(declaration.sourceLocation)
       }
       self.currentTLD = nil
     }
@@ -219,7 +218,7 @@ class BoogieTranslator {
       }
       contractConstructorInitialisations[contractDeclaration.identifier.name]! += preStatements
       contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
-        .assignment(.identifier(name), assignedExpression)
+        .assignment(.identifier(name), assignedExpression, registerProofObligation(variableDeclaration.sourceLocation))
       )
       contractConstructorInitialisations[contractDeclaration.identifier.name]! += postStatements
     }
@@ -229,12 +228,11 @@ class BoogieTranslator {
     for declaration in contractDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
       invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: getMark(declaration.sourceLocation),
+                                                    mark: registerProofObligation(declaration.sourceLocation),
                                                     obligationType: .preCondition))
       invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: getMark(declaration.sourceLocation),
+                                                    mark: registerProofObligation(declaration.sourceLocation),
                                                     obligationType: .postCondition))
-      registerProofObligation(declaration.sourceLocation)
     }
     tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
@@ -443,14 +441,16 @@ class BoogieTranslator {
                                  _ binding: Identifier?
                                  ) -> ([BProofObligation], [BStatement]) {
     var preStatements = [BStatement]()
-    if let bindingName = binding?.name {
+    if let binding = binding {
+      let bindingName = binding.name
       let translatedName = translateIdentifierName(bindingName)
       // Create local variable (rawName = bindingName) which equals caller
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
                                                                  rawName: bindingName,
                                                                  type: .userDefined("Address")))
       preStatements.append(.assignment(.identifier(translatedName),
-                                       .identifier(translateGlobalIdentifierName("caller"))))
+                                       .identifier(translateGlobalIdentifierName("caller")),
+                                       registerProofObligation(binding.sourceLocation)))
     }
 
     var callerPreConditions = [BProofObligation]()
@@ -464,10 +464,9 @@ class BoogieTranslator {
         callerPreConditions.append(
           BProofObligation(expression: .equals(.identifier(translateGlobalIdentifierName("caller")),
                                                .identifier(translateGlobalIdentifierName(identifier.name))),
-                           mark: getMark(identifier.sourceLocation),
+                           mark: registerProofObligation(identifier.sourceLocation),
                            obligationType: BProofObligationType.preCondition)
           )
-        registerProofObligation(identifier.sourceLocation)
       case.arrayType(.basicType(.address)):
         // eg (exists i: int :: caller == accounts_Bank[i]);
         let existsExpr: BExpression =
@@ -482,10 +481,9 @@ class BoogieTranslator {
 
         callerPreConditions.append(
           BProofObligation(expression: existsExpr,
-                           mark: getMark(identifier.sourceLocation),
+                           mark: registerProofObligation(identifier.sourceLocation),
                            obligationType: BProofObligationType.preCondition)
           )
-        registerProofObligation(identifier.sourceLocation)
       case .functionType([.basicType(.address)], .basicType(.bool)):
         //insert check at start of the function -> if call returns false -> assume false
         // if call returns false, the contract would have aborted and reverted any changes
@@ -496,22 +494,22 @@ class BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: tmpIdentifier,
                                                                    rawName: tmpIdentifier,
                                                                    type: .boolean))
-        registerProofObligation(identifier.sourceLocation)
-
         let functionName = normaliser.translateGlobalIdentifierName(identifier.name + normaliser.flattenTypes(types: [.basicType(.address)]),
                                                                     tld: getCurrentTLDName())
 
         preStatements += [
             // do call
-            .callProcedure([tmpIdentifier],
-                           functionName,
-                           [.identifier(translateGlobalIdentifierName("caller"))],
-                           getMark(identifier.sourceLocation)),
+            .callProcedure(BCallProcedure(returnedValues: [tmpIdentifier],
+                                          procedureName: functionName,
+                                          arguments: [.identifier(translateGlobalIdentifierName("caller"))],
+                                          mark: registerProofObligation(identifier.sourceLocation))),
 
             // check result -> if call returns false, assume false
             .ifStatement(BIfStatement(condition: .not(.identifier(tmpIdentifier)),
-                                      trueCase: [BStatement.assume(.boolean(false))],
-                                      falseCase: []))
+                                      trueCase: [BStatement.assume(.boolean(false),
+                                        registerProofObligation(identifier.sourceLocation))],
+                                      falseCase: [],
+                                      mark: registerProofObligation(identifier.sourceLocation)))
         ]
       default:
         print("Not implemented verification of \(identifierType) caller capabilities yet")
@@ -772,11 +770,13 @@ class BoogieTranslator {
     }
   }
 
-  func registerProofObligation(_ sourceLocation: SourceLocation) {
-    flintProofObligationSourceLocation[getMark(sourceLocation)] = sourceLocation
+  func registerProofObligation(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
+    let mapping = getMark(sourceLocation)
+    flintProofObligationSourceLocation[mapping] = sourceLocation
+    return mapping
   }
 
-  func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
+  private func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
     return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
   }
 
@@ -791,15 +791,15 @@ class BoogieTranslator {
       boogieLine += 1
 
       // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+) ([a-zA-Z]*) (.*)")
+      let matches = line.groups(for: "// #MARKER# ([0-9]+) (.*)")
       if matches.count == 1 {
         // Extract line number
         let line = Int(matches[0][1])!
         if line < 0 { //Invalid
           continue
         }
-        let callingFunction: String = matches[0][2]
-        let file: String = matches[0][3]
+
+        let file: String = matches[0][2]
         guard let sourceLocation = flintProofObligationSourceLocation[VerifierMappingKey(file: file, flintLine: line)] else {
           print("Couldn't find marker for proof obligation")
           print(flintProofObligationSourceLocation)

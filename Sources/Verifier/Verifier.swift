@@ -96,35 +96,46 @@ public class Verifier {
     // Example Boogie output
     /*
     Boogie program verifier version 2.3.0.61016, Copyright (c) 2003-2014, Microsoft.
-    examples/casestudies/Bank.bpl(260,1): Error BP5003: A postcondition might not hold on this return path.
-    examples/casestudies/Bank.bpl(249,3): Related location: This is the postcondition that might not hold.
+    test.bpl(472,3): Error BP5002: A precondition for this call might not hold.
+    test.bpl(461,3): Related location: This is the precondition that might not hold.
     Execution trace:
-        examples/casestudies/Bank.bpl(251,15): anon0
-
-    test.bpl(186,1): Error BP5001: This assertion might not hold.
+        test.bpl(472,3): anon0
+    test.bpl(482,1): Error BP5003: A postcondition might not hold on this return path.
+    test.bpl(477,3): Related location: This is the postcondition that might not hold.
     Execution trace:
-       test.bpl(186,1): anon0
+        test.bpl(481,5): anon0
+    test.bpl(492,1): Error BP5003: A postcondition might not hold on this return path.
+    test.bpl(487,3): Related location: This is the postcondition that might not hold.
+    Execution trace:
+        test.bpl(491,5): anon0
+    test.bpl(498,3): Error BP5001: This assertion might not hold.
+    Execution trace:
+        test.bpl(498,3): anon0
+    test.bpl(508,3): Error BP5002: A precondition for this call might not hold.
+    test.bpl(461,3): Related location: This is the precondition that might not hold.
+    Execution trace:
+        test.bpl(507,5): anon0
 
-    bank_test.bpl(4,64): error: invalid Function
+    Boogie program verifier finished with 13 verified, 5 errors
 
-    F7DA4749-9924-4C41-972A-8EBF33398B69.bpl(234,1): Error BP5002: A precondition for this call might not hold.
-    F7DA4749-9924-4C41-972A-8EBF33398B69.bpl(292,1): Related location: This is the precondition that might not hold.
 
     935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
     2853A8A3-FF61-4575-95A3-36516B26A887.bpl(317,1): Error BP5004: This loop invariant might not hold on entry.
 
     Boogie program verifier finished with 10 verified, 1 error
+
+
     */
     var rawLines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
                                .components(separatedBy: "\n")
     rawLines.removeFirst() // Discard first line - contains Boogie version info
 
-    var groupedErrorLines = [(BoogieError, [String])]()
+    var groupedErrorLines = [(Int, [String])]() // Error code + trace
     for line in rawLines {
       // Look for tuple followed by "Error BP...."
-      let matches = line.groups(for: "\\(([0-9]+),([0-9]+)\\): Error BP[0-9]+")
+      let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): Error BP([0-9]+)")
       if matches.count > 0 {
-        groupedErrorLines.append((.assertionFailure(0, ""), []))
+        groupedErrorLines.append((Int(matches[0][1])!, []))
       }
 
       if groupedErrorLines.count > 0 {
@@ -132,133 +143,133 @@ public class Verifier {
       }
     }
 
-    for errorGroup in groupedErrorLines {
-      // get the failing condition - inv / pre / post / assert
-      let failingCondition = errorGroup.removeFirst()
-
-      // get which function it's failing in - inv + pre + post
-
-      // get callee function, if exists called by whom? - inv + pre
-      // TODO: Execution Trace
-    }
-
-    var errors = [BoogieError]()
-    for line in rawLines {
-      // Look for tuple followed by "Error"
-      let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error (BP[0-9]+)|Related location|Error:|error:)")
-      switch matches.count {
-      case 0:
-        break
-      case 1:
-        // Extract line number
-        errors.append(parseBoogieError(lineNumber: Int(matches[0][1])!,
-                                       error: line))
-      default:
-        print(matches)
-        print("was expecting 3 matches on last line of Boogie output")
-        print(rawBoogieOutput)
-        fatalError()
-      }
-    }
-
-    return errors
+    return groupedErrorLines.map({ parseBoogieError(errorCode: $0.0, errorLines: $0.1) })
   }
 
-  private func parseBoogieError(lineNumber: Int, error line: String) -> BoogieError {
-    if line.contains("assertion") {
-      return .assertionFailure(lineNumber, line)
+  private func parseBoogieError(errorCode: Int, errorLines: [String]) -> BoogieError {
+    switch errorCode {
+    case 5001:
+      // Assertion failure
+      guard let firstLine = errorLines.first else {
+        print("Assertion failure should have at least one line")
+        fatalError()
+      }
+      let lineNumber = parseErrorLineNumber(line: firstLine)
+      return .assertionFailure(lineNumber)
 
-    } else if line.contains("postcondition") {
-      return .postConditionFailure(lineNumber, line)
+    case 5002:
+      // Precondition failure
+      let callLocationLine = errorLines[0] // Line of procedure call
+      let callLineNumber = parseErrorLineNumber(line: callLocationLine)
 
-    } else if line.contains("precondition for this call might not hold") {
-      return .callPreConditionFailure(lineNumber, line)
+      let relatedLocationLine = errorLines[1] // Related location line, has the offending pre condition
+      let preCondLineNumber = parseErrorLineNumber(line: relatedLocationLine)
+      return .preConditionFailure(callLineNumber, preCondLineNumber)
 
-    } else if line.contains("This is the precondition that might not hold") {
-      return .preConditionFailure(lineNumber, line)
+    case 5003:
+      // PostCondition failure
+      let relatedLocationLine = errorLines[1] // Related location line, has the offending post condition
+      let postCondLineNumber = parseErrorLineNumber(line: relatedLocationLine)
 
-    } else if line.contains("global variable that is not in the enclosing procedure's modifies clause") {
-      return .modifiesFailure(lineNumber, line)
+      let procedureResponsibleLine = errorLines[0] // Has the line of the responsible return path of offending procedure
+      let procedureResponsibleLineNumber = parseErrorLineNumber(line: procedureResponsibleLine)
+      print(procedureResponsibleLineNumber)
+      print(postCondLineNumber)
 
-    } else if line.contains("loop invariant might not hold on entry") {
-      return .loopInvariantEntryFailure(lineNumber, line)
-
-    } else if line.contains("loop invariant might not be maintained by the loop") {
-      return .loopInvariantMaintenanceFailure(lineNumber, line)
+      return .postConditionFailure(procedureResponsibleLineNumber, postCondLineNumber)
+    default:
+      print("Couldn't determine type of verification failure code: \(errorCode)\n\(errorLines)")
+      fatalError()
     }
+  }
 
-    print("Couldn't determine type of verification failure: \(line)")
-    fatalError()
+  private func parseErrorLineNumber(line: String) -> Int {
+    // Look for tuple followed by "Error"
+    let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\):")
+    switch matches.count {
+    case 1:
+      // Extract line number
+      return Int(matches[0][1])!
+    default:
+      print("Could not parse boogie error line")
+      print(matches)
+      print(line)
+      fatalError()
+    }
   }
 
   private func resolveBoogieErrors(errors boogieErrors: [BoogieError],
                                    mapping b2fSourceMapping: [Int: SourceLocation]) -> [Diagnostic] {
-
     var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
-      case .assertionFailure(let lineNumber, _):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
+      case .assertionFailure(let lineNumber):
+        let sourceLocation = lookupSourceLocation(line: lineNumber, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: sourceLocation,
                                       message: "Could not verify assertion holds"))
-      case .callPreConditionFailure(let lineNumber, _):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
+
+      case .preConditionFailure(let procedureCallLine, let preConditionLine):
+        let procSourceLocation = lookupSourceLocation(line: procedureCallLine, mapping: b2fSourceMapping)
+        let preCondSourceLocation = lookupSourceLocation(line: preConditionLine, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
-                                      message: "Could not verify pre-condition for this call holds"))
-      case .preConditionFailure(let lineNumber, _):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
+                                      sourceLocation: procSourceLocation,
+                                      message: "Could not verify pre-condition on holds",
+                                      notes: [
+                                        Diagnostic(severity: .warning,
+                                                   sourceLocation: preCondSourceLocation,
+                                                   message: "This is the failing pre-condition")
+                                      ]))
+
+      case .postConditionFailure(let procedureLine, let postLine):
+        let procSourceLocation = lookupSourceLocation(line: procedureLine, mapping: b2fSourceMapping)
+        let postSourceLocation = lookupSourceLocation(line: postLine, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
-                                      message: "Could not verify pre-condition holds"))
-      case .postConditionFailure(let lineNumber, _):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
-                                      message: "Could not verify post-condition holds"))
-      case .modifiesFailure(let lineNumber, let line):
-        print("modifies failure - on line \(lineNumber): \(line)")
-        //guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-        //  print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-        //  fatalError()
-        //}
-        // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
-        //flintErrors.append(Diagnostic(severity: .error,
-        //                              sourceLocation: sourceLocation,
-        //                              message: "Could not verify post-condition holds"))
-        continue
-      case .loopInvariantEntryFailure(let lineNumber, let line):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
-                                      message: "Could not verify entry to the loop \(line)"))
-      case .loopInvariantMaintenanceFailure(let lineNumber, let line):
-        guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-          print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-          fatalError()
-        }
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
-                                      message: "Could not verify loop body \(line)"))
+                                      sourceLocation: procSourceLocation,
+                                      message: "Could not verify function post-condition",
+                                      notes: [
+                                        Diagnostic(severity: .warning,
+                                                   sourceLocation: postSourceLocation,
+                                                   message: "This is the post-condition responsible")
+                                      ]))
+    //  case .modifiesFailure(let lineNumber, let line):
+    //    print("modifies failure - on line \(lineNumber): \(line)")
+    //    //guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+    //    //  print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+    //    //  fatalError()
+    //    //}
+    //    // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
+    //    //flintErrors.append(Diagnostic(severity: .error,
+    //    //                              sourceLocation: sourceLocation,
+    //    //                              message: "Could not verify post-condition holds"))
+    //    continue
+    //  case .loopInvariantEntryFailure(let lineNumber, let line):
+    //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+    //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+    //      fatalError()
+    //    }
+    //    flintErrors.append(Diagnostic(severity: .error,
+    //                                  sourceLocation: sourceLocation,
+    //                                  message: "Could not verify entry to the loop \(line)"))
+    //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
+    //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+    //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+    //      fatalError()
+    //    }
+    //    flintErrors.append(Diagnostic(severity: .error,
+    //                                  sourceLocation: sourceLocation,
+    //                                  message: "Could not verify loop body \(line)"))
       }
     }
     return flintErrors
+  }
+
+  private func lookupSourceLocation(line: Int, mapping: [Int: SourceLocation]) -> SourceLocation {
+    guard let sourceLocation = mapping[line] else {
+      print("cannot find mapping for failing proof obligation on line \(line)")
+      fatalError()
+    }
+    return sourceLocation
   }
 }
 // swiftlint:enable all
