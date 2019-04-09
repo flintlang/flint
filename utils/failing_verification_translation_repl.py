@@ -7,8 +7,10 @@
 
 import subprocess
 
+failing_verification_translation_sh="./utils/failing_verification_translation.sh"
+
 def run_verifier():
-    finished_failed_programs = subprocess.run(["./utils/failing_verification.sh"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    finished_failed_programs = subprocess.run([failing_verification_translation_sh], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
     output = str(finished_failed_programs.stdout, 'utf8').rstrip()
     return output.split('\n')[2:]
