@@ -1,0 +1,59 @@
+contract C {
+  var i: Int
+  var j: Int = 0
+
+  invariant(i % 3 == 0)
+}
+
+C :: (any) {
+  public init () {
+    i = 0
+  }
+
+  func A (i: Int)
+    pre (i == 6)
+  {
+  }
+
+  // Violate pre condition
+  func B ()
+  {
+    A(3)
+  }
+
+  // Violate invariant
+  func D()
+    mutates (i)
+  {
+    i = 2
+  }
+
+  // Violate post condition
+  func E()
+    mutates (i)
+    post(i == 9)
+  {
+    i = 6
+  }
+
+  // Failing assertion
+  func F() {
+    assert (false)
+  }
+
+  // Invariant doesn't hold on function call
+  func G()
+    mutates (i)
+  {
+    i = 2
+    A(2)
+    i = 3
+  }
+
+  // No modifies clause
+  func H()
+    mutates (j)
+  {
+    i = 3
+  }
+}
