@@ -165,7 +165,7 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
-      registerProofObligation(functionCall.sourceLocation)
+    registerProofObligation(functionCall.sourceLocation)
 
     for arg in functionCall.arguments {
       let (expr, stmts, postStmts) = process(arg.expression)
@@ -198,6 +198,7 @@ extension BoogieTranslator {
       assert (argumentsExpressions.count == 2)
 
       // Call Boogie send function
+      registerProofObligation(functionCall.sourceLocation)
       let functionCall = BStatement.callProcedure([],
                                                   "send",
                                                   argumentsExpressions,
@@ -361,7 +362,7 @@ extension BoogieTranslator {
     // Procedure must hold invariant
     let invariants = (tldInvariants[getCurrentTLDName()] ?? [])
       // drop contract invariants, if init function
-      .filter({ !(isContractInit || isStructInit) || ($0.obligationType.isPreCondition) }) + structInvariants
+      .filter({ !(isContractInit || isStructInit) || ($0.obligationType.isPostCondition) }) + structInvariants
     prePostConditions += invariants
 
     var modifies = [String]()

@@ -433,3 +433,12 @@ procedure withdraw_Bank(amount: int)
   contractWei := contractWei - w;
   sentWei := sentWei + w;
 }
+
+procedure B(i: int)
+  requires (i > 0);
+{
+}
+
+procedure A() {
+  call B(0);
+}

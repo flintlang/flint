@@ -13,13 +13,22 @@ enum BoogieError {
   case loopInvariantMaintenanceFailure(Int, String)
 }
 
-struct VerifierMappingKey: Hashable {
+struct VerifierMappingKey: Hashable, CustomStringConvertible {
   let file: String
   let flintLine: Int
+  let callingFunction: String? = nil
 
   var hashValue: Int {
     return file.hashValue + flintLine ^ 2
   }
+
+  var description: String {
+  return "// #MARKER# \(flintLine) \(callingFunction ?? "") \(file)"
+  }
+}
+
+struct FlintProofObligationInformation {
+
 }
 
 public struct IdentifierNormaliser {

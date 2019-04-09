@@ -126,6 +126,13 @@ enum BProofObligationType: CustomStringConvertible {
     default: return false
     }
   }
+
+  var isPostCondition: Bool {
+    switch self {
+    case .postCondition: return true
+    default: return false
+    }
+  }
 }
 
 struct BProofObligation: CustomStringConvertible {
@@ -134,9 +141,8 @@ struct BProofObligation: CustomStringConvertible {
   let obligationType: BProofObligationType
 
   var description: String {
-    let markLine = marker(mark: mark)
     let endChar = (obligationType.isAssertion || obligationType.isLoopInvariant) ? ";" : ""
-    return "\(markLine)\n\(obligationType) (\(expression))\(endChar)"
+    return "\(mark)\n\(obligationType) (\(expression))\(endChar)"
   }
 }
 
@@ -179,16 +185,10 @@ struct BProcedureDeclaration: CustomStringConvertible {
 
     // \(name)'s implementation
     \(statementsString)
-    \(marker(mark: mark))
+    \(mark)
     }
     """
   }
-}
-
-func marker(mark: VerifierMappingKey) -> String {
-  let file = mark.file
-  let flintLine = mark.flintLine
-  return "// #MARKER# \(flintLine) \(file)"
 }
 
 struct BModifiesDeclaration: CustomStringConvertible, Hashable {
@@ -242,7 +242,7 @@ enum BStatement: CustomStringConvertible {
         returnValuesComponent = "\(returnedValues.joined(separator: ", ")) := "
       }
 
-      return "\(marker(mark: mark))\ncall \(returnValuesComponent) \(functionName)(\(argumentComponent));"
+      return "\(mark)\ncall \(returnValuesComponent) \(functionName)(\(argumentComponent));"
     case .callForallProcedure(let functionName, let arguments):
       let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
 

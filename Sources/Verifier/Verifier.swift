@@ -115,12 +115,35 @@ public class Verifier {
 
     Boogie program verifier finished with 10 verified, 1 error
     */
-    var lines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+    var rawLines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
                                .components(separatedBy: "\n")
-    lines.removeFirst() // Discard first line - contains Boogie version info
+    rawLines.removeFirst() // Discard first line - contains Boogie version info
+
+    var groupedErrorLines = [(BoogieError, [String])]()
+    for line in rawLines {
+      // Look for tuple followed by "Error BP...."
+      let matches = line.groups(for: "\\(([0-9]+),([0-9]+)\\): Error BP[0-9]+")
+      if matches.count > 0 {
+        groupedErrorLines.append((.assertionFailure(0, ""), []))
+      }
+
+      if groupedErrorLines.count > 0 {
+        groupedErrorLines[groupedErrorLines.count-1].1.append(line)
+      }
+    }
+
+    for errorGroup in groupedErrorLines {
+      // get the failing condition - inv / pre / post / assert
+      let failingCondition = errorGroup.removeFirst()
+
+      // get which function it's failing in - inv + pre + post
+
+      // get callee function, if exists called by whom? - inv + pre
+      // TODO: Execution Trace
+    }
 
     var errors = [BoogieError]()
-    for line in lines {
+    for line in rawLines {
       // Look for tuple followed by "Error"
       let matches = line.groups(for: "\\(([0-9]+),[0-9]+\\): (Error (BP[0-9]+)|Related location|Error:|error:)")
       switch matches.count {

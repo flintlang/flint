@@ -728,7 +728,7 @@ class BoogieTranslator {
       return BType.map(convertType(keyType), convertType(valueType))
     case .arrayType(let type):
       return .map(.int, convertType(type))
-    case .fixedSizeArrayType(let type, let size):
+    case .fixedSizeArrayType(let type, _):
       return .map(.int, convertType(type))
     case .inoutType(let type):
       return convertType(type)
@@ -791,14 +791,15 @@ class BoogieTranslator {
       boogieLine += 1
 
       // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+) (.*)")
+      let matches = line.groups(for: "// #MARKER# ([0-9]+) ([a-zA-Z]*) (.*)")
       if matches.count == 1 {
         // Extract line number
         let line = Int(matches[0][1])!
         if line < 0 { //Invalid
           continue
         }
-        let file: String = matches[0][2]
+        let callingFunction: String = matches[0][2]
+        let file: String = matches[0][3]
         guard let sourceLocation = flintProofObligationSourceLocation[VerifierMappingKey(file: file, flintLine: line)] else {
           print("Couldn't find marker for proof obligation")
           print(flintProofObligationSourceLocation)
