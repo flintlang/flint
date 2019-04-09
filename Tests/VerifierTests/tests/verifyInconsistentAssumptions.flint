@@ -2,6 +2,8 @@ contract InconsistentAssumptions {
   // TODO: Inconsistent axioms
   // TODO: Inconsistent pre conditions
   // TODO: Inconsistent invariants conditions
+
+  var i: Int = 0
 }
 
 InconsistentAssumptions :: (any) {

@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract Array {
   var as: [Int]
   var bs: [Int: Int]

@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 struct L {
   public init() {}
 

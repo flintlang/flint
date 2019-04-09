@@ -19,6 +19,7 @@ zip: release
 
 test: lint release
 	cd Tests/BehaviorTests && ./compile_behavior_tests.sh
+	./Tests/VerifierTests/run_verifier_tests.py
 	swift run -c release lite
 
 lint:

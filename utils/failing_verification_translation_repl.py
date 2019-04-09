@@ -21,7 +21,7 @@ def print_failing_selection(failing_contracts):
 
 def debug_contract(contract_location):
     debugRunArgs = [
-            ".build/x86_64-unknown-linux/debug/flintc",
+            ".build/debug/flintc",
             "--dump-verifier-ir",
             contract_location
             ]

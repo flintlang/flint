@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract Test {
   var s: S
 }
@@ -66,7 +67,7 @@ Test :: (any) {
     let v: Int = w.getRawValue()
     let i: Int = s.i
 
-    //Should violate S's invariant
+    //Would violate S's invariant - call J() picks up the error, as it requires it as a pre-condition
     //s.i = 0
 
     let j: J = J(&s)
@@ -74,5 +75,12 @@ Test :: (any) {
 
     let size0: Int = j.ss.size
     let size1: Int = s.ks[0][1].size
+  }
+
+  //VERIFY-FAIL
+  public violateSInvariant()
+    mutates (S.i)
+  {
+    s.i = 0
   }
 }

@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract LocalVariables {
     var ten: Int = 10
     var is: [Int]

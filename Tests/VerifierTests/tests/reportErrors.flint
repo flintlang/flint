@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract C {
   var i: Int
   var j: Int = 0
@@ -18,10 +19,12 @@ C :: (any) {
   // Violate pre condition
   func B ()
   {
+    //VERIFY-FAIL
     A(3)
   }
 
   // Violate invariant
+  //VERIFY-FAIL
   func D()
     mutates (i)
   {
@@ -29,6 +32,7 @@ C :: (any) {
   }
 
   // Violate post condition
+  //VERIFY-FAIL
   func E()
     mutates (i)
     post(i == 9)
@@ -38,6 +42,7 @@ C :: (any) {
 
   // Failing assertion
   func F() {
+    //VERIFY-FAIL
     assert (false)
   }
 
@@ -46,14 +51,8 @@ C :: (any) {
     mutates (i)
   {
     i = 2
+    //VERIFY-FAIL
     A(2)
-    i = 3
-  }
-
-  // No modifies clause
-  func H()
-    mutates (j)
-  {
     i = 3
   }
 }

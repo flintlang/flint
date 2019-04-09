@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract VerifyAsserts  {
 }
 
@@ -28,8 +29,9 @@ VerifyAsserts :: (any) {
     }
   }
 
-  //func failingAssertion(j: Int)
-  //{
-  //  assert (j == 0)
-  //}
+  func failingAssertion(j: Int)
+  {
+    //VERIFY-FAIL
+    assert (j == 0)
+  }
 }

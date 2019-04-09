@@ -1,5 +1,6 @@
+//VERIFY-CHECK
 contract VerifyPrePostConditions {
-  let ten: Int = 10
+  var ten: Int = 10
 
   invariant (10 == 10)
   invariant (ten == 10)
@@ -43,5 +44,19 @@ VerifyPrePostConditions :: (any) {
   {
     // Pre condition contradicts what the invariant says
     assert(false)
+  }
+
+  func failPreCondition()
+  {
+    //VERIFY-FAIL
+    testParamsPreConditions(0, 0)
+  }
+
+  //VERIFY-FAIL
+  func failPostCondition()
+    mutates(ten)
+    post (ten == 10)
+  {
+    ten = 5
   }
 }

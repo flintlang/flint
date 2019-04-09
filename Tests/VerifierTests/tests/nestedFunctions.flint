@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract Nested {
   var temp: Int = 10
 }
