@@ -2,16 +2,17 @@ import AST
 import Foundation
 
 enum BoogieError {
-  // Failure (line number, error string)
-
+  // Verification errors
   case assertionFailure(Int) // Location of failing assertion
   case preConditionFailure(Int, Int) // Location of call; pre-condition
   case postConditionFailure(Int, Int)  // Location of function; Location of failing post
+  case loopInvariantEntryFailure(Int) // Location of failing loop invariant
 
-  //case modifiesFailure(Int, String)
+  // Syntax / semantic errors
+  case modifiesFailure(String)
+  case genericFailure(String)
 
   ////case callPreConditionFailure(Int, String)
-  //case loopInvariantEntryFailure(Int, String)
   //case loopInvariantMaintenanceFailure(Int, String)
 }
 

@@ -116,11 +116,20 @@ public class Verifier {
     Execution trace:
         test.bpl(507,5): anon0
 
+    test.bpl(364,1): Error BP5004: This loop invariant might not hold on entry.
+    Execution trace:
+        test.bpl(313,23): anon0
+        test.bpl(329,30): anon15_Then
+        test.bpl(334,19): anon3
+        test.bpl(344,30): anon16_Then
+        test.bpl(349,22): anon6
+        test.bpl(351,1): anon17_LoopHead
+        test.bpl(357,22): anon17_LoopBody
+
     Boogie program verifier finished with 13 verified, 5 errors
 
 
     935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
-    2853A8A3-FF61-4575-95A3-36516B26A887.bpl(317,1): Error BP5004: This loop invariant might not hold on entry.
 
     Boogie program verifier finished with 10 verified, 1 error
 
@@ -129,6 +138,23 @@ public class Verifier {
     var rawLines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
                                .components(separatedBy: "\n")
     rawLines.removeFirst() // Discard first line - contains Boogie version info
+
+    // Check if output contains non-verification errors (syntax ...)
+
+    var nonVerificationErrors = [BoogieError]()
+    for line in rawLines {
+      let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): Error:")
+      if matches.count > 0 {
+        if line.contains("modifies clause") {
+          nonVerificationErrors.append(.modifiesFailure(line))
+        } else {
+          nonVerificationErrors.append(.genericFailure(line))
+        }
+      }
+    }
+    if nonVerificationErrors.count > 0 {
+      return nonVerificationErrors
+    }
 
     var groupedErrorLines = [(Int, [String])]() // Error code + trace
     for line in rawLines {
@@ -173,10 +199,13 @@ public class Verifier {
 
       let procedureResponsibleLine = errorLines[0] // Has the line of the responsible return path of offending procedure
       let procedureResponsibleLineNumber = parseErrorLineNumber(line: procedureResponsibleLine)
-      print(procedureResponsibleLineNumber)
-      print(postCondLineNumber)
-
       return .postConditionFailure(procedureResponsibleLineNumber, postCondLineNumber)
+
+    case 5004:
+      let loopInvariantLine = errorLines[0] // Has the line of the responsible return path of offending procedure
+      let loopInvariantLineNumber = parseErrorLineNumber(line: loopInvariantLine)
+      return .loopInvariantEntryFailure(loopInvariantLineNumber)
+
     default:
       print("Couldn't determine type of verification failure code: \(errorCode)\n\(errorLines)")
       fatalError()
@@ -232,25 +261,18 @@ public class Verifier {
                                                    sourceLocation: postSourceLocation,
                                                    message: "This is the post-condition responsible")
                                       ]))
-    //  case .modifiesFailure(let lineNumber, let line):
-    //    print("modifies failure - on line \(lineNumber): \(line)")
-    //    //guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-    //    //  print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-    //    //  fatalError()
-    //    //}
-    //    // TODO: Determine if this is a shadow variable or a user variable - display enclosing function sourceLocation
-    //    //flintErrors.append(Diagnostic(severity: .error,
-    //    //                              sourceLocation: sourceLocation,
-    //    //                              message: "Could not verify post-condition holds"))
-    //    continue
-    //  case .loopInvariantEntryFailure(let lineNumber, let line):
-    //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-    //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-    //      fatalError()
-    //    }
-    //    flintErrors.append(Diagnostic(severity: .error,
-    //                                  sourceLocation: sourceLocation,
-    //                                  message: "Could not verify entry to the loop \(line)"))
+      case .loopInvariantEntryFailure(let invariantLine):
+        let invariantSourceLocation = lookupSourceLocation(line: invariantLine, mapping: b2fSourceMapping)
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: invariantSourceLocation,
+                                      message: "Could not verify entry to the loop"))
+
+      case .modifiesFailure(let line):
+        print("Missing modifies clause: \(line)")
+
+      case .genericFailure(let line):
+        print("Boogie error: \(line)")
+
     //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
     //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
     //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
