@@ -41,3 +41,7 @@ public struct Identifier: Hashable, ASTNode {
     return "\(identifierToken)"
   }
 }
+
+public extension Identifier {
+  public static let DUMMY = Identifier(identifierToken: Token(kind: .identifier(":DUMMY:"), sourceLocation: .DUMMY))
+}

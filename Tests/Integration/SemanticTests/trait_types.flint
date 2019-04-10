@@ -1,0 +1,54 @@
+// RUN: %flintc %s --verify
+
+// expected-warning@0 {{No contract declaration in top level module}}
+
+struct trait StructureTrait {
+  public init()
+  func test() {}
+  public func signature() -> Int
+}
+
+contract trait ContractTrait {
+  event e()
+
+  self :: (any) {
+    public init() {}
+    func test() {}
+  }
+}
+
+external trait ExternalTrait {
+  func test(param: int256) -> int32
+
+  func test2()
+}
+
+struct trait FalseStructureTrait {
+  event e() // expected-error {{Member invalid in struct trait context}}
+
+  self :: (any) { // expected-error {{Member invalid in struct trait context}}
+    public init() {}
+    func test() {}
+    func new() -> Bool
+    public func alpha()
+  }
+}
+
+contract trait FalseContractTrait {
+  public init() // expected-error {{Member invalid in contract trait context}}
+
+  func test() {} // expected-error {{Member invalid in contract trait context}}
+  public func signature() -> Int // expected-error {{Member invalid in contract trait context}}
+}
+
+external trait FalseExternalTrait {
+  public init() // expected-error {{Member invalid in external trait context}}
+
+  init() {} // expected-error {{Member invalid in external trait context}}
+
+  func test() {} // expected-error {{Member invalid in external trait context}}
+
+  self :: (any) { // expected-error {{Member invalid in external trait context}}
+    public init() {}
+  }
+}

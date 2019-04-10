@@ -1,0 +1,42 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  let a: Address
+}
+
+Test :: caller <- (any) {
+  public init(){
+    a = caller
+  }
+
+  public fallback() {}
+  public fallback() {} // expected-error {{A public fallback has already been defined}}
+
+  fallback() {}
+  fallback(a: Address, b: inout Wei) {} //expected-error {{Contract fallback shouldn't have any arguments}}
+}
+
+Test :: (a) {
+  public fallback() {} // expected-error {{Public contract fallback should be callable using caller protection 'any'}}
+}
+
+contract Test2 {} // expected-warning {{Contract 'Test2' doesn't have a public fallback but does have a private fallback}}
+
+Test2 :: (any) {
+  public init() {}
+
+  // fallback() -> Int {} Blind parser error
+  fallback() {} //expected-note {{A fallback is declared here}}
+}
+
+contract Test3 {
+  var x: Int = 0
+}
+
+Test3 :: (any) {
+  public init() {}
+
+  public fallback() { //  expected-warning {{This fallback is likely to use over 2 300 gas which is the limit for calls sending ETH directly}}
+    x += 1
+  }
+}

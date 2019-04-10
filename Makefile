@@ -2,14 +2,16 @@ BOOGIE_EXE=boogie/Binaries/Boogie.exe
 Z3=z3/build/z3
 Z3_slink=boogie/Binaries/z3.exe
 
-all: generate $(BOOGIE_EXE)
+.PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
+
+all: generate-sources $(BOOGIE_EXE) debug
+
+debug: generate-sources
 	swift build
 	cp -r stdlib .build/debug/
 
-.PHONY: all release zip test lint generate clean
-
-release: generate $(BOOGIE_EXE)
-	swift build	-c release --static-swift-stdlib
+release: generate-sources $(BOOGIE_EXE)
+	swift build -c release --static-swift-stdlib
 	cp -r stdlib .build/release/
 
 zip: release
@@ -17,15 +19,26 @@ zip: release
 	zip -r flintc.zip flintc stdlib
 	rm flintc
 
-test: lint release
-	cd Tests/BehaviorTests && ./compile_behavior_tests.sh
+test: lint generate-mocks release
+	swift test
+	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
+	./Tests/VerifierTests/run_verifier_tests.py
+	swift run -c release lite
+
+test-nogen: lint release
+	swift test
+	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py
 	swift run -c release lite
 
 lint:
-	swiftlint lint
+	swiftlint lint --strict
 
-generate: .derived-sources/AST/ASTPass/ASTPass.swift
+generate-mocks:
+	 swift package resolve
+	./generate_mocks.sh
+
+generate-sources: Sources/AST/ASTPass/ASTPass.generated.swift
 
 .derived-sources/AST/ASTPass/ASTPass.swift: Sources/AST/ASTPass/ASTPass.template.swift
 	cd utils/codegen && npm install && cd ../..
@@ -53,5 +66,3 @@ clean:
 	-cd boogie && msbuild Source/Boogie.sln /t:Clean && cd ..
 	-rm boogie/Binaries/*.{dll,pdb,config}
 	-rm -r z3/build
-
-

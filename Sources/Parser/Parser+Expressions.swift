@@ -29,11 +29,20 @@ extension Parser {
       return .inoutExpression(try parseInoutExpression())
     }
 
+    if case .call = first {
+      return .externalCall(try parseExternalCall(upTo: limitTokenIndex))
+    }
+
     // Try to parse a binary expression.
     // For each Flint binary operator, try to find it in the tokens ahead, and parse the tokens before and after as
     // the LHS and RHS expressions.
     if let expr = try parseBinaryExpression(upTo: limitTokenIndex) {
       return .binaryExpression(expr)
+    }
+
+    // Try to parse a type conversion expression.
+    if let expr = try parseTypeConversionExpression(upTo: limitTokenIndex) {
+      return .typeConversionExpression(expr)
     }
 
     if case .try = first {
@@ -91,6 +100,7 @@ extension Parser {
       // Try to parse a literal.
       return .literal(try parseLiteral())
     }
+
     switch first {
     case .public, .visible, .var, .let:
       // Try to parse a variable declaration.
@@ -112,6 +122,29 @@ extension Parser {
       return BinaryExpression(lhs: lhs, op: operatorToken, rhs: rhs)
     }
     return nil
+  }
+
+  // MARK: Casting
+  func parseTypeConversionExpression(upTo limitTokenIndex: Int) throws -> TypeConversionExpression? {
+    guard let index = indexOfFirstAtCurrentDepth([.as], maxIndex: limitTokenIndex) else {
+      return nil
+    }
+
+    let expression = try parseExpression(upTo: index)
+    let asToken = try consume(.as, or: .dummy())
+    var kind: TypeConversionExpression.Kind = .coerce
+    if let currentToken = currentToken {
+      if currentToken.kind == .punctuation(.bang) {
+        kind = .cast
+        try consume(.punctuation(.bang), or: .dummy())
+      } else if currentToken.kind == .punctuation(.question) {
+        kind = .castOptional
+        try consume(.punctuation(.question), or: .dummy())
+      }
+    }
+    let type = try parseType()
+
+    return TypeConversionExpression(expression: expression, asToken: asToken, kind: kind, type: type)
   }
 
   // MARK: Bracketed
@@ -150,6 +183,36 @@ extension Parser {
     }
     let expression = try parseExpression(upTo: statementEndIndex)
     return InoutExpression(ampersandToken: ampersandToken, expression: expression)
+  }
+
+  // MARK: External Calls
+  func parseExternalCall(upTo limitTokenIndex: Int) throws -> ExternalCall {
+    try consume(.call, or: .badDeclaration(at: latestSource))
+
+    var arguments: [FunctionArgument] = []
+    if tokens[currentIndex].kind == .punctuation(.openBracket) {
+      (arguments, _) = try parseFunctionCallArgumentList()
+    }
+
+    var mode: ExternalCall.Mode = .normal
+    if tokens[currentIndex].kind == .punctuation(.question) ||
+      tokens[currentIndex].kind == .punctuation(.bang) {
+      let token = try consume(anyOf: [.punctuation(.question), .punctuation(.bang)], or: .dummy())
+
+      if token.kind == .punctuation(.bang) {
+        mode = .isForced
+      } else if token.kind == .punctuation(.question) {
+        mode = .returnsGracefullyOptional
+      }
+    }
+
+    guard let functionCall = try parseBinaryExpression(upTo: limitTokenIndex) else {
+      throw raise(.badDeclaration(at: tokens[currentIndex].sourceLocation))
+    }
+
+    return ExternalCall(hyperParameters: arguments,
+                        functionCall: functionCall,
+                        mode: mode)
   }
 
   // MARK: Function Call

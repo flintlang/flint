@@ -223,6 +223,11 @@ extension BoogieTranslator {
     case .emitStatement:
       // Ignore emit statements
       return []
+
+    case .doCatchStatement(let doCatchStatement):
+      //TODO: Implement
+      print("not implemented do catch statement yet")
+      fatalError()
     }
   }
 
@@ -726,13 +731,14 @@ extension BoogieTranslator {
                                    scopeContext: scopeContext)
     // Is type of lhs a struct
     switch lhsType {
-    case .stdlibType(.wei):
-      let holyAccesses = handleNestedStructAccess(structName: "Wei",
-                                                  access: rhs,
-                                                  shadowVariablePrefix: shadowVariablePrefix)
-      let (lExpr, lStmts, lPostStmts) = process(lhs)
-      let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
-      return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
+    // Wei just a userDefinedType now
+    //case .stdlibType(.wei):
+    //  let holyAccesses = handleNestedStructAccess(structName: "Wei",
+    //                                              access: rhs,
+    //                                              shadowVariablePrefix: shadowVariablePrefix)
+    //  let (lExpr, lStmts, lPostStmts) = process(lhs)
+    //  let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
+    //  return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
 
     case .userDefinedType(let structName):
       // Return function which returns BExpr to access field
@@ -890,8 +896,8 @@ extension BoogieTranslator {
 
       let accessEnclosingType: String
       switch lhsType {
-      case .stdlibType(.wei):
-        accessEnclosingType = "Wei"
+      //case .stdlibType(.wei):
+      //  accessEnclosingType = "Wei"
 
       case .userDefinedType(let structName):
         // Return function which returns BExpr to access field

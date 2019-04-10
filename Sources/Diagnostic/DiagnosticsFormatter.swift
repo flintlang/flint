@@ -5,9 +5,9 @@
 //  Created by Franklin Schrans on 1/4/18.
 //
 
-import Foundation
 import Rainbow
 import Source
+import Utils
 
 /// Formats error and warning messages.
 public struct DiagnosticsFormatter {
@@ -42,8 +42,8 @@ public struct DiagnosticsFormatter {
     let infoLine = "\(infoTopic)\(sourceFileText):"
     let body: String
 
-    if let sourceContext = sourceContext, let file = diagnosticFile {
-      let sourceCode = try sourceContext.sourceCode(in: file)
+    if let sourceContext = sourceContext, let file = diagnosticFile,
+       let sourceCode = try? sourceContext.sourceCode(in: file) {
       let sourcePreview = renderSourcePreview(at: diagnostic.sourceLocation,
                                               sourceCode: sourceCode, highlightColor: highlightColor, style: style)
       body = """
@@ -105,12 +105,5 @@ public struct DiagnosticsFormatter {
     return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) +
         String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) +
         String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
-  }
-}
-
-fileprivate extension String {
-  func indented(by level: Int) -> String {
-    let lines = components(separatedBy: "\n")
-    return lines.joined(separator: "\n" + String(repeating: " ", count: level))
   }
 }

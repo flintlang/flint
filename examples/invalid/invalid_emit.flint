@@ -1,0 +1,14 @@
+contract Events {
+  event eventA {
+    let addr: Address
+    let x: Int
+  }
+}
+
+Events :: caller <- (any) {
+  public init() {}
+
+  public func A() {
+    emit 2 + 2
+  }
+}

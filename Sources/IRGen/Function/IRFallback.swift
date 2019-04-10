@@ -23,7 +23,7 @@ struct IRContractFallback {
 
   var parameterNames: [String] {
     return fallbackDeclaration.explicitParameters.map { parameter in
-      return IRIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext)
+      return IRIdentifier(identifier: parameter.identifier).rendered(functionContext: functionContext).description
     }
   }
 

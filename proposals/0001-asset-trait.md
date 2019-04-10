@@ -8,13 +8,13 @@
 
 ## Introduction
 
-Smart contracts can carry out sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value (for example, currency such as Wei). Asset types support a restricted set of operations and have their own semantics.
+Smart contracts can carry out sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value \(for example, currency such as Wei\). Asset types support a restricted set of operations and have their own semantics.
 
-Assets can be **transferred** from/to other Assets of the same type (for example, transferring Wei from one variable to another). By default, it is not possible to create an Asset from a raw type (such as an Integer), and they cannot be implicitly destroyed.
+Assets can be **transferred** from/to other Assets of the same type \(for example, transferring Wei from one variable to another\). By default, it is not possible to create an Asset from a raw type \(such as an Integer\), and they cannot be implicitly destroyed.
 
 In the context of currency, smart contracts often use **state properties** to record information about the balance they possess. So far, making such properties accurately reflect the balance the contract actually possesses had to be done manually by the programmer. Oversights, such as forgetting to update a state property, might lead to inconsistencies between a smart contract's actual balance and its state properties' view. Asset types provide a **safe** way of handling currency in Flint.
 
-Making `Wei` and other currency types implement `Asset` allow the contract's state to always **accurately** represent the actual contract's balance (by default). The type system enforces Wei transfers to be recorded in the contract's state. Adding Wei to a contract can be done safely through an `@payable` function. 
+Making `Wei` and other currency types implement `Asset` allow the contract's state to always **accurately** represent the actual contract's balance \(by default\). The type system enforces Wei transfers to be recorded in the contract's state. Adding Wei to a contract can be done safely through an `@payable` function.
 
 ```swift
 // Wei implements Asset
@@ -28,12 +28,12 @@ Bank :: account <- (balances.keys) {
   mutating func deposit(implicit value: inout Wei) {
     // Omitting this line causes a compiler warning: the value received should be recorded.
     balances[address].transfer(&value)
-  }
-  
+  }
+
   mutating func withdraw() {
     // balances[account] is automatically set to 0 before transferring.
     send(account, &balances[account])
-  }
+  }
 }
 ```
 
@@ -53,19 +53,19 @@ contract Bank {
 Bank :: account <- (balances.keys) {
   @payable
   mutating func deposit(implicit value: inout Wei) {
-    balances[account] += value // ⍺
-  }
-  
+    balances[account] += value // ⍺
+  }
+
   mutating func withdraw() {
     send(account, balances[account])
-    balances[account] = 0 // β
-  }
+    balances[account] = 0 // β
+  }
 }
 ```
 
 The following Solidity contracts show how call reentrancy can result in contracts sending more Wei than they intended to. The `withdraw` function retrieves the balance of the given account, transfers it back, then sets it to 0. On line 13, an external call is performed using the low-level `call` function, attaching a Wei value. No function signature is specified, so the target’s fallback function is called. The vulnerability is exploited if the target’s fallback function calls back into `withdraw(address)`. Lines 11–13 will be executed again, without having set the recipient’s balance to 0. Vulnerable thus sends balance again, and the process repeats itself until the transaction’s gas is exhausted.
 
-```
+```text
 contract Vulnerable {
   mapping(address => uint256) public balances;
 
@@ -86,8 +86,7 @@ contract Attacker {
 }
 ```
 
-The vulnerability can be avoided by swapping the last two lines of the `withdraw` function.
-A type system could help ensure a contract can't send more Wei than it intended to.
+The vulnerability can be avoided by swapping the last two lines of the `withdraw` function. A type system could help ensure a contract can't send more Wei than it intended to.
 
 ## Proposed solution
 
@@ -103,16 +102,16 @@ Bank :: account <- (balances.keys) {
   mutating func deposit(implicit value: inout Wei) {
     // Omitting this line causes a compiler warning: the value received should be recorded.
     balances[address].transfer(&value)
-  }
-  
+  }
+
   mutating func withdraw() {
     // balances[account] is automatically set to 0 before transferring.
     send(account, &balances[account])
-  }
+  }
 }
 ```
 
-We introduce the `Asset` trait and make `Wei` an instance of it. A Flint `Asset` represents an item of value (for example, currency). Asset types support a restricted set of operations and have their own semantics.
+We introduce the `Asset` trait and make `Wei` an instance of it. A Flint `Asset` represents an item of value \(for example, currency\). Asset types support a restricted set of operations and have their own semantics.
 
 The asset trait is defined as follows:
 
@@ -122,7 +121,7 @@ trait Asset {
 
   // Create the asset by transferring a given amount of asset's contents.
   init(from other: inout Self, amount: RawType)
- 
+
   // Unsafely create the Asset using the given raw value.
   init(unsafeValue: RawType)
 
@@ -225,9 +224,8 @@ struct Wei: Asset, Currency {
 ## Semantics
 
 Compiler warnings are triggered when asset local variables or parameters are not consumed exactly once in the scope of the function.
-*****************
-SUSAN: WHY IS THIS ONLY A WARNING RATHER THAN AN  ERROR?
-*****************
+
+SUSAN: WHY IS THIS ONLY A WARNING RATHER THAN AN ERROR?
 
 ### Transferring an asset
 
@@ -294,7 +292,6 @@ a.unsafelySetRawValue(50)
 }
 ```
 
-
 ### Unsupported operations
 
 #### Assets as parameters
@@ -346,8 +343,7 @@ func foo() {
 
 ### Impact on external function call
 
-It is not possible to declare a function taking `inout` parameters (required for Asset types)
-with `public` visibility.
+It is not possible to declare a function taking `inout` parameters \(required for Asset types\) with `public` visibility.
 
 ### Example: Withdrawing a specific amount
 
@@ -408,7 +404,7 @@ Wallet :: (owner) {
     for i in (0..<beneficiaries.count) {
       var allocation = Wei(from: &balance, amount: amount * weights[i])
       allocation.transfer(from: &bonus, amount: beneficiaryBonus)
-      
+
       send(beneficiaries[i], &allocation)
     }
   }
@@ -420,9 +416,8 @@ Wallet :: (owner) {
 ### Special syntax
 
 In the future, we should consider using syntactic sugar for the `Asset` operations.
-**********
+
 SUSAN: WHAT SHOULD THIS LOOK LIKE?
-**********
 
 ### @autodestroying attribute
 
@@ -504,4 +499,5 @@ class Wei: Asset<Int> {
 
 ### Linear types
 
-We considered implement the Asset trait as linear type. Local variables would have needed to be consumed exactly once in the scope they are defined. State properties however would only be able to be consumed at most once, making them affine types. These rules are however not enforcable for assets contained in arrays or dictionaries, due to aliasing issues. Instead, the compiler produces warnings whenever it can detect such cases. 
+We considered implement the Asset trait as linear type. Local variables would have needed to be consumed exactly once in the scope they are defined. State properties however would only be able to be consumed at most once, making them affine types. These rules are however not enforcable for assets contained in arrays or dictionaries, due to aliasing issues. Instead, the compiler produces warnings whenever it can detect such cases.
+

@@ -1,0 +1,20 @@
+contract Factorial {
+  var value: Int = 0
+}
+
+Factorial :: (any) {
+  public init() {}
+
+  func factorial(n: Int) -> Int {
+    if (n < 2) { return 1 } 
+    return n * factorial(n: n - 1)
+  }
+
+  public mutating func calculate(n: Int) {
+    value = factorial(n: n)
+  }
+
+  public func getValue() -> Int {
+    return value
+  }
+}

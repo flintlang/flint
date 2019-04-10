@@ -14,7 +14,7 @@ public struct FunctionInformation {
   public var isSignature: Bool
 
   public var parameterTypes: [RawType] {
-    return declaration.signature.parameters.map { $0.type.rawType }
+    return declaration.signature.parameters.rawTypes
   }
 
   var parameterIdentifiers: [Identifier] {
@@ -23,5 +23,9 @@ public struct FunctionInformation {
 
   public var resultType: RawType {
     return declaration.signature.rawType
+  }
+
+  var requiredParameterIdentifiers: [Identifier] {
+    return declaration.signature.parameters.filter { $0.assignedExpression == nil }.map { $0.identifier }
   }
 }

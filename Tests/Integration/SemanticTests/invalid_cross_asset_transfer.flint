@@ -1,0 +1,84 @@
+// RUN: %flintc %s --verify
+
+struct trait TheAsset {
+  // Moves `amount` from `source` into `this` asset.
+  mutating func transfer(source: inout Self, amount: Int) {
+    if source.getRawValue() < amount {
+      fatalError()
+    }
+
+    source.setRawValue(value: source.getRawValue() - amount)
+    setRawValue(value: getRawValue() + amount)
+  }
+
+  // Returns the funds contained in this asset, as an integer.
+  mutating func setRawValue(value: Int) -> Int
+
+  // Returns the funds contained in this asset, as an integer.
+  func getRawValue() -> Int
+}
+
+struct TheAssetOne: TheAsset {
+  var value: Int = 0
+
+  mutating func setRawValue(value: Int) -> Int {
+    self.value = value
+    return value
+  }
+
+  func getRawValue() -> Int {
+    return value
+  }
+}
+
+struct TheAssetTwo: TheAsset {
+  var value: Int = 0
+
+  mutating func setRawValue(value: Int) -> Int {
+    self.value = value
+    return value
+  }
+
+  func getRawValue() -> Int {
+    return value
+  }
+}
+
+struct Comparison {
+  init() {}
+
+  mutating func transfer() {
+    var assetOneDestination: TheAssetOne = TheAssetOne()
+    var assetOneSource: TheAssetOne = TheAssetOne()
+
+    assetOneDestination.transfer(source: &assetOneSource, amount: 100)
+
+    var assetTwoDestination: TheAssetTwo = TheAssetTwo()
+    var assetTwoSource: TheAssetTwo = TheAssetTwo()
+
+    assetTwoDestination.transfer(source: &assetTwoSource, amount: 100)
+
+    assetOneDestination.transfer(&assetTwoDestination, 100) // expected-error {{Function 'transfer' is not in scope}}
+  }
+}
+
+contract A {}
+
+A :: (any) {
+  public init() {}
+
+  public mutating func transfer() -> Bool {
+    var assetOneDestination: TheAssetOne = TheAssetOne()
+    var assetOneSource: TheAssetOne = TheAssetOne()
+
+    assetOneDestination.transfer(source: &assetOneSource, amount: 100)
+
+    var assetTwoDestination: TheAssetTwo = TheAssetTwo()
+    var assetTwoSource: TheAssetTwo = TheAssetTwo()
+
+    assetTwoDestination.transfer(source: &assetTwoSource, amount: 100)
+
+    assetOneDestination.transfer(&assetTwoDestination, 100) // expected-error {{Function 'transfer' is not in scope}}
+    return true
+  }
+}

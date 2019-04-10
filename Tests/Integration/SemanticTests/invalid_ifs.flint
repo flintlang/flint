@@ -1,0 +1,70 @@
+// RUN: %flintc %s --verify
+
+contract Test {
+  var a: Int = 0
+  var b: Int = 1
+}
+
+Test :: (any) {
+  public init() {}
+}
+
+Test :: caller <- (any) {
+  func one(x: Int) -> Bool {
+    return x == 1
+  }
+
+  func double(x: Int) -> Int {
+    return 2 * x
+  }
+
+  func test(b: Bool) -> Int {
+    if b {
+      return 1
+    }
+
+    let x: Int = 1
+
+    if one(x: x) {
+      return 0
+    }
+
+    if one(x: double(x: x)) {
+      return 2
+    }
+
+    if b && one(x: x) || one(x: double(x: x)) {
+      return 3
+    }
+
+    if x == 2 * x + double(x: x) {
+      return 4
+    }
+
+    if let x: Int = 5 { // expected-error {{Invalid redeclaration of 'x'}}
+      return 5
+    }
+
+    if let y: Int = 5 {
+      return 5
+    }
+
+    if var y: Int = 5 { // expected-error {{Condition has invalid type: must be Bool or a valid let statement}}
+      return 5
+    }
+
+    if double(x: x) { // expected-error {{Condition has invalid type: must be Bool or a valid let statement}}
+      return 0
+    }
+
+    if 2 + 2 { // expected-error {{Condition has invalid type: must be Bool or a valid let statement}}
+      return 0
+    }
+
+    if x { // expected-error {{Condition has invalid type: must be Bool or a valid let statement}}
+      return 0
+    }
+
+    return x
+  }
+}

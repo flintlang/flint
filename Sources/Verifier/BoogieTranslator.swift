@@ -720,8 +720,8 @@ class BoogieTranslator {
     switch type {
     case .basicType(let basicType):
       return convertBasicType(basicType)
-    case .stdlibType(let stdlibType):
-      return convertStdlibType(stdlibType)
+    //case .stdlibType(let stdlibType):
+    //  return convertStdlibType(stdlibType)
     case .dictionaryType(let keyType, let valueType):
       return BType.map(convertType(keyType), convertType(valueType))
     case .arrayType(let type):
