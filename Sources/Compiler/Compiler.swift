@@ -15,6 +15,7 @@ import SemanticAnalyzer
 import TypeChecker
 import Optimizer
 import IRGen
+import Verifier
 
 /// Runs the different stages of the compiler.
 public struct Compiler {
@@ -26,7 +27,7 @@ public struct Compiler {
     Optimizer(),
     TraitResolver(),
     FunctionCallCompleter(),
-    IRPreprocessor()]
+    CallGraphGenerator()]
 
   private static func exitWithFailure() -> Never {
     print("Failed to compile.")
@@ -90,16 +91,12 @@ extension Compiler {
       exitWithFailure()
     }
 
-    if config.dumpAST {
-      print(ASTDumper(topLevelModule: ast).dump())
-      exit(0)
-    }
+    let sourceContext = SourceContext(sourceFiles: config.inputFiles)
 
     // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast).run(
-      passes: config.astPasses,
-      in: environment,
-      sourceContext: SourceContext(sourceFiles: config.inputFiles))
+    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: config.astPasses,
+                                                        in: environment,
+                                                        sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
@@ -107,9 +104,49 @@ extension Compiler {
       exit(0)
     }
 
+    if config.dumpAST {
+      print(ASTDumper(topLevelModule: passRunnerOutcome.element).dump())
+      exit(0)
+    }
+
+    // Run verifier
+    if !config.skipVerifier {
+      let (verified, errors) = Verifier(dumpVerifierIR: config.dumpVerifierIR,
+                                        printVerificationOutput: config.printVerificationOutput,
+                                        boogieLocation: "boogie/Binaries/Boogie.exe",
+                                        monoLocation: "/usr/bin/mono",
+                                        topLevelModule: passRunnerOutcome.element,
+                                        environment: passRunnerOutcome.environment,
+                                        sourceContext: sourceContext,
+                                        normaliser: IdentifierNormaliser()).verify()
+
+      if verified {
+        print("Contract Verified!")
+      } else {
+        print("Contract not verified")
+        _ = try config.diagnostics.checkpoint(errors)
+        exitWithFailure()
+      }
+    }
+
+    if config.skipCodeGen {
+      exit(0)
+    }
+
+    // Run final IRPreprocessor pass
+    let irPreprocessOutcome = ASTPassRunner(ast: passRunnerOutcome.element).run(
+      passes: [IRPreprocessor()],
+      in: environment,
+      sourceContext: sourceContext)
+    if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {
+      if failed {
+        exitWithFailure()
+      }
+      exit(0)
+    }
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element,
-                                 environment: passRunnerOutcome.environment)
+    let irCode = IRCodeGenerator(topLevelModule: irPreprocessOutcome.element,
+                                 environment: irPreprocessOutcome.environment)
       .generateCode()
 
     // Compile the YUL IR code using solc.

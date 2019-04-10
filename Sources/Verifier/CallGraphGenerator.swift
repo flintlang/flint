@@ -2,12 +2,10 @@ import AST
 
 // Fill the environment's call graph
 public class CallGraphGenerator: ASTPass {
-  private let normaliser: IdentifierNormaliser
+  private let normaliser = IdentifierNormaliser()
   private var callerFunctionName: String?
 
-  public init(normaliser: IdentifierNormaliser) {
-    self.normaliser = normaliser
-  }
+  public init() {}
 
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {

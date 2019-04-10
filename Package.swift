@@ -65,6 +65,7 @@ let package = Package(
         "TypeChecker",
         "Optimizer",
         "IRGen",
+        "Verifier",
         "Commander",
         "Rainbow",
         "Symbolic",

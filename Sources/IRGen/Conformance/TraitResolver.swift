@@ -68,6 +68,8 @@ public struct TraitResolver: ASTPass {
           return parameter
         }
 
+      functionDeclaration.scopeContext!.parameters.append(contentsOf: functionDeclaration.signature.parameters)
+
       // We update the passContext with a new function as the signature has changed.
       let newPassContext = passContext.withUpdates { (context) in
           context.environment!.addFunction(functionDeclaration,

@@ -165,7 +165,6 @@ extension Environment {
                    typeStates: [TypeState] = [],
                    callerProtections: [CallerProtection] = [],
                    scopeContext: ScopeContext) -> RawType {
-
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression,
