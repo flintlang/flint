@@ -14,10 +14,11 @@ public struct Attribute: ASTNode {
   var atToken: Token
   var identifierToken: Token
 
-  public init?(atToken: Token, identifierToken: Token) {
+  public init(atToken: Token, identifierToken: Token) {
     guard case .identifier(let attribute) = identifierToken.kind,
       let kind = Kind(rawValue: attribute) else {
-        return nil
+        print("found attribute with token which isn't an identiffier")
+        fatalError()
     }
 
     self.kind = kind
@@ -27,7 +28,6 @@ public struct Attribute: ASTNode {
 
   public enum Kind: String {
     case payable
-    case abstract
   }
 
   // MARK: - ASTNode

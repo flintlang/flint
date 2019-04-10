@@ -62,7 +62,7 @@ public class CallGraphGenerator: ASTPass {
   public func postProcess(functionCall: FunctionCall,
                           passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var updatedContext = passContext
-    var environment = passContext.environment!
+    let environment = passContext.environment!
     let currentType = passContext.enclosingTypeIdentifier!.name
     let enclosingType = functionCall.identifier.enclosingType ?? currentType
 

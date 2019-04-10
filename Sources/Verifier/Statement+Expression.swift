@@ -224,7 +224,7 @@ extension BoogieTranslator {
       // Ignore emit statements
       return []
 
-    case .doCatchStatement(let doCatchStatement):
+    case .doCatchStatement: //(let doCatchStatement):
       //TODO: Implement
       print("not implemented do catch statement yet")
       fatalError()

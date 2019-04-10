@@ -61,7 +61,6 @@ extension Parser {
       }
     }
 
-    print(declarations)
     return declarations
   }
 
@@ -269,31 +268,27 @@ extension Parser {
 
     let attrs = try parseAttributes()
     let modifiers = try parseModifiers()
-    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
-      throw raise(.statementSameLine(at: latestSource))
-    }
-    let signatureDeclaration: Bool
-    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
-      signatureDeclaration = false
-    } else {
-      signatureDeclaration = true
-    }
 
     let declType = currentToken?.kind
     if .func == declType {
-      if signatureDeclaration {
-        return .functionSignatureDeclaration(
-          try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      } else {
-        return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      // parse function signature, and if there's a body, parse that
+      let signature = try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .functionDeclaration(FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
+      return .functionSignatureDeclaration(signature)
     } else if .init == declType {
-      if signatureDeclaration {
-        return .specialSignatureDeclaration(
-          try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      } else {
-        return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
+      let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .specialDeclaration(SpecialDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
+      return .specialSignatureDeclaration(signature)
     } else {
       throw raise(.badMember(in: "trait", at: latestSource))
     }
@@ -323,25 +318,28 @@ extension Parser {
       throw raise(.statementSameLine(at: latestSource))
     }
 
-    // Check if abstract function
-    let signatureDeclaration = attrs.filter({x in x.kind == .abstract}).count > 0
+    let declType = currentToken?.kind
+    if .func == declType {
+      // parse function signature, and if there's a body, parse that
+      let signature = try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
 
-    let first = currentToken?.kind
-    if .func == first {
-      if signatureDeclaration {
-        return .functionSignatureDeclaration(
-          try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .functionDeclaration(FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
-      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      return .functionSignatureDeclaration(signature)
+    } else if .init == declType || .fallback == declType {
+      let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .specialDeclaration(SpecialDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
+      }
+      return .specialSignatureDeclaration(signature)
     }
 
-    if .init == first  || .fallback == first {
-      if signatureDeclaration {
-        return .specialSignatureDeclaration(
-          try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      }
-      return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
-    }
     throw raise(.badMember(in: "contract behaviour", at: latestSource))
   }
 

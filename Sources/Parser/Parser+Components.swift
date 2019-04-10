@@ -51,10 +51,8 @@ extension Parser {
   // MARK: Attribute
   func parseAttribute() throws -> Attribute {
     let at = try consume(.punctuation(.at), or: .expectedAttribute(at: latestSource))
-    guard let token = currentToken, let attribute = Attribute(atToken: at, identifierToken: token) else {
-     throw raise(.missingAttributeName(at: latestSource))
-    }
-    currentIndex += 1
+    let identifier = try parseIdentifier()
+    let attribute = Attribute(atToken: at, identifierToken: identifier.identifierToken)
     consumeNewLines()
     return attribute
   }
