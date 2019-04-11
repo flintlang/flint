@@ -14,7 +14,9 @@ PonziToken :: (any) {
 }
 
 PonziToken :: caller <- (any) {
-  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool {
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
+    mutates (allowed, totalSupply, balance)
+  {
     let allowance: Int = allowed[from][caller]
     assert(allowance >= value)
     allowed[from][caller] -= value
@@ -24,19 +26,23 @@ PonziToken :: caller <- (any) {
     return true
   }
 
-  mutating func transferTokens(from: Address, to: Address, value: Int) {
-    assert(balanceOf[from] >= value)
+  func transferTokens(from: Address, to: Address, value: Int)
+    mutates (totalSupply, balance)
+  {
+    assert(balance[from] >= value)
     if to == deployedAddress {
       sell(value)
     }
 		// Omitted as not relevant to vulnerability
   }
 
-  mutating func sell(amount: Int) {
+  func sell(amount: Int)
+    mutates (totalSupply, balance)
+  {
     // remove tokens
     totalSupply -= amount
     // Explitly allow overflow here
-    balanceOf[caller] = balanceOf[caller] &- amount
+    balance[caller] = balance[caller] &- amount
   }
 }
 
@@ -48,7 +54,7 @@ PonziToken :: caller <- (any) {
 // When Bob calls transferFrom(claire, ponziToken, 1)
 // transferTokens(claire, ponziToken, 1) is called
 // Which then calls sell(1)
-// sell(1) updates the balanceOf[bob] which equals 0 to -1 leading to 2^256 - 1
+// sell(1) updates the balance[bob] which equals 0 to -1 leading to 2^256 - 1
 // as the current balance of bob.
 contract Bob {
   let ponziToken: Address
@@ -61,7 +67,9 @@ Bob :: (any) {
     claire = proxy
   }
 
-  public exploit() {
+  public func exploit()
+    mutates (PonziToken.allowed, PonziToken.totalSupply, PonziToken.balance)
+  {
     transferFrom(claire, ponziToken, 1)
   }
 }

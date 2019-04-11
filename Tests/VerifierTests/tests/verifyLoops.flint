@@ -3,30 +3,30 @@ struct L {
   public init() {}
 
   public func loopTest() {
-    var is: [Int] = [1,2,3]
-    for let i: Int in is {
-      call(i)
-      assert (i <= 3)
+    var js: [Int] = [1,2,3]
+    for let j: Int in js {
+      test(i: j)
+      assert(j <= 3)
     }
 
     for let j: Int in (0...5) {
-      call(j)
+      test(i: j)
     }
 
     var bound: Int = 10
     for let k: Int in (0..<10) {
-      call(k)
+      test(i: k)
       assert (k < bound)
     }
   }
 
   func indirectIterable() {
-    var is: [[Int]] = []
-    is[0] = [1]
-    is[1] = [2]
-    for let i: [Int] in is {
-      for let l: Int in i {
-        call(l)
+    var ks: [[Int]] = []
+    ks[0] = [1]
+    ks[1] = [2]
+    for let k: [Int] in ks {
+      for let l: Int in k {
+        test(i: l)
       }
     }
 
@@ -55,7 +55,7 @@ struct L {
   // Literal array not implemented yet
   func literalLoop() {
     for let j: Int in [1,2,3,4] {
-      call(j)
+      test(i: j)
       assert(j<5)
     }
   }
@@ -63,7 +63,7 @@ struct L {
   func dictLoop() {
     var d: [Int: Address] = [:]
     for let v: Address in d {
-      call(1, v)
+      test(i: 1, a: v)
     }
   }
 
@@ -90,7 +90,7 @@ struct L {
   // Can't return array types?
   //func loopFunctionCall() {
   //  for let i: Int in getIterable() {
-  //    call(i)
+  //    test(i: i)
   //  }
   //}
 
@@ -99,16 +99,16 @@ struct L {
   //}
 
   func test() {
-    var is: [Int] = [1,2,3]
-    assert (is.size == 3)
+    var js: [Int] = [1,2,3]
+    assert (js.size == 3)
 
-    var js: [Int: Int] = [:]
-    assert (js.size == 0)
+    var ks: [Int: Int] = [:]
+    assert (ks.size == 0)
   }
 
-  func call(i: Int) { }
+  func test(i: Int) { }
 
-  func call(i:  Int, a: Address) { }
+  func test(i:  Int, a: Address) { }
 }
 
 contract C {}

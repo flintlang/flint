@@ -62,7 +62,7 @@ SimpleDAO @(Join) :: caller <- (any) {
   public func join(implicit value: inout Wei)
     mutates (balances, Wei.rawValue)
   {
-    balances[caller].transfer(&value)
+    balances[caller].transfer(source: &value)
   }
 }
 
@@ -132,7 +132,7 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
        let totalstake: Int = getTotalStake()
        for let value: Wei in balances {
          let rawvalue: Int = (proposals[proposal].payout * value.getRawValue()) / totalstake
-         transfervalue.transfer(&value, rawvalue)
+         transfervalue.transfer(source: &value, amount: rawvalue)
        }
        send(proposals[proposal].recipient, &transfervalue)
     }

@@ -3,7 +3,7 @@
 // Based on openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 // ----------------------------------------------------------------------------
 
-trait ERC20 {
+struct trait ERC20 {
   event transfer {
     let from: Address
     let to: Address

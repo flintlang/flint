@@ -13,7 +13,9 @@ KotET :: caller <- (any) {
   }
 
   @payable
-  public mutating func dethrone(implicit value: Wei) {
+  public func dethrone(implicit value: Wei)
+    mutates (Wei.rawValue, king, claimPrice, pot)
+  {
     if value.getRawValue() < claimPrice {
       fatalError()
     }
@@ -21,10 +23,10 @@ KotET :: caller <- (any) {
     let oldKing: Address = king
     let compensation: Wei = Wei(&pot, calculateCompensation())
 
-    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.claimPrice = calculateNewPrice(bid: value.getRawValue())
     self.king = caller
 
-    pot.transfer(&value)
+    pot.transfer(source: &value)
     send(oldKing, &compensation) // To add new external call syntax
     // Currently vulnerable to an oldKing that throws when sending
     // Should delegate to another function to call
@@ -55,16 +57,18 @@ ValidKotET :: caller <- (any) {
   }
 
   @payable
-  public mutating func dethrone(implicit value: Wei) {
+  public func dethrone(implicit value: Wei)
+    mutates (Wei.rawValue, claimPrice, king, pot)
+  {
     if value.getRawValue() < claimPrice {
       fatalError()
     }
     pastKings[king] = Wei(&pot, calculateCompensation())
 
-    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.claimPrice = calculateNewPrice(bid: value.getRawValue())
     self.king = caller
 
-    pot.transfer(&value)
+    pot.transfer(source: &value)
   }
 
   func calculateNewPrice(bid: Int) -> Int {

@@ -34,7 +34,7 @@ FlightManager :: caller <- (any) {
     assert(flightInformation.isCancelled == false)
 
     // Record the received Ether in the contract's state.
-    amountPaid[caller].transfer(&value)
+    amountPaid[caller].transfer(source: &value)
 
     passengers[numPassengers] = caller
     numPassengers += 1

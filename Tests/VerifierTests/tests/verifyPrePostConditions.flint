@@ -49,7 +49,7 @@ VerifyPrePostConditions :: (any) {
   func failPreCondition()
   {
     //VERIFY-FAIL
-    testParamsPreConditions(0, 0)
+    testParamsPreConditions(input: 0, increment: 0)
   }
 
   //VERIFY-FAIL

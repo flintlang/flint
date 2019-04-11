@@ -17,7 +17,7 @@ struct J {
   }
 
   public init()
-    mutates (S.i, S.is, S.ks, S.j)
+    mutates (S.i, S.js, S.ks, S.j)
   {
     self.s = S()
     self.ss = [:]
@@ -26,7 +26,7 @@ struct J {
 
 struct S {
   var i: Int
-  var is: [Int]
+  var js: [Int]
   var ks: [[[Int]]]
   var j: Int = 0
 
@@ -36,25 +36,25 @@ struct S {
   public init()
     pre (1==1)
   {
-    self.is = []
+    self.js = []
     self.ks = []
     i = 1
   }
 
   public func wow()
-    mutates (is, j)
+    mutates (js, j)
     pre(2 == 2)
     pre (j < 10)
     post (j < 10)
   {
-    is[0] = 0
+    js[0] = 0
     j = 1
   }
 }
 
 Test :: (any) {
   public init()
-    mutates (S.i, S.is, S.j, S.ks)
+    mutates (S.i, S.js, S.j, S.ks)
     pre(1==1)
   {
     s = S()
@@ -62,7 +62,7 @@ Test :: (any) {
 
   @payable
   public func t(implicit w: Wei)
-    mutates (s, S.i, S.is, S.j, S.ks, J.s, J.ss, Wei.rawValue)
+    mutates (s, S.i, S.js, S.j, S.ks, J.s, J.ss, Wei.rawValue)
   {
     let v: Int = w.getRawValue()
     let i: Int = s.i
@@ -71,14 +71,14 @@ Test :: (any) {
     //s.i = 0
 
     let j: J = J(&s)
-    let k: Int = j.ss[i+=1].is[1]
+    let k: Int = j.ss[i+=1].js[1]
 
     let size0: Int = j.ss.size
     let size1: Int = s.ks[0][1].size
   }
 
   //VERIFY-FAIL
-  public violateSInvariant()
+  public func violateSInvariant()
     mutates (S.i)
   {
     s.i = 0

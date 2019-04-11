@@ -1,13 +1,13 @@
 //VERIFY-CHECK
 contract LocalVariables {
     var ten: Int = 10
-    var is: [Int]
+    var js: [Int]
 }
 
 LocalVariables :: (any) {
 
   public init() {
-    is = []
+    js = []
   }
 
   public func localVariables() {
@@ -16,12 +16,12 @@ LocalVariables :: (any) {
   }
 
   public func loop()
-    mutates (is)
+    mutates (js)
   {
     var k: Int = 5
-    is[0] = 0
+    js[0] = 0
 
-    //for let i: Int in is {
+    //for let j: Int in js {
     //  k += i
     //}
   }
@@ -29,8 +29,8 @@ LocalVariables :: (any) {
   public func scoping()
     mutates (ten)
   {
-    var is: Int = 0
-    is = 6
+    var js: Int = 0
+    js = 6
     let j: Int = self.ten
     self.ten += 5
   }
@@ -49,6 +49,6 @@ LocalVariables :: (any) {
   }
 
   public func selfArray() -> Int {
-    return self.is[0]
+    return self.js[0]
   }
 }

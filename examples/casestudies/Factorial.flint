@@ -7,13 +7,13 @@ Factorial :: (any) {
 
   func factorial(n: Int) -> Int {
     if (n < 2) { return 1 } 
-    return n * factorial(n - 1)
+    return n * factorial(n: n - 1)
   }
 
   public func calculate(n: Int)
     mutates (value)
   {
-    value = factorial(n)
+    value = factorial(n: n)
   }
 
   public func getValue() -> Int {

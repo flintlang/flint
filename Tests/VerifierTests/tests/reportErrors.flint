@@ -20,7 +20,7 @@ C :: (any) {
   func B ()
   {
     //VERIFY-FAIL
-    A(3)
+    A(i: 3)
   }
 
   // Violate invariant
@@ -52,7 +52,7 @@ C :: (any) {
   {
     i = 2
     //VERIFY-FAIL
-    A(2)
+    A(i: 2)
     i = 3
   }
 }
