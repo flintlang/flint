@@ -369,7 +369,8 @@ extension BoogieTranslator {
     prePostConditions += invariants
 
     var modifies = [String]()
-    for mutates in functionDeclaration.mutates {
+    // Get mutates from function clause, or from environment if the function was made from a trait
+    for mutates in functionDeclaration.mutates + (self.traitFunctionMutates[currentFunctionName] ?? []) {
       let enclosingType = mutates.enclosingType ?? getCurrentTLDName()
       let variableType = environment.type(of: mutates.name, enclosingType: enclosingType)
       switch variableType {

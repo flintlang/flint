@@ -82,7 +82,8 @@ public class CallGraphGenerator: ASTPass {
         let normalisedFunctionName = normaliseFunctionName(functionName: functionCall.identifier.name,
                                                    parameterTypes: functionInformation.parameterTypes,
                                                    enclosingType: enclosingType)
-        environment.addFunctionCall(caller: currentFunction, callee: normalisedFunctionName)
+        environment.addFunctionCall(caller: currentFunction, callee: (normalisedFunctionName,
+                                                                      functionInformation.declaration))
         updatedContext.environment = environment
 
       case .matchedInitializer(let specialInformation):
@@ -94,7 +95,8 @@ public class CallGraphGenerator: ASTPass {
         let normalisedFunctionName = normaliseFunctionName(functionName: specialInformation.declaration.asFunctionDeclaration.name,
                                                            parameterTypes: specialInformation.parameterTypes,
                                                            enclosingType: functionCall.identifier.name)
-        environment.addFunctionCall(caller: currentFunction, callee: normalisedFunctionName)
+        environment.addFunctionCall(caller: currentFunction, callee: (normalisedFunctionName,
+                                                                      specialInformation.declaration.asFunctionDeclaration))
         updatedContext.environment = environment
 
       case .failure(let candidates):

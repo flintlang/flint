@@ -283,9 +283,13 @@ extension Environment {
     types[type]!.publicFallback = publicFallback
   }
 
-  public func addFunctionCall(caller: String, callee: String) {
-    var existingCalls = callGraph[caller] ?? Set<String>()
-    existingCalls.insert(callee)
-    callGraph[caller] = existingCalls
+  // Add function call to call graph
+  public func addFunctionCall(caller: String, callee: (String, FunctionDeclaration)) {
+    var existingCalls = callGraph[caller] ?? [(String, FunctionDeclaration)]()
+    // Avoid having duplicates
+    if existingCalls.first(where: { $0.0 == callee.0 }) == nil {
+      existingCalls.append(callee)
+      callGraph[caller] = existingCalls
+    }
   }
 }
