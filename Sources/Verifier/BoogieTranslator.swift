@@ -36,7 +36,7 @@ class BoogieTranslator {
   // Mapping of each state name, for each contract state variable
   var contractStateVariableStates = [String: [String: Int]]()
   // Statements to be placed in the constructor of the contract
-  var contractConstructorInitialisations = [String: [BStatement]]()
+  var tldConstructorInitialisations = [String: [(String, Expression)]]()
 
   // Name of global variables in the contract
   var contractGlobalVariables = [String: [String]]()
@@ -256,7 +256,6 @@ class BoogieTranslator {
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
-      let type = convertType(variableDeclaration.type)
 
       // Some variables require shadow variables, eg dictionaries need an array of keys
       for bvariableDeclaration in generateVariables(variableDeclaration) {
@@ -265,16 +264,12 @@ class BoogieTranslator {
       }
 
       // Record assignment to put in constructor procedure
-      let (assignedExpression, preStatements, postStatements) = variableDeclaration.assignedExpression == nil
-        ? (defaultValue(type), [], []) : process(variableDeclaration.assignedExpression!)
-      if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
-        contractConstructorInitialisations[contractDeclaration.identifier.name] = []
+      if tldConstructorInitialisations[contractDeclaration.identifier.name] == nil {
+        tldConstructorInitialisations[contractDeclaration.identifier.name] = []
       }
-      contractConstructorInitialisations[contractDeclaration.identifier.name]! += preStatements
-      contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
-        .assignment(.identifier(name), assignedExpression, registerProofObligation(variableDeclaration.sourceLocation))
-      )
-      contractConstructorInitialisations[contractDeclaration.identifier.name]! += postStatements
+      if let assignedExpression = variableDeclaration.assignedExpression {
+        tldConstructorInitialisations[contractDeclaration.identifier.name]!.append((name, assignedExpression))
+      }
     }
 
     // TODO: Handle usage of += 1 and preStmts
@@ -361,33 +356,29 @@ class BoogieTranslator {
     var structGlobalVariables = [String]()
     var declarations = [BTopLevelDeclaration]()
 
+    // Add nextInstance variable
+    declarations.append(.variableDeclaration(BVariableDeclaration(name: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
+                                                                  rawName: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
+                                                                  type: .int)))
+
     for variableDeclaration in structDeclaration.variableDeclarations {
+      let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
       // Some variables require shadow variables, eg dictionaries need an array of keys
       for bvariableDeclaration in generateVariables(variableDeclaration, tldIsStruct: true) {
         declarations.append(.variableDeclaration(bvariableDeclaration))
         structGlobalVariables.append(bvariableDeclaration.name)
       }
 
-      /* TODO: Struct variable assignment
       // Record assignment to put in constructor procedure
-      let (assignedExpression, preStatements) = variableDeclaration.assignedExpression == nil
-        ? (defaultValue(type), []) : process(variableDeclaration.assignedExpression!)
-      if contractConstructorInitialisations[contractDeclaration.identifier.name] == nil {
-        contractConstructorInitialisations[contractDeclaration.identifier.name] = []
+      if tldConstructorInitialisations[structDeclaration.identifier.name] == nil {
+        tldConstructorInitialisations[structDeclaration.identifier.name] = []
       }
-      contractConstructorInitialisations[contractDeclaration.identifier.name]! += preStatements
-      contractConstructorInitialisations[contractDeclaration.identifier.name]!.append(
-        .assignment(.identifier(name), assignedExpression)
-      )
-      */
+      if let assignedExpression = variableDeclaration.assignedExpression {
+        tldConstructorInitialisations[structDeclaration.identifier.name]!.append((name, assignedExpression))
+      }
     }
 
     self.structGlobalVariables[getCurrentTLDName()] = structGlobalVariables
-
-    // Add nextInstance variable
-    declarations.append(.variableDeclaration(BVariableDeclaration(name: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
-                                                                  rawName: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
-                                                                  type: .int)))
 
     for functionDeclaration in structDeclaration.functionDeclarations {
       self.currentBehaviourMember = .functionDeclaration(functionDeclaration)
@@ -483,11 +474,13 @@ class BoogieTranslator {
       // Create const string for this literal -> const normalisedString: String;
       print("Not implemented translating strings")
       fatalError()
-    case .address:
-      // TODO: Implement addresses
-      // Create const address -> for this literal -> const normalisedAddress: Address;
-      print("Not implemented translating addresses")
-      fatalError()
+    case .address(let hex):
+      let hexValue = hex[hex.index(hex.startIndex, offsetBy: 2)...] // Hex literals are prefixed with 0x
+      guard let dec = Int(hex, radix: 16) else {
+        print("Couldn't convert hex address value \(hex)")
+        fatalError()
+      }
+      return .integer(dec)
     }
   }
 

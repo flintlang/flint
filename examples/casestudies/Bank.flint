@@ -7,11 +7,7 @@ contract Bank {
 
   var totalDonations: Wei
 
-  event didCompleteTransfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
+  event didCompleteTransfer (from: Address, to: Address, value: Int)
 }
 
 // The functions in this block can be called by any user.
@@ -43,7 +39,7 @@ Bank :: account <- (any) {
     mutates (totalDonations, Wei.rawValue)
   {
     // This will transfer the funds into totalDonations.
-    totalDonations.transfer(&value)
+    totalDonations.transfer(source: &value)
   }
 }
 
@@ -56,7 +52,7 @@ Bank :: (manager) {
     mutates (balances, Wei.rawValue)
   {
     var w: Wei = Wei(amount)
-    balances[account].transfer(&w)
+    balances[account].transfer(source: &w)
   }
 
   public func clear(account: Address)
@@ -84,7 +80,7 @@ Bank :: account <- (accounts) {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
     // Crashes if balances[account] doesn't have enough Wei.
-    balances[destination].transfer(&balances[account], amount)
+    balances[destination].transfer(source: &balances[account], amount: amount)
 
     // Emit the Ethereum event.
     emit didCompleteTransfer(from: account, to: destination, value: amount)
@@ -94,7 +90,7 @@ Bank :: account <- (accounts) {
   public func deposit(implicit value: Wei)
     mutates(balances, Wei.rawValue)
   {
-    balances[account].transfer(&value)
+    balances[account].transfer(source: &value)
   }
 
   public func withdraw(amount: Int)

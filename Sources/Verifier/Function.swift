@@ -286,10 +286,6 @@ extension BoogieTranslator {
     var functionPostAmble = [BStatement]()
     var functionPreAmble = [BStatement]()
 
-    if isContractInit {
-      functionPostAmble += contractConstructorInitialisations[getCurrentTLDName()] ?? []
-    }
-
     var prePostConditions = [BProofObligation]()
     var bParameters = [BParameterDeclaration]()
     bParameters += parameters.flatMap({x in process(x)})
@@ -358,6 +354,24 @@ extension BoogieTranslator {
                                                   mark: registerProofObligation(e.sourceLocation),
                                                   obligationType: .postCondition))
       }
+    }
+
+    if isContractInit || isStructInit {
+      var assignments = [BStatement]()
+
+      for (name, expression) in (tldConstructorInitialisations[getCurrentTLDName()] ?? []) {
+        let (e, pre, post) = process(expression)
+        assignments += pre
+        if isStructInit {
+          assignments.append(.assignment(.mapRead(.identifier(name),
+                                                  .identifier(self.structInstanceVariableName!)),
+                                         e, registerProofObligation(expression.sourceLocation)))
+        } else {
+          assignments.append(.assignment(.identifier(name), e, registerProofObligation(expression.sourceLocation)))
+        }
+        assignments += post
+      }
+      functionPostAmble += assignments
     }
 
     let bStatements = functionPreAmble + body.flatMap({x in process(x)}) + functionPostAmble
