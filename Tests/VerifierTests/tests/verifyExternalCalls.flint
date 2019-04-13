@@ -1,0 +1,32 @@
+//VERIFY-CHECK
+external trait Library {
+  public func getValue() -> int256
+  public func setValue(amount: int256) -> int256
+}
+contract C {
+  var v: Int = 0
+  var j: Int = 10
+  invariant (j == 10)
+}
+
+C :: (any) {
+  public init() {}
+
+  public func test(extAddress: Address)
+    mutates (v, j)
+  {
+    let libInstance: Library = Library(address: extAddress)
+    do {
+      self.v = (call libInstance.getValue()) as! Int
+    do {
+      self.v = (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      j = 3
+      fatalError()
+    }
+    } catch is ExternalCallError {
+      j = 2
+      fatalError()
+    }
+  }
+}
