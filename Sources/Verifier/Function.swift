@@ -201,7 +201,12 @@ extension BoogieTranslator {
                                                                  arguments: argumentsExpressions,
                                                                  mark: registerProofObligation(functionCall.sourceLocation)))
       return (.nop, [functionCall], argumentPostStmts)
-    default: break
+    default:
+      // Check if a trait 'initialiser' is being called
+      if environment.isTraitDeclared(rawFunctionName) {
+        // Is being called, so return dummy value - ignore the init, doesn't do anything
+        return (.integer(0), [], [])
+      }
     }
 
     // TODO: Assert that contract invariant holds

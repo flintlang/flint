@@ -109,6 +109,11 @@ public class CallGraphGenerator: ASTPass {
         default: break functionCallSwitch
         }
 
+        //TODO: Check that is actually an external trait function call
+        // For time, assume that it is
+        // External trait calls -> ignore, don't add to call graph
+        break
+
         print("call graph generation - could not find function for call: \(functionCall)")
         print(scopeContext)
         print(functionCall)

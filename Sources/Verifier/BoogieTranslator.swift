@@ -54,6 +54,10 @@ class BoogieTranslator {
   // Struct function instance variable
   var structInstanceVariableName: String?
 
+  // To track whether the current statement we're processing is in do-catch block
+  var enclosingDoBody = [Statement]()
+  var enclosingCatchBody = [BStatement]()
+
   public init(topLevelModule: TopLevelModule,
               environment: Environment,
               sourceContext: SourceContext,
@@ -476,7 +480,7 @@ class BoogieTranslator {
       fatalError()
     case .address(let hex):
       let hexValue = hex[hex.index(hex.startIndex, offsetBy: 2)...] // Hex literals are prefixed with 0x
-      guard let dec = Int(hex, radix: 16) else {
+      guard let dec = Int(hexValue, radix: 16) else {
         print("Couldn't convert hex address value \(hex)")
         fatalError()
       }
@@ -779,6 +783,13 @@ class BoogieTranslator {
       return convertType(type)
     case .userDefinedType:
       return .int
+    case .solidityType(let solidityType):
+      guard let flintParallel = solidityType.basicParallel,
+            let flintType = RawType.BasicType(rawValue: flintParallel) else {
+        print("unkown solidity type to convert to Flint type \(solidityType)")
+        fatalError()
+      }
+      return convertBasicType(flintType)
     default:
       print("not implemented conversion for type: \(type)")
       fatalError()

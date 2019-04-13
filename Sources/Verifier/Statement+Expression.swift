@@ -199,7 +199,7 @@ extension BoogieTranslator {
       // - increment index until length of iterable - work out length of iterable
 
       let body = [assignValueToVariable]
-               + forStatement.body.flatMap({x in process(x)})
+               + forStatement.body.flatMap({ process($0) })
                + [incrementIndex]
 
       // index should be less than finalIndexValue
@@ -224,10 +224,24 @@ extension BoogieTranslator {
       // Ignore emit statements
       return []
 
-    case .doCatchStatement: //(let doCatchStatement):
-      //TODO: Implement
-      print("not implemented do catch statement yet")
-      fatalError()
+    case .doCatchStatement(let doCatchStatement):
+      var doCatchStmts = [BStatement]()
+
+      // Handle nested doCatch
+      let oldEnclosingCatchBody = self.enclosingCatchBody
+      let oldEnclosingDoBody = self.enclosingDoBody
+
+      self.enclosingCatchBody = doCatchStatement.catchBody.flatMap({ process($0) })
+      self.enclosingDoBody = doCatchStatement.doBody
+      while let firstStmt = self.enclosingDoBody.first {
+        self.enclosingDoBody.remove(at: 0)
+        // Process first
+        doCatchStmts += process(firstStmt)
+      }
+      self.enclosingCatchBody = oldEnclosingCatchBody
+      self.enclosingDoBody = oldEnclosingDoBody
+
+      return doCatchStmts
     }
   }
 
@@ -251,6 +265,80 @@ extension BoogieTranslator {
       return handleFunctionCall(functionCall,
                                 structInstance: self.structInstanceVariableName == nil ? nil :
                                   .identifier(self.structInstanceVariableName!))
+
+    case .externalCall(let externalCall):
+      switch externalCall.mode {
+      case .normal:
+        //TODO: Finish
+        // have to handle error being thrown
+        // - assert invariants all hold
+        // - get return type of external call
+        // - create variable to hold return value
+        // - havoc return value
+        // - create variable to hold (wasSuccessful)
+        // - havoc executionSuccess variable
+        // if executionSucces -> continue as normal, else -> catchBlock
+
+        var stmts = [BStatement]()
+        // Only select 1 half of pre/post invariants
+        let tldInvariants = self.tldInvariants.values.flatMap({ $0 }).filter({ $0.obligationType.isPreCondition })
+        for invariant in tldInvariants {
+          stmts.append(.assertStatement(BProofObligation(expression: invariant.expression,
+                                                         mark: invariant.mark,
+                                                         obligationType: .assertion)))
+        }
+
+        guard let scopeContext = getCurrentScopeContext() else {
+          print("couldn't get scope context of current function - used for updating shadow variable")
+          fatalError()
+        }
+        let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+        let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+        let currentType = getCurrentTLDName()
+        let functionCallType = environment.type(of: .binaryExpression(externalCall.functionCall),
+                                                enclosingType: currentType,
+                                                typeStates: typeStates,
+                                                callerProtections: callerProtections,
+                                                scopeContext: scopeContext)
+
+        let boogieType = convertType(functionCallType)
+        let returnValueVariable = generateRandomIdentifier(prefix: "extern_value_") // Variable to hold return value
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
+                                                                   rawName: returnValueVariable,
+                                                                   type: boogieType))
+
+        // Variable to hold is external call completed
+        let successValueVariable = generateRandomIdentifier(prefix: "extern_sucess_")
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: successValueVariable,
+                                                                   rawName: successValueVariable,
+                                                                   type: .boolean))
+        stmts.append(.havoc(returnValueVariable, registerProofObligation(expression.sourceLocation)))
+        stmts.append(.havoc(successValueVariable, registerProofObligation(expression.sourceLocation)))
+
+        var trueStatements = [BStatement]()
+        if let nextStatement = self.enclosingDoBody.first {
+          self.enclosingDoBody.remove(at: 0)
+          trueStatements += process(nextStatement)
+        }
+
+        let handleExceptionIf = BIfStatement(condition: .identifier(successValueVariable),
+                                             trueCase: trueStatements,
+                                             falseCase: self.enclosingCatchBody,
+                                             mark: registerProofObligation(expression.sourceLocation))
+
+        stmts.append(.ifStatement(handleExceptionIf))
+        return (.identifier(returnValueVariable), stmts, [])
+
+      case .returnsGracefullyOptional:
+        // no errors,
+        print("TODO: Implement - Cannot translate external call (optional return)")
+        fatalError()
+
+      case .isForced:
+        // Very similar to normal, except if the external one fails, then just - assume false (revert contract)
+        print("TODO: Implement isForced external call")
+        fatalError()
+      }
 
     case .identifier(let identifier):
       let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
@@ -382,6 +470,10 @@ extension BoogieTranslator {
 
     case .`self`:
       return (.nop, [], [])
+
+    case .typeConversionExpression(let typeConversionExpression):
+      //TODO: Handle as? / as! ...
+      return process(typeConversionExpression.expression)
 
     // Assumption - can only be used as iterables in for-loops
     //case .range(let rangeExpression):

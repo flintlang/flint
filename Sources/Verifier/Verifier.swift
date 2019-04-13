@@ -143,7 +143,7 @@ public class Verifier {
 
     var nonVerificationErrors = [BoogieError]()
     for line in rawLines {
-      let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): Error:")
+      let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): [eE]rror:")
       if matches.count > 0 {
         if line.contains("modifies clause") {
           nonVerificationErrors.append(.modifiesFailure(line))
