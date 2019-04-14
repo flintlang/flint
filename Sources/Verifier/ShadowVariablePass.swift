@@ -69,6 +69,15 @@ public class ShadowVariablePass: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  public func process(parameter: Parameter,
+                      passContext: ASTPassContext) -> ASTPassResult<Parameter> {
+
+    if parameter.isImplicit {
+      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: parameter.type.name))
+    }
+    return ASTPassResult(element: parameter, diagnostics: [], passContext: passContext)
+  }
+
   private func normaliseFunctionName(functionName: String,
                                      parameterTypes: [RawType],
                                      enclosingType: String) -> String {

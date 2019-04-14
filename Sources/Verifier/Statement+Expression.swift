@@ -788,7 +788,7 @@ extension BoogieTranslator {
     switch rhs {
     case .functionCall(let functionCall):
       let (structInstance, instancePreStmts, instancePostStmts) = process(lhs,
-                                                                          enclosingTLD: structName)
+                                                                          enclosingTLD: enclosingType)
       let (call, callPre, callPost) = self.handleFunctionCall(functionCall,
                                                               structInstance: structInstance,
                                                               owningType: structName)

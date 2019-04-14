@@ -293,7 +293,11 @@ extension BoogieTranslator {
 
     var prePostConditions = [BProofObligation]()
     var bParameters = [BParameterDeclaration]()
-    bParameters += parameters.flatMap({x in process(x)})
+    for param in parameters {
+      let (bParam, initStatements) = processParameter(param)
+      functionPreAmble += initStatements
+      bParameters += bParam
+    }
     if let cTld = currentTLD {
       switch cTld {
       case .structDeclaration:

@@ -438,16 +438,42 @@ class BoogieTranslator {
     return declarations
   }
 
-  func process(_ parameter: Parameter) -> [BParameterDeclaration] {
+  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement]) {
     let name = parameter.identifier.name
     var declarations = [BParameterDeclaration]()
+
+    var functionPreAmble = [BStatement]()
+    if parameter.isImplicit {
+      // Can't call payable functions
+      if case .userDefinedType("Wei") = parameter.type.rawType {
+        // Declare function variable for wei variable
+        // declare function variable for amount of wei recieved
+        // havoc rawValue
+        // assume rawValue > 0
+        // Allocate struct for incoming Wei (wei recieved)
+        let translatedName = translateIdentifierName(parameter.identifier.name)
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
+                                                                   rawName: parameter.identifier.name,
+                                                                   type: .int))
+        let weiAmount = generateRandomIdentifier(prefix: "implicit_amount_")
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
+                                                                   rawName: weiAmount,
+                                                                   type: .int))
+        functionPreAmble.append(.havoc(weiAmount, getMark(parameter.sourceLocation)))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(0)), getMark(parameter.sourceLocation)))
+        functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
+                                                              procedureName: "initInt_Wei",
+                                                              arguments: [.identifier(weiAmount)],
+                                                              mark: getMark(parameter.sourceLocation))))
+      }
+    } else {
     //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
     //let variables = generateParameters(parameter)
     declarations.append(BParameterDeclaration(name: translateIdentifierName(name),
                                               rawName: name,
                                               type: convertType(parameter.type)))
-
-    return declarations
+    }
+    return (declarations, functionPreAmble)
   }
 
   func process(_ token: Token) -> BExpression {
