@@ -249,7 +249,9 @@ extension BoogieTranslator {
                localContext: Bool = true,
                shadowVariablePrefix: ((Int) -> String)? = nil,
                subscriptDepth: Int = 0,
-               beingAssignedTo: Bool = false) -> (BExpression, [BStatement], [BStatement]) {
+               isBeingAssignedTo: Bool = false,
+               enclosingTLD: String? = nil,
+               structInstanceVariable: BExpression? = nil) -> (BExpression, [BStatement], [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       // Some variable types require shadow variables, eg dictionaries (array of keys)
@@ -262,9 +264,9 @@ extension BoogieTranslator {
                                 shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [], [])
 
     case .functionCall(let functionCall):
-      return handleFunctionCall(functionCall,
-                                structInstance: self.structInstanceVariableName == nil ? nil :
+      let structInstance = structInstanceVariable ?? (self.structInstanceVariableName == nil ? nil :
                                   .identifier(self.structInstanceVariableName!))
+      return handleFunctionCall(functionCall, structInstance: structInstance)
 
     case .externalCall(let externalCall):
       switch externalCall.mode {
@@ -344,7 +346,9 @@ extension BoogieTranslator {
       let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
       return (processIdentifier(identifier,
                                 localContext: localContext,
-                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth)), [], [])
+                                shadowVariablePrefix: shadowVariablePrefix(subscriptDepth),
+                                enclosingTLD: enclosingTLD,
+                                structInstanceVariable: structInstanceVariable), [], [])
 
     case .binaryExpression(let binaryExpression):
       return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
@@ -356,107 +360,13 @@ extension BoogieTranslator {
                      subscriptDepth: subscriptDepth)
 
     case .subscriptExpression(let subscriptExpression):
-      var postAmble = [BStatement]()
-      let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
-                                                      localContext: localContext,
-                                                      shadowVariablePrefix: shadowVariablePrefix,
-                                                      subscriptDepth: subscriptDepth + 1)
-      let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
-      postAmble += subPostStmts + indexPostStmts
-      if beingAssignedTo {
-        // - if index is bigger than size (in arrays)
-        // - or if key is not in keys
-        //  - increment size value + (add to keys, if dict)
-        let currentType = getCurrentTLDName()
-        guard let scopeContext = getCurrentScopeContext() else {
-          print("couldn't get scope context of current function - used for updating shadow variable")
-          fatalError()
-        }
-        let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
-        let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-        let baseExpressionType = environment.type(of: subscriptExpression.baseExpression,
-                                                  enclosingType: currentType,
-                                                  typeStates: typeStates,
-                                                  callerProtections: callerProtections,
-                                                  scopeContext: scopeContext)
-        switch baseExpressionType {
-        case .arrayType:
-          // is index bigger than size?
-          let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
-          postAmble.append(.ifStatement(BIfStatement(condition: .not(.lessThan(indxExpr, sizeShadowVariable)),
-                                                     trueCase: [
-                                                       // increment size variable
-                                                       .assignment(sizeShadowVariable,
-                                                                   .add(sizeShadowVariable, .integer(1)),
-                                                                   registerProofObligation(subscriptExpression.sourceLocation)
-                                                                   )
-                                                     ],
-                                                     falseCase: [],
-                                                     mark: registerProofObligation(subscriptExpression.sourceLocation))))
-        case .dictionaryType:
-          // does keys contain key? - if so, add it!
-          //counter = 0
-          //containsKey = false
-          //while (counter < size && !containsKey) {
-          //  if keys[counter] == indxExpr {
-          //    containsKeys = true
-          //  }
-          //  counter += 1
-          //}
-          //if !containsKey {
-          //  keys[size] = indxExpr
-          //  size += 1
-          //}
-
-          let counterName = generateRandomIdentifier(prefix: "lit_")
-          let counter = BExpression.identifier(counterName)
-          addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: counterName,
-                                                                     rawName: counterName,
-                                                                     type: .int))
-          let containsKeyName = generateRandomIdentifier(prefix: "lit_")
-          let containsKey = BExpression.identifier(containsKeyName)
-          addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: containsKeyName,
-                                                                     rawName: containsKeyName,
-                                                                     type: .boolean))
-
-          let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
-          let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression)
-
-          let checkingContains =
-            BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
-                                            .not(containsKey)),
-                            body: [
-                              .ifStatement(BIfStatement(condition: .equals(.mapRead(keysShadowVariable, counter),
-                                                                           indxExpr),
-                                                        trueCase: [.assignment(containsKey,
-                                                                   .boolean(true),
-                                                                   registerProofObligation(subscriptExpression.sourceLocation))],
-                                                        falseCase: [],
-                                                        mark: registerProofObligation(subscriptExpression.sourceLocation))),
-                              .assignment(counter,
-                                          .add(counter, .integer(1)),
-                                          registerProofObligation(subscriptExpression.sourceLocation))
-                            ],
-                            invariants: [],
-                            mark: registerProofObligation(subscriptExpression.sourceLocation))
-          let update = BIfStatement(condition: .not(containsKey),
-                                    trueCase: [
-                                      // increment size variable
-                                      .assignment(sizeShadowVariable,
-                                                  .add(sizeShadowVariable, .integer(1)),
-                                                  registerProofObligation(subscriptExpression.sourceLocation))
-                                    ],
-                                    falseCase: [],
-                                    mark: registerProofObligation(subscriptExpression.sourceLocation))
-
-          postAmble.append(.assignment(counter, .integer(0), registerProofObligation(subscriptExpression.sourceLocation)))
-          postAmble.append(.assignment(containsKey, .boolean(false), registerProofObligation(subscriptExpression.sourceLocation)))
-          postAmble.append(.whileStatement(checkingContains))
-          postAmble.append(.ifStatement(update))
-        default: break
-        }
-      }
-      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, postAmble)
+      return processSubscriptExpression(subscriptExpression,
+                                        shadowVariablePrefix: shadowVariablePrefix,
+                                        enclosingTLD: enclosingTLD,
+                                        structInstanceVariable: structInstanceVariable,
+                                        subscriptDepth: subscriptDepth,
+                                        localContext: localContext,
+                                        isBeingAssignedTo: isBeingAssignedTo)
 
     case .literal(let token):
       return (process(token), [], [])
@@ -634,7 +544,7 @@ extension BoogieTranslator {
     var assignmentStatements = [BStatement]()
     var postAmbleStmts = [BStatement]()
 
-    let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs, beingAssignedTo: true)
+    let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs, isBeingAssignedTo: true)
     assignmentStatements += lhsStmts
     postAmbleStmts += postLhsStmts
     switch lhsType {
@@ -804,11 +714,9 @@ extension BoogieTranslator {
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
-    switch lhs {
-    case .`self`:
+    if binaryExpression.isExplicitPropertyAccess {
       // self.A, means get the A in the contract, not the local declaration
       return process(rhs, localContext: false, shadowVariablePrefix: shadowVariablePrefix)
-    default: break
     }
 
     // For struct fields and methods (eg array size..)
@@ -821,54 +729,32 @@ extension BoogieTranslator {
                                    typeStates: typeStates,
                                    callerProtections: callerProtections,
                                    scopeContext: scopeContext)
-    // Is type of lhs a struct
+
+    // Are we trying to access size/keys properties of arrays/dicts
     switch lhsType {
-    // Wei just a userDefinedType now
-    //case .stdlibType(.wei):
-    //  let holyAccesses = handleNestedStructAccess(structName: "Wei",
-    //                                              access: rhs,
-    //                                              shadowVariablePrefix: shadowVariablePrefix)
-    //  let (lExpr, lStmts, lPostStmts) = process(lhs)
-    //  let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
-    //  return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
-
-    case .userDefinedType(let structName):
-      // Return function which returns BExpr to access field
-      let holyAccesses = handleNestedStructAccess(structName: structName,
-                                                  access: rhs,
-                                                  shadowVariablePrefix: shadowVariablePrefix)
-      let (lExpr, lStmts, lPostStmts) = process(lhs)
-      let (finalExpr, holyStmts, holyPostStmts) = holyAccesses(lExpr)
-      return (finalExpr, lStmts + holyStmts, holyPostStmts + lPostStmts)
-
     case .arrayType, .dictionaryType:
       // Check if trying to access .size or .keys fields or arrays/dictionaries
       switch rhs {
       case .identifier(let identifier) where identifier.name == "size":
         // process lhs, to extract the identifier name, and turn into size_...
-        return generateIterableShadowAccess(lhs,
-                                            shadowPrefix: normaliser.getShadowArraySizePrefix,
-                                            structInstance: structInstance,
-                                            enclosingStruct: currentType
-                                            //localContext: false
-                                            )
+
+        // Process the variable we are finding the size of
+        return process(lhs,
+                       shadowVariablePrefix: normaliser.getShadowArraySizePrefix,
+                       enclosingTLD: enclosingType)
+
       case .identifier(let identifier) where identifier.name == "keys":
         // process lhs, to extract the identifier name, and turn into keys_...
         // If you've been asked for size shadow variable, you should return that -> to get size of the keys
         if let shadowPrefix = shadowVariablePrefix {
-          return generateIterableShadowAccess(lhs,
-                                              shadowPrefix: shadowPrefix,
-                                              structInstance: structInstance,
-                                              enclosingStruct: currentType
-                                              //localContext: false
-                                              )
+          // Process the variable we are finding the size of
+          return process(lhs,
+                         shadowVariablePrefix: shadowPrefix,
+                         enclosingTLD: enclosingType)
         } else {
-          return generateIterableShadowAccess(lhs,
-                                              shadowPrefix: normaliser.getShadowDictionaryKeysPrefix,
-                                              structInstance: structInstance,
-                                              enclosingStruct: currentType
-                                              //localContext: false
-                                              )
+          return process(lhs,
+                         shadowVariablePrefix: normaliser.getShadowDictionaryKeysPrefix,
+                         enclosingTLD: enclosingType)
         }
       default: break
       }
@@ -893,139 +779,49 @@ extension BoogieTranslator {
       break
     }
 
+    // Accessing property or function of UDT
+    guard case .userDefinedType(let structName) = lhsType else {
+      print("Not accessing property of a struct: \(lhsType)")
+      fatalError()
+    }
+
+    switch rhs {
+    case .functionCall(let functionCall):
+      let (structInstance, instancePreStmts, instancePostStmts) = process(lhs,
+                                                                          enclosingTLD: structName)
+      let (call, callPre, callPost) = self.handleFunctionCall(functionCall,
+                                                              structInstance: structInstance,
+                                                              owningType: structName)
+      return (call, instancePreStmts + callPre, instancePostStmts + callPost)
+
+    case .identifier(let identifier):
+      var shadowPrefix: String = ""
+      if let prefixFunc = shadowVariablePrefix {
+        shadowPrefix = prefixFunc(0)
+      }
+
+      let (structExp, structPreStmts, structPostStmts) = process(lhs, enclosingTLD: enclosingType)
+      let field = processIdentifier(identifier,
+                                    localContext: false,
+                                    shadowVariablePrefix: shadowPrefix,
+                                    enclosingTLD: structName,
+                                    structInstanceVariable: structExp)
+      return (field, structPreStmts, structPostStmts)
+
+    case .subscriptExpression(let subscriptExpression):
+      let (structExp, structPreStmts, structPostStmts) = process(lhs, enclosingTLD: enclosingType)
+      let (subExpr, subPreStmts, subPostStmts) = processSubscriptExpression(subscriptExpression,
+                                                                            shadowVariablePrefix: shadowVariablePrefix,
+                                                                            enclosingTLD: structName,
+                                                                            structInstanceVariable: structExp)
+      return (subExpr, structPreStmts + subPreStmts, subPostStmts + structPostStmts)
+    default: break
+    }
+
     print("Unknown type used with `dot` operator \(lhsType)")
     print("\(lhs)")
     print("\(rhs)")
     fatalError()
-  }
-
-  private func generateIterableShadowAccess(_ iterable: Expression,
-                                            shadowPrefix: (Int) -> String,
-                                            depth: Int = 0,
-                                            structInstance: BExpression? = nil,
-                                            enclosingStruct: String? = nil,
-                                            localContext: Bool = true) -> (BExpression, [BStatement], [BStatement]) {
-    switch iterable {
-    case .identifier(let identifier):
-      let identifier = processIdentifier(identifier,
-                                         localContext: localContext,
-                                         shadowVariablePrefix: shadowPrefix(depth),
-                                         enclosingTLD: enclosingStruct
-                                         )
-      if let instance = structInstance {
-        return (.mapRead(identifier, instance), [], [])
-      }
-      return (identifier, [], [])
-
-    case .subscriptExpression(let subscriptExpression):
-      let (subExpr, subStmts, subPostStmts) = generateIterableShadowAccess(subscriptExpression.baseExpression,
-                                                                           shadowPrefix: shadowPrefix,
-                                                                           depth: depth + 1,
-                                                                           structInstance: structInstance,
-                                                                           enclosingStruct: enclosingStruct,
-                                                                           localContext: localContext)
-      let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression)
-      return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, subPostStmts + indexPostStmts)
-
-    default:
-      print("Can't generate iterable shadow access for \(iterable)")
-      fatalError()
-    }
-  }
-
-  private func handleNestedStructAccess(structName: String,
-                                        access: Expression,
-                                        shadowVariablePrefix: ((Int) -> String)?,
-                                        subscriptDepth: Int = 0)
-        -> ((BExpression) -> (BExpression, [BStatement], [BStatement])) {
-
-    let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
-    switch access {
-
-    // Final accesses of dot chain \/ \/ \/
-    case .identifier(let identifier):
-      let translatedIdentifier = shadowVariablePrefix(subscriptDepth) +
-        normaliser.translateGlobalIdentifierName(identifier.name, tld: structName)
-
-      let lhsExpr = BExpression.identifier(translatedIdentifier)
-      return ({ structInstance in (.mapRead(lhsExpr, structInstance), [], []) })
-
-    case .subscriptExpression(let subscriptExpression):
-      guard let accessEnclosingType = access.enclosingType else {
-        print("Unable to get enclosing type of struct access \(access)")
-        fatalError()
-      }
-      let holyBase = handleNestedStructAccess(structName: accessEnclosingType,
-                                              access: subscriptExpression.baseExpression,
-                                              shadowVariablePrefix: shadowVariablePrefix,
-                                              subscriptDepth: subscriptDepth + 1)
-      let (indexExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression)
-
-      return ({ structInstance in
-                let (holyExpr, holyStmts, holyPostStmts) = holyBase(structInstance)
-                return (.mapRead(holyExpr, indexExpr), holyStmts + indexStmts, indexPostStmts + holyPostStmts)
-              })
-
-    case .functionCall(let functionCall):
-      return ({ structInstance in self.handleFunctionCall(functionCall,
-                                                          structInstance: structInstance,
-                                                          owningType: structName) })
-
-    // Accessing another struct field \/ \/ \/ - or what looks like a struct field
-    case .binaryExpression(let binaryEx) where binaryEx.opToken == .dot:
-      let currentType = getCurrentTLDName()
-      guard let scopeContext = getCurrentFunction().scopeContext else {
-        print("couldn't get scope context of current function - used to determine if accessing struct property")
-        fatalError()
-      }
-      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
-      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-      let lhsType = environment.type(of: binaryEx.lhs,
-                                     enclosingType: currentType,
-                                     typeStates: typeStates,
-                                     callerProtections: callerProtections,
-                                     scopeContext: scopeContext)
-
-      let accessEnclosingType: String
-      switch lhsType {
-      //case .stdlibType(.wei):
-      //  accessEnclosingType = "Wei"
-
-      case .userDefinedType(let structName):
-        // Return function which returns BExpr to access field
-        accessEnclosingType = structName
-      default:
-        // array or dict fields are being accessed (size/keys)
-        // therefore final access in a dot chain
-        return ({ structInstance in
-                  return self.processDotBinaryExpression(binaryEx,
-                                                    enclosingType: structName,
-                                                    structInstance: structInstance,
-                                                    // accessing size/keys, prefix is calculated then
-                                                    shadowVariablePrefix: shadowVariablePrefix) // trying to fix A = B.keys{ _ in "" })
-                })
-
-        //print("Unknown enclosing type: \(lhsType)")
-        //fatalError()
-      }
-
-      let holyAccess = handleNestedStructAccess(structName: accessEnclosingType,
-                                                access: binaryEx.rhs,
-                                                shadowVariablePrefix: shadowVariablePrefix)
-
-      let holyIdentifier = handleNestedStructAccess(structName: structName,
-                                                    access: binaryEx.lhs,
-                                                    shadowVariablePrefix: shadowVariablePrefix)
-      return ({ structInstance in
-                let (holyIdentifier, holyIdentifierStmts, holyIdentifierPostStmts) = holyIdentifier(structInstance)
-                let (holyExpr, holyExprStmts, holyExprPostStmts) = holyAccess(holyIdentifier)
-                return (holyExpr, holyIdentifierStmts + holyExprStmts, holyExprPostStmts + holyIdentifierPostStmts)
-              })
-
-    default:
-      print("Not implemented nested dot access of: \(access), yet")
-      fatalError()
-    }
   }
 
   // process Identifier
@@ -1034,7 +830,8 @@ extension BoogieTranslator {
   private func processIdentifier(_ identifier: Identifier,
                                  localContext: Bool = true,
                                  shadowVariablePrefix: String = "",
-                                 enclosingTLD: String? = nil) -> BExpression {
+                                 enclosingTLD: String? = nil,
+                                 structInstanceVariable: BExpression? = nil) -> BExpression {
     // See if identifier is a local variable
     if localContext,
        let currentFunctionName = getCurrentFunctionName(),
@@ -1050,12 +847,127 @@ extension BoogieTranslator {
     let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name,
                                                                                     enclosingTLD: enclosingTLD)
 
-    // Currently in a struct, referring to a 'global' variable
-    if let currentStructInstanceVariable = structInstanceVariableName {
+    if let instanceVariable = structInstanceVariable {
+      // Accessing a field in a struct
+      return .mapRead(.identifier(translatedIdentifier), instanceVariable)
+    } else if let currentStructInstanceVariable = structInstanceVariableName {
+      // Currently in a struct, referring to a 'global' variable
       return .mapRead(.identifier(translatedIdentifier),
                        .identifier(currentStructInstanceVariable))
     }
     return .identifier(translatedIdentifier)
+  }
+
+  private func processSubscriptExpression(_ subscriptExpression: SubscriptExpression,
+                                          shadowVariablePrefix: ((Int) -> String)? = nil,
+                                          enclosingTLD: String? = nil,
+                                          structInstanceVariable: BExpression? = nil,
+                                          subscriptDepth: Int = 0,
+                                          localContext: Bool = true,
+                                          isBeingAssignedTo: Bool = false) -> (BExpression, [BStatement], [BStatement]) {
+    var postAmble = [BStatement]()
+    let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
+                                                    localContext: localContext,
+                                                    shadowVariablePrefix: shadowVariablePrefix,
+                                                    subscriptDepth: subscriptDepth + 1,
+                                                    enclosingTLD: enclosingTLD,
+                                                    structInstanceVariable: structInstanceVariable)
+    let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
+    postAmble += subPostStmts + indexPostStmts
+    if isBeingAssignedTo {
+      // - if index is bigger than size (in arrays)
+      // - or if key is not in keys
+      //  - increment size value + (add to keys, if dict)
+      let currentType = getCurrentTLDName()
+      guard let scopeContext = getCurrentScopeContext() else {
+        print("couldn't get scope context of current function - used for updating shadow variable")
+        fatalError()
+      }
+      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+      let baseExpressionType = environment.type(of: subscriptExpression.baseExpression,
+                                                enclosingType: currentType,
+                                                typeStates: typeStates,
+                                                callerProtections: callerProtections,
+                                                scopeContext: scopeContext)
+      switch baseExpressionType {
+      case .arrayType:
+        // is index bigger than size?
+        let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
+        postAmble.append(.ifStatement(BIfStatement(condition: .not(.lessThan(indxExpr, sizeShadowVariable)),
+                                                   trueCase: [
+                                                     // increment size variable
+                                                     .assignment(sizeShadowVariable,
+                                                                 .add(sizeShadowVariable, .integer(1)),
+                                                                 registerProofObligation(subscriptExpression.sourceLocation)
+                                                                 )
+                                                   ],
+                                                   falseCase: [],
+                                                   mark: registerProofObligation(subscriptExpression.sourceLocation))))
+      case .dictionaryType:
+        // does keys contain key? - if so, add it!
+        //counter = 0
+        //containsKey = false
+        //while (counter < size && !containsKey) {
+        //  if keys[counter] == indxExpr {
+        //    containsKeys = true
+        //  }
+        //  counter += 1
+        //}
+        //if !containsKey {
+        //  keys[size] = indxExpr
+        //  size += 1
+        //}
+
+        let counterName = generateRandomIdentifier(prefix: "lit_")
+        let counter = BExpression.identifier(counterName)
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: counterName,
+                                                                   rawName: counterName,
+                                                                   type: .int))
+        let containsKeyName = generateRandomIdentifier(prefix: "lit_")
+        let containsKey = BExpression.identifier(containsKeyName)
+        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: containsKeyName,
+                                                                   rawName: containsKeyName,
+                                                                   type: .boolean))
+
+        let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
+        let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression)
+
+        let checkingContains =
+          BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
+                                          .not(containsKey)),
+                          body: [
+                            .ifStatement(BIfStatement(condition: .equals(.mapRead(keysShadowVariable, counter),
+                                                                         indxExpr),
+                                                      trueCase: [.assignment(containsKey,
+                                                                 .boolean(true),
+                                                                 registerProofObligation(subscriptExpression.sourceLocation))],
+                                                      falseCase: [],
+                                                      mark: registerProofObligation(subscriptExpression.sourceLocation))),
+                            .assignment(counter,
+                                        .add(counter, .integer(1)),
+                                        registerProofObligation(subscriptExpression.sourceLocation))
+                          ],
+                          invariants: [],
+                          mark: registerProofObligation(subscriptExpression.sourceLocation))
+        let update = BIfStatement(condition: .not(containsKey),
+                                  trueCase: [
+                                    // increment size variable
+                                    .assignment(sizeShadowVariable,
+                                                .add(sizeShadowVariable, .integer(1)),
+                                                registerProofObligation(subscriptExpression.sourceLocation))
+                                  ],
+                                  falseCase: [],
+                                  mark: registerProofObligation(subscriptExpression.sourceLocation))
+
+        postAmble.append(.assignment(counter, .integer(0), registerProofObligation(subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(containsKey, .boolean(false), registerProofObligation(subscriptExpression.sourceLocation)))
+        postAmble.append(.whileStatement(checkingContains))
+        postAmble.append(.ifStatement(update))
+      default: break
+      }
+    }
+    return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, postAmble)
   }
 
   private func getIterableSizeExpression(iterable: Expression) -> BExpression {
