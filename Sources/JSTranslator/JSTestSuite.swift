@@ -15,6 +15,19 @@ public class JSTestSuite {
     
     // this function is the entry point which takes a flint AST and translates it into a JS AST suitable for testing
     public func convertAST(ast: TopLevelModule) {
+        let declarations : [TopLevelDeclaration] = ast.declarations
+        
+        for d in declarations {
+            switch d {
+            case .contractDeclaration(let contractDec):
+                print(contractDec)
+            case .contractBehaviorDeclaration(let contractBehaviour):
+                print(contractBehaviour)
+            default:
+                continue
+            }
+        }
+        
         
     }
     
