@@ -1,7 +1,6 @@
 import AST
 
 public class JSTestSuite {
-    
     private var contractName: String
     private var filePath: String
     private var JSTestFuncs: [JSTestFunction]
@@ -20,15 +19,23 @@ public class JSTestSuite {
         for d in declarations {
             switch d {
             case .contractDeclaration(let contractDec):
-                print(contractDec)
+                processContract(contract: contractDec)
             case .contractBehaviorDeclaration(let contractBehaviour):
-                print(contractBehaviour)
+                processContractBehaviour(contractBehaviour: contractBehaviour)
             default:
                 continue
             }
         }
-        
-        
+    }
+    
+    private func processContractBehaviour(contractBehaviour: ContractBehaviorDeclaration)
+    {
+        // this function should extract out the test funcs from each of the contracts and populate the JSTestFuncs array
+    }
+    
+    private func processContract(contract : ContractDeclaration)
+    {
+        // this functions duty is to extract the file path and contract name
     }
     
     // this is the function that generates the string representation of the JS file -> ready for execution
