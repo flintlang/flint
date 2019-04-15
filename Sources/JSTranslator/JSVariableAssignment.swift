@@ -1,10 +1,10 @@
 public class JSVariableAssignment {
-    private let assignee : String
-    private let expression : JSNode
+    private let lhs : String
+    private let rhs : JSNode
     
-    public init(assignee: String, expression: JSNode) {
-        self.assignee = assignee
-        self.expression = expression
+    public init(lhs: String, rhs: JSNode) {
+        self.lhs = lhs
+        self.rhs = rhs
     }
     
 }
