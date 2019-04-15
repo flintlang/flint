@@ -57,12 +57,15 @@ struct Wei: Asset {
 
   func setRawValue(value: Int) -> Int
     mutates (rawValue)
+    post(self.rawValue == value)
   {
     rawValue = value
     return rawValue
   }
 
-  func getRawValue() -> Int {
+  func getRawValue() -> Int
+    post(returns rawValue)
+  {
     return rawValue
   }
 }

@@ -94,6 +94,7 @@ public struct Lexer {
     "mutating": .mutating,
     "external": .external,
     "return": .return,
+    "returns": .returns,
     "become": .become,
     "emit": .emit,
     "call": .call,

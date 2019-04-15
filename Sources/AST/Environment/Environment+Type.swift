@@ -280,6 +280,12 @@ extension Environment {
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence: fatalError()
     case .rawAssembly(_, let resultType): return resultType!
+    case .returnsExpression(let returnsExpression):
+       return type(of: returnsExpression,
+                   enclosingType: enclosingType,
+                   typeStates: typeStates,
+                   callerProtections: callerProtections,
+                   scopeContext: scopeContext)
     }
   }
 }

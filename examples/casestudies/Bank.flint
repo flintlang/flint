@@ -101,5 +101,6 @@ Bank :: account <- (accounts) {
 
     // Send the amount back to the Ethereum user.
     send(account, &w)
+    assert(w.getRawValue() == 0)
   }
 }

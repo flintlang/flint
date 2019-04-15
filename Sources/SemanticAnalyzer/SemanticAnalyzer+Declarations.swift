@@ -579,7 +579,7 @@ extension SemanticAnalyzer {
         return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
            .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
-           .subscriptExpression, .range:
+           .subscriptExpression, .range, .returnsExpression:
         return false
       case .rawAssembly, .sequence:
         return true

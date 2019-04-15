@@ -385,6 +385,10 @@ extension BoogieTranslator {
       //TODO: Handle as? / as! ...
       return process(typeConversionExpression.expression)
 
+    case .returnsExpression(let returnsExpression):
+      let (returnsExpr, _, _) = process(returnsExpression)
+        return (.equals(.identifier(self.getFunctionReturnVariable()), returnsExpr), [], [])
+
     // Assumption - can only be used as iterables in for-loops
     //case .range(let rangeExpression):
 

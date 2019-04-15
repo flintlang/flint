@@ -781,6 +781,10 @@ public struct ASTVisitor {
       processResult.element = .sequence(elements.map { element in
         return processResult.combining(visit(element, passContext: processResult.passContext))
       })
+
+    case .returnsExpression(let returnsExpression):
+      processResult.element = .returnsExpression(processResult.combining(visit(returnsExpression,
+                                                                               passContext: processResult.passContext)))
     case .rawAssembly: break
     }
 

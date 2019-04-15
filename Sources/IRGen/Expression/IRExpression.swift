@@ -69,6 +69,7 @@ struct IRExpression {
       }).joined(separator: "\n"))
     case .rawAssembly(let assembly, _):
       return .inline(assembly)
+    case .returnsExpression: fatalError("Returns expression shouldn't be rendered directly")
     case .range: fatalError("Range shouldn't be rendered directly")
     }
 
