@@ -3,12 +3,14 @@ import AST
 public class JSTestSuite {
     private var contractName: String
     private var filePath: String
+    private var testSuiteName: String
     private var JSTestFuncs: [JSTestFunction]
     
     // creates the JSTestSuite class
     public init() {
         contractName = ""
         filePath = ""
+        testSuiteName = ""
         JSTestFuncs = []
     }
     
@@ -30,12 +32,58 @@ public class JSTestSuite {
     
     private func processContractBehaviour(contractBehaviour: ContractBehaviorDeclaration)
     {
-        // this function should extract out the test funcs from each of the contracts and populate the JSTestFuncs array
+    
     }
     
     private func processContract(contract : ContractDeclaration)
     {
-        // this functions duty is to extract the file path and contract name
+        let members : [ContractMember] = contract.members
+        
+        for m in members {
+            switch (m)
+            {
+            case .variableDeclaration(let vdec):
+                process_contract_vars(vdec: vdec)
+            default:
+                continue
+            }
+        }
+    }
+    
+    private func getStringFromExpr(expr : Expression) -> String {
+        var fileName : String = ""
+        switch (expr) {
+        case .literal(let t):
+            switch (t.kind) {
+            case .literal(let lit):
+                switch (lit) {
+                case .string(let str):
+                    fileName = str
+                default:
+                    break
+                }
+            default:
+                break
+            }
+        default:
+            break
+        }
+        
+        return fileName
+    }
+    
+    private func process_contract_vars(vdec : VariableDeclaration) {
+        let nameOfVar : String = vdec.identifier.name
+        
+        if (nameOfVar == "filePath") {
+            self.filePath = getStringFromExpr(expr: vdec.assignedExpression!)
+            
+        } else if (nameOfVar == "contractName") {
+            self.contractName = getStringFromExpr(expr: vdec.assignedExpression!)
+            
+        } else if (nameOfVar == "TestSuiteName") {
+            self.testSuiteName = getStringFromExpr(expr: vdec.assignedExpression!)
+        }
     }
     
     // this is the function that generates the string representation of the JS file -> ready for execution
