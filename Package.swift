@@ -17,7 +17,7 @@ let package = Package(
       dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
     .target(
       name: "dev_version",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "JSTranslator"]),
     .target(
       name: "Source",
       dependencies: []
@@ -94,6 +94,9 @@ let package = Package(
         dependencies: ["FileCheck", "Commander"]),
     .target(
         name: "LSP",
-        dependencies: ["Diagnostic"])
+        dependencies: ["Diagnostic"]),
+    .target(
+        name: "JSTranslator",
+        dependencies: ["AST"])
     ]
 )
