@@ -3,12 +3,14 @@ import AST
 // Collect the shadow variables that are modified by a function
 public class ShadowVariablePass: ASTPass {
   private let normaliser: IdentifierNormaliser
+  private let triggers: Trigger
   var modifies = [String: Set<String>]()
 
   private var callerFunctionName: String?
 
   public init(normaliser: IdentifierNormaliser) {
     self.normaliser = normaliser
+    self.triggers = Trigger()
   }
 
   public func process(functionDeclaration: FunctionDeclaration,
@@ -19,6 +21,15 @@ public class ShadowVariablePass: ASTPass {
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
                                                parameterTypes: parameterTypes,
                                                enclosingType: enclosingType)
+
+    // Process for trigger
+    let scopeContext = passContext.scopeContext ?? ScopeContext()
+    for mutates in triggers.mutates(functionDeclaration, Context(environment: passContext.environment!,
+                                                                 enclosingType: enclosingType,
+                                                                 scopeContext: scopeContext)) {
+      addCurrentFunctionModifies(shadowVariableName: mutates)
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -34,13 +45,22 @@ public class ShadowVariablePass: ASTPass {
     let functionName = specialDeclaration.asFunctionDeclaration.name
     let parameterTypes = specialDeclaration.asFunctionDeclaration.signature.parameters.map({ $0.type.rawType })
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
-                                               parameterTypes: parameterTypes,
-                                               enclosingType: enclosingType)
+                                                    parameterTypes: parameterTypes,
+                                                    enclosingType: enclosingType)
     if specialDeclaration.isInit,
        passContext.environment!.isStructDeclared(enclosingType) {
         // Struct initialiser modifies next instance
         addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: passContext.enclosingTypeIdentifier!.name))
-      }
+    }
+
+    // Process for trigger
+    let scopeContext = passContext.scopeContext ?? ScopeContext()
+    for mutates in triggers.mutates(specialDeclaration.asFunctionDeclaration, Context(environment: passContext.environment!,
+                                                                 enclosingType: enclosingType,
+                                                                 scopeContext: scopeContext)) {
+      addCurrentFunctionModifies(shadowVariableName: mutates)
+    }
+
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -59,6 +79,16 @@ public class ShadowVariablePass: ASTPass {
 
   public func process(binaryExpression: BinaryExpression,
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+
+    // Process for trigger
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let scopeContext = passContext.scopeContext ?? ScopeContext()
+    for mutates in triggers.mutates(binaryExpression, Context(environment: passContext.environment!,
+                                                              enclosingType: enclosingType,
+                                                              scopeContext: scopeContext)) {
+      addCurrentFunctionModifies(shadowVariableName: mutates)
+    }
+
     // Mark that binary expression is assignment
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
@@ -74,6 +104,14 @@ public class ShadowVariablePass: ASTPass {
 
     if parameter.isImplicit {
       addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: parameter.type.name))
+    }
+
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let scopeContext = passContext.scopeContext ?? ScopeContext()
+    for mutates in triggers.mutates(parameter, Context(environment: passContext.environment!,
+                                                       enclosingType: enclosingType,
+                                                       scopeContext: scopeContext)) {
+      addCurrentFunctionModifies(shadowVariableName: mutates)
     }
     return ASTPassResult(element: parameter, diagnostics: [], passContext: passContext)
   }

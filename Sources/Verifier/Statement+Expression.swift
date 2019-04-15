@@ -90,6 +90,7 @@ extension BoogieTranslator {
 
       var preAmbleStmts = [BStatement]()
       var postAmbleStmts = [BStatement]()
+
       guard let scopeContext = getCurrentScopeContext() else {
         print("no scope context exists when determining type of loop iterable")
         fatalError()
@@ -407,58 +408,58 @@ extension BoogieTranslator {
   private func process(_ binaryExpression: BinaryExpression,
                        // Function which generates shadow variable prefix for variable name, (given a depth)
                        shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement], [BStatement]) {
+
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
     switch binaryExpression.opToken {
     case .dot:
-      return processDotBinaryExpression(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
+      let (e, preStmts, postStmts) = processDotBinaryExpression(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
+      return (e, preStmts, postStmts)
     case .equal:
-      return handleAssignment(lhs, rhs)
+      let (e, preStmts, postStmts) = handleAssignment(lhs, rhs)
+      let context = Context(environment: environment,
+                          enclosingType: getCurrentTLDName(),
+                          scopeContext: getCurrentScopeContext() ?? ScopeContext())
+
+      let(triggerPreStmts, triggerPostStmts) = triggers.lookup(binaryExpression, context, extra: ["lhs_translated_expression": e, "enclosing_function": getCurrentFunction().name]) // TODO: Bad. only works because I know that rn an assignment rule is the only one that could trigger.
+      return (e, preStmts + triggerPreStmts, postStmts + triggerPostStmts)
+    default: break
+    }
+
+    let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
+    let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
+    let preStmts = lhsStmts + rhsStmts
+    let postStmts = postRhsStmts + postLhsStmts
+    switch binaryExpression.opToken {
     case .plusEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr,
+      return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .add(lhsExpr, rhsExpr),
                                               registerProofObligation(binaryExpression.sourceLocation))],
-             postRhsStmts + postLhsStmts)
+             postStmts)
     case .minusEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr,
+      return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .subtract(lhsExpr, rhsExpr),
                                               registerProofObligation(binaryExpression.sourceLocation))],
-             postRhsStmts + postLhsStmts)
+             postStmts)
     case .timesEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr,
+      return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .multiply(lhsExpr, rhsExpr),
                                               registerProofObligation(binaryExpression.sourceLocation))],
-              postRhsStmts + postLhsStmts)
+              postStmts)
     case .divideEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (lhsExpr, lhsStmts + rhsStmts + [.assignment(lhsExpr,
+      return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .divide(lhsExpr, rhsExpr),
                                               registerProofObligation(binaryExpression.sourceLocation))],
-              postRhsStmts + postLhsStmts)
+              postStmts)
     case .plus:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.add(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.add(lhsExpr, rhsExpr), preStmts, postStmts)
     case .minus:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.subtract(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.subtract(lhsExpr, rhsExpr), preStmts, postStmts)
     case .times:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.multiply(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.multiply(lhsExpr, rhsExpr), preStmts, postStmts)
     case .divide:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.divide(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.divide(lhsExpr, rhsExpr), preStmts, postStmts)
 
     //TODO Handle unsafe operators
     //case .overflowingPlus:
@@ -470,42 +471,24 @@ extension BoogieTranslator {
 
     // Comparisons
     case .doubleEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.equals(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.equals(lhsExpr, rhsExpr), preStmts, postStmts)
     case .notEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.not(.equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.not(.equals(lhsExpr, rhsExpr)), preStmts, postStmts)
     case .openAngledBracket:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.lessThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.lessThan(lhsExpr, rhsExpr), preStmts, postStmts)
     case .closeAngledBracket:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.greaterThan(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.greaterThan(lhsExpr, rhsExpr), preStmts, postStmts)
     case .lessThanOrEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.or(.lessThan(lhsExpr, rhsExpr), .equals(lhsExpr, rhsExpr)), preStmts, postStmts)
     case .greaterThanOrEqual:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.not(.lessThan(lhsExpr, rhsExpr)), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.not(.lessThan(lhsExpr, rhsExpr)), preStmts, postStmts)
     case .or:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.or(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.or(lhsExpr, rhsExpr), preStmts, postStmts)
     case .and:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.and(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.and(lhsExpr, rhsExpr), preStmts, postStmts)
 
     case .percent:
-      let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-      let (lhsExpr, lhsStmts, postLhsStmts) = process(lhs)
-      return (.modulo(lhsExpr, rhsExpr), lhsStmts + rhsStmts, postRhsStmts + postLhsStmts)
+      return (.modulo(lhsExpr, rhsExpr), preStmts, postStmts)
 
       /*
       //TODO: Handle

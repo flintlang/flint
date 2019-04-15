@@ -1,5 +1,6 @@
 import AST
 import Foundation
+import Source
 
 enum BoogieError {
   // Verification errors
@@ -27,7 +28,16 @@ struct VerifierMappingKey: Hashable, CustomStringConvertible {
   var description: String {
   return "// #MARKER# \(flintLine) \(file)"
   }
+
+  public static var DUMMY: VerifierMappingKey {
+    return VerifierMappingKey(file: "", flintLine: -1)
+  }
 }
+
+func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
+  return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
+}
+
 
 struct FlintProofObligationInformation {
 

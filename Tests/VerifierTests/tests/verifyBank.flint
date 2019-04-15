@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 // Contract declarations contain only their state properties.
 contract Bank {
   var manager: Address
@@ -59,6 +60,7 @@ Bank :: (manager) {
   public func clear(account: Address)
     mutates (balances, Wei.rawValue)
   {
+    //VERIFY-FAIL
     balances[account] = Wei(0)
   }
 

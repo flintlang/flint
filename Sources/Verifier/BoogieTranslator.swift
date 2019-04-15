@@ -9,6 +9,7 @@ class BoogieTranslator {
   let environment: Environment
   let sourceContext: SourceContext
   let normaliser: IdentifierNormaliser
+  let triggers: Trigger
 
   // Variables declared in each function
   var functionVariableDeclarations = [String: Set<BVariableDeclaration>]()
@@ -45,6 +46,8 @@ class BoogieTranslator {
 
   // List of invariants for each tld
   var tldInvariants = [String: [BProofObligation]]()
+  // Global invariants - must hold on all contract/struct methods
+  var globalInvariants = [BProofObligation]()
 
   var enums = [String]()
 
@@ -66,6 +69,7 @@ class BoogieTranslator {
     self.environment = environment
     self.sourceContext = sourceContext
     self.normaliser = normaliser
+    self.triggers = Trigger()
   }
 
   public func translate() -> (String, [Int: SourceLocation]) {
@@ -156,6 +160,12 @@ class BoogieTranslator {
   func generateAST() -> BTopLevelProgram {
     var declarations = [BTopLevelDeclaration]()
 
+    // Triggers
+    //TODO: Actually parse? expression rules in some format, and use that to register sourceLocations
+    registerProofObligation(SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true))
+    declarations += triggers.globalMetaVariableDeclaration.map({ .variableDeclaration($0) })
+    globalInvariants += triggers.invariants
+
     // Add type def for Address
     declarations.append(.typeDeclaration(BTypeDeclaration(name: "Address", alias: .int)))
 
@@ -170,9 +180,16 @@ class BoogieTranslator {
           BParameterDeclaration(name: "address", rawName: "address", type: .userDefined("Address")),
           BParameterDeclaration(name: "wei", rawName: "wei", type: .int)
         ],
-        prePostConditions: [], // TODO: Put pre and post conditions on send
-        modifies: [],
-        statements: [], //TODO: Statements
+        prePostConditions: self.globalInvariants + [BProofObligation(expression:
+          .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(0)),
+         mark: registerProofObligation(SourceLocation.INVALID),
+         obligationType: .postCondition)],
+        modifies: [BModifiesDeclaration(variable: "rawValue_Wei")],
+        // Drain all wei from struct
+        statements: [.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")),
+                                 .integer(0),
+                                 registerProofObligation(SourceLocation.INVALID))],
+
         variables: [], // TODO: variables
         mark: registerProofObligation(SourceLocation.INVALID)
         )
@@ -440,6 +457,7 @@ class BoogieTranslator {
 
   func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement]) {
     let name = parameter.identifier.name
+    let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
 
     var functionPreAmble = [BStatement]()
@@ -447,13 +465,12 @@ class BoogieTranslator {
       // Can't call payable functions
       if case .userDefinedType("Wei") = parameter.type.rawType {
         // Declare function variable for wei variable
-        // declare function variable for amount of wei recieved
+        // declare function variable for amount of wei received
         // havoc rawValue
         // assume rawValue > 0
-        // Allocate struct for incoming Wei (wei recieved)
-        let translatedName = translateIdentifierName(parameter.identifier.name)
+        // Allocate struct for incoming Wei (wei received)
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
-                                                                   rawName: parameter.identifier.name,
+                                                                   rawName: name,
                                                                    type: .int))
         let weiAmount = generateRandomIdentifier(prefix: "implicit_amount_")
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
@@ -465,15 +482,21 @@ class BoogieTranslator {
                                                               procedureName: "initInt_Wei",
                                                               arguments: [.identifier(weiAmount)],
                                                               mark: getMark(parameter.sourceLocation))))
+        registerProofObligation(parameter.sourceLocation)
       }
     } else {
     //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
     //let variables = generateParameters(parameter)
-    declarations.append(BParameterDeclaration(name: translateIdentifierName(name),
+    declarations.append(BParameterDeclaration(name: translatedName,
                                               rawName: name,
                                               type: convertType(parameter.type)))
     }
-    return (declarations, functionPreAmble)
+
+    let context = Context(environment: environment,
+                          enclosingType: getCurrentTLDName(),
+                          scopeContext: getCurrentScopeContext() ?? ScopeContext())
+    let (triggerPreStmts, triggerPostStmts) = triggers.lookup(parameter, context, extra: ["normalised_parameter_name": translatedName])
+    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts)
   }
 
   func process(_ token: Token) -> BExpression {
@@ -605,6 +628,7 @@ class BoogieTranslator {
       : translateIdentifierName(variableDeclaration.identifier.name)
 
     var declarations = [BVariableDeclaration]()
+    var assumptions = [BStatement]()
 
     switch variableDeclaration.type.rawType {
     case .dictionaryType, .arrayType, .fixedSizeArrayType:
@@ -619,6 +643,7 @@ class BoogieTranslator {
       declarations += generateIterableShadowVariables(name: name,
                                                       type: variableDeclaration.type.rawType,
                                                       hole: hole)
+      // TODO: Implement assumptions about dict/arrays ...., empty? default values?
     default:
       break
     }
@@ -858,10 +883,6 @@ class BoogieTranslator {
     let mapping = getMark(sourceLocation)
     flintProofObligationSourceLocation[mapping] = sourceLocation
     return mapping
-  }
-
-  private func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
-    return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
   }
 
   func generateFlint2BoogieMapping(code: String) -> [Int: SourceLocation] {

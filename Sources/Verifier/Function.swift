@@ -166,6 +166,12 @@ extension BoogieTranslator {
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
 
+    // Process triggers
+    let context = Context(environment: environment,
+                          enclosingType: getCurrentTLDName(),
+                          scopeContext: getCurrentScopeContext() ?? ScopeContext())
+    let (triggerPreStmts, triggerPostStmts) = triggers.lookup(functionCall, context)
+
     for arg in functionCall.arguments {
       let (expr, stmts, postStmts) = process(arg.expression)
       argumentsExpressions.append(expr)
@@ -183,12 +189,12 @@ extension BoogieTranslator {
       argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
                                                                    mark: registerProofObligation(functionCall.sourceLocation),
                                                                    obligationType: .assertion)))
-      return (.nop, argumentsStatements, argumentPostStmts)
+      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     // Handle fatal error case
     case "fatalError":
       argumentsStatements.append(.assume(.boolean(false), registerProofObligation(functionCall.sourceLocation)))
-      return (.nop, argumentsStatements, argumentPostStmts)
+      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "send":
       // send calls should have 2 arguments:
@@ -200,7 +206,7 @@ extension BoogieTranslator {
                                                                  procedureName: "send",
                                                                  arguments: argumentsExpressions,
                                                                  mark: registerProofObligation(functionCall.sourceLocation)))
-      return (.nop, [functionCall], argumentPostStmts)
+      return (.nop, triggerPreStmts + [functionCall], argumentPostStmts + triggerPostStmts)
     default:
       // Check if a trait 'initialiser' is being called
       if environment.isTraitDeclared(rawFunctionName) {
@@ -244,7 +250,7 @@ extension BoogieTranslator {
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
       argumentsStatements.append(functionCall)
-      return (returnValue, argumentsStatements, [])
+      return (returnValue, argumentsStatements + triggerPreStmts, triggerPostStmts)
     } else {
       // Function doesn't return a value
       // Can assume can't be called as part of a nested expression,
@@ -253,7 +259,7 @@ extension BoogieTranslator {
                                                                procedureName: functionName,
                                                                arguments: argumentsExpressions,
                                                                mark: registerProofObligation(functionCall.sourceLocation))))
-      return (.nop, argumentsStatements, argumentPostStmts)
+      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
     }
   }
 
@@ -287,6 +293,12 @@ extension BoogieTranslator {
     // Process caller capabilities
     // Need the caller preStatements to handle the case when a function is called
     let (callerPreConds, callerPreStatements) = processCallerCapabilities(callers, callerBinding)
+
+    // Process triggers
+    let context = Context(environment: environment,
+                          enclosingType: getCurrentTLDName(),
+                          scopeContext: getCurrentScopeContext() ?? ScopeContext())
+    let (triggerPreStmts, triggerPostStmts) = triggers.lookup(functionDeclaration, context)
 
     var functionPostAmble = [BStatement]()
     var functionPreAmble = [BStatement]()
@@ -342,9 +354,9 @@ extension BoogieTranslator {
           functionPreAmble += reserveNextStructInstance
           functionPostAmble += returnAllocatedStructInstance
         } else {
-          bParameters.append(BParameterDeclaration(name: self.structInstanceVariableName!,
+          bParameters.insert(BParameterDeclaration(name: self.structInstanceVariableName!,
                                                    rawName: self.structInstanceVariableName!,
-                                                   type: .int))
+                                                   type: .int), at: 0)
         }
       default: break
       }
@@ -435,9 +447,9 @@ extension BoogieTranslator {
       returnType: returnType,
       returnName: returnName,
       parameters: bParameters,
-      prePostConditions: callerPreConds + prePostConditions,
+      prePostConditions: callerPreConds + prePostConditions + globalInvariants,
       modifies: modifiesClauses,
-      statements: callerPreStatements + bStatements,
+      statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
       mark: registerProofObligation(functionDeclaration.sourceLocation)
     ))

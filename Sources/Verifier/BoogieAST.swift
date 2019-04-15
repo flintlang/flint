@@ -348,8 +348,10 @@ struct BIfStatement: CustomStringConvertible {
     \(mark)
     if (\(condition)) {
       \(trueComponent)
+      \(mark)
     } else {
       \(falseComponent)
+      \(mark)
     }
     """
   }
