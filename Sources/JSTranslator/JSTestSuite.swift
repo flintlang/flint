@@ -32,8 +32,69 @@ public class JSTestSuite {
     
     private func processContractBehaviour(contractBehaviour: ContractBehaviorDeclaration)
     {
-    
+        
+        let members : [ContractBehaviorMember] = contractBehaviour.members
+        
+        // process each of the function declarations
+        for m in members {
+            switch (m) {
+            case .functionDeclaration(let fdec):
+                print(fdec)
+            default:
+                continue
+            }
+        }
     }
+    
+    private func processContractFunction(fdec: FunctionDeclaration)
+    {
+        let fSignature : FunctionSignatureDeclaration = fdec.signature
+        
+        let fName : String = fSignature.identifier.name
+        
+        var jsStmts : [JSNode] = []
+        
+        // if this is not a test function then do not process
+        if (!fName.lowercased().contains("test"))
+        {
+            return
+        }
+        
+        let body : [Statement] = fdec.body
+        
+        // I should create a JS Function here
+        // does this make sense
+        // I should probably factor this stuff out
+        for stmt in body {
+            switch (stmt) {
+            case .expression(let expr):
+                // okay -> I need to do other stuff
+                //jsStmts.append(process_expr(expr: expr))
+                print(expr)
+            default:
+                continue
+            }
+        }
+    }
+    
+    private func process_expr(expr : Expression) -> JSNode?
+    {
+        // writing a lot of code is tiring
+        let jsNode : JSNode? = nil
+        
+        switch (expr) {
+        case .functionCall(let fCall):
+            print(fCall)
+        case .binaryExpression(let binExp):
+            print(binExp)
+        default:
+            break
+        }
+        
+        return jsNode
+    }
+    
+    
     
     private func processContract(contract : ContractDeclaration)
     {
