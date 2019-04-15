@@ -1,5 +1,0 @@
-contract abc {
-  let z  :  Int = 1
-  let z1 : [Int] = []
-  let z2  [Int:Int]  = [:]
-}
