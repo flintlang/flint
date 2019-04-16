@@ -9,6 +9,7 @@ public class JSTestSuite {
     
     private var isFuncTransaction : [String:Bool]
     
+    
     // creates the JSTestSuite class
     public init() {
         contractName = ""
@@ -100,12 +101,32 @@ public class JSTestSuite {
         
         var jsArgs : [JSNode] = []
         
+        // i should support literals
+        
         for a in args {
             // create a JSNode for each of these but for now we will just do variables
             switch (a.expression)
             {
             case .identifier(let i):
                 jsArgs.append(.Variable(JSVariable(variable: i.name)))
+            // this should process literals and extract values from literals
+            case .literal(let l):
+                switch (l.kind) {
+                case .literal(let lit):
+                    switch (lit) {
+                    case .decimal(let dec):
+                        switch (dec) {
+                        case .integer(let val):
+                            jsArgs.append(.Literal(.Integer(val)))
+                        default:
+                            break
+                        }
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
             default:
                 break
             }
