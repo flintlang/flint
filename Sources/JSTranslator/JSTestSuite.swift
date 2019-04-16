@@ -39,6 +39,15 @@ public class JSTestSuite {
         
         let members : [ContractBehaviorMember] = contractBehaviour.members
         
+        for m in members {
+            switch (m) {
+            case .functionDeclaration(let fdec):
+                isFuncTransaction[fdec.identifier.name] = fdec.isMutating
+            default:
+                continue
+            }
+        }
+        
         // process each of the function declarations
         for m in members {
             switch (m) {
