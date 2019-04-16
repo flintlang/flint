@@ -39,6 +39,7 @@ public class JSTestSuite {
         
         let members : [ContractBehaviorMember] = contractBehaviour.members
         
+        // I am doing this on the wrong contract, I need to pull in the other contract and 
         for m in members {
             switch (m) {
             case .functionDeclaration(let fdec):
@@ -47,6 +48,10 @@ public class JSTestSuite {
                 continue
             }
         }
+        
+        isFuncTransaction["increment"] = true
+        isFuncTransaction["getValue"] = false
+        isFuncTransaction["Counter"] = false
         
         // process each of the function declarations
         for m in members {
@@ -114,8 +119,8 @@ public class JSTestSuite {
         var rhsNode : JSNode? = nil
         var type : Bool? = nil
         var name: String? = nil
-        // this gets the name of the variable
-        // and the type of
+      
+        
         switch (binExp.lhs) {
         case .variableDeclaration(let vdec):
             name = vdec.identifier.name
@@ -124,7 +129,7 @@ public class JSTestSuite {
             break
         }
 
-        
+        // we need to do function call
         switch (binExp.rhs) {
         case .binaryExpression(let binExpr):
             switch (binExpr.op.kind) {
@@ -139,11 +144,13 @@ public class JSTestSuite {
             default:
                 break
             }
-
+        case .functionCall(let fCall):
+            rhsNode = process_func_call(fCall: fCall)
         default:
             break
         }
-        
+
+
         return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!))
     }
     
@@ -160,10 +167,7 @@ public class JSTestSuite {
         
         switch (binExpr.rhs) {
         case .functionCall(let fCall):
-            let fName : String = fCall.identifier.name
-            let funcArgs = process_func_call_args(args: fCall.arguments)
-            
-            rhsNode = .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isFuncTransaction[fName]!, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+            rhsNode = process_func_call(fCall: fCall, lhsName: lhsName)
         default:
             break
         }
@@ -171,10 +175,16 @@ public class JSTestSuite {
         return rhsNode!
     }
     
+    private func process_func_call(fCall : FunctionCall, lhsName: String = "") -> JSNode {
+        let fName : String = fCall.identifier.name
+        let funcArgs = process_func_call_args(args: fCall.arguments)
+        
+        return .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isFuncTransaction[fName]!, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+    }
+    
     
     private func process_expr(expr : Expression) -> JSNode
     {
-
         var jsNode : JSNode? = nil
         switch (expr) {
         case .binaryExpression(let binExp):
@@ -190,6 +200,8 @@ public class JSTestSuite {
                 }
             default: break
             }
+        case .functionCall(let fCall):
+            jsNode = process_func_call(fCall: fCall)
         default:
             break
         }
