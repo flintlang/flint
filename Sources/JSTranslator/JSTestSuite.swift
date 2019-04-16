@@ -309,8 +309,36 @@ public class JSTestSuite {
         }
     }
     
+    private func genRunTests() -> String {
+        var fnc = "async function run_tests() {\n"
+        
+        for tFnc in JSTestFuncs {
+            fnc += "    await "  + tFnc.getFuncName() + "(myContract) \n"
+        }
+        
+        fnc += "}\n\n"
+        return fnc
+    }
+    
     // this is the function that generates the string representation of the JS file -> ready for execution
     public func genFile() -> String {
-        return "empty file"
+        var file = ""
+        for testFunc in JSTestFuncs {
+            file += testFunc.description + "\n"
+        }
+        
+        file += "\n"
+        
+        file += genRunTests()
+        
+        file += "function delay_tests() { \n        filter_latest.stopWatching(); \n        setTimeout(run_tests, 1000); \n} \n\n"
+        
+        file += "const filter_latest = eth.filter(\"latest\", delay_tests); \n"
+        
+        file += "deploy_contract('main.sol', '\(self.contractName)');"
+        
+        print(file)
+    
+        return file
     }
 }
