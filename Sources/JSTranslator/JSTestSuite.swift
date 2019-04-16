@@ -225,7 +225,7 @@ public class JSTestSuite {
             isTransaction = isFuncTransaction
         }
         
-        return .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isTransaction, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
     }
     
     
@@ -299,7 +299,6 @@ public class JSTestSuite {
         
         if (nameOfVar == "filePath") {
             self.filePath = getStringFromExpr(expr: vdec.assignedExpression!)
-            
         } else if (nameOfVar == "contractName") {
             self.contractName = getStringFromExpr(expr: vdec.assignedExpression!)
             
