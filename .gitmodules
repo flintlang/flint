@@ -6,3 +6,6 @@
 	path = z3
 	url = https://github.com/Z3Prover/z3
         ignore = untracked
+[submodule "symbooglix"]
+	path = symbooglix
+	url = https://github.com/boogie-org/symbooglix

@@ -21,9 +21,9 @@ LocalVariables :: (any) {
     var k: Int = 5
     js[0] = 0
 
-    //for let j: Int in js {
-    //  k += i
-    //}
+    for let j: Int in js {
+      k += i
+    }
   }
 
   public func scoping()
