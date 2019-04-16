@@ -7,6 +7,10 @@ public class JSTestFunction : CustomStringConvertible {
         self.stmts = stmts
     }
     
+    public func getFuncName() -> String {
+        return self.name
+    }
+    
     public var description : String {
         let fncSignature = "async function " + name + "(t_contract) { \n"
         var body = ""
