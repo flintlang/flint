@@ -1,10 +1,13 @@
 import AST
 
 public class JSTestSuite {
+    // for now lets write this to support a single test contract
     private var contractName: String
     private var filePath: String
     private var testSuiteName: String
     private var JSTestFuncs: [JSTestFunction]
+    
+    private var isFuncTransaction : [String:Bool]
     
     // creates the JSTestSuite class
     public init() {
@@ -12,6 +15,7 @@ public class JSTestSuite {
         filePath = ""
         testSuiteName = ""
         JSTestFuncs = []
+        isFuncTransaction = [:]
     }
     
     // this function is the entry point which takes a flint AST and translates it into a JS AST suitable for testing
