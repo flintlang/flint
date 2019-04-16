@@ -199,8 +199,13 @@ public class JSTestSuite {
     private func process_func_call(fCall : FunctionCall, lhsName: String = "") -> JSNode {
         let fName : String = fCall.identifier.name
         let funcArgs = process_func_call_args(args: fCall.arguments)
+        var isTransaction = false
         
-        return .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isFuncTransaction[fName]!, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+        if let isFuncTransaction = isFuncTransaction[fName] {
+            isTransaction = isFuncTransaction
+        }
+        
+        return .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isTransaction, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
     }
     
     
