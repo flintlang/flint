@@ -158,6 +158,8 @@ public class JSTestSuite {
         var rhsNode : JSNode? = nil
         var type : Bool? = nil
         var name: String? = nil
+        
+        var isInstantiation : Bool = false
       
         
         switch (binExp.lhs) {
@@ -173,7 +175,6 @@ public class JSTestSuite {
         case .binaryExpression(let binExpr):
             switch (binExpr.op.kind) {
             case .punctuation(let p):
-                print(p)
                 switch (p) {
                 case .dot:
                     rhsNode = process_dot_expr(binExpr: binExpr)
@@ -184,13 +185,14 @@ public class JSTestSuite {
                 break
             }
         case .functionCall(let fCall):
+            isInstantiation = !fCall.identifier.name.lowercased().contains("assert") && !contractFunctionNames.contains(fCall.identifier.name)
             rhsNode = process_func_call(fCall: fCall)
         default:
             break
         }
 
-
-        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!))
+    
+        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!, isInstantiation: isInstantiation))
     }
     
     private func process_dot_expr(binExpr : BinaryExpression) -> JSNode {
