@@ -1,4 +1,4 @@
-public class JSVariableAssignment {
+public class JSVariableAssignment : CustomStringConvertible {
     private let lhs : String
     private let isConstant: Bool
     private let rhs : JSNode
@@ -9,4 +9,8 @@ public class JSVariableAssignment {
         self.isConstant = isConstant
     }
     
+    public var description: String {
+        let varModifier = isConstant ? "let" : "var"
+        return varModifier + " " + lhs.description + " = " + rhs.description
+    }
 }
