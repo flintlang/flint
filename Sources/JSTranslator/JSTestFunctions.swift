@@ -11,9 +11,11 @@ public class JSTestFunction : CustomStringConvertible {
         let fncSignature = "async function " + name + "(t_contract) { \n"
         var body = ""
         let closeToken = "}"
+        body += "   let 012assertResult = {} \n"
         for stm in stmts {
             body += "   " + stm.description + "\n"
         }
-        return fncSignature + body + closeToken
+        let procR = "   process_test_result(012assertResult['result'], \"" + name  + "\"" + ")" + "\n"
+        return fncSignature + body + procR + closeToken
     }
 }
