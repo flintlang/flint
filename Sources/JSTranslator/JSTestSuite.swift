@@ -225,7 +225,9 @@ public class JSTestSuite {
             isTransaction = isFuncTransaction
         }
         
-        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+        let isAssert = fName.lowercased().contains("assert")
+        
+        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs))
     }
     
     
