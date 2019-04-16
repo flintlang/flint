@@ -13,8 +13,6 @@ public class JSTestSuite {
     private var isFuncTransaction : [String:Bool]
     private var contractFunctionNames : [String]
 
-    
-    
     // creates the JSTestSuite class
     public init() {
         contractName = ""
@@ -61,7 +59,7 @@ public class JSTestSuite {
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
-                    isFuncTransaction[fName] = fn.isMutating
+                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating
                     contractFunctionNames.append(fName)
                 }
             }
@@ -169,7 +167,7 @@ public class JSTestSuite {
         default:
             break
         }
-
+        
         // we need to do function call
         switch (binExp.rhs) {
         case .binaryExpression(let binExpr):
