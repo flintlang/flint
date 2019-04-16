@@ -1,4 +1,7 @@
 import AST
+import Parser
+import Lexer
+import Foundation
 
 public class JSTestSuite {
     // for now lets write this to support a single test contract
@@ -8,6 +11,8 @@ public class JSTestSuite {
     private var JSTestFuncs: [JSTestFunction]
     
     private var isFuncTransaction : [String:Bool]
+    private var contractFunctionNames : [String]
+
     
     
     // creates the JSTestSuite class
@@ -17,6 +22,7 @@ public class JSTestSuite {
         testSuiteName = ""
         JSTestFuncs = []
         isFuncTransaction = [:]
+        contractFunctionNames = []
     }
     
     // this function is the entry point which takes a flint AST and translates it into a JS AST suitable for testing
@@ -27,6 +33,7 @@ public class JSTestSuite {
             switch d {
             case .contractDeclaration(let contractDec):
                 processContract(contract: contractDec)
+                loadContract()
             case .contractBehaviorDeclaration(let contractBehaviour):
                 processContractBehaviour(contractBehaviour: contractBehaviour)
             default:
@@ -35,30 +42,45 @@ public class JSTestSuite {
         }
     }
     
+    private func loadContract() {
+        // process the contract that we actually care about
+        do {
+            let sourceCode = try String(contentsOf: URL(fileURLWithPath: self.filePath))
+            let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath), isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
+            let (_, environment, parserDiagnostics) = try Parser(tokens: tokens).parse()
+            
+            if (environment.syntaxErrors)
+            {
+                // print syntax errors before exiting and also use throw
+                print("failed to compile contract")
+                exit(1)
+            }
+            
+            let contractFunctions = environment.types[self.contractName]!.allFunctions
+            
+            for (fName, allFuncsWithName) in contractFunctions {
+                if (allFuncsWithName.count > 0)
+                {
+                    isFuncTransaction[fName] = fn.isMutating
+                    contractFunctionNames.append(fName)
+                }
+            }
+            
+        } catch {
+            print("failed to compile contract")
+            exit(1)
+        }
+    }
+    
     private func processContractBehaviour(contractBehaviour: ContractBehaviorDeclaration)
     {
         
         let members : [ContractBehaviorMember] = contractBehaviour.members
         
-        // I am doing this on the wrong contract, I need to pull in the other contract and 
-        for m in members {
-            switch (m) {
-            case .functionDeclaration(let fdec):
-                isFuncTransaction[fdec.identifier.name] = fdec.isMutating
-            default:
-                continue
-            }
-        }
-        
-        isFuncTransaction["increment"] = true
-        isFuncTransaction["getValue"] = false
-        isFuncTransaction["Counter"] = false
-        
         // process each of the function declarations
         for m in members {
             switch (m) {
             case .functionDeclaration(let fdec):
-                // I need to know the types of the function
                 if let fnc = processContractFunction(fdec: fdec) {
                     JSTestFuncs.append(fnc)
                 }
@@ -100,8 +122,6 @@ public class JSTestSuite {
     private func process_func_call_args(args : [FunctionArgument]) -> [JSNode] {
         
         var jsArgs : [JSNode] = []
-        
-        // i should support literals
         
         for a in args {
             // create a JSNode for each of these but for now we will just do variables

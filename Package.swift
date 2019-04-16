@@ -100,6 +100,6 @@ let package = Package(
         dependencies: ["Diagnostic"]),
     .target(
         name: "JSTranslator",
-        dependencies: ["AST"])
+        dependencies: ["AST", "Parser", "Lexer"])
     ]
 )
