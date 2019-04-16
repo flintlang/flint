@@ -8,7 +8,7 @@ public class JSTestFunction : CustomStringConvertible {
     }
     
     public var description : String {
-        let fncSignature = "async function " + name + "() { \n"
+        let fncSignature = "async function " + name + "(t_contract) { \n"
         var body = ""
         let closeToken = "}"
         for stm in stmts {
