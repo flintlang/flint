@@ -52,14 +52,17 @@ public class JSTestSuite {
         for m in members {
             switch (m) {
             case .functionDeclaration(let fdec):
-                print(fdec)
+                // I need to know the types of the function
+                if let fnc = processContractFunction(fdec: fdec) {
+                    JSTestFuncs.append(fnc)
+                }
             default:
                 continue
             }
         }
     }
     
-    private func processContractFunction(fdec: FunctionDeclaration)
+    private func processContractFunction(fdec: FunctionDeclaration) -> JSTestFunction?
     {
         let fSignature : FunctionSignatureDeclaration = fdec.signature
         
@@ -70,41 +73,128 @@ public class JSTestSuite {
         // if this is not a test function then do not process
         if (!fName.lowercased().contains("test"))
         {
-            return
+            return nil
         }
         
         let body : [Statement] = fdec.body
         
-        // I should create a JS Function here
-        // does this make sense
-        // I should probably factor this stuff out
         for stmt in body {
             switch (stmt) {
             case .expression(let expr):
-                // okay -> I need to do other stuff
-                //jsStmts.append(process_expr(expr: expr))
-                print(expr)
+                jsStmts.append(process_expr(expr: expr))
             default:
                 continue
             }
         }
+        
+        return JSTestFunction(name: fName, stmts: jsStmts)
     }
     
-    private func process_expr(expr : Expression) -> JSNode?
-    {
-        // writing a lot of code is tiring
-        let jsNode : JSNode? = nil
+    
+    private func process_func_call_args(args : [FunctionArgument]) -> [JSNode] {
         
-        switch (expr) {
-        case .functionCall(let fCall):
-            print(fCall)
-        case .binaryExpression(let binExp):
-            print(binExp)
+        var jsArgs : [JSNode] = []
+        
+        for a in args {
+            // create a JSNode for each of these but for now we will just do variables
+            switch (a.expression)
+            {
+            case .identifier(let i):
+                jsArgs.append(.Variable(JSVariable(variable: i.name)))
+            default:
+                break
+            }
+        }
+        
+        return jsArgs
+    }
+
+    private func process_assignment_expr(binExp : BinaryExpression) -> JSNode
+    {
+        var rhsNode : JSNode? = nil
+        var type : Bool? = nil
+        var name: String? = nil
+        // this gets the name of the variable
+        // and the type of
+        switch (binExp.lhs) {
+        case .variableDeclaration(let vdec):
+            name = vdec.identifier.name
+            type = vdec.isConstant
+        default:
+            break
+        }
+
+        
+        switch (binExp.rhs) {
+        case .binaryExpression(let binExpr):
+            switch (binExpr.op.kind) {
+            case .punctuation(let p):
+                print(p)
+                switch (p) {
+                case .dot:
+                    rhsNode = process_dot_expr(binExpr: binExpr)
+                default:
+                    break
+                }
+            default:
+                break
+            }
+
         default:
             break
         }
         
-        return jsNode
+        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!))
+    }
+    
+    private func process_dot_expr(binExpr : BinaryExpression) -> JSNode {
+        var lhsName : String = ""
+        var rhsNode : JSNode? = nil
+        
+        switch (binExpr.lhs) {
+        case .identifier(let i):
+            lhsName = i.name
+        default:
+            break
+        }
+        
+        switch (binExpr.rhs) {
+        case .functionCall(let fCall):
+            let fName : String = fCall.identifier.name
+            let funcArgs = process_func_call_args(args: fCall.arguments)
+            
+            rhsNode = .FunctionCall(JSFunctionCall(contractCall: true, transactionMethod: isFuncTransaction[fName]!, isAssert: fName.lowercased().contains("assert"), functionName: fName, contractName: lhsName, args: funcArgs))
+        default:
+            break
+        }
+        
+        return rhsNode!
+    }
+    
+    
+    private func process_expr(expr : Expression) -> JSNode
+    {
+
+        var jsNode : JSNode? = nil
+        switch (expr) {
+        case .binaryExpression(let binExp):
+            switch (binExp.op.kind) {
+            case .punctuation(let punc):
+                switch (punc) {
+                case .equal:
+                    jsNode = process_assignment_expr(binExp: binExp)
+                case .dot:
+                    jsNode = process_dot_expr(binExpr: binExp)
+                default:
+                    break
+                }
+            default: break
+            }
+        default:
+            break
+        }
+        
+        return jsNode!
     }
     
     
