@@ -6,23 +6,29 @@ import Foundation
 
 public class Verifier {
   private let boogieLocation: String
+  private let symbooglixLocation: String
   private let monoLocation: String
   private let dumpVerifierIR: Bool
   private let printVerificationOutput: Bool
+  private let skipHolisticCheck: Bool
   private var boogieTranslator: BoogieTranslator
 
   public init(dumpVerifierIR: Bool,
               printVerificationOutput: Bool,
+              skipHolisticCheck: Bool,
               boogieLocation: String,
+              symbooglixLocation: String,
               monoLocation: String,
               topLevelModule: TopLevelModule,
               environment: Environment,
               sourceContext: SourceContext,
               normaliser: IdentifierNormaliser) {
     self.boogieLocation = boogieLocation
+    self.symbooglixLocation = symbooglixLocation
     self.monoLocation = monoLocation
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
+    self.skipHolisticCheck = skipHolisticCheck
     self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
                                              environment: environment,
                                              sourceContext: sourceContext,
@@ -36,30 +42,58 @@ public class Verifier {
     if dumpVerifierIR {
       print(translation)
     }
-    let boogieErrors = executeBoogie(boogie: translation)
+
+    // Verify boogie code
+    let boogieErrors = executeBoogie(boogie: "\(translation)")
     let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: mapping)
-    return (boogieErrors.count == 0, flintErrors)
+    let contractVerified = boogieErrors.count == 0
+
+    if contractVerified && !skipHolisticCheck {
+      let holisticErrors = executeSymbooglix(translation: translation)
+    }
+
+    return (contractVerified, flintErrors)
   }
 
   private func executeBoogie(boogie: String) -> [BoogieError] {
-
-    let uniqueFileName = UUID().uuidString + ".bpl"
-    let tempBoogieFile = URL(fileURLWithPath: NSTemporaryDirectory(),
-                             isDirectory: true).appendingPathComponent(uniqueFileName)
-    do {
-      // Safely force unwrap as Swift uses unicode internally
-      try boogie.data(using: .utf8)!.write(to: tempBoogieFile, options: [.atomic])
-    } catch {
-      print("Error writing boogie to file: \(error)")
+    let tempBoogieFile = writeToTempFile(data: boogie)
+    let (uncheckedOutput, terminationStatus) = executeTask(executable: monoLocation,
+                                                           arguments: [boogieLocation, tempBoogieFile.path])
+    guard let output = uncheckedOutput else {
+      print("Error during verification, could not decode verifier output")
       fatalError()
     }
 
+    if printVerificationOutput {
+      print(output)
+    }
+
+    if terminationStatus != 0 {
+      print("Error during verification, verifier terminated with non-zero exit code")
+      print(output)
+      fatalError()
+    }
+
+    return extractBoogieErrors(rawBoogieOutput: output)
+  }
+
+  private func executeSymbooglix(translation: FlintBoogieTranslation) -> [BoogieError] {
+    let tempHolisticFile = writeToTempFile(data: "\(translation.holisticProgram)")
+    let entryPoints = translation.holisticTestEntryPoints.reduce("", { "\($0),\($1)" })
+    let arguments = [symbooglixLocation, tempHolisticFile.path, "--timeout", "10", "-e"] + entryPoints
+    print(arguments)
+    let (uncheckedOutput, terminationStatus) = executeTask(executable: monoLocation,
+                                                           arguments: arguments)
+    return []
+  }
+
+  private func executeTask(executable: String, arguments: [String]) -> (String?, Int32) {
     // Create a Task instance
     let task = Process()
 
     // Set the task parameters
-    task.launchPath = monoLocation
-    task.arguments = [boogieLocation, tempBoogieFile.path]
+    task.launchPath = executable
+    task.arguments = arguments
 
     // Create a Pipe and make the task
     // put all the output there
@@ -73,23 +107,21 @@ public class Verifier {
     // Get the data
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     let uncheckedOutput = String(data: data, encoding: String.Encoding.utf8)
-    if uncheckedOutput == nil {
-      print("Error during verification, could not decode verifier output")
+    return (uncheckedOutput, task.terminationStatus)
+  }
+
+  private func writeToTempFile(data: String) -> URL {
+    let uniqueFileName = UUID().uuidString + ".bpl"
+    let tempFile = URL(fileURLWithPath: NSTemporaryDirectory(),
+                             isDirectory: true).appendingPathComponent(uniqueFileName)
+    do {
+      // Safely force unwrap as Swift uses unicode internally
+      try data.data(using: .utf8)!.write(to: tempFile, options: [.atomic])
+    } catch {
+      print("Error writing boogie to file: \(error)")
       fatalError()
     }
-
-    let output = uncheckedOutput!
-    if printVerificationOutput {
-      print(output)
-    }
-
-    if task.terminationStatus != 0 {
-      print("Error during verification, verifier terminated with non-zero exit code")
-      print(output)
-      fatalError()
-    }
-
-    return extractBoogieErrors(rawBoogieOutput: output)
+    return tempFile
   }
 
   private func extractBoogieErrors(rawBoogieOutput: String) -> [BoogieError] {

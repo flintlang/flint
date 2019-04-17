@@ -348,7 +348,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .event, .public, .visible, .mutating, .var, .let, .invariant:
+      case .event, .public, .visible, .mutating, .var, .let, .invariant, .will:
         members.append(try parseContractMember(enclosingType: enclosingType))
       case .punctuation(.closeBrace):
         return members
@@ -371,6 +371,12 @@ extension Parser {
         throw raise(.expectedInvariantDeclaration(at: latestSource))
       }
       return .invariantDeclaration(try parseExpression(upTo: newLine))
+    } else if first == .will {
+      _ = try consume(anyOf: [.will], or: .expectedHolisticDeclaration(at: latestSource))
+      guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+        throw raise(.expectedHolisticDeclaration(at: latestSource))
+      }
+      return .holisticDeclaration(try parseExpression(upTo: newLine))
     }
 
     let modifiers = try parseModifiers()

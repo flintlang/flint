@@ -33,6 +33,14 @@ public struct ContractDeclaration: ASTNode {
     })
   }
 
+  public var holisticDeclarations: [Expression] {
+    return members.compactMap({ if case .holisticDeclaration(let expression) = $0 {
+        return expression
+      }
+      return nil
+    })
+  }
+
   public var isStateful: Bool {
     return !states.isEmpty
   }

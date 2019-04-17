@@ -204,7 +204,7 @@ extension BoogieTranslator {
                + [incrementIndex]
 
       // index should be less than finalIndexValue
-      let loopInvariantExpression: BExpression = .or(.lessThan(index, finalIndexValue), .equals(index, finalIndexValue))
+      let loopInvariantExpression: BExpression = .lessThanOrEqual(index, finalIndexValue)
       //.lessThan(.old(index), index)
       let loopInvariants = [BProofObligation(expression: loopInvariantExpression,
                                              mark: registerProofObligation(forStatement.sourceLocation),

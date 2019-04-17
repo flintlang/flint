@@ -113,7 +113,9 @@ extension Compiler {
     if !config.skipVerifier {
       let (verified, errors) = Verifier(dumpVerifierIR: config.dumpVerifierIR,
                                         printVerificationOutput: config.printVerificationOutput,
+                                        skipHolisticCheck: config.skipHolisticCheck,
                                         boogieLocation: "boogie/Binaries/Boogie.exe",
+                                        symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
                                         monoLocation: "/usr/bin/mono",
                                         topLevelModule: passRunnerOutcome.element,
                                         environment: passRunnerOutcome.environment,
@@ -181,6 +183,7 @@ public struct CompilerConfiguration {
   public let emitBytecode: Bool
   public let dumpVerifierIR: Bool
   public let printVerificationOutput: Bool
+  public let skipHolisticCheck: Bool
   public let skipVerifier: Bool
   public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
@@ -194,6 +197,7 @@ public struct CompilerConfiguration {
               emitBytecode: Bool,
               dumpVerifierIR: Bool,
               printVerificationOutput: Bool,
+              skipHolisticCheck: Bool,
               skipVerifier: Bool,
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
@@ -206,6 +210,7 @@ public struct CompilerConfiguration {
     self.emitBytecode = emitBytecode
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
+    self.skipHolisticCheck = skipHolisticCheck
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics

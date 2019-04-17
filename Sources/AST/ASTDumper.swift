@@ -211,6 +211,8 @@ public class ASTDumper {
       self.dump(eventDeclaration)
     case .invariantDeclaration(let expression):
       self.dump(expression)
+    case .holisticDeclaration(let expression):
+      self.dump(expression)
     }
   }
 

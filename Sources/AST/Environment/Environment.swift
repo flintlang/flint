@@ -61,6 +61,11 @@ public class Environment {
     return types[enclosingType]!.conformingFunctions
   }
 
+  /// The list of functions in a type
+  public func functions(in enclosingType: RawTypeIdentifier) -> [String: [FunctionInformation]] {
+    return types[enclosingType]!.allFunctions
+  }
+
   /// The list of initializers in a type.
   public func initializers(in enclosingType: RawTypeIdentifier) -> [SpecialInformation] {
     return types[enclosingType]!.allInitialisers

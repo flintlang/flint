@@ -38,9 +38,26 @@ func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
   return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
 }
 
-
 struct FlintProofObligationInformation {
 
+}
+
+struct FlintBoogieTranslation: CustomStringConvertible {
+  let boogieTlds: [BTopLevelDeclaration]
+  let holisticTestProcedures: [BTopLevelDeclaration]
+  let holisticTestEntryPoints: [String]
+
+  var verificationProgram: BTopLevelProgram {
+    return BTopLevelProgram(declarations: boogieTlds)
+  }
+
+  var holisticProgram: BTopLevelProgram {
+    return BTopLevelProgram(declarations: boogieTlds + holisticTestProcedures)
+  }
+
+  var description: String {
+    return verificationProgram.description
+  }
 }
 
 public struct IdentifierNormaliser {

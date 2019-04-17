@@ -95,7 +95,11 @@ extension Diagnostic {
   }
   static func expectedInvariantDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
-                      message: "Expected 'invariant' declaration withing contract")
+                      message: "Expected 'invariant' declaration within contract")
+  }
+  static func expectedHolisticDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'holistic' declaration within contract")
   }
 
   // MARK: Enum

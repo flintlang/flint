@@ -268,6 +268,14 @@ public struct ASTVisitor {
       processResult.element =
         .invariantDeclaration(processResult.combining(visit(expression,
                                                             passContext: newPassContext)))
+    case .holisticDeclaration(let expression):
+      // Create empty scope
+      var newPassContext = processResult.passContext
+      newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
+
+      processResult.element =
+        .holisticDeclaration(processResult.combining(visit(expression,
+                                                            passContext: newPassContext)))
     }
 
     let postProcessResult = pass.postProcess(contractMember: processResult.element,

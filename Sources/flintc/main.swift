@@ -13,6 +13,7 @@ func main() {
     Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code."),
     Flag("dump-verifier-ir", flag: "d", description: "Emit the representation of the code used by the verifier."),
     Flag("print-verifier-output", flag: "o", description: "Emit the verifier's raw verification output"),
+    Flag("skip-holistic", flag: "l", description: "Skip checking holistic specifications"),
     Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),
     Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
@@ -20,7 +21,7 @@ func main() {
     Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
     Flag("no-stdlib", description: "Do not load the standard library"),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipVerifier, skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier, skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -48,6 +49,7 @@ func main() {
         emitBytecode: emitBytecode,
         dumpVerifierIR: dumpVerifierIR,
         printVerificationOutput: printVerificationOutput,
+        skipHolisticCheck: skipHolisticCheck,
         skipVerifier: skipVerifier,
         skipCodeGen: skipCodeGen,
         diagnostics: DiagnosticPool(shouldVerify: shouldVerify,

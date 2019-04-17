@@ -1,0 +1,23 @@
+//VERIFY-CHECK
+contract C {
+  var i: Int = 5
+
+  will (i == 10)
+}
+
+C :: (any) {
+  public init() {}
+
+  public func add()
+    mutates (i)
+  {
+    i += 5
+  }
+
+
+  public func sub()
+    mutates (i)
+  {
+    i -= 5
+  }
+}

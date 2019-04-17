@@ -1,8 +1,8 @@
 BOOGIE_EXE=boogie/Binaries/Boogie.exe
 SYMBOOGLIX_EXE=symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe
 Z3=z3/build/z3
-Z3_slink=boogie/Binaries/z3.exe
-
+Boogie_Z3_slink=boogie/Binaries/z3.exe
+Symbooglix_Z3_slink=symbooglix/src/SymbooglixDriver/bin/Release/z3.exe
 .PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
 
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
@@ -45,21 +45,23 @@ generate-sources: Sources/AST/ASTPass/ASTPass.generated.swift
 	cd utils/codegen && npm install && cd ../..
 	./utils/codegen/codegen.js
 
-$(SYMBOOGLIX_EXE): $(Z3_slink)
+$(SYMBOOGLIX_EXE): $(Symbooglix_Z3_slink)
 	cd symbooglix/src && (test -f nuget.exe || wget https://nuget.org/nuget.exe) \
 	  && mono ./nuget.exe restore Symbooglix.sln \
 	  && msbuild /p:Configuration=Release /verbosity:quiet \
 	  && cd ../..
 
-$(BOOGIE_EXE): $(Z3_slink)
+$(BOOGIE_EXE): $(Boogie_Z3_slink)
 	cd boogie && (test -f nuget.exe || wget https://nuget.org/nuget.exe) \
 	  && mono ./nuget.exe restore Source/Boogie.sln \
 	  && msbuild Source/Boogie.sln /verbosity:quiet && cd ..
 
-$(Z3_slink): $(Z3)
+$(Boogie_Z3_slink): $(Z3)
 	cd boogie \
 	  && (test -L Binaries/z3.exe || ln -s ../../$(Z3) Binaries/z3.exe) \
 	  && cd .. \
+
+$(Symbooglix_Z3_slink): $(Z3)
 	cd symbooglix \
 	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || ln -s ../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe) \
 	  && (test -L src/Symbooglix/bin/Release/z3.exe || ln -s ../../$(Z3) src/Symbooglix/bin/Release/z3.exe) \

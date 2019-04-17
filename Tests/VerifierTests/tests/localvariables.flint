@@ -22,7 +22,7 @@ LocalVariables :: (any) {
     js[0] = 0
 
     for let j: Int in js {
-      k += i
+      k += j
     }
   }
 
