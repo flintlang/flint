@@ -15,14 +15,16 @@ import TypeChecker
 import Optimizer
 import LSP
 import IRGen
+import JSTranslator
 
 /// Runs the different stages of the compiler.
 struct Compiler {
   var sourceFiles: [URL]
   var sourceCode: String
   var stdlibFiles: [URL]
+  var outputDirectory: URL
   var diagnostics: DiagnosticPool
-  var typeStateDiagram : Bool
+
 
   var sourceContext: SourceContext {
     return SourceContext(sourceFiles: sourceFiles, sourceCodeString: sourceCode, isForServer: true)
@@ -34,69 +36,98 @@ struct Compiler {
     return stdlibTokens + userTokens
   }
     
-  func ide_compile() throws
-  {
-    let tokens = try tokenizeFiles()
-
-    // Turn the tokens into an Abstract Syntax Tree (AST).
-    let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
-    
-    // add all parser diagnostics to the pool of diagnistics  
-    diagnostics.appendAll(parserDiagnostics)
-    
-    
-    // i should check if there are any syntax errors before I do this part - but i want to give some
-    // information back to the user that their program is mesesd up
-    if (typeStateDiagram)
-    {
-        let gs : [Graph] = produce_graphs_from_ev(ev: environment)
-        var dotFiles : [String] = []
-        for g in gs {
-            let dotFile = produce_dot_graph(graph: g)
-            dotFiles.append(dotFile)
+  func compile() throws {
+        let tokens = try tokenizeFiles()
+        
+        // Turn the tokens into an Abstract Syntax Tree (AST).
+        let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+        
+        if let failed = try diagnostics.checkpoint(parserDiagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
         }
-        for dot in dotFiles {
-            print(dot)
+        
+        guard let ast = parserAST else {
+            exitWithFailure()
         }
-        return
-    }
-   
-    // only continue if you have no syntax errors? 
-    // need to set a flag to tell it not to continue on syntax errors
-    guard let ast = parserAST else {
-        return
-    }
     
-    // stop parsing if any syntax errors are detected
-    if (environment.syntaxErrors)
-    {
-        let diag = diagnostics
-        let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
-        print(json)
-        return
-    }
+        // The AST passes to run sequentially.
+        let astPasses: [ASTPass] = [
+            SemanticAnalyzer(),
+            TypeChecker(),
+            Optimizer(),
+            IRPreprocessor()
+        ]
+        
+        // Run all of the passes. (Semantic checks)
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+        if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        // Generate YUL IR code.
+        let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+            .generateCode()
+        
+        // Compile the YUL IR code using solc.
+        try SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: false).compile()
     
-    
-    let astPasses: [ASTPass] = [
-        SemanticAnalyzer(),
-        TypeChecker(),
-        Optimizer(),
-        IRPreprocessor()
-    ]
-    
-    let passRunnerOutcome = ASTPassRunner(ast: ast)
-        .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+        // these are warnings from the solc compiler
+        try diagnostics.display()
 
-    // add semantic diagnostics
-    diagnostics.appendAll(passRunnerOutcome.diagnostics)
-    
-    // I guess at this point - I need to know that
-    
-    let json = try convertFlintDiagToLspDiagJson(diagnostics.getDiagnostics())
-    print(json)
+        let fileName = "main.sol"
+        let irFileURL: URL
+        irFileURL = outputDirectory.appendingPathComponent(fileName)
+        do {
+            try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+        } catch {
+            exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+        }
 
-    // all the diagnostics have been added
-    return
-  }
+    
+    }
+    
+    func exitWithFailure() -> Never {
+        print("Failed to compile.")
+        exit(1)
+    }
+    
 }
+
+func exitWithSolcNotInstalledDiagnostic() -> Never {
+    let diagnostic = Diagnostic(
+        severity: .error,
+        sourceLocation: nil,
+        message: "Missing dependency: solc",
+        notes: [
+            Diagnostic(
+                severity: .note,
+                sourceLocation: nil,
+                message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html " +
+                "for installation instructions.")
+        ]
+    )
+    // swiftlint:disable force_try
+    print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+    // swiftlint:enable force_try
+    exit(1)
+}
+
+func exitWithUnableToWriteIRFile(irFileURL: URL) {
+    let diagnostic = Diagnostic(severity: .error,
+                                sourceLocation: nil,
+                                message: "Could not write IR file: '\(irFileURL.path)'.")
+    // swiftlint:disable force_try
+    print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+    // swiftlint:enable force_try
+    exit(1)
+}
+
+
 
