@@ -449,8 +449,6 @@ function process_test_result(res, test_name) {
     
         file += "main('main.sol', '\(self.contractName)');"
         
-        print(file)
-    
         return file
     }
 }
