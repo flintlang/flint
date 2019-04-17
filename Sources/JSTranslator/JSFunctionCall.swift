@@ -48,7 +48,7 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall += ", [])"
                 }
             } else {
-                fCall = "call_method_int(t_contract, " + self.functionName
+                fCall = "call_method_int(t_contract, " + "'" + self.functionName + "'"
                 if args.count > 0 {
                     fCall += "," + create_arg_list() + ")"
                 } else {
