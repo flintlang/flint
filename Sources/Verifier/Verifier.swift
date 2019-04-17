@@ -4,6 +4,8 @@ import Lexer
 import Diagnostic
 import Foundation
 
+import Yaml
+
 public class Verifier {
   private let boogieLocation: String
   private let symbooglixLocation: String
@@ -48,8 +50,10 @@ public class Verifier {
     let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: mapping)
     let contractVerified = boogieErrors.count == 0
 
-    if contractVerified && !skipHolisticCheck {
-      let holisticErrors = executeSymbooglix(translation: translation)
+    if contractVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0
+      && !executeSymbooglix(translation: translation) {
+      //TODO: Give more informative feedback - ie, # of runs, # of failing runs
+      print("Unable to verify holistic spec")
     }
 
     return (contractVerified, flintErrors)
@@ -77,14 +81,27 @@ public class Verifier {
     return extractBoogieErrors(rawBoogieOutput: output)
   }
 
-  private func executeSymbooglix(translation: FlintBoogieTranslation) -> [BoogieError] {
+  private func executeSymbooglix(translation: FlintBoogieTranslation) -> Bool {//[SymbooglixError] {
     let tempHolisticFile = writeToTempFile(data: "\(translation.holisticProgram)")
-    let entryPoints = translation.holisticTestEntryPoints.reduce("", { "\($0),\($1)" })
-    let arguments = [symbooglixLocation, tempHolisticFile.path, "--timeout", "10", "-e"] + entryPoints
-    print(arguments)
+    let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
+    let workingDir = NSTemporaryDirectory() + UUID().uuidString
+    let arguments = [symbooglixLocation, tempHolisticFile.path,
+      "--timeout", "10",
+      "--output-dir", workingDir,
+      "-e", entryPoints]
     let (uncheckedOutput, terminationStatus) = executeTask(executable: monoLocation,
                                                            arguments: arguments)
-    return []
+    if uncheckedOutput == nil {
+      print("Symbooglix produced no output")
+      fatalError()
+    }
+
+    // exit code 4 == timeout
+    //if !(terminationStatus == 4 || terminationStatus == 0) {
+    //  print("Symbooglix exited with error code \(terminationStatus)\n\(output)")
+    //  fatalError()
+    //}
+    return extractSymbooglixErrors(terminationCountersFile: workingDir + "/termination_counters.yml")
   }
 
   private func executeTask(executable: String, arguments: [String]) -> (String?, Int32) {
@@ -99,6 +116,7 @@ public class Verifier {
     // put all the output there
     let pipe = Pipe()
     task.standardOutput = pipe
+    task.standardError = Pipe()
 
     // Launch the task
     task.launch()
@@ -122,6 +140,25 @@ public class Verifier {
       fatalError()
     }
     return tempFile
+  }
+
+  private func extractSymbooglixErrors(terminationCountersFile: String) -> Bool {
+    do {
+      let results = try Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile), encoding: .utf8))
+      guard let resultDict = results.dictionary else {
+        print("Found no results in termination_counters file")
+        fatalError()
+
+      }
+      let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
+      let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
+      //print(successfulRuns)
+      //print(totalRuns)
+      return successfulRuns == totalRuns
+    } catch {
+      print("Unable to parse termination_counters yaml file")
+      fatalError()
+    }
   }
 
   private func extractBoogieErrors(rawBoogieOutput: String) -> [BoogieError] {

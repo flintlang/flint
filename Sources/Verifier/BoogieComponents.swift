@@ -17,6 +17,10 @@ enum BoogieError {
   //case loopInvariantMaintenanceFailure(Int, String)
 }
 
+enum SymbooglixError {
+  case error()
+}
+
 struct VerifierMappingKey: Hashable, CustomStringConvertible {
   let file: String
   let flintLine: Int

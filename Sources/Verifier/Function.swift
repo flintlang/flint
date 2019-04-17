@@ -447,7 +447,7 @@ extension BoogieTranslator {
       returnType: returnType,
       returnName: returnName,
       parameters: bParameters,
-      prePostConditions: callerPreConds + prePostConditions + globalInvariants,
+      prePostConditions: callerPreConds + prePostConditions + (!isContractInit ? globalInvariants : []), //Inits should establish
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
