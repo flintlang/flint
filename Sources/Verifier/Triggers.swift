@@ -63,13 +63,14 @@ struct Trigger {
   }
 
   private static func registerFunctionCallTriggers() -> [Rule<FunctionCall>] {
-    var triggers = [Rule<FunctionCall>]()
+    let triggers = [Rule<FunctionCall>]()
     return triggers
   }
 
   private static func registerFunctionDeclarationTriggers() -> [Rule<FunctionDeclaration>] {
     var triggers = [Rule<FunctionDeclaration>]()
     triggers.append(TriggerRule.weiCreationUnsafeInit())
+    triggers.append(TriggerRule.weiSetupInvariantOnInit())
     return triggers
   }
 

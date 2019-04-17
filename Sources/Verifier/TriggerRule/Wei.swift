@@ -97,4 +97,26 @@ extension TriggerRule {
                                     rule: updateTotalValue,
                                     mutates: ["totalValue_Wei"])
     }
+
+    static func weiSetupInvariantOnInit() -> Rule<FunctionDeclaration> {
+      let isContractInit: ((FunctionDeclaration, Context, ExtraType) -> Bool) = { function, c, e in
+        return function.identifier.name == "init" && c.environment.isContractDeclared(c.enclosingType)
+      }
+      let updateVariables: ((FunctionDeclaration, Context, ExtraType) -> ([BStatement], [BStatement])) = { function, c, e in
+        let mark = getMark(function.sourceLocation)
+        var preStmts = [BStatement]()
+        preStmts.append(.assignment(.identifier("totalValue_Wei"), .integer(0), mark))
+        preStmts.append(.assignment(.identifier("sentValue_Wei"), .integer(0), mark))
+        preStmts.append(.assignment(.identifier("receivedValue_Wei"), .integer(0), mark))
+        return (preStmts, [])
+      }
+
+      return Rule<FunctionDeclaration>(condition: isContractInit,
+                                       rule: updateVariables,
+                                       mutates: [
+                                         "totalValue_Wei",
+                                         "sentValue_Wei",
+                                         "receivedValue_Wei"
+                                       ])
+    }
 }
