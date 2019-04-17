@@ -10,6 +10,8 @@ Medium article: [Flint: A New Language for Safe Smart Contracts on Ethereum](htt
 
 Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf)
 
+Current working paper: [Flint for Safer Smart Contracts] (https://arxiv.org/abs/1904.06534)
+
 Between October 2018 and January 2019, Flint was developed as part of an [Imperial College Department of Computing](https://www.doc.ic.ac.uk) 362 group project. A [presentation](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Presentation.pdf) and [report](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Report.pdf) detailing the development were produced.
 
 ## Language Overview
