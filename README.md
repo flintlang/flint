@@ -14,10 +14,6 @@ Current working paper: [Flint for Safer Smart Contracts](https://arxiv.org/abs/1
 
 Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdf). 
 
-(https://github.com/flintlang/flint/tree/master/docs/pdf). The work has continued as a group project and documentation for that work can be accessed [here](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf)
-
-[presentation](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Presentation.pdf) and [report](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Report.pdf) detailing the development were produced.
-
 ## Language Overview
 
 The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), [Local](docs/language_guide.md) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
