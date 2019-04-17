@@ -8,6 +8,7 @@ public class JSTestSuite {
     private var contractName: String
     private var filePath: String
     private var testSuiteName: String
+    private let ast : TopLevelModule
     private var JSTestFuncs: [JSTestFunction]
     
     private var isFuncTransaction : [String:Bool]
@@ -112,23 +113,42 @@ function process_test_result(res, test_name) {
 """
 
     // creates the JSTestSuite class
-    public init() {
-        contractName = ""
-        filePath = ""
-        testSuiteName = ""
-        JSTestFuncs = []
-        isFuncTransaction = [:]
-        contractFunctionNames = []
+    public init(ast: TopLevelModule) {
+        self.contractName = ""
+        self.filePath = ""
+        self.testSuiteName = ""
+        self.JSTestFuncs = []
+        self.isFuncTransaction = [:]
+        self.contractFunctionNames = []
+        self.ast = ast
+        loadTestContractVars()
     }
     
-    // this function is the entry point which takes a flint AST and translates it into a JS AST suitable for testing
-    public func convertAST(ast: TopLevelModule) {
-        let declarations : [TopLevelDeclaration] = ast.declarations
-        
+    public func getFilePathToFlintContract() -> String {
+        return self.filePath
+    }
+    
+    public func loadTestContractVars() {
+        let declarations : [TopLevelDeclaration] = self.ast.declarations
+    
         for d in declarations {
             switch d {
             case .contractDeclaration(let contractDec):
-                processContract(contract: contractDec)
+               processContract(contract: contractDec)
+            default:
+               continue
+           }
+        }
+    
+    }
+    
+    // this function is the entry point which takes a flint AST and translates it into a JS AST suitable for testing
+    public func convertAST() {
+        let declarations : [TopLevelDeclaration] = self.ast.declarations
+        
+        for d in declarations {
+            switch d {
+            case .contractDeclaration:
                 loadContract()
             case .contractBehaviorDeclaration(let contractBehaviour):
                 processContractBehaviour(contractBehaviour: contractBehaviour)
@@ -143,14 +163,7 @@ function process_test_result(res, test_name) {
         do {
             let sourceCode = try String(contentsOf: URL(fileURLWithPath: self.filePath))
             let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath), isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
-            let (_, environment, parserDiagnostics) = try Parser(tokens: tokens).parse()
-            
-            if (environment.syntaxErrors)
-            {
-                // print syntax errors before exiting and also use throw
-                print("failed to compile contract")
-                exit(1)
-            }
+            let (_, environment, _) = Parser(tokens: tokens).parse()
             
             let contractFunctions = environment.types[self.contractName]!.allFunctions
             
@@ -163,7 +176,7 @@ function process_test_result(res, test_name) {
             }
             
         } catch {
-            print("failed to compile contract")
+            print("Fatal error")
             exit(1)
         }
     }
