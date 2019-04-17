@@ -58,7 +58,7 @@ public class JSFunctionCall : CustomStringConvertible {
         } else {
             
             if isAssert {
-                fCall += self.functionName + "(" + "012assertResult, "
+                fCall += self.functionName + "(" + "assertResult012, "
             } else {
                 fCall += self.functionName + "("
             }
