@@ -51,4 +51,10 @@ LocalVariables :: (any) {
   public func selfArray() -> Int {
     return self.js[0]
   }
+
+  func outOfBoundsAccess() {
+    var i: Int[4] = [1,2,3,4]
+    //VERIFY-FAIL
+    let j: Int = i[5]
+  }
 }
