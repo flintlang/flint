@@ -48,7 +48,7 @@ generate-sources: Sources/AST/ASTPass/ASTPass.generated.swift
 $(SYMBOOGLIX_EXE): $(Symbooglix_Z3_slink)
 	cd symbooglix/src && (test -f nuget.exe || wget https://nuget.org/nuget.exe) \
 	  && mono ./nuget.exe restore Symbooglix.sln \
-	  && msbuild /p:Configuration=Release /verbosity:quiet \
+	  && msbuild Symbooglix.sln /p:Configuration=Release /verbosity:quiet \
 	  && cd ../..
 
 $(BOOGIE_EXE): $(Boogie_Z3_slink)
@@ -63,8 +63,8 @@ $(Boogie_Z3_slink): $(Z3)
 
 $(Symbooglix_Z3_slink): $(Z3)
 	cd symbooglix \
-	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || ln -s ../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe) \
-	  && (test -L src/Symbooglix/bin/Release/z3.exe || ln -s ../../$(Z3) src/Symbooglix/bin/Release/z3.exe) \
+	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || ln -s ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe) \
+	  && (test -L src/Symbooglix/bin/Release/z3.exe || ln -s ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe) \
 	  && cd ..
 
 $(Z3):
@@ -78,4 +78,6 @@ clean:
 	-rm boogie/Binaries/z3.exe
 	-cd boogie && msbuild Source/Boogie.sln /t:Clean && cd ..
 	-rm boogie/Binaries/*.{dll,pdb,config}
+	-rm $(Symbooglix_Z3_slink)
+	-cd symbooglix/src && msbuild /t:Clean && cd ../..
 	-rm -r z3/build

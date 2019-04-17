@@ -9,3 +9,4 @@
 [submodule "symbooglix"]
 	path = symbooglix
 	url = https://github.com/boogie-org/symbooglix
+        ignore = untracked
