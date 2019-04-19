@@ -243,9 +243,9 @@ extension SemanticAnalyzer {
   func isStructTraitMember(member: TraitMember) -> Bool {
     switch member {
     case .functionDeclaration, .specialDeclaration,
-         .functionSignatureDeclaration, .specialSignatureDeclaration:
+         .functionSignatureDeclaration, .specialSignatureDeclaration, .eventDeclaration:
       return true
-    case .contractBehaviourDeclaration, .eventDeclaration:
+    case .contractBehaviourDeclaration:
       return false
     }
   }
