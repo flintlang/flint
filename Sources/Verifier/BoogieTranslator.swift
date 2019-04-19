@@ -499,7 +499,8 @@ class BoogieTranslator {
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
       // Can't call payable functions
-      if case .userDefinedType("Wei") = parameter.type.rawType {
+      if case .inoutType(let structType) = parameter.type.rawType,
+         case .userDefinedType("Wei") = structType {
         // Declare function variable for wei variable
         // declare function variable for amount of wei received
         // havoc rawValue

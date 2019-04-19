@@ -94,7 +94,7 @@ public class ShadowVariablePass: ASTPass {
   }
 
   public func postProcess(binaryExpression: BinaryExpression,
-                      passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+                          passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     // Unmark that binary expression is assignment
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
@@ -102,8 +102,8 @@ public class ShadowVariablePass: ASTPass {
   public func process(parameter: Parameter,
                       passContext: ASTPassContext) -> ASTPassResult<Parameter> {
 
-    if parameter.isImplicit {
-      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: parameter.type.name))
+    if parameter.isImplicit, case .inoutType(let innerType) = parameter.type.rawType {
+      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: innerType.name))
     }
 
     let enclosingType = passContext.enclosingTypeIdentifier!.name
