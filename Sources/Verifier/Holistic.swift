@@ -36,7 +36,7 @@ extension BoogieTranslator {
   // Return Boogie declarations whic htest the specification
   // Also return a list of the entry points, for the symbolic executor
   func processHolisticSpecification(willSpec: Expression,
-                                    contractDeclaration: ContractDeclaration) -> ([BTopLevelDeclaration], [String]) {
+                                    contractDeclaration: ContractDeclaration) -> ([BIRTopLevelDeclaration], [String]) {
     let source = willSpec.sourceLocation
     let mark = registerProofObligation(source)
     let currentContract = contractDeclaration.identifier.name
@@ -52,11 +52,11 @@ extension BoogieTranslator {
     let initProcedures = self.environment.initializers(in: currentContract).map({ $0.declaration })
     var procedureVariables = Set<BVariableDeclaration>()
     // All variables are modified
-    var procedureModifies = Set<BModifiesDeclaration>()
+    var procedureModifies = Set<BIRModifiesDeclaration>()
     procedureModifies = procedureModifies.union((contractGlobalVariables[getCurrentTLDName()] ?? [])
-                                                .map({ BModifiesDeclaration(variable: $0) }))
+                                                .map({ BIRModifiesDeclaration(variable: $0, userDefined: false) }))
     for (_, modifies) in self.functionModifiesShadow {
-      procedureModifies = procedureModifies.union(modifies.map({ BModifiesDeclaration(variable: $0) }))
+      procedureModifies = procedureModifies.union(modifies.map({ BIRModifiesDeclaration(variable: $0, userDefined: false) }))
     }
     /*
     for f in (publicFunctions + initProcedures.map({ $0.asFunctionDeclaration })) {
@@ -98,7 +98,7 @@ extension BoogieTranslator {
                                                                  mark: mark,
                                                                  obligationType: .assertion))
 
-    var procedureDeclarations = [BTopLevelDeclaration]()
+    var procedureDeclarations = [BIRTopLevelDeclaration]()
     var procedureNames = [String]()
     //Generate new procedure for each init function - check that for all initial conditions,
     // holistic spec holds
@@ -111,7 +111,7 @@ extension BoogieTranslator {
                                                              mark: mark))
       let procedureName = entryPointBase + randomString(length: 5) //unique identifier
       let procedureStmts = [callInit, initalUnsatFalse, whileUnsat, assertSpec]
-      let specProcedure = BProcedureDeclaration(
+      let specProcedure = BIRProcedureDeclaration(
         name: procedureName,
         returnType: nil,
         returnName: nil,

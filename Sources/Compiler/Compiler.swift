@@ -111,16 +111,16 @@ extension Compiler {
 
     // Run verifier
     if !config.skipVerifier {
-      let (verified, errors) = Verifier(dumpVerifierIR: config.dumpVerifierIR,
-                                        printVerificationOutput: config.printVerificationOutput,
-                                        skipHolisticCheck: config.skipHolisticCheck,
-                                        boogieLocation: "boogie/Binaries/Boogie.exe",
-                                        symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
-                                        monoLocation: "/usr/bin/mono",
-                                        topLevelModule: passRunnerOutcome.element,
-                                        environment: passRunnerOutcome.environment,
-                                        sourceContext: sourceContext,
-                                        normaliser: IdentifierNormaliser()).verify()
+      let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
+                                              printVerificationOutput: config.printVerificationOutput,
+                                              skipHolisticCheck: config.skipHolisticCheck,
+                                              boogieLocation: "boogie/Binaries/Boogie.exe",
+                                              symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
+                                              monoLocation: "/usr/bin/mono",
+                                              topLevelModule: passRunnerOutcome.element,
+                                              environment: passRunnerOutcome.environment,
+                                              sourceContext: sourceContext,
+                                              normaliser: IdentifierNormaliser()).verify()
 
       if verified {
         print("Contract functional spec verified!")

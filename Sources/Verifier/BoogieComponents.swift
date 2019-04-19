@@ -50,6 +50,7 @@ struct FlintBoogieTranslation: CustomStringConvertible {
   let boogieTlds: [BTopLevelDeclaration]
   let holisticTestProcedures: [BTopLevelDeclaration]
   let holisticTestEntryPoints: [String]
+  let lineMapping: [Int: SourceLocation]
 
   var verificationProgram: BTopLevelProgram {
     return BTopLevelProgram(declarations: boogieTlds)

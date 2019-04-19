@@ -279,7 +279,7 @@ extension BoogieTranslator {
                 callerProtections: [CallerProtection] = [],
                 callerBinding: Identifier? = nil,
                 structInvariants: [BProofObligation] = []
-                ) -> BTopLevelDeclaration {
+                ) -> BIRTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
     let parameters = functionDeclaration.signature.parameters
@@ -437,15 +437,15 @@ extension BoogieTranslator {
       modifies += structGlobalVariables[getCurrentTLDName()] ?? []
     }
 
-    let modifiesClauses = Set<BModifiesDeclaration>(modifies.map({
-       BModifiesDeclaration(variable: $0)
+    let modifiesClauses = Set<BIRModifiesDeclaration>(modifies.map({
+       BIRModifiesDeclaration(variable: $0, userDefined: true)
     }))
 
     // About to exit function, reset struct instance variable
     self.structInstanceVariableName = nil
     _ = setCurrentScopeContext(oldCtx)
 
-    return .procedureDeclaration(BProcedureDeclaration(
+    return .procedureDeclaration(BIRProcedureDeclaration(
       name: currentFunctionName,
       returnType: returnType,
       returnName: returnName,

@@ -74,15 +74,15 @@ class BoogieTranslator {
     self.triggers = Trigger()
   }
 
-  public func translate() -> (FlintBoogieTranslation, [Int: SourceLocation]) {
+  public func translate() -> BoogieTranslationIR {
     /* for everything defined in TLM, generate Boogie representation */
     self.functionModifiesShadow = collectModifiedShadowVariables()
     resolveModifiedShadowVariables()
     resolveTraitMutations()
 
     // Generate AST and print
-    let boogieTranslation = generateAST()
-    return (boogieTranslation, generateFlint2BoogieMapping(code: "\(boogieTranslation)"))
+    let boogieTranslationIr = generateAST()
+    return boogieTranslationIr
   }
 
   func collectModifiedShadowVariables() -> [String: Set<String>] {
@@ -159,8 +159,8 @@ class BoogieTranslator {
     }
   }
 
-  func generateAST() -> FlintBoogieTranslation {
-    var declarations = [BTopLevelDeclaration]()
+  func generateAST() -> BoogieTranslationIR {
+    var declarations = [BIRTopLevelDeclaration]()
 
     // Triggers
     //TODO: Actually parse? expression rules in some format, and use that to register sourceLocations
@@ -174,7 +174,7 @@ class BoogieTranslator {
     // Add global send function
     // eg. send(address, wei)
     declarations.append(.procedureDeclaration(
-      BProcedureDeclaration(
+      BIRProcedureDeclaration(
         name: "send",
         returnType: nil,
         returnName: nil,
@@ -186,7 +186,7 @@ class BoogieTranslator {
           .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(0)),
          mark: registerProofObligation(SourceLocation.INVALID),
          obligationType: .postCondition)],
-        modifies: [BModifiesDeclaration(variable: "rawValue_Wei")],
+        modifies: [BIRModifiesDeclaration(variable: "rawValue_Wei", userDefined: true)],
         // Drain all wei from struct
         statements: [.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")),
                                  .integer(0),
@@ -260,16 +260,16 @@ class BoogieTranslator {
       self.currentTLD = nil
     }
 
-    let propertyDeclarations: [BTopLevelDeclaration]
+    let propertyDeclarations: [BIRTopLevelDeclaration]
       = emptyMapProperties.map({ arg in
                                      let (_, v) = arg
                                      let funcDec: BFunctionDeclaration = v.0
                                      let axDec: BAxiomDeclaration = v.1
-                                     return [BTopLevelDeclaration.functionDeclaration(funcDec),
-                                             BTopLevelDeclaration.axiomDeclaration(axDec)]
+                                     return [BIRTopLevelDeclaration.functionDeclaration(funcDec),
+                                             BIRTopLevelDeclaration.axiomDeclaration(axDec)]
                                    }).reduce([], +)
 
-    var holisticTests = [BTopLevelDeclaration]()
+    var holisticTests = [BIRTopLevelDeclaration]()
     var holisticEntryPoints = [String]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
@@ -287,13 +287,16 @@ class BoogieTranslator {
     }
     self.currentTLD = nil
 
-    return FlintBoogieTranslation(boogieTlds: propertyDeclarations + declarations,
-                                  holisticTestProcedures: holisticTests,
-                                  holisticTestEntryPoints: holisticEntryPoints)
+    return BoogieTranslationIR(tlds: propertyDeclarations + declarations,
+                               holisticTestProcedures: holisticTests,
+                               holisticTestEntryPoints: holisticEntryPoints,
+                               lineMapping: flintProofObligationSourceLocation,
+                               callGraph: [:] // TODO Detect function calls
+    )
   }
 
-   func process(_ contractDeclaration: ContractDeclaration) -> [BTopLevelDeclaration] {
-    var declarations = [BTopLevelDeclaration]()
+   func process(_ contractDeclaration: ContractDeclaration) -> [BIRTopLevelDeclaration] {
+    var declarations = [BIRTopLevelDeclaration]()
     var contractGlobalVariables = [String]()
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
@@ -354,7 +357,7 @@ class BoogieTranslator {
     return declarations
   }
 
-  func process(_ enumDeclaration: EnumDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ enumDeclaration: EnumDeclaration) -> [BIRTopLevelDeclaration] {
     //var enumType = enumDeclaration.type
     let enumName = enumDeclaration.identifier.name
 
@@ -362,7 +365,7 @@ class BoogieTranslator {
 
     // Declare type EnumName: int;
     // const var enumCase: EnumName;
-    var axioms = [BTopLevelDeclaration]()
+    var axioms = [BIRTopLevelDeclaration]()
     axioms.append(.typeDeclaration(BTypeDeclaration(name: enumName, alias: .int)))
 
     //TODO: Implement for other enum types
@@ -394,17 +397,17 @@ class BoogieTranslator {
     return axioms
   }
 
-  func process(_ traitDeclaration: TraitDeclaration) -> [BTopLevelDeclaration] {
+  func process(_ traitDeclaration: TraitDeclaration) -> [BIRTopLevelDeclaration] {
     // TODO:
     return []
   }
 
-   func process(_ structDeclaration: StructDeclaration, _ structInvariantDeclarations: [BProofObligation]) -> [BTopLevelDeclaration] {
+   func process(_ structDeclaration: StructDeclaration, _ structInvariantDeclarations: [BProofObligation]) -> [BIRTopLevelDeclaration] {
     // Skip special global struct - too solidity low level - TODO: Is this necessary?
     if structDeclaration.identifier.name == "Flint$Global" { return [] }
 
     var structGlobalVariables = [String]()
-    var declarations = [BTopLevelDeclaration]()
+    var declarations = [BIRTopLevelDeclaration]()
 
     // Add nextInstance variable
     declarations.append(.variableDeclaration(BVariableDeclaration(name: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
@@ -454,11 +457,11 @@ class BoogieTranslator {
   }
 
   func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration,
-               structInvariants: [BProofObligation]) -> [BTopLevelDeclaration] {
+               structInvariants: [BProofObligation]) -> [BIRTopLevelDeclaration] {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
 
-    var declarations = [BTopLevelDeclaration]()
+    var declarations = [BIRTopLevelDeclaration]()
 
     let callerBinding = contractBehaviorDeclaration.callerBinding
     let callerProtections = contractBehaviorDeclaration.callerProtections
@@ -970,39 +973,6 @@ class BoogieTranslator {
   func registerProofObligation(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
     let mapping = getMark(sourceLocation)
     flintProofObligationSourceLocation[mapping] = sourceLocation
-    return mapping
-  }
-
-  func generateFlint2BoogieMapping(code: String) -> [Int: SourceLocation] {
-    var mapping = [Int: SourceLocation]()
-
-    let lines = code.trimmingCharacters(in: .whitespacesAndNewlines)
-                               .components(separatedBy: "\n")
-    var boogieLine = 1 // Boogie starts counting lines from 1
-    for line in lines {
-      // Pre increment because assert markers precede asserts and pre/post condits
-      boogieLine += 1
-
-      // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+) (.*)")
-      if matches.count == 1 {
-        // Extract line number
-        let line = Int(matches[0][1])!
-        if line < 0 { //Invalid
-          continue
-        }
-
-        let file: String = matches[0][2]
-        guard let sourceLocation = flintProofObligationSourceLocation[VerifierMappingKey(file: file, flintLine: line)] else {
-          print("Couldn't find marker for proof obligation")
-          print(flintProofObligationSourceLocation)
-          print(line)
-          print(file)
-          fatalError()
-        }
-        mapping[boogieLine] = sourceLocation
-      }
-    }
     return mapping
   }
 }
