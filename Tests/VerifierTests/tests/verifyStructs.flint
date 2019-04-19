@@ -71,13 +71,19 @@ Test :: (any) {
     //s.i = 0
 
     let j: J = J(&s)
+    // Fails out-of-bounds check
+    //VERIFY-FAIL
     let k: Int = j.ss[i+=1].js[1]
 
     let size0: Int = j.ss.size
+    //Fail out of bounds check
+    //VERIFY-FAIL
     s.ks[0][1] = [1]
     let size1: Int = s.ks[0][1].size
     assert(size1 == 1)
-    assert(s.ks[0][1][0] == 1)
+    if s.ks[0][1].size >= 0 {
+      assert(s.ks[0][1][0] == 1)
+    }
   }
 
   //VERIFY-FAIL

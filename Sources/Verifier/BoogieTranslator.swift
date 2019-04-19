@@ -23,6 +23,8 @@ class BoogieTranslator {
   var functionModifiesShadow = [String: Set<String>]()
   // Map of (trait) function names to the variables it's callee's modify
   var traitFunctionMutates = [String: [Identifier]]()
+  // Contract dict/array size assume statements - placed at start of each function
+  var functionIterableSizeAssumptions = [BStatement]()
 
   // Source location that each proof oligation corresponds to
   var flintProofObligationSourceLocation = [VerifierMappingKey: SourceLocation]()
@@ -297,11 +299,19 @@ class BoogieTranslator {
     for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
 
+      //TODO: Handle dict/arrays -> generate assumes
       // Some variables require shadow variables, eg dictionaries need an array of keys
       for bvariableDeclaration in generateVariables(variableDeclaration) {
         declarations.append(.variableDeclaration(bvariableDeclaration))
         contractGlobalVariables.append(bvariableDeclaration.name)
       }
+
+      // If variable is of type array/dict, it's need to add assume stmt about it's size to
+      // functionIterableSizeAssumptions list
+      functionIterableSizeAssumptions += generateIterableSizeAssumptions(name: name,
+                                                                         type: variableDeclaration.type.rawType,
+                                                                         source: variableDeclaration.sourceLocation,
+                                                                         isInStruct: false)
 
       // Record assignment to put in constructor procedure
       if tldConstructorInitialisations[contractDeclaration.identifier.name] == nil {
@@ -416,6 +426,13 @@ class BoogieTranslator {
       if let assignedExpression = variableDeclaration.assignedExpression {
         tldConstructorInitialisations[structDeclaration.identifier.name]!.append((name, assignedExpression))
       }
+
+      // If variable is of type array/dict, it's need to add assume stmt about it's size to
+      // functionIterableSizeAssumptions list
+      functionIterableSizeAssumptions += generateIterableSizeAssumptions(name: name,
+                                                                         type: variableDeclaration.type.rawType,
+                                                                         source: variableDeclaration.sourceLocation,
+                                                                         isInStruct: true)
     }
 
     self.structGlobalVariables[getCurrentTLDName()] = structGlobalVariables
@@ -714,6 +731,57 @@ class BoogieTranslator {
     default:
       return declarations
     }
+  }
+
+  func generateIterableSizeAssumptions(name: String,
+                                       type: RawType,
+                                       source: SourceLocation,
+                                       depth: Int = 0,
+                                       isInStruct: Bool = false) -> [BStatement] {
+    var assumeStmts = [BStatement]()
+    let identifierName = BExpression.identifier(normaliser.getShadowArraySizePrefix(depth: depth) + name)
+    let holyDynAccess = nestedIterableAccess(holyExpression: { .greaterThanOrEqual($0, .integer(0)) },
+                                             depth: depth,
+                                             isInStruct: isInStruct)
+    switch type {
+    case .dictionaryType(_, let valueType):
+      assumeStmts.append(.assume(holyDynAccess(identifierName),
+                                 registerProofObligation(source)))
+
+      assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
+    case .arrayType(let valueType):
+      assumeStmts.append(.assume(holyDynAccess(identifierName),
+                                 registerProofObligation(source)))
+      assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
+    case .fixedSizeArrayType(let valueType, let size):
+      let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(size)) },
+                                                 depth: depth,
+                                                 isInStruct: isInStruct)
+      assumeStmts.append(.assume(holyFixedAccess(identifierName),
+                                 registerProofObligation(source)))
+      assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
+    default: break
+    }
+
+    return assumeStmts
+  }
+
+  func nestedIterableAccess(holyExpression: @escaping (BExpression) -> BExpression,
+                            depth: Int,
+                            isInStruct: Bool) -> (BExpression) -> BExpression {
+    var isInStruct = isInStruct
+    if depth == 0 && isInStruct {
+      isInStruct = false
+    } else if depth <= 0  && !isInStruct {
+      return holyExpression
+    }
+
+    let i = "i" + randomString(length: 10)
+    return nestedIterableAccess(holyExpression: { .quantified(.forall,
+                                                  [BParameterDeclaration(name: i, rawName: i, type: .int)],
+                                                  holyExpression(.mapRead($0, .identifier(i)))) } ,
+                                depth: depth - 1,
+                                isInStruct: isInStruct)
   }
 
   func getStateVariable() -> String {

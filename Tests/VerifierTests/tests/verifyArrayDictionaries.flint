@@ -37,7 +37,9 @@ Array :: (any) {
     let bsKeys: [Int] = bs.keys
 
     let esKeys: [Int] = es.keys
-    let esSubSize: Int = es[esKeys[0]].size
+    if esKeys.size > 0 {
+      let esSubSize: Int = es[esKeys[0]].size
+    }
   }
 
   func growSize(a: Address) {

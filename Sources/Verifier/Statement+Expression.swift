@@ -535,7 +535,7 @@ extension BoogieTranslator {
     assignmentStatements += lhsStmts
     postAmbleStmts += postLhsStmts
     switch lhsType {
-    case .arrayType:
+    case .arrayType, .fixedSizeArrayType:
       let rhsSizeExpr: BExpression
       if case .arrayLiteral = rhs {
         let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
@@ -612,6 +612,7 @@ extension BoogieTranslator {
     let iterableElementType: RawType
     switch iterableType {
     case .arrayType(let inner): iterableElementType = inner
+    case .fixedSizeArrayType(let inner, _): iterableElementType = inner
     case .dictionaryType(_, let keyType): iterableElementType = keyType
     default: iterableElementType = iterableType
     }
@@ -641,9 +642,9 @@ extension BoogieTranslator {
 
       //Shadow variables
       let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
-        assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
-                                           .integer(counter),
-                                           registerProofObligation(iterable.sourceLocation)))
+      assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
+                                         .integer(counter),
+                                         registerProofObligation(iterable.sourceLocation)))
 
     case .dictionaryLiteral(let dictionaryLiteral):
       var counter = 0
@@ -859,28 +860,29 @@ extension BoogieTranslator {
                                                     subscriptDepth: subscriptDepth + 1,
                                                     enclosingTLD: enclosingTLD,
                                                     structInstanceVariable: structInstanceVariable)
-    let (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
+    var (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
     postAmble += subPostStmts + indexPostStmts
+    let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression, enclosingTLD: enclosingTLD)
+    let currentType = getCurrentTLDName()
+    guard let scopeContext = getCurrentScopeContext() else {
+      print("couldn't get scope context of current function - used for updating shadow variable")
+      fatalError()
+    }
+    let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
+    let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
+    let baseExpressionType = environment.type(of: subscriptExpression.baseExpression,
+                                              enclosingType: currentType,
+                                              typeStates: typeStates,
+                                              callerProtections: callerProtections,
+                                              scopeContext: scopeContext)
+
     if isBeingAssignedTo {
       // - if index is bigger than size (in arrays)
       // - or if key is not in keys
       //  - increment size value + (add to keys, if dict)
-      let currentType = getCurrentTLDName()
-      guard let scopeContext = getCurrentScopeContext() else {
-        print("couldn't get scope context of current function - used for updating shadow variable")
-        fatalError()
-      }
-      let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
-      let typeStates = getCurrentContractBehaviorDeclaration()?.states ?? []
-      let baseExpressionType = environment.type(of: subscriptExpression.baseExpression,
-                                                enclosingType: currentType,
-                                                typeStates: typeStates,
-                                                callerProtections: callerProtections,
-                                                scopeContext: scopeContext)
       switch baseExpressionType {
       case .arrayType:
         // is index bigger than size?
-        let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
         postAmble.append(.ifStatement(BIfStatement(condition: .not(.lessThan(indxExpr, sizeShadowVariable)),
                                                    trueCase: [
                                                      // increment size variable
@@ -917,7 +919,6 @@ extension BoogieTranslator {
                                                                    rawName: containsKeyName,
                                                                    type: .boolean))
 
-        let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression)
         let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression)
 
         let checkingContains =
@@ -954,11 +955,39 @@ extension BoogieTranslator {
       default: break
       }
     }
+
+    // Assert access is lt the size of the array
+    // if not isAssignment || fixedSizeArrayType, => indx lessThan size
+    // else => indx lessThanOrEqual size
+    let fixedArrayType: Bool
+    if case .fixedSizeArrayType = baseExpressionType {
+      fixedArrayType = true
+    } else {
+      fixedArrayType = false
+    }
+
+    let resolveShadowVariable = structInstanceVariable == nil ? sizeShadowVariable : .mapRead(sizeShadowVariable, structInstanceVariable!)
+    let accessAssertExpression: BExpression
+    if !isBeingAssignedTo || fixedArrayType {
+      accessAssertExpression = .lessThan(indxExpr, resolveShadowVariable)
+    } else {
+      accessAssertExpression = .lessThanOrEqual(indxExpr, resolveShadowVariable)
+    }
+    let assertValidAccess = BStatement.assertStatement(BProofObligation(expression: accessAssertExpression,
+                                                                        mark: registerProofObligation(subscriptExpression.sourceLocation),
+                                                                        obligationType: .assertion))
+    // Only add assert check, if array type
+    switch baseExpressionType {
+    case .arrayType, .fixedSizeArrayType:
+       indexStmts.append(assertValidAccess)
+    default: break
+    }
+
     return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, postAmble)
   }
 
-  private func getIterableSizeExpression(iterable: Expression) -> BExpression {
-    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix).0
+  private func getIterableSizeExpression(iterable: Expression, enclosingTLD: String? = nil) -> BExpression {
+    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix, enclosingTLD: enclosingTLD).0
   }
 
   private func getDictionaryKeysExpression(dict: Expression) -> BExpression {

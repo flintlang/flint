@@ -395,7 +395,10 @@ extension BoogieTranslator {
       functionPostAmble += assignments
     }
 
-    let bStatements = functionPreAmble + body.flatMap({x in process(x)}) + functionPostAmble
+    let bStatements = functionIterableSizeAssumptions
+                    + functionPreAmble
+                    + body.flatMap({x in process(x)})
+                    + functionPostAmble
 
     // Procedure must hold invariant
     let invariants = (tldInvariants[getCurrentTLDName()] ?? [])

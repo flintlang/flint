@@ -6,6 +6,8 @@ contract Bank {
   var accounts: [Address]
   var lastIndex: Int = 0
 
+  invariant (lastIndex == accounts.size)
+
   var totalDonations: Wei
 
   event didCompleteTransfer (from: Address, to: Address, value: Int)
@@ -60,6 +62,7 @@ Bank :: (manager) {
   public func clear(account: Address)
     mutates (balances, Wei.rawValue)
   {
+    // Wei could be being destroyed here
     //VERIFY-FAIL
     balances[account] = Wei(0)
   }

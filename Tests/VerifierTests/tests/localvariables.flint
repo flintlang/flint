@@ -2,12 +2,14 @@
 contract LocalVariables {
     var ten: Int = 10
     var js: [Int]
+    var ks: Int[4]
 }
 
 LocalVariables :: (any) {
 
   public init() {
     js = []
+    ks = [1,2,3,4]
   }
 
   public func localVariables() {
@@ -48,13 +50,16 @@ LocalVariables :: (any) {
     return para
   }
 
-  public func selfArray() -> Int {
-    return self.js[0]
-  }
-
   func outOfBoundsAccess() {
+    //Checking oob local variable
     var i: Int[4] = [1,2,3,4]
     //VERIFY-FAIL
     let j: Int = i[5]
+  }
+
+  func outOfBoundsAccess2() -> Int {
+    //Checking oob global variable
+    //VERIFY-FAIL
+    return ks[4]
   }
 }
