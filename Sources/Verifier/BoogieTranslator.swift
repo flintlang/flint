@@ -26,6 +26,9 @@ class BoogieTranslator {
   // Contract dict/array size assume statements - placed at start of each function
   var functionIterableSizeAssumptions = [BStatement]()
 
+  // Call Graph of Boogie procedures
+  var callGraph = [String: Set<String>]()
+
   // Source location that each proof oligation corresponds to
   var flintProofObligationSourceLocation = [VerifierMappingKey: SourceLocation]()
 
@@ -77,7 +80,6 @@ class BoogieTranslator {
   public func translate() -> BoogieTranslationIR {
     /* for everything defined in TLM, generate Boogie representation */
     self.functionModifiesShadow = collectModifiedShadowVariables()
-    resolveModifiedShadowVariables()
     resolveTraitMutations()
 
     // Generate AST and print
@@ -86,26 +88,11 @@ class BoogieTranslator {
   }
 
   func collectModifiedShadowVariables() -> [String: Set<String>] {
-    let shadowVariablePass = ShadowVariablePass(normaliser: self.normaliser)
+    let shadowVariablePass = ShadowVariablePass(normaliser: self.normaliser, triggers: self.triggers)
     _ = ASTPassRunner(ast: self.topLevelModule) .run(passes: [shadowVariablePass],
                                                      in: self.environment,
                                                      sourceContext: self.sourceContext)
     return shadowVariablePass.modifies
-  }
-
-  // If A modifies x and B calls A, B modifies x
-  func resolveModifiedShadowVariables() {
-    let cfg = self.environment.callGraph
-
-    for _ in 0...cfg.keys.count {
-      for (considering, calls) in cfg {
-        var modifies = self.functionModifiesShadow[considering] ?? Set<String>()
-        for (call, _) in calls {
-          modifies = modifies.union(self.functionModifiesShadow[call] ?? Set<String>())
-        }
-        self.functionModifiesShadow[considering] = modifies
-      }
-    }
   }
 
   // If trait calls function which is implemented elsewhere, and that function mutates a value,
@@ -145,6 +132,7 @@ class BoogieTranslator {
       }
     }
 
+    // This resolves user specified mutates clauses - for functions implemented in traits.
     let cfg = self.environment.callGraph
     for _ in 0...functionsToFlow.count {
       for traitFunction in functionsToFlow {
@@ -290,8 +278,8 @@ class BoogieTranslator {
     return BoogieTranslationIR(tlds: propertyDeclarations + declarations,
                                holisticTestProcedures: holisticTests,
                                holisticTestEntryPoints: holisticEntryPoints,
-                               lineMapping: flintProofObligationSourceLocation,
-                               callGraph: [:] // TODO Detect function calls
+                               lineMapping: self.flintProofObligationSourceLocation,
+                               callGraph: self.callGraph
     )
   }
 
@@ -502,8 +490,8 @@ class BoogieTranslator {
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
       // Can't call payable functions
-      if case .inoutType(let structType) = parameter.type.rawType,
-         case .userDefinedType("Wei") = structType {
+      switch parameter.type.rawType {
+      case .inoutType(.userDefinedType("Wei")), .userDefinedType("Wei"):
         // Declare function variable for wei variable
         // declare function variable for amount of wei received
         // havoc rawValue
@@ -516,20 +504,28 @@ class BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
                                                                    rawName: weiAmount,
                                                                    type: .int))
+        let procedureName = "initInt_Wei"
         functionPreAmble.append(.havoc(weiAmount, getMark(parameter.sourceLocation)))
         functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(0)), getMark(parameter.sourceLocation)))
         functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
-                                                              procedureName: "initInt_Wei",
+                                                              procedureName: procedureName,
                                                               arguments: [.identifier(weiAmount)],
                                                               mark: getMark(parameter.sourceLocation))))
+        guard let currentFunctionName = getCurrentFunctionName() else {
+          print("unable to get current function name - while processing parameter")
+          fatalError()
+        }
+        // Add procedure call to callGraph
+        addProcedureCall(currentFunctionName, procedureName)
         registerProofObligation(parameter.sourceLocation)
+      default: break
       }
     } else {
-    //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
-    //let variables = generateParameters(parameter)
-    declarations.append(BParameterDeclaration(name: translatedName,
-                                              rawName: name,
-                                              type: convertType(parameter.type)))
+      //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
+      //let variables = generateParameters(parameter)
+      declarations.append(BParameterDeclaration(name: translatedName,
+                                                rawName: name,
+                                                type: convertType(parameter.type)))
     }
 
     let context = Context(environment: environment,
@@ -651,6 +647,12 @@ class BoogieTranslator {
                                       falseCase: [],
                                       mark: registerProofObligation(identifier.sourceLocation)))
         ]
+        guard let currentFunctionName = getCurrentFunctionName() else {
+          print("unable to get current function name - while processing caller capabilities")
+          fatalError()
+        }
+        // Add procedure call to callGraph
+        addProcedureCall(currentFunctionName, functionName)
       default:
         print("Not implemented verification of \(identifierType) caller capabilities yet")
         fatalError()
@@ -872,6 +874,14 @@ class BoogieTranslator {
     let old = self.currentScopeContext
     self.currentScopeContext = ctx
     return old
+  }
+
+  func addProcedureCall(_ caller: String, _ callee: String) {
+    if self.callGraph[caller] != nil {
+      self.callGraph[caller]!.insert(callee)
+    } else {
+      self.callGraph[caller] = Set<String>([callee])
+    }
   }
 
   func translateIdentifierName(_ name: String, currentFunctionName: String? = nil) -> String {

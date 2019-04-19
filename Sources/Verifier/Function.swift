@@ -165,6 +165,10 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
+    guard let currentFunctionName = getCurrentFunctionName() else {
+      print("Unableto get current function name - while processing function call")
+      fatalError()
+    }
 
     // Process triggers
     let context = Context(environment: environment,
@@ -201,11 +205,14 @@ extension BoogieTranslator {
       // send(account, &w)
       assert (argumentsExpressions.count == 2)
 
+      let procedureName = "send"
       // Call Boogie send function
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
-                                                                 procedureName: "send",
+                                                                 procedureName: procedureName,
                                                                  arguments: argumentsExpressions,
                                                                  mark: registerProofObligation(functionCall.sourceLocation)))
+      // Add procedure call to callGraph
+      addProcedureCall(currentFunctionName, procedureName)
       return (.nop, triggerPreStmts + [functionCall], argumentPostStmts + triggerPostStmts)
     default:
       // Check if a trait 'initialiser' is being called
@@ -250,6 +257,8 @@ extension BoogieTranslator {
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
       argumentsStatements.append(functionCall)
+      // Add procedure call to callGraph
+      addProcedureCall(currentFunctionName, functionName)
       return (returnValue, argumentsStatements + triggerPreStmts, triggerPostStmts)
     } else {
       // Function doesn't return a value
@@ -259,6 +268,8 @@ extension BoogieTranslator {
                                                                procedureName: functionName,
                                                                arguments: argumentsExpressions,
                                                                mark: registerProofObligation(functionCall.sourceLocation))))
+      // Add procedure call to callGraph
+      addProcedureCall(currentFunctionName, functionName)
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
     }
   }
@@ -426,8 +437,6 @@ extension BoogieTranslator {
 
       modifies.append(normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
     }
-    // Get the global shadow variables, the function modifies (but can't be directly expressed by the user) - ie. nextInstance_struct
-    modifies += (functionModifiesShadow[currentFunctionName] ?? [])
 
     if isContractInit {
       modifies += contractGlobalVariables[getCurrentTLDName()] ?? []
@@ -440,6 +449,11 @@ extension BoogieTranslator {
     let modifiesClauses = Set<BIRModifiesDeclaration>(modifies.map({
        BIRModifiesDeclaration(variable: $0, userDefined: true)
     }))
+    // Get the global shadow variables, the function modifies
+    // (but can't be directly expressed by the user) - ie. nextInstance_struct
+    .union((functionModifiesShadow[currentFunctionName] ?? []).map({
+       BIRModifiesDeclaration(variable: $0, userDefined: false)
+     }))
 
     // About to exit function, reset struct instance variable
     self.structInstanceVariableName = nil

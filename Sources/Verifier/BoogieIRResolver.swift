@@ -4,7 +4,17 @@ class BoogieIRResolver: IRResolver {
   typealias InputType = BoogieTranslationIR
   typealias ResultType = FlintBoogieTranslation
 
+  // Mapping from procedure name to variables it modifies
+  var procedureModifies = [String: Set<BModifiesDeclaration>]()
+
   func resolve(ir: BoogieTranslationIR) -> FlintBoogieTranslation {
+    // Process mutates clause - flow non-user-defined mutates
+    var procedureDeclarations = [BIRProcedureDeclaration]()
+    for case .procedureDeclaration(let dec) in (ir.tlds + ir.holisticTestProcedures) {
+      procedureDeclarations.append(dec)
+    }
+    self.procedureModifies = resolveMutates(callGraph: ir.callGraph, procedureDeclarations: procedureDeclarations)
+
     var declarations = [BTopLevelDeclaration]()
     for declaration in ir.tlds {
       switch declaration {
@@ -50,17 +60,35 @@ class BoogieIRResolver: IRResolver {
   }
 
   private func resolve(irProcedureDeclaration: BIRProcedureDeclaration) -> BProcedureDeclaration {
-    //TODO: Compute modifies
-    let modifies = irProcedureDeclaration.modifies.map({ BModifiesDeclaration(variable: $0.variable) })
+    let modifies = self.procedureModifies[irProcedureDeclaration.name] ?? Set<BModifiesDeclaration>()
     return BProcedureDeclaration(name: irProcedureDeclaration.name,
                                  returnType: irProcedureDeclaration.returnType,
                                  returnName: irProcedureDeclaration.returnName,
                                  parameters: irProcedureDeclaration.parameters,
                                  prePostConditions: irProcedureDeclaration.prePostConditions,
-                                 modifies: Set<BModifiesDeclaration>(modifies),
+                                 modifies: modifies,
                                  statements: irProcedureDeclaration.statements,
                                  variables: irProcedureDeclaration.variables,
                                  mark: irProcedureDeclaration.mark)
+  }
+
+  private func resolveMutates(callGraph: [String: Set<String>],
+                              procedureDeclarations: [BIRProcedureDeclaration]) -> [String: Set<BModifiesDeclaration>] {
+
+    var modifies = Dictionary(uniqueKeysWithValues: procedureDeclarations.map({ ($0.name, $0.modifies) }))
+
+    // Make enough iterations for modifies to flow through all procedures
+    for _ in 0...procedureDeclarations.count {
+      for (currentProcedure, called) in callGraph {
+        var calleeModifies = Set<BIRModifiesDeclaration>()
+        for calledProcedure in called {
+          let eligibleModifies = modifies[calledProcedure]?.filter({ !$0.userDefined })
+          calleeModifies = calleeModifies.union(eligibleModifies ?? Set())
+        }
+        modifies[currentProcedure] = modifies[currentProcedure]?.union(calleeModifies) ?? Set()
+      }
+    }
+    return modifies.mapValues({ Set<BModifiesDeclaration>($0.map({ BModifiesDeclaration(variable: $0.variable) })) })
   }
 
   private func generateFlint2BoogieMapping(code: String,

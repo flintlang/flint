@@ -74,42 +74,44 @@ extension BoogieTranslator {
                                                    rawName: "unsat",
                                                    type: .boolean))
 
-
-    let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), mark)
-    let havocSelector = BStatement.havoc("selector", mark)
-    let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(0)),
-                                                    .lessThan(selector, .integer(numPublicFunctions))), mark)
-    let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
-                                                               selector: selector,
-                                                               tld: currentContract,
-                                                               mark: mark)
-    procedureVariables = procedureVariables.union(variables)
-
-    let checkUnsat = BStatement.assignment(unsat, .not(bSpec), mark)
-    let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: unsat,
-                                                               body: [
-                                                                 havocSelector,
-                                                                 assumeSelector
-                                                               ] + methodSelection
-                                                                 + [checkUnsat],
-                                                               invariants: [],
-                                                               mark: mark))
-    let assertSpec = BStatement.assertStatement(BProofObligation(expression: bSpec,
-                                                                 mark: mark,
-                                                                 obligationType: .assertion))
-
     var procedureDeclarations = [BIRTopLevelDeclaration]()
     var procedureNames = [String]()
     //Generate new procedure for each init function - check that for all initial conditions,
     // holistic spec holds
     for initProcedure in initProcedures {
+      let procedureName = entryPointBase + randomString(length: 5) //unique identifier
+
+      let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), mark)
+      let havocSelector = BStatement.havoc("selector", mark)
+      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(0)),
+                                                      .lessThan(selector, .integer(numPublicFunctions))), mark)
+      let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
+                                                                 selector: selector,
+                                                                 tld: currentContract,
+                                                                 mark: mark,
+                                                                 enclosingFunctionName: procedureName)
+      procedureVariables = procedureVariables.union(variables)
+
+      let checkUnsat = BStatement.assignment(unsat, .not(bSpec), mark)
+      let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: unsat,
+                                                                 body: [
+                                                                   havocSelector,
+                                                                   assumeSelector
+                                                                 ] + methodSelection
+                                                                   + [checkUnsat],
+                                                                 invariants: [],
+                                                                 mark: mark))
+      let assertSpec = BStatement.assertStatement(BProofObligation(expression: bSpec,
+                                                                   mark: mark,
+                                                                   obligationType: .assertion))
       let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
                                                       tld: currentContract)
       let callInit = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                              procedureName: translatedName,
                                                              arguments: [],
                                                              mark: mark))
-      let procedureName = entryPointBase + randomString(length: 5) //unique identifier
+      // Add procedure call to callGraph
+      addProcedureCall(procedureName, translatedName)
       let procedureStmts = [callInit, initalUnsatFalse, whileUnsat, assertSpec]
       let specProcedure = BIRProcedureDeclaration(
         name: procedureName,
@@ -132,7 +134,8 @@ extension BoogieTranslator {
   private func generateMethodSelection(functions: [FunctionDeclaration],
                                        selector: BExpression,
                                        tld: String,
-                                       mark: VerifierMappingKey) -> ([BStatement], [BVariableDeclaration]) {
+                                       mark: VerifierMappingKey,
+                                       enclosingFunctionName: String) -> ([BStatement], [BVariableDeclaration]) {
     /*
         if (selector == 2) {
           call loop_LocalVariables();
@@ -176,6 +179,8 @@ extension BoogieTranslator {
                                                                   procedureName: procedureName,
                                                                   arguments: arguments,
                                                                   mark: mark))
+      // Add procedure call to callGraph
+      addProcedureCall(enclosingFunctionName, procedureName)
       ifStmts.append(procedureCall)
       selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(counter)),
                                                  trueCase: ifStmts,

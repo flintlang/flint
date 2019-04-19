@@ -352,7 +352,7 @@ extension BoogieTranslator {
                                 structInstanceVariable: structInstanceVariable), [], [])
 
     case .binaryExpression(let binaryExpression):
-      return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
+      return process(binaryExpression, shadowVariablePrefix: shadowVariablePrefix, isBeingAssignedTo: isBeingAssignedTo)
 
     case .bracketedExpression(let bracketedExpression):
       return process(bracketedExpression.expression,
@@ -407,14 +407,17 @@ extension BoogieTranslator {
 
   private func process(_ binaryExpression: BinaryExpression,
                        // Function which generates shadow variable prefix for variable name, (given a depth)
-                       shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement], [BStatement]) {
+                       shadowVariablePrefix: ((Int) -> String)?,
+                       isBeingAssignedTo: Bool) -> (BExpression, [BStatement], [BStatement]) {
 
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
     switch binaryExpression.opToken {
     case .dot:
-      let (e, preStmts, postStmts) = processDotBinaryExpression(binaryExpression, shadowVariablePrefix: shadowVariablePrefix)
+      let (e, preStmts, postStmts) = processDotBinaryExpression(binaryExpression,
+                                                                shadowVariablePrefix: shadowVariablePrefix,
+                                                                isBeingAssignedTo: isBeingAssignedTo)
       return (e, preStmts, postStmts)
     case .equal:
       let (e, preStmts, postStmts) = handleAssignment(lhs, rhs)
@@ -697,14 +700,18 @@ extension BoogieTranslator {
                                           enclosingType: String? = nil,
                                           // For when accessing size/keys
                                           structInstance: BExpression? = nil,
-                                          shadowVariablePrefix: ((Int) -> String)?) -> (BExpression, [BStatement], [BStatement]) {
+                                          shadowVariablePrefix: ((Int) -> String)?,
+                                          isBeingAssignedTo: Bool) -> (BExpression, [BStatement], [BStatement]) {
 
     let lhs = binaryExpression.lhs
     let rhs = binaryExpression.rhs
 
     if binaryExpression.isExplicitPropertyAccess {
       // self.A, means get the A in the contract, not the local declaration
-      return process(rhs, localContext: false, shadowVariablePrefix: shadowVariablePrefix)
+      return process(rhs,
+                     localContext: false,
+                     shadowVariablePrefix: shadowVariablePrefix,
+                     isBeingAssignedTo: isBeingAssignedTo)
     }
 
     // For struct fields and methods (eg array size..)
@@ -776,6 +783,7 @@ extension BoogieTranslator {
     switch rhs {
     case .functionCall(let functionCall):
       let (structInstance, instancePreStmts, instancePostStmts) = process(lhs,
+                                                                          isBeingAssignedTo: isBeingAssignedTo,
                                                                           enclosingTLD: enclosingType)
       let (call, callPre, callPost) = self.handleFunctionCall(functionCall,
                                                               structInstance: structInstance,
@@ -788,7 +796,9 @@ extension BoogieTranslator {
         shadowPrefix = prefixFunc(0)
       }
 
-      let (structExp, structPreStmts, structPostStmts) = process(lhs, enclosingTLD: enclosingType)
+      let (structExp, structPreStmts, structPostStmts) = process(lhs,
+                                                                 isBeingAssignedTo: isBeingAssignedTo,
+                                                                 enclosingTLD: enclosingType)
       let field = processIdentifier(identifier,
                                     localContext: false,
                                     shadowVariablePrefix: shadowPrefix,
@@ -797,11 +807,14 @@ extension BoogieTranslator {
       return (field, structPreStmts, structPostStmts)
 
     case .subscriptExpression(let subscriptExpression):
-      let (structExp, structPreStmts, structPostStmts) = process(lhs, enclosingTLD: enclosingType)
+      let (structExp, structPreStmts, structPostStmts) = process(lhs,
+                                                                 isBeingAssignedTo: isBeingAssignedTo,
+                                                                 enclosingTLD: enclosingType)
       let (subExpr, subPreStmts, subPostStmts) = processSubscriptExpression(subscriptExpression,
                                                                             shadowVariablePrefix: shadowVariablePrefix,
                                                                             enclosingTLD: structName,
-                                                                            structInstanceVariable: structExp)
+                                                                            structInstanceVariable: structExp,
+                                                                            isBeingAssignedTo: isBeingAssignedTo)
       return (subExpr, structPreStmts + subPreStmts, subPostStmts + structPostStmts)
     default: break
     }
@@ -862,7 +875,10 @@ extension BoogieTranslator {
                                                     structInstanceVariable: structInstanceVariable)
     var (indxExpr, indexStmts, indexPostStmts) = process(subscriptExpression.indexExpression, localContext: true)
     postAmble += subPostStmts + indexPostStmts
-    let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression, enclosingTLD: enclosingTLD)
+    let sizeShadowVariable = getIterableSizeExpression(iterable: subscriptExpression.baseExpression,
+                                                       enclosingTLD: enclosingTLD,
+                                                       structInstanceVariable: structInstanceVariable)
+
     let currentType = getCurrentTLDName()
     guard let scopeContext = getCurrentScopeContext() else {
       print("couldn't get scope context of current function - used for updating shadow variable")
@@ -966,12 +982,11 @@ extension BoogieTranslator {
       fixedArrayType = false
     }
 
-    let resolveShadowVariable = structInstanceVariable == nil ? sizeShadowVariable : .mapRead(sizeShadowVariable, structInstanceVariable!)
     let accessAssertExpression: BExpression
     if !isBeingAssignedTo || fixedArrayType {
-      accessAssertExpression = .lessThan(indxExpr, resolveShadowVariable)
+      accessAssertExpression = .lessThan(indxExpr, sizeShadowVariable)
     } else {
-      accessAssertExpression = .lessThanOrEqual(indxExpr, resolveShadowVariable)
+      accessAssertExpression = .lessThanOrEqual(indxExpr, sizeShadowVariable)
     }
     let assertValidAccess = BStatement.assertStatement(BProofObligation(expression: accessAssertExpression,
                                                                         mark: registerProofObligation(subscriptExpression.sourceLocation),
@@ -986,8 +1001,12 @@ extension BoogieTranslator {
     return (.mapRead(subExpr, indxExpr), subStmts + indexStmts, postAmble)
   }
 
-  private func getIterableSizeExpression(iterable: Expression, enclosingTLD: String? = nil) -> BExpression {
-    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix, enclosingTLD: enclosingTLD).0
+  private func getIterableSizeExpression(iterable: Expression,
+                                         enclosingTLD: String? = nil,
+                                         structInstanceVariable: BExpression? = nil) -> BExpression {
+    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix,
+                   enclosingTLD: enclosingTLD,
+                   structInstanceVariable: structInstanceVariable).0
   }
 
   private func getDictionaryKeysExpression(dict: Expression) -> BExpression {

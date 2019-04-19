@@ -26,9 +26,11 @@ struct Proposal {
 
 contract SimpleDAO (Join, Propose, Vote) {
   var curator: Address
-  visible var proposal: Int = 0
+  visible var proposal: Int = 0-1
   var proposals: [Proposal]
   var balances: [Address: Wei]
+
+  invariant (proposal < proposals.size)
 }
 
 SimpleDAO @(any) :: caller <- (any) {
@@ -77,7 +79,7 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
     mutates (proposals, Proposal.proposer, Proposal.payout, Proposal.recipient, Proposal.yea, Proposal.nay, Proposal.finished, Proposal.success, Proposal.voted)
   {
     // Sanity checks omitted to be concise
-    let pID: Int = proposals.size + 1;
+    let pID: Int = proposals.size
     proposals[pID] = Proposal(caller, value, recipient)
     return pID
   }
@@ -95,6 +97,9 @@ SimpleDAO @(Propose) :: (curator) {
   public func beginVote(proposal: Int)
     mutates (proposal)
   {
+    if proposal >= proposals.size {
+      fatalError()
+    }
     self.proposal = proposal
     become Vote
   }

@@ -1,20 +1,20 @@
 import AST
 
 // Collect the shadow variables that are modified by a function
-public class ShadowVariablePass: ASTPass {
+class ShadowVariablePass: ASTPass {
   private let normaliser: IdentifierNormaliser
   private let triggers: Trigger
   var modifies = [String: Set<String>]()
 
   private var callerFunctionName: String?
 
-  public init(normaliser: IdentifierNormaliser) {
+  init(normaliser: IdentifierNormaliser, triggers: Trigger) {
     self.normaliser = normaliser
-    self.triggers = Trigger()
+    self.triggers = triggers
   }
 
-  public func process(functionDeclaration: FunctionDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+  func process(functionDeclaration: FunctionDeclaration,
+               passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let functionName = functionDeclaration.name
     let parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
@@ -33,14 +33,14 @@ public class ShadowVariablePass: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(functionDeclaration: FunctionDeclaration,
-                          passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+  func postProcess(functionDeclaration: FunctionDeclaration,
+                   passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     self.callerFunctionName = nil
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func process(specialDeclaration: SpecialDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+  func process(specialDeclaration: SpecialDeclaration,
+               passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
     let functionName = specialDeclaration.asFunctionDeclaration.name
     let parameterTypes = specialDeclaration.asFunctionDeclaration.signature.parameters.map({ $0.type.rawType })
@@ -64,21 +64,21 @@ public class ShadowVariablePass: ASTPass {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(specialDeclaration: SpecialDeclaration,
-                          passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+  func postProcess(specialDeclaration: SpecialDeclaration,
+                   passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     self.callerFunctionName = nil
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  public func process(becomeStatement: BecomeStatement,
-                      passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
+  func process(becomeStatement: BecomeStatement,
+               passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
 
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
-  public func process(binaryExpression: BinaryExpression,
-                      passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+  func process(binaryExpression: BinaryExpression,
+               passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
 
     // Process for trigger
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -93,14 +93,14 @@ public class ShadowVariablePass: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(binaryExpression: BinaryExpression,
-                          passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
+  func postProcess(binaryExpression: BinaryExpression,
+                   passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     // Unmark that binary expression is assignment
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
-  public func process(parameter: Parameter,
-                      passContext: ASTPassContext) -> ASTPassResult<Parameter> {
+  func process(parameter: Parameter,
+               passContext: ASTPassContext) -> ASTPassResult<Parameter> {
 
     if parameter.isImplicit, case .inoutType(let innerType) = parameter.type.rawType {
       addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: innerType.name))
