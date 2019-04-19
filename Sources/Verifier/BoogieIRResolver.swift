@@ -76,13 +76,15 @@ class BoogieIRResolver: IRResolver {
                               procedureDeclarations: [BIRProcedureDeclaration]) -> [String: Set<BModifiesDeclaration>] {
 
     var modifies = Dictionary(uniqueKeysWithValues: procedureDeclarations.map({ ($0.name, $0.modifies) }))
+    var procedureInfo = Dictionary(uniqueKeysWithValues: procedureDeclarations.map({ ($0.name, $0) }))
 
     // Make enough iterations for modifies to flow through all procedures
     for _ in 0...procedureDeclarations.count {
       for (currentProcedure, called) in callGraph {
         var calleeModifies = Set<BIRModifiesDeclaration>()
+        let isCurrentProcedureHolistic = procedureInfo[currentProcedure]?.isHolisticProcedure ?? false
         for calledProcedure in called {
-          let eligibleModifies = modifies[calledProcedure]?.filter({ !$0.userDefined })
+          let eligibleModifies = modifies[calledProcedure]?.filter({ isCurrentProcedureHolistic || !$0.userDefined })
           calleeModifies = calleeModifies.union(eligibleModifies ?? Set())
         }
         modifies[currentProcedure] = modifies[currentProcedure]?.union(calleeModifies) ?? Set()

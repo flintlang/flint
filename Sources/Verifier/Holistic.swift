@@ -51,18 +51,6 @@ extension BoogieTranslator {
                                     .filter({ $0.isPublic })
     let initProcedures = self.environment.initializers(in: currentContract).map({ $0.declaration })
     var procedureVariables = Set<BVariableDeclaration>()
-    // All variables are modified
-    var procedureModifies = Set<BIRModifiesDeclaration>()
-    procedureModifies = procedureModifies.union((contractGlobalVariables[getCurrentTLDName()] ?? [])
-                                                .map({ BIRModifiesDeclaration(variable: $0, userDefined: false) }))
-    for (_, modifies) in self.functionModifiesShadow {
-      procedureModifies = procedureModifies.union(modifies.map({ BIRModifiesDeclaration(variable: $0, userDefined: false) }))
-    }
-    /*
-    for f in (publicFunctions + initProcedures.map({ $0.asFunctionDeclaration })) {
-      procedureModifies = procedureModifies.union(f.mutates.map({ BModifiesDeclaration(variable: normaliser.....$0.name) }))
-    }
-    */
 
     let numPublicFunctions = publicFunctions.count
     let selector = BExpression.identifier("selector")
@@ -119,10 +107,11 @@ extension BoogieTranslator {
         returnName: nil,
         parameters: [],
         prePostConditions: [],
-        modifies: procedureModifies,
+        modifies: Set(), // All variables are modified - will be determined in IR resolution phase
         statements: procedureStmts,
         variables: procedureVariables,
-        mark: mark
+        mark: mark,
+        isHolisticProcedure: true
       )
       procedureNames.append(procedureName)
       procedureDeclarations.append(.procedureDeclaration(specProcedure))

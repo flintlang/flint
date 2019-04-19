@@ -468,7 +468,8 @@ extension BoogieTranslator {
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      mark: registerProofObligation(functionDeclaration.sourceLocation)
+      mark: registerProofObligation(functionDeclaration.sourceLocation),
+      isHolisticProcedure: false
     ))
   }
 }

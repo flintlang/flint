@@ -181,7 +181,8 @@ class BoogieTranslator {
                                  registerProofObligation(SourceLocation.INVALID))],
 
         variables: [], // TODO: variables
-        mark: registerProofObligation(SourceLocation.INVALID)
+        mark: registerProofObligation(SourceLocation.INVALID),
+        isHolisticProcedure: false
         )
       )
     )

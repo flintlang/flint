@@ -42,4 +42,6 @@ struct BIRProcedureDeclaration {
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
   let mark: VerifierMappingKey
+
+  let isHolisticProcedure: Bool
 }
