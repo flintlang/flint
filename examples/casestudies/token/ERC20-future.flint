@@ -4,24 +4,14 @@
 // ----------------------------------------------------------------------------
 
 struct trait ERC20 {
-  event transfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
-  event approval {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
+  event transfer (from: Address, to: Address, value: Int)
+  event approval (from: Address, to: Address, value: Int)
 
-  self :: caller <- (any) {
-    public func totalSupply() -> Int
-    public func balanceOf(owner: Address) -> Int
-    public func allowance(owner: Address, spender: Address) -> Int
+  public func totalSupply() -> Int
+  public func balanceOf(owner: Address) -> Int
+  public func allowance(owner: Address, spender: Address) -> Int
 
-    public func transfer(to: Address, value: Int) -> Bool
-    public func approve(spender: Address, value: Int) -> Bool
-    public func transferFrom(from: Address, to: Address, value: Int) -> Bool
-  }
+  public func transfer(to: Address, value: Int) -> Bool
+  public func approve(spender: Address, value: Int) -> Bool
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
 }

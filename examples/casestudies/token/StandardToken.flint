@@ -11,16 +11,8 @@ contract StandardToken {
     var allowed: [Address: [Address: Int]]
     var totalSupply: Int = 0
 
-    event Transfer {
-      let from: Address
-      let to: Address
-      let value: Int
-    }
-    event Approval {
-      let from: Address
-      let to: Address
-      let value: Int
-    }
+    event Transfer (from: Address, to: Address, value: Int)
+    event Approval (from: Address, to: Address, value: Int)
 }
 
 StandardToken :: (any) {

@@ -11,14 +11,8 @@ contract SimpleAuction {
   var highestBidder: Address
   var highestBid: Wei
 
-  event highestBidDidIncrease {
-    let bidder: Address
-    let amount: Int
-  }
-  event auctionDidEnd {
-    let winner: Address
-    let bid: Int
-  }
+  event highestBidDidIncrease (bidder: Address, amount: Int)
+  event auctionDidEnd (winner: Address, bid: Int)
 }
 
 SimpleAuction :: caller <- (any) {
@@ -46,7 +40,7 @@ SimpleAuction :: caller <- (any) {
     highestBidder = caller
 
     // Record the new highest bid.
-    highestBid.transfer(&value)
+    highestBid.transfer(source: &value)
 
     let amount: Int = value.getRawValue()
     emit highestBidDidIncrease(bidder: caller, amount: amount)
@@ -63,7 +57,7 @@ SimpleAuction :: caller <- (any) {
 
 SimpleAuction :: (beneficiary) {
   public func endAuction()
-    mutates (hasAuctionEnded)
+    mutates (hasAuctionEnded, Wei.rawValue)
   {
     if hasAuctionEnded { fatalError() }
 

@@ -31,18 +31,25 @@ Test :: (p1, p2) {
   public func setPosition(addr: Address, position: Int)
     mutates (arr)
   {
-    arr[position] = addr
+    if position < arr.size {
+      arr[position] = addr
+    }
   }
 
   public func write(pos: Int, value: Int)
     mutates (dict)
   {
-    var key: Address = arr[pos]
-    dict[key] = value
+    if pos < arr.size {
+      var key: Address = arr[pos]
+      dict[key] = value
+    }
   }
 
   public func getValue(pos: Int) -> Int {
-    var key: Address = arr[pos]
-    return dict[key]
+    if pos < arr.size {
+      var key: Address = arr[pos]
+      return dict[key]
+    }
+    return 0
   }
 }

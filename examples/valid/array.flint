@@ -25,27 +25,40 @@ Test :: caller <- (any) {
   public func write(index: Int, val: Int)
     mutates (numWrites, arr)
   {
-    arr[index] = val
-    increaseNumWrites()
+    if index < arr.size {
+      arr[index] = val
+      increaseNumWrites()
+    }
   }
 
   public func value(index: Int) -> Int {
-    return arr[index]
+    if index < arr.size {
+      return arr[index]
+    }
+    return 0
   }
 
   public func value2(index: Int) -> Int {
-    return arr2[index]
+    if index < arr2.size {
+      return arr2[index]
+    }
+    return 1
   }
 
   public func write2(index: Int, val: Int)
     mutates (arr2, numWrites)
   {
-    arr2[index] = val
+    if index < arr2.size {
+      arr2[index] = val
+    }
     increaseNumWrites()
   }
 
   public func valueBoth(index: Int) -> Int {
-    return arr[index] + arr2[index]
+    if index < arr.size && index < arr2.size {
+      return arr[index] + arr2[index]
+    }
+    return 3
   }
 
   public func numWrites() -> Int {
@@ -59,8 +72,9 @@ Test :: caller <- (any) {
   }
 
   public func accessOutOfBounds()
-    mutates (arr)
+    //mutates (arr)
   {
-    arr[4] = 5
+    // Should fail
+    //arr[4] = 5
   }
 }

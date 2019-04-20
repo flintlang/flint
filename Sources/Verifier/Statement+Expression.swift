@@ -1,5 +1,7 @@
 import AST
 
+import BigInt
+
 extension BoogieTranslator {
    func process(_ statement: Statement) -> [BStatement] {
     switch statement {
@@ -36,7 +38,7 @@ extension BoogieTranslator {
         print("Unknown expression in becomeStatement \(becomeStatement.expression)")
         fatalError()
       }
-      return [.assignment(.identifier(stateVariable), .integer(stateValue), registerProofObligation(becomeStatement.sourceLocation))]
+      return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)), registerProofObligation(becomeStatement.sourceLocation))]
 
     case .ifStatement(let ifStatement):
       let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition)
@@ -61,7 +63,7 @@ extension BoogieTranslator {
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: indexName,
                                                                  rawName: indexName,
                                                                  type: .int))
-      let incrementIndex = BStatement.assignment(index, .add(index, .integer(1)),
+      let incrementIndex = BStatement.assignment(index, .add(index, .integer(BigUInt(1))),
                                                  registerProofObligation(forStatement.sourceLocation))
 
       // Create for loop variable
@@ -108,7 +110,7 @@ extension BoogieTranslator {
         // Adjust the index update accordingly
         let inclusive: Bool = rangeExpression.op.kind == .punctuation(.closedRange)
         if inclusive {
-          finalIndexValue = BExpression.add(bound, .integer(1))
+          finalIndexValue = BExpression.add(bound, .integer(BigUInt(1)))
         } else {
           finalIndexValue = bound
         }
@@ -130,7 +132,7 @@ extension BoogieTranslator {
         assignValueToVariable = BStatement.assignment(loopVariable,
                                                       .mapRead(iterableIdentifier, index),
                                                       registerProofObligation(forStatement.sourceLocation))
-        initialIndexValue = BExpression.integer(0)
+        initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
 
       case .dictionaryLiteral:
@@ -149,7 +151,7 @@ extension BoogieTranslator {
                                                       .mapRead(iterableIdentifier,
                                                                .mapRead(keysExpr, index)),
                                                       registerProofObligation(forStatement.sourceLocation))
-        initialIndexValue = BExpression.integer(0)
+        initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + dictLitIdentifier)
 
       default:
@@ -167,7 +169,7 @@ extension BoogieTranslator {
           assignValueToVariable = BStatement.assignment(loopVariable,
                                                         .mapRead(indexableExpr, index),
                                                         registerProofObligation(forStatement.sourceLocation))
-          initialIndexValue = BExpression.integer(0)
+          initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
         case .dictionaryType:
@@ -181,7 +183,7 @@ extension BoogieTranslator {
           assignValueToVariable = BStatement.assignment(loopVariable,
                                                         .mapRead(iterableExpr, .mapRead(iterableKeys, index)),
                                                         registerProofObligation(forStatement.sourceLocation))
-          initialIndexValue = BExpression.integer(0)
+          initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
         default:
@@ -636,7 +638,7 @@ extension BoogieTranslator {
         }
 
         assignmentStmts += preStatements
-        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(counter)),
+        assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(BigUInt(counter))),
                                            bExpr,
                                            registerProofObligation(iterable.sourceLocation)))
         postAmbleStmts += postStmts
@@ -646,7 +648,7 @@ extension BoogieTranslator {
       //Shadow variables
       let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
       assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
-                                         .integer(counter),
+                                         .integer(BigUInt(counter)),
                                          registerProofObligation(iterable.sourceLocation)))
 
     case .dictionaryLiteral(let dictionaryLiteral):
@@ -675,7 +677,7 @@ extension BoogieTranslator {
 
         // Shadow variables
         // Set keys shadow variable to stated dictionary keys
-        assignmentStmts.append(.assignment(.mapRead(.identifier(keysShadowVariableName), .integer(counter)),
+        assignmentStmts.append(.assignment(.mapRead(.identifier(keysShadowVariableName), .integer(BigUInt(counter))),
                                            bKeyExpr,
                                            registerProofObligation(iterable.sourceLocation)))
 
@@ -685,7 +687,7 @@ extension BoogieTranslator {
       // Shadow variables
       let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
       assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
-                                         .integer(counter),
+                                         .integer(BigUInt(counter)),
                                          registerProofObligation(iterable.sourceLocation)))
 
     default:
@@ -727,7 +729,7 @@ extension BoogieTranslator {
 
     // Are we trying to access size/keys properties of arrays/dicts
     switch lhsType {
-    case .arrayType, .dictionaryType:
+    case .arrayType, .dictionaryType, .fixedSizeArrayType:
       // Check if trying to access .size or .keys fields or arrays/dictionaries
       switch rhs {
       case .identifier(let identifier) where identifier.name == "size":
@@ -903,7 +905,7 @@ extension BoogieTranslator {
                                                    trueCase: [
                                                      // increment size variable
                                                      .assignment(sizeShadowVariable,
-                                                                 .add(sizeShadowVariable, .integer(1)),
+                                                                 .add(sizeShadowVariable, .integer(BigUInt(1))),
                                                                  registerProofObligation(subscriptExpression.sourceLocation)
                                                                  )
                                                    ],
@@ -935,7 +937,9 @@ extension BoogieTranslator {
                                                                    rawName: containsKeyName,
                                                                    type: .boolean))
 
-        let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression)
+        let keysShadowVariable = getDictionaryKeysExpression(dict: subscriptExpression.baseExpression,
+                                                             enclosingTLD: enclosingTLD,
+                                                             structInstanceVariable: structInstanceVariable)
 
         let checkingContains =
           BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
@@ -949,7 +953,7 @@ extension BoogieTranslator {
                                                       falseCase: [],
                                                       mark: registerProofObligation(subscriptExpression.sourceLocation))),
                             .assignment(counter,
-                                        .add(counter, .integer(1)),
+                                        .add(counter, .integer(BigUInt(1))),
                                         registerProofObligation(subscriptExpression.sourceLocation))
                           ],
                           invariants: [],
@@ -958,13 +962,13 @@ extension BoogieTranslator {
                                   trueCase: [
                                     // increment size variable
                                     .assignment(sizeShadowVariable,
-                                                .add(sizeShadowVariable, .integer(1)),
+                                                .add(sizeShadowVariable, .integer(BigUInt(1))),
                                                 registerProofObligation(subscriptExpression.sourceLocation))
                                   ],
                                   falseCase: [],
                                   mark: registerProofObligation(subscriptExpression.sourceLocation))
 
-        postAmble.append(.assignment(counter, .integer(0), registerProofObligation(subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(counter, .integer(BigUInt(0)), registerProofObligation(subscriptExpression.sourceLocation)))
         postAmble.append(.assignment(containsKey, .boolean(false), registerProofObligation(subscriptExpression.sourceLocation)))
         postAmble.append(.whileStatement(checkingContains))
         postAmble.append(.ifStatement(update))
@@ -1004,12 +1008,18 @@ extension BoogieTranslator {
   private func getIterableSizeExpression(iterable: Expression,
                                          enclosingTLD: String? = nil,
                                          structInstanceVariable: BExpression? = nil) -> BExpression {
-    return process(iterable, shadowVariablePrefix: normaliser.getShadowArraySizePrefix,
+    return process(iterable,
+                   shadowVariablePrefix: normaliser.getShadowArraySizePrefix,
                    enclosingTLD: enclosingTLD,
                    structInstanceVariable: structInstanceVariable).0
   }
 
-  private func getDictionaryKeysExpression(dict: Expression) -> BExpression {
-    return process(dict, shadowVariablePrefix: normaliser.getShadowDictionaryKeysPrefix).0
+  private func getDictionaryKeysExpression(dict: Expression,
+                                           enclosingTLD: String? = nil,
+                                           structInstanceVariable: BExpression? = nil) -> BExpression {
+    return process(dict,
+                   shadowVariablePrefix: normaliser.getShadowDictionaryKeysPrefix,
+                   enclosingTLD: enclosingTLD,
+                   structInstanceVariable: structInstanceVariable).0
   }
 }

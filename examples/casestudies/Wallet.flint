@@ -16,7 +16,7 @@ Wallet :: caller <- (any) {
     mutates (contents, Wei.rawValue)
   {
     // Record the Wei received into the contents state property.
-    contents.transfer(&value)
+    contents.transfer(source: &value)
   }
 }
 

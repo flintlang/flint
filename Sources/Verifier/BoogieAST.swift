@@ -1,6 +1,8 @@
 import Source
 import Foundation
 
+import BigInt
+
 struct BTopLevelProgram: CustomStringConvertible {
   let declarations: [BTopLevelDeclaration]
 
@@ -278,7 +280,7 @@ indirect enum BExpression: CustomStringConvertible {
   case negate(BExpression)
   case mapRead(BExpression, BExpression)
   case boolean(Bool)
-  case integer(Int)
+  case integer(BigUInt)
   case real(Int, Int)
   case identifier(String)
   case old(BExpression)

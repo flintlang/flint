@@ -6,7 +6,9 @@ contract KotET {
 }
 
 KotET :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
     self.owner = caller
     self.king = caller
     self.pot = Wei(0)
@@ -46,11 +48,15 @@ contract ValidKotET {
   visible var claimPrice: Int = 100
   var owner: Address
   var pot: Wei
-  var pastKings: [Address: Wei] = [:]
+  var pastKings: [Address: Wei]
 }
 
 ValidKotET :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
+    self.pastKings = [:]
+
     self.owner = caller
     self.king = caller
     self.pot = Wei(0)
@@ -58,7 +64,7 @@ ValidKotET :: caller <- (any) {
 
   @payable
   public func dethrone(implicit value: Wei)
-    mutates (Wei.rawValue, claimPrice, king, pot)
+    mutates (Wei.rawValue, claimPrice, king, pot, pastKings)
   {
     if value.getRawValue() < claimPrice {
       fatalError()
@@ -85,7 +91,9 @@ ValidKotET :: caller <- (any) {
 ValidKotET :: king <- (any) {
   // should be mutating, but send is not a mutating function although it should
   // be in this case
-  public func withdrawCompensation() {
+  public func withdrawCompensation()
+    mutates (Wei.rawValue)
+  {
     send(king, &pastKings[king])
   }
 }

@@ -4,6 +4,8 @@ import Foundation
 import Lexer
 import Source
 
+import BigInt
+
 class BoogieTranslator {
   let topLevelModule: TopLevelModule
   let environment: Environment
@@ -171,13 +173,13 @@ class BoogieTranslator {
           BParameterDeclaration(name: "wei", rawName: "wei", type: .int)
         ],
         prePostConditions: self.globalInvariants + [BProofObligation(expression:
-          .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(0)),
+          .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(BigUInt(0))),
          mark: registerProofObligation(SourceLocation.INVALID),
          obligationType: .postCondition)],
         modifies: [BIRModifiesDeclaration(variable: "rawValue_Wei", userDefined: true)],
         // Drain all wei from struct
         statements: [.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")),
-                                 .integer(0),
+                                 .integer(BigUInt(0)),
                                  registerProofObligation(SourceLocation.INVALID))],
 
         variables: [], // TODO: variables
@@ -507,7 +509,7 @@ class BoogieTranslator {
                                                                    type: .int))
         let procedureName = "initInt_Wei"
         functionPreAmble.append(.havoc(weiAmount, getMark(parameter.sourceLocation)))
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(0)), getMark(parameter.sourceLocation)))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), getMark(parameter.sourceLocation)))
         functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
                                                               procedureName: procedureName,
                                                               arguments: [.identifier(weiAmount)],
@@ -554,7 +556,7 @@ class BoogieTranslator {
     case .decimal(let decimalLiteral):
       switch decimalLiteral {
       case .integer(let i):
-        return .integer(i)
+        return .integer(BigUInt(i))
       case .real(let b, let f):
         return .real(b, f)
       }
@@ -566,8 +568,8 @@ class BoogieTranslator {
       fatalError()
     case .address(let hex):
       let hexValue = hex[hex.index(hex.startIndex, offsetBy: 2)...] // Hex literals are prefixed with 0x
-      guard let dec = Int(hexValue, radix: 16) else {
-        print("Couldn't convert hex address value \(hex)")
+      guard let dec = BigUInt(hexValue, radix: 16) else {
+        print("Couldn't convert hex address value \(hexValue)")
         fatalError()
       }
       return .integer(dec)
@@ -747,7 +749,7 @@ class BoogieTranslator {
                                        isInStruct: Bool = false) -> [BStatement] {
     var assumeStmts = [BStatement]()
     let identifierName = BExpression.identifier(normaliser.getShadowArraySizePrefix(depth: depth) + name)
-    let holyDynAccess = nestedIterableAccess(holyExpression: { .greaterThanOrEqual($0, .integer(0)) },
+    let holyDynAccess = nestedIterableAccess(holyExpression: { .greaterThanOrEqual($0, .integer(BigUInt(0))) },
                                              depth: depth,
                                              isInStruct: isInStruct)
     switch type {
@@ -761,7 +763,7 @@ class BoogieTranslator {
                                  registerProofObligation(source)))
       assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
     case .fixedSizeArrayType(let valueType, let size):
-      let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(size)) },
+      let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(BigUInt(size))) },
                                                  depth: depth,
                                                  isInStruct: isInStruct)
       assumeStmts.append(.assume(holyFixedAccess(identifierName),
@@ -951,10 +953,10 @@ class BoogieTranslator {
 
    func defaultValue(_ type: BType) -> BExpression {
     switch type {
-    case .int: return .integer(0)
+    case .int: return .integer(BigUInt(0))
     case .real: return .real(0, 0)
     case .boolean: return .boolean(false) // TODO: Is this the default bool value?
-    case .userDefined: return .integer(0) //TODO: Is this right, for eg addresses
+    case .userDefined: return .integer(BigUInt(0)) //TODO: Is this right, for eg addresses
     //  print("Can't translate default value for user defined type yet \(name)")
     //  fatalError()
     case .map(let t1, let t2):

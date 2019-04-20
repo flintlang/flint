@@ -5,6 +5,8 @@ contract WesternUnion {
   var customers: [Address]
   var numCustomers: Int = 0
 
+  invariant (numCustomers == customers.size)
+
   //only customers can withdraw money from bank
 
   // customer can only withdraw the amount of money in their account

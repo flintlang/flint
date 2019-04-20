@@ -14,7 +14,7 @@ struct Proposal {
   invariant (noVotes >= 0)
   invariant (quorum >= 0)
   invariant (yesVotes + noVotes == voted.size)
-  invariant (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes))
+  //invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
 
   public init() {
     self.voted = [:]
@@ -27,6 +27,8 @@ contract SimpleDAO (Join, Propose, Vote) {
   var members: [Address]
   var balances: [Address: Int]
   var totalSupply: Int = 0
+
+  invariant (totalSupply >= 0)
 }
 
 SimpleDAO @(any) :: (any) {
@@ -44,6 +46,11 @@ SimpleDAO @(Propose) :: caller <- (members) {
   public func newProposal(recipient: Address, value: Int)
     mutates (proposal, Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
   {
+    // Satisfy invariant
+    if (value < 0) {
+      fatalError()
+    }
+
     proposal = Proposal()
     proposal.proposer = caller
     proposal.value = value

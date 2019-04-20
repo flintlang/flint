@@ -3,6 +3,8 @@ contract MajorityWithdraw (Preparing, Voting, Completed) {
 
   var participants: [Address]
   var numParticipants: Int = 0
+  invariant (numParticipants == participants.size)
+
   var participantVotes: [Address: Bool]
 
   let leader: Address

@@ -8,23 +8,13 @@ contract FlintToken (Minting, MintingFinished) {
     var totalSupply: Int = 0
     var owner: Address
 
-    event Transfer {
-      let from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000
-      let to: Address
-      let value: Int
-    }
-    event Approval {
-      let from: Address
-      let to: Address
-      let value: Int
-    }
+    event Transfer (
+      to: Address, value: Int, from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    event Approval (from: Address, to: Address, value: Int)
 
-    event Mint {
-      let to: Address
-      let value: Int
-    }
+    event Mint (to: Address, value: Int)
 
-    event MintFinished {}
+    event MintFinished ()
 }
 
 FlintToken @(any) :: caller <- (any) {
@@ -48,7 +38,7 @@ FlintToken @(any) :: caller <- (any) {
     balances[caller] -= value
     balances[to] += value
 
-    emit Transfer(from: caller, to: to, value: value)
+    emit Transfer(to: to, value: value, from: caller)
 
     return true;
   }
@@ -83,7 +73,7 @@ FlintToken @(any) :: caller <- (any) {
     balances[to] += value
     allowed[from][caller] -= value
 
-    emit Transfer(from: from, to: to, value: value)
+    emit Transfer(to: to, value: value, from: from)
     return true
   }
 
@@ -148,7 +138,7 @@ FlintToken @(Minting) :: (owner) {
   // Stop minting new tokens
   // Return true if successful
   public func finishMinting() -> Bool {
-    emit MintFinished
+    emit MintFinished()
     return true
     become MintingFinished
   }

@@ -2,6 +2,7 @@ contract Marking {
   var lecturer: Address
   var markers: [Address]
   var numMarkers: Int = 0
+  invariant(numMarkers == markers.size)
 
   var grades: [Address: Int]
 }

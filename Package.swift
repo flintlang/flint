@@ -41,6 +41,7 @@ let package = Package(
     .package(url: "https://github.com/flintrocks/swift-lsp.git", .branch("master")),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
     .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
+    .package(url: "https://github.com/attaswift/BigInt.git", from: "4.0.0"),
   ],
   targets: [
     .target(
@@ -211,6 +212,7 @@ let package = Package(
         "AST",
         "Lexer",
         "Yaml",
+        "BigInt",
       ]
     ),
     .target(

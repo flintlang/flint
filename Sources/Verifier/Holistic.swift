@@ -1,5 +1,7 @@
 import AST
 
+import BigInt
+
 extension BoogieTranslator {
     /* Example translated holistic spec - will(ten mod 5 == 0)
       var selector: int;
@@ -71,8 +73,8 @@ extension BoogieTranslator {
 
       let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), mark)
       let havocSelector = BStatement.havoc("selector", mark)
-      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(0)),
-                                                      .lessThan(selector, .integer(numPublicFunctions))), mark)
+      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
+                                                      .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), mark)
       let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
                                                                  selector: selector,
                                                                  tld: currentContract,
@@ -171,7 +173,7 @@ extension BoogieTranslator {
       // Add procedure call to callGraph
       addProcedureCall(enclosingFunctionName, procedureName)
       ifStmts.append(procedureCall)
-      selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(counter)),
+      selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(BigUInt(counter))),
                                                  trueCase: ifStmts,
                                                  falseCase: [],
                                                  mark: mark)))
