@@ -8,34 +8,24 @@ import Diagnostic
 /// The main function for the compiler.
 func main() {
     command (
-        Flag("typestate information", flag:"t", description:"Information for typestates"),
-        Argument<String> ("source code", description: "source code to verify"),
-        Argument<String> ("file name", description: "file name")
+        Argument<String> ("Test file", description: "Test file (.tflint)")
     )
-    { typeStateDiagram, sourceCode, fileName in
+    { sourceCode in
+        let fileName =  sourceCode
         let inputFiles = [URL(fileURLWithPath: fileName)]
+        let sourceCode = try String(contentsOf: inputFiles[0])
+        
         do {
-            let c = Compiler(
-                sourceFiles: inputFiles,
-                sourceCode: sourceCode,
-                stdlibFiles: StandardLibrary.default.files,
-                diagnostics: DiagnosticPool(shouldVerify: false,
-                                            quiet: false,
-                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
-                typeStateDiagram: typeStateDiagram)
+            try TestRunner(testFile: inputFiles[0],
+                           sourceCode: sourceCode,
+                           diagnostics: DiagnosticPool(shouldVerify: false,
+                                                       quiet: false,
+                                                       sourceContext: SourceContext(sourceFiles: inputFiles))).run_tests()
             
-            // I need a better way of representing the flags
-            try c.ide_compile()
-            
-        } catch let err {
-            let diagnostic = Diagnostic(severity: .error,
-                                        sourceLocation: nil,
-                                        message: err.localizedDescription)
-            // swiftlint:disable force_try
-            print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
-            // swiftlint:enable force_try
-            exit(1)
+        } catch {
+            print("Failed to run tests")
         }
+        
     }.run() 
 }
 
@@ -57,4 +47,5 @@ func main_d() throws {
 }
 
 //try main_d()
-try main_d()
+main()
+//try main_d()
