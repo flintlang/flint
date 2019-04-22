@@ -13,6 +13,8 @@ LocalVariables :: (any) {
   }
 
   public func localVariables() {
+    // Test that it is known that global arrays cannot be size < 0
+    assert(js.size >= 0)
     var i: Int = 10
     let j: Int = 20
   }
@@ -53,6 +55,9 @@ LocalVariables :: (any) {
   func outOfBoundsAccess() {
     //Checking oob local variable
     var i: Int[4] = [1,2,3,4]
+    assert (i.size >= 0)
+    assert (i.size == 4)
+
     //VERIFY-FAIL
     let j: Int = i[5]
   }
