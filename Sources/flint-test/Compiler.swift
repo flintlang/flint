@@ -36,12 +36,68 @@ struct Compiler {
     return stdlibTokens + userTokens
   }
     
+    func createConstructor(constructor : SpecialDeclaration) -> FunctionDeclaration? {
+        
+        if (!(constructor.signature.specialToken.kind == .init)) {
+            return nil
+        }
+        
+        if (constructor.body.count == 0) {
+            return nil
+        }
+
+        var sig = constructor.signature
+        sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
+        let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
+        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "testFrameworkConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
+        let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken)
+        
+        return newFunc
+    }
+    
+    func insertConstructorFunc(ast : TopLevelModule) -> TopLevelModule {
+      let decWithoutStdlib = ast.declarations[2...]
+        
+      var newDecs : [TopLevelDeclaration] = []
+      newDecs.append(ast.declarations[0])
+      newDecs.append(ast.declarations[1])
+
+      for m in decWithoutStdlib {
+          switch (m) {
+          case .contractDeclaration(let cdec):
+                newDecs.append(m)
+          case .contractBehaviorDeclaration(var cbdec):
+            var mems : [ContractBehaviorMember] = []
+            for cm in cbdec.members {
+                switch (cm) {
+                case .specialDeclaration(let spdec):
+                    if let constructorFunc = createConstructor(constructor: spdec) {
+                        let cBeh : ContractBehaviorMember = .functionDeclaration(constructorFunc)
+                        mems.append(cBeh)
+                        mems.append(.specialDeclaration(spdec))
+                    } else {
+                        mems.append(cm)
+                    }
+                default:
+                    mems.append(cm)
+                }
+            }
+            cbdec.members = mems
+            newDecs.append(.contractBehaviorDeclaration(cbdec))
+          default:
+                newDecs.append(m)
+          }
+      }
+        
+      return TopLevelModule(declarations: newDecs)
+    }
+    
   func compile() throws {
         let tokens = try tokenizeFiles()
         
         // Turn the tokens into an Abstract Syntax Tree (AST).
         let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
-        
+    
         if let failed = try diagnostics.checkpoint(parserDiagnostics) {
             if failed {
                 exitWithFailure()
@@ -49,9 +105,11 @@ struct Compiler {
             exit(0)
         }
         
-        guard let ast = parserAST else {
+        guard var ast = parserAST else {
             exitWithFailure()
         }
+
+        ast = insertConstructorFunc(ast: parserAST!)
     
         // The AST passes to run sequentially.
         let astPasses: [ASTPass] = [
