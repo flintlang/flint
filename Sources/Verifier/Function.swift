@@ -289,7 +289,8 @@ extension BoogieTranslator {
                 isContractInit: Bool = false,
                 callerProtections: [CallerProtection] = [],
                 callerBinding: Identifier? = nil,
-                structInvariants: [BProofObligation] = []
+                structInvariants: [BProofObligation] = [],
+                typeStates: [TypeState] = []
                 ) -> BIRTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
@@ -304,6 +305,9 @@ extension BoogieTranslator {
     // Process caller capabilities
     // Need the caller preStatements to handle the case when a function is called
     let (callerPreConds, callerPreStatements) = processCallerCapabilities(callers, callerBinding)
+
+    // Process type states
+    let typeStatePreConds = processTypeStates(typeStates)
 
     // Process triggers
     let context = Context(environment: environment,
@@ -464,7 +468,7 @@ extension BoogieTranslator {
       returnType: returnType,
       returnName: returnName,
       parameters: bParameters,
-      prePostConditions: callerPreConds + prePostConditions + (!isContractInit ? globalInvariants : []), //Inits should establish
+      prePostConditions: callerPreConds + typeStatePreConds + prePostConditions + (!isContractInit ? globalInvariants : []), //Inits should establish
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),

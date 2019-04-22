@@ -456,6 +456,7 @@ class BoogieTranslator {
 
     let callerBinding = contractBehaviorDeclaration.callerBinding
     let callerProtections = contractBehaviorDeclaration.callerProtections
+    let typeStates = contractBehaviorDeclaration.states
 
     for member in contractBehaviorDeclaration.members {
       self.currentBehaviourMember = member
@@ -466,13 +467,15 @@ class BoogieTranslator {
                                     isContractInit: true,
                                     callerProtections: callerProtections,
                                     callerBinding: callerBinding,
-                                    structInvariants: structInvariants))
+                                    structInvariants: structInvariants,
+                                    typeStates: typeStates))
 
       case .functionDeclaration(let functionDeclaration):
         declarations.append(process(functionDeclaration,
                                     callerProtections: callerProtections,
                                     callerBinding: callerBinding,
-                                    structInvariants: structInvariants))
+                                    structInvariants: structInvariants,
+                                    typeStates: typeStates))
 
       default:
         // TODO: Handle functionSignatureDeclaration case
@@ -662,6 +665,28 @@ class BoogieTranslator {
       }
     }
     return (callerPreConditions, preStatements)
+  }
+
+  func processTypeStates(_ typeStates: [TypeState]) -> [BProofObligation] {
+    var conditions = [BExpression]()
+    let typeStates = typeStates.filter({ !$0.isAny })
+    for typeState in typeStates {
+      conditions.append(.equals(.identifier(getStateVariable()),
+                                // Convert typestate name to numerical representation
+                                .integer(BigUInt(getStateVariableValue(typeState.name)))))
+    }
+
+    if conditions.count > 0 {
+      // Only return precondition, if we have something to form a pre-condition with
+      let condition = conditions.reduce(.boolean(false), { BExpression.or($0, $1) })
+
+      let sourceLocation = SourceLocation.spanning(typeStates.first!.identifier, to: typeStates.last!.identifier)
+
+      return [BProofObligation(expression: condition,
+                               mark: sourceLocation,
+                               obligationType: .preCondition)]
+    }
+    return []
   }
 
   func generateVariables(_ variableDeclaration: VariableDeclaration,
