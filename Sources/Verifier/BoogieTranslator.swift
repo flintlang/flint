@@ -32,7 +32,7 @@ class BoogieTranslator {
   var callGraph = [String: Set<String>]()
 
   // Source location that each proof oligation corresponds to
-  var flintProofObligationSourceLocation = [VerifierMappingKey: SourceLocation]()
+  var flintProofObligationTranslationInformation = [ErrorMappingKey: TranslationInformation]()
 
   // Current behaviour member - function / special / signature declaration ..
   var currentBehaviourMember: ContractBehaviorMember?
@@ -281,7 +281,7 @@ class BoogieTranslator {
     return BoogieTranslationIR(tlds: propertyDeclarations + declarations,
                                holisticTestProcedures: holisticTests,
                                holisticTestEntryPoints: holisticEntryPoints,
-                               lineMapping: self.flintProofObligationSourceLocation,
+                               lineMapping: self.flintProofObligationTranslationInformation,
                                callGraph: self.callGraph
     )
   }
@@ -683,7 +683,7 @@ class BoogieTranslator {
       let sourceLocation = SourceLocation.spanning(typeStates.first!.identifier, to: typeStates.last!.identifier)
 
       return [BProofObligation(expression: condition,
-                               mark: sourceLocation,
+                               mark: registerProofObligation(sourceLocation),
                                obligationType: .preCondition)]
     }
     return []
@@ -1008,9 +1008,9 @@ class BoogieTranslator {
     }
   }
 
-  func registerProofObligation(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
+  func registerProofObligation(_ sourceLocation: SourceLocation) -> ErrorMappingKey {
     let mapping = getMark(sourceLocation)
-    flintProofObligationSourceLocation[mapping] = sourceLocation
+    flintProofObligationTranslationInformation[mapping] = TranslationInformation(sourceLocation: sourceLocation)
     return mapping
   }
 }

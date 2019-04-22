@@ -298,7 +298,7 @@ public class BoogieVerifier: Verifier {
   }
 
   private func resolveBoogieErrors(errors boogieErrors: [BoogieError],
-                                   mapping b2fSourceMapping: [Int: SourceLocation]) -> [Diagnostic] {
+                                   mapping b2fSourceMapping: [Int: TranslationInformation]) -> [Diagnostic] {
     var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
@@ -356,12 +356,12 @@ public class BoogieVerifier: Verifier {
     return flintErrors
   }
 
-  private func lookupSourceLocation(line: Int, mapping: [Int: SourceLocation]) -> SourceLocation {
-    guard let sourceLocation = mapping[line] else {
+  private func lookupSourceLocation(line: Int, mapping: [Int: TranslationInformation]) -> SourceLocation {
+    guard let translationInformation = mapping[line] else {
       print("cannot find mapping for failing proof obligation on line \(line)")
       fatalError()
     }
-    return sourceLocation
+    return translationInformation.sourceLocation
   }
 }
 // swiftlint:enable all

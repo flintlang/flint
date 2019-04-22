@@ -125,7 +125,7 @@ extension BoogieTranslator {
   private func generateMethodSelection(functions: [FunctionDeclaration],
                                        selector: BExpression,
                                        tld: String,
-                                       mark: VerifierMappingKey,
+                                       mark: ErrorMappingKey,
                                        enclosingFunctionName: String) -> ([BStatement], [BVariableDeclaration]) {
     /*
         if (selector == 2) {

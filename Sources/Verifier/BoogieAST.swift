@@ -139,7 +139,7 @@ enum BProofObligationType: CustomStringConvertible {
 
 struct BProofObligation: CustomStringConvertible {
   let expression: BExpression
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
   let obligationType: BProofObligationType
 
   var description: String {
@@ -157,7 +157,7 @@ struct BProcedureDeclaration: CustomStringConvertible {
   let modifies: Set<BModifiesDeclaration>
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
 
   var description: String {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
@@ -220,7 +220,7 @@ struct BCallProcedure: CustomStringConvertible {
   let returnedValues: [String]
   let procedureName: String
   let arguments: [BExpression]
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
 
   var description: String {
     let argumentComponent = arguments.map({(x) -> String in x.description}).joined(separator: ", ")
@@ -235,13 +235,13 @@ struct BCallProcedure: CustomStringConvertible {
 }
 
 enum BStatement: CustomStringConvertible {
-  case expression(BExpression, VerifierMappingKey)
+  case expression(BExpression, ErrorMappingKey)
   case ifStatement(BIfStatement)
   case whileStatement(BWhileStatement)
   case assertStatement(BProofObligation)
-  case assume(BExpression, VerifierMappingKey)
-  case havoc(String, VerifierMappingKey)
-  case assignment(BExpression, BExpression, VerifierMappingKey)
+  case assume(BExpression, ErrorMappingKey)
+  case havoc(String, ErrorMappingKey)
+  case assignment(BExpression, BExpression, ErrorMappingKey)
   case callProcedure(BCallProcedure)
   case breakStatement
 
@@ -343,7 +343,7 @@ struct BIfStatement: CustomStringConvertible {
   let condition: BExpression
   let trueCase: [BStatement]
   let falseCase: [BStatement]
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
 
   var description: String {
     let trueComponent = trueCase.map({(x) -> String in x.description}).joined(separator: "\n")
@@ -365,7 +365,7 @@ struct BWhileStatement: CustomStringConvertible {
   let condition: BExpression
   let body: [BStatement]
   let invariants: [BProofObligation]
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
 
   var description: String {
     let invariantComponent = invariants.map({ (x) -> String in x.description }).joined(separator: "\n")

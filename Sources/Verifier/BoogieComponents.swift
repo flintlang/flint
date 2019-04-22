@@ -17,29 +17,48 @@ enum BoogieError {
   //case loopInvariantMaintenanceFailure(Int, String)
 }
 
+/*
+enum VerificationFailureExplanation: String {
+  case assertionFailure = "Could not verify assertion holds"
+  case preConditionFailure = "Could not verify pre-condition holds"
+  case postConditionFailure = "Could not verify post-condition is satisfied"
+  case invariantFailure = "Could not verify invariant holds"
+
+  case outOfBoundsAccess = "This could be an out of bounds access"
+}
+*/
+
 enum SymbooglixError {
   case error()
 }
 
-struct VerifierMappingKey: Hashable, CustomStringConvertible {
+struct ErrorMappingKey: Hashable, CustomStringConvertible {
   let file: String
   let flintLine: Int
+  let column: Int
 
   var hashValue: Int {
-    return file.hashValue + flintLine ^ 2
+    return file.hashValue + flintLine ^ 2 + column ^ 3
   }
 
   var description: String {
-  return "// #MARKER# \(flintLine) \(file)"
+  return "// #MARKER# \(flintLine) \(column) \(file)"
   }
 
-  public static var DUMMY: VerifierMappingKey {
-    return VerifierMappingKey(file: "", flintLine: -1)
+  public static var DUMMY: ErrorMappingKey {
+    return ErrorMappingKey(file: "", flintLine: -1, column: 0)
   }
 }
 
-func getMark(_ sourceLocation: SourceLocation) -> VerifierMappingKey {
-  return VerifierMappingKey(file: sourceLocation.file.absoluteString, flintLine: sourceLocation.line)
+struct TranslationInformation {
+  let sourceLocation: SourceLocation
+  //let verificationFailureExplanation: VerificationFailureExplanation?
+}
+
+func getMark(_ sourceLocation: SourceLocation) -> ErrorMappingKey {
+  return ErrorMappingKey(file: sourceLocation.file.absoluteString,
+                            flintLine: sourceLocation.line,
+                            column: sourceLocation.column)
 }
 
 struct FlintProofObligationInformation {
@@ -50,7 +69,7 @@ struct FlintBoogieTranslation: CustomStringConvertible {
   let boogieTlds: [BTopLevelDeclaration]
   let holisticTestProcedures: [BTopLevelDeclaration]
   let holisticTestEntryPoints: [String]
-  let lineMapping: [Int: SourceLocation]
+  let lineMapping: [Int: TranslationInformation]
 
   var verificationProgram: BTopLevelProgram {
     return BTopLevelProgram(declarations: boogieTlds)

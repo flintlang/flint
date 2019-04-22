@@ -94,8 +94,8 @@ class BoogieIRResolver: IRResolver {
   }
 
   private func generateFlint2BoogieMapping(code: String,
-                                           proofObligationMapping: [VerifierMappingKey: SourceLocation]) -> [Int: SourceLocation] {
-    var mapping = [Int: SourceLocation]()
+                                           proofObligationMapping: [ErrorMappingKey: TranslationInformation]) -> [Int: TranslationInformation] {
+    var mapping = [Int: TranslationInformation]()
 
     let lines = code.trimmingCharacters(in: .whitespacesAndNewlines)
                                .components(separatedBy: "\n")
@@ -105,7 +105,7 @@ class BoogieIRResolver: IRResolver {
       boogieLine += 1
 
       // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+) (.*)")
+      let matches = line.groups(for: "// #MARKER# ([0-9]+) ([0-9]+) (.*)")
       if matches.count == 1 {
         // Extract line number
         let line = Int(matches[0][1])!
@@ -113,15 +113,20 @@ class BoogieIRResolver: IRResolver {
           continue
         }
 
-        let file: String = matches[0][2]
-        guard let sourceLocation = proofObligationMapping[VerifierMappingKey(file: file, flintLine: line)] else {
+        let column = Int(matches[0][2])!
+        if column < 0 { //Invalid
+          continue
+        }
+
+        let file: String = matches[0][3]
+        guard let translationInformation = proofObligationMapping[ErrorMappingKey(file: file, flintLine: line, column: column)] else {
           print("Couldn't find marker for proof obligation")
           print(proofObligationMapping)
           print(line)
           print(file)
           fatalError()
         }
-        mapping[boogieLine] = sourceLocation
+        mapping[boogieLine] = translationInformation
       }
     }
     return mapping

@@ -5,7 +5,7 @@ struct BoogieTranslationIR {
   let holisticTestProcedures: [BIRTopLevelDeclaration]
   let holisticTestEntryPoints: [String]
 
-  let lineMapping: [VerifierMappingKey: SourceLocation]
+  let lineMapping: [ErrorMappingKey: TranslationInformation]
   let callGraph: [String: Set<String>]
 }
 
@@ -41,7 +41,7 @@ struct BIRProcedureDeclaration {
   let modifies: Set<BIRModifiesDeclaration>
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
-  let mark: VerifierMappingKey
+  let mark: ErrorMappingKey
 
   let isHolisticProcedure: Bool
 }
