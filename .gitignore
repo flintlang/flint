@@ -8,6 +8,7 @@ Package.resolved
 
 utils/testRunner/main.sol
 utils/testRunner/test.js
+utils/testRunner/*.bin
 
 bin/
 contracts/
