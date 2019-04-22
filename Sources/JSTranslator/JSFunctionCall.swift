@@ -18,6 +18,11 @@ public class JSFunctionCall : CustomStringConvertible {
         self.args = args
     }
     
+    public func generateTestFrameworkConstructorCall() -> String {
+        
+        return ""
+    }
+    
     private func create_arg_list() -> String {
         var argList = ""
         let lastIndex = args.count - 1
