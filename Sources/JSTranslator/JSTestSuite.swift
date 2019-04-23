@@ -13,6 +13,7 @@ public class JSTestSuite {
     
     private var isFuncTransaction : [String:Bool]
     private var contractFunctionNames : [String]
+    private var contractFunctionInfo : [String : ContractFuncInfo]
     
     private let firstHalf : String =
 """
@@ -120,6 +121,7 @@ function process_test_result(res, test_name) {
         self.JSTestFuncs = []
         self.isFuncTransaction = [:]
         self.contractFunctionNames = []
+        self.contractFunctionInfo = [:]
         self.ast = ast
         loadTestContractVars()
     }
@@ -171,6 +173,10 @@ function process_test_result(res, test_name) {
                 if (allFuncsWithName.count > 0)
                 {
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating
+                    if let resultType = allFuncsWithName[0].declaration.signature.resultType {
+                        contractFunctionInfo[fName] = ContractFuncInfo(type: resultType.name)
+                    }
+    
                     contractFunctionNames.append(fName)
                 }
             }
