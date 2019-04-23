@@ -334,7 +334,7 @@ function process_test_result(res, test_name) {
                 break
             }
         case .functionCall(let fCall):
-            isInstantiation = !fCall.identifier.name.lowercased().contains("assert") && !contractFunctionNames.contains(fCall.identifier.name)
+            isInstantiation = !fCall.identifier.name.lowercased().contains("assert") && !contractFunctionNames.contains(fCall.identifier.name) && fCall.identifier.name.lowercased().contains(self.contractName.lowercased())
             rhsNode = process_func_call(fCall: fCall)
         case .literal(let li):
             if let lit = extract_literal(literalToken: li) {
