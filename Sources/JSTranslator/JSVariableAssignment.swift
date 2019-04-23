@@ -5,12 +5,14 @@ public class JSVariableAssignment : CustomStringConvertible {
     private let isConstant: Bool
     private let rhs : JSNode
     private let isInstantiation: Bool
+    private let resultType: String
     
-    public init(lhs: String, rhs: JSNode, isConstant: Bool, isInstantiation : Bool = false) {
+    public init(lhs: String, rhs: JSNode, isConstant: Bool, resultType: String, isInstantiation : Bool = false) {
         self.lhs = lhs
         self.rhs = rhs
         self.isConstant = isConstant
         self.isInstantiation = isInstantiation
+        self.resultType = resultType
     }
     
     public var description: String {
@@ -24,9 +26,9 @@ public class JSVariableAssignment : CustomStringConvertible {
                 exit(0)
             }
             
-            desc += fCall.generateTestFrameworkConstructorCall() + "/n"
+            desc += fCall.generateTestFrameworkConstructorCall() + "\n"
             
-            desc += "//"
+            desc += "   //"
             
         }
 
