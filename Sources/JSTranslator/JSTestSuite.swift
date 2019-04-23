@@ -26,9 +26,19 @@ const web3 = new Web3();
 const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
-var accountAdd = web3.personal.newAccount("1");
-web3.personal.unlockAccount(accountAdd, "1", 1000);
-web3.eth.defaultAccount = accountAdd;
+const defaultAcc = web3.personal.newAccount("1");
+web3.personal.unlockAccount(defaultAcc, "1", 1000);
+web3.eth.defaultAccount = defaultAcc;
+
+function setAddr(addr) {
+    web3.personal.unlockAccount(addr, "1", 1000);
+    web3.eth.defaultAccount = addr;
+}
+
+function unsetAddr() {
+    web3.personal.unlockAccount(defaultAcc, "1", 1000);
+    web3.eth.defaultAccount = defaultAcc;
+}
 
 async function deploy_contract(abi, bytecode) {
     let gasEstimate = eth.estimateGas({data: bytecode});
@@ -36,7 +46,7 @@ async function deploy_contract(abi, bytecode) {
 
     return new Promise (function(resolve, reject) {
     localContract.new({
-      from:accountAdd,
+      from:defaultAcc,
       data:bytecode,
       gas:gasEstimate}, function(err, contract){
        if(!err) {
@@ -104,6 +114,25 @@ function assertEqual(result_dict, expected, actual) {
     }
 
     return result_dict
+}
+
+async function assertCallerSat(result_dict, fncName, args, t_contract) {
+    let tx_hash = await transactional_method(t_contract, fncName, args);
+    let receipt = eth.getTransactionReceipt(tx_hash);
+    let result = !(receipt.status === "0x0");
+    result_dict['result'] = result && result_dict['result'];
+
+    if (result && result_dict['result']) {
+            result_dict['msg'] = "has Passed";
+    } else {
+           result_dict['msg'] = "has Failed";
+    }
+}
+
+function newAddress() {
+    let newAcc = web3.personal.newAccount("1");
+    web3.personal.unlockAccount(newAcc, "1", 1000);
+    return newAcc;
 }
 
 function process_test_result(res, test_name) {
