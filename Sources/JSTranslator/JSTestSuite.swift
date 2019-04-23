@@ -147,6 +147,14 @@ async function assertCallerSat(result_dict, fncName, args, t_contract) {
     }
 }
 
+async function assertCanCallInThisState(result_dict, fncName, args, t_contract) {
+    await assertCallerSat(result_dict, fncName, args, t_contract)
+}
+
+async function assertCantCallInThisState(result_dict, fncName, args, t_contract) {
+    await assertCallerUnsat(result_dict, fncName, args, t_contract)
+}
+
 function newAddress() {
     let newAcc = web3.personal.newAccount("1");
     web3.personal.unlockAccount(newAcc, "1", 1000);
