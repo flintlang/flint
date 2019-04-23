@@ -106,7 +106,6 @@ function assertEqual(result_dict, expected, actual) {
     let result = expected === actual;
     result_dict['result'] = result && result_dict['result'];
 
-    // do I want to keep updating the msg
     if (result && result_dict['result']) {
         result_dict['msg'] = "has Passed";
     } else {
@@ -116,10 +115,29 @@ function assertEqual(result_dict, expected, actual) {
     return result_dict
 }
 
-async function assertCallerSat(result_dict, fncName, args, t_contract) {
+async function isRevert(result_dict, fncName, args, t_contract) {
     let tx_hash = await transactional_method(t_contract, fncName, args);
     let receipt = eth.getTransactionReceipt(tx_hash);
-    let result = !(receipt.status === "0x0");
+    let result = (receipt.status === "0x0");
+    return result
+}
+
+async function assertCallerUnsat(result_dict, fncName, args, t_contract) {
+    let result = await isRevert(result_dict, fncName, args, t_contract);
+
+    result_dict['result'] = result && result_dict['result'];
+
+    if (result && result_dict['result']) {
+            result_dict['msg'] = "has Passed";
+    } else {
+           result_dict['msg'] = "has Failed";
+    }
+}
+
+async function assertCallerSat(result_dict, fncName, args, t_contract) {
+    let result = await isRevert(result_dict, fncName, args, t_contract);
+    result = !result
+
     result_dict['result'] = result && result_dict['result'];
 
     if (result && result_dict['result']) {
