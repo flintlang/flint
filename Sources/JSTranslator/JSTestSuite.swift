@@ -90,7 +90,7 @@ async function transactional_method(contract, methodName, args) {
     let isMined = await check_tx_mined(tx_hash);
 
     return new Promise(function(resolve, reject) {
-        resolve(isMined);
+        resolve(tx_hash);
     });
 }
 
@@ -107,7 +107,7 @@ function assertEqual(result_dict, expected, actual) {
     result_dict['result'] = result && result_dict['result'];
 
     // do I want to keep updating the msg
-    if (result) {
+    if (result && result_dict['result']) {
         result_dict['msg'] = "has Passed";
     } else {
         result_dict['msg'] = "has Failed";
