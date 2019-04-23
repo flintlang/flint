@@ -1,0 +1,32 @@
+contract TestCounter {
+  let filePath : String = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/examples/valid/Counter.flint"
+  let contractName: String = "Counter"   
+  let TestSuiteName : String  = "<Add a name for this test suite>"
+}
+
+TestCounter :: (any) {
+
+  public func test_caller_caps_positive() {
+   let addr1 : Address =  newAddress()
+   let addr2 : Address = newAddress()
+
+   let c : Counter = Counter(addr1)
+   
+   setAddr(addr1)
+   assertCallerSat("getValue")
+   unsetAddr()
+  }   
+
+  public func test_caller_caps_negative() {
+   let addr1 : Address =  newAddress()
+   let addr2 : Address = newAddress()
+
+   let c : Counter = Counter(addr1)
+   
+   setAddr(addr2)
+   assertCallerSat("getValue")
+   unsetAddr()
+  }   
+
+}
+
