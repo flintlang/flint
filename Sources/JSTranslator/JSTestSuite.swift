@@ -237,6 +237,31 @@ function process_test_result(res, test_name) {
         return JSTestFunction(name: fName, stmts: jsStmts)
     }
     
+    private func extract_literal(literalToken : Token) -> JSNode? {
+        switch (literalToken.kind) {
+        case .literal(let lit):
+            switch (lit) {
+            case .decimal(let dec):
+                switch (dec) {
+                case .integer(let val):
+                    return .Literal(.Integer(val))
+                default:
+                    break
+                }
+            case .address(let s):
+                return .Literal(.String(s))
+            case .string(let s):
+                return .Literal(.String(s))
+            default:
+                return nil
+            }
+        default:
+            return nil
+        }
+        
+        return nil
+    }
+    
     
     private func process_func_call_args(args : [FunctionArgument]) -> [JSNode] {
         
@@ -248,27 +273,9 @@ function process_test_result(res, test_name) {
             {
             case .identifier(let i):
                 jsArgs.append(.Variable(JSVariable(variable: i.name)))
-            // this should process literals and extract values from literals
             case .literal(let l):
-                switch (l.kind) {
-                case .literal(let lit):
-                    switch (lit) {
-                    case .decimal(let dec):
-                        switch (dec) {
-                        case .integer(let val):
-                            jsArgs.append(.Literal(.Integer(val)))
-                        default:
-                            break
-                        }
-                    case .address(let s):
-                        jsArgs.append(.Literal(.String(s)))
-                    case .string(let s):
-                        jsArgs.append(.Literal(.String(s)))
-                    default:
-                        break
-                    }
-                default:
-                    break
+                if let lit = extract_literal(literalToken: l) {
+                    jsArgs.append(lit)
                 }
             default:
                 break
@@ -312,7 +319,7 @@ function process_test_result(res, test_name) {
             break
         }
         
-        // we need to do function call
+        
         switch (binExp.rhs) {
         case .binaryExpression(let binExpr):
             switch (binExpr.op.kind) {
@@ -329,6 +336,10 @@ function process_test_result(res, test_name) {
         case .functionCall(let fCall):
             isInstantiation = !fCall.identifier.name.lowercased().contains("assert") && !contractFunctionNames.contains(fCall.identifier.name)
             rhsNode = process_func_call(fCall: fCall)
+        case .literal(let li):
+            if let lit = extract_literal(literalToken: li) {
+                rhsNode = lit
+            }
         default:
             break
         }
