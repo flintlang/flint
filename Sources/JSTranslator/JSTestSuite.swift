@@ -84,6 +84,10 @@ async function transactional_method(contract, methodName, args) {
     });
 }
 
+function call_method_string(contract, methodName, args) {
+    return contract[methodName]['call'](...args);
+}
+
 function call_method_int(contract, methodName, args) {
     return contract[methodName]['call'](...args).toNumber();
 }
