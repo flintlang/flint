@@ -260,6 +260,10 @@ function process_test_result(res, test_name) {
                         default:
                             break
                         }
+                    case .address(let s):
+                        jsArgs.append(.Literal(.String(s)))
+                    case .string(let s):
+                        jsArgs.append(.Literal(.String(s)))
                     default:
                         break
                     }
