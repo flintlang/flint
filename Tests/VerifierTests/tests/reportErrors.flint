@@ -52,7 +52,25 @@ C :: (any) {
   {
     i = 2
     //VERIFY-FAIL
-    A(i: 2)
+    A(i: 6)
     i = 3
+  }
+
+  // Out of bounds array access
+  func H()
+  {
+    var js: Int[2] = [1, 2]
+    //VERIFY-FAIL
+    var j: Int = js[2]
+  }
+
+  // Asset destruction
+  @payable
+  //VERIFY-FAIL
+  func I(implicit w: Wei)
+    mutates (Wei.rawValue)
+  {
+    var y: Wei = w
+    y = Wei(0)
   }
 }

@@ -12,7 +12,7 @@ extension BoogieTranslator {
       case BExpression.identifier, BExpression.mapRead, BExpression.nop:
         break
       default:
-        statements.append(.expression(bExpression, registerProofObligation(expression.sourceLocation)))
+        statements.append(.expression(bExpression, TranslationInformation(sourceLocation: expression.sourceLocation)))
       }
       return statements + postStatements
 
@@ -23,7 +23,7 @@ extension BoogieTranslator {
         statements += preStatements
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr,
-                                      registerProofObligation(returnStatement.sourceLocation)))
+                                      TranslationInformation(sourceLocation: returnStatement.sourceLocation)))
         statements += postStatements
       }
       return statements
@@ -38,7 +38,7 @@ extension BoogieTranslator {
         print("Unknown expression in becomeStatement \(becomeStatement.expression)")
         fatalError()
       }
-      return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)), registerProofObligation(becomeStatement.sourceLocation))]
+      return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)), TranslationInformation(sourceLocation: becomeStatement.sourceLocation))]
 
     case .ifStatement(let ifStatement):
       let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition)
@@ -51,7 +51,7 @@ extension BoogieTranslator {
         .ifStatement(BIfStatement(condition: condExpr,
                                   trueCase: trueCase,
                                   falseCase: falseCase,
-                                  mark: registerProofObligation(ifStatement.sourceLocation))
+                                  ti: TranslationInformation(sourceLocation: ifStatement.sourceLocation))
         )] + postCondStmt
 
     case .forStatement(let forStatement):
@@ -64,7 +64,7 @@ extension BoogieTranslator {
                                                                  rawName: indexName,
                                                                  type: .int))
       let incrementIndex = BStatement.assignment(index, .add(index, .integer(BigUInt(1))),
-                                                 registerProofObligation(forStatement.sourceLocation))
+                                                 TranslationInformation(sourceLocation: forStatement.sourceLocation))
 
       // Create for loop variable
       // Some variable types require shadow variables, eg dictionaries (array of keys)
@@ -115,7 +115,7 @@ extension BoogieTranslator {
           finalIndexValue = bound
         }
 
-        assignValueToVariable = BStatement.assignment(loopVariable, index, registerProofObligation(forStatement.sourceLocation))
+        assignValueToVariable = BStatement.assignment(loopVariable, index, TranslationInformation(sourceLocation: forStatement.sourceLocation))
         initialIndexValue = start
 
       case .arrayLiteral:
@@ -131,7 +131,7 @@ extension BoogieTranslator {
 
         assignValueToVariable = BStatement.assignment(loopVariable,
                                                       .mapRead(iterableIdentifier, index),
-                                                      registerProofObligation(forStatement.sourceLocation))
+                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
 
@@ -150,7 +150,7 @@ extension BoogieTranslator {
         assignValueToVariable = BStatement.assignment(loopVariable,
                                                       .mapRead(iterableIdentifier,
                                                                .mapRead(keysExpr, index)),
-                                                      registerProofObligation(forStatement.sourceLocation))
+                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + dictLitIdentifier)
 
@@ -168,7 +168,7 @@ extension BoogieTranslator {
 
           assignValueToVariable = BStatement.assignment(loopVariable,
                                                         .mapRead(indexableExpr, index),
-                                                        registerProofObligation(forStatement.sourceLocation))
+                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
@@ -182,7 +182,7 @@ extension BoogieTranslator {
 
           assignValueToVariable = BStatement.assignment(loopVariable,
                                                         .mapRead(iterableExpr, .mapRead(iterableKeys, index)),
-                                                        registerProofObligation(forStatement.sourceLocation))
+                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
@@ -194,7 +194,7 @@ extension BoogieTranslator {
 
       let assignIndexInitialValue = BStatement.assignment(index,
                                                           initialIndexValue,
-                                                          registerProofObligation(forStatement.sourceLocation))
+                                                          TranslationInformation(sourceLocation: forStatement.sourceLocation))
 
       // - create invariant, which says it's always increasing
       // - use to index into iterable - work out how to index into iterable (helper?)
@@ -208,9 +208,8 @@ extension BoogieTranslator {
       // index should be less than finalIndexValue
       let loopInvariantExpression: BExpression = .lessThanOrEqual(index, finalIndexValue)
       //.lessThan(.old(index), index)
-      let loopInvariants = [BProofObligation(expression: loopInvariantExpression,
-                                             mark: registerProofObligation(forStatement.sourceLocation),
-                                             obligationType: .loopInvariant)
+      let loopInvariants = [BLoopInvariant(expression: loopInvariantExpression,
+                                             ti: TranslationInformation(sourceLocation: forStatement.sourceLocation))
                            ]
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
@@ -219,7 +218,7 @@ extension BoogieTranslator {
           condition: .lessThan(index, finalIndexValue),
           body: body,
           invariants: loopInvariants,
-          mark: registerProofObligation(forStatement.sourceLocation)
+          ti: TranslationInformation(sourceLocation: forStatement.sourceLocation)
         )
         )] + postAmbleStmts
 
@@ -286,11 +285,9 @@ extension BoogieTranslator {
 
         var stmts = [BStatement]()
         // Only select 1 half of pre/post invariants
-        let tldInvariants = self.tldInvariants.values.flatMap({ $0 }).filter({ $0.obligationType.isPreCondition })
-        for invariant in tldInvariants {
-          stmts.append(.assertStatement(BProofObligation(expression: invariant.expression,
-                                                         mark: invariant.mark,
-                                                         obligationType: .assertion)))
+        for invariant in self.tldInvariants.values.flatMap({ $0 }) {
+          stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
+                                                         ti: invariant.ti)))
         }
 
         guard let scopeContext = getCurrentScopeContext() else {
@@ -317,8 +314,8 @@ extension BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: successValueVariable,
                                                                    rawName: successValueVariable,
                                                                    type: .boolean))
-        stmts.append(.havoc(returnValueVariable, registerProofObligation(expression.sourceLocation)))
-        stmts.append(.havoc(successValueVariable, registerProofObligation(expression.sourceLocation)))
+        stmts.append(.havoc(returnValueVariable, TranslationInformation(sourceLocation: expression.sourceLocation)))
+        stmts.append(.havoc(successValueVariable, TranslationInformation(sourceLocation: expression.sourceLocation)))
 
         var trueStatements = [BStatement]()
         if let nextStatement = self.enclosingDoBody.first {
@@ -329,7 +326,7 @@ extension BoogieTranslator {
         let handleExceptionIf = BIfStatement(condition: .identifier(successValueVariable),
                                              trueCase: trueStatements,
                                              falseCase: self.enclosingCatchBody,
-                                             mark: registerProofObligation(expression.sourceLocation))
+                                             ti: TranslationInformation(sourceLocation: expression.sourceLocation))
 
         stmts.append(.ifStatement(handleExceptionIf))
         return (.identifier(returnValueVariable), stmts, [])
@@ -440,22 +437,22 @@ extension BoogieTranslator {
     case .plusEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .add(lhsExpr, rhsExpr),
-                                              registerProofObligation(binaryExpression.sourceLocation))],
+                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
              postStmts)
     case .minusEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .subtract(lhsExpr, rhsExpr),
-                                              registerProofObligation(binaryExpression.sourceLocation))],
+                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
              postStmts)
     case .timesEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .multiply(lhsExpr, rhsExpr),
-                                              registerProofObligation(binaryExpression.sourceLocation))],
+                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
               postStmts)
     case .divideEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
                                               .divide(lhsExpr, rhsExpr),
-                                              registerProofObligation(binaryExpression.sourceLocation))],
+                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
               postStmts)
     case .plus:
       return (.add(lhsExpr, rhsExpr), preStmts, postStmts)
@@ -544,7 +541,7 @@ extension BoogieTranslator {
       let rhsSizeExpr: BExpression
       if case .arrayLiteral = rhs {
         let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
-        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, registerProofObligation(lhs.sourceLocation))]
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, TranslationInformation(sourceLocation: lhs.sourceLocation))]
         postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -554,7 +551,7 @@ extension BoogieTranslator {
       } else {
         // Assignment between two identifiers of sorts
         let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, registerProofObligation(lhs.sourceLocation))]
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
         rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
         postAmbleStmts += postRhsStmts
       }
@@ -563,14 +560,14 @@ extension BoogieTranslator {
       //  - size
       // Get size shadow variable and set equal to iterableIdentifier size shadowvariable
       let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
-      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, registerProofObligation(lhs.sourceLocation)))
+      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
 
     case .dictionaryType:
       let rhsSizeExpr: BExpression
       let rhsKeysExpr: BExpression
       if case .dictionaryLiteral = rhs {
         let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
-        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, registerProofObligation(lhs.sourceLocation))]
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, TranslationInformation(sourceLocation: lhs.sourceLocation))]
         postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -581,7 +578,7 @@ extension BoogieTranslator {
       } else {
         // Assignment between two identifiers of sorts
         let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, registerProofObligation(lhs.sourceLocation))]
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
         postAmbleStmts += postRhsStmts
         rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
         rhsKeysExpr =  getDictionaryKeysExpression(dict: rhs)
@@ -592,13 +589,13 @@ extension BoogieTranslator {
       // Get size + keys shadow variable and set equal to iterableIdentifier size + keys shadowvariable
       let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
       let lhsKeysExpr =  getDictionaryKeysExpression(dict: lhs)
-      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, registerProofObligation(lhs.sourceLocation)))
-      assignmentStatements.append(.assignment(lhsKeysExpr, rhsKeysExpr, registerProofObligation(lhs.sourceLocation)))
+      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
+      assignmentStatements.append(.assignment(lhsKeysExpr, rhsKeysExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
 
     default:
       let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
       postAmbleStmts += postRhsStmts
-      assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, registerProofObligation(lhs.sourceLocation))]
+      assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
     }
 
     return (lhsExpr, assignmentStatements, postAmbleStmts)
@@ -640,7 +637,7 @@ extension BoogieTranslator {
         assignmentStmts += preStatements
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), .integer(BigUInt(counter))),
                                            bExpr,
-                                           registerProofObligation(iterable.sourceLocation)))
+                                           TranslationInformation(sourceLocation: iterable.sourceLocation)))
         postAmbleStmts += postStmts
         counter += 1
       }
@@ -649,7 +646,7 @@ extension BoogieTranslator {
       let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
       assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
                                          .integer(BigUInt(counter)),
-                                         registerProofObligation(iterable.sourceLocation)))
+                                         TranslationInformation(sourceLocation: iterable.sourceLocation)))
 
     case .dictionaryLiteral(let dictionaryLiteral):
       var counter = 0
@@ -673,13 +670,13 @@ extension BoogieTranslator {
 
         assignmentStmts.append(.assignment(.mapRead(.identifier(literalVariableName), bKeyExpr),
                                            bValueExpr,
-                                           registerProofObligation(iterable.sourceLocation)))
+                                           TranslationInformation(sourceLocation: iterable.sourceLocation)))
 
         // Shadow variables
         // Set keys shadow variable to stated dictionary keys
         assignmentStmts.append(.assignment(.mapRead(.identifier(keysShadowVariableName), .integer(BigUInt(counter))),
                                            bKeyExpr,
-                                           registerProofObligation(iterable.sourceLocation)))
+                                           TranslationInformation(sourceLocation: iterable.sourceLocation)))
 
         counter += 1
       }
@@ -688,7 +685,7 @@ extension BoogieTranslator {
       let sizeShadowVariableName = normaliser.getShadowArraySizePrefix(depth: 0) + literalVariableName
       assignmentStmts.append(.assignment(.identifier(sizeShadowVariableName),
                                          .integer(BigUInt(counter)),
-                                         registerProofObligation(iterable.sourceLocation)))
+                                         TranslationInformation(sourceLocation: iterable.sourceLocation)))
 
     default:
       print("unable to process iterable literal - not an iterable!: \(iterable)")
@@ -906,11 +903,11 @@ extension BoogieTranslator {
                                                      // increment size variable
                                                      .assignment(sizeShadowVariable,
                                                                  .add(sizeShadowVariable, .integer(BigUInt(1))),
-                                                                 registerProofObligation(subscriptExpression.sourceLocation)
+                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)
                                                                  )
                                                    ],
                                                    falseCase: [],
-                                                   mark: registerProofObligation(subscriptExpression.sourceLocation))))
+                                                   ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))))
       case .dictionaryType:
         // does keys contain key? - if so, add it!
         //counter = 0
@@ -949,27 +946,27 @@ extension BoogieTranslator {
                                                                          indxExpr),
                                                       trueCase: [.assignment(containsKey,
                                                                  .boolean(true),
-                                                                 registerProofObligation(subscriptExpression.sourceLocation))],
+                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))],
                                                       falseCase: [],
-                                                      mark: registerProofObligation(subscriptExpression.sourceLocation))),
+                                                      ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))),
                             .assignment(counter,
                                         .add(counter, .integer(BigUInt(1))),
-                                        registerProofObligation(subscriptExpression.sourceLocation))
+                                        TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
                           ],
                           invariants: [],
-                          mark: registerProofObligation(subscriptExpression.sourceLocation))
+                          ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
         let update = BIfStatement(condition: .not(containsKey),
                                   trueCase: [
                                     // increment size variable
                                     .assignment(sizeShadowVariable,
                                                 .add(sizeShadowVariable, .integer(BigUInt(1))),
-                                                registerProofObligation(subscriptExpression.sourceLocation))
+                                                TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
                                   ],
                                   falseCase: [],
-                                  mark: registerProofObligation(subscriptExpression.sourceLocation))
+                                  ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
 
-        postAmble.append(.assignment(counter, .integer(BigUInt(0)), registerProofObligation(subscriptExpression.sourceLocation)))
-        postAmble.append(.assignment(containsKey, .boolean(false), registerProofObligation(subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(counter, .integer(BigUInt(0)), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(containsKey, .boolean(false), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
         postAmble.append(.whileStatement(checkingContains))
         postAmble.append(.ifStatement(update))
       default: break
@@ -992,9 +989,8 @@ extension BoogieTranslator {
     } else {
       accessAssertExpression = .lessThanOrEqual(indxExpr, sizeShadowVariable)
     }
-    let assertValidAccess = BStatement.assertStatement(BProofObligation(expression: accessAssertExpression,
-                                                                        mark: registerProofObligation(subscriptExpression.sourceLocation),
-                                                                        obligationType: .assertion))
+    let assertValidAccess = BStatement.assertStatement(BAssertStatement(expression: accessAssertExpression,
+                                                                        ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
     // Only add assert check, if array type
     switch baseExpressionType {
     case .arrayType, .fixedSizeArrayType:

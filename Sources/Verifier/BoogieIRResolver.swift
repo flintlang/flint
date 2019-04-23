@@ -51,25 +51,41 @@ class BoogieIRResolver: IRResolver {
       }
     }
 
-    let mapping = generateFlint2BoogieMapping(code: "\(BTopLevelProgram(declarations: declarations))",
-                                              proofObligationMapping: ir.lineMapping)
     return FlintBoogieTranslation(boogieTlds: declarations,
                                   holisticTestProcedures: holisticDeclarations,
-                                  holisticTestEntryPoints: ir.holisticTestEntryPoints,
-                                  lineMapping: mapping)
+                                  holisticTestEntryPoints: ir.holisticTestEntryPoints)
   }
 
   private func resolve(irProcedureDeclaration: BIRProcedureDeclaration) -> BProcedureDeclaration {
     let modifies = self.procedureModifies[irProcedureDeclaration.name] ?? Set<BModifiesDeclaration>()
+
+    // Resolve invariants -> convert into pre+post
+    var preConditions = irProcedureDeclaration.preConditions
+    var postConditions = irProcedureDeclaration.postConditions
+
+    for invariant in irProcedureDeclaration.structInvariants {
+      // Add pre and post, even for struct inits, because nextInstance will have incremented for inits
+      preConditions.append(BPreCondition(expression: invariant.expression, ti: invariant.ti))
+      postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
+    }
+
+    for invariant in irProcedureDeclaration.contractInvariants + irProcedureDeclaration.globalInvariants {
+      if !irProcedureDeclaration.isContractInit {
+        preConditions.append(BPreCondition(expression: invariant.expression, ti: invariant.ti))
+      }
+      postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
+    }
+
     return BProcedureDeclaration(name: irProcedureDeclaration.name,
                                  returnType: irProcedureDeclaration.returnType,
                                  returnName: irProcedureDeclaration.returnName,
                                  parameters: irProcedureDeclaration.parameters,
-                                 prePostConditions: irProcedureDeclaration.prePostConditions,
+                                 preConditions: preConditions,
+                                 postConditions: postConditions,
                                  modifies: modifies,
                                  statements: irProcedureDeclaration.statements,
                                  variables: irProcedureDeclaration.variables,
-                                 mark: irProcedureDeclaration.mark)
+                                 ti: irProcedureDeclaration.ti)
   }
 
   private func resolveMutates(callGraph: [String: Set<String>],
@@ -91,44 +107,5 @@ class BoogieIRResolver: IRResolver {
       }
     }
     return modifies.mapValues({ Set<BModifiesDeclaration>($0.map({ BModifiesDeclaration(variable: $0.variable) })) })
-  }
-
-  private func generateFlint2BoogieMapping(code: String,
-                                           proofObligationMapping: [ErrorMappingKey: TranslationInformation]) -> [Int: TranslationInformation] {
-    var mapping = [Int: TranslationInformation]()
-
-    let lines = code.trimmingCharacters(in: .whitespacesAndNewlines)
-                               .components(separatedBy: "\n")
-    var boogieLine = 1 // Boogie starts counting lines from 1
-    for line in lines {
-      // Pre increment because assert markers precede asserts and pre/post condits
-      boogieLine += 1
-
-      // Look for ASSERT markers
-      let matches = line.groups(for: "// #MARKER# ([0-9]+) ([0-9]+) (.*)")
-      if matches.count == 1 {
-        // Extract line number
-        let line = Int(matches[0][1])!
-        if line < 0 { //Invalid
-          continue
-        }
-
-        let column = Int(matches[0][2])!
-        if column < 0 { //Invalid
-          continue
-        }
-
-        let file: String = matches[0][3]
-        guard let translationInformation = proofObligationMapping[ErrorMappingKey(file: file, flintLine: line, column: column)] else {
-          print("Couldn't find marker for proof obligation")
-          print(proofObligationMapping)
-          print(line)
-          print(file)
-          fatalError()
-        }
-        mapping[boogieLine] = translationInformation
-      }
-    }
-    return mapping
   }
 }

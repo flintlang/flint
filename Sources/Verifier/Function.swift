@@ -190,14 +190,13 @@ extension BoogieTranslator {
     case "assert":
       // assert that assert function call always has one argument
       assert (argumentsExpressions.count == 1)
-      argumentsStatements.append(.assertStatement(BProofObligation(expression: argumentsExpressions[0],
-                                                                   mark: registerProofObligation(functionCall.sourceLocation),
-                                                                   obligationType: .assertion)))
+      argumentsStatements.append(.assertStatement(BAssertStatement(expression: argumentsExpressions[0],
+                                                                   ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     // Handle fatal error case
     case "fatalError":
-      argumentsStatements.append(.assume(.boolean(false), registerProofObligation(functionCall.sourceLocation)))
+      argumentsStatements.append(.assume(.boolean(false), TranslationInformation(sourceLocation: functionCall.sourceLocation)))
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "send":
@@ -210,7 +209,7 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                                  procedureName: procedureName,
                                                                  arguments: argumentsExpressions,
-                                                                 mark: registerProofObligation(functionCall.sourceLocation)))
+                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, procedureName)
       return (.nop, triggerPreStmts + [functionCall], argumentPostStmts + triggerPostStmts)
@@ -252,7 +251,7 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [returnValueVariable],
                                                                  procedureName: functionName,
                                                                  arguments: argumentsExpressions,
-                                                                 mark: registerProofObligation(functionCall.sourceLocation)))
+                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
@@ -267,7 +266,7 @@ extension BoogieTranslator {
       argumentsStatements.append(.callProcedure(BCallProcedure(returnedValues: [],
                                                                procedureName: functionName,
                                                                arguments: argumentsExpressions,
-                                                               mark: registerProofObligation(functionCall.sourceLocation))))
+                                                               ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, functionName)
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
@@ -289,7 +288,7 @@ extension BoogieTranslator {
                 isContractInit: Bool = false,
                 callerProtections: [CallerProtection] = [],
                 callerBinding: Identifier? = nil,
-                structInvariants: [BProofObligation] = [],
+                structInvariants: [BIRInvariant] = [],
                 typeStates: [TypeState] = []
                 ) -> BIRTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
@@ -318,7 +317,8 @@ extension BoogieTranslator {
     var functionPostAmble = [BStatement]()
     var functionPreAmble = [BStatement]()
 
-    var prePostConditions = [BProofObligation]()
+    var preConditions = [BPreCondition]()
+    var postConditions = [BPostCondition]()
     var bParameters = [BParameterDeclaration]()
     for param in parameters {
       let (bParam, initStatements) = processParameter(param)
@@ -341,10 +341,10 @@ extension BoogieTranslator {
           let reserveNextStructInstance: [BStatement] = [
             .assignment(.identifier(self.structInstanceVariableName!),
                         .identifier(nextInstance),
-                        registerProofObligation(functionDeclaration.sourceLocation)),
+                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)),
             .assignment(.identifier(nextInstance),
                         .add(.identifier(nextInstance), .integer(1)),
-                        registerProofObligation(functionDeclaration.sourceLocation))
+                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation))
           ]
           // Include nextInstance in modifies
           var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
@@ -355,16 +355,15 @@ extension BoogieTranslator {
           let returnAllocatedStructInstance: [BStatement] = [
             .assignment(.identifier(returnName!),
                         .identifier(self.structInstanceVariableName!),
-                        registerProofObligation(functionDeclaration.sourceLocation))
+                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation))
             //.returnStatement
           ]
 
           let structInitPost: BExpression =
             .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
-          prePostConditions.append(BProofObligation(expression: structInitPost,
-                                                    mark: registerProofObligation(functionDeclaration.sourceLocation),
-                                                    obligationType: .postCondition))
+          postConditions.append(BPostCondition(expression: structInitPost,
+                                              ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)))
 
           functionPreAmble += reserveNextStructInstance
           functionPostAmble += returnAllocatedStructInstance
@@ -382,13 +381,11 @@ extension BoogieTranslator {
     for condition in signature.prePostConditions {
       switch condition {
       case .pre(let e):
-        prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: registerProofObligation(e.sourceLocation),
-                                                  obligationType: .preCondition))
+        preConditions.append(BPreCondition(expression: process(e).0,
+                                           ti: TranslationInformation(sourceLocation: e.sourceLocation)))
       case .post(let e):
-        prePostConditions.append(BProofObligation(expression: process(e).0,
-                                                  mark: registerProofObligation(e.sourceLocation),
-                                                  obligationType: .postCondition))
+        postConditions.append(BPostCondition(expression: process(e).0,
+                                             ti: TranslationInformation(sourceLocation: e.sourceLocation)))
       }
     }
 
@@ -401,25 +398,22 @@ extension BoogieTranslator {
         if isStructInit {
           assignments.append(.assignment(.mapRead(.identifier(name),
                                                   .identifier(self.structInstanceVariableName!)),
-                                         e, registerProofObligation(expression.sourceLocation)))
+                                         e, TranslationInformation(sourceLocation: expression.sourceLocation)))
         } else {
-          assignments.append(.assignment(.identifier(name), e, registerProofObligation(expression.sourceLocation)))
+          assignments.append(.assignment(.identifier(name), e, TranslationInformation(sourceLocation: expression.sourceLocation)))
         }
         assignments += post
       }
       functionPostAmble += assignments
     }
 
+    // Procedure must hold contract invariants
+    let contractInvariants = (tldInvariants[getCurrentTLDName()] ?? [])
+
     let bStatements = functionIterableSizeAssumptions
                     + functionPreAmble
                     + body.flatMap({x in process(x)})
                     + functionPostAmble
-
-    // Procedure must hold invariant
-    let invariants = (tldInvariants[getCurrentTLDName()] ?? [])
-      // drop contract invariants, if init function
-      .filter({ !(isContractInit || isStructInit) || ($0.obligationType.isPostCondition) }) + structInvariants
-    prePostConditions += invariants
 
     var modifies = [String]()
     // Get mutates from function clause, or from environment if the function was made from a trait
@@ -468,12 +462,18 @@ extension BoogieTranslator {
       returnType: returnType,
       returnName: returnName,
       parameters: bParameters,
-      prePostConditions: callerPreConds + typeStatePreConds + prePostConditions + (!isContractInit ? globalInvariants : []), //Inits should establish
+      preConditions: callerPreConds + typeStatePreConds + preConditions, //Inits should establish
+      postConditions: postConditions,
+      structInvariants: structInvariants,
+      contractInvariants: contractInvariants,
+      globalInvariants: self.globalInvariants,
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      mark: registerProofObligation(functionDeclaration.sourceLocation),
-      isHolisticProcedure: false
+      ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
+      isHolisticProcedure: false,
+      isStructInit: isStructInit,
+      isContractInit: isContractInit
     ))
   }
 }

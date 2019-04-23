@@ -22,11 +22,11 @@ extension TriggerRule {
         return ([], [.assignment(.identifier("totalValue_Wei"),
                             .add(.identifier("totalValue_Wei"), .mapRead(.identifier("rawValue_Wei"),
                                                                          .identifier(implicitWei as! String))),
-                            getMark(parameter.sourceLocation)),
+                            TranslationInformation(sourceLocation: parameter.sourceLocation)),
                      .assignment(.identifier("receivedValue_Wei"),
                             .add(.identifier("receivedValue_Wei"), .mapRead(.identifier("rawValue_Wei"),
                                                                          .identifier(implicitWei as! String))),
-                            getMark(parameter.sourceLocation))])
+                            TranslationInformation(sourceLocation: parameter.sourceLocation))])
       }
       return Rule<Parameter>(condition: isParameterWeiImplicit,
                              rule: updateReceivedAndTotalValue,
@@ -54,7 +54,7 @@ extension TriggerRule {
       let updateReceivedAndTotalValue: ((FunctionDeclaration, Context, ExtraType) -> ([BStatement], [BStatement])) = { functionDeclaration, _, _ in
         return ([], [.assignment(.identifier("totalValue_Wei"),
                             .add(.identifier("totalValue_Wei"), .identifier("unsafeRawValue_initInt_Wei")),
-                            getMark(functionDeclaration.sourceLocation))])
+                            TranslationInformation(sourceLocation: functionDeclaration.sourceLocation))])
       }
 
       return Rule<FunctionDeclaration>(condition: isWeiCreation,
@@ -90,7 +90,7 @@ extension TriggerRule {
         let lhsBExpr = e["lhs_translated_expression"] as! BExpression
         let update = BStatement.assignment(.identifier("totalValue_Wei"),
                                            .subtract(.identifier("totalValue_Wei"), lhsBExpr),
-                                           getMark(binaryExpression.sourceLocation))
+                                           TranslationInformation(sourceLocation: binaryExpression.sourceLocation))
         return ([update], [])
       }
       return Rule<BinaryExpression>(condition: isWeiAssignment,
@@ -103,7 +103,7 @@ extension TriggerRule {
         return function.identifier.name == "init" && c.environment.isContractDeclared(c.enclosingType)
       }
       let updateVariables: ((FunctionDeclaration, Context, ExtraType) -> ([BStatement], [BStatement])) = { function, c, e in
-        let mark = getMark(function.sourceLocation)
+        let mark = TranslationInformation(sourceLocation: function.sourceLocation)
         var preStmts = [BStatement]()
         preStmts.append(.assignment(.identifier("totalValue_Wei"), .integer(0), mark))
         preStmts.append(.assignment(.identifier("sentValue_Wei"), .integer(0), mark))

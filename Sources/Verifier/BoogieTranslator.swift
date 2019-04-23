@@ -32,7 +32,7 @@ class BoogieTranslator {
   var callGraph = [String: Set<String>]()
 
   // Source location that each proof oligation corresponds to
-  var flintProofObligationTranslationInformation = [ErrorMappingKey: TranslationInformation]()
+  var flintProofObligationTranslationInformation = [TranslationInformation.ErrorMappingKey: TranslationInformation]()
 
   // Current behaviour member - function / special / signature declaration ..
   var currentBehaviourMember: ContractBehaviorMember?
@@ -52,9 +52,9 @@ class BoogieTranslator {
   var structGlobalVariables = [String: [String]]()
 
   // List of invariants for each tld
-  var tldInvariants = [String: [BProofObligation]]()
+  var tldInvariants = [String: [BIRInvariant]]()
   // Global invariants - must hold on all contract/struct methods
-  var globalInvariants = [BProofObligation]()
+  var globalInvariants = [BIRInvariant]()
 
   var enums = [String]()
 
@@ -154,7 +154,7 @@ class BoogieTranslator {
 
     // Triggers
     //TODO: Actually parse? expression rules in some format, and use that to register sourceLocations
-    registerProofObligation(SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true))
+    TranslationInformation(sourceLocation: SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true))
     declarations += triggers.globalMetaVariableDeclaration.map({ .variableDeclaration($0) })
     globalInvariants += triggers.invariants
 
@@ -172,24 +172,29 @@ class BoogieTranslator {
           BParameterDeclaration(name: "address", rawName: "address", type: .userDefined("Address")),
           BParameterDeclaration(name: "wei", rawName: "wei", type: .int)
         ],
-        prePostConditions: self.globalInvariants + [BProofObligation(expression:
+        preConditions: [],
+        postConditions: [BPostCondition(expression:
           .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(BigUInt(0))),
-         mark: registerProofObligation(SourceLocation.INVALID),
-         obligationType: .postCondition)],
+         ti: TranslationInformation(sourceLocation: SourceLocation.DUMMY))],
+        structInvariants: [],
+        contractInvariants: [],
+        globalInvariants: self.globalInvariants,
         modifies: [BIRModifiesDeclaration(variable: "rawValue_Wei", userDefined: true)],
         // Drain all wei from struct
         statements: [.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")),
                                  .integer(BigUInt(0)),
-                                 registerProofObligation(SourceLocation.INVALID))],
+                                 TranslationInformation(sourceLocation: SourceLocation.DUMMY))],
 
         variables: [], // TODO: variables
-        mark: registerProofObligation(SourceLocation.INVALID),
-        isHolisticProcedure: false
+        ti: TranslationInformation(sourceLocation: SourceLocation.DUMMY),
+        isHolisticProcedure: false,
+        isStructInit: false,
+        isContractInit: false
         )
       )
     )
 
-    var structInvariants = [BProofObligation]()
+    var structInvariants = [BIRInvariant]()
     for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
       self.currentTLD = .structDeclaration(structDeclaration)
 
@@ -210,12 +215,8 @@ class BoogieTranslator {
 
         self.structInstanceVariableName = nil
 
-        structInvariants.append(BProofObligation(expression: inv,
-                                                      mark: registerProofObligation(declaration.sourceLocation),
-                                                      obligationType: .preCondition))
-        structInvariants.append(BProofObligation(expression: inv,
-                                                      mark: registerProofObligation(declaration.sourceLocation),
-                                                      obligationType: .postCondition))
+        structInvariants.append(BIRInvariant(expression: inv,
+                                                      ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
       }
       self.currentTLD = nil
     }
@@ -317,15 +318,11 @@ class BoogieTranslator {
     }
 
     // TODO: Handle usage of += 1 and preStmts
-    var invariantDeclarations = [BProofObligation]()
+    var invariantDeclarations = [BIRInvariant]()
     for declaration in contractDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
-      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: registerProofObligation(declaration.sourceLocation),
-                                                    obligationType: .preCondition))
-      invariantDeclarations.append(BProofObligation(expression: process(declaration).0,
-                                                    mark: registerProofObligation(declaration.sourceLocation),
-                                                    obligationType: .postCondition))
+      invariantDeclarations.append(BIRInvariant(expression: process(declaration).0,
+                                                    ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
     }
     tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
@@ -393,7 +390,7 @@ class BoogieTranslator {
     return []
   }
 
-   func process(_ structDeclaration: StructDeclaration, _ structInvariantDeclarations: [BProofObligation]) -> [BIRTopLevelDeclaration] {
+   func process(_ structDeclaration: StructDeclaration, _ structInvariantDeclarations: [BIRInvariant]) -> [BIRTopLevelDeclaration] {
     // Skip special global struct - too solidity low level - TODO: Is this necessary?
     if structDeclaration.identifier.name == "Flint$Global" { return [] }
 
@@ -448,7 +445,7 @@ class BoogieTranslator {
   }
 
   func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration,
-               structInvariants: [BProofObligation]) -> [BIRTopLevelDeclaration] {
+               structInvariants: [BIRInvariant]) -> [BIRTopLevelDeclaration] {
     // TODO: Use type states, to generate pre-conditions
     _ = contractBehaviorDeclaration.states
 
@@ -510,20 +507,21 @@ class BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
                                                                    rawName: weiAmount,
                                                                    type: .int))
+        let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
         let procedureName = "initInt_Wei"
-        functionPreAmble.append(.havoc(weiAmount, getMark(parameter.sourceLocation)))
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), getMark(parameter.sourceLocation)))
+        functionPreAmble.append(.havoc(weiAmount, translationInformation))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), translationInformation))
         functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
                                                               procedureName: procedureName,
                                                               arguments: [.identifier(weiAmount)],
-                                                              mark: getMark(parameter.sourceLocation))))
+                                                              ti: translationInformation)))
         guard let currentFunctionName = getCurrentFunctionName() else {
           print("unable to get current function name - while processing parameter")
           fatalError()
         }
         // Add procedure call to callGraph
         addProcedureCall(currentFunctionName, procedureName)
-        registerProofObligation(parameter.sourceLocation)
+        TranslationInformation(sourceLocation: parameter.sourceLocation)
       default: break
       }
     } else {
@@ -581,7 +579,7 @@ class BoogieTranslator {
 
   func processCallerCapabilities(_ callerIdentifiers: [Identifier],
                                  _ binding: Identifier?
-                                 ) -> ([BProofObligation], [BStatement]) {
+                                 ) -> ([BPreCondition], [BStatement]) {
     var preStatements = [BStatement]()
     if let binding = binding {
       let bindingName = binding.name
@@ -592,10 +590,10 @@ class BoogieTranslator {
                                                                  type: .userDefined("Address")))
       preStatements.append(.assignment(.identifier(translatedName),
                                        .identifier(translateGlobalIdentifierName("caller")),
-                                       registerProofObligation(binding.sourceLocation)))
+                                       TranslationInformation(sourceLocation: binding.sourceLocation)))
     }
 
-    var callerPreConditions = [BProofObligation]()
+    var callerPreConditions = [BPreCondition]()
     for identifier in callerIdentifiers {
       let identifierType = environment.type(of: identifier.name, enclosingType: getCurrentTLDName())
 
@@ -604,10 +602,9 @@ class BoogieTranslator {
       switch identifierType {
       case .basicType(.address):
         callerPreConditions.append(
-          BProofObligation(expression: .equals(.identifier(translateGlobalIdentifierName("caller")),
+          BPreCondition(expression: .equals(.identifier(translateGlobalIdentifierName("caller")),
                                                .identifier(translateGlobalIdentifierName(identifier.name))),
-                           mark: registerProofObligation(identifier.sourceLocation),
-                           obligationType: BProofObligationType.preCondition)
+                           ti: TranslationInformation(sourceLocation: identifier.sourceLocation))
           )
       case.arrayType(.basicType(.address)):
         // eg (exists i: int :: caller == accounts_Bank[i]);
@@ -622,9 +619,8 @@ class BoogieTranslator {
                       )
 
         callerPreConditions.append(
-          BProofObligation(expression: existsExpr,
-                           mark: registerProofObligation(identifier.sourceLocation),
-                           obligationType: BProofObligationType.preCondition)
+          BPreCondition(expression: existsExpr,
+                           ti: TranslationInformation(sourceLocation: identifier.sourceLocation))
           )
       case .functionType([.basicType(.address)], .basicType(.bool)):
         //insert check at start of the function -> if call returns false -> assume false
@@ -644,14 +640,14 @@ class BoogieTranslator {
             .callProcedure(BCallProcedure(returnedValues: [tmpIdentifier],
                                           procedureName: functionName,
                                           arguments: [.identifier(translateGlobalIdentifierName("caller"))],
-                                          mark: registerProofObligation(identifier.sourceLocation))),
+                                          ti: TranslationInformation(sourceLocation: identifier.sourceLocation))),
 
             // check result -> if call returns false, assume false
             .ifStatement(BIfStatement(condition: .not(.identifier(tmpIdentifier)),
                                       trueCase: [BStatement.assume(.boolean(false),
-                                        registerProofObligation(identifier.sourceLocation))],
+                                        TranslationInformation(sourceLocation: identifier.sourceLocation))],
                                       falseCase: [],
-                                      mark: registerProofObligation(identifier.sourceLocation)))
+                                      ti: TranslationInformation(sourceLocation: identifier.sourceLocation)))
         ]
         guard let currentFunctionName = getCurrentFunctionName() else {
           print("unable to get current function name - while processing caller capabilities")
@@ -667,7 +663,7 @@ class BoogieTranslator {
     return (callerPreConditions, preStatements)
   }
 
-  func processTypeStates(_ typeStates: [TypeState]) -> [BProofObligation] {
+  func processTypeStates(_ typeStates: [TypeState]) -> [BPreCondition] {
     var conditions = [BExpression]()
     let typeStates = typeStates.filter({ !$0.isAny })
     for typeState in typeStates {
@@ -682,9 +678,8 @@ class BoogieTranslator {
 
       let sourceLocation = SourceLocation.spanning(typeStates.first!.identifier, to: typeStates.last!.identifier)
 
-      return [BProofObligation(expression: condition,
-                               mark: registerProofObligation(sourceLocation),
-                               obligationType: .preCondition)]
+      return [BPreCondition(expression: condition,
+                               ti: TranslationInformation(sourceLocation: sourceLocation))]
     }
     return []
   }
@@ -780,19 +775,19 @@ class BoogieTranslator {
     switch type {
     case .dictionaryType(_, let valueType):
       assumeStmts.append(.assume(holyDynAccess(identifierName),
-                                 registerProofObligation(source)))
+                                 TranslationInformation(sourceLocation: source)))
 
       assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
     case .arrayType(let valueType):
       assumeStmts.append(.assume(holyDynAccess(identifierName),
-                                 registerProofObligation(source)))
+                                 TranslationInformation(sourceLocation: source)))
       assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
     case .fixedSizeArrayType(let valueType, let size):
       let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(BigUInt(size))) },
                                                  depth: depth,
                                                  isInStruct: isInStruct)
       assumeStmts.append(.assume(holyFixedAccess(identifierName),
-                                 registerProofObligation(source)))
+                                 TranslationInformation(sourceLocation: source)))
       assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
     default: break
     }
@@ -1006,11 +1001,5 @@ class BoogieTranslator {
 
       return .functionApplication(emptyMapPropertyName, [])
     }
-  }
-
-  func registerProofObligation(_ sourceLocation: SourceLocation) -> ErrorMappingKey {
-    let mapping = getMark(sourceLocation)
-    flintProofObligationTranslationInformation[mapping] = TranslationInformation(sourceLocation: sourceLocation)
-    return mapping
   }
 }

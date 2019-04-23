@@ -40,7 +40,7 @@ extension BoogieTranslator {
   func processHolisticSpecification(willSpec: Expression,
                                     contractDeclaration: ContractDeclaration) -> ([BIRTopLevelDeclaration], [String]) {
     let source = willSpec.sourceLocation
-    let mark = registerProofObligation(source)
+    let translationInformation = TranslationInformation(sourceLocation: source)
     let currentContract = contractDeclaration.identifier.name
 
     //TODO: Do analysis on willSpec, see if more than one procedure needs making or something?
@@ -71,18 +71,18 @@ extension BoogieTranslator {
     for initProcedure in initProcedures {
       let procedureName = entryPointBase + randomString(length: 5) //unique identifier
 
-      let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), mark)
-      let havocSelector = BStatement.havoc("selector", mark)
+      let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), translationInformation)
+      let havocSelector = BStatement.havoc("selector", translationInformation)
       let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
-                                                      .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), mark)
+                                                      .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), translationInformation)
       let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
                                                                  selector: selector,
                                                                  tld: currentContract,
-                                                                 mark: mark,
+                                                                 translationInformation: translationInformation,
                                                                  enclosingFunctionName: procedureName)
       procedureVariables = procedureVariables.union(variables)
 
-      let checkUnsat = BStatement.assignment(unsat, .not(bSpec), mark)
+      let checkUnsat = BStatement.assignment(unsat, .not(bSpec), translationInformation)
       let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: unsat,
                                                                  body: [
                                                                    havocSelector,
@@ -90,16 +90,15 @@ extension BoogieTranslator {
                                                                  ] + methodSelection
                                                                    + [checkUnsat],
                                                                  invariants: [],
-                                                                 mark: mark))
-      let assertSpec = BStatement.assertStatement(BProofObligation(expression: bSpec,
-                                                                   mark: mark,
-                                                                   obligationType: .assertion))
+                                                                 ti: translationInformation))
+      let assertSpec = BStatement.assertStatement(BAssertStatement(expression: bSpec,
+                                                                   ti: translationInformation))
       let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
                                                       tld: currentContract)
       let callInit = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                              procedureName: translatedName,
                                                              arguments: [],
-                                                             mark: mark))
+                                                             ti: translationInformation))
       // Add procedure call to callGraph
       addProcedureCall(procedureName, translatedName)
       let procedureStmts = [callInit, initalUnsatFalse, whileUnsat, assertSpec]
@@ -108,12 +107,18 @@ extension BoogieTranslator {
         returnType: nil,
         returnName: nil,
         parameters: [],
-        prePostConditions: [],
+        preConditions: [],
+        postConditions: [],
+        structInvariants: [],
+        contractInvariants: [],
+        globalInvariants: [],
         modifies: Set(), // All variables are modified - will be determined in IR resolution phase
         statements: procedureStmts,
         variables: procedureVariables,
-        mark: mark,
-        isHolisticProcedure: true
+        ti: translationInformation,
+        isHolisticProcedure: true,
+        isStructInit: false,
+        isContractInit: false
       )
       procedureNames.append(procedureName)
       procedureDeclarations.append(.procedureDeclaration(specProcedure))
@@ -125,7 +130,7 @@ extension BoogieTranslator {
   private func generateMethodSelection(functions: [FunctionDeclaration],
                                        selector: BExpression,
                                        tld: String,
-                                       mark: ErrorMappingKey,
+                                       translationInformation: TranslationInformation,
                                        enclosingFunctionName: String) -> ([BStatement], [BVariableDeclaration]) {
     /*
         if (selector == 2) {
@@ -153,7 +158,7 @@ extension BoogieTranslator {
         variables.append(BVariableDeclaration(name: argumentName,
                                               rawName: argumentName,
                                               type: convertType(parameter.type)))
-        ifStmts.append(.havoc(argumentName, mark))
+        ifStmts.append(.havoc(argumentName, translationInformation))
         arguments.append(.identifier(argumentName))
       }
 
@@ -169,14 +174,14 @@ extension BoogieTranslator {
       let procedureCall = BStatement.callProcedure(BCallProcedure(returnedValues: returnedValues,
                                                                   procedureName: procedureName,
                                                                   arguments: arguments,
-                                                                  mark: mark))
+                                                                  ti: translationInformation))
       // Add procedure call to callGraph
       addProcedureCall(enclosingFunctionName, procedureName)
       ifStmts.append(procedureCall)
       selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(BigUInt(counter))),
                                                  trueCase: ifStmts,
                                                  falseCase: [],
-                                                 mark: mark)))
+                                                 ti: translationInformation)))
 
       counter += 1
     }

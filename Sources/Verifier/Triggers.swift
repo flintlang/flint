@@ -9,7 +9,7 @@ import Foundation
 
 struct Trigger {
   public let globalMetaVariableDeclaration: [BVariableDeclaration]
-  public let invariants: [BProofObligation]
+  public let invariants: [BIRInvariant]
 
   private let parameterTriggers: [Rule<Parameter>]
   private let functionCallTriggers: [Rule<FunctionCall>]
@@ -80,18 +80,15 @@ struct Trigger {
     return triggers
   }
 
-  private static func registerInvariants() -> [BProofObligation] {
-    var invariants = [BProofObligation]()
-    for type in [BProofObligationType.preCondition, BProofObligationType.postCondition] {
-      // Wei Accounting
-      // TODO: Pass in SourceLocation - for Wei - determine the syntax needed for this
-      let source = SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true)
-      invariants.append(BProofObligation(expression: .equals(.identifier("totalValue_Wei"),
-                                                             .subtract(.identifier("receivedValue_Wei"),
-                                                                       .identifier("sentValue_Wei"))),
-                                         mark: getMark(source),
-                                         obligationType: type))
-    }
+  private static func registerInvariants() -> [BIRInvariant] {
+    var invariants = [BIRInvariant]()
+    // Wei Accounting
+    // TODO: Pass in SourceLocation - for Wei - determine the syntax needed for this
+    let source = SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true)
+    invariants.append(BIRInvariant(expression: .equals(.identifier("totalValue_Wei"),
+                                                           .subtract(.identifier("receivedValue_Wei"),
+                                                                     .identifier("sentValue_Wei"))),
+                                       ti: TranslationInformation(sourceLocation: source)))
     return invariants
   }
 

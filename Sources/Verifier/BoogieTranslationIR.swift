@@ -5,7 +5,7 @@ struct BoogieTranslationIR {
   let holisticTestProcedures: [BIRTopLevelDeclaration]
   let holisticTestEntryPoints: [String]
 
-  let lineMapping: [ErrorMappingKey: TranslationInformation]
+  let lineMapping: [TranslationInformation.ErrorMappingKey: TranslationInformation]
   let callGraph: [String: Set<String>]
 }
 
@@ -32,16 +32,27 @@ struct BIRModifiesDeclaration: Hashable {
   }
 }
 
+struct BIRInvariant {
+  let expression: BExpression
+  let ti: TranslationInformation
+}
+
 struct BIRProcedureDeclaration {
   let name: String
   let returnType: BType?
   let returnName: String?
   let parameters: [BParameterDeclaration]
-  let prePostConditions: [BProofObligation]
+  let preConditions: [BPreCondition]
+  let postConditions: [BPostCondition]
+  let structInvariants: [BIRInvariant]
+  let contractInvariants: [BIRInvariant]
+  let globalInvariants: [BIRInvariant]
   let modifies: Set<BIRModifiesDeclaration>
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
-  let mark: ErrorMappingKey
+  let ti: TranslationInformation
 
   let isHolisticProcedure: Bool
+  let isStructInit: Bool
+  let isContractInit: Bool
 }

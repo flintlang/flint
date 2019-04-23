@@ -17,70 +17,67 @@ enum BoogieError {
   //case loopInvariantMaintenanceFailure(Int, String)
 }
 
-/*
-enum VerificationFailureExplanation: String {
-  case assertionFailure = "Could not verify assertion holds"
-  case preConditionFailure = "Could not verify pre-condition holds"
-  case postConditionFailure = "Could not verify post-condition is satisfied"
-  case invariantFailure = "Could not verify invariant holds"
-
-  case outOfBoundsAccess = "This could be an out of bounds access"
-}
-*/
-
 enum SymbooglixError {
   case error()
 }
 
-struct ErrorMappingKey: Hashable, CustomStringConvertible {
-  let file: String
-  let flintLine: Int
-  let column: Int
-
-  var hashValue: Int {
-    return file.hashValue + flintLine ^ 2 + column ^ 3
-  }
-
-  var description: String {
-  return "// #MARKER# \(flintLine) \(column) \(file)"
-  }
-
-  public static var DUMMY: ErrorMappingKey {
-    return ErrorMappingKey(file: "", flintLine: -1, column: 0)
-  }
-}
-
 struct TranslationInformation {
   let sourceLocation: SourceLocation
-  //let verificationFailureExplanation: VerificationFailureExplanation?
-}
+  // Some pre + post conditions originally come from flint invariants
+  let isInvariant: Bool
+  let failingMsg: String?
 
-func getMark(_ sourceLocation: SourceLocation) -> ErrorMappingKey {
-  return ErrorMappingKey(file: sourceLocation.file.absoluteString,
-                            flintLine: sourceLocation.line,
-                            column: sourceLocation.column)
+  init(sourceLocation: SourceLocation, failingMsg: String? = nil) {
+    self.sourceLocation = sourceLocation
+    self.isInvariant = false
+    self.failingMsg = failingMsg
+  }
+
+  init(sourceLocation: SourceLocation, isInvariant: Bool) {
+    self.sourceLocation = sourceLocation
+    self.isInvariant = isInvariant
+  }
+
+  var mark: ErrorMappingKey {
+    return ErrorMappingKey(file: self.sourceLocation.file.absoluteString,
+                           flintLine: sourceLocation.line,
+                           column: sourceLocation.column)
+  }
+
+  struct ErrorMappingKey: Hashable, CustomStringConvertible {
+    let file: String
+    let flintLine: Int
+    let column: Int
+
+    var hashValue: Int {
+      return file.hashValue + flintLine ^ 2 + column ^ 3
+    }
+
+    var description: String {
+    return "// #MARKER# \(flintLine) \(column) \(file)"
+    }
+
+    public static var DUMMY: ErrorMappingKey {
+      return ErrorMappingKey(file: "", flintLine: -1, column: 0)
+    }
+  }
 }
 
 struct FlintProofObligationInformation {
 
 }
 
-struct FlintBoogieTranslation: CustomStringConvertible {
+struct FlintBoogieTranslation {
   let boogieTlds: [BTopLevelDeclaration]
   let holisticTestProcedures: [BTopLevelDeclaration]
   let holisticTestEntryPoints: [String]
-  let lineMapping: [Int: TranslationInformation]
 
-  var verificationProgram: BTopLevelProgram {
+  var functionalProgram: BTopLevelProgram {
     return BTopLevelProgram(declarations: boogieTlds)
   }
 
   var holisticProgram: BTopLevelProgram {
     return BTopLevelProgram(declarations: boogieTlds + holisticTestProcedures)
-  }
-
-  var description: String {
-    return verificationProgram.description
   }
 }
 

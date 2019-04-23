@@ -42,15 +42,17 @@ public class BoogieVerifier: Verifier {
     // Returns the boogie translation and a mapping from Boogie line #'s to flint line #'s
     let translationIR = boogieTranslator.translate()
     let translation = BoogieIRResolver().resolve(ir: translationIR)
+    let (functionalBoogieSource, functionalMapping) = translation.functionalProgram.render()
     if dumpVerifierIR {
-      print(translation)
+      print(functionalBoogieSource)
     }
 
     // Verify boogie code
-    let boogieErrors = executeBoogie(boogie: "\(translation)")
-    let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: translation.lineMapping)
+    let boogieErrors = executeBoogie(boogie: functionalBoogieSource)
+    let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: functionalMapping)
     let contractVerified = boogieErrors.count == 0
 
+    // Test holistic spec
     if contractVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0
       && !executeSymbooglix(translation: translation) {
       //TODO: Give more informative feedback - ie, # of runs, # of failing runs
@@ -83,7 +85,8 @@ public class BoogieVerifier: Verifier {
   }
 
   private func executeSymbooglix(translation: FlintBoogieTranslation) -> Bool {//[SymbooglixError] {
-    let tempHolisticFile = writeToTempFile(data: "\(translation.holisticProgram)")
+    let (holisticBoogieSource, holisticMapping) = translation.holisticProgram.render()
+    let tempHolisticFile = writeToTempFile(data: holisticBoogieSource)
     let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
     let workingDir = NSTemporaryDirectory() + UUID().uuidString
     let arguments = [symbooglixLocation, tempHolisticFile.path,
@@ -297,44 +300,65 @@ public class BoogieVerifier: Verifier {
     }
   }
 
+  private func diagnoseFailingPreCondition(_ procTi: TranslationInformation,
+                                           _ preCondTi: TranslationInformation) -> Diagnostic {
+
+    let failingItem = preCondTi.isInvariant ? "invariant" : "pre-condition"
+    let errorMsg = "Could not verify "
+                 + failingItem
+                 + " holds on function call"
+
+    return Diagnostic(severity: .error,
+                      sourceLocation: procTi.sourceLocation,
+                      message: errorMsg,
+                      notes: [
+                        Diagnostic(severity: .warning,
+                                   sourceLocation: preCondTi.sourceLocation,
+                                   message: "This is the failing \(failingItem)")
+                      ])
+  }
+
+  private func diagnoseFailingPostCondition(_ procTi: TranslationInformation,
+                                            _ postCondTi: TranslationInformation) -> Diagnostic {
+
+    let failingItem = postCondTi.isInvariant ? "invariant" : "post-condition"
+    let errorMsg = "Could not verify "
+                 + failingItem
+                 + " holds by end of function"
+
+    return Diagnostic(severity: .error,
+                      sourceLocation: procTi.sourceLocation,
+                      message: errorMsg,
+                      notes: [
+                        Diagnostic(severity: .warning,
+                                   sourceLocation: postCondTi.sourceLocation,
+                                   message: "This is the failing \(failingItem)")
+                      ])
+  }
+
   private func resolveBoogieErrors(errors boogieErrors: [BoogieError],
                                    mapping b2fSourceMapping: [Int: TranslationInformation]) -> [Diagnostic] {
     var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
       case .assertionFailure(let lineNumber):
-        let sourceLocation = lookupSourceLocation(line: lineNumber, mapping: b2fSourceMapping)
+        let ti = lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: sourceLocation,
+                                      sourceLocation: ti.sourceLocation,
                                       message: "Could not verify assertion holds"))
 
       case .preConditionFailure(let procedureCallLine, let preConditionLine):
-        let procSourceLocation = lookupSourceLocation(line: procedureCallLine, mapping: b2fSourceMapping)
-        let preCondSourceLocation = lookupSourceLocation(line: preConditionLine, mapping: b2fSourceMapping)
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: procSourceLocation,
-                                      message: "Could not verify pre-condition on holds",
-                                      notes: [
-                                        Diagnostic(severity: .warning,
-                                                   sourceLocation: preCondSourceLocation,
-                                                   message: "This is the failing pre-condition")
-                                      ]))
+        flintErrors.append(diagnoseFailingPreCondition(lookupTranslationInformation(line: procedureCallLine, mapping: b2fSourceMapping),
+                                                       lookupTranslationInformation(line: preConditionLine, mapping: b2fSourceMapping)))
 
       case .postConditionFailure(let procedureLine, let postLine):
-        let procSourceLocation = lookupSourceLocation(line: procedureLine, mapping: b2fSourceMapping)
-        let postSourceLocation = lookupSourceLocation(line: postLine, mapping: b2fSourceMapping)
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: procSourceLocation,
-                                      message: "Could not verify function post-condition",
-                                      notes: [
-                                        Diagnostic(severity: .warning,
-                                                   sourceLocation: postSourceLocation,
-                                                   message: "This is the post-condition responsible")
-                                      ]))
+        flintErrors.append(diagnoseFailingPostCondition(lookupTranslationInformation(line: procedureLine, mapping: b2fSourceMapping),
+                                                       lookupTranslationInformation(line: postLine, mapping: b2fSourceMapping)))
+
       case .loopInvariantEntryFailure(let invariantLine):
-        let invariantSourceLocation = lookupSourceLocation(line: invariantLine, mapping: b2fSourceMapping)
+        let invariantTi = lookupTranslationInformation(line: invariantLine, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: invariantSourceLocation,
+                                      sourceLocation: invariantTi.sourceLocation,
                                       message: "Could not verify entry to the loop"))
 
       case .modifiesFailure(let line):
@@ -356,12 +380,12 @@ public class BoogieVerifier: Verifier {
     return flintErrors
   }
 
-  private func lookupSourceLocation(line: Int, mapping: [Int: TranslationInformation]) -> SourceLocation {
+  private func lookupTranslationInformation(line: Int, mapping: [Int: TranslationInformation]) -> TranslationInformation {
     guard let translationInformation = mapping[line] else {
       print("cannot find mapping for failing proof obligation on line \(line)")
       fatalError()
     }
-    return translationInformation.sourceLocation
+    return translationInformation
   }
 }
 // swiftlint:enable all
