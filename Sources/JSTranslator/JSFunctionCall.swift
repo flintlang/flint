@@ -75,7 +75,15 @@ public class JSFunctionCall : CustomStringConvertible {
             }
         } else {
             
-            if functionName == "assertCallerSat" || functionName == "assertCallerUnsat" {
+            var assertFuncs : [String] = []
+            assertFuncs.append("assertCallerSat")
+            assertFuncs.append("assertCallerUnsat")
+            assertFuncs.append("assertCanCallInThisState")
+            assertFuncs.append("assertCantCallInThisState")
+            
+            let isCallerOrStateFunc = assertFuncs.contains(functionName)
+            
+            if isCallerOrStateFunc {
                 fCall += "await "
             }
             
@@ -89,11 +97,11 @@ public class JSFunctionCall : CustomStringConvertible {
                 fCall += create_arg_list()
             }
             
-            if args.count < 2 && (functionName == "assertCallerSat" || functionName == "assertCallerUnsat") {
+            if args.count < 2 && isCallerOrStateFunc {
                 fCall += ", []"
             }
             
-            if functionName == "assertCallerSat" || functionName == "assertCallerUnsat" {
+            if isCallerOrStateFunc {
                 fCall += ", t_contract"
             }
             
