@@ -366,9 +366,14 @@ function process_test_result(res, test_name) {
             isTransaction = isFuncTransaction
         }
         
+        var resultType: String = ""
+        if let funcInfo = contractFunctionInfo[fName] {
+            resultType = funcInfo.getType()
+        }
+        
         let isAssert = fName.lowercased().contains("assert")
         
-        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs))
+        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType))
     }
     
     
