@@ -75,19 +75,29 @@ public class JSFunctionCall : CustomStringConvertible {
             }
         } else {
             
+            if functionName == "assertCallerSat" {
+                fCall += "await "
+            }
+            
             if isAssert {
                 fCall += self.functionName + "(" + "assertResult012, "
             } else {
                 fCall += self.functionName + "("
             }
             
-            
             if args.count > 0 {
-                fCall += create_arg_list() + ")"
-            } else {
-                fCall += ")"
+                fCall += create_arg_list()
             }
             
+            if args.count < 2 && functionName == "assertCallerSat" {
+                fCall += ", []"
+            }
+            
+            if functionName == "assertCallerSat" {
+                fCall += ", t_contract"
+            }
+            
+            fCall += ")"
         }
     
         return fCall
