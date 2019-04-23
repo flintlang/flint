@@ -1,0 +1,24 @@
+contract Counter (s1, s2) {
+  var value: Int = 0
+}
+
+Counter @(s1) :: (any) {
+  public init() {
+    become s1
+  } 
+
+  mutating public func changeS2() {
+    become s2 
+  }
+
+  public func getValue() -> Int {
+    return value
+  }
+}
+
+Counter @(s2) :: (any) {
+
+  mutating public func increment() {
+      value += 1
+  }
+}
