@@ -19,8 +19,12 @@ public class JSFunctionCall : CustomStringConvertible {
     }
     
     public func generateTestFrameworkConstructorCall() -> String {
-        
-        return ""
+        if args.count == 0 {
+            return ""
+        }
+        var desc = "await transactional_method(t_contract, \'testFrameworkConstructor\', "
+        desc += "[" + create_arg_list() + "]" + ")"
+        return desc
     }
     
     private func create_arg_list() -> String {
