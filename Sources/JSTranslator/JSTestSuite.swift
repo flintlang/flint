@@ -283,7 +283,7 @@ function process_test_result(res, test_name) {
         var rhsNode : JSNode? = nil
         var type : Bool? = nil
         var name: String? = nil
-        
+        var resultType: String? = nil
         var isInstantiation : Bool = false
       
         
@@ -291,6 +291,23 @@ function process_test_result(res, test_name) {
         case .variableDeclaration(let vdec):
             name = vdec.identifier.name
             type = vdec.isConstant
+            switch (vdec.type.rawType) {
+            case .basicType(let rt):
+                switch (rt) {
+                case .string:
+                    resultType = "String"
+                case .int:
+                    resultType = "Int"
+                case .address:
+                    resultType = "Address"
+                case .bool:
+                    resultType = "Bool"
+                default:
+                    resultType = vdec.type.rawType.name
+                }
+            default:
+                resultType = vdec.type.rawType.name
+            }
         default:
             break
         }
@@ -316,8 +333,7 @@ function process_test_result(res, test_name) {
             break
         }
 
-    
-        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!, isInstantiation: isInstantiation))
+        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!, resultType: resultType!, isInstantiation: isInstantiation))
     }
     
     private func process_dot_expr(binExpr : BinaryExpression) -> JSNode {
