@@ -6,16 +6,18 @@ public class JSFunctionCall : CustomStringConvertible {
     private let functionName: String
     private let args : [JSNode]
     private let contractName : String
+    private let resultType : String
     
     // return type of function call is required
     
-    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode]) {
+    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "") {
         self.contractCall = contractCall
         self.transactionMethod = transactionMethod
         self.isAssert = isAssert
         self.functionName = functionName
         self.contractName = contractName
         self.args = args
+        self.resultType = resultType
     }
     
     public func generateTestFrameworkConstructorCall() -> String {
@@ -57,7 +59,14 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall += ", [])"
                 }
             } else {
-                fCall = "call_method_int(t_contract, " + "'" + self.functionName + "'"
+                if (resultType == "Int") {
+                    fCall = "call_method_int(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "String") {
+                    fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Address") {
+                    fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
+                }
+               
                 if args.count > 0 {
                     fCall += "," + create_arg_list() + ")"
                 } else {
