@@ -989,8 +989,10 @@ extension BoogieTranslator {
     } else {
       accessAssertExpression = .lessThanOrEqual(indxExpr, sizeShadowVariable)
     }
+    let ti = TranslationInformation(sourceLocation: subscriptExpression.sourceLocation,
+                                    failingMsg: ErrorMsg.ArrayOutofBoundsAccess)
     let assertValidAccess = BStatement.assertStatement(BAssertStatement(expression: accessAssertExpression,
-                                                                        ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
+                                                                        ti: ti))
     // Only add assert check, if array type
     switch baseExpressionType {
     case .arrayType, .fixedSizeArrayType:

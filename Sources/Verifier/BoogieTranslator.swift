@@ -216,7 +216,7 @@ class BoogieTranslator {
         self.structInstanceVariableName = nil
 
         structInvariants.append(BIRInvariant(expression: inv,
-                                                      ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+                                             ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
       }
       self.currentTLD = nil
     }

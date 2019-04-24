@@ -304,6 +304,7 @@ public class BoogieVerifier: Verifier {
                                            _ preCondTi: TranslationInformation) -> Diagnostic {
 
     let failingItem = preCondTi.isInvariant ? "invariant" : "pre-condition"
+    let triggerResponsible = preCondTi.triggerName == nil ? "" : "Caused by \(preCondTi.triggerName!) trigger"
     let errorMsg = "Could not verify "
                  + failingItem
                  + " holds on function call"
@@ -314,7 +315,7 @@ public class BoogieVerifier: Verifier {
                       notes: [
                         Diagnostic(severity: .warning,
                                    sourceLocation: preCondTi.sourceLocation,
-                                   message: "This is the failing \(failingItem)")
+                                   message: "This is the failing \(failingItem)\n\(triggerResponsible)")
                       ])
   }
 
@@ -322,6 +323,7 @@ public class BoogieVerifier: Verifier {
                                             _ postCondTi: TranslationInformation) -> Diagnostic {
 
     let failingItem = postCondTi.isInvariant ? "invariant" : "post-condition"
+    let triggerResponsible = postCondTi.triggerName == nil ? "" : "Caused by \(postCondTi.triggerName!) trigger"
     let errorMsg = "Could not verify "
                  + failingItem
                  + " holds by end of function"
@@ -332,7 +334,7 @@ public class BoogieVerifier: Verifier {
                       notes: [
                         Diagnostic(severity: .warning,
                                    sourceLocation: postCondTi.sourceLocation,
-                                   message: "This is the failing \(failingItem)")
+                                   message: "This is the failing \(failingItem).\n\(triggerResponsible)")
                       ])
   }
 
@@ -343,9 +345,10 @@ public class BoogieVerifier: Verifier {
       switch error {
       case .assertionFailure(let lineNumber):
         let ti = lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)
+        let errorMsg = ti.failingMsg ?? "Could not verify assertion holds"
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: ti.sourceLocation,
-                                      message: "Could not verify assertion holds"))
+                                      message: errorMsg))
 
       case .preConditionFailure(let procedureCallLine, let preConditionLine):
         flintErrors.append(diagnoseFailingPreCondition(lookupTranslationInformation(line: procedureCallLine, mapping: b2fSourceMapping),
@@ -357,9 +360,10 @@ public class BoogieVerifier: Verifier {
 
       case .loopInvariantEntryFailure(let invariantLine):
         let invariantTi = lookupTranslationInformation(line: invariantLine, mapping: b2fSourceMapping)
+        let errorMsg = invariantTi.failingMsg ?? "Could not verify entry to the loop"
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: invariantTi.sourceLocation,
-                                      message: "Could not verify entry to the loop"))
+                                      message: errorMsg))
 
       case .modifiesFailure(let line):
         print("Missing modifies clause: \(line)")

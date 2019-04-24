@@ -4,8 +4,6 @@
 // Eg, totalValue_Wei == receivedValue_Wei - sentValue_Wei
 
 import AST
-import Source
-import Foundation
 
 struct Trigger {
   public let globalMetaVariableDeclaration: [BVariableDeclaration]
@@ -82,28 +80,13 @@ struct Trigger {
 
   private static func registerInvariants() -> [BIRInvariant] {
     var invariants = [BIRInvariant]()
-    // Wei Accounting
-    // TODO: Pass in SourceLocation - for Wei - determine the syntax needed for this
-    let source = SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true)
-    invariants.append(BIRInvariant(expression: .equals(.identifier("totalValue_Wei"),
-                                                           .subtract(.identifier("receivedValue_Wei"),
-                                                                     .identifier("sentValue_Wei"))),
-                                       ti: TranslationInformation(sourceLocation: source)))
+    invariants += TriggerRule.weiInvariants()
     return invariants
   }
 
   private static func registerMetaVarableDeclarations() -> [BVariableDeclaration] {
     var declarations = [BVariableDeclaration]()
-    // Wei Accounting
-    declarations.append(BVariableDeclaration(name: "totalValue_Wei",
-                                             rawName: "totalValue_Wei",
-                                             type: .int))
-    declarations.append(BVariableDeclaration(name: "receivedValue_Wei",
-                                             rawName: "receivedValue_Wei",
-                                             type: .int))
-    declarations.append(BVariableDeclaration(name: "sentValue_Wei",
-                                             rawName: "sentValue_Wei",
-                                             type: .int))
+    declarations += TriggerRule.weiMetaVariables()
     return declarations
   }
 

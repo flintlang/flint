@@ -1,4 +1,7 @@
 import AST
+import Source
+
+import Foundation
 
 extension TriggerRule {
     static func weiCreationImplicit() -> Rule<Parameter> {
@@ -118,5 +121,31 @@ extension TriggerRule {
                                          "sentValue_Wei",
                                          "receivedValue_Wei"
                                        ])
+    }
+
+    static func weiInvariants() -> [BIRInvariant] {
+      // TODO: Pass in SourceLocation - for Wei - determine the syntax needed for this
+      let source = SourceLocation(line: 2, column: 3, length: 51,
+                                  file: URL(fileURLWithPath: "/home/yianni/Projects/flint/stdlib/WeiAccounting.inv"),
+                                  isFromStdlib: false)
+      return [(BIRInvariant(expression: .equals(.identifier("totalValue_Wei"),
+                                                .subtract(.identifier("receivedValue_Wei"),
+                                                          .identifier("sentValue_Wei"))),
+                            ti: TranslationInformation(sourceLocation: source, triggerName: "WeiAccounting")))]
+    }
+
+    static func weiMetaVariables() -> [BVariableDeclaration] {
+      var declarations = [BVariableDeclaration]()
+      // Wei Accounting
+      declarations.append(BVariableDeclaration(name: "totalValue_Wei",
+                                               rawName: "totalValue_Wei",
+                                               type: .int))
+      declarations.append(BVariableDeclaration(name: "receivedValue_Wei",
+                                               rawName: "receivedValue_Wei",
+                                               type: .int))
+      declarations.append(BVariableDeclaration(name: "sentValue_Wei",
+                                               rawName: "sentValue_Wei",
+                                               type: .int))
+      return declarations
     }
 }

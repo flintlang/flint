@@ -17,6 +17,11 @@ enum BoogieError {
   //case loopInvariantMaintenanceFailure(Int, String)
 }
 
+struct ErrorMsg {
+  static let ArrayOutofBoundsAccess
+    = "Potential out-of-bounds error:\nCould not verify that array access is within array bounds"
+}
+
 enum SymbooglixError {
   case error()
 }
@@ -26,16 +31,16 @@ struct TranslationInformation {
   // Some pre + post conditions originally come from flint invariants
   let isInvariant: Bool
   let failingMsg: String?
+  let triggerName: String? // Name of trigger with caused this
 
-  init(sourceLocation: SourceLocation, failingMsg: String? = nil) {
-    self.sourceLocation = sourceLocation
-    self.isInvariant = false
-    self.failingMsg = failingMsg
-  }
-
-  init(sourceLocation: SourceLocation, isInvariant: Bool) {
+  init(sourceLocation: SourceLocation,
+       isInvariant: Bool = false,
+       failingMsg: String? = nil,
+       triggerName: String? = nil) {
     self.sourceLocation = sourceLocation
     self.isInvariant = isInvariant
+    self.failingMsg = failingMsg
+    self.triggerName = triggerName
   }
 
   var mark: ErrorMappingKey {
