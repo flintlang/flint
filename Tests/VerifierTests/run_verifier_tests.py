@@ -18,34 +18,46 @@ test_batch_size = 8
 
 def parse_flint_errors(stdout_lines):
     error_lines = set()
+    warning_lines = set()
     lines = stdout_lines.split('\n')
     for current_line, line in enumerate(lines):
         if 'Error in' in line:
             error_info_line = lines[current_line + 1] # ... at line 35, column 5
             matches = re.search('at line (?P<flint_line>[0-9]+), column ([0-9]+)', error_info_line)
             error_lines.add(int(matches.group('flint_line')))
-    return error_lines
+
+        elif 'Warning in' in line:
+            warning_info_line = lines[current_line + 1]
+            matches = re.search('at line (?P<flint_line>[0-9]+), column ([0-9]+)', warning_info_line)
+            if matches is not None:
+                warning_lines.add(int(matches.group('flint_line')))
+
+    return (error_lines, warning_lines)
 
 def parse_fail_lines(flint_lines):
     fail_lines = set()
+    warning_lines = set()
     for (current_line, line) in enumerate(flint_lines, 1): # Humans count from 1
         line = line.rstrip().strip()
         if line == "//VERIFY-FAIL":
             # The annotation is always placed the line of interest
             fail_lines.add(current_line + 1)
+        elif line == "//VERIFY-WARNING":
+            warning_lines.add(current_line + 1)
+
         current_line += 1
-    return fail_lines
+    return (fail_lines, warning_lines)
 
 
 contract_verify_result = {}
-def test_contract(contract_path, fail_lines):
+def test_contract(contract_path, fail_lines, warning_lines):
     runArgs = [
             flintc,
             "-g", # Only verify
             contract_path
             ]
     finished_verify = subprocess.run(runArgs, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    failed_verification_lines = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
+    (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
 
     if len(fail_lines) == 0:
         expected_return_code = finished_verify.returncode == 0
@@ -53,7 +65,7 @@ def test_contract(contract_path, fail_lines):
         expected_return_code = finished_verify.returncode != 0
 
     # Store result
-    contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines)
+    contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
 
 test_contracts = [join(test_contracts_folder, f) for f in listdir(test_contracts_folder) \
         if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')]
@@ -74,8 +86,8 @@ for contract in test_contracts:
             skipped.append(contract)
             continue
 
-        fail_lines = parse_fail_lines(lines)
-        pending_jobs.append(threading.Thread(target=test_contract, args=(contract, fail_lines)))
+        (fail_lines, warning_lines) = parse_fail_lines(lines)
+        pending_jobs.append(threading.Thread(target=test_contract, args=(contract, fail_lines, warning_lines)))
 
 # Wait until all tests are completed
 for job_batch in batch(pending_jobs, test_batch_size):

@@ -1,11 +1,25 @@
+//VERIFY-CHECK
 contract InconsistentAssumptions {
-  // TODO: Inconsistent axioms
-  // TODO: Inconsistent pre conditions
-  // TODO: Inconsistent invariants conditions
 
   var i: Int = 0
+
+  // Inconsistent invariants would mean that the init function
+  // couldn't be satisfied.
+  invariant (i == 0)
 }
 
 InconsistentAssumptions :: (any) {
   public init() {}
+
+  // Inconsistent pre conditions
+  //VERIFY-WARNING
+  func test1()
+    pre (i == 2)
+  {
+  }
+
+  // No inconsistent assumptions
+  func test2()
+  {
+  }
 }

@@ -8,7 +8,7 @@
 import Foundation
 
 /// A location in a source file.
-public struct SourceLocation: Comparable, CustomStringConvertible {
+public struct SourceLocation: Comparable, CustomStringConvertible, Hashable {
 
   public var line: Int
   public var column: Int
@@ -22,6 +22,10 @@ public struct SourceLocation: Comparable, CustomStringConvertible {
     self.length = length
     self.file = file
     self.isFromStdlib = isFromStdlib
+  }
+
+  public var hashValue: Int {
+    return file.hashValue + line ^ 2 + column ^ 3 + length ^ 4
   }
 
   public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1,

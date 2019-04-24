@@ -124,11 +124,13 @@ extension Compiler {
                                               sourceContext: sourceContext,
                                               normaliser: IdentifierNormaliser()).verify()
 
+      _ = try config.diagnostics.checkpoint(errors)
+      _ = try config.diagnostics.display()
+
       if verified {
         print("Contract specification verified!")
       } else {
         print("Contract specification not verified")
-        _ = try config.diagnostics.checkpoint(errors)
         exitWithFailure()
       }
     }
