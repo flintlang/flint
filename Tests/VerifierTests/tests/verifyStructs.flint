@@ -92,7 +92,7 @@ Test :: (any) {
 
   //VERIFY-FAIL
   public func violateSInvariant()
-    mutates (S.i)
+    mutates (s, S.i)
   {
     s.i = 0
   }

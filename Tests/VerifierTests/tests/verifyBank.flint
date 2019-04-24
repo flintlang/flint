@@ -39,7 +39,7 @@ Bank :: account <- (any) {
 
   @payable
   public func donate(implicit value: Wei)
-    mutates (totalDonations, Wei.rawValue)
+    mutates (Wei.rawValue)
   {
     // This will transfer the funds into totalDonations.
     totalDonations.transfer(source: &value)
@@ -52,7 +52,7 @@ Bank :: (manager) {
   // This function needs to be declared "mutating" as its body mutates
   // the contract's state.
   public func freeDeposit(account: Address, amount: Int)
-    mutates (balances, Wei.rawValue)
+    mutates (Wei.rawValue)
   {
     var i: Int = (0-1)
     var w: Wei = Wei(amount)
@@ -94,7 +94,7 @@ Bank :: account <- (accounts) {
 
   @payable
   public func deposit(implicit value: Wei)
-    mutates(balances, Wei.rawValue)
+    mutates(Wei.rawValue)
   {
     balances[account].transfer(source: &value)
   }

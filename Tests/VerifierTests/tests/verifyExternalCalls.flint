@@ -21,11 +21,11 @@ C :: (any) {
     do {
       self.v = (call libInstance.getValue()) as! Int
     } catch is ExternalCallError {
-      j = 3
+      self.j = 3
       fatalError()
     }
     } catch is ExternalCallError {
-      j = 2
+      self.j = 2
       fatalError()
     }
   }
@@ -33,7 +33,7 @@ C :: (any) {
   func violatedInvariant()
     mutates (j)
   {
-    j = 5
+    self.j = 5
     let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
     do {
       //VERIFY-FAIL

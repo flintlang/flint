@@ -26,7 +26,7 @@ def parse_flint_errors(stdout_lines):
             matches = re.search('at line (?P<flint_line>[0-9]+), column ([0-9]+)', error_info_line)
             error_lines.add(int(matches.group('flint_line')))
 
-        elif 'Warning in' in line:
+        elif 'Warning in' in line[:10]:
             warning_info_line = lines[current_line + 1]
             matches = re.search('at line (?P<flint_line>[0-9]+), column ([0-9]+)', warning_info_line)
             if matches is not None:

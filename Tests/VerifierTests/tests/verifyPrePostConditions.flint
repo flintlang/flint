@@ -33,12 +33,14 @@ VerifyPrePostConditions :: (any) {
     assert (input2 == 10 + increment)
   }
 
+  //VERIFY-WARNING
   func testGlobals()
     pre (ten == 5)
   {
     assert(ten != 10)
   }
 
+  //VERIFY-WARNING
   func testInconsistentPre()
     pre (ten == 5)
   {
