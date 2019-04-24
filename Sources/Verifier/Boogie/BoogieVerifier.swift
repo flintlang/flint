@@ -12,14 +12,18 @@ public class BoogieVerifier: Verifier {
   private let monoLocation: String
   private let dumpVerifierIR: Bool
   private let printVerificationOutput: Bool
+  private let printHolisticRunStats: Bool
   private let skipHolisticCheck: Bool
+  private let maxHolisticTimeout: Int
   private var boogieTranslator: BoogieTranslator
 
   public init(dumpVerifierIR: Bool,
               printVerificationOutput: Bool,
               skipHolisticCheck: Bool,
+              printHolisticRunStats: Bool,
               boogieLocation: String,
               symbooglixLocation: String,
+              maxHolisticTimeout: Int,
               monoLocation: String,
               topLevelModule: TopLevelModule,
               environment: Environment,
@@ -31,6 +35,8 @@ public class BoogieVerifier: Verifier {
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
     self.skipHolisticCheck = skipHolisticCheck
+    self.printHolisticRunStats = printHolisticRunStats
+    self.maxHolisticTimeout = maxHolisticTimeout
     self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
                                              environment: environment,
                                              sourceContext: sourceContext,
@@ -43,29 +49,30 @@ public class BoogieVerifier: Verifier {
     let translationIR = boogieTranslator.translate()
     let translation = BoogieIRResolver().resolve(ir: translationIR)
     let (functionalBoogieSource, functionalMapping) = translation.functionalProgram.render()
-    if dumpVerifierIR {
+    if self.dumpVerifierIR {
       print(functionalBoogieSource)
     }
 
     // Verify boogie code
     let boogieErrors = executeBoogie(boogie: functionalBoogieSource)
     let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: functionalMapping)
-    let contractVerified = boogieErrors.count == 0
+    let functionalVerification = boogieErrors.count == 0
 
     // Test holistic spec
-    if contractVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
-      let holisticRunInfo = executeSymbooglix(translation: translation)
-      print("Number of runs: \(holisticRunInfo.totalRuns)")
-      print("Number of successes: \(holisticRunInfo.successfulRuns)")
-      print("Number of failures: \(holisticRunInfo.failedRuns)")
-      if holisticRunInfo.verified {
-        print("Contract holistic spec verified")
-      } else {
-        print("Unable to verify contract holistic spec")
+    var holisticErrors = [Diagnostic]()
+    var holisticVerification = true
+    if functionalVerification && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
+      for holisticRunInfo in executeSymbooglix(translation: translation,
+                                               maxTimeout: self.maxHolisticTimeout) {
+        holisticVerification = holisticVerification && holisticRunInfo.verified
+        if let diagnostic = diagnoseRunInfo(holisticRunInfo: holisticRunInfo,
+                                            printHolisticRunStats: self.printHolisticRunStats) {
+          holisticErrors.append(diagnostic)
+        }
       }
     }
 
-    return (contractVerified, flintErrors)
+    return (functionalVerification && holisticVerification, flintErrors + holisticErrors)
   }
 
   private func executeBoogie(boogie: String) -> [BoogieError] {
@@ -90,28 +97,55 @@ public class BoogieVerifier: Verifier {
     return extractBoogieErrors(rawBoogieOutput: output)
   }
 
-  private func executeSymbooglix(translation: FlintBoogieTranslation) -> HolisticRunInfo {//[SymbooglixError] {
-    let (holisticBoogieSource, holisticMapping) = translation.holisticProgram.render()
-    let tempHolisticFile = writeToTempFile(data: holisticBoogieSource)
-    let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
-    let workingDir = NSTemporaryDirectory() + UUID().uuidString
-    let arguments = [symbooglixLocation, tempHolisticFile.path,
-      "--timeout", "10",
-      "--output-dir", workingDir,
-      "-e", entryPoints]
-    let (uncheckedOutput, terminationStatus) = executeTask(executable: monoLocation,
-                                                           arguments: arguments)
-    if uncheckedOutput == nil {
-      print("Symbooglix produced no output")
-      fatalError()
+  private func executeSymbooglix(translation: FlintBoogieTranslation, maxTimeout: Int) -> [HolisticRunInfo] {
+    var runInfo = [HolisticRunInfo]()
+    for (holisticSpec, holisticProgram) in translation.holisticPrograms {
+      let (holisticBoogieSource, _) = holisticProgram.render()
+
+      let tempHolisticFile = writeToTempFile(data: holisticBoogieSource)
+      let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
+      let workingDir = NSTemporaryDirectory() + UUID().uuidString
+      let arguments = [symbooglixLocation, tempHolisticFile.path,
+        "--timeout", String(maxTimeout),
+        "--output-dir", workingDir,
+        "-e", entryPoints]
+      let (uncheckedOutput, terminationStatus) = executeTask(executable: monoLocation,
+                                                             arguments: arguments)
+      if uncheckedOutput == nil {
+        print("Symbooglix produced no output")
+        fatalError()
+      }
+
+      // exit code 4 == timeout
+      //if !(terminationStatus == 4 || terminationStatus == 0) {
+      //  print("Symbooglix exited with error code \(terminationStatus)\n\(output)")
+      //  fatalError()
+      //}
+      runInfo.append(extractSymbooglixErrors(terminationCountersFile: workingDir + "/termination_counters.yml",
+                                             spec: holisticSpec))
+    }
+    return runInfo
+  }
+
+  private func diagnoseRunInfo(holisticRunInfo: HolisticRunInfo, printHolisticRunStats: Bool) -> Diagnostic? {
+    if holisticRunInfo.verified {
+      return nil
     }
 
-    // exit code 4 == timeout
-    //if !(terminationStatus == 4 || terminationStatus == 0) {
-    //  print("Symbooglix exited with error code \(terminationStatus)\n\(output)")
-    //  fatalError()
-    //}
-    return extractSymbooglixErrors(terminationCountersFile: workingDir + "/termination_counters.yml")
+    var notes = [Diagnostic]()
+    if printHolisticRunStats {
+      notes.append(Diagnostic(severity: .warning,
+                              sourceLocation: SourceLocation.DUMMY,
+                              message: """
+                                 Number of runs: \(holisticRunInfo.totalRuns)
+                                 Number of successes: \(holisticRunInfo.successfulRuns)
+                                 Number of failures: \(holisticRunInfo.failedRuns)
+                              """))
+    }
+    return Diagnostic(severity: .error,
+                      sourceLocation: holisticRunInfo.responsibleSpec,
+                      message: "This holistic spec could not be verified",
+                      notes: notes)
   }
 
   private func executeTask(executable: String, arguments: [String]) -> (String?, Int32) {
@@ -152,9 +186,10 @@ public class BoogieVerifier: Verifier {
     return tempFile
   }
 
-  private func extractSymbooglixErrors(terminationCountersFile: String) -> HolisticRunInfo {
+  private func extractSymbooglixErrors(terminationCountersFile: String, spec: SourceLocation) -> HolisticRunInfo {
     do {
-      let results = try Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile), encoding: .utf8))
+      let results = try Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile),
+                                             encoding: .utf8))
       guard let resultDict = results.dictionary else {
         print("Found no results in termination_counters file")
         fatalError()
@@ -162,7 +197,9 @@ public class BoogieVerifier: Verifier {
       }
       let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
       let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
-      return HolisticRunInfo(totalRuns: totalRuns, successfulRuns: successfulRuns)
+      return HolisticRunInfo(totalRuns: totalRuns,
+                             successfulRuns: successfulRuns,
+                             responsibleSpec: spec)
     } catch {
       print("Unable to parse termination_counters yaml file")
       fatalError()
@@ -342,17 +379,36 @@ public class BoogieVerifier: Verifier {
                       ])
   }
 
+  private func diagnoseFailingAssertion(_ ti: TranslationInformation) -> Diagnostic {
+    let defaultMessage: String
+    if ti.isExternalCall {
+      defaultMessage = "Could not verify safe call to external function"
+    } else {
+      defaultMessage = "Could not verify assertion holds"
+    }
+
+    let errorMsg = ti.failingMsg ?? defaultMessage
+
+    var notes = [Diagnostic]()
+    if let relatedTI = ti.relatedTI {
+      notes.append(Diagnostic(severity: .warning,
+                              sourceLocation: relatedTI.sourceLocation,
+                              message: "This is the failing property"))
+    }
+
+    return Diagnostic(severity: .error,
+                      sourceLocation: ti.sourceLocation,
+                      message: errorMsg,
+                      notes: notes)
+  }
+
   private func resolveBoogieErrors(errors boogieErrors: [BoogieError],
                                    mapping b2fSourceMapping: [Int: TranslationInformation]) -> [Diagnostic] {
     var flintErrors = [Diagnostic]()
     for error in boogieErrors {
       switch error {
       case .assertionFailure(let lineNumber):
-        let ti = lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)
-        let errorMsg = ti.failingMsg ?? "Could not verify assertion holds"
-        flintErrors.append(Diagnostic(severity: .error,
-                                      sourceLocation: ti.sourceLocation,
-                                      message: errorMsg))
+        flintErrors.append(diagnoseFailingAssertion(lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)))
 
       case .preConditionFailure(let procedureCallLine, let preConditionLine):
         flintErrors.append(diagnoseFailingPreCondition(lookupTranslationInformation(line: procedureCallLine, mapping: b2fSourceMapping),

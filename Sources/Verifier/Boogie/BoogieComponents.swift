@@ -29,6 +29,8 @@ enum SymbooglixError {
 struct HolisticRunInfo {
   let totalRuns: Int
   let successfulRuns: Int
+  let responsibleSpec: SourceLocation
+
   var verified: Bool {
     return totalRuns > 0 && totalRuns == successfulRuns
   }
@@ -38,21 +40,27 @@ struct HolisticRunInfo {
   }
 }
 
-struct TranslationInformation {
+class TranslationInformation {
   let sourceLocation: SourceLocation
   // Some pre + post conditions originally come from flint invariants
   let isInvariant: Bool
+  let isExternalCall: Bool
   let failingMsg: String?
   let triggerName: String? // Name of trigger with caused this
+  let relatedTI: TranslationInformation?
 
   init(sourceLocation: SourceLocation,
        isInvariant: Bool = false,
+       isExternalCall: Bool = false,
        failingMsg: String? = nil,
-       triggerName: String? = nil) {
+       triggerName: String? = nil,
+       relatedTI: TranslationInformation? = nil) {
     self.sourceLocation = sourceLocation
     self.isInvariant = isInvariant
+    self.isExternalCall = isExternalCall
     self.failingMsg = failingMsg
     self.triggerName = triggerName
+    self.relatedTI = relatedTI
   }
 
   var mark: ErrorMappingKey {
@@ -86,15 +94,16 @@ struct FlintProofObligationInformation {
 
 struct FlintBoogieTranslation {
   let boogieTlds: [BTopLevelDeclaration]
-  let holisticTestProcedures: [BTopLevelDeclaration]
+  // List of holistic test procedures and their expression
+  let holisticTestProcedures: [(SourceLocation, BTopLevelDeclaration)]
   let holisticTestEntryPoints: [String]
 
   var functionalProgram: BTopLevelProgram {
     return BTopLevelProgram(declarations: boogieTlds)
   }
 
-  var holisticProgram: BTopLevelProgram {
-    return BTopLevelProgram(declarations: boogieTlds + holisticTestProcedures)
+  var holisticPrograms: [(SourceLocation, BTopLevelProgram)] {
+    return holisticTestProcedures.map({ ($0.0, BTopLevelProgram(declarations: boogieTlds + [$0.1])) })
   }
 }
 

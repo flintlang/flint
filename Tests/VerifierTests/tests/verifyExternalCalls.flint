@@ -29,4 +29,32 @@ C :: (any) {
       fatalError()
     }
   }
+
+  func violatedInvariant()
+    mutates (j)
+  {
+    j = 5
+    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    do {
+      //VERIFY-FAIL
+      (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      fatalError()
+    }
+  }
+
+  @payable
+  func violatedAssetAccountingInvariant(implicit w: Wei)
+    mutates (Wei.rawValue)
+  {
+    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    var w1: Wei = w
+    w1 = Wei(0)
+    do {
+      //VERIFY-FAIL
+      (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      fatalError()
+    }
+  }
 }

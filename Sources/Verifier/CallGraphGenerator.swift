@@ -99,7 +99,7 @@ public class CallGraphGenerator: ASTPass {
                                                                       specialInformation.declaration.asFunctionDeclaration))
         updatedContext.environment = environment
 
-      case .failure(let candidates):
+      case .failure: //(let candidates):
         // Check if event, and resume, else abort
         switch environment.matchEventCall(functionCall,
                                           enclosingType: enclosingType,
@@ -114,13 +114,13 @@ public class CallGraphGenerator: ASTPass {
         // External trait calls -> ignore, don't add to call graph
         break
 
-        print("call graph generation - could not find function for call: \(functionCall)")
-        print(scopeContext)
-        print(functionCall)
-        print(currentType)
-        print(enclosingType)
-        print(candidates)
-        fatalError()
+        //print("call graph generation - could not find function for call: \(functionCall)")
+        //print(scopeContext)
+        //print(functionCall)
+        //print(currentType)
+        //print(enclosingType)
+        //print(candidates)
+        //fatalError()
 
       default:
         print("call graph generation - default: \(functionCall)")

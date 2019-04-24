@@ -114,8 +114,10 @@ extension Compiler {
       let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
+                                              printHolisticRunStats: config.printHolisticRunStats,
                                               boogieLocation: "boogie/Binaries/Boogie.exe",
                                               symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
+                                              maxHolisticTimeout: config.maxHolisticTimeout,
                                               monoLocation: "/usr/bin/mono",
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
@@ -123,9 +125,9 @@ extension Compiler {
                                               normaliser: IdentifierNormaliser()).verify()
 
       if verified {
-        print("Contract functional spec verified!")
+        print("Contract specification verified!")
       } else {
-        print("Contract functional spec not verified")
+        print("Contract specification not verified")
         _ = try config.diagnostics.checkpoint(errors)
         exitWithFailure()
       }
@@ -185,6 +187,8 @@ public struct CompilerConfiguration {
   public let printVerificationOutput: Bool
   public let skipHolisticCheck: Bool
   public let skipVerifier: Bool
+  public let printHolisticRunStats: Bool
+  public let maxHolisticTimeout: Int
   public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
   public let loadStdlib: Bool
@@ -198,6 +202,8 @@ public struct CompilerConfiguration {
               dumpVerifierIR: Bool,
               printVerificationOutput: Bool,
               skipHolisticCheck: Bool,
+              printHolisticRunStats: Bool,
+              maxHolisticTimeout: Int,
               skipVerifier: Bool,
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
@@ -211,6 +217,8 @@ public struct CompilerConfiguration {
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
     self.skipHolisticCheck = skipHolisticCheck
+    self.printHolisticRunStats = printHolisticRunStats
+    self.maxHolisticTimeout = maxHolisticTimeout
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics

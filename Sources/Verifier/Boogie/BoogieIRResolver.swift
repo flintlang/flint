@@ -10,7 +10,7 @@ class BoogieIRResolver: IRResolver {
   func resolve(ir: BoogieTranslationIR) -> FlintBoogieTranslation {
     // Process mutates clause - flow non-user-defined mutates
     var procedureDeclarations = [BIRProcedureDeclaration]()
-    for case .procedureDeclaration(let dec) in (ir.tlds + ir.holisticTestProcedures) {
+    for case .procedureDeclaration(let dec) in (ir.tlds + ir.holisticTestProcedures.map({ $0.1 })) {
       procedureDeclarations.append(dec)
     }
     self.procedureModifies = resolveMutates(callGraph: ir.callGraph, procedureDeclarations: procedureDeclarations)
@@ -33,21 +33,21 @@ class BoogieIRResolver: IRResolver {
       }
     }
 
-    var holisticDeclarations = [BTopLevelDeclaration]()
-    for declaration in ir.holisticTestProcedures {
+    var holisticDeclarations = [(SourceLocation, BTopLevelDeclaration)]()
+    for (spec, declaration) in ir.holisticTestProcedures {
       switch declaration {
       case .functionDeclaration(let bFunctionDeclaration):
-        holisticDeclarations.append(BTopLevelDeclaration.functionDeclaration(bFunctionDeclaration))
+        holisticDeclarations.append((spec, BTopLevelDeclaration.functionDeclaration(bFunctionDeclaration)))
       case .axiomDeclaration(let bAxiomDeclaration):
-        holisticDeclarations.append(BTopLevelDeclaration.axiomDeclaration(bAxiomDeclaration))
+        holisticDeclarations.append((spec, BTopLevelDeclaration.axiomDeclaration(bAxiomDeclaration)))
       case .variableDeclaration(let bVariableDeclaration):
-        holisticDeclarations.append(BTopLevelDeclaration.variableDeclaration(bVariableDeclaration))
+        holisticDeclarations.append((spec, BTopLevelDeclaration.variableDeclaration(bVariableDeclaration)))
       case .constDeclaration(let bConstDeclaration):
-        holisticDeclarations.append(BTopLevelDeclaration.constDeclaration(bConstDeclaration))
+        holisticDeclarations.append((spec, BTopLevelDeclaration.constDeclaration(bConstDeclaration)))
       case .typeDeclaration(let bTypeDeclaration):
-        holisticDeclarations.append(BTopLevelDeclaration.typeDeclaration(bTypeDeclaration))
+        holisticDeclarations.append((spec, BTopLevelDeclaration.typeDeclaration(bTypeDeclaration)))
       case .procedureDeclaration(let bIRProcedureDeclaration):
-        holisticDeclarations.append(.procedureDeclaration(resolve(irProcedureDeclaration: bIRProcedureDeclaration)))
+        holisticDeclarations.append((spec, .procedureDeclaration(resolve(irProcedureDeclaration: bIRProcedureDeclaration))))
       }
     }
 

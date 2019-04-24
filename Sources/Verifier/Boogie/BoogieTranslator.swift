@@ -154,7 +154,6 @@ class BoogieTranslator {
 
     // Triggers
     //TODO: Actually parse? expression rules in some format, and use that to register sourceLocations
-    TranslationInformation(sourceLocation: SourceLocation(line: 42, column: 42, length: 3, file: URL(string: "stdlib/Asset.flint")!, isFromStdlib: true))
     declarations += triggers.globalMetaVariableDeclaration.map({ .variableDeclaration($0) })
     globalInvariants += triggers.invariants
 
@@ -261,15 +260,16 @@ class BoogieTranslator {
                                              BIRTopLevelDeclaration.axiomDeclaration(axDec)]
                                    }).reduce([], +)
 
-    var holisticTests = [BIRTopLevelDeclaration]()
+    var holisticTests = [(SourceLocation, BIRTopLevelDeclaration)]()
     var holisticEntryPoints = [String]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractDeclaration(contractDeclaration)
       // Handle holistic specification on contract
+      let contractName = contractDeclaration.identifier.name
       let holisticTranslationInformation = contractDeclaration.holisticDeclarations.map({
                                               processHolisticSpecification(willSpec: $0,
-                                              contractDeclaration: contractDeclaration)
+                                                                           contractName: contractName)
                                             })
       let (holisticDecls, entryPoints)
         = holisticTranslationInformation.reduce(([], []), { x, y in (x.0 + y.0, x.1 + y.1) })
@@ -521,7 +521,6 @@ class BoogieTranslator {
         }
         // Add procedure call to callGraph
         addProcedureCall(currentFunctionName, procedureName)
-        TranslationInformation(sourceLocation: parameter.sourceLocation)
       default: break
       }
     } else {
@@ -693,7 +692,6 @@ class BoogieTranslator {
       : translateIdentifierName(variableDeclaration.identifier.name)
 
     var declarations = [BVariableDeclaration]()
-    var assumptions = [BStatement]()
 
     switch variableDeclaration.type.rawType {
     case .dictionaryType, .arrayType, .fixedSizeArrayType:
@@ -708,7 +706,6 @@ class BoogieTranslator {
       declarations += generateIterableShadowVariables(name: name,
                                                       type: variableDeclaration.type.rawType,
                                                       hole: hole)
-      // TODO: Implement assumptions about dict/arrays ...., empty? default values?
     default:
       break
     }

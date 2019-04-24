@@ -2,7 +2,7 @@ import Source
 
 struct BoogieTranslationIR {
   let tlds: [BIRTopLevelDeclaration]
-  let holisticTestProcedures: [BIRTopLevelDeclaration]
+  let holisticTestProcedures: [(SourceLocation, BIRTopLevelDeclaration)]
   let holisticTestEntryPoints: [String]
 
   let lineMapping: [TranslationInformation.ErrorMappingKey: TranslationInformation]

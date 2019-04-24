@@ -1,4 +1,5 @@
 import AST
+import Source
 
 import BigInt
 
@@ -38,10 +39,9 @@ extension BoogieTranslator {
   // Return Boogie declarations whic htest the specification
   // Also return a list of the entry points, for the symbolic executor
   func processHolisticSpecification(willSpec: Expression,
-                                    contractDeclaration: ContractDeclaration) -> ([BIRTopLevelDeclaration], [String]) {
-    let source = willSpec.sourceLocation
-    let translationInformation = TranslationInformation(sourceLocation: source)
-    let currentContract = contractDeclaration.identifier.name
+                                    contractName: String) -> ([(SourceLocation, BIRTopLevelDeclaration)], [String]) {
+    let translationInformation = TranslationInformation(sourceLocation: willSpec.sourceLocation)
+    let currentContract = contractName
 
     //TODO: Do analysis on willSpec, see if more than one procedure needs making or something?
     let bSpec = process(willSpec).0 // TODO: Handle +=1 in spec
@@ -64,7 +64,7 @@ extension BoogieTranslator {
                                                    rawName: "unsat",
                                                    type: .boolean))
 
-    var procedureDeclarations = [BIRTopLevelDeclaration]()
+    var procedureDeclarations = [(SourceLocation, BIRTopLevelDeclaration)]()
     var procedureNames = [String]()
     //Generate new procedure for each init function - check that for all initial conditions,
     // holistic spec holds
@@ -121,7 +121,7 @@ extension BoogieTranslator {
         isContractInit: false
       )
       procedureNames.append(procedureName)
-      procedureDeclarations.append(.procedureDeclaration(specProcedure))
+      procedureDeclarations.append((willSpec.sourceLocation, .procedureDeclaration(specProcedure)))
     }
 
     return (procedureDeclarations, procedureNames)

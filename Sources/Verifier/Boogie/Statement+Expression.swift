@@ -281,14 +281,20 @@ extension BoogieTranslator {
         // - havoc return value
         // - create variable to hold (wasSuccessful)
         // - havoc executionSuccess variable
+        // - havoc all global variables + assume invariants (other function calls could have changed their values)
         // if executionSucces -> continue as normal, else -> catchBlock
 
         var stmts = [BStatement]()
         // Only select 1 half of pre/post invariants
-        for invariant in self.tldInvariants.values.flatMap({ $0 }) {
+        for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants {
+          let ti = TranslationInformation(sourceLocation: externalCall.sourceLocation,
+                                          isExternalCall: true,
+                                          relatedTI: invariant.ti)
           stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
-                                                         ti: invariant.ti)))
+                                                         ti: ti)))
         }
+        // TODO: Need someway of specifying like related locations
+        // Want to say, this external call doesn't work -> this is failing invariant.
 
         guard let scopeContext = getCurrentScopeContext() else {
           print("couldn't get scope context of current function - used for updating shadow variable")
@@ -314,8 +320,9 @@ extension BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: successValueVariable,
                                                                    rawName: successValueVariable,
                                                                    type: .boolean))
-        stmts.append(.havoc(returnValueVariable, TranslationInformation(sourceLocation: expression.sourceLocation)))
-        stmts.append(.havoc(successValueVariable, TranslationInformation(sourceLocation: expression.sourceLocation)))
+        let ti = TranslationInformation(sourceLocation: expression.sourceLocation)
+        stmts.append(.havoc(returnValueVariable, ti))
+        stmts.append(.havoc(successValueVariable, ti))
 
         var trueStatements = [BStatement]()
         if let nextStatement = self.enclosingDoBody.first {
@@ -326,7 +333,7 @@ extension BoogieTranslator {
         let handleExceptionIf = BIfStatement(condition: .identifier(successValueVariable),
                                              trueCase: trueStatements,
                                              falseCase: self.enclosingCatchBody,
-                                             ti: TranslationInformation(sourceLocation: expression.sourceLocation))
+                                             ti: ti)
 
         stmts.append(.ifStatement(handleExceptionIf))
         return (.identifier(returnValueVariable), stmts, [])
