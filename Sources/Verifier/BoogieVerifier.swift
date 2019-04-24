@@ -53,10 +53,16 @@ public class BoogieVerifier: Verifier {
     let contractVerified = boogieErrors.count == 0
 
     // Test holistic spec
-    if contractVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0
-      && !executeSymbooglix(translation: translation) {
-      //TODO: Give more informative feedback - ie, # of runs, # of failing runs
-      print("Unable to verify holistic spec")
+    if contractVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
+      let holisticRunInfo = executeSymbooglix(translation: translation)
+      print("Number of runs: \(holisticRunInfo.totalRuns)")
+      print("Number of successes: \(holisticRunInfo.successfulRuns)")
+      print("Number of failures: \(holisticRunInfo.failedRuns)")
+      if holisticRunInfo.verified {
+        print("Contract holistic spec verified")
+      } else {
+        print("Unable to verify contract holistic spec")
+      }
     }
 
     return (contractVerified, flintErrors)
@@ -84,7 +90,7 @@ public class BoogieVerifier: Verifier {
     return extractBoogieErrors(rawBoogieOutput: output)
   }
 
-  private func executeSymbooglix(translation: FlintBoogieTranslation) -> Bool {//[SymbooglixError] {
+  private func executeSymbooglix(translation: FlintBoogieTranslation) -> HolisticRunInfo {//[SymbooglixError] {
     let (holisticBoogieSource, holisticMapping) = translation.holisticProgram.render()
     let tempHolisticFile = writeToTempFile(data: holisticBoogieSource)
     let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
@@ -146,7 +152,7 @@ public class BoogieVerifier: Verifier {
     return tempFile
   }
 
-  private func extractSymbooglixErrors(terminationCountersFile: String) -> Bool {
+  private func extractSymbooglixErrors(terminationCountersFile: String) -> HolisticRunInfo {
     do {
       let results = try Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile), encoding: .utf8))
       guard let resultDict = results.dictionary else {
@@ -156,9 +162,7 @@ public class BoogieVerifier: Verifier {
       }
       let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
       let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
-      //print(successfulRuns)
-      //print(totalRuns)
-      return successfulRuns == totalRuns
+      return HolisticRunInfo(totalRuns: totalRuns, successfulRuns: successfulRuns)
     } catch {
       print("Unable to parse termination_counters yaml file")
       fatalError()

@@ -1,16 +1,17 @@
 //VERIFY-CHECK
-contract C {
-  var i: Int = 5
+contract D {
+  var i: Int = 2
 
+  //VERIFY-FAIL
   will (i == 10)
 }
 
-C :: (any) {
+D :: (any) {
   public init() {}
 
   public func add()
     mutates (i)
   {
-    i += 5
+    i += 3
   }
 }

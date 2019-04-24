@@ -19,11 +19,23 @@ enum BoogieError {
 
 struct ErrorMsg {
   static let ArrayOutofBoundsAccess
-    = "Potential out-of-bounds error:\nCould not verify that array access is within array bounds"
+    = "Potential out-of-bounds error: Could not verify that array access is within array bounds"
 }
 
 enum SymbooglixError {
   case error()
+}
+
+struct HolisticRunInfo {
+  let totalRuns: Int
+  let successfulRuns: Int
+  var verified: Bool {
+    return totalRuns > 0 && totalRuns == successfulRuns
+  }
+
+  var failedRuns: Int {
+    return totalRuns - successfulRuns
+  }
 }
 
 struct TranslationInformation {
