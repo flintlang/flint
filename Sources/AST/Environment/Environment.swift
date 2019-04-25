@@ -28,6 +28,9 @@ public class Environment {
   // Call graph - using normalised names
   public var callGraph = [String: [(String, FunctionDeclaration)]]()
 
+  // Which functions have external calls
+  public var functionCallsExternal = [String: Bool]()
+
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
 

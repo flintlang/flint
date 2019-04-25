@@ -31,9 +31,6 @@ class BoogieTranslator {
   // Call Graph of Boogie procedures
   var callGraph = [String: Set<String>]()
 
-  // Source location that each proof oligation corresponds to
-  var flintProofObligationTranslationInformation = [TranslationInformation.ErrorMappingKey: TranslationInformation]()
-
   // Current behaviour member - function / special / signature declaration ..
   var currentBehaviourMember: ContractBehaviorMember?
   // Current top level declaration - contract behaviour / trait / struct ..
@@ -282,7 +279,6 @@ class BoogieTranslator {
     return BoogieTranslationIR(tlds: propertyDeclarations + declarations,
                                holisticTestProcedures: holisticTests,
                                holisticTestEntryPoints: holisticEntryPoints,
-                               lineMapping: self.flintProofObligationTranslationInformation,
                                callGraph: self.callGraph
     )
   }

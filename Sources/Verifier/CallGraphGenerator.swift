@@ -133,6 +133,19 @@ public class CallGraphGenerator: ASTPass {
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: updatedContext)
   }
 
+  public func postProcess(externalCall: ExternalCall,
+                          passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    var updatedContext = passContext
+    let environment = passContext.environment!
+
+    if let currentFunction = self.callerFunctionName {
+      environment.addExternalCall(caller: currentFunction)
+      updatedContext.environment = environment
+    }
+
+    return ASTPassResult(element: externalCall, diagnostics: [], passContext: updatedContext)
+  }
+
   private func normaliseFunctionName(functionName: String,
                                      parameterTypes: [RawType],
                                      enclosingType: String) -> String {

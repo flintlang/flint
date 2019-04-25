@@ -40,7 +40,7 @@ struct HolisticRunInfo {
   }
 }
 
-class TranslationInformation {
+class TranslationInformation: Hashable, CustomStringConvertible {
   let sourceLocation: SourceLocation
   // Some pre + post conditions originally come from flint invariants
   let isInvariant: Bool
@@ -63,28 +63,25 @@ class TranslationInformation {
     self.relatedTI = relatedTI
   }
 
-  var mark: ErrorMappingKey {
-    return ErrorMappingKey(file: self.sourceLocation.file.absoluteString,
-                           flintLine: sourceLocation.line,
-                           column: sourceLocation.column)
+  var mark: String {
+    return self.description
   }
 
-  struct ErrorMappingKey: Hashable, CustomStringConvertible {
-    let file: String
-    let flintLine: Int
-    let column: Int
-
-    var hashValue: Int {
-      return file.hashValue + flintLine ^ 2 + column ^ 3
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.sourceLocation)
+    if let relatedTI = self.relatedTI {
+      hasher.combine(relatedTI)
     }
+  }
 
-    var description: String {
-    return "// #MARKER# \(flintLine) \(column) \(file)"
-    }
+  var description: String {
+  return "// #MARKER# \(hashValue)"
+  }
 
-    public static var DUMMY: ErrorMappingKey {
-      return ErrorMappingKey(file: "", flintLine: -1, column: 0)
-    }
+  static let regexString = "// #MARKER# ([-]?[0-9]+)"
+
+  static func == (lhs: TranslationInformation, rhs: TranslationInformation) -> Bool {
+    return lhs.hashValue == rhs.hashValue
   }
 }
 
@@ -165,6 +162,27 @@ public struct IdentifierNormaliser {
       return "@\(flattenTypes(types: [keyType]))@$@\(flattenTypes(types: [valueType]))@"
     default:
       return type.name + flattenTypes(types: types)
+    }
+  }
+}
+extension String {
+  func groups(for regexPattern: String) -> [[String]] {
+    do {
+      let text = self
+      let regex = try NSRegularExpression(pattern: regexPattern)
+      let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+      return matches.map { match in
+        return (0..<match.numberOfRanges).map {
+          let rangeBounds = match.range(at: $0)
+          guard let range = Range(rangeBounds, in: text) else {
+            return ""
+          }
+        return String(text[range])
+        }
+      }
+    } catch let error {
+      print("invalid regex: \(error.localizedDescription)")
+      return []
     }
   }
 }

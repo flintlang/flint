@@ -5,7 +5,6 @@ struct BoogieTranslationIR {
   let holisticTestProcedures: [(SourceLocation, BIRTopLevelDeclaration)]
   let holisticTestEntryPoints: [String]
 
-  let lineMapping: [TranslationInformation.ErrorMappingKey: TranslationInformation]
   let callGraph: [String: Set<String>]
 }
 

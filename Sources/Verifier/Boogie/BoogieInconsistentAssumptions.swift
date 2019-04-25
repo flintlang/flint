@@ -58,6 +58,7 @@ class BoogieInconsistentAssumptions {
       switch error {
       case .assertionFailure(let lineNumber):
         guard let ti = mapping[lineNumber] else {
+          print(mapping)
           print("Couldn't find translation information for assertion on line \(lineNumber) in inconsistent assertions")
           fatalError()
         }

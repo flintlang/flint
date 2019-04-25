@@ -292,4 +292,8 @@ extension Environment {
       callGraph[caller] = existingCalls
     }
   }
+
+  public func addExternalCall(caller: String) {
+    functionCallsExternal[caller] = true
+  }
 }

@@ -31,7 +31,7 @@ C :: (any) {
   }
 
   func violatedInvariant()
-    mutates (j)
+    mutates (j, v)
   {
     self.j = 5
     let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
@@ -45,7 +45,7 @@ C :: (any) {
 
   @payable
   func violatedAssetAccountingInvariant(implicit w: Wei)
-    mutates (Wei.rawValue)
+    mutates (Wei.rawValue, j, v)
   {
     let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
     var w1: Wei = w
@@ -53,6 +53,20 @@ C :: (any) {
     do {
       //VERIFY-FAIL
       (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      fatalError()
+    }
+  }
+
+  func stateCouldChangeAfterExternalCall()
+    mutates (v, j)
+  {
+    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    do {
+      let vOld: Int = v
+      (call libInstance.getValue()) as! Int
+      //VERIFY-FAIL
+      assert (self.v == vOld)
     } catch is ExternalCallError {
       fatalError()
     }

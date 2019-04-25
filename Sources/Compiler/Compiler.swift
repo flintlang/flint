@@ -125,9 +125,8 @@ extension Compiler {
                                               normaliser: IdentifierNormaliser()).verify()
 
       _ = try config.diagnostics.checkpoint(errors)
-      _ = try config.diagnostics.display()
-
       if verified {
+        _ = try config.diagnostics.display()
         print("Contract specification verified!")
       } else {
         print("Contract specification not verified")

@@ -325,6 +325,17 @@ extension BoogieTranslator {
         stmts.append(.havoc(successValueVariable, ti))
 
         var trueStatements = [BStatement]()
+        // Havoc global state - to capture that the values of the global state can be changed,
+        for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) {
+          trueStatements.append(.havoc(variableName, ti))
+          // Add external call
+        }
+
+        // we can assume that the invariants will hold - as all the functions must hold the invariant
+        for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants {
+          trueStatements.append(.assume(invariant.expression, ti))
+        }
+
         if let nextStatement = self.enclosingDoBody.first {
           self.enclosingDoBody.remove(at: 0)
           trueStatements += process(nextStatement)

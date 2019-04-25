@@ -24,8 +24,11 @@ public struct SourceLocation: Comparable, CustomStringConvertible, Hashable {
     self.isFromStdlib = isFromStdlib
   }
 
-  public var hashValue: Int {
-    return file.hashValue + line ^ 2 + column ^ 3 + length ^ 4
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(self.line)
+    hasher.combine(self.column)
+    hasher.combine(self.length)
+    hasher.combine(self.file)
   }
 
   public static func spanning<S1: SourceEntity, S2: SourceEntity>(_ lowerBoundEntity: S1,
