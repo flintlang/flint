@@ -1,11 +1,11 @@
 public struct ContractFuncInfo {
-    private var type : String
+    private var resultType : String
     
-    public init(type : String) {
-        self.type = type
+    public init(resultType : String) {
+        self.resultType = resultType
     }
     
     public func getType() -> String {
-       return type
+       return resultType
     }
 }
