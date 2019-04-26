@@ -94,6 +94,27 @@ async function transactional_method(contract, methodName, args) {
     });
 }
 
+async function transactional_method_void(contract, methodName, args) {
+    var value = contract[methodName]['call'](...args);
+    var tx_hash = await transactional_method(contract, methodName, args);
+
+    return {tx_hash: tx_hash, rVal: value};
+}
+
+async function transactional_method_string(contract, methodName, args) {
+    var value = web3.toAscii(contract[methodName]['call'](...args));
+    var tx_hash = await transactional_method(contract, methodName, args);
+
+    return {tx_hash: tx_hash, rVal: value};
+}
+
+async function transactional_method_int(contract, methodName, args) {
+    var value = contract[methodName]['call'](...args).toNumber();
+    var tx_hash = await transactional_method(contract, methodName, args);
+
+    return {tx_hash: tx_hash, rVal: value};
+}
+
 function call_method_string(contract, methodName, args) {
     return contract[methodName]['call'](...args);
 }
@@ -233,7 +254,7 @@ function process_test_result(res, test_name) {
                 {
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
-                        contractFunctionInfo[fName] = ContractFuncInfo(type: resultType.name)
+                        contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultType.name)
                     }
     
                     contractFunctionNames.append(fName)
