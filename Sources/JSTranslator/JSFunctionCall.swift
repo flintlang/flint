@@ -20,6 +20,11 @@ public class JSFunctionCall : CustomStringConvertible {
         self.resultType = resultType
     }
     
+    
+    public func generateExtraVarAssignment() -> Bool {
+        return transactionMethod && (resultType != "")
+    }
+    
     public func generateTestFrameworkConstructorCall() -> String {
         if args.count == 0 {
             return ""
@@ -52,7 +57,17 @@ public class JSFunctionCall : CustomStringConvertible {
         
         if (contractCall) {
             if (transactionMethod) {
-                fCall = "await transactional_method(t_contract, " + "'" + self.functionName + "'"
+                // I need to switch between the different types that are possible and then generate the right return value
+                if (resultType == "Int") {
+                    fCall = "await transactional_method_int(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "String") {
+                    fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Address") {
+                    fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else {
+                    fCall = "await transactional_method_void(t_contract, " + "'" + self.functionName + "'"
+                }
+            
                 if args.count > 0 {
                     fCall += "," + "[" + create_arg_list() + "]" + ")"
                 } else {

@@ -21,6 +21,7 @@ public class JSVariableAssignment : CustomStringConvertible {
         
         if (isInstantiation)
         {
+            // check that the rhs is an actual function call
             guard case .FunctionCall(let fCall) = rhs else {
                 print("Function call is not a valid instantiation")
                 exit(0)
@@ -30,6 +31,23 @@ public class JSVariableAssignment : CustomStringConvertible {
             
             desc += "   //"
             
+        }
+        
+        switch (rhs) {
+        case .FunctionCall(let fCall):
+            if fCall.generateExtraVarAssignment() {
+                let randNum = Int.random(in: 0..<Int.max)
+                let randomVar = "_X" + randNum.description
+                desc += "let " + randomVar + " = " + rhs.description + ";"
+                desc += "\n"
+                desc += "   "
+                let varModifier = isConstant ? "let" : "var"
+                desc += varModifier
+                desc += " " + lhs.description + " = " + randomVar + "['rVal']" + ";"
+                return desc
+            }
+        default:
+            break
         }
 
         let varModifier = isConstant ? "let" : "var"
