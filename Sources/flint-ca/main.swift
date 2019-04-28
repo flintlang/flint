@@ -9,10 +9,11 @@ func main() {
     command (
         Flag("typestate information", flag:"t", description:"Information for typestates"),
         Flag("caller capability analysis", flag:"c", description:"Information for caller capabilites"),
+        Flag("gas estimation", flag:"g", description:"gas estimation of contract and functions"),
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { typeStateDiagram, callerAnalysis, sourceCode, fileName in
+    { typeStateDiagram, callerAnalysis, estimateGas, sourceCode, fileName in
         let inputFiles = [URL(fileURLWithPath: fileName)]
         do {
             let c = Compiler(
@@ -23,7 +24,8 @@ func main() {
                                             quiet: false,
                         sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
                 typeStateDiagram: typeStateDiagram,
-                callerCapabilityAnalysis: callerAnalysis)
+                callerCapabilityAnalysis: callerAnalysis,
+                estimateGas: estimateGas)
             
             // I need a better way of representing the flags
             try c.ide_compile()
@@ -54,7 +56,8 @@ func main_d() throws {
                                             quiet: false,
                                             sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
                 typeStateDiagram : false,
-                callerCapabilityAnalysis: true)
+                callerCapabilityAnalysis: false,
+                estimateGas: true)
             
             try c.ide_compile()
             

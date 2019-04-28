@@ -22,8 +22,10 @@ struct Compiler {
   var sourceCode: String
   var stdlibFiles: [URL]
   var diagnostics: DiagnosticPool
-  var typeStateDiagram : Bool
-  var callerCapabilityAnalysis: Bool
+  let typeStateDiagram : Bool
+  let callerCapabilityAnalysis: Bool
+  let estimateGas : Bool
+  
 
   var sourceContext: SourceContext {
     return SourceContext(sourceFiles: sourceFiles, sourceCodeString: sourceCode, isForServer: true)
@@ -68,6 +70,12 @@ struct Compiler {
             exitWithFailure()
         }
         exit(0)
+    }
+    
+    if (estimateGas) {
+        let gasEstimator = GasEstimator()
+        let ge_json = gasEstimator.estimateGas(ast: ast)
+        print(ge_json)
     }
     
     if (callerCapabilityAnalysis) {
