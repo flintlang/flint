@@ -41,12 +41,34 @@ struct Compiler {
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
     
-    // add all parser diagnostics to the pool of diagnistics  
-    diagnostics.appendAll(parserDiagnostics)
+    if let failed = try diagnostics.checkpoint(parserDiagnostics) {
+        if failed {
+            exitWithFailure()
+        }
+        exit(0)
+    }
     
+    guard let ast = parserAST else {
+        exitWithFailure()
+    }
     
-    // i should check if there are any syntax errors before I do this part - but i want to give some
-    // information back to the user that their program is mesesd up
+    let astPasses: [ASTPass] = [
+        SemanticAnalyzer(),
+        TypeChecker(),
+        Optimizer(),
+        IRPreprocessor()
+    ]
+    
+    // Run all of the passes.
+    let passRunnerOutcome = ASTPassRunner(ast: ast)
+        .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+        if failed {
+            exitWithFailure()
+        }
+        exit(0)
+    }
+
     if (typeStateDiagram)
     {
         let gs : [Graph] = produce_graphs_from_ev(ev: environment)
@@ -58,43 +80,14 @@ struct Compiler {
         for dot in dotFiles {
             print(dot)
         }
-        return
-    }
-   
-    // only continue if you have no syntax errors? 
-    // need to set a flag to tell it not to continue on syntax errors
-    guard let ast = parserAST else {
-        return
     }
     
-    // stop parsing if any syntax errors are detected
-    if (environment.syntaxErrors)
-    {
-        let diag = diagnostics
-        let json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
-        print(json)
-        return
-    }
-    
-    
-    let astPasses: [ASTPass] = [
-        SemanticAnalyzer(),
-        TypeChecker(),
-        Optimizer(),
-        IRPreprocessor()
-    ]
-    
-    let passRunnerOutcome = ASTPassRunner(ast: ast)
-        .run(passes: astPasses, in: environment, sourceContext: sourceContext)
-
-    // add semantic diagnostics
-    diagnostics.appendAll(passRunnerOutcome.diagnostics)
-        
-    let json = try convertFlintDiagToLspDiagJson(diagnostics.getDiagnostics())
-    print(json)
-
-    // all the diagnostics have been added
     return
+  }
+    
+  func exitWithFailure() -> Never {
+        print("ERROR")
+        exit(0)
   }
 }
 
