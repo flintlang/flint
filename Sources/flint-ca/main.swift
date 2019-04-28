@@ -1,7 +1,7 @@
 import Foundation
 import Commander
 import AST
-import LSP
+import ContractAnalysis
 import Diagnostic
 
 /// The main function for the compiler.

@@ -17,13 +17,13 @@ let package = Package(
       dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic"]),
     .target(
       name: "flint-lsp",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "JSTranslator"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP"]),
     .target(
       name: "flint-ca",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "JSTranslator"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "ContractAnalysis"]),
     .target(
       name: "flint-test",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "JSTranslator"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator"]),
     .target(
       name: "Source",
       dependencies: []
@@ -100,7 +100,10 @@ let package = Package(
         dependencies: ["FileCheck", "Commander"]),
     .target(
         name: "LSP",
-        dependencies: ["Diagnostic"]),
+        dependencies: ["Diagnostic", "AST"]),
+    .target(
+        name: "ContractAnalysis",
+        dependencies: ["AST"]),
     .target(
         name: "JSTranslator",
         dependencies: ["AST", "Parser", "Lexer"])
