@@ -20,8 +20,7 @@ func main() {
                 stdlibFiles: StandardLibrary.default.files,
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
-                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
-                typeStateDiagram: typeStateDiagram)
+                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
             
             // I need a better way of representing the flags
             try c.ide_compile()
@@ -50,8 +49,7 @@ func main_d() throws {
                 stdlibFiles: StandardLibrary.default.files,
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
-                                            sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
-                typeStateDiagram : true)
+                                            sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
             
             try c.ide_compile()
             
