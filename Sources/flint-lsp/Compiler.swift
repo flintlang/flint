@@ -49,7 +49,7 @@ struct Compiler {
     {
         let diag = diagnostics
         let lsp_json = try convertFlintDiagToLspDiagJson(diag.getDiagnostics())
-        print(json)
+        print(lsp_json)
         return
     }
     
@@ -71,7 +71,7 @@ struct Compiler {
     diagnostics.appendAll(passRunnerOutcome.diagnostics)
         
     let lsp_json = try convertFlintDiagToLspDiagJson(diagnostics.getDiagnostics())
-    print(json)
+    print(lsp_json)
 
     // all the diagnostics have been added
     return
