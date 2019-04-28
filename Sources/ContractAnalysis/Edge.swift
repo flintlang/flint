@@ -5,7 +5,7 @@ public struct Edge {
 
     init(startVertex: String, endVertex: String, label: String) {
         StartVertex = startVertex
-	EndVertex = endVertex
-	Label = label
+	    EndVertex = endVertex
+        Label = label
     }
 }
