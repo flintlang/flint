@@ -89,9 +89,7 @@ struct Compiler {
 
     // add semantic diagnostics
     diagnostics.appendAll(passRunnerOutcome.diagnostics)
-    
-    // I guess at this point - I need to know that
-    
+        
     let json = try convertFlintDiagToLspDiagJson(diagnostics.getDiagnostics())
     print(json)
 
