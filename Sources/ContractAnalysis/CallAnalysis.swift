@@ -12,7 +12,7 @@ public class CallAnalyser {
         anyPercentage = 0
     }
     
-    private func computeAnyPercentage() -> Int {
+    private func computeAnyPercentage() -> Float {
         var totalNumberOfFuncs = 0
         
         if let numberOfFuncsUnderAny = callerCapInfo["any"]?.count {
@@ -20,7 +20,7 @@ public class CallAnalyser {
                 totalNumberOfFuncs += funcs.count
             }
             
-            return numberOfFuncsUnderAny / totalNumberOfFuncs
+            return Float(numberOfFuncsUnderAny) / Float(totalNumberOfFuncs)
         }
         
         return 0
@@ -80,7 +80,7 @@ public class CallAnalyser {
         var callAnalysis : [String : String] = [:]
         callAnalysis["states"] = string_json_state_call_info
         callAnalysis["caller"] = string_json_caller_cap_info
-        callAnalysis["anyPercent"] = computeAnyPercentage().description
+        callAnalysis["anyPercent"] = (computeAnyPercentage() * 100).description
         
         let call_analysis_json = String(data: try JSONSerialization.data(withJSONObject: callAnalysis, options: []), encoding: .utf8)
         
