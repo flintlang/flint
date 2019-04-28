@@ -12,7 +12,7 @@ func main() {
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { callerAnalysis, typeStateDiagram, sourceCode, fileName in
+    { typeStateDiagram, callerAnalysis, sourceCode, fileName in
         let inputFiles = [URL(fileURLWithPath: fileName)]
         do {
             let c = Compiler(
