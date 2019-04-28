@@ -60,7 +60,7 @@ public class CallAnalyser {
 
     public func analyse(ast : TopLevelModule) throws -> String {
         
-        let decs = ast.declarations
+        let decs = ast.declarations[2...]
         
         for d in decs {
             switch (d) {
