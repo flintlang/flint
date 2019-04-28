@@ -23,6 +23,7 @@ struct Compiler {
   var stdlibFiles: [URL]
   var diagnostics: DiagnosticPool
   var typeStateDiagram : Bool
+  var callerCapabilityAnalysis: Bool
 
   var sourceContext: SourceContext {
     return SourceContext(sourceFiles: sourceFiles, sourceCodeString: sourceCode, isForServer: true)
@@ -67,6 +68,12 @@ struct Compiler {
             exitWithFailure()
         }
         exit(0)
+    }
+    
+    if (callerCapabilityAnalysis) {
+        let callerAnalyser = CallAnalyser()
+        let ca_json = try callerAnalyser.analyse(ast: ast)
+        print(ca_json)
     }
 
     if (typeStateDiagram)

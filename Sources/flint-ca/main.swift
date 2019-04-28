@@ -8,10 +8,11 @@ import Diagnostic
 func main() {
     command (
         Flag("typestate information", flag:"t", description:"Information for typestates"),
+        Flag("caller capability analysis", flag:"c", description:"Information for caller capabilites"),
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { typeStateDiagram, sourceCode, fileName in
+    { callerAnalysis, typeStateDiagram, sourceCode, fileName in
         let inputFiles = [URL(fileURLWithPath: fileName)]
         do {
             let c = Compiler(
@@ -21,7 +22,8 @@ func main() {
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
                         sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
-                typeStateDiagram: typeStateDiagram)
+                typeStateDiagram: typeStateDiagram,
+                callerCapabilityAnalysis: callerAnalysis)
             
             // I need a better way of representing the flags
             try c.ide_compile()
@@ -51,7 +53,8 @@ func main_d() throws {
                 diagnostics: DiagnosticPool(shouldVerify: false,
                                             quiet: false,
                                             sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)),
-                typeStateDiagram : true)
+                typeStateDiagram : false,
+                callerCapabilityAnalysis: true)
             
             try c.ide_compile()
             
@@ -66,5 +69,5 @@ func main_d() throws {
         }
 }
 
-//try main_d()
-main()
+try main_d()
+//main()
