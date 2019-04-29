@@ -509,9 +509,19 @@ function process_test_result(res, test_name) {
             resultType = funcInfo.getType()
         }
         
+        var contractEventInfo : ContractEventInfo? = nil
+        if fName.contains("assertEventFired") {
+            if let eventInfo = self.contractEventInfo[funcArgs[0].description] {
+                contractEventInfo = eventInfo
+            } else {
+                print("The event " + funcArgs[0].description + " does not exist")
+                exit(0)
+            }
+        }
+        
         let isAssert = fName.lowercased().contains("assert")
         
-        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType))
+        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType, eventInformation: contractEventInfo))
     }
     
     

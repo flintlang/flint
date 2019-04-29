@@ -1,3 +1,5 @@
+import Foundation
+
 public class JSFunctionCall : CustomStringConvertible {
     
     private let contractCall : Bool
@@ -7,10 +9,9 @@ public class JSFunctionCall : CustomStringConvertible {
     private let args : [JSNode]
     private let contractName : String
     private let resultType : String
+    private let eventInformation : ContractEventInfo?
     
-    // return type of function call is required
-    
-    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "") {
+    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "", eventInformation : ContractEventInfo? = nil) {
         self.contractCall = contractCall
         self.transactionMethod = transactionMethod
         self.isAssert = isAssert
@@ -18,6 +19,7 @@ public class JSFunctionCall : CustomStringConvertible {
         self.contractName = contractName
         self.args = args
         self.resultType = resultType
+        self.eventInformation = eventInformation
     }
     
     
@@ -95,6 +97,7 @@ public class JSFunctionCall : CustomStringConvertible {
             assertFuncs.append("assertCallerUnsat")
             assertFuncs.append("assertCanCallInThisState")
             assertFuncs.append("assertCantCallInThisState")
+            assertFuncs.append("assertEventFired")
             
             let isCallerOrStateFunc = assertFuncs.contains(functionName)
             
@@ -108,19 +111,40 @@ public class JSFunctionCall : CustomStringConvertible {
                 fCall += self.functionName + "("
             }
             
-            if args.count > 0 {
-                fCall += create_arg_list()
-            }
-            
-            if args.count < 2 && isCallerOrStateFunc {
-                fCall += ", []"
+            if functionName.contains("assertEventFired") {
+                if let eventInfo = eventInformation {
+                    let event_args = args[1...]
+                    var event_filter = ""
+                    var event_name = ""
+                    do {
+                        event_filter = try eventInfo.create_event_arg_object(args: Array(event_args))
+                        event_name = args[0].description
+                    } catch {
+                        print("Failed to construct event filter")
+                        exit(0)
+                    }
+                    fCall += "\"" + event_name + "\", "
+                    fCall += event_filter
+                } else {
+                    print("No associated event information with this function call")
+                    exit(0)
+                }
+            } else {
+                
+                if args.count > 0 {
+                    fCall += create_arg_list()
+                }
+                
+                if args.count < 2 && isCallerOrStateFunc {
+                    fCall += ", []"
+                }
             }
             
             if isCallerOrStateFunc {
                 fCall += ", t_contract"
             }
             
-            fCall += ")"
+            fCall += ");"
         }
     
         return fCall
