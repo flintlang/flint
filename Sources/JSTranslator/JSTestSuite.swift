@@ -14,6 +14,7 @@ public class JSTestSuite {
     private var isFuncTransaction : [String:Bool]
     private var contractFunctionNames : [String]
     private var contractFunctionInfo : [String : ContractFuncInfo]
+    private var contractEventInfo : [String : ContractEventInfo]
     
     private let firstHalf : String =
 """
@@ -202,6 +203,7 @@ function process_test_result(res, test_name) {
         self.isFuncTransaction = [:]
         self.contractFunctionNames = []
         self.contractFunctionInfo = [:]
+        self.contractEventInfo = [:]
         self.ast = ast
         loadTestContractVars()
     }
@@ -248,7 +250,24 @@ function process_test_result(res, test_name) {
             let (_, environment, _) = Parser(tokens: tokens).parse()
             
             let contractFunctions = environment.types[self.contractName]!.allFunctions
+            let contractEvents = environment.types[self.contractName]!.allEvents
             
+            // process contract event information
+            for (eventName, allEventsWithName) in contractEvents {
+                    // this will always exist if the parse tree has been constructed
+                    let e = allEventsWithName[0]
+                    var event_args : [(String, String)] = []
+                    var count = 0
+                    let paramTypes = e.eventTypes
+                    for i in e.parameterIdentifiers {
+                        let paramInfo = (i.name, paramTypes[count].name)
+                        event_args.append(paramInfo)
+                        count += 1
+                    }
+                    let contractInfo = ContractEventInfo(name: eventName, event_args: event_args)
+                    contractEventInfo[eventName] = contractInfo
+            }
+        
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
@@ -260,6 +279,7 @@ function process_test_result(res, test_name) {
                     contractFunctionNames.append(fName)
                 }
             }
+
             
         } catch {
             print("Fatal error")
