@@ -11,7 +11,7 @@ public struct ContractEventInfo {
     
     public func create_event_arg_object(args : [JSNode]) throws -> String {
         
-        let res_dict : [String : String] = [:]
+        var res_dict : [String : String] = [:]
         var numOfArg : Int = 0
         
         if args.count != event_args.count {
