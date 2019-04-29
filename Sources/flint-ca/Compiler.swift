@@ -13,7 +13,6 @@ import Parser
 import SemanticAnalyzer
 import TypeChecker
 import Optimizer
-import ContractAnalysis
 import IRGen
 
 /// Runs the different stages of the compiler.
