@@ -137,6 +137,27 @@ function assertEqual(result_dict, expected, actual) {
     return result_dict
 }
 
+async function assertEventFired(result_dict, eventName, event_args, t_contract) {
+   let result = await new Promise(function(resolve, reject) {
+        let cEvent = t_contract[eventName](event_args, {fromBlock: 0, toBlock: 'latest'});
+        cEvent.get(function(error, logs) {
+            if (logs.length > 0) {
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        });
+   });
+
+    result_dict['result'] = result && result_dict['result'];
+
+    if (result && result_dict['result']) {
+            result_dict['msg'] = "has Passed";
+    } else {
+           result_dict['msg'] = "has Failed";
+    }
+}
+
 async function isRevert(result_dict, fncName, args, t_contract) {
     let tx_hash = await transactional_method(t_contract, fncName, args);
     let receipt = eth.getTransactionReceipt(tx_hash);
