@@ -2,7 +2,7 @@
 //  Compiler.swift
 //  flintcPackageDescription
 //
-//  Created by Franklin Schrans on 12/19/17.
+
 //
 
 import Foundation
@@ -21,10 +21,9 @@ struct Compiler {
   var sourceFiles: [URL]
   var sourceCode: String
   var stdlibFiles: [URL]
+  var outputDirectory : URL
   var diagnostics: DiagnosticPool
-  let typeStateDiagram : Bool
-  let callerCapabilityAnalysis: Bool
-  let estimateGas : Bool
+ 
   
 
   var sourceContext: SourceContext {
@@ -37,7 +36,46 @@ struct Compiler {
     return stdlibTokens + userTokens
   }
     
-  func ide_compile() throws
+  func getAST() throws -> (TopLevelModule, Environment) {
+    
+    let tokens = try tokenizeFiles()
+    
+    let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+    
+    if let failed = try diagnostics.checkpoint(parserDiagnostics) {
+        if failed {
+            exitWithFailure()
+        }
+        exit(0)
+    }
+    
+    guard let ast = parserAST else {
+        exitWithFailure()
+    }
+    
+    let astPasses: [ASTPass] = [
+        SemanticAnalyzer(),
+        TypeChecker(),
+        Optimizer(),
+        IRPreprocessor()
+    ]
+    
+    // Run all of the passes.
+    let passRunnerOutcome = ASTPassRunner(ast: ast)
+        .run(passes: astPasses, in: environment, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+        if failed {
+            exitWithFailure()
+        }
+        exit(0)
+    }
+    
+    return (parserAST!, environment)
+    
+  }
+    
+    
+  func compile() throws
   {
     let tokens = try tokenizeFiles()
 
@@ -72,37 +110,59 @@ struct Compiler {
         exit(0)
     }
     
-    if (estimateGas) {
-        let gasEstimator = GasEstimator()
-        let ge_json = gasEstimator.estimateGas(ast: ast)
-        print(ge_json)
+    // Generate YUL IR code.
+    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+        .generateCode()
+    
+    // Compile the YUL IR code using solc.
+    try SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: false).compile()
+    
+    // these are warnings from the solc compiler
+    try diagnostics.display()
+    
+    let fileName = "main.sol"
+    let irFileURL: URL
+    irFileURL = outputDirectory.appendingPathComponent(fileName)
+    do {
+        try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+    } catch {
+        exitWithUnableToWriteIRFile(irFileURL: irFileURL)
     }
     
-    if (callerCapabilityAnalysis) {
-        let callerAnalyser = CallAnalyser()
-        let ca_json = try callerAnalyser.analyse(ast: ast)
-        print(ca_json)
-    }
-
-    if (typeStateDiagram)
-    {
-        let gs : [Graph] = produce_graphs_from_ev(ev: environment)
-        var dotFiles : [String] = []
-        for g in gs {
-            let dotFile = produce_dot_graph(graph: g)
-            dotFiles.append(dotFile)
-        }
-        for dot in dotFiles {
-            print(dot)
-        }
-    }
-    
-    return
   }
-    
+        
   func exitWithFailure() -> Never {
         print("ERROR")
         exit(0)
   }
+}
+
+func exitWithSolcNotInstalledDiagnostic() -> Never {
+    let diagnostic = Diagnostic(
+        severity: .error,
+        sourceLocation: nil,
+        message: "ERROR Missing dependency: solc",
+        notes: [
+            Diagnostic(
+                severity: .note,
+                sourceLocation: nil,
+                message: "Refer to http://solidity.readthedocs.io/en/develop/installing-solidity.html " +
+                "for installation instructions.")
+        ]
+    )
+    // swiftlint:disable force_try
+    print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+    // swiftlint:enable force_try
+    exit(1)
+}
+
+func exitWithUnableToWriteIRFile(irFileURL: URL) {
+    let diagnostic = Diagnostic(severity: .error,
+                                sourceLocation: nil,
+                                message: "ERROR Could not write IR file: '\(irFileURL.path)'.")
+    // swiftlint:disable force_try
+    print(try! DiagnosticsFormatter(diagnostics: [diagnostic], sourceContext: nil).rendered())
+    // swiftlint:enable force_try
+    exit(1)
 }
 
