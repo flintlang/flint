@@ -38,7 +38,7 @@ struct Analyser {
         if (estimateGas) {
             let gasEstimator = GasEstimator()
             try c.compile()
-            let ge_json = gasEstimator.estimateGas(ast: ast)
+            let ge_json = gasEstimator.estimateGas(ast: ast, env : environment)
             print(ge_json)
         }
         
