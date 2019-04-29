@@ -394,6 +394,14 @@ function process_test_result(res, test_name) {
                 if let lit = extract_literal(literalToken: l) {
                     jsArgs.append(lit)
                 }
+            case .binaryExpression(let be):
+                switch (be.opToken) {
+                case .dot:
+                    jsArgs.append(process_dot_expr(binExpr: be))
+                default:
+                    break
+                }
+        
             default:
                 break
             }
@@ -478,6 +486,8 @@ function process_test_result(res, test_name) {
         switch (binExpr.rhs) {
         case .functionCall(let fCall):
             rhsNode = process_func_call(fCall: fCall, lhsName: lhsName)
+        case .identifier(let i):
+            rhsNode = .Variable(JSVariable(variable: i.name))
         default:
             break
         }
