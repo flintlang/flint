@@ -13,7 +13,7 @@ struct Proposal {
   invariant (yesVotes >= 0)
   invariant (noVotes >= 0)
   invariant (quorum >= 0)
-  invariant (yesVotes + noVotes == voted.size)
+  //invariant (yesVotes + noVotes == SimpleDAO.totalSupply)
   //invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
 
   public init() {
@@ -28,7 +28,9 @@ contract SimpleDAO (Join, Propose, Vote) {
   var balances: [Address: Int]
   var totalSupply: Int = 0
 
+  invariant (avaliableMemberSlots == 3 - members.size)
   invariant (totalSupply >= 0)
+  // want to say that each balance is less than the total supply
 }
 
 SimpleDAO @(any) :: (any) {
