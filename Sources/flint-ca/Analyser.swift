@@ -35,10 +35,14 @@ struct Analyser {
         
         let (ast, environment) = try c.getAST()
         
+        
         if (estimateGas) {
             let gasEstimator = GasEstimator()
-            try c.compile()
-            let ge_json = gasEstimator.estimateGas(ast: ast, env : environment)
+            let new_ast = gasEstimator.processAST(ast: ast)
+            let p = Parser(ast: new_ast)
+            let new_env = p.getEnv()
+            try c.genSolFile(ast: new_ast, env: new_env)
+            let ge_json = gasEstimator.estimateGas(ast: new_ast, env: new_env)
             print(ge_json)
         }
         
