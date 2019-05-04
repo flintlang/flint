@@ -85,7 +85,7 @@ async function deploy_contract(abi, bytecode) {
         jsTestFile += header_estimate_gas
         jsTestFile += "\n"
         
-        jsTestFile += "res_dict['contract'] = web3.eth.estimateGas({data: bytecode}); \n"
+        jsTestFile += "    res_dict['contract'] = web3.eth.estimateGas({data: bytecode}); \n"
         
         let funcs = env.types[contractName]!.allFunctions
         
@@ -93,14 +93,15 @@ async function deploy_contract(abi, bytecode) {
             jsTestFile += "    res_dict[\"\(fName)\"] = c.\(fName).estimateGas(); \n"
         }
         
-        jsTestFile += "    console.log(res_dict); \n} \n"
+        jsTestFile += "    console.log(JSON.stringify(res_dict)); \n} \n"
         
         jsTestFile += "estimate_gas('main.sol', '\(contractName)');"
         
         var jsonOutput = ""
         do {
            jsonOutput = try runNode(jsTestFile: jsTestFile)
-        } catch {
+        } catch let err {
+            print(err)
             print("ERROR : Could not run gas estimator (js file)")
         }
         
