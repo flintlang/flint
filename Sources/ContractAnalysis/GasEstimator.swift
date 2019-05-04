@@ -67,6 +67,36 @@ async function deploy_contract(abi, bytecode) {
         return output
     }
     
+    public func processAST(ast : TopLevelModule) -> TopLevelModule {
+        var new_decs : [TopLevelDeclaration] = []
+        let any_caller_protection : CallerProtection = CallerProtection(identifier: Identifier(name: "any", sourceLocation: .DUMMY))
+
+        var contract_names_to_states : [String : [TypeState]] = [:]
+        for dec in ast.declarations {
+            switch (dec) {
+            case .contractDeclaration(let cdec):
+                contract_names_to_states[cdec.identifier.name] = cdec.states
+                new_decs.append(.contractDeclaration(cdec))
+            case .contractBehaviorDeclaration(let cbDec):
+                continue
+            default:
+                new_decs.append(dec)
+            }
+        }
+        
+        for dec in ast.declarations {
+            switch (dec) {
+            case .contractBehaviorDeclaration(let cbdec):
+                let states = contract_names_to_states[cbdec.contractIdentifier.name]!
+                new_decs.append(.contractBehaviorDeclaration(ContractBehaviorDeclaration(contractIdentifier: cbdec.contractIdentifier, states: states, callerBinding: cbdec.callerBinding, callerProtections: [any_caller_protection], closeBracketToken: cbdec.closeBracketToken, members: cbdec.members)))
+            default:
+                continue
+            }
+        }
+
+        return TopLevelModule(declarations: new_decs)
+    }
+    
     private func getGasEstimate(ast : TopLevelModule, env : Environment, contractName: String) -> String {
         var jsTestFile : String = ""
         jsTestFile += jsTemplate
@@ -110,13 +140,21 @@ async function deploy_contract(abi, bytecode) {
     
     func runNode(jsTestFile : String) throws -> String {
         let fileManager = FileManager.init()
-        let outputfile = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: false).appendingPathComponent("utils").appendingPathComponent("testRunner").appendingPathComponent("test.js")
+        //let outputfile = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: false).appendingPathComponent("utils").appendingPathComponent("gasEstimator").appendingPathComponent("test.js", isDirectory: false)
+        //let outputfile = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator")
+        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator/test.js"
+        let outputfile = URL(fileURLWithPath: path)
+        
+        if !(fileManager.fileExists(atPath: path)) {
+            fileManager.createFile(atPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator/test.js", contents: nil)
+        }
+ 
         try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
         
         let p = Process()
         let pipe = Pipe()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner"
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator"
         p.arguments = ["node", "test.js"]
         p.standardOutput = pipe
         p.launch()
