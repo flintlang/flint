@@ -10,6 +10,10 @@ utils/testRunner/main.sol
 utils/testRunner/test.js
 utils/testRunner/*.bin
 
+utils/gasEstimator/main.sol
+utils/gasEstimator/test.js
+utils/gasEstimator/*.bin
+
 bin/
 contracts/
 build/
