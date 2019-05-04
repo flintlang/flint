@@ -29,6 +29,7 @@ public class CallAnalyser {
     private func addStateToFunc(state : String, funcName : String) {
         if var funcs = stateCallerInfo[state] {
             funcs.append(funcName)
+            self.stateCallerInfo[state] = funcs
         } else {
             self.stateCallerInfo[state] = []
             self.stateCallerInfo[state]?.append(funcName)
@@ -38,6 +39,7 @@ public class CallAnalyser {
     private func addCallerCapToFunc(caller : String, funcName : String) {
         if var funcs = callerCapInfo[caller] {
             funcs.append(funcName)
+            self.callerCapInfo[caller] = funcs
         } else {
             self.callerCapInfo[caller] = []
             self.callerCapInfo[caller]?.append(funcName)
