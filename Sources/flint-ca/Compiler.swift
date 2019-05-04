@@ -73,6 +73,43 @@ struct Compiler {
     
   }
     
+  func genSolFile(ast: TopLevelModule, env: Environment) throws {
+    let astPasses: [ASTPass] = [
+        SemanticAnalyzer(),
+        TypeChecker(),
+        Optimizer(),
+        IRPreprocessor()
+    ]
+    
+    // Run all of the passes.
+    let passRunnerOutcome = ASTPassRunner(ast: ast)
+        .run(passes: astPasses, in: env, sourceContext: sourceContext)
+    if let failed = try diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+        if failed {
+            exitWithFailure()
+        }
+        exit(0)
+    }
+    
+    // Generate YUL IR code.
+    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+        .generateCode()
+    
+    // Compile the YUL IR code using solc.
+    try SolcCompiler(inputSource: irCode, outputDirectory: outputDirectory, emitBytecode: false).compile()
+    
+    // these are warnings from the solc compiler
+    try diagnostics.display()
+    
+    let fileName = "main.sol"
+    let irFileURL: URL
+    irFileURL = outputDirectory.appendingPathComponent(fileName)
+    do {
+        try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+    } catch {
+        exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+    }
+  }
     
   func compile() throws
   {
@@ -129,7 +166,7 @@ struct Compiler {
     }
     
   }
-        
+  
   func exitWithFailure() -> Never {
         print("ERROR")
         exit(0)
