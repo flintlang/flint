@@ -5,7 +5,7 @@ import LSP
 import JSTranslator
 import Diagnostic
 
-/// The main function for the compiler.
+/// The main function for the testing framework
 func main() {
     command (
         Argument<String> ("Test file", description: "Test file (.tflint)"),
@@ -24,7 +24,8 @@ func main() {
                                                        sourceContext: SourceContext(sourceFiles: inputFiles)),
                            test_run: test_run).run_tests()
             
-        } catch {
+        } catch let err {
+            print(err)
             print("Failed to run tests")
         }
         
@@ -32,7 +33,7 @@ func main() {
 }
 
 func main_d() throws {
-    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint_testing_framework_older_webjs/examples/test_counter.tflint"
+    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/test_flint_contracts/caller_caps.tflint"
     let inputFiles = [URL(fileURLWithPath: fileName)]
     let sourceCode = try String(contentsOf: inputFiles[0])
     
@@ -42,13 +43,13 @@ func main_d() throws {
                        diagnostics: DiagnosticPool(shouldVerify: false,
                                                    quiet: false,
                                                    sourceContext: SourceContext(sourceFiles: inputFiles)),
-                       test_run: false).run_tests()
+                       test_run: true).run_tests()
         
-    } catch {
+    } catch let err {
+        print(err)
         print("Failed to run tests")
     }
 }
 
-//try main_d()
 main()
-//try main_d()
+
