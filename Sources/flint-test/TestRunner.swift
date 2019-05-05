@@ -15,6 +15,7 @@ struct TestRunner {
     let testFile : URL
     let sourceCode : String
     var diagnostics: DiagnosticPool
+    var test_run : Bool
     
     func tokenizeTestFile() throws -> [Token] {
         let testTokens = try Lexer(sourceFile: testFile, isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
@@ -64,7 +65,11 @@ struct TestRunner {
         // create java script file and then run it
         jsTestSuite.convertAST()
         let jsTestFile : String = jsTestSuite.genFile()
-        try runNode(jsTestFile: jsTestFile)
+        if test_run {
+            print(jsTestFile)
+        } else {
+           try runNode(jsTestFile: jsTestFile)
+        }
     }
     
     func runNode(jsTestFile : String) throws {
