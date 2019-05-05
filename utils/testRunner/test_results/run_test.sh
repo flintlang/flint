@@ -21,3 +21,7 @@ rm temp.js
 swift run flint-test -t /Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/test_flint_contracts/state_test.tflint  > temp.js
 diff generated_js_files/state_test.js temp.js
 rm temp.js
+
+swift run flint-test -t /Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/test_flint_contracts/event.tflint  > temp.js
+diff generated_js_files/event.js temp.js
+rm temp.js
