@@ -1,5 +1,5 @@
 contract TestCounter {
-  let filePath : String = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/examples/valid/Counter.flint"
+  let filePath : String = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/flint_contracts/state_test.flint"
   let contractName: String = "Counter"   
   let TestSuiteName : String  = "<Add a name for this test suite>"
 }
