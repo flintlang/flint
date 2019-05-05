@@ -1,12 +1,15 @@
-Fixes #000
+# pull\_request\_template
 
-# Implementation Overview
+Fixes \#000
 
-# Notes
+## Implementation Overview
 
-# Checklist
+## Notes
 
-- [ ] Remove all TODOs, debug prints, whitespace changes
-- [ ] Update docs/grammar.abnf if necessary
-- [ ] Include tests
-- [ ] Add `review wanted` label, remove "WIP" in PR title
+## Checklist
+
+* [ ] Remove all TODOs, debug prints, whitespace changes
+* [ ] Update docs/grammar.abnf if necessary
+* [ ] Include tests
+* [ ] Add `review wanted` label, remove "WIP" in PR title
+

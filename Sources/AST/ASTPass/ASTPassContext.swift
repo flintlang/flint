@@ -144,6 +144,56 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
+  /// When visiting an external call's function call, this property is set to `true`.
+  public var isExternalFunctionCall: Bool {
+    get { return self[IsExternalFunctionCallContextEntry.self] ?? false }
+    set { self[IsExternalFunctionCallContextEntry.self] = newValue }
+  }
+
+  /// The external call context while visiting an external call
+  public var externalCallContext: ExternalCall? {
+    get { return self[ExternalCallContext.self] }
+    set { self[ExternalCallContext.self] = newValue }
+  }
+
+  /// Stack of do-catch statements
+  public var doCatchStatementStack: [DoCatchStatement] {
+    get { return self[DoCatchStatementStack.self] ?? [DoCatchStatement]() }
+    set { self[DoCatchStatementStack.self] = newValue }
+  }
+
+  /// When inside the condition of an if statement, this property is set to `true`
+  public var isInsideIfCondition: Bool {
+    get { return self[IsInsideIfCondition.self] ?? false }
+    set { self[IsInsideIfCondition.self] = newValue }
+  }
+
+  /// When inside an 'if let ...' construct, this property is set to `true`
+  public var isIfLetConstruct: Bool {
+    get { return self[IsIfLetConstruct.self] ?? false }
+    set { self[IsIfLetConstruct.self] = newValue }
+  }
+
+  /// When visiting argument labels in a function call, this property is set to `true`.
+  public var isFunctionCallArgumentLabel: Bool {
+    get { return self[IsFunctionCallArgumentLabel.self] ?? false }
+    set { self[IsFunctionCallArgumentLabel.self] = newValue }
+  }
+
+  /// When visiting arguments in a function call, this property is set to `true`.
+  public var isFunctionCallArgument: Bool {
+    get { return self[IsFunctionCallArgument.self] ?? false }
+    set { self[IsFunctionCallArgument.self] = newValue }
+  }
+
+  /// When visiting an external configuration parameter, this property is set to `true`.
+  /// External configuration params are hyper-parameters to the call, like the gas, the
+  /// wei used for the external call or reentrancy.
+  public var isExternalConfigurationParam: Bool {
+    get { return self[IsExternalConfigurationParam.self] ?? false }
+    set { self[IsExternalConfigurationParam.self] = newValue }
+  }
+
   /// The identifier of the enclosing type (contract, struct, enum, trait or event).
   public var enclosingTypeIdentifier: Identifier? {
     if let trait = traitDeclarationContext?.traitIdentifier {
@@ -256,7 +306,27 @@ private struct ScopeContextContextEntry: PassContextEntry {
   typealias Value = ScopeContext
 }
 
+private struct ExternalCallContext: PassContextEntry {
+  typealias Value = ExternalCall
+}
+
 private struct IsFunctionCallContextEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsExternalFunctionCallContextEntry: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct DoCatchStatementStack: PassContextEntry {
+  typealias Value = [DoCatchStatement]
+}
+
+private struct IsInsideIfCondition: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsIfLetConstruct: PassContextEntry {
   typealias Value = Bool
 }
 
@@ -265,5 +335,20 @@ private struct IsAssignment: PassContextEntry {
 }
 
 private struct IsPropertyDefaultAssignment: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsFunctionCallArgumentLabel: PassContextEntry {
+  typealias Value = Bool
+}
+
+private struct IsFunctionCallArgument: PassContextEntry {
+  typealias Value = Bool
+}
+
+/// See the 'isExternalConfigurationParam' property
+/// External configuration params are hyper-parameters to the call, like the gas, the
+/// wei used for the external call or reentrancy.
+private struct IsExternalConfigurationParam: PassContextEntry {
   typealias Value = Bool
 }

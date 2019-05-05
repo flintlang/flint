@@ -1,0 +1,85 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+
+contract Foo {
+  // CHECK-AST:   EventDeclaration
+  // CHECK-AST:     identifier "Finished"
+  event Finished()
+
+  // CHECK-AST:   EventDeclaration
+  // CHECK-AST:     identifier "Transfer"
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "from"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "to"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "value"
+  // CHECK-AST:   built-in type Int
+  event Transfer(from: Address, to: Address, value: Int)
+
+  // CHECK-AST:   EventDeclaration
+  // CHECK-AST:     identifier "Approve"
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "to"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "value"
+  // CHECK-AST:   built-in type Int
+  // CHECK-AST: VariableDeclaration
+  // CHECK-AST:   identifier "from"
+  // CHECK-AST:   built-in type Address
+  // CHECK-AST:    literal 0x0000000000000000000000000000000000000000
+  event Approve(to: Address, value: Int, from: Address = 0x0000000000000000000000000000000000000000)
+}
+
+Foo :: (any) {
+  public init() {}
+
+  public func finish() {
+    // CHECK-AST: EmitStatement
+    // CHECK-AST:   identifier "Finished"
+    emit Finished()
+  }
+
+  public func mint(account: Address) {
+    // CHECK-AST: EmitStatement
+    // CHECK-AST:   identifier "Approve"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "to"
+    // CHECK-AST:     identifier "account"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "value"
+    // CHECK-AST:     literal 20
+    emit Approve(to: account, value: 20)
+  }
+
+  public func transfer(owner: Address, receiver: Address){
+    // CHECK-AST: EmitStatement
+    // CHECK-AST:   identifier "Approve"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "to"
+    // CHECK-AST:     identifier "receiver"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "value"
+    // CHECK-AST:     literal 100
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "from"
+    // CHECK-AST:     identifier "owner"
+    emit Approve(to: receiver, value: 100, from: owner)
+    // CHECK-AST: EmitStatement
+    // CHECK-AST:   identifier "Transfer"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "from"
+    // CHECK-AST:     identifier "owner"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "to"
+    // CHECK-AST:     identifier "receiver"
+    // CHECK-AST:   FunctionArgument
+    // CHECK-AST:     identifier "value"
+    // CHECK-AST:     literal 100
+    emit Transfer(from: owner, to: receiver, value: 100)
+  }
+}

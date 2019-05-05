@@ -40,11 +40,7 @@ extension Environment {
       }
       return functionInformation.resultType
     case .matchedInitializer:
-      let name = functionCall.identifier.name
-      if let stdlibType = RawType.StdlibType(rawValue: name) {
-        return .stdlibType(stdlibType)
-      }
-      return .userDefinedType(name)
+      return .userDefinedType(functionCall.identifier.name)
     default:
       let eventMatch = matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: scopeContext)
       switch eventMatch {
@@ -177,18 +173,20 @@ extension Environment {
                              typeStates: typeStates,
                              callerProtections: callerProtections,
                              scopeContext: scopeContext))
-
+    case .typeConversionExpression(let typeConversionExpression):
+      return typeConversionExpression.type.rawType
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
 
       if binaryExpression.opToken == .dot {
-        switch type(of: binaryExpression.lhs,
-                    enclosingType: enclosingType,
-                    typeStates: typeStates,
-                    callerProtections: callerProtections,
-                    scopeContext: scopeContext) {
+        let lhsType = type(of: binaryExpression.lhs,
+                           enclosingType: enclosingType,
+                           typeStates: typeStates,
+                           callerProtections: callerProtections,
+                           scopeContext: scopeContext)
+        switch lhsType {
         case .arrayType:
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
@@ -208,7 +206,11 @@ extension Environment {
             fatalError()
           }
         default:
-          break
+          return type(of: binaryExpression.rhs,
+                      enclosingType: lhsType.name,
+                      typeStates: typeStates,
+                      callerProtections: callerProtections,
+                      scopeContext: scopeContext)
         }
       }
 
@@ -232,13 +234,17 @@ extension Environment {
                   callerProtections: callerProtections,
                   scopeContext: scopeContext) ?? .errorType
 
+    case .externalCall(let externalCall):
+      return type(of: .binaryExpression(externalCall.functionCall),
+                  enclosingType: enclosingType,
+                  typeStates: typeStates,
+                  callerProtections: callerProtections,
+                  scopeContext: scopeContext)
+
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
         let type = scopeContext.type(for: identifier.name) {
-        if case .inoutType(let type) = type {
-          return type
-        }
-        return type
+        return type.stripInout
       }
       return type(of: identifier.name,
                   enclosingType: identifier.enclosingType ?? enclosingType,

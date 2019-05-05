@@ -5,12 +5,13 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 // Generates code for an attempt expression
 struct IRAttemptExpression {
   var attemptExpression: AttemptExpression
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     let functionCall = attemptExpression.functionCall
     let functionName = functionCall.mangledIdentifier ?? functionCall.identifier.name
 
@@ -21,10 +22,10 @@ struct IRAttemptExpression {
       callName = IRWrapperFunction.prefixSoft + functionName
     }
 
-    let args: String = functionCall.arguments.map({ argument in
+    let args = functionCall.arguments.map({ argument in
       return IRExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
-    }).joined(separator: ", ")
+    })
 
-    return "\(callName)(\(args))"
+    return .functionCall(YUL.FunctionCall(callName, args))
   }
 }

@@ -39,7 +39,8 @@ struct IRCallerProtectionChecks {
         // swiftlint:disable line_length
         let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
         // swiftlint:enable line_length
-        let check = "eq(caller(), \(functionCall.rendered(functionContext: functionContext)))"
+        let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
+        let check = "eq(caller(), \(renderedFunctionCall.description))"
         return "\(variableName) := add(\(variableName), \(check))"
       case .functionType(parameters: [.basicType(.address)], result: .basicType(.bool)):
         var identifier = callerProtection.identifier
@@ -48,9 +49,9 @@ struct IRCallerProtectionChecks {
         identifier.identifierToken.kind = .identifier(name)
         // swiftlint:disable line_length
         let functionCall = IRFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [FunctionArgument(.rawAssembly("caller()", resultType: .basicType(.address)))], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
+        let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
+        return "\(variableName) := add(\(variableName), \(renderedFunctionCall.description))"
         // swiftlint:enable line_length
-        let check = "\(functionCall.rendered(functionContext: functionContext))"
-        return "\(variableName) := add(\(variableName), \(check))"
       case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
           let check = IRRuntimeFunction.isValidCallerProtection(address: "sload(add(\(offset!), \(index)))")
@@ -62,9 +63,11 @@ struct IRCallerProtectionChecks {
       case .basicType(.address):
         let check = IRRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
         return "\(variableName) := add(\(variableName), \(check)"
-      case .basicType, .stdlibType, .rangeType, .dictionaryType, .userDefinedType,
-           .inoutType, .functionType, .any, .errorType:
+      case .basicType, .rangeType, .dictionaryType, .userDefinedType,
+           .inoutType, .functionType, .any, .errorType, .solidityType:
         return ""
+      case .selfType:
+        fatalError("Self type should have been replaced with concrete type")
       }
 
       }

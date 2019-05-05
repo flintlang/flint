@@ -11,7 +11,7 @@ import Foundation
 import Source
 import Lexer
 
-/// A prepocessing step to update the program's AST before code generation.
+/// A preprocessing step to update the program's AST before code generation.
 public struct IRPreprocessor: ASTPass {
 
   public init() {}
@@ -49,24 +49,6 @@ public struct IRPreprocessor: ASTPass {
   }
 
   // MARK: Declaration
-  public func process(structDeclaration: StructDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    let environment = passContext.environment!
-    var structDeclaration = structDeclaration
-
-    let conformingFunctions = environment.conformingFunctions(in: structDeclaration.identifier.name)
-      .compactMap { functionInformation -> StructMember in
-        var functionDeclaration = functionInformation.declaration
-        functionDeclaration.scopeContext = ScopeContext()
-
-        return .functionDeclaration(functionDeclaration)
-      }
-
-    structDeclaration.members += conformingFunctions
-
-    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
-  }
-
   public func process(variableDeclaration: VariableDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
@@ -84,7 +66,7 @@ public struct IRPreprocessor: ASTPass {
     var functionDeclaration = functionDeclaration
 
     // Mangle the function name in the declaration.
-    let parameters = functionDeclaration.signature.parameters.map { $0.type.rawType }
+    let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
                                           enclosingType: passContext.enclosingTypeIdentifier!.name)
@@ -142,12 +124,17 @@ public struct IRPreprocessor: ASTPass {
     }
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
   func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
-    return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
+    return Parameter(identifier: identifier,
+                     type: Type(inferredType: type,
+                                identifier: identifier),
+                     implicitToken: nil,
+                     assignedExpression: nil)
   }
 
   public func process(specialDeclaration: SpecialDeclaration,

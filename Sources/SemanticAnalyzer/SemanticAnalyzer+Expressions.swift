@@ -12,25 +12,65 @@ extension SemanticAnalyzer {
 
   public func process(binaryExpression: BinaryExpression,
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
-    var binaryExpression = binaryExpression
     let environment = passContext.environment!
+    var diagnostics = [Diagnostic]()
 
-    if case .dot = binaryExpression.opToken {
-      // The identifier explicitly refers to a state property, such as in `self.foo`.
-      // We set its enclosing type to the type it is declared in.
+    switch binaryExpression.opToken {
+    case .dot:
       let enclosingType = passContext.enclosingTypeIdentifier!
       let lhsType = environment.type(of: binaryExpression.lhs,
                                      enclosingType: enclosingType.name,
                                      scopeContext: passContext.scopeContext!)
       if case .identifier(let enumIdentifier) = binaryExpression.lhs,
         environment.isEnumDeclared(enumIdentifier.name) {
-        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
-      } else {
-        binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
+      } else if lhsType == .selfType, passContext.traitDeclarationContext == nil {
+        diagnostics.append(.useOfSelfOutsideTrait(at: binaryExpression.lhs.sourceLocation))
       }
+    case .equal:
+      // Check if `call?` assignment
+      if case .externalCall(let externalCall) = binaryExpression.rhs,
+        externalCall.mode != .returnsGracefullyOptional,
+        passContext.isInsideIfCondition {
+        diagnostics.append(.ifLetConstructWithoutOptionalExternalCall(binaryExpression))
+      }
+    default:
+      break
     }
 
-    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+    return ASTPassResult(element: binaryExpression, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  public func process(typeConversionExpression: TypeConversionExpression,
+                      passContext: ASTPassContext) -> ASTPassResult<TypeConversionExpression> {
+    var diagnostics: [Diagnostic] = []
+    if typeConversionExpression.kind != .cast {
+      // Not implemented yet
+      diagnostics.append(.notImplementedAs(typeConversionExpression))
+    }
+
+    guard let environment = passContext.environment,
+      let enclosingType = passContext.enclosingTypeIdentifier,
+      let scopeContext = passContext.scopeContext else {
+        fatalError("No context available at callsite, unable to determine validity of as")
+    }
+
+    let expressionType = environment.type(of: typeConversionExpression.expression,
+                                             enclosingType: enclosingType.name,
+                                             scopeContext: scopeContext)
+
+    // Check elementary casting constraint
+    if expressionType.canReinterpret(as: typeConversionExpression.type.rawType) {
+      // 1. If we have an external function call, we allow conversions between any kind of type
+      // 2. If we have a solidity type conversion to a non-solidity type conversion we always allow it as the
+      //    only place where we can get a Solidity type is from an external call
+      if !passContext.isExternalFunctionCall && typeConversionExpression.type.rawType.isSolidityType {
+        diagnostics.append(.badSolidityTypeConversion(typeConversionExpression, expressionType: expressionType))
+      }
+    } else {
+      diagnostics.append(.typesNotReinterpretable(typeConversionExpression, expressionType: expressionType))
+    }
+
+    return ASTPassResult(element: typeConversionExpression, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(attemptExpression: AttemptExpression,
@@ -67,6 +107,72 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    var parametersGiven: [String: Bool] = [
+      "value": false,
+      "gas": false
+    ]
+    var diagnostics = [Diagnostic]()
+    let environment = passContext.environment!
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    var passContext = passContext
+
+    // ensure only one instance of value and gas hyper-parameters
+    for parameter in externalCall.hyperParameters {
+      if let identifier: Identifier = parameter.identifier {
+        let name: String = identifier.name
+        if let valueGiven: Bool = parametersGiven[name] {
+          if valueGiven {
+            diagnostics.append(.duplicateExternalCallHyperParameter(identifier))
+          }
+          parametersGiven[name] = true
+        } else {
+          diagnostics.append(.invalidExternalCallHyperParameter(identifier))
+        }
+      } else {
+        diagnostics.append(.unlabeledExternalCallHyperParameter(externalCall))
+      }
+    }
+
+    switch externalCall.mode {
+    case .normal:
+      // Ensure `call` is only used inside the do-body of do-catch statement
+      if passContext.doCatchStatementStack.last != nil {
+        // Update containsExternallCall value of doCatchStatement
+        var doCatchStatementStack = passContext.doCatchStatementStack
+        doCatchStatementStack[doCatchStatementStack.count - 1].containsExternalCall = true
+        passContext = passContext.withUpdates {
+          $0.doCatchStatementStack = doCatchStatementStack
+        }
+      } else {
+        diagnostics.append(.normalExternalCallOutsideDoCatch(externalCall))
+      }
+    case .returnsGracefullyOptional:
+      // Ensure 'call?' is only used in an 'if let ... = call? ...' construct
+      if !passContext.isIfLetConstruct {
+        diagnostics.append(.optionalExternalCallOutsideIfLet(externalCall))
+      }
+    case .isForced:
+      // Ensure 'call!' is never used inside a do-catch block
+      if passContext.doCatchStatementStack.count > 0 {
+        diagnostics.append(.forcedExternalCallInsideDoCatch(externalCall))
+      }
+    }
+
+    // Ensure a return value is not ignored
+    if environment.type(of: externalCall.functionCall.rhs,
+                        enclosingType: enclosingType,
+                        scopeContext: passContext.scopeContext!) != .basicType(.void) &&
+      externalCall.mode != .returnsGracefullyOptional &&
+      !passContext.inAssignment &&
+      !passContext.isFunctionCallArgument {
+      // TODO: disabled, broken (e.g. (call ...) == 0 is not ignoring the value)
+      //diagnostics.append(.externalCallReturnValueIgnored(externalCall))
+    }
+
+    return ASTPassResult(element: externalCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(arrayLiteral: ArrayLiteral, passContext: ASTPassContext) -> ASTPassResult<AST.ArrayLiteral> {
     return ASTPassResult(element: arrayLiteral, diagnostics: [], passContext: passContext)
   }
@@ -101,7 +207,9 @@ extension SemanticAnalyzer {
 
     var diagnostics = [Diagnostic]()
 
-    let isMutating = passContext.functionDeclarationContext?.isMutating ?? passContext.specialDeclarationContext?.declaration.asFunctionDeclaration.isMutating ?? false
+    let isMutating: Bool =
+      passContext.specialDeclarationContext?.declaration.isInit ?? false ||
+        passContext.functionDeclarationContext?.isMutating ?? false
 
     if !passContext.isInEmit {
       // Find the function declaration associated with this function call.
@@ -125,6 +233,22 @@ extension SemanticAnalyzer {
                 functionDeclaration: passContext.functionDeclarationContext!.declaration))
           }
         }
+
+        if let externalCall = passContext.externalCallContext {
+
+          // check value parameter (appropriate usage)
+          if !matchingFunction.declaration.isPayable {
+            if externalCall.hasHyperParameter(parameterName: "value") {
+              diagnostics.append(.valueParameterForUnpayableFunction(externalCall))
+            }
+          } else {
+            if !externalCall.hasHyperParameter(parameterName: "value") {
+              diagnostics.append(.missingValueParameterForPayableFunction(externalCall))
+            }
+          }
+        }
+
+        checkArgumentLabels(functionCall, &diagnostics, isEventCall: false)
         checkFunctionArguments(functionCall, matchingFunction.declaration, &passContext, isMutating, &diagnostics)
 
       case .matchedInitializer(let matchingInitializer):
@@ -156,18 +280,33 @@ extension SemanticAnalyzer {
         diagnostics.append(.noMatchingFunctionForFunctionCall(functionCall, candidates: candidates))
       }
     } else if case .failure(let candidates) =
-      environment.matchEventCall(functionCall,
-                                 enclosingType: enclosingType,
-                                 scopeContext: passContext.scopeContext ?? ScopeContext()) {
-      // Event call has failed to match but has candidates
-      if !candidates.isEmpty {
-        diagnostics.append(.partialMatchingEvents(functionCall, candidates: candidates))
-      } else {
-        diagnostics.append(.noMatchingEvents(functionCall))
-      }
-
+        environment.matchEventCall(functionCall,
+                                   enclosingType: enclosingType,
+                                   scopeContext: passContext.scopeContext ?? ScopeContext()) {
+        // Event call has failed to match but has candidates
+        if !candidates.isEmpty {
+          diagnostics.append(.partialMatchingEvents(functionCall, candidates: candidates))
+        } else {
+          diagnostics.append(.noMatchingEvents(functionCall))
+        }
+    } else if case .matchedEvent(_) =
+        environment.matchEventCall(functionCall,
+                                   enclosingType: enclosingType,
+                                   scopeContext: passContext.scopeContext ?? ScopeContext()) {
+        checkArgumentLabels(functionCall, &diagnostics, isEventCall: true)
     }
+
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  // Checks whether all arguments of a function call are labeled
+  private func checkArgumentLabels(_ functionCall: FunctionCall,
+                                   _ diagnostics: inout [Diagnostic],
+                                   isEventCall: Bool) {
+
+    if !functionCall.arguments.filter({$0.identifier == nil}).isEmpty {
+      diagnostics.append(.unlabeledFunctionCallArguments(functionCall, isEventCall: isEventCall))
+    }
   }
 
   /// Whether an expression refers to a state property.

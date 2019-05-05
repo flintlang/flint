@@ -1,14 +1,18 @@
-# The Flint Programming Language [![Build Status](https://travis-ci.org/flintlang/flint.svg?branch=master)](https://travis-ci.org/flintlang/flint)
+# The Flint Programming Language
 
-<img src="docs/flint_small.png" height="70">
+![](.gitbook/assets/flint_small.png)
 
 Flint is a new type-safe, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
-Flint is still in **alpha development**, and is not ready to be used in production yet. The current work on Flint is in the fork https://github.com/flintrocks/flint. In January the fork will be merged back here.
+Flint is still in **alpha development**, and is not ready to be used in production yet.
 
 Medium article: [Flint: A New Language for Safe Smart Contracts on Ethereum](https://medium.com/@fschrans/flint-a-new-language-for-safe-smart-contracts-on-ethereum-a5672137a5c7)
 
-Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf)
+Programmin 2018! paper: [Writing Safe Smart Contracts in Flint](https://dl.acm.org/citation.cfm?doid=3191697.3213790)
+
+Current working paper: [Flint for Safer Smart Contracts](https://arxiv.org/abs/1904.06534)
+
+Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdf) and the codebase is [here](https://github.com/flintlang/flint).
 
 ## Language Overview
 
@@ -18,7 +22,7 @@ Flint is still under active development and proposes a variety of novel _contrac
 
 ### Caller Protections
 
-[**Caller protections**](https://docs.flintlang.org/caller-protections) require programmers to think about who should be able to call the contract’s sensitive functions. Protections are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+[**Caller protections**](https://docs.flintlang.org/caller-protections) require programmers to think about who should be able to call the contract’s sensitive functions. Protections are checked statically for internal calls \(unlike Solidity modifiers\), and at runtime for calls originating from external contracts.
 
 Example:
 
@@ -47,9 +51,11 @@ Bank :: (any) {
 ```
 
 ### Type States
-[**Type States**](docs/language_guide.md#type-states) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities (e.g. Parity Multi-Sig wallet) from mistakes with respect to administrating state. States are checked statically for internal calls (unlike Solidity modifiers), and at runtime for calls originating from external contracts.
+
+[**Type States**](docs/language_guide.md#type-states) integrate a design pattern of stateful contracts into the language itself, which both require programmers to think about what state a function can be called in but also to prevent vulnerabilities \(e.g. Parity Multi-Sig wallet\) from mistakes with respect to administrating state. States are checked statically for internal calls \(unlike Solidity modifiers\), and at runtime for calls originating from external contracts.
 
 Example:
+
 ```swift
 // Enumeration of states.
 contract Auction (Preparing, InProgress) {}
@@ -103,7 +109,7 @@ Bank :: (any) {
 
 Flint's Asset type ensure a contract's state always truthfully represents its Ether value, preventing attacks such as TheDAO.
 
-A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets (such as Ether) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy.
+A restricted set of atomic operations can be performed on Assets. It is impossible to create, duplicate, or lose Assets \(such as Ether\) in unprivileged code. This prevents attacks relating to double-spending and re-entrancy.
 
 Example use:
 
@@ -139,14 +145,13 @@ docker run -i -t franklinsch/flint
 
 Example smart contracts are available in `flint/examples/valid/`.
 
-Instructions for installing using a binary package or from source are available [here]( https://docs.flintlang.org/installation).
+Instructions for installing using a binary package or from source are available [here](https://docs.flintlang.org/installation).
 
 ## Contributing
 
-Contributions to Flint are highly welcomed! [Contribution Guide](CONTRIBUTING.md)
-The Issues page tracks the tasks which have yet to be completed.
+Contributions to Flint are highly welcomed! [Contribution Guide](contributing.md) The Issues page tracks the tasks which have yet to be completed.
 
-Flint Improvement Proposals (FIPs) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).
+Flint Improvement Proposals \(FIPs\) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).
 
 ## Future plans
 
@@ -160,3 +165,4 @@ Future plans for Flint are numerous, and include:
 ## License
 
 The Flint project is available under the MIT license. See the LICENSE file for more information.
+

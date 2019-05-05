@@ -8,6 +8,7 @@ import Foundation
 import AST
 import Lexer
 import Diagnostic
+import Source
 
 extension SemanticAnalyzer {
   /// The set of characters for identifiers which can only be used in the stdlib.
@@ -49,9 +50,10 @@ extension SemanticAnalyzer {
       }
     }
 
-    if passContext.isFunctionCall {
-      // If the identifier is the name of a function call, do nothing. The function call will be matched in
-      // `process(functionCall:passContext:)`.
+    if passContext.isFunctionCall || passContext.isFunctionCallArgumentLabel {
+      // If the identifier is the name of a function call or a function call argument label,
+      // do nothing. The function call will be matched in `process(functionCall:passContext:)`,
+      // or the other checks should not take place for argument labels.
     } else if inFunctionOrInitializer, !passContext.isInBecome, !passContext.isInEmit {
       // The identifier is used within the body of a function or an initializer
 
@@ -144,13 +146,36 @@ extension SemanticAnalyzer {
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
     var diagnostics = [Diagnostic]()
 
-    if parameter.type.rawType.isUserDefinedType, !parameter.isInout {
+    checkWhetherSolidityTypesAreAllowedInContext(type: parameter.type,
+                                                 passContext: passContext,
+                                                 diagnostics: &diagnostics)
+
+    if parameter.type.rawType.isUserDefinedType,
+      !parameter.isInout,
+      !(parameter.type.isCurrencyType && parameter.isImplicit) {
       // Ensure all structs are passed by reference, for now.
       diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation,
                                     message: "Structs cannot be passed by value yet, and have to be passed inout"))
+    } else if passContext.traitDeclarationContext == nil && parameter.type.rawType.isSelfType {
+      diagnostics.append(.useOfSelfOutsideTrait(at: parameter.sourceLocation))
     }
 
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func checkWhetherSolidityTypesAreAllowedInContext(type: Type,
+                                                    passContext: ASTPassContext,
+                                                    diagnostics: inout [Diagnostic]) {
+    if let kind = passContext.traitDeclarationContext?.traitKind.kind, kind == .external {
+      if case .solidityType = type.rawType {} else {
+        // typeAnnotation is describing a Flint type but we are in an external trait declaration
+        diagnostics.append(.flintTypeUsedInExternalTrait(type, at: type.sourceLocation))
+      }
+    } else if case .solidityType = type.rawType {
+      // type annotation is describing a Solidity type but we are not in an external trait declaration
+      diagnostics.append(.solidityTypeUsedOutsideExternalTrait(type, at: type.sourceLocation))
+    }
+
   }
 
   public func process(callerProtection: CallerProtection,

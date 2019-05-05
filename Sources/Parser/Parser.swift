@@ -29,10 +29,10 @@ public class Parser {
   }
 
   /// Semantic information about the source program.
-  var environment = Environment()
+  var environment: Environment = Environment()
 
   // Diagnostics
-  var diagnostics = [Diagnostic]()
+  var diagnostics: [Diagnostic] = [Diagnostic]()
 
   public init(tokens: [Token]) {
     self.tokens = tokens

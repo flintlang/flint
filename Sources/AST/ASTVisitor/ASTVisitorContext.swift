@@ -5,6 +5,8 @@
 //  Created by Franklin Schrans on 1/11/18.
 //
 
+import Lexer
+
 /// Contextual information used when visiting the state properties declared in a contract declaration.
 public struct ContractStateDeclarationContext {
   public var contractIdentifier: Identifier
@@ -57,9 +59,11 @@ public struct EnumDeclarationContext {
 /// of the trait the members are declared for.
 public struct TraitDeclarationContext {
   public var traitIdentifier: Identifier
+  public var traitKind: Token
 
-  public init(traitIdentifier: Identifier) {
+  public init(traitIdentifier: Identifier, traitKind: Token) {
     self.traitIdentifier = traitIdentifier
+    self.traitKind = traitKind
   }
 }
 

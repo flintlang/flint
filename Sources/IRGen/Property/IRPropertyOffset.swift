@@ -5,13 +5,14 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
+import YUL
 
 /// Generates code for a property offset.
 struct IRPropertyOffset {
-  var expression: Expression
+  var expression: AST.Expression
   var enclosingType: RawType
 
-  func rendered(functionContext: FunctionContext) -> String {
+  func rendered(functionContext: FunctionContext) -> YUL.Expression {
     if case .binaryExpression(let binaryExpression) = expression {
       return IRPropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
         .rendered(functionContext: functionContext)
@@ -24,11 +25,12 @@ struct IRPropertyOffset {
     let structIdentifier: String
 
     switch enclosingType {
-    case .stdlibType(let type): structIdentifier = type.rawValue
     case .userDefinedType(let type): structIdentifier = type
     default: fatalError()
     }
 
-    return "\(functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!)"
+    return .literal(.num(
+      functionContext.environment.propertyOffset(for: identifier.name, enclosingType: structIdentifier)!
+    ))
   }
 }

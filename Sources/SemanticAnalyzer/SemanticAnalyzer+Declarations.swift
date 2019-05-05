@@ -140,6 +140,34 @@ extension SemanticAnalyzer {
                                                                            in: enclosingType) {
       diagnostics.append(.invalidRedeclaration(eventDeclaration.identifier, originalSource: conflict))
     }
+
+    // Check that all default arguments are at the end
+    let arguments = eventDeclaration.variableDeclarations
+
+    var currentArgumentIndex = 0
+
+    while currentArgumentIndex < arguments.count && arguments[currentArgumentIndex].assignedExpression == nil {
+      currentArgumentIndex += 1
+    }
+
+    while currentArgumentIndex < arguments.count {
+      if arguments[currentArgumentIndex].assignedExpression == nil {
+        diagnostics.append(.defaultArgumentsNotAtEnd(eventDeclaration))
+      }
+
+      currentArgumentIndex += 1
+    }
+
+    // Check there are no duplicate parameters
+    var identifiers = [String]()
+    for argument in arguments {
+      if identifiers.contains(argument.identifier.name) {
+        diagnostics.append(.duplicateParameterDeclarations(eventDeclaration))
+      }
+
+      identifiers.append(argument.identifier.name)
+    }
+
     return ASTPassResult(element: eventDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -154,11 +182,14 @@ extension SemanticAnalyzer {
     }
 
     traitDeclaration.members.forEach { member in
-      if traitDeclaration.traitKind.kind == .struct, isContractTraitMember(member: member) {
-        diagnostics.append(.contractTraitMemberInStructTrait(member))
+      if traitDeclaration.traitKind.kind == .struct, !isStructTraitMember(member: member) {
+        diagnostics.append(.invalidStructTraitMember(member))
       }
-      if traitDeclaration.traitKind.kind == .contract, isStructTraitMember(member: member) {
-        diagnostics.append(.structTraitMemberInContractTrait(member))
+      if traitDeclaration.traitKind.kind == .contract, !isContractTraitMember(member: member) {
+        diagnostics.append(.invalidContractTraitMember(member))
+      }
+      if traitDeclaration.traitKind.kind == .external, !isExternalTraitMember(member: member) {
+        diagnostics.append(.invalidExternalTraitMember(member))
       }
     }
 
@@ -210,7 +241,23 @@ extension SemanticAnalyzer {
   }
 
   func isStructTraitMember(member: TraitMember) -> Bool {
-    return !isContractTraitMember(member: member)
+    switch member {
+    case .functionDeclaration, .specialDeclaration,
+         .functionSignatureDeclaration, .specialSignatureDeclaration:
+      return true
+    case .contractBehaviourDeclaration, .eventDeclaration:
+      return false
+    }
+  }
+
+  func isExternalTraitMember(member: TraitMember) -> Bool {
+    switch member {
+    case .functionSignatureDeclaration:
+      return true
+    case .functionDeclaration, .specialDeclaration, .specialSignatureDeclaration,
+         .contractBehaviourDeclaration, .eventDeclaration:
+      return false
+    }
   }
 
   // MARK: Variable
@@ -221,7 +268,7 @@ extension SemanticAnalyzer {
     let environment = passContext.environment!
 
     // Check valid modifiers
-     if variableDeclaration.isMutating {
+    if variableDeclaration.isMutating {
        if variableDeclaration.isConstant {
           diagnostics.append(.mutatingConstant(variableDeclaration))
        } else if variableDeclaration.isVariable {
@@ -229,7 +276,7 @@ extension SemanticAnalyzer {
        }
      }
 
-     if variableDeclaration.isPublic {
+    if variableDeclaration.isPublic {
        if variableDeclaration.isConstant {
         diagnostics.append(.publicLet(variableDeclaration))
        }
@@ -243,6 +290,16 @@ extension SemanticAnalyzer {
       !environment.isTypeDeclared(typeIdentifier) {
       diagnostics.append(.useOfUndeclaredType(variableDeclaration.type))
     }
+
+    // Ensure that the type is not Self unless in a trait declaration
+    if passContext.traitDeclarationContext == nil && variableDeclaration.type.rawType.isSelfType {
+      diagnostics.append(.useOfSelfOutsideTrait(at: variableDeclaration.sourceLocation))
+    }
+
+    // Check whether Solidity types are allowed in the current context
+    checkWhetherSolidityTypesAreAllowedInContext(type: variableDeclaration.type,
+                                                 passContext: passContext,
+                                                 diagnostics: &diagnostics)
 
     if passContext.inFunctionOrInitializer {
       if let conflict = passContext.scopeContext!.declaration(for: variableDeclaration.identifier.name),
@@ -293,6 +350,18 @@ extension SemanticAnalyzer {
   }
 
   // MARK: Function
+  public func process(functionSignatureDeclaration: FunctionSignatureDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
+    var diagnostics: [Diagnostic] = []
+    if let resultType = functionSignatureDeclaration.resultType {
+        checkWhetherSolidityTypesAreAllowedInContext(type: resultType,
+                                                     passContext: passContext,
+                                                     diagnostics: &diagnostics)
+    }
+
+    return ASTPassResult(element: functionSignatureDeclaration, diagnostics: diagnostics, passContext: passContext)
+  }
+
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
@@ -387,6 +456,33 @@ extension SemanticAnalyzer {
       diagnostics.append(.multipleBecomes(statement))
     }
 
+    // Check that all default arguments are at the end
+    let arguments = signature.parameters
+
+    var currentArgumentIndex = 0
+
+    while currentArgumentIndex < arguments.count && arguments[currentArgumentIndex].assignedExpression == nil {
+      currentArgumentIndex += 1
+    }
+
+    while currentArgumentIndex < arguments.count {
+      if arguments[currentArgumentIndex].assignedExpression == nil {
+        diagnostics.append(.defaultArgumentsNotAtEnd(functionDeclaration))
+      }
+
+      currentArgumentIndex += 1
+    }
+
+    // Check there are no duplicate parameters
+    var identifiers = [String]()
+    for argument in arguments {
+      if identifiers.contains(argument.identifier.name) {
+        diagnostics.append(.duplicateParameterDeclarations(functionDeclaration))
+      }
+
+      identifiers.append(argument.identifier.name)
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -405,7 +501,7 @@ extension SemanticAnalyzer {
       diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
     }
 
-    // Clear the context in preparation for the next time we visit a function declaration.
+    // Clear the context in preparation for the next time we visit a special or function declaration.
     let passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
 
     var functionDeclaration = functionDeclaration
@@ -454,6 +550,8 @@ extension SemanticAnalyzer {
         if binaryExpression.op.kind == .punctuation(.equal) {
           return true
         }
+      case .typeConversionExpression:
+        return true
       case .functionCall(let function):
         let match = environment.matchFunctionCall(function,
                                                   enclosingType: enclosingType,
@@ -470,6 +568,8 @@ extension SemanticAnalyzer {
           return false
         }
         return true
+      case .externalCall:
+        return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
            .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
            .subscriptExpression, .range:
@@ -482,7 +582,7 @@ extension SemanticAnalyzer {
       }
     case .ifStatement:
       return false
-    case .returnStatement, .forStatement, .becomeStatement:
+    case .returnStatement, .forStatement, .becomeStatement, .doCatchStatement:
       return true
     case .emitStatement:
       return false
@@ -553,8 +653,12 @@ extension SemanticAnalyzer {
       }
     }
 
+    // Clear the context in preparation for the next time we visit a special or function declaration.
+    passContext = passContext.withUpdates { $0.mutatingExpressions = nil }
+
     var specialDeclaration = specialDeclaration
     specialDeclaration.scopeContext = passContext.scopeContext ?? ScopeContext()
+
     return ASTPassResult(element: specialDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 }

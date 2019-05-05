@@ -1,0 +1,53 @@
+// RUN: %flintc %s --verify
+
+contract Contract {
+}
+
+external trait External {
+  func test() -> int256
+  func test2(param: int48) -> int24
+}
+
+Contract :: (any) {
+  public init() {
+    let x: Int = 1 as Int // expected-error {{Type conversions with 'as' are not yet implemented}}
+    let y: Int = 1 as! Int
+    let z: Int = 1 as? Int // expected-error {{Type conversions with 'as?' are not yet implemented}}
+  }
+
+  func typeReinterpretation() {
+    let x: Int = 1
+
+    let x0: Int = x as! Int
+    let x1: String = x as! String // expected-error {{'Int' cannot be reinterpreted as 'String'}}
+    let x2: Event = x as! Event // expected-error {{'Int' cannot be reinterpreted as 'Event'}}
+    let x3: Address = x as! Address // expected-error {{'Int' cannot be reinterpreted as 'Address'}}
+    let x4: Bool = x as! Bool // expected-error {{'Int' cannot be reinterpreted as 'Bool'}}
+
+    let y: String = "test"
+
+    let y0: String = y as! String
+    let y1: Int = y as! Int // expected-error {{'String' cannot be reinterpreted as 'Int'}}
+    let y2: Address = y as! Address // expected-error {{'String' cannot be reinterpreted as 'Address'}}
+    let y3: Bool = y as! Bool // expected-error {{'String' cannot be reinterpreted as 'Bool'}}
+
+    let z: Bool = true
+
+    let z0: Bool = z as! Bool
+    let z1: Int = z as! Int // expected-error {{'Bool' cannot be reinterpreted as 'Int'}}
+    let z2: Address = z as! Address // expected-error {{'Bool' cannot be reinterpreted as 'Address'}}
+    let z3: String = z as! String // expected-error {{'Bool' cannot be reinterpreted as 'String'}}
+  }
+
+  func typeReinterpretationWithExternalCall() {
+    let fake: External = External(address: 0x0000000000000000000000000000000000000000)
+    let x0: Int = (call! fake.test()) as! Int
+    let x1: Int = ((call! fake.test()) as! int64) as! Int // expected-error {{Conversion from 'int256' to 'int64' only allowed in external call context or from a Solidity to a Flint type}}
+    let x2: Int = (call! fake.test2(param: (call! fake.test()) as! int64)) as! Int // expected-error {{'Flint$ErrorType' cannot be reinterpreted as 'Int'}}
+                                                                                   // expected-error@-1 {{Function 'test2' is not in scope}}
+    let myValue: Int = 100
+    let x3: Int = (call! fake.test2(param: myValue as! int24)) as! Int // expected-error {{'Flint$ErrorType' cannot be reinterpreted as 'Int'}}
+                                                                       // expected-error@-1 {{Function 'test2' is not in scope}}
+    let x4: Int = (call! fake.test2(param: myValue as! int48)) as! Int
+  }
+}

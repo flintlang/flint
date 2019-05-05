@@ -1,10 +1,14 @@
 .DS_Store
 /.build
-/.derived-sources
+/.derived-tests
 /Packages
 /*.xcodeproj
 /node_modules
-Package.resolved
+
+*.sol
+!sol_emitter.sol
+!sol_external.sol
+*.swp
 
 utils/testRunner/main.sol
 utils/testRunner/test.js
@@ -18,3 +22,5 @@ utils/gasEstimator/node_modules/*
 bin/
 contracts/
 build/
+
+*.generated.swift
