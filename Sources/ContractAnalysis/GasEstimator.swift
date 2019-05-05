@@ -3,6 +3,8 @@ import Foundation
 
 public class GasEstimator {
     
+    private let test_run : Bool
+    
     private let jsTemplate : String =
 """
 const Web3 = require('web3');
@@ -50,7 +52,9 @@ async function deploy_contract(abi, bytecode) {
 
 """
     
-    public init() {}
+    public init(test_run : Bool = false) {
+        self.test_run = test_run
+    }
     
     public func estimateGas(ast: TopLevelModule, env: Environment) -> String {
         var output : String = ""
@@ -126,6 +130,10 @@ async function deploy_contract(abi, bytecode) {
         jsTestFile += "    console.log(JSON.stringify(res_dict)); \n} \n"
         
         jsTestFile += "estimate_gas('main.sol', '\(contractName)');"
+        
+        if test_run {
+            return jsTestFile
+        }
         
         var jsonOutput = ""
         do {

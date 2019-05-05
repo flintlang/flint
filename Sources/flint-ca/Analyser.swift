@@ -15,6 +15,7 @@ struct Analyser {
     let estimateGas : Bool
     let typeStateDiagram : Bool
     let callerCapabilityAnalysis : Bool
+    let test_run : Bool
     
 
     public func analyse() throws
@@ -37,7 +38,7 @@ struct Analyser {
         
         
         if (estimateGas) {
-            let gasEstimator = GasEstimator()
+            let gasEstimator = GasEstimator(test_run: test_run)
             let new_ast = gasEstimator.processAST(ast: ast)
             let p = Parser(ast: new_ast)
             let new_env = p.getEnv()
