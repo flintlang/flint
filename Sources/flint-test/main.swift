@@ -8,9 +8,10 @@ import Diagnostic
 /// The main function for the compiler.
 func main() {
     command (
-        Argument<String> ("Test file", description: "Test file (.tflint)")
+        Argument<String> ("Test file", description: "Test file (.tflint)"),
+        Flag("test runner", flag:"t", description:"Flag to run unit tests for test framework")
     )
-    { sourceCode in
+    { sourceCode, test_run in
         let fileName =  sourceCode
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
@@ -20,7 +21,8 @@ func main() {
                            sourceCode: sourceCode,
                            diagnostics: DiagnosticPool(shouldVerify: false,
                                                        quiet: false,
-                                                       sourceContext: SourceContext(sourceFiles: inputFiles))).run_tests()
+                                                       sourceContext: SourceContext(sourceFiles: inputFiles)),
+                           test_run: test_run).run_tests()
             
         } catch {
             print("Failed to run tests")
@@ -39,7 +41,8 @@ func main_d() throws {
                        sourceCode: sourceCode,
                        diagnostics: DiagnosticPool(shouldVerify: false,
                                                    quiet: false,
-                                                   sourceContext: SourceContext(sourceFiles: inputFiles))).run_tests()
+                                                   sourceContext: SourceContext(sourceFiles: inputFiles)),
+                       test_run: false).run_tests()
         
     } catch {
         print("Failed to run tests")
