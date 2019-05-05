@@ -100,6 +100,7 @@ extension Compiler {
       passes: config.astPasses,
       in: environment,
       sourceContext: SourceContext(sourceFiles: config.inputFiles))
+    
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
@@ -123,6 +124,118 @@ extension Compiler {
   }
 }
 
+extension Compiler {
+    
+    private static func createConstructor(constructor : SpecialDeclaration) -> FunctionDeclaration? {
+        
+        if (!(constructor.signature.specialToken.kind == .init)) {
+            return nil
+        }
+        
+        if (constructor.body.count == 0) {
+            return nil
+        }
+        
+        var sig = constructor.signature
+        sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
+        let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
+        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "testFrameworkConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
+        let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken)
+        
+        return newFunc
+    }
+    
+    private static func insertConstructorFunc(ast : TopLevelModule) -> TopLevelModule {
+        let decWithoutStdlib = ast.declarations[2...]
+        
+        var newDecs : [TopLevelDeclaration] = []
+        newDecs.append(ast.declarations[0])
+        newDecs.append(ast.declarations[1])
+        
+        for m in decWithoutStdlib {
+            switch (m) {
+            case .contractDeclaration(let cdec):
+                newDecs.append(m)
+            case .contractBehaviorDeclaration(var cbdec):
+                var mems : [ContractBehaviorMember] = []
+                for cm in cbdec.members {
+                    switch (cm) {
+                    case .specialDeclaration(let spdec):
+                        if let constructorFunc = createConstructor(constructor: spdec) {
+                            let cBeh : ContractBehaviorMember = .functionDeclaration(constructorFunc)
+                            mems.append(cBeh)
+                            mems.append(.specialDeclaration(spdec))
+                        } else {
+                            mems.append(cm)
+                        }
+                    default:
+                        mems.append(cm)
+                    }
+                }
+                cbdec.members = mems
+                newDecs.append(.contractBehaviorDeclaration(cbdec))
+            default:
+                newDecs.append(m)
+            }
+        }
+        
+        return TopLevelModule(declarations: newDecs)
+    }
+    
+    
+    public static func compile_for_test(config : CompilerTestFrameworkConfiguration) throws {
+        let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
+        
+        // Turn the tokens into an Abstract Syntax Tree (AST).
+        let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+        
+        if let failed = try config.diagnostics.checkpoint(parserDiagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        guard var ast = parserAST else {
+            exitWithFailure()
+        }
+        
+        ast = insertConstructorFunc(ast: parserAST!)
+        
+        // Run all of the passes. (Semantic checks)
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: environment,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles, sourceCodeString: config.sourceCode, isForServer: true))
+        
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        // Generate YUL IR code.
+        let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+            .generateCode()
+        
+        // Compile the YUL IR code using solc.
+        try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
+        
+        // these are warnings from the solc compiler
+        try config.diagnostics.display()
+        
+        let fileName = "main.sol"
+        let irFileURL: URL
+        irFileURL = config.outputDirectory.appendingPathComponent(fileName)
+        do {
+            try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+        } catch {
+            exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+        }
+    }
+}
+
 // MARK: - Configurations
 public struct DiagnoserConfiguration {
   public let inputFiles: [URL]
@@ -133,6 +246,29 @@ public struct DiagnoserConfiguration {
     self.inputFiles = inputFiles
     self.astPasses = astPasses
   }
+}
+
+public struct CompilerTestFrameworkConfiguration {
+    public let sourceFiles: [URL]
+    public let sourceCode: String
+    public let stdlibFiles: [URL]
+    public let outputDirectory: URL
+    public let diagnostics: DiagnosticPool
+    public let astPasses: [ASTPass]
+    
+    public init(sourceFiles : [URL],
+                sourceCode : String,
+                stdlibFiles : [URL],
+                outputDirectory: URL,
+                diagnostics: DiagnosticPool,
+                astPasses : [ASTPass] = Compiler.defaultASTPasses) {
+        self.sourceFiles = sourceFiles
+        self.sourceCode = sourceCode
+        self.stdlibFiles = stdlibFiles
+        self.outputDirectory = outputDirectory
+        self.diagnostics = diagnostics
+        self.astPasses = astPasses
+    }
 }
 
 public struct CompilerConfiguration {

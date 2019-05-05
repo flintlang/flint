@@ -9,6 +9,7 @@ import Optimizer
 import LSP
 import IRGen
 import JSTranslator
+import Compiler
 
 
 struct TestRunner {
@@ -45,20 +46,20 @@ struct TestRunner {
         
         let inputFiles = [URL(fileURLWithPath: pathToFlintContract)]
         let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner")
+        let contract_sourceCode = try String(contentsOf: inputFiles[0])
         
-        // compile the contract that is being tested
+        let config = CompilerTestFrameworkConfiguration(sourceFiles: inputFiles,
+                                                        sourceCode: contract_sourceCode,
+                                                        stdlibFiles: StandardLibrary.default.files,
+                                                        outputDirectory: outputDirectory,
+                                                        diagnostics: DiagnosticPool(shouldVerify: false,
+                                                                                    quiet: false, sourceContext: SourceContext(sourceFiles: inputFiles)))
+        
+        // Compile the contract
         do {
-           let sourceCode = try String(contentsOf: inputFiles[0])
-           try Compiler(
-                sourceFiles: inputFiles,
-                sourceCode: sourceCode,
-                stdlibFiles: StandardLibrary.default.files,
-                outputDirectory: outputDirectory,
-                diagnostics: DiagnosticPool(shouldVerify: false,
-                                            quiet: false,
-                                            sourceContext: SourceContext(sourceFiles: inputFiles))
-                ).compile()
-        } catch {
+            try Compiler.compile_for_test(config: config)
+        } catch let err {
+            print(err)
             print("Failed to compile contract that is being tested")
         }
         
