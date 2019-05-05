@@ -1,0 +1,5 @@
+// I need a more structured approach to this
+contract abc {
+  let x  Int  = 2
+  let z  Int = 3
+ }

@@ -273,6 +273,7 @@ extension Environment {
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence: fatalError()
     case .rawAssembly(_, let resultType): return resultType!
+    case .emptyExpr(_): fatalError("Trying to compute the type of an empty expression")
     }
   }
 }

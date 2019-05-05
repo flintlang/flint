@@ -38,6 +38,18 @@ public class Parser {
     self.tokens = tokens
     self.currentIndex = tokens.startIndex
   }
+    
+  public init(ast: TopLevelModule) {
+    self.tokens = []
+    self.currentIndex = 0
+    setupEnvironment(using: ast)
+  }
+    
+  public func getEnv() -> Environment {
+        return environment
+  }
+    
+    
 
   /// Parses the token list.
   ///
@@ -45,10 +57,14 @@ public class Parser {
   ///             and the list of diagnostics emitted.
   public func parse() -> (TopLevelModule?, Environment, [Diagnostic]) {
     let topLevelModule = try? parseTopLevelModule()
+    if (diagnostics.count > 0)
+    {
+        environment.syntaxErrors = true
+    }
     setupEnvironment(using: topLevelModule)
     return (topLevelModule, environment, diagnostics)
   }
-
+    
   private func setupEnvironment(using topLevelModule: TopLevelModule?) {
     if let ast = topLevelModule {
       ast.declarations.forEach { (tld) in

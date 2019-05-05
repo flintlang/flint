@@ -1,0 +1,14 @@
+// contract
+contract abc {
+   let x1 : [Int = []
+}
+
+abc :: (any) {
+   public init() {}
+
+   func test() {
+       let x: Int = 2
+       //let z: Int = &x
+
+   }
+}

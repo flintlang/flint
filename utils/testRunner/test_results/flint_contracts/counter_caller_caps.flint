@@ -1,0 +1,21 @@
+contract Counter {
+  var value: Int = 0
+  var owner: Address
+}
+
+Counter :: (any) {
+  public init(owner: Address) {
+    self.owner = owner
+  } 
+}
+
+Counter :: (owner) {
+
+  public func getValue() -> Int {
+    return value
+  }
+
+  mutating public func increment() {
+      value += 1
+  }
+}

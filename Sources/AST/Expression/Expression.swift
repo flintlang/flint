@@ -24,6 +24,7 @@ public indirect enum Expression: ASTNode {
   case sequence([Expression])
   case range(RangeExpression)
   case rawAssembly(String, resultType: RawType?)
+  case emptyExpr(SourceLocation)
 
   public mutating func assigningEnclosingType(type: String) -> Expression {
     switch self {
@@ -93,6 +94,7 @@ public indirect enum Expression: ASTNode {
     case .range(let rangeExpression): return rangeExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
     case .rawAssembly: fatalError()
+    case .emptyExpr(_): fatalError("EMPTY EXPR")
     }
   }
   public var description: String {
@@ -112,6 +114,7 @@ public indirect enum Expression: ASTNode {
     case .range(let rangeExpression): return rangeExpression.description
     case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
     case .rawAssembly: fatalError()
+    case .emptyExpr(_): fatalError("EMPTY EXPR")
     }
   }
 }
