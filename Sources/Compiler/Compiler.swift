@@ -16,6 +16,7 @@ import TypeChecker
 import Optimizer
 import IRGen
 
+
 /// Runs the different stages of the compiler.
 public struct Compiler {
   public static let defaultASTPasses: [ASTPass] = [
@@ -131,7 +132,7 @@ extension Compiler {
   }
 }
 
-// MARk - TestingFramework Compiler hooks
+// MARK: - TestingFramework Compiler hooks
 extension Compiler {
     
     private static func createConstructor(constructor : SpecialDeclaration) -> FunctionDeclaration? {
@@ -244,7 +245,7 @@ extension Compiler {
     }
 }
 
-// MARk - Compiler hook for contract analyser
+// MARK: - Compiler hook for contract analyser
 extension Compiler {
     public static func getAST(config: CompilerContractAnalyserConfiguration) throws -> (TopLevelModule, Environment) {
         
@@ -319,6 +320,45 @@ extension Compiler {
     
 }
 
+
+// MARK: Compile hook for language server
+extension Compiler {
+    public static func ide_compile(config: CompilerLSPConfiguration) throws -> [Diagnostic]
+    {
+        let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0], sourceCode: config.sourceCode)
+        
+        // Turn the tokens into an Abstract Syntax Tree (AST).
+        let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+        
+        // add all parser diagnostics to the pool of diagnistics
+        config.diagnostics.appendAll(parserDiagnostics)
+        
+        // stop parsing if any syntax errors are detected
+        if (environment.syntaxErrors)
+        {
+            let diag = config.diagnostics
+            return diag.getDiagnostics()
+        }
+        
+        guard let ast = parserAST else {
+            return config.diagnostics.getDiagnostics()
+        }
+ 
+        
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: environment,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles,
+                                              sourceCodeString: config.sourceCode,
+                                              isForServer: true))
+        
+        // add semantic diagnostics
+        config.diagnostics.appendAll(passRunnerOutcome.diagnostics)
+        
+        return config.diagnostics.getDiagnostics()
+    }
+}
+
 // MARK: - Configurations
 public struct DiagnoserConfiguration {
   public let inputFiles: [URL]
@@ -329,6 +369,26 @@ public struct DiagnoserConfiguration {
     self.inputFiles = inputFiles
     self.astPasses = astPasses
   }
+}
+
+public struct CompilerLSPConfiguration {
+    public let sourceFiles: [URL]
+    public let sourceCode: String
+    public let stdlibFiles: [URL]
+    public let diagnostics: DiagnosticPool
+    public let astPasses: [ASTPass]
+    
+    public init(sourceFiles : [URL],
+                sourceCode : String,
+                stdlibFiles : [URL],
+                diagnostics: DiagnosticPool,
+                astPasses : [ASTPass] = Compiler.defaultASTPasses) {
+        self.sourceFiles = sourceFiles
+        self.sourceCode = sourceCode
+        self.stdlibFiles = stdlibFiles
+        self.diagnostics = diagnostics
+        self.astPasses = astPasses
+    }
 }
 
 public struct CompilerContractAnalyserConfiguration {

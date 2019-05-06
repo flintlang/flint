@@ -3,27 +3,27 @@ import Commander
 import AST
 import LSP
 import Diagnostic
+import Compiler
 
 /// The main function for the compiler.
 func main() {
     command (
-        Flag("typestate information", flag:"t", description:"Information for typestates"),
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { typeStateDiagram, sourceCode, fileName in
+    { sourceCode, fileName in
         let inputFiles = [URL(fileURLWithPath: fileName)]
         do {
-            let c = Compiler(
-                sourceFiles: inputFiles,
-                sourceCode: sourceCode,
-                stdlibFiles: StandardLibrary.default.files,
-                diagnostics: DiagnosticPool(shouldVerify: false,
-                                            quiet: false,
-                        sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
-            
-            // I need a better way of representing the flags
-            try c.ide_compile()
+         
+            let config = CompilerLSPConfiguration(sourceFiles: inputFiles,
+                                                  sourceCode: sourceCode,
+                                                  stdlibFiles: StandardLibrary.default.files,
+                                                  diagnostics: DiagnosticPool(shouldVerify: false,
+                                                                              quiet: false,
+                                                                              sourceContext: SourceContext(sourceFiles: inputFiles, sourceCodeString: sourceCode, isForServer: true)))
+            let diags = try Compiler.ide_compile(config: config)
+            let lsp_json = try convertFlintDiagToLspDiagJson(diags)
+            print(lsp_json)
             
         } catch let err {
             let diagnostic = Diagnostic(severity: .error,
@@ -42,16 +42,16 @@ func main_d() throws {
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
         do {
-            //print("this  is the first time running")
-            let c = Compiler(
-                sourceFiles: inputFiles,
-                sourceCode: sourceCode,
-                stdlibFiles: StandardLibrary.default.files,
-                diagnostics: DiagnosticPool(shouldVerify: false,
-                                            quiet: false,
-                                            sourceContext: SourceContext(sourceFiles:inputFiles, sourceCodeString: sourceCode, isForServer: true)))
             
-            try c.ide_compile()
+            let config = CompilerLSPConfiguration(sourceFiles: inputFiles,
+                                                  sourceCode: sourceCode,
+                                                  stdlibFiles: StandardLibrary.default.files,
+                                                  diagnostics: DiagnosticPool(shouldVerify: false,
+                                                                              quiet: false,
+                                                                              sourceContext: SourceContext(sourceFiles: inputFiles, sourceCodeString: sourceCode, isForServer: true)))
+            let diags = try Compiler.ide_compile(config: config)
+            let lsp_json = try convertFlintDiagToLspDiagJson(diags)
+            print(lsp_json)
             
         } catch let err {
             let diagnostic = Diagnostic(severity: .error,
@@ -64,5 +64,4 @@ func main_d() throws {
         }
 }
 
-//try main_d()
 main()
