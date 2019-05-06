@@ -2,9 +2,7 @@ contract Counter (s1, s2) {
   var value: Int = 0
   var owner: Address
 
-  event didComplete {
-    let val : Int
-  }
+  event didComplete(val: Int)
 }
 
 Counter @(s1) :: (any) {

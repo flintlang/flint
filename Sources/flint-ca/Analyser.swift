@@ -8,6 +8,7 @@ import TypeChecker
 import Optimizer
 import ContractAnalysis
 import IRGen
+import Compiler
 
 struct Analyser {
     let contractFile : String
@@ -20,29 +21,25 @@ struct Analyser {
 
     public func analyse() throws
     {
-        
         let inputFiles = [URL(fileURLWithPath: contractFile)]
         let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator")
         
-        let c = Compiler(
-                sourceFiles: inputFiles,
-                sourceCode: sourceCode,
-                stdlibFiles: StandardLibrary.default.files,
-                outputDirectory: outputDirectory,
-                diagnostics: DiagnosticPool(shouldVerify: false,
-                                            quiet: false,
-                                            sourceContext: SourceContext(sourceFiles: inputFiles))
-                )
-        
-        let (ast, environment) = try c.getAST()
-        
+        let config = CompilerContractAnalyserConfiguration(sourceFiles: inputFiles,
+                                                           sourceCode: sourceCode,
+                                                           stdlibFiles: StandardLibrary.default.files,
+                                                           outputDirectory: outputDirectory,
+                                                           diagnostics: DiagnosticPool(shouldVerify: false,
+                                                                                       quiet: false,
+                                                                                       sourceContext: SourceContext(sourceFiles: inputFiles, sourceCodeString: sourceCode, isForServer: true)))
+       
+        let (ast, environment) = try Compiler.getAST(config: config)
         
         if (estimateGas) {
             let gasEstimator = GasEstimator(test_run: test_run)
             let new_ast = gasEstimator.processAST(ast: ast)
             let p = Parser(ast: new_ast)
             let new_env = p.getEnv()
-            try c.genSolFile(ast: new_ast, env: new_env)
+            try Compiler.genSolFile(config: config, ast: new_ast, env: new_env)
             let ge_json = gasEstimator.estimateGas(ast: new_ast, env: new_env)
             print(ge_json)
         }

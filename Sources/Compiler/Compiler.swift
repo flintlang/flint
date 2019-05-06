@@ -29,6 +29,7 @@ public struct Compiler {
     IRPreprocessor()]
 
   private static func exitWithFailure() -> Never {
+    print("ERROR")
     print("Failed to compile.")
     exit(1)
   }
@@ -44,6 +45,12 @@ public struct Compiler {
     let userTokens = try inputFiles.flatMap { try Lexer(sourceFile: $0).lex() }
 
     return stdlibTokens + userTokens
+  }
+    
+   private static func tokenizeSourceCode(sourceFile : URL, sourceCode : String) throws -> [Token] {
+        let stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+        let userTokens = try Lexer(sourceFile: sourceFile, isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
+        return stdlibTokens + userTokens
   }
 }
 
@@ -124,6 +131,7 @@ extension Compiler {
   }
 }
 
+// MARk - TestingFramework Compiler hooks
 extension Compiler {
     
     private static func createConstructor(constructor : SpecialDeclaration) -> FunctionDeclaration? {
@@ -236,6 +244,81 @@ extension Compiler {
     }
 }
 
+// MARk - Compiler hook for contract analyser
+extension Compiler {
+    public static func getAST(config: CompilerContractAnalyserConfiguration) throws -> (TopLevelModule, Environment) {
+        
+        let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0], sourceCode: config.sourceCode)
+        
+        let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+        
+        if let failed = try config.diagnostics.checkpoint(parserDiagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        guard let ast = parserAST else {
+            exitWithFailure()
+        }
+        
+        // Run all of the passes.
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: environment,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles,
+                                              sourceCodeString: config.sourceCode,
+                                              isForServer: true))
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        return (parserAST!, environment)
+        
+    }
+    
+    public static func genSolFile(config: CompilerContractAnalyserConfiguration, ast: TopLevelModule, env: Environment) throws {
+        
+        // Run all of the passes.
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: env,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles,
+                                              sourceCodeString: config.sourceCode,
+                                              isForServer: true))
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        // Generate YUL IR code.
+        let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+            .generateCode()
+        
+        // Compile the YUL IR code using solc.
+        try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
+        
+        // these are warnings from the solc compiler
+        try config.diagnostics.display()
+        
+        let fileName = "main.sol"
+        let irFileURL: URL
+        irFileURL = config.outputDirectory.appendingPathComponent(fileName)
+        do {
+            try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+        } catch {
+            exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+        }
+    }
+    
+}
+
 // MARK: - Configurations
 public struct DiagnoserConfiguration {
   public let inputFiles: [URL]
@@ -246,6 +329,29 @@ public struct DiagnoserConfiguration {
     self.inputFiles = inputFiles
     self.astPasses = astPasses
   }
+}
+
+public struct CompilerContractAnalyserConfiguration {
+    public let sourceFiles: [URL]
+    public let sourceCode: String
+    public let stdlibFiles: [URL]
+    public let outputDirectory : URL
+    public let diagnostics: DiagnosticPool
+    public let astPasses: [ASTPass]
+    
+    public init(sourceFiles : [URL],
+                sourceCode : String,
+                stdlibFiles : [URL],
+                outputDirectory: URL,
+                diagnostics: DiagnosticPool,
+                astPasses : [ASTPass] = Compiler.defaultASTPasses) {
+        self.sourceFiles = sourceFiles
+        self.sourceCode = sourceCode
+        self.stdlibFiles = stdlibFiles
+        self.outputDirectory = outputDirectory
+        self.diagnostics = diagnostics
+        self.astPasses = astPasses
+    }
 }
 
 public struct CompilerTestFrameworkConfiguration {
