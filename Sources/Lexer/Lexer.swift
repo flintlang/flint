@@ -31,8 +31,13 @@ public struct Lexer {
         
     self.isFromStdlib = isFromStdlib
   }
-
-
+    
+    public init(sourceCode : String) {
+        self.sourceFile = URL(fileURLWithPath: "REPL")
+        self.sourceCode = sourceCode
+        self.isFromStdlib = false
+    }
+    
   /// Converts the source code into a list of tokens.
   public func lex() -> [Token] {
     return lex(string: sourceCode)
