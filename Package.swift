@@ -45,6 +45,9 @@ let package = Package(
       name: "flint-test",
       dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator", "Compiler"]),
     .target(
+      name: "flint-repl",
+      dependencies: ["Commander", "Rainbow", "Symbolic", "Diagnostic", "REPL"]),
+    .target(
       name: "Source",
       dependencies: []
     ),
@@ -303,6 +306,9 @@ let package = Package(
         dependencies: ["AST"]),
     .target(
         name: "JSTranslator",
-        dependencies: ["AST", "Parser", "Lexer"])
+        dependencies: ["AST", "Parser", "Lexer"]),
+    .target(
+        name: "REPL",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler"])
     ]
 )
