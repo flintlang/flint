@@ -106,20 +106,26 @@ for contract, result in contract_verify_result.items():
 
 list_failed = False
 list_skipped = False
+list_passed = False
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"fs",["list-failed","list-skipped"])
+    opts, args = getopt.getopt(sys.argv[1:],"fsp",["list-failed","list-skipped", "list-passed"])
     for opt, arg in opts:
         if opt in ("-f", "--list-failed"):
             list_failed = True
         elif opt in ("-s", "--list-skipped"):
             list_skipped = True
+        elif opt in ("-p", "--list-passed"):
+            list_passed = True
 except getopt.GetoptError:
-    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped]')
+    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped], [-p|--list-passed]')
     sys.exit(2)
 
 print("Verification tests")
 print("Total: %i" % len(test_contracts))
 print("Passed: %i" % len(passed))
+if list_passed:
+    for passed in passed:
+        print("\tPass: %s" % passed)
 print("Skipped: %i" % len(skipped))
 if list_skipped:
     for skip in skipped:
