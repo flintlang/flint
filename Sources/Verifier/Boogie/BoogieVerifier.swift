@@ -135,23 +135,23 @@ public class BoogieVerifier: Verifier {
   }
 
   private func extractSymbooglixErrors(terminationCountersFile: String, spec: SourceLocation) -> HolisticRunInfo {
-    do {
-      let results = try Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile),
-                                             encoding: .utf8))
-      guard let resultDict = results.dictionary else {
-        print("Found no results in termination_counters file")
-        fatalError()
-
-      }
-      let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
-      let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
-      return HolisticRunInfo(totalRuns: totalRuns,
-                             successfulRuns: successfulRuns,
-                             responsibleSpec: spec)
-    } catch {
+    guard let results = try? Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile),
+                                           encoding: .utf8)) else {
       print("Unable to parse termination_counters yaml file")
+      print(terminationCountersFile)
       fatalError()
     }
+
+    guard let resultDict = results.dictionary else {
+      print("Found no results in termination_counters file")
+      fatalError()
+
+    }
+    let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
+    let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
+    return HolisticRunInfo(totalRuns: totalRuns,
+                           successfulRuns: successfulRuns,
+                           responsibleSpec: spec)
   }
 
   private func diagnoseFailingPreCondition(_ procTi: TranslationInformation,

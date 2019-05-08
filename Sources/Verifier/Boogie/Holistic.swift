@@ -18,9 +18,7 @@ extension BoogieTranslator {
 
       call init_LocalVariables(); /// This does limit the response somewhat - it means we're only checking Will (A), wrt to the initial configuration. Could replace with invariant instead?
 
-      unsat := true;
-
-      while (unsat) {
+      while (!(ten_LocalVariables mod 5 == 0)) {
         havoc selector;
         assume (selector > 1 && selector < 4);
 
@@ -29,7 +27,6 @@ extension BoogieTranslator {
         } else if (selector == 3) {
           call scoping_LocalVariables();
         }
-        unsat := !(ten_LocalVariables mod 5 == 0);
       }
 
       assert (ten_LocalVariables mod 5 == 0);
@@ -59,10 +56,6 @@ extension BoogieTranslator {
     procedureVariables.insert(BVariableDeclaration(name: "selector",
                                                    rawName: "selector",
                                                    type: .int))
-    let unsat = BExpression.identifier("unsat")
-    procedureVariables.insert(BVariableDeclaration(name: "unsat",
-                                                   rawName: "unsat",
-                                                   type: .boolean))
 
     var procedureDeclarations = [(SourceLocation, BIRTopLevelDeclaration)]()
     var procedureNames = [String]()
@@ -71,7 +64,6 @@ extension BoogieTranslator {
     for initProcedure in initProcedures {
       let procedureName = entryPointBase + randomString(length: 5) //unique identifier
 
-      let initalUnsatFalse = BStatement.assignment(unsat, .boolean(true), translationInformation)
       let havocSelector = BStatement.havoc("selector", translationInformation)
       let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
                                                       .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), translationInformation)
@@ -82,13 +74,11 @@ extension BoogieTranslator {
                                                                  enclosingFunctionName: procedureName)
       procedureVariables = procedureVariables.union(variables)
 
-      let checkUnsat = BStatement.assignment(unsat, .not(bSpec), translationInformation)
-      let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: unsat,
+      let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: .not(bSpec),
                                                                  body: [
                                                                    havocSelector,
                                                                    assumeSelector
-                                                                 ] + methodSelection
-                                                                   + [checkUnsat],
+                                                                 ] + methodSelection,
                                                                  invariants: [],
                                                                  ti: translationInformation))
       let assertSpec = BStatement.assertStatement(BAssertStatement(expression: bSpec,
@@ -101,7 +91,7 @@ extension BoogieTranslator {
                                                              ti: translationInformation))
       // Add procedure call to callGraph
       addProcedureCall(procedureName, translatedName)
-      let procedureStmts = [callInit, initalUnsatFalse, whileUnsat, assertSpec]
+      let procedureStmts = [callInit, whileUnsat, assertSpec]
       let specProcedure = BIRProcedureDeclaration(
         name: procedureName,
         returnType: nil,
