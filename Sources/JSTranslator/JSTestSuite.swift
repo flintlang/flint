@@ -3,7 +3,7 @@ import Parser
 import Lexer
 import Foundation
 
-public class JSTestSuite {
+public class JSTranslator {
     // for now lets write this to support a single test contract
     private var contractName: String
     private var filePath: String
