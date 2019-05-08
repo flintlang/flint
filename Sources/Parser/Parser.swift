@@ -65,6 +65,14 @@ public class Parser {
     return (topLevelModule, environment, diagnostics)
   }
     
+  public func parseRepl() -> ([Statement], [Diagnostic]) {
+    let res = try? parseCodeBlock()
+    if let (stmts, _) = res {
+        return (stmts, diagnostics)
+    }
+    return ([], diagnostics)
+  }
+    
   private func setupEnvironment(using topLevelModule: TopLevelModule?) {
     if let ast = topLevelModule {
       ast.declarations.forEach { (tld) in
