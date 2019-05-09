@@ -320,6 +320,78 @@ extension Compiler {
     
 }
 
+// MARK: Compile hook for repl
+extension Compiler {
+    public static func getAST(config: CompilerReplConfiguration) throws -> (TopLevelModule, Environment) {
+        
+        let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
+     
+        let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
+        
+        if let failed = try config.diagnostics.checkpoint(parserDiagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        guard let ast = parserAST else {
+            exitWithFailure()
+        }
+        
+        // Run all of the passes.
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: environment,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles))
+        
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        return (parserAST!, environment)
+    }
+    
+    public static func genSolFile(config: CompilerReplConfiguration, ast: TopLevelModule, env: Environment) throws {
+        
+        // Run all of the passes.
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: env,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles))
+        
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        // Generate YUL IR code.
+        let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+            .generateCode()
+        
+        // Compile the YUL IR code using solc.
+        try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
+        
+        // these are warnings from the solc compiler
+        try config.diagnostics.display()
+        
+        let fileName = "main.sol"
+        let irFileURL: URL
+        irFileURL = config.outputDirectory.appendingPathComponent(fileName)
+        do {
+            try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
+        } catch {
+            exitWithUnableToWriteIRFile(irFileURL: irFileURL)
+        }
+    }
+
+}
+
 
 // MARK: Compile hook for language server
 extension Compiler {
@@ -389,6 +461,27 @@ public struct CompilerLSPConfiguration {
         self.diagnostics = diagnostics
         self.astPasses = astPasses
     }
+}
+
+public struct CompilerReplConfiguration {
+    public let sourceFiles: [URL]
+    public let stdlibFiles: [URL]
+    public let outputDirectory : URL
+    public let diagnostics: DiagnosticPool
+    public let astPasses: [ASTPass]
+    
+    public init(sourceFiles : [URL],
+                stdlibFiles : [URL],
+                outputDirectory: URL,
+                diagnostics: DiagnosticPool,
+                astPasses : [ASTPass] = Compiler.defaultASTPasses) {
+        self.sourceFiles = sourceFiles
+        self.stdlibFiles = stdlibFiles
+        self.outputDirectory = outputDirectory
+        self.diagnostics = diagnostics
+        self.astPasses = astPasses
+    }
+    
 }
 
 public struct CompilerContractAnalyserConfiguration {
