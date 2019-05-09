@@ -303,7 +303,7 @@ function process_test_result(res, test_name) {
 
             
         } catch {
-            print("Fatal error")
+            print("Fatal error: Loading of contract that is to be tested has failed")
             exit(1)
         }
     }
