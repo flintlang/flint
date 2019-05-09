@@ -32,6 +32,7 @@ let package = Package(
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")
   ],
   targets: [
     // MARK: Source -
@@ -309,6 +310,6 @@ let package = Package(
         dependencies: ["AST", "Parser", "Lexer"]),
     .target(
         name: "REPL",
-        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic"])
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "JSTranslator", "SwiftyJSON"])
     ]
 )
