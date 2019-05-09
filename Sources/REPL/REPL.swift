@@ -87,8 +87,45 @@ public class REPL {
     }
     
     public func run() throws {
-        while let input = readLine() {
-            print(input)
+        deploy_contracts()
+        do {
+            print("REPL ACTIVE")
+            while var input = readLine() {
+                
+                guard input != ".exit" else {
+                    break
+                }
+                
+                // let c : Counter = Counter()
+                // c.increment()
+                
+                input = "{" + input + "}"
+                
+                let lex = Lexer(sourceCode: input)
+                let tokens = lex.lex()
+                let parser = Parser(tokens: tokens)
+                let (stmts, diags) = parser.parseRepl()
+                
+                if stmts.count == 0 {
+                    print(try DiagnosticsFormatter(diagnostics: diags, sourceContext: nil).rendered())
+                    continue
+                }
+            
+                var jsLine = ""
+                
+                for stmt in stmts {
+                    switch (stmt) {
+                    case .expression(let ex):
+                        print(ex)
+                        //print(rT.process_expr(expr: ex))
+                    default:
+                        print("Syntax is not currently supported")
+                    }
+                }
+            }
+            
+        } catch let err {
+            print(err)
         }
     }
     
