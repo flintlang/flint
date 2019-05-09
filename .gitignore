@@ -13,11 +13,17 @@
 utils/testRunner/main.sol
 utils/testRunner/test.js
 utils/testRunner/*.bin
+utils/testRunner/node_modules/*
 
 utils/gasEstimator/main.sol
 utils/gasEstimator/test.js
 utils/gasEstimator/*.bin
 utils/gasEstimator/node_modules/*
+
+utils/repl/main.sol
+utils/repl/test.js
+utils/repl/*.bin
+utils/repl/node_modules/*
 
 bin/
 contracts/
