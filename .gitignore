@@ -21,6 +21,7 @@ utils/gasEstimator/*.bin
 utils/gasEstimator/node_modules/*
 
 utils/repl/main.sol
+utils/repl/contract.json
 utils/repl/test.js
 utils/repl/*.bin
 utils/repl/node_modules/*
