@@ -144,7 +144,7 @@ extension BoogieTranslator {
       for parameter in callParamters {
         //declare argument variable
         //havoc argument
-        let argumentName = randomString(length: 10)
+        let argumentName = "arg_" + randomString(length: 10)
         variables.append(BVariableDeclaration(name: argumentName,
                                               rawName: argumentName,
                                               type: convertType(parameter.type)))
@@ -153,7 +153,7 @@ extension BoogieTranslator {
       }
 
       if let returnType = returnType {
-        let returnVariable = randomString(length: 10)
+        let returnVariable = "return_" + randomString(length: 10)
         variables.append(BVariableDeclaration(name: returnVariable,
                                               rawName: returnVariable,
                                               type: convertType(returnType)))

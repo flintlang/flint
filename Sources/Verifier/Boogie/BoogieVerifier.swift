@@ -107,6 +107,7 @@ public class BoogieVerifier: Verifier {
       //  print("Symbooglix exited with error code \(terminationStatus)\n\(output)")
       //  fatalError()
       //}
+      //print(uncheckedOutput!)
       runInfo.append(extractSymbooglixErrors(terminationCountersFile: workingDir + "/termination_counters.yml",
                                              spec: holisticSpec))
     }
@@ -135,10 +136,15 @@ public class BoogieVerifier: Verifier {
   }
 
   private func extractSymbooglixErrors(terminationCountersFile: String, spec: SourceLocation) -> HolisticRunInfo {
-    guard let results = try? Yaml.load(try String(contentsOf: URL(fileURLWithPath: terminationCountersFile),
-                                           encoding: .utf8)) else {
-      print("Unable to parse termination_counters yaml file")
+    guard let contents = try? String(contentsOf: URL(fileURLWithPath: terminationCountersFile),
+                                     encoding: .utf8) else {
+      print("Couldn't get contents of terminationCounters file")
       print(terminationCountersFile)
+      fatalError()
+    }
+    guard let results = try? Yaml.load(contents) else {
+      print("Unable to parse termination_counters yaml file")
+      print(contents)
       fatalError()
     }
 

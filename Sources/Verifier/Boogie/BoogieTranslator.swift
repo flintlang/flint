@@ -509,8 +509,9 @@ class BoogieTranslator {
         functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), translationInformation))
         functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
                                                               procedureName: procedureName,
-                                                              arguments: [.identifier(weiAmount)],
+                                                              arguments: [.integer(BigUInt(0))],
                                                               ti: translationInformation)))
+        functionPreAmble.append(.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)), .identifier(weiAmount), translationInformation))
         guard let currentFunctionName = getCurrentFunctionName() else {
           print("unable to get current function name - while processing parameter")
           fatalError()

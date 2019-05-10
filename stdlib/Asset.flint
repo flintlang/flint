@@ -43,7 +43,7 @@ struct Wei: Asset {
   var rawValue: Int = 0
 
   init(unsafeRawValue: Int) {
-    if unsafeRawValue > 0 || unsafeRawValue < 0 {
+    if unsafeRawValue != 0 {
       fatalError()
     }
     self.rawValue = unsafeRawValue
