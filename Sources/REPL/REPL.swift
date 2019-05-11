@@ -133,14 +133,39 @@ public class REPL {
                     print(try DiagnosticsFormatter(diagnostics: diags, sourceContext: nil).rendered())
                     continue
                 }
-            
-                var jsLine = ""
-                
+        
                 for stmt in stmts {
                     switch (stmt) {
                     case .expression(let ex):
-                        print(ex)
-                        //print(rT.process_expr(expr: ex))
+                        switch (ex) {
+                        case .binaryExpression(let binExp):
+                
+                            if let (rC, variableName) = check_if_instantiation(assignment: binExp) {
+                                if let addr = try rC.deploy(expr: binExp, variable_name: variableName) {
+                                    variableMap[variableName] = REPLVariable(variableName: variableName, variableType: rC.getContractName(), variableValue: addr)
+                                }
+                                
+                                continue
+                            }
+                            
+                            if let (rC, variableName) = check_if_contract_call(expr: binExp) {
+                                switch (binExp.rhs) {
+                                case .functionCall(let fCall):
+                                    if let res = rC.run(fCall: fCall, instance: variableName) {
+                                        print(res)
+                                    }
+                                default:
+                                    print("Not supported yet")
+                                }
+                                
+                                continue
+                            }
+                            
+                            // generic call (this is for all other expressions)
+                
+                        default:
+                            continue
+                        }
                     default:
                         print("Syntax is not currently supported")
                     }
