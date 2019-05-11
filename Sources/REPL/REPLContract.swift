@@ -73,7 +73,7 @@ public class REPLContract{
         }
     }
     
-    private func process_func_call_args(args : [FunctionArgument]) -> ([String], Bool) {
+    private func process_func_call_args(args : [FunctionArgument]) -> [String]? {
     
         var result_args : [String] = []
         
@@ -89,28 +89,29 @@ public class REPLContract{
                             if let rContract = repl.queryContractInfo(contractName: contractType) {
                                 switch (binExp.rhs) {
                                 case .functionCall(let fc):
-                                    if let result = rContract.run(fCall: fc) {
+                                    if let result = rContract.run(fCall: fc, instance: rVar.variableName) {
                                         result_args.append(result)
                                     } else {
                                         print("Was not able to run \(fc.description)")
-                                        return ([], true)
+                                        return nil
                                     }
                                 default:
                                     print("Only function calls on rhs of dot expressions are currently supported")
-                                    return ([], true)
+                                    return nil
                                 }
                             }
+                            
                         } else {
                             print("Variable \(i.name) is not in scope.")
-                            return ([], true)
+                            return nil
                         }
                     default:
                         print("Identfier not found on lhs of dot expression")
-                        return ([], true)
+                        return nil
                     }
                 default:
                     print("Only supported expression is dot expressions. \(binExp.description) is not yet supported")
-                    return ([], true)
+                    return nil
                 }
                 // I can now pull out the binExp processing into a separate function?
             case .identifier(let i):
@@ -118,7 +119,7 @@ public class REPLContract{
                     result_args.append(val.variableValue)
                 } else {
                     print("Variable \(i.name) is not in scope.")
-                    return ([], true)
+                    return nil
                 }
             case .literal(let li):
                 switch (li.kind) {
@@ -140,17 +141,17 @@ public class REPLContract{
                     }
                 default:
                     print("ERROR: Found non literal in literal token. Exiting REPL")
-                    return ([], true)
+                    return nil
                 }
                 
             default:
                 print("This argument type (name: \(a.identifier!.name)  value : \(a.expression.description)) is not supported")
             
-                return ([], true)
+                return nil
             }
         }
     
-        return (result_args, false)
+        return result_args
     }
     
 
@@ -158,12 +159,12 @@ public class REPLContract{
 
         let rhs = expr.rhs
         var args : [String]
-        var isError : Bool
         switch (rhs) {
         case .functionCall(let fc):
             let fCallArgs = fc.arguments
-            (args, isError) = process_func_call_args(args: fCallArgs)
-            if (isError) {
+            if let function_args = process_func_call_args(args: fCallArgs) {
+                args = function_args
+            } else {
                 print("Invalid argument found in constructor function. Failing deployment of  \(variable_name) : \(self.contractName).")
                 return nil
             }
