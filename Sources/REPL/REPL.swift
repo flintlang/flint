@@ -152,4 +152,34 @@ public class REPL {
         }
     }
     
+    private func get_contract_name(expr : BinaryExpression) -> String? {
+        
+        return nil
+    }
+    
+    private func check_if_instantiation(assignment : BinaryExpression) -> (REPLContract, String)? {
+        var typeName = ""
+        var variableName = ""
+    
+        switch (assignment.opToken) {
+        case .equal:
+            switch (assignment.lhs) {
+            case .variableDeclaration(let vdec):
+                typeName = vdec.type.name
+                variableName = vdec.identifier.name
+            default:
+                break
+            }
+            
+        default:
+            break
+        }
+        
+        if let rContract = self.contractInfoMap[typeName] {
+            return (rContract, variableName)
+        } else {
+            return nil
+        }
+    }
+    
 }
