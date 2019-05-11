@@ -413,7 +413,7 @@ extension Compiler {
             exit(0)
         }
         
-        return (parserAST!, environment)
+        return (ast, environment)
     }
     
     public static func genSolFile(config: CompilerReplConfiguration, ast: TopLevelModule, env: Environment) throws {
