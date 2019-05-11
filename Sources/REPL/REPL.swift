@@ -152,7 +152,28 @@ public class REPL {
         }
     }
     
-    private func get_contract_name(expr : BinaryExpression) -> String? {
+    private func check_if_contract_call(expr : BinaryExpression) -> (REPLContract, String)? {
+        switch (expr.opToken) {
+        case .dot:
+            switch (expr.lhs) {
+            case .identifier(let i):
+                if let rVar = variableMap[i.name] {
+                    if let rContract = contractInfoMap[rVar.variableType] {
+                        return (rContract, i.name)
+                    } else {
+                        print("Variable is not mapped to a contract")
+                        return nil
+                    }
+                } else {
+                    print("Variable \(i.name) not in scope")
+                }
+            default:
+                print("Only identifiers are allowed on the LHS of a dot expression")
+            }
+            print("")
+        default:
+            return nil
+        }
         
         return nil
     }
