@@ -39,10 +39,39 @@ async function deploy_contract(abi, bytecode) {
     });
 }
 
+async function check_tx_mined(tx_hash) {
+    let txs = eth.getBlock("latest").transactions;
+    return new Promise(function(resolve, reject) {
+        while (!txs.includes(tx_hash)) {
+            txs = eth.getBlock("latest").transactions;
+        }
+        resolve("true");
+    });
+}
+
+async function transactional_method(contract, methodName, args) {
+    var tx_hash = await new Promise(function(resolve, reject) {
+        contract[methodName]['sendTransaction'](...args, function(err, result) {
+            resolve(result);
+        });
+    });
+
+    let isMined = await check_tx_mined(tx_hash);
+
+    return new Promise(function(resolve, reject) {
+        resolve(tx_hash);
+    });
+}
+
 async function main() {
 	let abi = process.argv[2];
 	let bytecode  = process.argv[3];
-	let dep_contract = await deploy_contract(abi, bytecode)
+	let constructor_args = JSON.parse(process.argv[4]);
+	let dep_contract = await deploy_contract(abi, bytecode);
+	if (constructor_args.length > 0) {
+            await transactional_method(dep_contract, 'replConstructor', constructor_args)
+	}
+
 	console.log(dep_contract.address);
 } 
 
