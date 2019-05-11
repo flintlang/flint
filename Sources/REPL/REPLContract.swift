@@ -15,9 +15,10 @@ public class REPLContract{
     private let contractName : String
     private let abi: String
     private let bytecode: String
+    private let repl: REPL
 
     
-    public init(contractFilePath : String, contractName : String, abi: String, bytecode: String) {
+    public init(contractFilePath : String, contractName : String, abi: String, bytecode: String, repl : REPL) {
         self.contractFilePath = contractFilePath
         self.contractName = contractName
         self.contractFunctionInfo = [:]
@@ -27,10 +28,121 @@ public class REPLContract{
         self.instanceToAddress = [:]
         self.abi = abi
         self.bytecode = bytecode
+        self.repl = repl
         loadContract()
     }
     
-    public func deploy(variable_name : String) throws {
+
+    public func run(fCall : FunctionCall) -> String? {
+        
+        return ""
+    }
+    
+    private func process_func_call_args(args : [FunctionArgument]) -> ([String], Bool) {
+    
+        var result_args : [String] = []
+        
+        for a in args {
+            switch (a.expression) {
+            case .binaryExpression(let binExp):
+                switch (binExp.opToken) {
+                case .dot:
+                    switch (binExp.lhs) {
+                    case .identifier(let i):
+                        if let rVar = repl.queryVariableMap(variable: i.name) {
+                            let contractType = rVar.variableType
+                            if let rContract = repl.queryContractInfo(contractName: contractType) {
+                                switch (binExp.rhs) {
+                                case .functionCall(let fc):
+                                    if let result = rContract.run(fCall: fc) {
+                                        result_args.append(result)
+                                    } else {
+                                        print("Was not able to run \(fc.description)")
+                                        return ([], true)
+                                    }
+                                default:
+                                    print("Only function calls on rhs of dot expressions are currently supported")
+                                    return ([], true)
+                                }
+                            }
+                        } else {
+                            print("Variable \(i.name) is not in scope.")
+                            return ([], true)
+                        }
+                    default:
+                        print("Identfier not found on lhs of dot expression")
+                        return ([], true)
+                    }
+                    print("dot")
+                default:
+                    print("Only supported expression is dot expressions. \(binExp.description) is not yet supported")
+                    return ([], true)
+                }
+                // I can now pull out the binExp processing into a separate function?
+            case .identifier(let i):
+                if let val = repl.queryVariableMap(variable: i.name) {
+                    result_args.append(val.variableValue)
+                } else {
+                    print("Variable \(i.name) is not in scope.")
+                    return ([], true)
+                }
+            case .literal(let li):
+                switch (li.kind) {
+                case .literal(let lit):
+                    switch (lit) {
+                    case .address(let s):
+                        result_args.append(s)
+                    case .boolean(let bool):
+                        result_args.append(bool.rawValue)
+                    case .string(let s):
+                        result_args.append(s)
+                    case .decimal(let decLit):
+                        switch (decLit) {
+                        case .integer(let i):
+                            result_args.append(i.description)
+                        case .real(let i1, let i2):
+                            result_args.append(i1.description + "." + i2.description)
+                        }
+                    }
+                default:
+                    print("ERROR: Found non literal in literal token. Exiting REPL")
+                    return ([], true)
+                }
+                
+            default:
+                print("This argument type (name: \(a.identifier?.name)  value : \(a.expression.description)) is not supported")
+            
+                return ([], true)
+            }
+        }
+    
+        return (result_args, false)
+    }
+    
+
+    public func deploy(expr: BinaryExpression, variable_name : String) throws {
+        // so from the expression I can extract the assigned expression
+        let rhs = expr.rhs
+
+        var args : [String]
+        var isError : Bool
+        switch (rhs) {
+        case .functionCall(let fc):
+            let fCallArgs = fc.arguments
+            (args, isError) = process_func_call_args(args: fCallArgs)
+            if (isError) {
+                print("Invalid argument found in constructor function. Failing deployment of  \(variable_name) : \(self.contractName).")
+                return
+            }
+            print(args)
+        default:
+            print("Invalid expression on rhs of contract insantiation. Failing deployment of \(variable_name) : \(self.contractName).")
+            return
+        }
+        
+        return
+        
+
         let fileManager = FileManager.init()
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/deploy_contract.js"
         
