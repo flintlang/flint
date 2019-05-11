@@ -4,6 +4,7 @@ import Parser
 import Lexer
 import Diagnostic
 import Foundation
+import SwiftyJSON
 
 public class REPLContract{
     private var isFuncTransaction : [String:Bool]
@@ -32,10 +33,12 @@ public class REPLContract{
         loadContract()
     }
     
+    public func getContractName() -> String {
+        return contractName
+    }
 
-    public func run(fCall : FunctionCall) -> String? {
-        
-        return ""
+    public func run(fCall : FunctionCall, expr : Expression? = nil) -> String? {
+        return "1"
     }
     
     private func process_func_call_args(args : [FunctionArgument]) -> ([String], Bool) {
@@ -73,7 +76,6 @@ public class REPLContract{
                         print("Identfier not found on lhs of dot expression")
                         return ([], true)
                     }
-                    print("dot")
                 default:
                     print("Only supported expression is dot expressions. \(binExp.description) is not yet supported")
                     return ([], true)
@@ -110,7 +112,7 @@ public class REPLContract{
                 }
                 
             default:
-                print("This argument type (name: \(a.identifier?.name)  value : \(a.expression.description)) is not supported")
+                print("This argument type (name: \(a.identifier!.name)  value : \(a.expression.description)) is not supported")
             
                 return ([], true)
             }
@@ -120,10 +122,9 @@ public class REPLContract{
     }
     
 
-    public func deploy(expr: BinaryExpression, variable_name : String) throws {
-        // so from the expression I can extract the assigned expression
-        let rhs = expr.rhs
+    public func deploy(expr: BinaryExpression, variable_name : String) throws -> String? {
 
+        let rhs = expr.rhs
         var args : [String]
         var isError : Bool
         switch (rhs) {
@@ -132,17 +133,21 @@ public class REPLContract{
             (args, isError) = process_func_call_args(args: fCallArgs)
             if (isError) {
                 print("Invalid argument found in constructor function. Failing deployment of  \(variable_name) : \(self.contractName).")
-                return
+                return nil
             }
-            print(args)
         default:
             print("Invalid expression on rhs of contract insantiation. Failing deployment of \(variable_name) : \(self.contractName).")
-            return
+            return nil
         }
         
-        return
         
-
+        let json_args = JSON(args)
+        
+        guard let rawString = json_args.rawString() else {
+            print("Could not extract JSON constructor arguments")
+            return nil
+        }
+        
         let fileManager = FileManager.init()
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/deploy_contract.js"
         
@@ -156,15 +161,17 @@ public class REPLContract{
         p.launchPath = "/usr/bin/env"
         p.standardOutput = pipe
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
-        p.arguments = ["node", "deploy_contract.js", self.abi, self.bytecode]
+        p.arguments = ["node", "deploy_contract.js", self.abi, self.bytecode, rawString]
         p.launch()
         p.waitUntilExit()
         
         let data = pipe.fileHandleForReading.readDataToEndOfFile();
         if let addr = String(data: data, encoding: .utf8) {
-            //instanceToAddress[variable_name] = addr
+            instanceToAddress[variable_name] = addr
+            return addr
         } else {
             print("ERROR : Could not deploy contract \(self.contractName)")
+            return nil
         }
     }
     
