@@ -209,7 +209,7 @@ extension BoogieTranslator {
       let loopInvariantExpression: BExpression = .lessThanOrEqual(index, finalIndexValue)
       //.lessThan(.old(index), index)
       let loopInvariants = [BLoopInvariant(expression: loopInvariantExpression,
-                                             ti: TranslationInformation(sourceLocation: forStatement.sourceLocation))
+                                           ti: TranslationInformation(sourceLocation: forStatement.sourceLocation))
                            ]
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
@@ -925,7 +925,7 @@ extension BoogieTranslator {
                                                                  )
                                                    ],
                                                    falseCase: [],
-                                                   ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))))
+                                                   ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))))
       case .dictionaryType:
         // does keys contain key? - if so, add it!
         //counter = 0
@@ -964,9 +964,9 @@ extension BoogieTranslator {
                                                                          indxExpr),
                                                       trueCase: [.assignment(containsKey,
                                                                  .boolean(true),
-                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))],
+                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))],
                                                       falseCase: [],
-                                                      ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))),
+                                                      ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))),
                             .assignment(counter,
                                         .add(counter, .integer(BigUInt(1))),
                                         TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
@@ -981,7 +981,7 @@ extension BoogieTranslator {
                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
                                   ],
                                   falseCase: [],
-                                  ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
+                                  ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))
 
         postAmble.append(.assignment(counter, .integer(BigUInt(0)), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
         postAmble.append(.assignment(containsKey, .boolean(false), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
@@ -1008,6 +1008,7 @@ extension BoogieTranslator {
       accessAssertExpression = .lessThanOrEqual(indxExpr, sizeShadowVariable)
     }
     let ti = TranslationInformation(sourceLocation: subscriptExpression.sourceLocation,
+                                    isUserDirectCause: false,
                                     failingMsg: ErrorMsg.ArrayOutofBoundsAccess)
     let assertValidAccess = BStatement.assertStatement(BAssertStatement(expression: accessAssertExpression,
                                                                         ti: ti))

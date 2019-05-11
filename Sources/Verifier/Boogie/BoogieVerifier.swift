@@ -66,6 +66,11 @@ public class BoogieVerifier: Verifier {
                                                                 monoLocation: self.monoLocation,
                                                                 boogieLocation: self.boogieLocation).diagnose()
 
+    // Check for unreachable code
+    let unreachableCode = BoogieUnreachableCode(boogie: translation.functionalProgram,
+                                                monoLocation: self.monoLocation,
+                                                boogieLocation: self.boogieLocation).diagnose()
+
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
     var holisticVerification = true
@@ -80,7 +85,13 @@ public class BoogieVerifier: Verifier {
       }
     }
 
-    return (functionalVerification && holisticVerification, flintErrors + inconsistentAssumptions + holisticErrors)
+    let verified = functionalVerification && holisticVerification
+    let verificationDiagnostics = flintErrors
+                                + inconsistentAssumptions
+                                + unreachableCode
+                                + holisticErrors
+
+    return (verified, verificationDiagnostics)
   }
 
   private func executeSymbooglix(translation: FlintBoogieTranslation, maxTimeout: Int) -> [HolisticRunInfo] {

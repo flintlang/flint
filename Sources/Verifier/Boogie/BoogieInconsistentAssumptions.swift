@@ -18,8 +18,9 @@ class BoogieInconsistentAssumptions {
     // Replace body of each procedure with assume false
     // For all the ones which verify, return inconsistent assumption diagnostics
 
-    self.boogieAst = BTopLevelProgram(declarations: self.boogieAst.declarations.map({ replaceProcedureBody($0) }))
-    let (boogieSource, boogieMapping) = self.boogieAst.render()
+    let (boogieSource, boogieMapping)
+      = BTopLevelProgram(declarations: self.boogieAst.declarations.map({ replaceProcedureBody($0) }))
+        .render()
 
     let boogieErrors = Boogie.verifyBoogie(boogie: boogieSource,
                                            monoLocation: self.monoLocation,

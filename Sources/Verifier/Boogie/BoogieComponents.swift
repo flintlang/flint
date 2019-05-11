@@ -45,6 +45,7 @@ class TranslationInformation: Hashable, CustomStringConvertible {
   // Some pre + post conditions originally come from flint invariants
   let isInvariant: Bool
   let isExternalCall: Bool
+  let isUserDirectCause: Bool // Is this the direct result of user code
   let failingMsg: String?
   let triggerName: String? // Name of trigger with caused this
   let relatedTI: TranslationInformation?
@@ -52,11 +53,13 @@ class TranslationInformation: Hashable, CustomStringConvertible {
   init(sourceLocation: SourceLocation,
        isInvariant: Bool = false,
        isExternalCall: Bool = false,
+       isUserDirectCause: Bool = true,
        failingMsg: String? = nil,
        triggerName: String? = nil,
        relatedTI: TranslationInformation? = nil) {
     self.sourceLocation = sourceLocation
     self.isInvariant = isInvariant
+    self.isUserDirectCause = isUserDirectCause
     self.isExternalCall = isExternalCall
     self.failingMsg = failingMsg
     self.triggerName = triggerName
