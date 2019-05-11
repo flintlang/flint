@@ -322,6 +322,63 @@ extension Compiler {
 
 // MARK: Compile hook for repl
 extension Compiler {
+    
+    private static func createConstructorRepl(constructor : SpecialDeclaration) -> FunctionDeclaration? {
+        
+        if (!(constructor.signature.specialToken.kind == .init)) {
+            return nil
+        }
+        
+        if (constructor.body.count == 0) {
+            return nil
+        }
+        
+        var sig = constructor.signature
+        sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
+        let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
+        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "replConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
+        let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken)
+        
+        return newFunc
+    }
+    
+    private static func insertConstructorFuncRepl(ast : TopLevelModule) -> TopLevelModule {
+        let decWithoutStdlib = ast.declarations[2...]
+        
+        var newDecs : [TopLevelDeclaration] = []
+        newDecs.append(ast.declarations[0])
+        newDecs.append(ast.declarations[1])
+        
+        for m in decWithoutStdlib {
+            switch (m) {
+            case .contractDeclaration(let cdec):
+                newDecs.append(m)
+            case .contractBehaviorDeclaration(var cbdec):
+                var mems : [ContractBehaviorMember] = []
+                for cm in cbdec.members {
+                    switch (cm) {
+                    case .specialDeclaration(let spdec):
+                        if let constructorFunc = createConstructorRepl(constructor: spdec) {
+                            let cBeh : ContractBehaviorMember = .functionDeclaration(constructorFunc)
+                            mems.append(cBeh)
+                            mems.append(.specialDeclaration(spdec))
+                        } else {
+                            mems.append(cm)
+                        }
+                    default:
+                        mems.append(cm)
+                    }
+                }
+                cbdec.members = mems
+                newDecs.append(.contractBehaviorDeclaration(cbdec))
+            default:
+                newDecs.append(m)
+            }
+        }
+        
+        return TopLevelModule(declarations: newDecs)
+    }
+    
     public static func getAST(config: CompilerReplConfiguration) throws -> (TopLevelModule, Environment) {
         
         let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
@@ -335,10 +392,14 @@ extension Compiler {
             exit(0)
         }
         
-        guard let ast = parserAST else {
+        
+        guard var ast = parserAST else {
             exitWithFailure()
         }
         
+        
+        ast = insertConstructorFuncRepl(ast: parserAST!)
+      
         // Run all of the passes.
         let passRunnerOutcome = ASTPassRunner(ast: ast)
             .run(passes: config.astPasses,
