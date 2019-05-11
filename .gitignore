@@ -25,6 +25,7 @@ utils/repl/contract.json
 utils/repl/test.js
 utils/repl/*.bin
 utils/repl/node_modules/*
+utils/repl/log.txt
 
 bin/
 contracts/
