@@ -37,8 +37,40 @@ public class REPLContract{
         return contractName
     }
 
-    public func run(fCall : FunctionCall, expr : Expression? = nil) -> String? {
-        return "1"
+    public func run(fCall : FunctionCall, instance : String, expr : Expression? = nil) -> String? {
+        guard let addr = instanceToAddress[instance] else {
+            print("\(instance) is not in scope.")
+            return nil
+        }
+        
+        guard let fArgs = process_func_call_args(args: fCall.arguments) else {
+            print("Failed to run function \(fCall.identifier.name) as arguments were malformed")
+            return nil
+        }
+        
+        let fileManager = FileManager.init()
+        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/run_function.js"
+        
+        if !(fileManager.fileExists(atPath: path)) {
+            print("FATAL ERROR: run_function file does not exist, cannot deploy contract for repl. Exiting.")
+            exit(0)
+        }
+        
+        let p = Process()
+        let pipe = Pipe()
+        p.launchPath = "/usr/bin/env"
+        p.standardOutput = pipe
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.arguments = ["node", "run_function.js", self.abi, addr]
+        p.launch()
+        p.waitUntilExit()
+        
+        let data = pipe.fileHandleForReading.readDataToEndOfFile();
+        if let res = String(data: data, encoding: .utf8) {
+            return res
+        } else {
+            return nil
+        }
     }
     
     private func process_func_call_args(args : [FunctionArgument]) -> ([String], Bool) {
