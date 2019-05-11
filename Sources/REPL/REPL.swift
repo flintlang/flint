@@ -9,6 +9,7 @@ import SwiftyJSON
 
 public class REPL {
     var contractInfoMap : [String : REPLContract] = [:]
+    var variableMap : [String : REPLVariable] = [:]
     let contractFilePath : String
     
     public init(contractFilePath: String, contractAddress : String = "") {
@@ -39,6 +40,22 @@ public class REPL {
         
     }
     
+    public func queryContractInfo(contractName : String) -> REPLContract? {
+        if let rContract = contractInfoMap[contractName] {
+            return rContract
+        }
+        
+        return nil
+    }
+    
+    public func queryVariableMap(variable : String) -> REPLVariable? {
+        if let rVar = variableMap[variable] {
+            return rVar
+        }
+        
+        return nil
+    }
+    
     private func deploy_contracts() {
         let inputFiles = [URL(fileURLWithPath: self.contractFilePath)]
         let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl")
@@ -49,7 +66,7 @@ public class REPL {
             try Compiler.genSolFile(config: config, ast: ast, env: environment)
             
             let contract_data = try getContractData()
-            
+        
             guard let dataFromString = contract_data.data(using: .utf8, allowLossyConversion: false) else {
                 print("ERROR : Unable to extract contract information")
                 exit(0)
@@ -72,8 +89,14 @@ public class REPL {
                         exit(0)
                     }
                     
-                    let rc = REPLContract(contractFilePath: self.contractFilePath, contractName: nameOfContract, abi: abi, bytecode: "0x" + bytecode)
+                    print("Processing contract: \(nameOfContract)")
+                    
+                    let rc = REPLContract(contractFilePath: self.contractFilePath, contractName: nameOfContract, abi: abi, bytecode: "0x" + bytecode, repl: self)
+                    
+                    print("Contract interface: \(abi)")
+                    
                     contractInfoMap[nameOfContract] = rc
+                    
                 default:
                     continue
                 }
