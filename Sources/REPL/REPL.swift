@@ -173,6 +173,10 @@ public class REPL {
         }
     }
     
+    public func addVarToMap(replVar : REPLVariable, name : String) {
+        variableMap[name] = replVar
+    }
+    
     public func run() throws {
         deploy_contracts()
         let replCodeProcessor : REPLCodeProcessor = REPLCodeProcessor(repl: self)
@@ -204,23 +208,8 @@ public class REPL {
                 for stmt in stmts {
                     switch (stmt) {
                     case .expression(let ex):
-                        switch (ex) {
-                        case .binaryExpression(let binExp):
-                
-                            if let (rC, variableName) = check_if_instantiation(assignment: binExp) {
-                                if let addr = try rC.deploy(expr: binExp, variable_name: variableName) {
-                                    variableMap[variableName] = REPLVariable(variableName: variableName, variableType: rC.getContractName(), variableValue: addr)
-                                }
-                                
-                                continue
-                            }
-                            
-                            if let res = replCodeProcessor.process_expr(expr: binExp) {
-                                print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
-                                continue
-                            }
-                        
-                        default:
+                        if let res = try replCodeProcessor.process_expr(expr: ex) {
+                            print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
                             continue
                         }
                     default:
@@ -235,30 +224,4 @@ public class REPL {
             print(err)
         }
     }
-    
-    private func check_if_instantiation(assignment : BinaryExpression) -> (REPLContract, String)? {
-        var typeName = ""
-        var variableName = ""
-    
-        switch (assignment.opToken) {
-        case .equal:
-            switch (assignment.lhs) {
-            case .variableDeclaration(let vdec):
-                typeName = vdec.type.name
-                variableName = vdec.identifier.name
-            default:
-                break
-            }
-            
-        default:
-            break
-        }
-        
-        if let rContract = self.contractInfoMap[typeName] {
-            return (rContract, variableName)
-        } else {
-            return nil
-        }
-    }
-    
 }
