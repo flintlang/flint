@@ -81,7 +81,7 @@ public class REPLCodeProcessor {
         return nil
     }
     
-    public func process_expr(expr: Expression) throws -> String? {
+    public func process_expr(expr: Expression) throws -> (String, String)? {
         switch (expr) {
         case .binaryExpression(let binExp):
             if let (rC, variableName) = check_if_instantiation(assignment: binExp) {
@@ -92,16 +92,42 @@ public class REPLCodeProcessor {
                 }
              }
     
-             if let res = process_binary_expr(expr: binExp) {
-                return res
+             if let (res, type) = try process_binary_expr(expr: binExp) {
+                return (res, type)
              }
+            
         case .identifier(let i):
-            print(i)
+            if let rVar = repl.queryVariableMap(variable: i.name) {
+                return (rVar.variableValue, rVar.variableType)
+            } else {
+                print("Variable \(i.name) not in scope".lightRed.bold)
+            }
+            
+        case .literal(let li):
+            switch (li.kind) {
+            case .literal(let lit):
+                switch (lit) {
+                case .string(let s):
+                    return (s, "String")
+                case .decimal(let dec):
+                    switch (dec) {
+                    case .integer(let i):
+                        return (i.description, "Int")
+                    default:
+                        print("Floating point numbers are not supported".lightRed.bold)
+                    }
+                case .address(let a):
+                    return (a, "Address")
+                case .boolean(let b):
+                    return (b.rawValue, "Bool")
+                }
+            default:
+                print("ERROR: Invalid token found \(li.description)".lightRed.bold)
+            }
         default:
             print("Syntax is not supported".lightRed.bold)
-            return nil
         }
-                
+        
         return nil
     }
     
