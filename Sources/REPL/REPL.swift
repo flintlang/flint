@@ -175,6 +175,7 @@ public class REPL {
     
     public func run() throws {
         deploy_contracts()
+        let replCodeProcessor : REPLCodeProcessor = REPLCodeProcessor(repl: self)
         do {
             print("flint>".lightMagenta, terminator: "")
             while var input = readLine() {
@@ -214,26 +215,16 @@ public class REPL {
                                 continue
                             }
                             
-                            if let (rC, variableName) = check_if_contract_call(expr: binExp) {
-                                switch (binExp.rhs) {
-                                case .functionCall(let fCall):
-                                    if let res = rC.run(fCall: fCall, instance: variableName) {
-                                        print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
-                                    }
-                                default:
-                                    print("Not supported yet")
-                                }
-                                
+                            if let res = replCodeProcessor.process_expr(expr: binExp) {
+                                print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
                                 continue
                             }
-                            
-                            // generic call (this is for all other expressions)
-                
+                        
                         default:
                             continue
                         }
                     default:
-                        print("Syntax is not currently supported")
+                        print("Syntax is not currently supported".lightRed.bold)
                     }
                 }
                 
@@ -243,32 +234,6 @@ public class REPL {
         } catch let err {
             print(err)
         }
-    }
-    
-    private func check_if_contract_call(expr : BinaryExpression) -> (REPLContract, String)? {
-        switch (expr.opToken) {
-        case .dot:
-            switch (expr.lhs) {
-            case .identifier(let i):
-                if let rVar = variableMap[i.name] {
-                    if let rContract = contractInfoMap[rVar.variableType] {
-                        return (rContract, i.name)
-                    } else {
-                        print("Variable is not mapped to a contract")
-                        return nil
-                    }
-                } else {
-                    print("Variable \(i.name) not in scope")
-                }
-            default:
-                print("Only identifiers are allowed on the LHS of a dot expression")
-            }
-            print("")
-        default:
-            return nil
-        }
-        
-        return nil
     }
     
     private func check_if_instantiation(assignment : BinaryExpression) -> (REPLContract, String)? {
