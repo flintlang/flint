@@ -6,6 +6,7 @@ import Diagnostic
 import Foundation
 import JSTranslator
 import SwiftyJSON
+import Rainbow
 
 public class REPL {
     var contractInfoMap : [String : REPLContract] = [:]
@@ -25,13 +26,14 @@ public class REPL {
             exit(0)
         }
 
+        
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
         p.arguments = ["node", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
-        
+ 
         let contractJsonFilePath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/contract.json"
         
         let get_contents_of_json = try String(contentsOf: URL(fileURLWithPath: contractJsonFilePath))
@@ -54,6 +56,68 @@ public class REPL {
         }
         
         return nil
+    }
+    
+    private func process_abi_args(args : [[String : String]]) -> String {
+        var final_args = "("
+        let final_count = args.count
+        for (i, a) in args.enumerated() {
+            let argName = a["name"]!
+            let argType = a["type"]!
+            
+            var flintType = ""
+            if argType == "uint256" {
+                flintType = "Int"
+            } else {
+                flintType = argType
+            }
+    
+            var flintArg = argName
+            flintArg.remove(at: flintArg.startIndex)
+            final_args += "\(flintArg) : \(flintType)"
+            if (i != final_count - 1) {
+                final_args += ", "
+            }
+       
+        }
+        
+        final_args += ")"
+        
+        return final_args
+    }
+    
+    private func pretty_print_abi(abi : String) throws {
+        
+        let abi_array = try JSONSerialization.jsonObject(with: abi.data(using: .utf8)!, options:[]) as? [[String : Any]]
+        
+        var abi_pretty_funcs : [String] = []
+        
+        for elem in abi_array! {
+            let type = elem["type"]! as! String
+            if (type == "function") {
+                var fncName = elem["name"]! as! String
+                if fncName == "replConstructor" {
+                    fncName = "init"
+                }
+                let inputs = elem["inputs"]! as! [[String : String]]
+                let isConstant = elem["constant"] as! Bool
+                let outputs = elem["outputs"] as! [[String : String]]
+                let funcSignature = "\(fncName)\(process_abi_args(args: inputs))"
+                if isConstant {
+                    abi_pretty_funcs.append(funcSignature.lightWhite + " (Constant)".lightCyan.bold)
+                } else {
+                    abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating)".lightYellow.bold)
+                }
+            }
+        }
+        
+        var final_funcs_string = ""
+        final_funcs_string += "Contract Functions: \n".lightGreen
+        for funcs in abi_pretty_funcs {
+            final_funcs_string += funcs + "\n"
+        }
+        
+        print(final_funcs_string)
     }
     
     private func deploy_contracts() {
@@ -80,20 +144,20 @@ public class REPL {
                     let nameOfContract = cdec.identifier.name
                     
                     guard let bytecode = json["contracts"][":" + nameOfContract]["bytecode"].string else {
-                        print("Could not extract the bytecode for \(nameOfContract). Exiting Repl")
+                        print("Could not extract the bytecode for \(nameOfContract). Exiting Repl".lightRed.bold)
                         exit(0)
                     }
                     
                     guard let abi = json["contracts"][":_Interface" + nameOfContract]["interface"].string else {
-                        print("Could not extract the abi for \(nameOfContract)")
+                        print("Could not extract the abi for \(nameOfContract)".lightRed.bold)
                         exit(0)
                     }
                     
-                    print("Processing contract: \(nameOfContract)")
+                    print("\(nameOfContract): \n".bold.underline.lightWhite)
                     
                     let rc = REPLContract(contractFilePath: self.contractFilePath, contractName: nameOfContract, abi: abi, bytecode: "0x" + bytecode, repl: self)
                     
-                    print("Contract interface: \(abi)")
+                    try pretty_print_abi(abi: abi)
                     
                     contractInfoMap[nameOfContract] = rc
                     
@@ -112,15 +176,17 @@ public class REPL {
     public func run() throws {
         deploy_contracts()
         do {
-            print("REPL ACTIVE")
+            print("flint>".lightMagenta, terminator: "")
             while var input = readLine() {
-                
+            
                 guard input != ".exit" else {
                     break
                 }
                 
-                // let c : Counter = Counter()
-                // c.increment()
+                
+                if input == "" {
+                    continue
+                }
                 
                 input = "{" + input + "}"
                 
@@ -152,7 +218,7 @@ public class REPL {
                                 switch (binExp.rhs) {
                                 case .functionCall(let fCall):
                                     if let res = rC.run(fCall: fCall, instance: variableName) {
-                                        print(res)
+                                        print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
                                     }
                                 default:
                                     print("Not supported yet")
@@ -170,6 +236,8 @@ public class REPL {
                         print("Syntax is not currently supported")
                     }
                 }
+                
+                print("flint>".lightMagenta, terminator: "")
             }
             
         } catch let err {
