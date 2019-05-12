@@ -37,6 +37,10 @@ public class REPLContract{
     public func getContractName() -> String {
         return contractName
     }
+    
+    public func getResultType(fnc : String) -> String {
+        return contractFunctionInfo[fnc]!.getType()
+    }
 
     public func run(fCall : FunctionCall, instance : String, expr : Expression? = nil) -> String? {
         guard let addr = instanceToAddress[instance] else {
