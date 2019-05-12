@@ -131,13 +131,13 @@ public class REPLCodeProcessor {
         return nil
     }
     
-    public func process_binary_expr(expr : BinaryExpression) -> String? {
+    public func process_binary_expr(expr : BinaryExpression) throws -> (String, String)? {
                 
         switch (expr.opToken) {
         case .dot:
             return process_dot_expr(expr: expr)
         case .equal:
-            return process_equal_expr(expr: expr)
+            return try process_equal_expr(expr: expr)
         case .plus:
             print("+")
         case .minus:
