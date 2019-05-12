@@ -49,6 +49,28 @@ public class REPLContract{
             return nil
         }
         
+        guard let args_data = try? JSONSerialization.data(withJSONObject: fArgs, options: []) else {
+            print("Failed to process arguments for \(fCall.identifier.name)".lightRed.bold)
+            return nil
+        }
+        
+        guard let args = String(data: args_data, encoding: .utf8) else {
+            print("Failed to process arguments for \(fCall.identifier.name)".lightRed.bold)
+            return nil
+        }
+        
+        guard let isTransaction = isFuncTransaction[fCall.identifier.name] else {
+            print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
+            return nil
+        }
+        
+        guard let funcInfo = contractFunctionInfo[fCall.identifier.name] else {
+            print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
+            return nil
+        }
+        
+        let resType = funcInfo.getType()
+        
         let fileManager = FileManager.init()
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/run_function.js"
         
@@ -62,16 +84,18 @@ public class REPLContract{
         p.launchPath = "/usr/bin/env"
         p.standardOutput = pipe
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
-        p.arguments = ["node", "run_function.js", self.abi, addr]
+        p.arguments = ["node", "run_function.js", self.abi, addr, fCall.identifier.name, isTransaction.description, resType, args]
         p.launch()
         p.waitUntilExit()
         
-        let data = pipe.fileHandleForReading.readDataToEndOfFile();
-        if let res = String(data: data, encoding: .utf8) {
-            return res
-        } else {
+        let result_file_path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/result.txt"
+        
+        guard let result = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) else {
+            print("Could not extract result of function \(fCall.identifier.name)".lightRed.bold)
             return nil
         }
+        
+        return result
     }
     
     private func process_func_call_args(args : [FunctionArgument]) -> [String]? {
@@ -241,6 +265,8 @@ public class REPLContract{
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
                         contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultType.name)
+                    } else {
+                        contractFunctionInfo[fName] = ContractFuncInfo(resultType: "nil")
                     }
                 
                     contractFunctionNames.append(fName)
