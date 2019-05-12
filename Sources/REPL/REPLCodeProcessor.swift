@@ -46,7 +46,7 @@ public class REPLCodeProcessor {
         return nil
     }
     
-    private func process_dot_expr(expr: BinaryExpression) -> String? {
+    private func process_dot_expr(expr: BinaryExpression) -> (String, String)? {
         var rC : REPLContract? = nil
         var variableName : String = ""
         
@@ -70,7 +70,8 @@ public class REPLCodeProcessor {
         switch (expr.rhs) {
         case .functionCall(let fCall):
             if let res = rC?.run(fCall: fCall, instance: variableName) {
-                return res
+                let resType = rC!.getResultType(fnc: fCall.identifier.name)
+                return (res, resType)
             }
         default:
             print("Not supported yet")
