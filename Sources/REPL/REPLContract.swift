@@ -157,7 +157,7 @@ public class REPLContract{
     
 
     public func deploy(expr: BinaryExpression, variable_name : String) throws -> String? {
-
+        print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
         let rhs = expr.rhs
         var args : [String]
         switch (rhs) {
@@ -202,6 +202,7 @@ public class REPLContract{
         let data = pipe.fileHandleForReading.readDataToEndOfFile();
         if let addr = String(data: data, encoding: .utf8) {
             instanceToAddress[variable_name] = addr
+            print("Contract deployed at address: ".lightGreen + addr.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite)
             return addr
         } else {
             print("ERROR : Could not deploy contract \(self.contractName)".lightRed.bold)
