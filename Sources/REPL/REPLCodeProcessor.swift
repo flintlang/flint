@@ -9,32 +9,38 @@ public class REPLCodeProcessor {
         self.repl = repl
     }
     
-    private func process_equal_expr(expr : BinaryExpression) -> String? {
+    private func process_equal_expr(expr : BinaryExpression) throws -> (String, String)? {
         
         var varName : String = ""
         var varType : String = ""
+        var varConst : Bool = false
+        var newVar : Bool = true
         
-        switch (expr.rhs) {
+        switch (expr.lhs) {
         case .variableDeclaration(let vdec):
             varName = vdec.identifier.name
             varType = vdec.type.name
+            varConst = vdec.isConstant
         default:
             print("Invalid expression found on the LHS of an equal \(expr.rhs.description)".lightRed.bold)
             return nil
         }
         
-        var res : String? = nil
-        switch (expr.lhs) {
-        case .binaryExpression(let binExp):
-            res = process_binary_expr(expr: binExp)
-        default:
-            print("Invalid expression found on the RHS of an equal \(expr.lhs.description)".lightRed.bold)
-            return nil
-        }
-        
-        if let val = res {
+        if let (res, resType) = try process_expr(expr: expr.rhs) {
             
-            return val
+            if resType != varType {
+                print("Mismatch of types \(resType) != \(varType)".lightRed.bold)
+                return nil
+            }
+            
+            let replVar = REPLVariable(variableName: varName, variableType: varType, variableValue: res, varConstant: varConst)
+            repl.addVarToMap(replVar: replVar, name: varName)
+            
+            return (res, varType)
+            
+        } else {
+            
+            print("Invalid expression found on RHS of equal \(expr.lhs.description)".lightRed.bold)
         }
         
         return nil
