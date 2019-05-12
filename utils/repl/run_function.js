@@ -9,6 +9,10 @@ const defaultAcc = web3.personal.newAccount("1");
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
+function log(data) {
+	fs.appendFileSync("log.txt", data + "\n");
+}
+
 async function check_tx_mined(tx_hash) {
     let txs = eth.getBlock("latest").transactions;
     return new Promise(function(resolve, reject) {
@@ -18,6 +22,7 @@ async function check_tx_mined(tx_hash) {
         resolve("true");
     });
 }
+
 
 async function transactional_method(contract, methodName, args) {
     var tx_hash = await new Promise(function(resolve, reject) {
@@ -41,8 +46,19 @@ function call_method_int(contract, methodName, args) {
     return contract[methodName]['call'](...args).toNumber();
 }
 
-function log(data) {
-	fs.appendFileSync("log.txt", data + "\n");
+async function transactional_method_string(contract, methodName, args) {
+    var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
+    log(value.length)
+    var tx_hash = await transactional_method(contract, methodName, args);
+
+    return {tx_hash: tx_hash, rVal: value};
+}
+
+async function transactional_method_int(contract, methodName, args) {
+    var value = contract[methodName]['call'](...args).toNumber();
+    var tx_hash = await transactional_method(contract, methodName, args);
+
+    return {tx_hash: tx_hash, rVal: value};
 }
 
 async function main() {
@@ -53,12 +69,59 @@ async function main() {
 	address = "" + address + "";
 	let instance = localContract.at(address);	
 
-	/* CALL CONTRACT METHOD (NOT IMPLEMENTED YET) */
-        let x = call_method_int(instance, 'getValue', []);
+	/* CALL CONTRACT METHOD  */
+	let functionNameToBeExecuted = process.argv[4];
+	let isTransaction = process.argv[5];
+	let resType  = process.argv[6];
+	let args = process.argv[7];
+	var json_args = []
+	if (!(args === "")) {
+	    json_args = JSON.parse(args); 
+	}
+
+	var res = "";
+
+	if (isTransaction) {
+
+	   if (resType === "Int") {
+		   let resObj = await transactional_method_int(instance, functionNameToBeExecuted, json_args) 
+		   res = resObj.rVal
+	   } else if (resType === "String") {
+		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args) 
+		   res = resObj.rVal
+	   } else if (resType === "Address") {
+		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args) 
+		   res = resObj.rVal
+	   } else {
+
+		   let tx_hash = await transactional_method(instance, functionNameToBeExecuted, json_args) 
+		   res = tx_hash
+	   }
+
+	} else {
+
+	   if (resType === "Int") {
+		   res = call_method_int(instance, functionNameToBeExecuted, json_args);
+	   } else if (resType === "String") {
+		   res = call_method_string(instance, functionNameToBeExecuted, json_args);
+	   } else if (resType === "Address") {
+		   res = call_method_string(instance, functionNameToBeExecuted, json_args);
+	   } else {
+		   res = "RETURN TYPE NOT SUPPORTED: " + resType
+	   }
+
+	}
 
 	/* RETURN RESULT */
-	console.log(x);
+	fs.writeFileSync("result.txt", res)
+	process.exit(0)
 } 
 
-main()
+try {
+  main()
+} 
+catch (error) {
+	fs.writeFileSync("error.txt", error);
+	process.exit(0);
+}
 
