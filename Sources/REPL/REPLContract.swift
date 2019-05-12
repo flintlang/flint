@@ -4,6 +4,7 @@ import Parser
 import Lexer
 import Diagnostic
 import Foundation
+import Rainbow
 import SwiftyJSON
 
 public class REPLContract{
@@ -39,12 +40,12 @@ public class REPLContract{
 
     public func run(fCall : FunctionCall, instance : String, expr : Expression? = nil) -> String? {
         guard let addr = instanceToAddress[instance] else {
-            print("\(instance) is not in scope.")
+            print("\(instance) is not in scope.".lightRed.bold)
             return nil
         }
         
         guard let fArgs = process_func_call_args(args: fCall.arguments) else {
-            print("Failed to run function \(fCall.identifier.name) as arguments were malformed")
+            print("Failed to run function \(fCall.identifier.name) as arguments were malformed".lightRed.bold)
             return nil
         }
         
@@ -52,7 +53,7 @@ public class REPLContract{
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/run_function.js"
         
         if !(fileManager.fileExists(atPath: path)) {
-            print("FATAL ERROR: run_function file does not exist, cannot deploy contract for repl. Exiting.")
+            print("FATAL ERROR: run_function file does not exist, cannot deploy contract for repl. Exiting.".lightRed.bold)
             exit(0)
         }
         
@@ -92,25 +93,25 @@ public class REPLContract{
                                     if let result = rContract.run(fCall: fc, instance: rVar.variableName) {
                                         result_args.append(result)
                                     } else {
-                                        print("Was not able to run \(fc.description)")
+                                        print("Was not able to run \(fc.description)".lightRed.bold)
                                         return nil
                                     }
                                 default:
-                                    print("Only function calls on rhs of dot expressions are currently supported")
+                                    print("Only function calls on rhs of dot expressions are currently supported".lightRed.bold)
                                     return nil
                                 }
                             }
                             
                         } else {
-                            print("Variable \(i.name) is not in scope.")
+                            print("Variable \(i.name) is not in scope.".lightRed.bold)
                             return nil
                         }
                     default:
-                        print("Identfier not found on lhs of dot expression")
+                        print("Identfier not found on lhs of dot expression".lightRed.bold)
                         return nil
                     }
                 default:
-                    print("Only supported expression is dot expressions. \(binExp.description) is not yet supported")
+                    print("Only supported expression is dot expressions. \(binExp.description) is not yet supported".lightRed.bold)
                     return nil
                 }
                 // I can now pull out the binExp processing into a separate function?
@@ -118,7 +119,7 @@ public class REPLContract{
                 if let val = repl.queryVariableMap(variable: i.name) {
                     result_args.append(val.variableValue)
                 } else {
-                    print("Variable \(i.name) is not in scope.")
+                    print("Variable \(i.name) is not in scope.".lightRed.bold)
                     return nil
                 }
             case .literal(let li):
@@ -140,12 +141,12 @@ public class REPLContract{
                         }
                     }
                 default:
-                    print("ERROR: Found non literal in literal token. Exiting REPL")
+                    print("ERROR: Found non literal in literal token. Exiting REPL".lightRed.bold)
                     return nil
                 }
                 
             default:
-                print("This argument type (name: \(a.identifier!.name)  value : \(a.expression.description)) is not supported")
+                print("This argument type (name: \(a.identifier!.name)  value : \(a.expression.description)) is not supported".lightRed.bold)
             
                 return nil
             }
@@ -165,11 +166,11 @@ public class REPLContract{
             if let function_args = process_func_call_args(args: fCallArgs) {
                 args = function_args
             } else {
-                print("Invalid argument found in constructor function. Failing deployment of  \(variable_name) : \(self.contractName).")
+                print("Invalid argument found in constructor function. Failing deployment of  \(variable_name) : \(self.contractName).".lightRed.bold)
                 return nil
             }
         default:
-            print("Invalid expression on rhs of contract insantiation. Failing deployment of \(variable_name) : \(self.contractName).")
+            print("Invalid expression on rhs of contract insantiation. Failing deployment of \(variable_name) : \(self.contractName).".lightRed.bold)
             return nil
         }
         
@@ -177,7 +178,7 @@ public class REPLContract{
         let json_args = JSON(args)
         
         guard let rawString = json_args.rawString() else {
-            print("Could not extract JSON constructor arguments")
+            print("Could not extract JSON constructor arguments".lightRed.bold)
             return nil
         }
         
@@ -185,7 +186,7 @@ public class REPLContract{
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/deploy_contract.js"
         
         if !(fileManager.fileExists(atPath: path)) {
-            print("FATAL ERROR: deploy_contract file does not exist, cannot deploy contract for repl. Exiting.")
+            print("FATAL ERROR: deploy_contract file does not exist, cannot deploy contract for repl. Exiting.".lightRed.bold)
             exit(0)
         }
         
@@ -203,7 +204,7 @@ public class REPLContract{
             instanceToAddress[variable_name] = addr
             return addr
         } else {
-            print("ERROR : Could not deploy contract \(self.contractName)")
+            print("ERROR : Could not deploy contract \(self.contractName)".lightRed.bold)
             return nil
         }
     }
