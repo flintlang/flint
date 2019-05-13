@@ -142,7 +142,7 @@ public class REPLContract{
                     print("Only supported expression is dot expressions. \(binExp.description) is not yet supported".lightRed.bold)
                     return nil
                 }
-                // I can now pull out the binExp processing into a separate function?
+                
             case .identifier(let i):
                 if let val = repl.queryVariableMap(variable: i.name) {
                     result_args.append(val.variableValue)
@@ -185,11 +185,16 @@ public class REPLContract{
     
 
     public func deploy(expr: BinaryExpression, variable_name : String) throws -> String? {
-        print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
         let rhs = expr.rhs
         var args : [String]
         switch (rhs) {
         case .functionCall(let fc):
+            
+            if fc.identifier.name != self.contractName {
+                print("Mismatch of contract types \(fc.identifier.name) != \(self.contractName)".lightRed.bold)
+                return "ERROR"
+            }
+            
             let fCallArgs = fc.arguments
             if let function_args = process_func_call_args(args: fCallArgs) {
                 args = function_args
@@ -217,6 +222,8 @@ public class REPLContract{
             print("FATAL ERROR: deploy_contract file does not exist, cannot deploy contract for repl. Exiting.".lightRed.bold)
             exit(0)
         }
+        
+        print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
         
         let p = Process()
         let pipe = Pipe()

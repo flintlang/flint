@@ -40,7 +40,7 @@ public class REPLCodeProcessor {
             
         } else {
             
-            print("Invalid expression found on RHS of equal \(expr.lhs.description)".lightRed.bold)
+            print("Invalid expression found on RHS of equal \(expr.rhs.description)".lightRed.bold)
         }
         
         return nil
@@ -80,18 +80,50 @@ public class REPLCodeProcessor {
         
         return nil
     }
+        
+    private func tryDeploy(binExp: BinaryExpression) throws -> Bool {
+        var typeName = ""
+        var variableName = ""
+        
+        switch (binExp.opToken) {
+        case .equal:
+            switch (binExp.lhs) {
+            case .variableDeclaration(let vdec):
+                typeName = vdec.type.name
+                variableName = vdec.identifier.name
+            default:
+                break
+            }
+            
+        default:
+            break
+        }
+        
+        if let rC = self.repl.queryContractInfo(contractName: typeName) {
+            if let addr = try rC.deploy(expr: binExp, variable_name: variableName) {
+                
+                if addr == "ERROR" {
+                    return true
+                }
+                
+                let replVar =  REPLVariable(variableName: variableName, variableType: rC.getContractName(), variableValue: addr, varConstant: true)
+                repl.addVarToMap(replVar: replVar, name: variableName)
+                return true
+            }
+        }
+    
+        return false
+    }
     
     public func process_expr(expr: Expression) throws -> (String, String)? {
         switch (expr) {
         case .binaryExpression(let binExp):
-            if let (rC, variableName) = check_if_instantiation(assignment: binExp) {
-                if let addr = try rC.deploy(expr: binExp, variable_name: variableName) {
-                    let replVar =  REPLVariable(variableName: variableName, variableType: rC.getContractName(), variableValue: addr, varConstant: true)
-                    repl.addVarToMap(replVar: replVar, name: variableName)
-                    return nil
-                }
+            
+             // returns true if this was a deployment statement
+             if try tryDeploy(binExp: binExp) {
+                return nil
              }
-    
+             
              if let (res, type) = try process_binary_expr(expr: binExp) {
                 return (res, type)
              }
@@ -151,30 +183,5 @@ public class REPLCodeProcessor {
         }
         
         return nil
-    }
-    
-    private func check_if_instantiation(assignment : BinaryExpression) -> (REPLContract, String)? {
-        var typeName = ""
-        var variableName = ""
-        
-        switch (assignment.opToken) {
-        case .equal:
-            switch (assignment.lhs) {
-            case .variableDeclaration(let vdec):
-                typeName = vdec.type.name
-                variableName = vdec.identifier.name
-            default:
-                break
-            }
-            
-        default:
-            break
-        }
-        
-        if let rContract = self.repl.queryContractInfo(contractName: typeName) {
-            return (rContract, variableName)
-        } else {
-            return nil
-        }
     }
 }
