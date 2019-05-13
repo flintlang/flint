@@ -9,9 +9,10 @@ import Diagnostic
 func main() {
     command (
         Argument<String> ("Test file", description: "Test file (.tflint)"),
-        Flag("test runner", flag:"t", description:"Flag to run unit tests for test framework")
+        Flag("test runner", flag:"t", description:"Flag to run unit tests for test framework"),
+        Flag("emit-ir", flag: "i", description: "Emit the internal representation of the code.")
     )
-    { sourceCode, test_run in
+    { sourceCode, test_run, coverage in
         let fileName =  sourceCode
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
@@ -22,7 +23,8 @@ func main() {
                            diagnostics: DiagnosticPool(shouldVerify: false,
                                                        quiet: false,
                                                        sourceContext: SourceContext(sourceFiles: inputFiles)),
-                           test_run: test_run).run_tests()
+                           test_run: test_run,
+                           coverage: coverage ).run_tests()
             
         } catch let err {
             print(err)
@@ -33,7 +35,7 @@ func main() {
 }
 
 func main_d() throws {
-    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/test_flint_contracts/caller_caps.tflint"
+    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/test.tflint"
     let inputFiles = [URL(fileURLWithPath: fileName)]
     let sourceCode = try String(contentsOf: inputFiles[0])
     
@@ -43,7 +45,8 @@ func main_d() throws {
                        diagnostics: DiagnosticPool(shouldVerify: false,
                                                    quiet: false,
                                                    sourceContext: SourceContext(sourceFiles: inputFiles)),
-                       test_run: true).run_tests()
+                       test_run: true,
+                       coverage: true).run_tests()
         
     } catch let err {
         print(err)
@@ -51,5 +54,7 @@ func main_d() throws {
     }
 }
 
+
 main()
+//try main_d()
 
