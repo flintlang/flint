@@ -21,6 +21,15 @@ public class REPLCodeProcessor {
             varName = vdec.identifier.name
             varType = vdec.type.name
             varConst = vdec.isConstant
+        case .identifier(let i):
+            guard let rVar = repl.queryVariableMap(variable: i.name) else {
+                print("Variable \(i.name) not in scope".lightRed.bold)
+                return nil
+            }
+            varName = rVar.variableName
+            varType = rVar.variableType
+            varConst = rVar.varConstant
+            newVar = false
         default:
             print("Invalid expression found on the LHS of an equal \(expr.rhs.description)".lightRed.bold)
             return nil
@@ -33,8 +42,15 @@ public class REPLCodeProcessor {
                 return nil
             }
             
+            if !newVar && varConst{
+                print("Cannot modify const variable \(varName)".lightRed.bold)
+                return nil
+            }
+            
             let replVar = REPLVariable(variableName: varName, variableType: varType, variableValue: res, varConstant: varConst)
             repl.addVarToMap(replVar: replVar, name: varName)
+            
+
             
             return (res, varType)
             
