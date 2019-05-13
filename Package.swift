@@ -310,6 +310,9 @@ let package = Package(
         dependencies: ["AST", "Parser", "Lexer"]),
     .target(
         name: "REPL",
-        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "JSTranslator", "SwiftyJSON", "Rainbow"])
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "JSTranslator", "SwiftyJSON", "Rainbow"]),
+    .target(
+        name: "Coverage",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "SwiftyJSON", "Rainbow"])
     ]
 )
