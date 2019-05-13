@@ -10,13 +10,15 @@ import LSP
 import IRGen
 import JSTranslator
 import Compiler
+import Coverage
 
 
 struct TestRunner {
     let testFile : URL
     let sourceCode : String
     var diagnostics: DiagnosticPool
-    var test_run : Bool
+    let test_run : Bool
+    let coverage : Bool
     
     func tokenizeTestFile() throws -> [Token] {
         let testTokens = try Lexer(sourceFile: testFile, isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
@@ -57,7 +59,15 @@ struct TestRunner {
         
         // Compile the contract
         do {
-            try Compiler.compile_for_test(config: config)
+            var (ast, _) = try Compiler.getAST(config: config)
+            
+            if (coverage) {
+                let cv = CoverageProvider()
+                ast = cv.instrument(ast: ast)
+            }
+      
+            try Compiler.compile_for_test(config: config, in_ast: ast)
+            
         } catch let err {
             print(err)
             print("Failed to compile contract that is being tested")
