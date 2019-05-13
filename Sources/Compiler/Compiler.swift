@@ -191,11 +191,10 @@ extension Compiler {
         return TopLevelModule(declarations: newDecs)
     }
     
-    
-    public static func compile_for_test(config : CompilerTestFrameworkConfiguration) throws {
+    public static func getAST(config: CompilerTestFrameworkConfiguration) throws -> (TopLevelModule, Environment) {
+        
         let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
         
-        // Turn the tokens into an Abstract Syntax Tree (AST).
         let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
         
         if let failed = try config.diagnostics.checkpoint(parserDiagnostics) {
@@ -205,11 +204,33 @@ extension Compiler {
             exit(0)
         }
         
-        guard var ast = parserAST else {
+        guard let ast = parserAST else {
             exitWithFailure()
         }
+  
+        // Run all of the passes.
+        let passRunnerOutcome = ASTPassRunner(ast: ast)
+            .run(passes: config.astPasses,
+                 in: environment,
+                 sourceContext: SourceContext(sourceFiles: config.sourceFiles))
         
-        ast = insertConstructorFunc(ast: parserAST!)
+        if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
+            if failed {
+                exitWithFailure()
+            }
+            exit(0)
+        }
+        
+        return (ast, environment)
+    }
+    
+    
+    public static func compile_for_test(config : CompilerTestFrameworkConfiguration, in_ast : TopLevelModule) throws {
+        
+        let ast = insertConstructorFunc(ast: in_ast)
+        
+        let p = Parser(ast: ast)
+        let environment = p.getEnv()
         
         // Run all of the passes. (Semantic checks)
         let passRunnerOutcome = ASTPassRunner(ast: ast)
