@@ -134,12 +134,12 @@ public class REPLCodeProcessor {
     public func process_expr(expr: Expression) throws -> (String, String)? {
         switch (expr) {
         case .binaryExpression(let binExp):
-            
+
              // returns true if this was a deployment statement
              if try tryDeploy(binExp: binExp) {
                 return nil
              }
-             
+
              if let (res, type) = try process_binary_expr(expr: binExp) {
                 return (res, type)
              }
@@ -179,21 +179,62 @@ public class REPLCodeProcessor {
         return nil
     }
     
+    private func process_arithmetic_expr(expr: BinaryExpression, op : REPLOperator) throws -> (String, String)? {
+        
+     
+        guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
+            print("Could not process arithmetic expression".lightRed.bold)
+            return nil
+        }
+    
+        guard let (e2, e2Type) = try process_expr(expr: expr.rhs) else {
+            print("Could not process arithmetic expression".lightRed.bold)
+            return nil
+        }
+        
+        if e2Type != "Int" || e1Type != "Int" {
+            print("Invalid type passed to arithmetic addition operation".lightRed.bold)
+            return nil
+        }
+        
+        guard let e1Int = Int(e1) else {
+            print("NaN found in arithmetic expression operands".lightRed.bold)
+            return nil
+        }
+        
+        guard let e2Int = Int(e2) else {
+            print("NaN found in arithmetic expression operands".lightRed.bold)
+            return nil
+        }
+        
+        switch (op) {
+        case .add:
+            return ((e1Int + e2Int).description, "Int")
+        case .divide:
+            return ((e1Int / e2Int).description, "Int")
+        case .minus:
+            return ((e1Int - e2Int).description, "Int")
+        case .power:
+            return ((e1Int ^ e2Int).description, "Int")
+        }
+        
+    }
+    
     public func process_binary_expr(expr : BinaryExpression) throws -> (String, String)? {
-                
+        
         switch (expr.opToken) {
         case .dot:
             return process_dot_expr(expr: expr)
         case .equal:
             return try process_equal_expr(expr: expr)
         case .plus:
-            print("+")
+            return try process_arithmetic_expr(expr: expr, op: .add)
         case .minus:
-            print("-")
+            return try process_arithmetic_expr(expr: expr, op: .minus)
         case .divide:
-            print("d")
+            return try process_arithmetic_expr(expr: expr, op: .divide)
         case .power:
-            print("e")
+            return try process_arithmetic_expr(expr: expr, op: .power)
         default:
             print("This expression is not supported: \(expr.description)".lightRed.bold)
         }
