@@ -209,7 +209,6 @@ public class REPL {
                     case .expression(let ex):
                         if let (res, _) = try replCodeProcessor.process_expr(expr: ex) {
                             print(res.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite.bold)
-                            continue
                         }
                     default:
                         print("Syntax is not currently supported".lightRed.bold)
