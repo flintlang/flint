@@ -48,7 +48,6 @@ function call_method_int(contract, methodName, args) {
 
 async function transactional_method_string(contract, methodName, args) {
     var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
-    log(value.length)
     var tx_hash = await transactional_method(contract, methodName, args);
 
     return {tx_hash: tx_hash, rVal: value};
