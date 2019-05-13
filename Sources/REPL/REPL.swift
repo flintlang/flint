@@ -202,7 +202,6 @@ public class REPL {
                 
                 if stmts.count == 0 {
                     print(try DiagnosticsFormatter(diagnostics: diags, sourceContext: nil).rendered())
-                    continue
                 }
         
                 for stmt in stmts {
