@@ -101,7 +101,7 @@ public class REPL {
                 }
                 let inputs = elem["inputs"]! as! [[String : String]]
                 let isConstant = elem["constant"] as! Bool
-                let outputs = elem["outputs"] as! [[String : String]]
+                //let outputs = elem["outputs"] as! [[String : String]]
                 let funcSignature = "\(fncName)\(process_abi_args(args: inputs))"
                 if isConstant {
                     abi_pretty_funcs.append(funcSignature.lightWhite + " (Constant)".lightCyan.bold)
