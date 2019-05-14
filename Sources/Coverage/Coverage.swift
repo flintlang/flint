@@ -64,7 +64,23 @@ public class CoverageProvider {
     }
     
     private func instrument_contract_b_dec(cBdec: ContractBehaviorDeclaration) -> ContractBehaviorDeclaration {
-        return cBdec
+        var members : [ContractBehaviorMember] = []
+    
+        for mem in cBdec.members {
+            switch (mem) {
+            case .functionDeclaration(let fdec):
+                self.functionsCount += 1
+                members.append(.functionDeclaration(instrument_function(fDec: fdec)))
+            default:
+                members.append(mem)
+            }
+        }
+        
+        return ContractBehaviorDeclaration(contractIdentifier: cBdec.contractIdentifier, states: cBdec.states, callerBinding: cBdec.callerBinding, callerProtections: cBdec.callerProtections, closeBracketToken: cBdec.closeBracketToken, members: members)
+    }
+    
+    private func instrument_function(fDec: FunctionDeclaration) -> FunctionDeclaration {
+        return fDec
     }
 
 }
