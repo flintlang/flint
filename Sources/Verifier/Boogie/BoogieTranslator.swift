@@ -76,13 +76,13 @@ class BoogieTranslator {
     self.triggers = Trigger()
   }
 
-  public func translate() -> BoogieTranslationIR {
+  public func translate(holisticTransactionDepth: Int) -> BoogieTranslationIR {
     /* for everything defined in TLM, generate Boogie representation */
     self.functionModifiesShadow = collectModifiedShadowVariables()
     resolveTraitMutations()
 
     // Generate AST and print
-    let boogieTranslationIr = generateAST()
+    let boogieTranslationIr = generateAST(holisticTransactionDepth: holisticTransactionDepth)
     return boogieTranslationIr
   }
 
@@ -146,7 +146,7 @@ class BoogieTranslator {
     }
   }
 
-  func generateAST() -> BoogieTranslationIR {
+  func generateAST(holisticTransactionDepth: Int) -> BoogieTranslationIR {
     var declarations = [BIRTopLevelDeclaration]()
 
     // Triggers
@@ -266,7 +266,8 @@ class BoogieTranslator {
       let contractName = contractDeclaration.identifier.name
       let holisticTranslationInformation = contractDeclaration.holisticDeclarations.map({
                                               processHolisticSpecification(willSpec: $0,
-                                                                           contractName: contractName)
+                                                                           contractName: contractName,
+                                                                           transactionDepth: holisticTransactionDepth)
                                             })
       let (holisticDecls, entryPoints)
         = holisticTranslationInformation.reduce(([], []), { x, y in (x.0 + y.0, x.1 + y.1) })

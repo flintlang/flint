@@ -14,14 +14,16 @@ extension BoogieTranslator {
         modifies selector;
       {
       var unsat: bool;
-      var arg1, a: int;
+      var arg1, a, bound: int;
+      bound := TRANSACTION_DEPTH;
 
-      call init_LocalVariables(); /// This does limit the response somewhat - it means we're only checking Will (A), wrt to the initial configuration. Could replace with invariant instead?
+      call init_LocalVariables();
 
-      while (!(ten_LocalVariables mod 5 == 0)) {
+      while (!(ten_LocalVariables mod 5 == 0) && bound > 0) {
         havoc selector;
         assume (selector > 1 && selector < 4);
 
+        // only test public functions
         if (selector == 2) {
           call loop_LocalVariables();
         } else if (selector == 3) {
@@ -36,7 +38,8 @@ extension BoogieTranslator {
   // Return Boogie declarations whic htest the specification
   // Also return a list of the entry points, for the symbolic executor
   func processHolisticSpecification(willSpec: Expression,
-                                    contractName: String) -> ([(SourceLocation, BIRTopLevelDeclaration)], [String]) {
+                                    contractName: String,
+                                    transactionDepth: Int) -> ([(SourceLocation, BIRTopLevelDeclaration)], [String]) {
     let translationInformation = TranslationInformation(sourceLocation: willSpec.sourceLocation)
     let currentContract = contractName
 
@@ -49,6 +52,10 @@ extension BoogieTranslator {
                                     .map({ $0.declaration })
                                     .filter({ $0.isPublic })
     let initProcedures = self.environment.initializers(in: currentContract).map({ $0.declaration })
+    if initProcedures.count > 1 {
+      print("not implemented holistic spec for multiple contract inits")
+      fatalError()
+    }
     var procedureVariables = Set<BVariableDeclaration>()
 
     let numPublicFunctions = publicFunctions.count
@@ -57,62 +64,68 @@ extension BoogieTranslator {
                                                    rawName: "selector",
                                                    type: .int))
 
+    let bound = BExpression.identifier("bound")
+    procedureVariables.insert(BVariableDeclaration(name: "bound",
+                                                   rawName: "bound",
+                                                   type: .int))
+    let setBound = BStatement.assignment(bound, .integer(BigUInt(transactionDepth)), translationInformation)
+    let decrementBound = BStatement.assignment(bound, .subtract(bound, .integer(1)), translationInformation)
+
     var procedureDeclarations = [(SourceLocation, BIRTopLevelDeclaration)]()
     var procedureNames = [String]()
     //Generate new procedure for each init function - check that for all initial conditions,
     // holistic spec holds
-    for initProcedure in initProcedures {
-      let procedureName = entryPointBase + randomString(length: 5) //unique identifier
+    let initProcedure = initProcedures.first!
+    let procedureName = entryPointBase + randomString(length: 5) //unique identifier 
+    let havocSelector = BStatement.havoc("selector", translationInformation)
+    let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
+                                                    .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), translationInformation)
+    let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
+                                                               selector: selector,
+                                                               tld: currentContract,
+                                                               translationInformation: translationInformation,
+                                                               enclosingFunctionName: procedureName)
+    procedureVariables = procedureVariables.union(variables)
 
-      let havocSelector = BStatement.havoc("selector", translationInformation)
-      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
-                                                      .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), translationInformation)
-      let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
-                                                                 selector: selector,
-                                                                 tld: currentContract,
-                                                                 translationInformation: translationInformation,
-                                                                 enclosingFunctionName: procedureName)
-      procedureVariables = procedureVariables.union(variables)
-
-      let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: .not(bSpec),
-                                                                 body: [
-                                                                   havocSelector,
-                                                                   assumeSelector
-                                                                 ] + methodSelection,
-                                                                 invariants: [],
+    let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: .and(.greaterThan(bound, .integer(0)), .not(bSpec)),
+                                                               body: [
+                                                                 havocSelector,
+                                                                 assumeSelector
+                                                               ] + methodSelection
+                                                                 + [decrementBound],
+                                                               invariants: [],
+                                                               ti: translationInformation))
+    let assertSpec = BStatement.assertStatement(BAssertStatement(expression: bSpec,
                                                                  ti: translationInformation))
-      let assertSpec = BStatement.assertStatement(BAssertStatement(expression: bSpec,
-                                                                   ti: translationInformation))
-      let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
-                                                      tld: currentContract)
-      let callInit = BStatement.callProcedure(BCallProcedure(returnedValues: [],
-                                                             procedureName: translatedName,
-                                                             arguments: [],
-                                                             ti: translationInformation))
-      // Add procedure call to callGraph
-      addProcedureCall(procedureName, translatedName)
-      let procedureStmts = [callInit, whileUnsat, assertSpec]
-      let specProcedure = BIRProcedureDeclaration(
-        name: procedureName,
-        returnType: nil,
-        returnName: nil,
-        parameters: [],
-        preConditions: [],
-        postConditions: [],
-        structInvariants: [],
-        contractInvariants: [],
-        globalInvariants: [],
-        modifies: Set(), // All variables are modified - will be determined in IR resolution phase
-        statements: procedureStmts,
-        variables: procedureVariables,
-        ti: translationInformation,
-        isHolisticProcedure: true,
-        isStructInit: false,
-        isContractInit: false
-      )
-      procedureNames.append(procedureName)
-      procedureDeclarations.append((willSpec.sourceLocation, .procedureDeclaration(specProcedure)))
-    }
+    let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
+                                                    tld: currentContract)
+    let callInit = BStatement.callProcedure(BCallProcedure(returnedValues: [],
+                                                           procedureName: translatedName,
+                                                           arguments: [],
+                                                           ti: translationInformation))
+    // Add procedure call to callGraph
+    addProcedureCall(procedureName, translatedName)
+    let procedureStmts = [setBound, callInit, whileUnsat, assertSpec]
+    let specProcedure = BIRProcedureDeclaration(
+      name: procedureName,
+      returnType: nil,
+      returnName: nil,
+      parameters: [],
+      preConditions: [],
+      postConditions: [],
+      structInvariants: [],
+      contractInvariants: [],
+      globalInvariants: [],
+      modifies: Set(), // All variables are modified - will be determined in IR resolution phase
+      statements: procedureStmts,
+      variables: procedureVariables,
+      ti: translationInformation,
+      isHolisticProcedure: true,
+      isStructInit: false,
+      isContractInit: false
+    )
+    procedureNames.append(procedureName)
+    procedureDeclarations.append((willSpec.sourceLocation, .procedureDeclaration(specProcedure)))
 
     return (procedureDeclarations, procedureNames)
   }

@@ -14,6 +14,7 @@ public class BoogieVerifier: Verifier {
   private let printVerificationOutput: Bool
   private let printHolisticRunStats: Bool
   private let skipHolisticCheck: Bool
+  private let maxTransactionDepth: Int
   private let maxHolisticTimeout: Int
   private var boogieTranslator: BoogieTranslator
 
@@ -23,6 +24,7 @@ public class BoogieVerifier: Verifier {
               printHolisticRunStats: Bool,
               boogieLocation: String,
               symbooglixLocation: String,
+              maxTransactionDepth: Int,
               maxHolisticTimeout: Int,
               monoLocation: String,
               topLevelModule: TopLevelModule,
@@ -36,6 +38,7 @@ public class BoogieVerifier: Verifier {
     self.printVerificationOutput = printVerificationOutput
     self.skipHolisticCheck = skipHolisticCheck
     self.printHolisticRunStats = printHolisticRunStats
+    self.maxTransactionDepth = maxTransactionDepth
     self.maxHolisticTimeout = maxHolisticTimeout
     self.boogieTranslator = BoogieTranslator(topLevelModule: topLevelModule,
                                              environment: environment,
@@ -46,7 +49,7 @@ public class BoogieVerifier: Verifier {
   // Verify flint code and return flint line number and suggestion for any error
   public func verify() -> (verified: Bool, errors: [Diagnostic]) {
     // Returns the boogie translation and a mapping from Boogie line #'s to flint line #'s
-    let translationIR = boogieTranslator.translate()
+    let translationIR = boogieTranslator.translate(holisticTransactionDepth: self.maxTransactionDepth)
     let translation = BoogieIRResolver().resolve(ir: translationIR)
     let (functionalBoogieSource, functionalMapping) = translation.functionalProgram.render()
     if self.dumpVerifierIR {
@@ -76,7 +79,8 @@ public class BoogieVerifier: Verifier {
     var holisticVerification = true
     if functionalVerification && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
       for holisticRunInfo in executeSymbooglix(translation: translation,
-                                               maxTimeout: self.maxHolisticTimeout) {
+                                               maxTimeout: self.maxHolisticTimeout,
+                                               transactionDepth: self.maxTransactionDepth) {
         holisticVerification = holisticVerification && holisticRunInfo.verified
         if let diagnostic = diagnoseRunInfo(holisticRunInfo: holisticRunInfo,
                                             printHolisticRunStats: self.printHolisticRunStats) {
@@ -94,7 +98,9 @@ public class BoogieVerifier: Verifier {
     return (verified, verificationDiagnostics)
   }
 
-  private func executeSymbooglix(translation: FlintBoogieTranslation, maxTimeout: Int) -> [HolisticRunInfo] {
+  private func executeSymbooglix(translation: FlintBoogieTranslation,
+                                 maxTimeout: Int,
+                                 transactionDepth: Int) -> [HolisticRunInfo] {
     var runInfo = [HolisticRunInfo]()
     for (holisticSpec, holisticProgram) in translation.holisticPrograms {
       let (holisticBoogieSource, _) = holisticProgram.render()

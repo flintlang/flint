@@ -117,6 +117,7 @@ extension Compiler {
                                               printHolisticRunStats: config.printHolisticRunStats,
                                               boogieLocation: "boogie/Binaries/Boogie.exe",
                                               symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
+                                              maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
                                               monoLocation: "/usr/bin/mono",
                                               topLevelModule: passRunnerOutcome.element,
@@ -190,6 +191,7 @@ public struct CompilerConfiguration {
   public let skipVerifier: Bool
   public let printHolisticRunStats: Bool
   public let maxHolisticTimeout: Int
+  public let maxTransactionDepth: Int
   public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
   public let loadStdlib: Bool
@@ -205,6 +207,7 @@ public struct CompilerConfiguration {
               skipHolisticCheck: Bool,
               printHolisticRunStats: Bool,
               maxHolisticTimeout: Int,
+              maxTransactionDepth: Int,
               skipVerifier: Bool,
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
@@ -220,6 +223,7 @@ public struct CompilerConfiguration {
     self.skipHolisticCheck = skipHolisticCheck
     self.printHolisticRunStats = printHolisticRunStats
     self.maxHolisticTimeout = maxHolisticTimeout
+    self.maxTransactionDepth = maxTransactionDepth
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics

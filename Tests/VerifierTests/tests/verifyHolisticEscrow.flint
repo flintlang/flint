@@ -1,0 +1,53 @@
+//VERIFY-CHECK
+contract Escrow(OPEN, SUCCESS, REFUND) {
+  var deposits: [Address: Wei]
+  var owner: Address
+  var beneficiary: Address
+}
+
+Escrow @(any) :: owner <- (any) {
+  public init(b: Address) {
+    self.beneficiary = b;
+    self.owner = owner
+    self.deposits = [:]
+    become OPEN
+  }
+}
+
+Escrow @(any) :: (owner) {
+  @payable
+  public func deposit(p: Address, implicit value: Wei)
+    mutates (deposits, Wei.rawValue)
+  {
+    self.deposits[p].transfer(source: &value)
+  }
+
+  public func close() {
+    become SUCCESS
+  }
+
+  public func refund() {
+    become REFUND
+  }
+}
+
+Escrow @(SUCCESS) :: (owner) {
+  public func withdraw()
+    mutates (deposits, Wei.rawValue)
+  {
+    var allDeposits: Wei = Wei(0)
+    for let value: Wei in self.deposits {
+      allDeposits.transfer(source: &value)
+    }
+
+    send(address: beneficiary, value: &allDeposits)
+  }
+}
+
+Escrow @(REFUND) :: (owner) {
+  public func claimRefund(p: Address)
+    mutates (deposits, Wei.rawValue)
+  {
+    send(address: p, value: &self.deposits[p])
+  }
+}
