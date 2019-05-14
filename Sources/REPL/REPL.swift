@@ -97,7 +97,7 @@ public class REPL {
             if (type == "function") {
                 var fncName = elem["name"]! as! String
                 if fncName == "replConstructor" {
-                    fncName = "init"
+                    fncName = "init".lightBlue
                 }
                 let inputs = elem["inputs"]! as! [[String : String]]
                 let isConstant = elem["constant"] as! Bool
