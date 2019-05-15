@@ -233,6 +233,10 @@ function process_test_result(res, test_name) {
         return self.filePath
     }
     
+    public func getContractName() -> String {
+        return self.contractName
+    }
+    
     public func loadTestContractVars() {
         let declarations : [TopLevelDeclaration] = self.ast.declarations
     
