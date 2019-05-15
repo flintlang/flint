@@ -6,6 +6,8 @@ public class CoverageProvider {
     private var executableStatementCount : Int = 0
     private var functionsCount : Int = 0
     private var branchNumberCount : Int = 0
+    private var statementCount : Int = 0
+    private var blockNum : Int = 0
     
     public init() {}
     
@@ -22,7 +24,7 @@ public class CoverageProvider {
                 new_decs.append(dec)
             }
         }
-     
+        
         return TopLevelModule(declarations: new_decs)
     }
     
@@ -69,7 +71,6 @@ public class CoverageProvider {
         for mem in cBdec.members {
             switch (mem) {
             case .functionDeclaration(let fdec):
-                self.functionsCount += 1
                 members.append(.functionDeclaration(instrument_function(fDec: fdec)))
             default:
                 members.append(mem)
