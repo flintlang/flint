@@ -1,9 +1,9 @@
 import AST
 import Parser
 import Lexer
+import Foundation
 
 public class CoverageProvider {
-    private var executableStatementCount : Int = 0
     private var functionsCount : Int = 0
     private var branchNumberCount : Int = 0
     private var statementCount : Int = 0
@@ -24,6 +24,15 @@ public class CoverageProvider {
                 new_decs.append(dec)
             }
         }
+        
+        var counts : [String : Int] = [:]
+        counts["functions"] = functionsCount
+        counts["statements"] = statementCount
+        counts["branch"] = branchNumberCount
+        
+        let json = String(data: try! JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
+        
+        try! json.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json"), atomically: true, encoding: .utf8)
         
         return TopLevelModule(declarations: new_decs)
     }
