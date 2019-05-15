@@ -91,7 +91,7 @@ struct TestRunner {
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage"
-        p.arguments = ["node", "gen_cov_report.js", contract_name, contract_file_path]
+        p.arguments = ["node", "--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
         p.launch()
         p.waitUntilExit()
     }
@@ -104,7 +104,7 @@ struct TestRunner {
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner"
-        p.arguments = ["node", "test.js"]
+        p.arguments = ["node", "--no-warnings", "test.js"]
         p.launch()
         p.waitUntilExit()
     }
