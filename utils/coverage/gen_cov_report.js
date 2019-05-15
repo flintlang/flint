@@ -75,6 +75,7 @@ async function get_events(abi, address, result_dict, found_counts) {
 
 async function main() { 
 	let contractName = process.argv[2];
+	let pathToContract = process.argv[3];
 	let abi = JSON.parse(fs.readFileSync("contract.json").toString())["contracts"][":_Interface" + contractName].interface
 	let addresses = fs.readFileSync("address.txt").toString().split("\n");
 
@@ -113,8 +114,6 @@ async function main() {
 	let record_set = da_records.concat(branch_records).concat(fn_records);
 
 	let counts = JSON.parse(fs.readFileSync("counts.json").toString());
-
-	let pathToContract = fs.readFileSync("contractFilePath.txt").toString();
 
         fs.writeFileSync("coverage.info", "SF:" + pathToContract + "\n");
 
