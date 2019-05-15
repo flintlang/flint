@@ -610,6 +610,10 @@ function process_test_result(res, test_name) {
         
         fnc += "    let compiledContract = solc.compile(source, 1); \n"
         
+        fnc += "    fs.writeFileSync(\"../coverage/contract.json\", JSON.stringify(compiledContract)); \n"
+        
+        fnc += "    fs.writeFileSync(\"../coverage/address.txt\", \"\"); \n"
+        
         fnc += "    let abi = compiledContract.contracts[':_Interface' + nameOfContract].interface; \n"
         
         fnc += "    let bytecode = \"0x\" + compiledContract.contracts[':' + nameOfContract].bytecode; \n"
@@ -617,6 +621,7 @@ function process_test_result(res, test_name) {
         var counter: Int = 0
         for tFnc in JSTestFuncs {
             fnc += "    let depContract_\(counter) = await deploy_contract(abi, bytecode); \n"
+            fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \" + depContract_\(counter).address); \n"
             fnc += "    await "  + tFnc.getFuncName() + "(depContract_\(counter)) \n"
             counter += 1
         }
