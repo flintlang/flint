@@ -80,7 +80,20 @@ struct TestRunner {
             print(jsTestFile)
         } else {
            try runNode(jsTestFile: jsTestFile)
+            if coverage {
+                let contractName = jsTestSuite.getContractName()
+                try genCovReport(contract_name: contractName, contract_file_path: pathToFlintContract)
+            }
         }
+    }
+    
+    func genCovReport(contract_name: String, contract_file_path: String) throws {
+        let p = Process()
+        p.launchPath = "/usr/bin/env"
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage"
+        p.arguments = ["node", "gen_cov_report.js", contract_name, contract_file_path]
+        p.launch()
+        p.waitUntilExit()
     }
     
     func runNode(jsTestFile : String) throws {
