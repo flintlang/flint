@@ -80,8 +80,148 @@ public class CoverageProvider {
         return ContractBehaviorDeclaration(contractIdentifier: cBdec.contractIdentifier, states: cBdec.states, callerBinding: cBdec.callerBinding, callerProtections: cBdec.callerProtections, closeBracketToken: cBdec.closeBracketToken, members: members)
     }
     
+    
+    private func func_event(line: Int, fName: String) -> Statement {
+        var funcArgs : [FunctionArgument] = []
+        let expr : Expression  = .literal(Token(kind: .literal(.decimal(.integer(line))), sourceLocation: .DUMMY))
+        let fncArg = FunctionArgument(identifier: Identifier(name: "line", sourceLocation: .DUMMY), expression: expr)
+   
+        let fncArgName = FunctionArgument(identifier: Identifier(name: "fName", sourceLocation: .DUMMY), expression: .literal(Token(kind: .literal(.string(fName)) , sourceLocation: .DUMMY)))
+        
+        funcArgs.append(fncArg)
+        funcArgs.append(fncArgName)
+        
+        let emitFncStmt : Statement = .emitStatement(EmitStatement(emitToken: Token(kind: .emit, sourceLocation: .DUMMY), functionCall: FunctionCall(identifier: Identifier(name: "funcC", sourceLocation: .DUMMY), arguments: funcArgs, closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false)))
+        
+        return emitFncStmt
+    }
+    
+    private func branch_event(line: Int, branch: Int, blockNum: Int) -> Statement {
+        var funcArgs : [FunctionArgument] = []
+        
+        let lineArg = FunctionArgument(identifier: Identifier(name: "line", sourceLocation: .DUMMY), expression: .literal(Token(kind: .literal(.decimal(.integer(line))), sourceLocation: .DUMMY)))
+        
+        let branchArg = FunctionArgument(identifier: Identifier(name: "branch", sourceLocation: .DUMMY), expression: .literal(Token(kind: .literal(.decimal(.integer(branch))), sourceLocation: .DUMMY)))
+        
+        let blockArg = FunctionArgument(identifier: Identifier(name: "blockNum", sourceLocation: .DUMMY), expression: .literal(Token(kind: .literal(.decimal(.integer(blockNum))), sourceLocation: .DUMMY)))
+        
+        funcArgs.append(lineArg)
+        funcArgs.append(branchArg)
+        funcArgs.append(blockArg)
+        
+        let branchEventStmt : Statement = .emitStatement(EmitStatement(emitToken: Token(kind: .emit, sourceLocation: .DUMMY), functionCall: FunctionCall(identifier: Identifier(name: "branchC", sourceLocation: .DUMMY), arguments: funcArgs, closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false)))
+        
+        return branchEventStmt
+    }
+    
+    private func stmt_event(line: Int) -> Statement {
+        var funcArgs : [FunctionArgument] = []
+        let expr : Expression  = .literal(Token(kind: .literal(.decimal(.integer(line))), sourceLocation: .DUMMY))
+        let lineArg = FunctionArgument(identifier: Identifier(name: "line", sourceLocation: .DUMMY), expression: expr)
+    
+        funcArgs.append(lineArg)
+
+        let stmtEventStmt : Statement = .emitStatement(EmitStatement(emitToken: Token(kind: .emit, sourceLocation: .DUMMY), functionCall: FunctionCall(identifier: Identifier(name: "stmC", sourceLocation: .DUMMY), arguments: funcArgs, closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false)))
+        
+        return stmtEventStmt
+    }
+    
+    private func instrument_if(ifS : IfStatement) -> IfStatement {
+        self.branchNumberCount += 2
+        
+        var ifBody : [Statement] = []
+        
+        self.blockNum += 1
+        ifBody.append(branch_event(line: ifS.ifToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
+        if (!ifS.body.isEmpty) {
+            ifBody.append(contentsOf: intstrument_statements(stmts: ifS.body))
+        }
+        
+        var elseBody : [Statement] = []
+        self.blockNum += 1
+        
+        if (!ifS.elseBody.isEmpty) {
+            elseBody.append(branch_event(line: ifS.elseBody[0].sourceLocation.line - 1, branch: 1, blockNum: self.blockNum))
+            elseBody.append(contentsOf: intstrument_statements(stmts: ifS.elseBody))
+        } else {
+            if (ifS.body.isEmpty) {
+                elseBody.append(branch_event(line: ifS.ifToken.sourceLocation.line, branch: 1, blockNum: self.blockNum))
+            } else {
+                elseBody.append(branch_event(line: ifS.body[0].sourceLocation.line + 1, branch: 1, blockNum: self.blockNum))
+            }
+        }
+     
+        var ifStmt : IfStatement = IfStatement(ifToken: ifS.ifToken, condition: ifS.condition, statements: ifBody, elseClauseStatements: elseBody)
+        
+        ifStmt.ifBodyScopeContext = ifS.ifBodyScopeContext
+        ifStmt.elseBodyScopeContext = ifS.elseBodyScopeContext
+        
+        return ifStmt
+    }
+    
+    
+    private func checkIfForOrIf(stmt : Statement) -> Bool {
+        switch (stmt) {
+        case .forStatement(_):
+            return true
+        case .ifStatement(_):
+            return true
+        default:
+            return false
+        }
+    }
+  
+    private func intstrument_statements(stmts: [Statement]) -> [Statement] {
+        var body : [Statement] = []
+        
+        for (i, stmt) in stmts.enumerated() {
+            switch (stmt) {
+            case .forStatement(let forStmt):
+                body.append(.forStatement(instrument_for(forS: forStmt)))
+            case .ifStatement(let ifStmt):
+                body.append(.ifStatement(instrument_if(ifS: ifStmt)))
+            case .doCatchStatement(let doCatch):
+                print(doCatch)
+            default:
+                if (i > 0 && checkIfForOrIf(stmt: stmts[i - 1])) {
+                    self.blockNum += 1
+                }
+                self.statementCount += 1
+                body.append(stmt)
+                body.append(stmt_event(line: stmt.sourceLocation.line))
+            }
+        }
+        
+        return body
+    }
+    
+    private func instrument_for(forS: ForStatement) -> ForStatement {
+        self.blockNum += 1
+        self.branchNumberCount += 1
+        var body : [Statement] = []
+        body.append(branch_event(line: forS.forToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
+        body.append(contentsOf: intstrument_statements(stmts: forS.body))
+  
+        var instForStmt = ForStatement(forToken: forS.forToken, variable: forS.variable, iterable: forS.iterable, statements: body)
+        
+        instForStmt.forBodyScopeContext = forS.forBodyScopeContext
+        
+        return instForStmt
+        
+    }
+    
     private func instrument_function(fDec: FunctionDeclaration) -> FunctionDeclaration {
-        return fDec
+        self.functionsCount += 1
+        self.blockNum += 1
+        
+        var body : [Statement]  = []
+        
+        let emitFncStmt = func_event(line: fDec.sourceLocation.line, fName: fDec.identifier.name)
+        body.append(emitFncStmt)
+        
+        body.append(contentsOf: intstrument_statements(stmts: fDec.body))
+        
+        return FunctionDeclaration(signature: fDec.signature, body: body, closeBraceToken: fDec.closeBraceToken, scopeContext: fDec.scopeContext, isExternal: fDec.isExternal)
     }
 
 }
