@@ -1,6 +1,7 @@
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path'); 
+const { execSync } = require('child_process')
 const solc = require('solc');
 const chalk = require('chalk');
 const web3 = new Web3();
@@ -133,6 +134,10 @@ async function main() {
 	fs.appendFileSync("coverage.info", "LH:" + found_counts.DA  + "\n");
 
 	fs.appendFileSync("coverage.info", "end_of_record");
+
+	execSync('genhtml --rc lcov_branch_coverage=1 -o html/ coverage.info');
+	execSync('open html/index.html');
+
 } 
 
 main()
