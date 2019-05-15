@@ -2,6 +2,7 @@ const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path'); 
 const solc = require('solc');
+const chalk = require('chalk');
 const web3 = new Web3();
 const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
@@ -76,6 +77,7 @@ async function get_events(abi, address, result_dict, found_counts) {
 async function main() { 
 	let contractName = process.argv[2];
 	let pathToContract = process.argv[3];
+	console.log(chalk.yellow("Generating coverage data for " + contractName));
 	let abi = JSON.parse(fs.readFileSync("contract.json").toString())["contracts"][":_Interface" + contractName].interface
 	let addresses = fs.readFileSync("address.txt").toString().split("\n");
 
