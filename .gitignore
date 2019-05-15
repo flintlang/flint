@@ -29,6 +29,13 @@ utils/repl/log.txt
 utils/repl/result.txt
 utils/repl/error.txt
 
+utils/coverage/contract.json
+utils/coverage/address.txt
+utils/coverage/counts.json
+utils/coverage/coverage.info
+utils/coverage/html/*
+utils/coverage/node_modules/*
+
 bin/
 contracts/
 build/
