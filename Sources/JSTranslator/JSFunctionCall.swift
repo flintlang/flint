@@ -36,6 +36,22 @@ public class JSFunctionCall : CustomStringConvertible {
         return desc
     }
     
+    private func create_arg_list(args: [JSNode]) -> String {
+        var argList = ""
+        let lastIndex = args.count - 1
+        var counter = 0
+        for a in args {
+            if counter == lastIndex {
+                argList += a.description
+                continue
+            }
+            argList +=  a.description + ", "
+            counter += 1
+        }
+        
+        return argList
+    }
+    
     private func create_arg_list() -> String {
         var argList = ""
         let lastIndex = args.count - 1
@@ -85,7 +101,7 @@ public class JSFunctionCall : CustomStringConvertible {
                 }
                
                 if args.count > 0 {
-                    fCall += "," + create_arg_list() + ")"
+                    fCall += ", [" + create_arg_list() + "])"
                 } else {
                     fCall += ", [])"
                 }
@@ -131,13 +147,27 @@ public class JSFunctionCall : CustomStringConvertible {
                 }
             } else {
                 
-                if args.count > 0 {
-                    fCall += create_arg_list()
+                if isCallerOrStateFunc {
+
+                    // I need to now verify
+                    if args.count > 0 {
+                        fCall +=  args[0].description
+                    }
+                    
+                    if args.count < 2 {
+                        fCall += ", []"
+                    } else {
+                        fCall += ", [" + create_arg_list(args: Array(args[1...])) + "]"
+                    }
+    
+                } else {
+                    
+                    if args.count > 0 {
+                        fCall += create_arg_list()
+                    }
                 }
                 
-                if args.count < 2 && isCallerOrStateFunc {
-                    fCall += ", []"
-                }
+
             }
             
             if isCallerOrStateFunc {
