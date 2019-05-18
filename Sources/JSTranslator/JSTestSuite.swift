@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const solc = require('solc');
 const chalk = require('chalk');
+const emoji = require('node-emoji');
 const web3 = new Web3();
 const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
@@ -204,12 +205,44 @@ function newAddress() {
     return newAcc;
 }
 
+function produce_pass_msg(name) {
+    let len = name.length;
+    let passed_length = "passed".length;
+
+    let spaces_to_add = len - passed_length;
+    let passed_msg = "passed "
+    if (spaces_to_add > 0) {
+        passed_msg = new Array(spaces_to_add - 2).join(' ') + passed_msg
+    }
+
+    console.log(chalk.magentaBright.bold(name));
+    console.log(chalk.greenBright.bold(passed_msg) + emoji.get('white_check_mark'));
+    
+}
+
+function produce_fail_msg(name) {
+    let len = name.length;
+    let failed_length = "failed".length;
+
+    let spaces_to_add = len - failed_length;
+    let failed_msg = "failed "
+    if (spaces_to_add > 0) {
+        failed_msg = new Array(spaces_to_add - 2).join(' ') + failed_msg
+    }
+
+    console.log(chalk.magentaBright.bold(name));
+    console.log(chalk.red.bold(failed_msg) + emoji.get('x'));
+    
+}
+
+
+
 function process_test_result(res, test_name) {
     if (res['result'])
     {
-        console.log(chalk.green(test_name + " " + res['msg']));
+        produce_pass_msg(test_name)
     } else {
-        console.log(chalk.red(test_name + " " +  res['msg']));
+        produce_fail_msg(test_name)
     }
 }
 
