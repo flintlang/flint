@@ -274,12 +274,13 @@ public class REPLContract{
                 if (allFuncsWithName.count > 0)
                 {
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating
+                    
+                    var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
-                        contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultType.name)
-                    } else {
-                        contractFunctionInfo[fName] = ContractFuncInfo(resultType: "nil")
+                        resultTypeVal = resultType.name
                     }
-                
+                    
+                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable)
                     contractFunctionNames.append(fName)
                 }
             }
