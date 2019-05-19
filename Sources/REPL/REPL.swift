@@ -27,12 +27,14 @@ public class REPL {
         }
 
         
+        
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
         p.arguments = ["node", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
+ 
  
         let contractJsonFilePath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/contract.json"
         
@@ -58,8 +60,13 @@ public class REPL {
         return nil
     }
     
-    private func process_abi_args(args : [[String : String]]) -> String {
+    private func process_abi_args(args : [[String : String]], payable: Bool = false) -> String {
         var final_args = "("
+        
+        if payable {
+            final_args += "_wei: Wei".lightGreen + ", "
+        }
+        
         let final_count = args.count
         for (i, a) in args.enumerated() {
             let argName = a["name"]!
@@ -95,6 +102,7 @@ public class REPL {
         for elem in abi_array! {
             let type = elem["type"]! as! String
             if (type == "function") {
+                let payable = elem["payable"]! as! Bool
                 var fncName = elem["name"]! as! String
                 if fncName == "replConstructor" {
                     fncName = "init".lightBlue
@@ -102,7 +110,7 @@ public class REPL {
                 let inputs = elem["inputs"]! as! [[String : String]]
                 let isConstant = elem["constant"] as! Bool
                 //let outputs = elem["outputs"] as! [[String : String]]
-                let funcSignature = "\(fncName)\(process_abi_args(args: inputs))"
+                let funcSignature = "\(fncName)\(process_abi_args(args: inputs, payable: payable))"
                 if isConstant {
                     abi_pretty_funcs.append(funcSignature.lightWhite + " (Constant)".lightCyan.bold)
                 } else {
