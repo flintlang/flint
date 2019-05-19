@@ -330,17 +330,19 @@ function process_test_result(res, test_name) {
                 if (allFuncsWithName.count > 0)
                 {
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating
+                    var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
-                        contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultType.name)
+                        resultTypeVal = resultType.name
                     }
-    
+                    
+                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable)
                     contractFunctionNames.append(fName)
                 }
             }
 
             
         } catch {
-            print("Fatal error: Loading of contract that is to be tested has failed")
+            print("Fatal error: Loading of contract that is to be tested has failed".lightRed.bold)
             exit(1)
         }
     }
