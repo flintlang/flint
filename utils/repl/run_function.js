@@ -73,15 +73,23 @@ async function main() {
         let localContract = eth.contract(JSON.parse(abi));
 	address = "" + address + "";
 	let instance = localContract.at(address);	
+	fs.writeFileSync("result.txt", "");
 
 	/* CALL CONTRACT METHOD  */
 	let functionNameToBeExecuted = process.argv[4];
 	let isTransaction = process.argv[5];
 	let resType  = process.argv[6];
 	let args = process.argv[7];
+	let isPayable = process.argv[8];
 	var json_args = []
 	if (!(args === "")) {
 	    json_args = JSON.parse(args); 
+	}
+
+	let hyperparam = {};
+
+	if (isPayable === "true") {
+		hyperparam = {value: process.argv[9]};
 	}
 
 	var res = "";
@@ -89,18 +97,17 @@ async function main() {
 	if (isTransaction) {
 
 	   if (resType === "Int") {
-		   let resObj = await transactional_method_int(instance, functionNameToBeExecuted, json_args) 
-		   res = resObj.rVal
+		   let resObj = await transactional_method_int(instance, functionNameToBeExecuted, json_args, hyperparam);
+		   res = resObj.rVal;
 	   } else if (resType === "String") {
-		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args) 
-		   res = resObj.rVal
+		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args, hyperparam);
+		   res = resObj.rVal;
 	   } else if (resType === "Address") {
-		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args) 
-		   res = resObj.rVal
+		   let resObj = await transactional_method_string(instance, functionNameToBeExecuted, json_args, hyperparam);
+		   res = resObj.rVal;
 	   } else {
-
-		   let tx_hash = await transactional_method(instance, functionNameToBeExecuted, json_args) 
-		   res = tx_hash
+		   let resObj = await transactional_method_void(instance, functionNameToBeExecuted, json_args, hyperparam);
+		   res = resObj.tx_hash; 
 	   }
 
 	} else {
@@ -111,6 +118,8 @@ async function main() {
 		   res = call_method_string(instance, functionNameToBeExecuted, json_args);
 	   } else if (resType === "Address") {
 		   res = call_method_string(instance, functionNameToBeExecuted, json_args);
+           } else if (resType === "nil") {
+		   res = "undefined";
 	   } else {
 		   res = "RETURN TYPE NOT SUPPORTED: " + resType
 	   }
