@@ -371,6 +371,9 @@ extension BoogieTranslator {
           bParameters.insert(BParameterDeclaration(name: self.structInstanceVariableName!,
                                                    rawName: self.structInstanceVariableName!,
                                                    type: .int), at: 0)
+          preConditions.append(BPreCondition(expression: .lessThan(.identifier(self.structInstanceVariableName!), .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
+                                             ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
+                                             free: true))
         }
       default: break
       }
@@ -412,7 +415,7 @@ extension BoogieTranslator {
 
     let bStatements = functionIterableSizeAssumptions
                     + functionPreAmble
-                    + body.flatMap({x in process(x)})
+                    + body.flatMap({x in process(x, structInvariants: structInvariants)})
                     + functionPostAmble
 
     var modifies = [String]()

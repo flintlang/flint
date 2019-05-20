@@ -72,3 +72,27 @@ C :: (any) {
     }
   }
 }
+
+struct TestStruct {
+  var v: Int = 0
+
+  invariant (v >= 0)
+
+  public init() { }
+
+  func testStructCouldChange()
+    mutates (v)
+  {
+    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    do {
+      let vOld: Int = v
+      (call libInstance.getValue()) as! Int
+      assert (v >= 0)
+
+      //VERIFY-FAIL
+      assert (self.v == vOld)
+    } catch is ExternalCallError {
+      fatalError()
+    }
+  }
+}

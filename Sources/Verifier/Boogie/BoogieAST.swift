@@ -132,9 +132,22 @@ struct BTypeDeclaration {
 struct BPreCondition {
   let expression: BExpression
   let ti: TranslationInformation
+  let free: Bool
+
+  init(expression: BExpression, ti: TranslationInformation) {
+    self.expression = expression
+    self.ti = ti
+    self.free = false
+  }
+
+  init(expression: BExpression, ti: TranslationInformation, free: Bool) {
+    self.expression = expression
+    self.ti = ti
+    self.free = free
+  }
 
   func render() -> (String, SourceMapping) {
-    return ("\(ti)\nrequires (\(expression));", Set([ti]))
+    return ("\(ti)\n\(free ? "free " : "")requires (\(expression));", Set([ti]))
   }
 }
 

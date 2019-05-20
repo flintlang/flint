@@ -3,11 +3,11 @@ import AST
 import BigInt
 
 extension BoogieTranslator {
-   func process(_ statement: Statement) -> [BStatement] {
+   func process(_ statement: Statement, structInvariants: [BIRInvariant] = []) -> [BStatement] {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
-      var (bExpression, statements, postStatements) = process(expression)
+      var (bExpression, statements, postStatements) = process(expression, structInvariants: structInvariants)
       switch bExpression {
       case BExpression.identifier, BExpression.mapRead, BExpression.nop:
         break
@@ -19,7 +19,7 @@ extension BoogieTranslator {
     case .returnStatement(let returnStatement):
       var statements = [BStatement]()
       if let expression = returnStatement.expression {
-        let (translatedExpr, preStatements, postStatements) = process(expression)
+        let (translatedExpr, preStatements, postStatements) = process(expression, structInvariants: structInvariants)
         statements += preStatements
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr,
@@ -41,11 +41,11 @@ extension BoogieTranslator {
       return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)), TranslationInformation(sourceLocation: becomeStatement.sourceLocation))]
 
     case .ifStatement(let ifStatement):
-      let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition)
+      let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition, structInvariants: structInvariants)
       let oldCtx = setCurrentScopeContext(ifStatement.ifBodyScopeContext)
-      let trueCase = ifStatement.body.flatMap({x in process(x)})
+      let trueCase = ifStatement.body.flatMap({x in process(x, structInvariants: structInvariants)})
       _ = setCurrentScopeContext(ifStatement.elseBodyScopeContext)
-      let falseCase = ifStatement.elseBody.flatMap({x in process(x)})
+      let falseCase = ifStatement.elseBody.flatMap({x in process(x, structInvariants: structInvariants)})
       _ = setCurrentScopeContext(oldCtx)
       return condStmt + [
         .ifStatement(BIfStatement(condition: condExpr,
@@ -103,8 +103,8 @@ extension BoogieTranslator {
 
       switch forStatement.iterable {
       case .range(let rangeExpression):
-        let (start, startStmts, postStartStmts) = process(rangeExpression.initial)
-        let (bound, boundStmts, postEndStmts) = process(rangeExpression.bound)
+        let (start, startStmts, postStartStmts) = process(rangeExpression.initial, structInvariants: structInvariants)
+        let (bound, boundStmts, postEndStmts) = process(rangeExpression.bound, structInvariants: structInvariants)
         preAmbleStmts += startStmts + boundStmts
         postAmbleStmts += postStartStmts + postEndStmts
         // Adjust the index update accordingly
@@ -161,7 +161,7 @@ extension BoogieTranslator {
         switch iterableType {
         case .arrayType:
           // Array type - the resulting expression is indexable
-          let (indexableExpr, indexableStmts, postIndexableStmts) = process(forStatement.iterable)
+          let (indexableExpr, indexableStmts, postIndexableStmts) = process(forStatement.iterable, structInvariants: structInvariants)
           preAmbleStmts += indexableStmts
           postAmbleStmts += postIndexableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
@@ -233,12 +233,12 @@ extension BoogieTranslator {
       let oldEnclosingCatchBody = self.enclosingCatchBody
       let oldEnclosingDoBody = self.enclosingDoBody
 
-      self.enclosingCatchBody = doCatchStatement.catchBody.flatMap({ process($0) })
+      self.enclosingCatchBody = doCatchStatement.catchBody.flatMap({ process($0, structInvariants: structInvariants) })
       self.enclosingDoBody = doCatchStatement.doBody
       while let firstStmt = self.enclosingDoBody.first {
         self.enclosingDoBody.remove(at: 0)
         // Process first
-        doCatchStmts += process(firstStmt)
+        doCatchStmts += process(firstStmt, structInvariants: structInvariants)
       }
       self.enclosingCatchBody = oldEnclosingCatchBody
       self.enclosingDoBody = oldEnclosingDoBody
@@ -253,6 +253,7 @@ extension BoogieTranslator {
                subscriptDepth: Int = 0,
                isBeingAssignedTo: Bool = false,
                enclosingTLD: String? = nil,
+               structInvariants: [BIRInvariant] = [],
                structInstanceVariable: BExpression? = nil) -> (BExpression, [BStatement], [BStatement]) {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
@@ -286,7 +287,7 @@ extension BoogieTranslator {
 
         var stmts = [BStatement]()
         // Only select 1 half of pre/post invariants
-        for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants {
+        for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants + structInvariants {
           let ti = TranslationInformation(sourceLocation: externalCall.sourceLocation,
                                           isExternalCall: true,
                                           relatedTI: invariant.ti)
@@ -326,13 +327,13 @@ extension BoogieTranslator {
 
         var trueStatements = [BStatement]()
         // Havoc global state - to capture that the values of the global state can be changed,
-        for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) {
+        for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
           trueStatements.append(.havoc(variableName, ti))
           // Add external call
         }
 
         // we can assume that the invariants will hold - as all the functions must hold the invariant
-        for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants {
+        for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants + structInvariants {
           trueStatements.append(.assume(invariant.expression, ti))
         }
 
@@ -375,7 +376,8 @@ extension BoogieTranslator {
       return process(bracketedExpression.expression,
                      localContext: localContext,
                      shadowVariablePrefix: shadowVariablePrefix,
-                     subscriptDepth: subscriptDepth)
+                     subscriptDepth: subscriptDepth,
+                     structInvariants: structInvariants)
 
     case .subscriptExpression(let subscriptExpression):
       return processSubscriptExpression(subscriptExpression,
@@ -401,10 +403,10 @@ extension BoogieTranslator {
 
     case .typeConversionExpression(let typeConversionExpression):
       //TODO: Handle as? / as! ...
-      return process(typeConversionExpression.expression)
+      return process(typeConversionExpression.expression, structInvariants: structInvariants)
 
     case .returnsExpression(let returnsExpression):
-      let (returnsExpr, _, _) = process(returnsExpression)
+      let (returnsExpr, _, _) = process(returnsExpression, structInvariants: structInvariants)
         return (.equals(.identifier(self.getFunctionReturnVariable()), returnsExpr), [], [])
 
     // Assumption - can only be used as iterables in for-loops

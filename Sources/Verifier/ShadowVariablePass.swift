@@ -80,7 +80,10 @@ class ShadowVariablePass: ASTPass {
   // External calls can modify the stateVariable as it could call other functions
   func process(externalCall: ExternalCall,
                passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
-    addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+    if passContext.structDeclarationContext == nil {
+      // Structs don't have state variables
+      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+    }
 
     return ASTPassResult(element: externalCall, diagnostics: [], passContext: passContext)
   }
