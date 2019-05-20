@@ -68,6 +68,12 @@ async function transactional_method(contract, methodName, args, hyperparam) {
     });
 }
 
+function isRevert(tx_hash) {
+    let receipt = eth.getTransactionReceipt(tx_hash);
+    let result = (receipt.status === "0x0");
+    return result
+}
+
 function call_method_string(contract, methodName, args) {
     return contract[methodName]['call'](...args);
 }
@@ -76,16 +82,51 @@ function call_method_int(contract, methodName, args) {
     return contract[methodName]['call'](...args).toNumber();
 }
 
-async function transactional_method_string(contract, methodName, args) {
-    var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
-    var tx_hash = await transactional_method(contract, methodName, args);
+async function transactional_method_void(contract, methodName, args, hyperparam) {
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
+    if (!(tx_hash.includes("ERROR"))) {
+	    let isReverted = isRevert(tx_hash);
+	    if (isReverted) {
+		    tx_hash = "reverted transaction";
+	    }
+    }
+      
+    return {tx_hash: tx_hash};
+}
 
+async function transactional_method_string(contract, methodName, args, hyperparam) {
+    var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
+
+    if (!(tx_hash.includes("ERROR"))) 
+    {
+	    let isReverted = isRevert(tx_hash);
+	    if (isReverted) {
+		    value = "reverted transaction";
+		    tx_hash = "reverted transaction";
+	    }
+    } else 
+    {
+	    value = tx_hash
+    }
+ 
     return {tx_hash: tx_hash, rVal: value};
 }
 
-async function transactional_method_int(contract, methodName, args) {
+async function transactional_method_int(contract, methodName, args, hyperparam) {
     var value = contract[methodName]['call'](...args).toNumber();
-    var tx_hash = await transactional_method(contract, methodName, args);
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
+    if (!(tx_hash.includes("ERROR"))) 
+    {
+	    let isReverted = isRevert(tx_hash);
+	    if (isReverted) {
+		    value = "reverted transaction";
+		    tx_hash = "reverted transaction";
+	    }
+    } else 
+    {
+	    value = tx_hash
+    }
 
     return {tx_hash: tx_hash, rVal: value};
 }
