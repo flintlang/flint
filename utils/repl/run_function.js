@@ -161,7 +161,7 @@ async function main() {
 
 	var res = "";
 
-	if (isTransaction) {
+	if (isTransaction === "true") {
 
 	   if (resType === "Int") {
 		   let resObj = await transactional_method_int(instance, functionNameToBeExecuted, json_args, hyperparam);
