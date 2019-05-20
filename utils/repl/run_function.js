@@ -30,14 +30,38 @@ async function check_tx_mined(tx_hash) {
 }
 
 
-async function transactional_method(contract, methodName, args) {
-    var tx_hash = await new Promise(function(resolve, reject) {
-        contract[methodName]['sendTransaction'](...args, function(err, result) {
-            resolve(result);
-        });
-    });
+async function transactional_method(contract, methodName, args, hyperparam) { 
+    let gasEstimate = contract[methodName].estimateGas(...args);  
+    let transactionFee = gasEstimate * web3.eth.gasPrice + hyperparam.value;
 
-    let isMined = await check_tx_mined(tx_hash);
+    var tx_hash;
+    if ("value" in hyperparam) {
+
+	    tx_hash = await new Promise(function(resolve, reject) {
+		contract[methodName]['sendTransaction'](...args, {value: transactionFee,  gasPrice: web3.eth.gasPrice, gas:gasEstimate}, function(err, result) {
+		    if (err) {
+			resolve("ERROR:" + err);
+		    }
+		    resolve(result);
+		});
+	    });
+
+    } else {
+
+	    tx_hash = await new Promise(function(resolve, reject) {
+		contract[methodName]['sendTransaction'](...args, function(err, result) {
+		    if (err) {
+			resolve("ERROR:" + err);
+		    }
+		    resolve(result);
+		});
+	    });
+    }
+
+
+    if (!(tx_hash.includes("ERROR"))) {
+         let isMined = await check_tx_mined(tx_hash);
+    }
 
     return new Promise(function(resolve, reject) {
         resolve(tx_hash);
