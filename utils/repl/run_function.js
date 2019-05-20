@@ -5,7 +5,13 @@ const web3 = new Web3();
 const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
-const defaultAcc = web3.personal.newAccount("1");
+/* CHECK THAT WE ARE ABLE TO FIND SOME ACCOUNTS */
+if (eth.accounts.length < 5) {
+	fs.writeFileSync("result.txt", "No test net was found, please launch one using flint-block");
+	process.exit(0);
+}
+
+const defaultAcc = eth.accounts[4];
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
