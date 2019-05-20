@@ -41,6 +41,46 @@ public class REPLContract{
     public func getResultType(fnc : String) -> String {
         return contractFunctionInfo[fnc]!.getType()
     }
+    
+    private func extract_wei_argument(args: [FunctionArgument]) -> (Int, [FunctionArgument])? {
+        if args.count > 0 {
+            let wei_arg = args[0]
+            
+            guard let param_name = wei_arg.identifier else {
+                print("Function is payable but no wei was sent, please send wei using the _wei parameter, _wei should be the first parameter".lightRed.bold)
+                return nil
+            }
+            
+            if param_name.name != "_wei" {
+                print("Function is payable but no wei was sent, please send wei using the _wei parameter, _wei should be the first parameter".lightRed.bold)
+                return nil
+            }
+            
+            switch (wei_arg.expression) {
+            case .literal(let li):
+                switch (li.kind) {
+                case .literal(let lit):
+                    switch (lit) {
+                    case .decimal(let dec):
+                        switch (dec) {
+                        case .integer(let i):
+                            return (i, Array(args[1...]))
+                        default:
+                            print("Invalid type found for Wei value".lightRed.bold)
+                        }
+                    default:
+                        print("Invalid type found for Wei value".lightRed.bold)
+                    }
+                default:
+                    print("Invalid type found for Wei value".lightRed.bold)
+                }
+            default:
+                print("Invalid type found for Wei value".lightRed.bold)
+            }
+        }
+        
+        return nil
+    }
 
     public func run(fCall : FunctionCall, instance : String, expr : Expression? = nil) -> String? {
         guard let addr = instanceToAddress[instance] else {
@@ -48,7 +88,22 @@ public class REPLContract{
             return nil
         }
         
-        guard let fArgs = process_func_call_args(args: fCall.arguments) else {
+        guard let funcInfo = contractFunctionInfo[fCall.identifier.name] else {
+            print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
+            return nil
+        }
+        
+        var func_args : [FunctionArgument] = fCall.arguments
+        var wei_value : Int? = nil
+        if contractFunctionInfo[fCall.identifier.name]!.isPayable() {
+            guard let (weiVal, remainingArgs) = extract_wei_argument(args: func_args) else {
+                return nil
+            }
+            func_args = remainingArgs
+            wei_value = weiVal
+        }
+        
+        guard let fArgs = process_func_call_args(args: func_args) else {
             print("Failed to run function \(fCall.identifier.name) as arguments were malformed".lightRed.bold)
             return nil
         }
@@ -68,11 +123,6 @@ public class REPLContract{
             return nil
         }
         
-        guard let funcInfo = contractFunctionInfo[fCall.identifier.name] else {
-            print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
-            return nil
-        }
-        
         let resType = funcInfo.getType()
         
         let fileManager = FileManager.init()
@@ -83,12 +133,18 @@ public class REPLContract{
             exit(0)
         }
         
+        var node_args = ["node", "run_function.js", self.abi, addr, fCall.identifier.name, isTransaction.description, resType, args, false.description]
+        
+        if let weiVal = wei_value {
+            node_args = ["node", "run_function.js", self.abi, addr.trimmingCharacters(in: .whitespacesAndNewlines), fCall.identifier.name, isTransaction.description, resType, args, true.description, weiVal.description]
+        }
+        
         let p = Process()
         let pipe = Pipe()
         p.launchPath = "/usr/bin/env"
         p.standardOutput = pipe
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
-        p.arguments = ["node", "run_function.js", self.abi, addr, fCall.identifier.name, isTransaction.description, resType, args]
+        p.arguments = node_args
         p.launch()
         p.waitUntilExit()
         
@@ -273,7 +329,7 @@ public class REPLContract{
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
-                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating
+                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
                     
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
