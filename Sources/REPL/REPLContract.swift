@@ -163,6 +163,10 @@ public class REPLContract{
         var result_args : [String] = []
         
         for a in args {
+            guard let _ = a.identifier else {
+              print("Missing labels to argument for function call, missing for expr: \(a.expression)".lightRed.bold)
+              return nil
+            }
             switch (a.expression) {
             case .binaryExpression(let binExp):
                 switch (binExp.opToken) {
