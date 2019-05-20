@@ -364,16 +364,11 @@ extension Compiler {
     }
     
     private static func insertConstructorFuncRepl(ast : TopLevelModule) -> TopLevelModule {
-        let decWithoutStdlib = ast.declarations[2...]
-        
+       
         var newDecs : [TopLevelDeclaration] = []
-        newDecs.append(ast.declarations[0])
-        newDecs.append(ast.declarations[1])
         
-        for m in decWithoutStdlib {
+        for m in ast.declarations {
             switch (m) {
-            case .contractDeclaration(let cdec):
-                newDecs.append(m)
             case .contractBehaviorDeclaration(var cbdec):
                 var mems : [ContractBehaviorMember] = []
                 for cm in cbdec.members {
