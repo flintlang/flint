@@ -39,10 +39,11 @@ async function transactional_method(contract, methodName, args, hyperparam) {
 
 	    tx_hash = await new Promise(function(resolve, reject) {
 		contract[methodName]['sendTransaction'](...args, {value: transactionFee,  gasPrice: web3.eth.gasPrice, gas:gasEstimate}, function(err, result) {
-		    if (err) {
+		    if (!err) {
+		        resolve(result);
+		    } else {
 			resolve("ERROR:" + err);
 		    }
-		    resolve(result);
 		});
 	    });
 
@@ -50,10 +51,11 @@ async function transactional_method(contract, methodName, args, hyperparam) {
 
 	    tx_hash = await new Promise(function(resolve, reject) {
 		contract[methodName]['sendTransaction'](...args, function(err, result) {
-		    if (err) {
+		    if (!err) {
+		        resolve(result);
+		    } else {
 			resolve("ERROR:" + err);
 		    }
-		    resolve(result);
 		});
 	    });
     }
