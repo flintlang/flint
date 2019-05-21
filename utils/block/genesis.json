@@ -1,0 +1,35 @@
+{
+    "config": {  
+        "chainId": 731, 
+	"byzantiumBlock": 0
+    },
+    "difficulty": "0x0",
+    "gasLimit": "0x8000000",
+    "alloc": {
+	    "0xCeEbDE7e99aC8A289A748c71c1193e3c1D2F3968": {
+		    "balance": "0x52B7D2DCC80CD2E4000000" 
+	    },
+
+	    "0x2F4057EEf248499edBc715771cCf349fdbe2e8D9": {
+		    "balance": "0x52B7D2DCC80CD2E4000000" 
+	    },
+
+	    "0x2F7c400f702951bcfCdC3375471D065AD3CBd613": {
+		    "balance": "0x52B7D2DCC80CD2E4000000" 
+		    
+	    },
+
+	    "0x4B35C80F3682df99E61ee170Ee8773c2f67d4c0c": {
+		    "balance": "0x52B7D2DCC80CD2E4000000" 
+		    
+	    },
+
+	    "0x2ce101e584CE9dE5492b2703715ECD09BBa0Cb19": {
+		    "balance": "0x52B7D2DCC80CD2E4000000" 
+		    
+	    }
+
+    }
+}
+
+
