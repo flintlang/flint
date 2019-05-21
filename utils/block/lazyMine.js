@@ -1,7 +1,5 @@
-/ * 
-	Thanks to Daniel Dean of Mindlink for the base of this script
-        http://engineering.mindlinksoft.com/creating-a-private-ethereum-blockchain-and-using-it-as-a-model/
-*/
+//  Thanks to Daniel Dean of Mindlink for the base of this script
+//  http://engineering.mindlinksoft.com/creating-a-private-ethereum-blockchain-and-using-it-as-a-model/
 
 function checkPendingTransactions() {
     poll()
