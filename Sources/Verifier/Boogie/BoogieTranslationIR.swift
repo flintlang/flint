@@ -2,7 +2,7 @@ import Source
 
 struct BoogieTranslationIR {
   let tlds: [BIRTopLevelDeclaration]
-  let holisticTestProcedures: [(SourceLocation, BIRTopLevelDeclaration)]
+  let holisticTestProcedures: [(SourceLocation, [BIRTopLevelDeclaration])]
   let holisticTestEntryPoints: [String]
 
   let callGraph: [String: Set<String>]
@@ -38,8 +38,8 @@ struct BIRInvariant {
 
 struct BIRProcedureDeclaration {
   let name: String
-  let returnType: BType?
-  let returnName: String?
+  let returnTypes: [BType]?
+  let returnNames: [String]?
   let parameters: [BParameterDeclaration]
   let preConditions: [BPreCondition]
   let postConditions: [BPostCondition]

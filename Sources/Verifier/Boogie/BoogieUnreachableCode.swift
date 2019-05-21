@@ -76,8 +76,8 @@ class BoogieUnreachableCode {
 
         procedures.append((BProcedureDeclaration(
           name: procedureDeclaration.name,
-          returnType: procedureDeclaration.returnType,
-          returnName: procedureDeclaration.returnName,
+          returnTypes: procedureDeclaration.returnTypes,
+          returnNames: procedureDeclaration.returnNames,
           parameters: procedureDeclaration.parameters,
           preConditions: procedureDeclaration.preConditions,
           postConditions: procedureDeclaration.postConditions,

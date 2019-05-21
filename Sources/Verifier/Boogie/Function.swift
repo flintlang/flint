@@ -460,10 +460,12 @@ extension BoogieTranslator {
     self.structInstanceVariableName = nil
     _ = setCurrentScopeContext(oldCtx)
 
-    return .procedureDeclaration(BIRProcedureDeclaration(
+    let returnTypes = returnType == nil ? nil : [returnType!]
+    let returnNames = returnName == nil ? nil : [returnName!]
+    let procDecl = BIRProcedureDeclaration(
       name: currentFunctionName,
-      returnType: returnType,
-      returnName: returnName,
+      returnTypes: returnTypes,
+      returnNames: returnNames,
       parameters: bParameters,
       preConditions: callerPreConds + typeStatePreConds + preConditions, //Inits should establish
       postConditions: postConditions,
@@ -477,6 +479,9 @@ extension BoogieTranslator {
       isHolisticProcedure: false,
       isStructInit: isStructInit,
       isContractInit: isContractInit
-    ))
+    )
+
+    self.functionMapping[currentFunctionName] = procDecl
+    return .procedureDeclaration(procDecl)
   }
 }

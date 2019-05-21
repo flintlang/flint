@@ -10,9 +10,13 @@ class BoogieIRResolver: IRResolver {
   func resolve(ir: BoogieTranslationIR) -> FlintBoogieTranslation {
     // Process mutates clause - flow non-user-defined mutates
     var procedureDeclarations = [BIRProcedureDeclaration]()
-    for case .procedureDeclaration(let dec) in (ir.tlds + ir.holisticTestProcedures.map({ $0.1 })) {
-      procedureDeclarations.append(dec)
+    for case .procedureDeclaration(let dec) in (ir.tlds + ir.holisticTestProcedures.flatMap({ $0.1 })) {
+      // Don't insert duplicate copies of procedures - due to holistic creation of SelectFunction + CallableFunctions
+      if !procedureDeclarations.contains(where: { $0.name == dec.name }) {
+        procedureDeclarations.append(dec)
+      }
     }
+
     self.procedureModifies = resolveMutates(callGraph: ir.callGraph, procedureDeclarations: procedureDeclarations)
 
     var declarations = [BTopLevelDeclaration]()
@@ -33,22 +37,27 @@ class BoogieIRResolver: IRResolver {
       }
     }
 
-    var holisticDeclarations = [(SourceLocation, BTopLevelDeclaration)]()
-    for (spec, declaration) in ir.holisticTestProcedures {
-      switch declaration {
-      case .functionDeclaration(let bFunctionDeclaration):
-        holisticDeclarations.append((spec, BTopLevelDeclaration.functionDeclaration(bFunctionDeclaration)))
-      case .axiomDeclaration(let bAxiomDeclaration):
-        holisticDeclarations.append((spec, BTopLevelDeclaration.axiomDeclaration(bAxiomDeclaration)))
-      case .variableDeclaration(let bVariableDeclaration):
-        holisticDeclarations.append((spec, BTopLevelDeclaration.variableDeclaration(bVariableDeclaration)))
-      case .constDeclaration(let bConstDeclaration):
-        holisticDeclarations.append((spec, BTopLevelDeclaration.constDeclaration(bConstDeclaration)))
-      case .typeDeclaration(let bTypeDeclaration):
-        holisticDeclarations.append((spec, BTopLevelDeclaration.typeDeclaration(bTypeDeclaration)))
-      case .procedureDeclaration(let bIRProcedureDeclaration):
-        holisticDeclarations.append((spec, .procedureDeclaration(resolve(irProcedureDeclaration: bIRProcedureDeclaration))))
+    var holisticDeclarations = [(SourceLocation, [BTopLevelDeclaration])]()
+    for (spec, declarations) in ir.holisticTestProcedures {
+      var tlds = [BTopLevelDeclaration]()
+      for declaration in declarations {
+        switch declaration {
+        case .functionDeclaration(let bFunctionDeclaration):
+          tlds.append(BTopLevelDeclaration.functionDeclaration(bFunctionDeclaration))
+        case .axiomDeclaration(let bAxiomDeclaration):
+          tlds.append(BTopLevelDeclaration.axiomDeclaration(bAxiomDeclaration))
+        case .variableDeclaration(let bVariableDeclaration):
+          tlds.append(BTopLevelDeclaration.variableDeclaration(bVariableDeclaration))
+        case .constDeclaration(let bConstDeclaration):
+          tlds.append(BTopLevelDeclaration.constDeclaration(bConstDeclaration))
+        case .typeDeclaration(let bTypeDeclaration):
+          tlds.append(BTopLevelDeclaration.typeDeclaration(bTypeDeclaration))
+        case .procedureDeclaration(let bIRProcedureDeclaration):
+          tlds.append(.procedureDeclaration(resolve(irProcedureDeclaration: bIRProcedureDeclaration)))
+        }
       }
+
+      holisticDeclarations.append((spec, tlds))
     }
 
     return FlintBoogieTranslation(boogieTlds: declarations,
@@ -77,8 +86,8 @@ class BoogieIRResolver: IRResolver {
     }
 
     return BProcedureDeclaration(name: irProcedureDeclaration.name,
-                                 returnType: irProcedureDeclaration.returnType,
-                                 returnName: irProcedureDeclaration.returnName,
+                                 returnTypes: irProcedureDeclaration.returnTypes,
+                                 returnNames: irProcedureDeclaration.returnNames,
                                  parameters: irProcedureDeclaration.parameters,
                                  preConditions: preConditions,
                                  postConditions: postConditions,

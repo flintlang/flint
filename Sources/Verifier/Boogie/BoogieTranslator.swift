@@ -17,6 +17,8 @@ class BoogieTranslator {
   var functionVariableDeclarations = [String: Set<BVariableDeclaration>]()
   // Procedure paramters
   var functionParameters = [String: [BParameterDeclaration]]()
+  // Procedure mapping
+  var functionMapping = [String: BIRProcedureDeclaration]()
   // Name of procedure return variable
   var functionReturnVariableName = [String: String]()
   // Empty Map Properties, for each type
@@ -162,8 +164,8 @@ class BoogieTranslator {
     declarations.append(.procedureDeclaration(
       BIRProcedureDeclaration(
         name: "send",
-        returnType: nil,
-        returnName: nil,
+        returnTypes: nil,
+        returnNames: nil,
         parameters: [
           BParameterDeclaration(name: "address", rawName: "address", type: .userDefined("Address")),
           BParameterDeclaration(name: "wei", rawName: "wei", type: .int)
@@ -257,7 +259,7 @@ class BoogieTranslator {
                                              BIRTopLevelDeclaration.axiomDeclaration(axDec)]
                                    }).reduce([], +)
 
-    var holisticTests = [(SourceLocation, BIRTopLevelDeclaration)]()
+    var holisticTests = [(SourceLocation, [BIRTopLevelDeclaration])]()
     var holisticEntryPoints = [String]()
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
@@ -270,7 +272,7 @@ class BoogieTranslator {
                                                                            transactionDepth: holisticTransactionDepth)
                                             })
       let (holisticDecls, entryPoints)
-        = holisticTranslationInformation.reduce(([], []), { x, y in (x.0 + y.0, x.1 + y.1) })
+        = holisticTranslationInformation.reduce(([], []), { x, y in (x.0 + [(y.0, y.1)], x.1 + [y.2]) })
 
       holisticTests += holisticDecls
       holisticEntryPoints += entryPoints

@@ -95,7 +95,7 @@ struct FlintProofObligationInformation {
 struct FlintBoogieTranslation {
   let boogieTlds: [BTopLevelDeclaration]
   // List of holistic test procedures and their expression
-  let holisticTestProcedures: [(SourceLocation, BTopLevelDeclaration)]
+  let holisticTestProcedures: [(SourceLocation, [BTopLevelDeclaration])]
   let holisticTestEntryPoints: [String]
 
   var functionalProgram: BTopLevelProgram {
@@ -103,7 +103,7 @@ struct FlintBoogieTranslation {
   }
 
   var holisticPrograms: [(SourceLocation, BTopLevelProgram)] {
-    return holisticTestProcedures.map({ ($0.0, BTopLevelProgram(declarations: boogieTlds + [$0.1])) })
+    return holisticTestProcedures.map({ ($0.0, BTopLevelProgram(declarations: boogieTlds + $0.1)) })
   }
 }
 

@@ -11,6 +11,17 @@ public enum PrePostCondition: Equatable {
     }
   }
 
+  public func isPre() -> Bool {
+    switch self {
+    case .pre: return true
+    default: return false
+    }
+  }
+
+  public func isPost() -> Bool {
+    return self.isPre()
+  }
+
   // MARK: - Equatable
   public static func == (lhs: PrePostCondition, rhs: PrePostCondition) -> Bool {
     switch lhs {

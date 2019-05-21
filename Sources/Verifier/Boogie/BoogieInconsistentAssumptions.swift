@@ -36,8 +36,8 @@ class BoogieInconsistentAssumptions {
       let assertFalseBody = [BStatement.assertStatement(BAssertStatement(expression: .boolean(false),
                                                                          ti: ti))]
       let replacementProcedure = BProcedureDeclaration(name: procedure.name,
-                                                       returnType: procedure.returnType,
-                                                       returnName: procedure.returnName,
+                                                       returnTypes: procedure.returnTypes,
+                                                       returnNames: procedure.returnNames,
                                                        parameters: procedure.parameters,
                                                        preConditions: procedure.preConditions,
                                                        postConditions: procedure.postConditions,

@@ -180,8 +180,8 @@ struct BLoopInvariant {
 
 struct BProcedureDeclaration {
   let name: String
-  let returnType: BType?
-  let returnName: String?
+  let returnTypes: [BType]?
+  let returnNames: [String]?
   let parameters: [BParameterDeclaration]
   let preConditions: [BPreCondition]
   let postConditions: [BPostCondition]
@@ -195,9 +195,16 @@ struct BProcedureDeclaration {
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
 
     var returnString: String
-    if let type = returnType {
-      assert (returnName != nil)
-      returnString = " returns (\(returnName!): \(type))"
+    if let types = returnTypes, let names = returnNames {
+      assert(types.count == names.count)
+
+      returnString = ""
+      for (name, type) in zip(names, types) {
+        returnString = "\(returnString), \(name): \(type)"
+      }
+      returnString.removeFirst(1)
+
+      returnString = " returns (\(returnString))"
     } else {
       returnString = ""
     }

@@ -102,16 +102,15 @@ public class BoogieVerifier: Verifier {
                                  maxTimeout: Int,
                                  transactionDepth: Int) -> [HolisticRunInfo] {
     var runInfo = [HolisticRunInfo]()
-    for (holisticSpec, holisticProgram) in translation.holisticPrograms {
+    for ((holisticSpec, holisticProgram), entryPoint) in zip(translation.holisticPrograms, translation.holisticTestEntryPoints) {
       let (holisticBoogieSource, _) = holisticProgram.render()
 
       let tempHolisticFile = Boogie.writeToTempFile(data: holisticBoogieSource)
-      let entryPoints = translation.holisticTestEntryPoints.joined(separator: ",")
       let workingDir = NSTemporaryDirectory() + UUID().uuidString
       let arguments = [symbooglixLocation, tempHolisticFile.path,
         "--timeout", String(maxTimeout),
         "--output-dir", workingDir,
-        "-e", entryPoints]
+        "-e", entryPoint]
       let (uncheckedOutput, _) = Boogie.executeTask(executable: monoLocation,
                                                                   arguments: arguments)
       if uncheckedOutput == nil {
