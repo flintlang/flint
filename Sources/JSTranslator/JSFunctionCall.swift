@@ -131,12 +131,12 @@ public class JSFunctionCall : CustomStringConvertible {
                 if args.count > 0 {
                     fCall += ", [" + create_arg_list() + "])"
                 } else {
-                    fCall += ", []);"
+                    fCall += ", [])"
                 }
             }
         } else {
             
-            let assertFuncs : [String] = JSTranslator.testSuiteFuncs
+            let assertFuncs : [String] = JSTranslator.callerOrStateFuncs
             
             let isCallerOrStateFunc = assertFuncs.contains(functionName)
             
@@ -189,15 +189,13 @@ public class JSFunctionCall : CustomStringConvertible {
                         fCall += create_arg_list()
                     }
                 }
-                
-
             }
             
             if isCallerOrStateFunc {
                 fCall += ", t_contract"
             }
             
-            fCall += ");"
+            fCall += ")"
         }
     
         return fCall
