@@ -89,35 +89,50 @@ public class JSFunctionCall : CustomStringConvertible {
                 } else {
                     fCall = "await transactional_method_void(t_contract, " + "'" + self.functionName + "'"
                 }
-            
+                
                 if args.count > 0 {
-                    fCall += "," + "[" + create_arg_list() + "]" + ")"
+                    fCall += "," + "[" + create_arg_list() + "], "
                 } else {
-                    fCall += ", [])"
+                    fCall += ", [], "
                 }
+                
+                if isPayable {
+                    if let weiAmt = weiAmount {
+                        fCall += "{value:" + weiAmt.description + "}"
+                    } else {
+                        print("Found no value assocaited with the wei paramater. Function Call \(functionName)")
+                        exit(0)
+                    }
+                    
+                } else {
+                    fCall += "{}"
+                }
+                
+                fCall += ")"
+                
             } else {
+                
                 if (resultType == "Int") {
                     fCall = "call_method_int(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "String") {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "Address") {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else {
+                    print("Calling a constant function with no return type, this is not allowed".lightRed.bold)
+                    print("Function: \(self.functionName)".lightRed.bold)
+                    exit(0)
                 }
-               
+
                 if args.count > 0 {
                     fCall += ", [" + create_arg_list() + "])"
                 } else {
-                    fCall += ", [])"
+                    fCall += ", []);"
                 }
             }
         } else {
             
-            var assertFuncs : [String] = []
-            assertFuncs.append("assertCallerSat")
-            assertFuncs.append("assertCallerUnsat")
-            assertFuncs.append("assertCanCallInThisState")
-            assertFuncs.append("assertCantCallInThisState")
-            assertFuncs.append("assertEventFired")
+            let assertFuncs : [String] = JSTranslator.testSuiteFuncs
             
             let isCallerOrStateFunc = assertFuncs.contains(functionName)
             
