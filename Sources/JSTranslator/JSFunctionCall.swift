@@ -13,7 +13,7 @@ public class JSFunctionCall : CustomStringConvertible {
     private let isPayable : Bool
     private let weiAmount : Int?
     
-    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "", isPayable: Bool, eventInformation : ContractEventInfo? = nil, weiAmount : Int? = nil) {
+    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "nil", isPayable: Bool, eventInformation : ContractEventInfo? = nil, weiAmount : Int? = nil) {
         self.contractCall = contractCall
         self.transactionMethod = transactionMethod
         self.isAssert = isAssert
@@ -24,6 +24,10 @@ public class JSFunctionCall : CustomStringConvertible {
         self.isPayable = isPayable
         self.weiAmount = weiAmount
         self.eventInformation = eventInformation
+    }
+    
+    public func getType() -> String {
+        return resultType
     }
     
     
