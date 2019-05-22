@@ -8,8 +8,8 @@ TestCounter :: (any) {
 
   public func test_event_fired() {
 	   let c : Counter = Counter()
-	   let x: Int = c.increment()
-           assertEventFired(c.didComplete, 1);
+	   c.increment()
+     assertEventFired(c.didComplete, 1);
   }   
 
 }

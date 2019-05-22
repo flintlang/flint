@@ -10,10 +10,10 @@ TestCounter :: (any) {
    let c : Counter = Counter(1, "0x838c72b6db1c2e430699cbf56a304703371db140")
 
    let v : Address = c.getAddr()
-   let c : Int = c.getExtraValue()
+   let e : Int = c.getExtraValue()
 
    assertEqual("0x838c72b6db1c2e430699cbf56a304703371db140", v);
-   assertEqual(1, c);
+   assertEqual(1, e);
   }  
 }
 
