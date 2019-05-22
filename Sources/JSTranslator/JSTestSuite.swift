@@ -263,7 +263,34 @@ function process_test_result(res, test_name) {
         self.contractFunctionInfo = [:]
         self.contractEventInfo = [:]
         self.ast = ast
+        loadLibraryFuncs()
         loadTestContractVars()
+    }
+    
+    private func loadLibraryFuncs() {
+        let assertEqualInfo = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertEqual"] = assertEqualInfo
+        
+        let newAddrInfo = ContractFuncInfo(resultType: "Address", payable: false)
+        self.contractFunctionInfo["newAddress"] = newAddrInfo
+        
+        let setAddr =  ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["setAddr"] = setAddr
+        
+        let unsetAddr = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["unsetAddr"] = unsetAddr
+
+        let assertCallerSat = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertCallerSat"] = assertCallerSat
+        
+        let assertCallerUnSat = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertCallerUnSat"] = assertCallerUnSat
+        
+        let assertCanCallInThisState = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertCanCallInThisState"] = assertCanCallInThisState
+        
+        let assertCantCallInThisState = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertCantCallInThisState"] = assertCantCallInThisState
     }
     
     public func getFilePathToFlintContract() -> String {
