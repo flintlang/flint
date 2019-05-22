@@ -10,7 +10,7 @@ func main() {
     command (
         Argument<String> ("Test file", description: "Test file (.tflint)"),
         Flag("test runner", flag:"t", description:"Flag to run unit tests for test framework"),
-        Flag("emit-ir", flag: "i", description: "Emit the internal representation of the code.")
+        Flag("cov", flag: "c", description: "Run test suite with coverage")
     )
     { sourceCode, test_run, coverage in
         let fileName =  sourceCode
