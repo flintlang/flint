@@ -535,9 +535,49 @@ function process_test_result(res, test_name) {
         return rhsNode!
     }
     
+    private func extract_int_lit_from_expr(expr : Expression) -> Int? {
+        switch (expr) {
+        case .literal(let li):
+            switch (li.kind) {
+            case .literal(let lit):
+                switch (lit) {
+                case .decimal(let dec):
+                    switch (dec) {
+                    case .integer(let i):
+                        return i
+                    default:
+                        return nil
+                    }
+                default:
+                    return nil
+                }
+            default:
+                return nil
+            }
+        default:
+            return nil
+        }
+    }
+    
+    private func get_wei_val(args : [FunctionArgument]) -> (Int, Int)? {
+        for (i, a) in args.enumerated() {
+            if let label = a.identifier {
+                if (label.name == "_wei") {
+                    guard let wei_val = extract_int_lit_from_expr(expr: a.expression) else {
+                        print("Non numeric wei value found: \(a.expression.description)".lightRed.bold)
+                        exit(0)
+                    }
+                    
+                    return (i, wei_val)
+                }
+            }
+        }
+        
+        return nil
+    }
+    
     private func process_func_call(fCall : FunctionCall, lhsName: String = "") -> JSNode {
         let fName : String = fCall.identifier.name
-        let funcArgs = process_func_call_args(args: fCall.arguments)
         var isTransaction = false
         
         if let isFuncTransaction = isFuncTransaction[fName] {
@@ -545,9 +585,36 @@ function process_test_result(res, test_name) {
         }
         
         var resultType: String = ""
+        var isPayable : Bool = false
         if let funcInfo = contractFunctionInfo[fName] {
             resultType = funcInfo.getType()
+            isPayable = funcInfo.isPayable()
         }
+        
+        var weiVal : Int? = nil
+        var funcCallArgs = fCall.arguments
+        if isPayable {
+            guard let (idx, weiAmt) = get_wei_val(args: fCall.arguments) else {
+                print("Payable function found but wei has not been sent, add wei with argument label _wei. Function Name: \(fCall.identifier.name)".lightRed.bold)
+                exit(0)
+            }
+            weiVal = weiAmt
+            var firstHalf : [FunctionArgument]
+            var secondHalf : [FunctionArgument]
+            
+            if idx > 0 {
+                firstHalf = Array(funcCallArgs[...(idx-1)])
+                secondHalf = Array(funcCallArgs[(idx+1)...])
+            } else {
+                 firstHalf = []
+                 secondHalf = Array(funcCallArgs[(idx+1)...])
+            }
+        
+            let completeArray = firstHalf + secondHalf
+            funcCallArgs = completeArray
+        }
+        
+        let funcArgs = process_func_call_args(args: funcCallArgs)
         
         var contractEventInfo : ContractEventInfo? = nil
         if fName.contains("assertEventFired") {
@@ -561,7 +628,7 @@ function process_test_result(res, test_name) {
         
         let isAssert = fName.lowercased().contains("assert")
         
-        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType, eventInformation: contractEventInfo))
+        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType, isPayable: isPayable, eventInformation: contractEventInfo, weiAmount: weiVal))
     }
     
     
