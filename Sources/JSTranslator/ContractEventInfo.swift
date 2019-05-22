@@ -12,14 +12,13 @@ public struct ContractEventInfo {
     public func create_event_arg_object(args : [JSNode]) throws -> String {
         
         var res_dict : [String : String] = [:]
-        var numOfArg : Int = 0
-        
+     
         if args.count != event_args.count {
             print("Incorrect number of arguments passed as an argument for event filter")
             exit(0)
         }
         
-        for a in args {
+        for (numOfArg, a) in args.enumerated() {
             switch (a) {
             case .FunctionCall(let fCall):
                 res_dict[event_args[numOfArg].0] = fCall.description
@@ -29,6 +28,10 @@ public struct ContractEventInfo {
                     res_dict[event_args[numOfArg].0] = i.description
                 case .String(let s):
                     res_dict[event_args[numOfArg].0] = s.description
+                case .Address(let s):
+                    res_dict[event_args[numOfArg].0] = s.description
+                case .Bool(let b):
+                    res_dict[event_args[numOfArg].0] = b.description
                 }
             case .Variable(let va):
                 res_dict[event_args[numOfArg].0] = va.description
@@ -36,8 +39,7 @@ public struct ContractEventInfo {
                 print("Incorrect expression passed as an argument for event filter")
                 exit(0)
             }
-        
-            numOfArg += 1
+
         }
         
         let json_res_dict = String(data: try JSONSerialization.data(withJSONObject: res_dict, options: []), encoding: .utf8)
