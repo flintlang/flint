@@ -1,18 +1,14 @@
 import Foundation
 
 public class JSVariableAssignment : CustomStringConvertible {
-    private let lhs : String
-    private let isConstant: Bool
+    private let lhs : JSVariable
     private let rhs : JSNode
     private let isInstantiation: Bool
-    private let resultType: String
     
-    public init(lhs: String, rhs: JSNode, isConstant: Bool, resultType: String, isInstantiation : Bool = false) {
+    public init(lhs : JSVariable , rhs: JSNode, isInstantiation : Bool = false) {
         self.lhs = lhs
         self.rhs = rhs
-        self.isConstant = isConstant
         self.isInstantiation = isInstantiation
-        self.resultType = resultType
     }
     
     public var description: String {
@@ -21,9 +17,9 @@ public class JSVariableAssignment : CustomStringConvertible {
         
         if (isInstantiation)
         {
-            // check that the rhs is an actual function call
+    
             guard case .FunctionCall(let fCall) = rhs else {
-                print("Function call is not a valid instantiation")
+                print("non function call is not a valid instantiation")
                 exit(0)
             }
             
@@ -41,7 +37,7 @@ public class JSVariableAssignment : CustomStringConvertible {
                 desc += "let " + randomVar + " = " + rhs.description + ";"
                 desc += "\n"
                 desc += "   "
-                let varModifier = isConstant ? "let" : "var"
+                let varModifier = lhs.isConstant() ? "let" : "var"
                 desc += varModifier
                 desc += " " + lhs.description + " = " + randomVar + "['rVal']" + ";"
                 return desc
@@ -50,7 +46,7 @@ public class JSVariableAssignment : CustomStringConvertible {
             break
         }
 
-        let varModifier = isConstant ? "let" : "var"
+        let varModifier = lhs.isConstant() ? "let" : "var"
         desc += varModifier
         desc += " " + lhs.description + " = " + rhs.description + ";"
         return desc
