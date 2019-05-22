@@ -1,6 +1,8 @@
 public enum JSLiteral : CustomStringConvertible {
    case Integer(Int)
    case String(String)
+   case Address(String)
+   case Bool(Bool)
     
     public var description: String {
         switch (self) {
@@ -8,6 +10,23 @@ public enum JSLiteral : CustomStringConvertible {
             return i.description
         case .String(let s):
             return "\"" + s + "\""
+        case .Address(let s):
+            return "\"" + s + "\""
+        case .Bool(let b):
+            return b.description
+        }
+    }
+    
+    public func getType() -> String {
+        switch (self) {
+        case .Integer(_):
+            return "Int"
+        case .String(_):
+            return "String"
+        case .Address(_):
+            return "Address"
+        case .Bool(_):
+            return "Bool"
         }
     }
 }
