@@ -36,6 +36,8 @@ utils/coverage/coverage.info
 utils/coverage/html/*
 utils/coverage/node_modules/*
 
+utils/block/keystore/*
+
 bin/
 contracts/
 build/
