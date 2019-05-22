@@ -196,8 +196,8 @@ public class CoverageProvider {
                     self.blockNum += 1
                 }
                 self.statementCount += 1
-                body.append(stmt)
                 body.append(stmt_event(line: stmt.sourceLocation.line))
+                body.append(stmt)
             }
         }
         
