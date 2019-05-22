@@ -15,6 +15,7 @@ public class JSTranslator {
     private var contractFunctionNames : [String]
     private var contractFunctionInfo : [String : ContractFuncInfo]
     private var contractEventInfo : [String : ContractEventInfo]
+    public static let testSuiteFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired"]
     
     private let firstHalf : String =
 """
@@ -329,7 +330,7 @@ function process_test_result(res, test_name) {
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
-                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating
+                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
                         resultTypeVal = resultType.name
