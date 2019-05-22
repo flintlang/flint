@@ -2,7 +2,7 @@ public enum JSLiteral : CustomStringConvertible {
    case Integer(Int)
    case String(String)
    case Address(String)
-   case Bool(Bool)
+   case Bool(String)
     
     public var description: String {
         switch (self) {
