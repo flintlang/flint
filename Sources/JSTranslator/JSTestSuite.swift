@@ -4,18 +4,21 @@ import Lexer
 import Foundation
 
 public class JSTranslator {
-    // for now lets write this to support a single test contract
     private var contractName: String
     private var filePath: String
     private var testSuiteName: String
     private let ast : TopLevelModule
     private var JSTestFuncs: [JSTestFunction]
     
-    private var isFuncTransaction : [String:Bool]
-    private var contractFunctionNames : [String]
-    private var contractFunctionInfo : [String : ContractFuncInfo]
-    private var contractEventInfo : [String : ContractEventInfo]
-    public static let testSuiteFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired"]
+    public var isFuncTransaction : [String:Bool]
+    public var contractFunctionNames : [String]
+    public var contractFunctionInfo : [String : ContractFuncInfo]
+    public var contractEventInfo : [String : ContractEventInfo]
+    public static let callerOrStateFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired"]
+    public static let genericAsserts = ["assertEqual"]
+    public static let utilityFuncs = ["newAddress", "setAddr", "unsetAddr"]
+    public static let allFuncs = JSTranslator.callerOrStateFuncs + JSTranslator.genericAsserts + JSTranslator.utilityFuncs
+
     
     private let firstHalf : String =
 """
