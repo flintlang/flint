@@ -37,6 +37,7 @@ utils/coverage/html/*
 utils/coverage/node_modules/*
 
 utils/block/keystore/*
+utils/block/geth/*
 
 bin/
 contracts/
