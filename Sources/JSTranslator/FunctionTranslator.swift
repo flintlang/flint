@@ -14,10 +14,10 @@ public class FunctionTranslator {
         self.jst = jst
     }
     
-    public func translate(funcDec : FunctionDeclaration) -> JSTestFunction? {
-        let s = processContractFunction(fdec: funcDec)
-        //print(error_array)
-        return s
+    public func translate(funcDec : FunctionDeclaration) -> (JSTestFunction?, [String]) {
+        let jsTestFunc = processContractFunction(fdec: funcDec)
+
+        return (jsTestFunc, error_array)
     }
     
     private func processContractFunction(fdec: FunctionDeclaration) -> JSTestFunction?
@@ -167,7 +167,7 @@ public class FunctionTranslator {
             lhsNode = lhsN
     
         default:
-            error_array.append("Found invalid variable declaration in assignment expression \(binExp.lhs.description) at \(binExp.sourceLocation)" .lightRed.bold)
+            error_array.append("Found invalid LHS in assignment expression \(binExp.lhs.description) at \(binExp.sourceLocation)" .lightRed.bold)
             return nil
         }
         
@@ -294,8 +294,8 @@ public class FunctionTranslator {
             if let label = a.identifier {
                 if (label.name == "_wei") {
                     guard let wei_val = extract_int_lit_from_expr(expr: a.expression) else {
-                        print("Non numeric wei value found: \(a.expression.description)".lightRed.bold)
-                        exit(0)
+                        error_array.append("Non numeric wei value found: \(a.expression.description) at \(a.sourceLocation)")
+                        return nil
                     }
                     
                     return (i, wei_val)
@@ -344,8 +344,8 @@ public class FunctionTranslator {
         
         if isPayable {
             guard let (idx, weiAmt) = get_wei_val(args: fCall.arguments) else {
-                print("Payable function found but wei has not been sent, add wei with argument label _wei. Function Name: \(fCall.identifier.name)".lightRed.bold)
-                exit(0)
+                error_array.append("Payable function found but wei has not been sent, add wei with argument label _wei. Function Name: \(fCall.identifier.name) at \(fCall.sourceLocation)")
+                return nil
             }
             weiVal = weiAmt
             var firstHalf : [FunctionArgument]
@@ -370,8 +370,8 @@ public class FunctionTranslator {
             if let eventInfo = jst.contractEventInfo[funcArgs[0].description] {
                 contractEventInfo = eventInfo
             } else {
-                print("The event " + funcArgs[0].description + " does not exist")
-                exit(0)
+                error_array.append("The event " + funcArgs[0].description + " does not exist at \(fCall.sourceLocation)")
+                return nil
             }
         }
         
