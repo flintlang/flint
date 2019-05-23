@@ -38,6 +38,9 @@ async function deploy_contract(abi, bytecode) {
           } else {
               resolve(contract);
           }
+       } else {
+	       console.log(err);
+	       process.exit(0);
        }
      });
     });
@@ -68,22 +71,22 @@ async function transactional_method(contract, methodName, args, hyperparam) {
 }
 
 async function transactional_method_void(contract, methodName, args, hyperparam) {
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
     var value = contract[methodName]['call'](...args);
-    var tx_hash = await transactional_method(contract, methodName, args);
 
     return {tx_hash: tx_hash, rVal: value};
 }
 
 async function transactional_method_string(contract, methodName, args, hyperparam) {
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
     var value = web3.toAscii(contract[methodName]['call'](...args));
-    var tx_hash = await transactional_method(contract, methodName, args);
 
     return {tx_hash: tx_hash, rVal: value};
 }
 
 async function transactional_method_int(contract, methodName, args, hyperparam) {
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
     var value = contract[methodName]['call'](...args).toNumber();
-    var tx_hash = await transactional_method(contract, methodName, args);
 
     return {tx_hash: tx_hash, rVal: value};
 }
