@@ -38,6 +38,7 @@ utils/coverage/node_modules/*
 
 utils/block/keystore/*
 utils/block/geth/*
+utils/block/go-ethereum/*
 
 bin/
 contracts/
