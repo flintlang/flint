@@ -9,9 +9,16 @@ const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 // add checks to see if test net is operating
-const defaultAcc = eth.accounts[3];
-web3.personal.unlockAccount(defaultAcc, "1", 1000);
-web3.eth.defaultAccount = defaultAcc;
+let defaultAcc;
+try {
+	defaultAcc = eth.accounts[3];
+	web3.personal.unlockAccount(defaultAcc, "1", 1000);
+	web3.eth.defaultAccount = defaultAcc;	
+} catch(err) {
+	console.log(chalk.red("Test accounts could not be located, please run a local geth installation with accounts loaded. Tip: Use flint-block"));
+	console.log(err);
+	process.exit(0);
+}
 
 function setAddr(addr) {
     web3.personal.unlockAccount(addr, "1", 1000);
@@ -57,11 +64,43 @@ async function check_tx_mined(tx_hash) {
 }
 
 async function transactional_method(contract, methodName, args, hyperparam) {
-    var tx_hash = await new Promise(function(resolve, reject) {
-        contract[methodName]['sendTransaction'](...args, function(err, result) {
-            resolve(result);
-        });
-    });
+    var tx_hash;
+    if ("value" in hyperparam) {
+	    let gasEstimate;
+	    let transactionFee;
+	    try {
+		    gasEstimate = contract[methodName].estimateGas(...args);  
+		    transactionFee = gasEstimate * web3.eth.gasPrice + hyperparam.value;
+	    } catch(err) {
+		    console.log(chalk.red("Failed to get gas estimate for: " + methodName + ". This means the function is continously reverting"));
+		    console.log(err);
+		    process.exit(0);
+	    }
+
+	    tx_hash = await new Promise(function(resolve, reject) {
+		contract[methodName]['sendTransaction'](...args, {value: transactionFee,  gasPrice: web3.eth.gasPrice, gas:gasEstimate}, function(err, result) {
+		    if (!err) {
+		        resolve(result);
+		    } else {
+			console.log(chalk.red("ERROR in transaction, trying to call method: " + methodName + " \n Message from block node:" + err));
+			process.exit(0);
+		    }
+		});
+	    });
+
+    } else {
+
+	    tx_hash = await new Promise(function(resolve, reject) {
+		contract[methodName]['sendTransaction'](...args, function(err, result) {
+		    if (!err) {
+		        resolve(result);
+		    } else {
+			console.log(chalk.red("ERROR in transaction, trying to call method: " + methodName + " \n Message from block node:" + err));
+			process.exit(0);
+		    }
+		});
+	    });
+    }
 
     let isMined = await check_tx_mined(tx_hash);
 
@@ -134,7 +173,7 @@ async function assertEventFired(result_dict, eventName, event_args, t_contract) 
 }
 
 async function isRevert(result_dict, fncName, args, t_contract) {
-    let tx_hash = await transactional_method(t_contract, fncName, args);
+    let tx_hash = await transactional_method(t_contract, fncName, args, {});
     let receipt = eth.getTransactionReceipt(tx_hash);
     let result = (receipt.status === "0x0");
     return result
