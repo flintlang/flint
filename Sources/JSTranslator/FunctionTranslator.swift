@@ -111,7 +111,7 @@ public class FunctionTranslator {
             return nil
         }
         
-        return rhsNode!
+        return rhsNode
     }
     
     private func process_assignment_expr(binExp : BinaryExpression) -> JSNode? {
@@ -190,6 +190,14 @@ public class FunctionTranslator {
             break
         }
         
+        guard let _ = rhsNode else {
+            return nil
+        }
+        
+        guard let _ = lhsNode else {
+            return nil
+        }
+                
         if rhsNode!.getType() != lhsNode!.getType() {
             error_array.append("Mismatch of types at \(binExp.sourceLocation)")
             return nil
@@ -297,7 +305,7 @@ public class FunctionTranslator {
                         error_array.append("Non numeric wei value found: \(a.expression.description) at \(a.sourceLocation)")
                         return nil
                     }
-                    
+
                     return (i, wei_val)
                 }
             }
