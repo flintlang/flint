@@ -86,6 +86,10 @@ public class FunctionTranslator {
         switch (binExpr.lhs) {
         case .identifier(let i):
             lhsName = i.name
+            guard let _ = varMap[lhsName] else {
+                error_array.append("Variable \(lhsName) not in scope at \(i.sourceLocation)")
+                return nil
+            }
         default:
             break
         }
@@ -100,12 +104,16 @@ public class FunctionTranslator {
             rhsNode = process_func_call(fCall: fCall, lhsName: lhsName)
             
         case .identifier(let i):
-            // currently we only support querying of events via this syntax
-            guard let _ = jst.contractEventInfo[i.name] else {
-                error_array.append("Only events are supported on the rhs of dot expression at \(i.sourceLocation)".lightRed.bold)
+            if let _ = jst.contractFunctionInfo[i.name] {
+                
+            } else if let _ = jst.contractEventInfo[i.name] {
+                
+            } else {
+                error_array.append("Only events and functions are supported on the rhs of dot expression at \(i.sourceLocation)".lightRed.bold)
                 return nil
             }
-            rhsNode = .Variable(JSVariable(variable: i.name, type: "event", isConstant: false))
+            
+            rhsNode = .Variable(JSVariable(variable: "\"" + i.name + "\"", type: "event", isConstant: false))
         default:
             error_array.append("Unsupported expression found on the RHS of dot expr \(binExpr.rhs) at \(binExpr.sourceLocation)".lightRed.bold)
             return nil

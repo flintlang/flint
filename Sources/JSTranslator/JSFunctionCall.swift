@@ -162,7 +162,7 @@ public class JSFunctionCall : CustomStringConvertible {
                         print("Failed to construct event filter")
                         exit(0)
                     }
-                    fCall += "\"" + event_name + "\", "
+                    fCall += event_name + ", "
                     fCall += event_filter
                 } else {
                     print("No associated event information with this function call")
