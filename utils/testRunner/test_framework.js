@@ -212,6 +212,18 @@ async function assertCantCallInThisState(result_dict, fncName, args, t_contract)
     await assertCallerUnsat(result_dict, fncName, args, t_contract)
 }
 
+async function assertWillThrow(result_dict, fncName, args, t_contract) {
+	let result = await isRevert(result_dict, fncName, args, t_contract);
+
+	result_dict['result'] = result && result_dict['result'];
+
+        if (result && result_dict['result']) {
+	      result_dict['msg'] = "has Passed";
+        } else {
+	      result_dict['msg'] = "has Failed";
+        }
+}
+
 function newAddress() {
     let newAcc = web3.personal.newAccount("1");
     web3.personal.unlockAccount(newAcc, "1", 1000);
