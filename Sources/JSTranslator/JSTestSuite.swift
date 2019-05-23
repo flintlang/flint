@@ -160,9 +160,21 @@ public class JSTranslator {
             case .functionDeclaration(let fdec):
                 //
                 let fT = FunctionTranslator(jst: self)
-                if let fnc = fT.translate(funcDec: fdec) {
+                let (jsFnc, errors) = fT.translate(funcDec: fdec)
+                
+                if errors.count > 0 {
+                    var error = ""
+                    for e in errors {
+                        error += e.lightRed.bold + "\n"
+                    }
+                    print(error)
+                    exit(0)
+                }
+                
+                if let fnc = jsFnc {
                     JSTestFuncs.append(fnc)
                 }
+                
             default:
                 continue
             }
