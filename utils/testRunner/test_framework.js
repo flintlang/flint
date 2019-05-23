@@ -9,11 +9,8 @@ const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 // add checks to see if test net is operating
-// this failed
-console.log("the personal api failed");
 const defaultAcc = eth.accounts[3];
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
-console.log("the personal api failed");
 web3.eth.defaultAccount = defaultAcc;
 
 function setAddr(addr) {
@@ -35,7 +32,6 @@ async function deploy_contract(abi, bytecode) {
       from:defaultAcc,
       data:bytecode,
       gas:gasEstimate}, function(err, contract){
-       console.log(err);
        if(!err) {
           if(!contract.address) {
               // transaction sent for contract deployment
@@ -60,8 +56,6 @@ async function check_tx_mined(tx_hash) {
 async function transactional_method(contract, methodName, args, hyperparam) {
     var tx_hash = await new Promise(function(resolve, reject) {
         contract[methodName]['sendTransaction'](...args, function(err, result) {
-	    console.log(methodName);
-	    console.log(err);
             resolve(result);
         });
     });
@@ -212,7 +206,6 @@ function produce_fail_msg(name) {
     
 }
 
-
 function process_test_result(res, test_name) {
     if (res['result'])
     {
@@ -221,5 +214,4 @@ function process_test_result(res, test_name) {
         produce_fail_msg(test_name)
     }
 }
-
 
