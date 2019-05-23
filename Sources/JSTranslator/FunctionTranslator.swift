@@ -383,7 +383,7 @@ public class FunctionTranslator {
         
         var contractEventInfo : ContractEventInfo? = nil
         if fName.contains("assertEventFired") {
-            if let eventInfo = jst.contractEventInfo[funcArgs[0].description] {
+            if let eventInfo = jst.contractEventInfo[funcArgs[0].description.replacingOccurrences(of: "\"", with: "")] {
                 contractEventInfo = eventInfo
             } else {
                 error_array.append("The event " + funcArgs[0].description + " does not exist at \(fCall.sourceLocation)")
