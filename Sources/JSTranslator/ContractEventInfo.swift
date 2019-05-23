@@ -12,6 +12,10 @@ public struct ContractEventInfo {
     public func create_event_arg_object(args : [JSNode]) throws -> String {
         
         var res_dict : [String : String] = [:]
+        
+        if args.count == 0 {
+            return "{}"
+        }
      
         if args.count != event_args.count {
             print("Incorrect number of arguments passed as an argument for event filter")
