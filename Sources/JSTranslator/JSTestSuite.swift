@@ -14,7 +14,7 @@ public class JSTranslator {
     public var contractFunctionNames : [String]
     public var contractFunctionInfo : [String : ContractFuncInfo]
     public var contractEventInfo : [String : ContractEventInfo]
-    public static let callerOrStateFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired"]
+    public static let callerOrStateFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired", "assertWillThrow"]
     public static let genericAsserts = ["assertEqual"]
     public static let utilityFuncs = ["newAddress", "setAddr", "unsetAddr"]
     public static let allFuncs = JSTranslator.callerOrStateFuncs + JSTranslator.genericAsserts + JSTranslator.utilityFuncs
@@ -63,6 +63,9 @@ public class JSTranslator {
         
         let assertCantCallInThisState = ContractFuncInfo(resultType: "nil", payable: false)
         self.contractFunctionInfo["assertCantCallInThisState"] = assertCantCallInThisState
+        
+        let assertWillThrow = ContractFuncInfo(resultType: "nil", payable: false)
+        self.contractFunctionInfo["assertWillThrow"] = assertWillThrow
     }
     
     public func getFilePathToFlintContract() -> String {
