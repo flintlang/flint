@@ -165,7 +165,7 @@ public class JSTranslator {
                 if errors.count > 0 {
                     var error = ""
                     for e in errors {
-                        error += e.lightRed.bold + "\n"
+                        error += e.lightRed.bold + "\n\n"
                     }
                     print(error)
                     exit(0)
