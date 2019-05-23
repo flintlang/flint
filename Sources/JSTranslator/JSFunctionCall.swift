@@ -40,7 +40,7 @@ public class JSFunctionCall : CustomStringConvertible {
             return ""
         }
         var desc = "await transactional_method(t_contract, \'testFrameworkConstructor\', "
-        desc += "[" + create_arg_list() + "]" + ")"
+        desc += "[" + create_arg_list() + "]" + ", {})"
         return desc
     }
     
