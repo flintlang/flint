@@ -1,1 +1,1 @@
-/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/block/go-ethereum/build/bin/geth --datadir . --networkid 777 --rpc --rpcapi="eth,web3,personal,miner,net,debug" --gasprice 0 --allow-insecure-unlock
+geth --datadir . --networkid 777 --rpc --rpcapi="eth,web3,personal,miner,net,debug" --gasprice 0 
