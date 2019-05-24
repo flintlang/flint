@@ -8,9 +8,11 @@ Flint is still in **alpha development**, and is not ready to be used in producti
 
 Medium article: [Flint: A New Language for Safe Smart Contracts on Ethereum](https://medium.com/@fschrans/flint-a-new-language-for-safe-smart-contracts-on-ethereum-a5672137a5c7)
 
-Academic paper: [Writing Safe Smart Contracts in Flint](https://www.doc.ic.ac.uk/~fs2014/flint.pdf)
+Programmin 2018! paper: [Writing Safe Smart Contracts in Flint](https://dl.acm.org/citation.cfm?doid=3191697.3213790)
 
-Between October 2018 and January 2019, Flint was developed as part of an [Imperial College Department of Computing](https://www.doc.ic.ac.uk) 362 group project. A [presentation](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Presentation.pdf) and [report](https://github.com/flintlang/flint/tree/b91d1302b839d7fda5fc8132c538084c3c6a0fd7/docs/pdf/2018-362-Report.pdf) detailing the development were produced.
+Current working paper: [Flint for Safer Smart Contracts](https://arxiv.org/abs/1904.06534)
+
+Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdf) and the codebase is [here](https://github.com/flintlang/flint).
 
 ## Language Overview
 
