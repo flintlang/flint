@@ -36,9 +36,49 @@ public class CoverageProvider {
         counts["statements"] = statementCount
         counts["branch"] = branchNumberCount
         
-        let json = String(data: try! JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
+        do {
+            let data = try JSONSerialization.data(withJSONObject: statememtDict, options: [])
+            let json_statement_dict = String(data: data , encoding: .utf8)!
+            try json_statement_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/statements.json"), atomically: true, encoding: .utf8)
+        } catch {
+            print(error)
+            print("failed to write statements.json")
+        }
         
-        try! json.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json"), atomically: true, encoding: .utf8)
+        do {
+            let json_branch_dict = String(data: try JSONSerialization.data(withJSONObject: branchDict, options: []), encoding: .utf8)!
+            try json_branch_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/branch.json"), atomically: true, encoding: .utf8)
+        } catch (let e) {
+            print(e)
+            print("failed to write branch.json")
+        }
+        
+        do {
+            let json_function_dict = String(data: try JSONSerialization.data(withJSONObject: functionDict, options: []), encoding: .utf8)!
+            try json_function_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function.json"), atomically: true, encoding: .utf8)
+            
+        } catch (let e) {
+            print(e)
+            print("failed to write function.json")
+        }
+        
+        do {
+            let json_function_to_line_no = String(data: try JSONSerialization.data(withJSONObject: functionToLineNo, options: []), encoding: .utf8)!
+            try json_function_to_line_no.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function_to_line.json"), atomically: true, encoding: .utf8)
+    
+        } catch (let e) {
+            print(e)
+            print("failed to write function_to_line.json")
+            
+        }
+        
+        do {
+              let json = String(data: try JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
+              try json.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json"), atomically: true, encoding: .utf8)
+        } catch (let e) {
+            print(e)
+            print("failed to write counts.json")
+        }
         
         return TopLevelModule(declarations: new_decs)
     }
