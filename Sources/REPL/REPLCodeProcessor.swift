@@ -89,6 +89,19 @@ public class REPLCodeProcessor {
                 let resType = rC!.getResultType(fnc: fCall.identifier.name)
                 return (res, resType)
             }
+            
+        case .identifier(let i):
+            let name = i.name
+            if let ev = rC!.getEventInfo(eventName: name) {
+                if let res = rC!.getEventLogs(instance: variableName, eventName: name) {
+                    return (res, "nil")
+                } else {
+                    print("Could not process logs for event \(name)".lightRed.bold)
+                    return nil
+                }
+            } else {
+               print("\(name) is not a member of contract \(variableName)".lightRed.bold)
+            }
         default:
             print("Not supported yet")
         }
@@ -150,7 +163,18 @@ public class REPLCodeProcessor {
             } else {
                 print("Variable \(i.name) not in scope".lightRed.bold)
             }
-            
+        case .functionCall(let fc):
+            print("NOT IMPLEMENTED YET".lightRed.bold)
+            if fc.identifier.name == "newAddress" {
+    
+                // run generate new address
+                // return new address with associated type
+                
+                return ("addr", "Address")
+                
+            } else {
+                print("Function \(fc.identifier.name) not in scope".lightRed.bold)
+            }
         case .literal(let li):
             switch (li.kind) {
             case .literal(let lit):

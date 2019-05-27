@@ -34,6 +34,55 @@ public class REPLContract{
         loadContract()
     }
     
+    public func getEventInfo(eventName : String) -> ContractEventInfo? {
+        if let ev = contractEventInfo[eventName] {
+            return ev
+        }
+        
+        return nil
+    }
+    
+    public func getEventLogs(instance: String, eventName : String) -> String? {
+        let abi = self.abi
+        let addr = self.instanceToAddress[instance]!
+        let eventName = eventName
+        
+        guard let eventInfo = contractEventInfo[eventName] else {
+            print("Event \(eventName) was not found in contract \(contractName)".lightRed.bold)
+            return nil
+        }
+        
+        let event_args = eventInfo.getArgs()
+        
+        var eventArgNames: [String] = []
+        var eventArgToTypes : [String : String] = [:]
+        
+        for earg in event_args {
+            eventArgNames.append(earg.0)
+            eventArgToTypes[earg.0] = earg.1
+        }
+        
+        let json_event_arg_names : String = String(data: try! JSONSerialization.data(withJSONObject: eventArgNames, options: []), encoding: .utf8)!
+        
+
+        let json_event_arg_to_types : String = String(data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
+        
+        let p = Process()
+        p.launchPath = "/usr/bin/env"
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.arguments = ["node", "event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
+        p.launch()
+        p.waitUntilExit()
+        
+        let result_file_path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/event_result.txt"
+        if let res = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) {
+            return res
+        }
+        
+
+        return nil
+
+    }
     public func getContractName() -> String {
         return contractName
     }
