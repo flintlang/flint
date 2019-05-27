@@ -131,7 +131,8 @@ async function transactional_method_int(contract, methodName, args, hyperparam) 
 }
 
 function call_method_string(contract, methodName, args) {
-    return contract[methodName]['call'](...args);
+    var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
+    return value 
 }
 
 function call_method_int(contract, methodName, args) {
