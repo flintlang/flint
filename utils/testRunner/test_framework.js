@@ -118,7 +118,7 @@ async function transactional_method_void(contract, methodName, args, hyperparam)
 
 async function transactional_method_string(contract, methodName, args, hyperparam) {
     var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
-    var value = web3.toAscii(contract[methodName]['call'](...args));
+    var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
 
     return {tx_hash: tx_hash, rVal: value};
 }
