@@ -26,15 +26,12 @@ public class REPL {
             exit(0)
         }
 
-        
-        
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
         p.arguments = ["node", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
- 
  
         let contractJsonFilePath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/contract.json"
         
@@ -75,6 +72,10 @@ public class REPL {
             var flintType = ""
             if argType == "uint256" {
                 flintType = "Int"
+            } else if argType == "bytes32" {
+                flintType = "String"
+            } else if argType == "address" {
+                flintType = "Address"
             } else {
                 flintType = argType
             }
