@@ -9,6 +9,10 @@ public struct ContractEventInfo {
         self.event_args = event_args
     }
     
+    public func getArgs() -> [(String,String)] {
+        return event_args
+    }
+    
     public func create_event_arg_object(args : [JSNode]) throws -> String {
         
         var res_dict : [String : String] = [:]
