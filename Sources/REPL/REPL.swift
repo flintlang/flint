@@ -51,7 +51,7 @@ public class REPL {
         
         return nil
     }
-    
+        
     public func queryVariableMap(variable : String) -> REPLVariable? {
         if let rVar = variableMap[variable] {
             return rVar
@@ -114,7 +114,11 @@ public class REPL {
                 if isConstant {
                     abi_pretty_funcs.append(funcSignature.lightWhite + " (Constant)".lightCyan.bold)
                 } else {
-                    abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating)".lightYellow.bold)
+                    if payable {
+                        abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating, Payable)".lightYellow.bold)
+                    } else {
+                        abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating)".lightYellow.bold)
+                    }
                 }
             }
         }
