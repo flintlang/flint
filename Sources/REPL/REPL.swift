@@ -29,7 +29,7 @@ public class REPL {
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
-        p.arguments = ["node", "compile_contract.js"]
+        p.arguments = ["node", "--no-warnings", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
  
