@@ -73,14 +73,14 @@ public class REPLCodeProcessor {
                     rC = rContract
                     variableName = i.name
                 } else {
-                    print("Variable is not mapped to a contract")
+                    print("Variable is not mapped to a contract".lightRed.bold)
                     return nil
                 }
             } else {
-                print("Variable \(i.name) not in scope")
+                print("Variable \(i.name) not in scope".lightRed.bold)
             }
         default:
-            print("Only identifiers are allowed on the LHS of a dot expression")
+            print("Only identifiers are allowed on the LHS of a dot expression".lightRed.bold)
         }
         
         switch (expr.rhs) {
