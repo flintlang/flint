@@ -31,17 +31,17 @@ async function check_tx_mined(tx_hash) {
 
 
 async function transactional_method(contract, methodName, args, hyperparam) { 
-    let gasEstimate = contract[methodName].estimateGas(...args);  
-    let transactionFee = gasEstimate * web3.eth.gasPrice + hyperparam.value;
-
     var tx_hash;
     if ("value" in hyperparam) {
+	    let gasEstimate = contract[methodName].estimateGas(...args);  
+	    let transactionFee = gasEstimate * web3.eth.gasPrice + hyperparam.value;
 
 	    tx_hash = await new Promise(function(resolve, reject) {
 		contract[methodName]['sendTransaction'](...args, {value: transactionFee,  gasPrice: web3.eth.gasPrice, gas:gasEstimate}, function(err, result) {
 		    if (!err) {
 		        resolve(result);
 		    } else {
+			console.log(err);
 			resolve("ERROR:" + err);
 		    }
 		});
@@ -89,7 +89,7 @@ async function transactional_method_void(contract, methodName, args, hyperparam)
     if (!(tx_hash.includes("ERROR"))) {
 	    let isReverted = isRevert(tx_hash);
 	    if (isReverted) {
-		    tx_hash = "reverted transaction";
+		    tx_hash = "reverted transaction " + tx_hash;
 	    }
     }
       
