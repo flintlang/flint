@@ -77,7 +77,10 @@ async function main() {
 		res += entry + ", \n";
 	});
 
-	res += "}";
+	res += "}\n";
+
+	res += "Fired: " + evs_for_repl.length + "\n";
+
 
 	fs.writeFileSync("event_result.txt", res);
 } 
