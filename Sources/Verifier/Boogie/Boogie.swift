@@ -5,7 +5,10 @@ struct Boogie {
                            printVerificationOutput: Bool) -> [BoogieError] {
     let tempBoogieFile = Boogie.writeToTempFile(data: boogie)
     let (uncheckedOutput, terminationStatus) = Boogie.executeTask(executable: monoLocation,
-                                                                   arguments: [boogieLocation, tempBoogieFile.path])
+                                                                   arguments: [boogieLocation,
+                                                                     tempBoogieFile.path,
+                                                                     "/inline:spec" // Boogie procedure inlining
+                                                                   ])
     guard let output = uncheckedOutput else {
       print("Error during verification, could not decode verifier output")
       fatalError()

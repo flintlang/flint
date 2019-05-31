@@ -190,6 +190,8 @@ struct BProcedureDeclaration {
   let variables: Set<BVariableDeclaration>
   let ti: TranslationInformation
 
+  private let procedureInlineDepth: Int = 10
+
   func render() -> (String, SourceMapping) {
     let parameterString = parameters.map({(x) -> String in return x.description}).joined(separator: ", ")
     let modifiesString = modifies.reduce("", {x, y in "\(x)\n\(y)"})
@@ -232,7 +234,7 @@ struct BProcedureDeclaration {
                                      .union(Set([ti]))
 
     let procedureString =  """
-    procedure \(name)(\(parameterString))\(returnString)
+    procedure {:inline \(procedureInlineDepth)} \(name)(\(parameterString))\(returnString)
       // Pre Conditions
       \(preString)
       // Post Conditions
