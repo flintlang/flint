@@ -135,7 +135,7 @@ extension Compiler {
 // MARK: - TestingFramework Compiler hooks
 extension Compiler {
     
-    private static func createConstructor(constructor : SpecialDeclaration) -> FunctionDeclaration? {
+    private static func createConstructor(constructor : SpecialDeclaration, enclosingType: String) -> FunctionDeclaration? {
         
         if (!(constructor.signature.specialToken.kind == .init)) {
             return nil
@@ -149,8 +149,15 @@ extension Compiler {
         sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
         let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
         let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "testFrameworkConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
-        let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken)
+        var newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken, scopeContext: constructor.scopeContext)
         
+        let parameters = newFunc.signature.parameters.rawTypes
+        let name = Mangler.mangleFunctionName(newFunc.identifier.name,
+                                              parameterTypes: parameters,
+                                              enclosingType: enclosingType)
+        newFunc.mangledIdentifier = name
+
+    
         return newFunc
     }
     
@@ -170,7 +177,7 @@ extension Compiler {
                 for cm in cbdec.members {
                     switch (cm) {
                     case .specialDeclaration(let spdec):
-                        if let constructorFunc = createConstructor(constructor: spdec) {
+                        if let constructorFunc = createConstructor(constructor: spdec, enclosingType: cbdec.contractIdentifier.name) {
                             let cBeh : ContractBehaviorMember = .functionDeclaration(constructorFunc)
                             mems.append(cBeh)
                             mems.append(.specialDeclaration(spdec))
@@ -225,12 +232,9 @@ extension Compiler {
     }
     
     
-    public static func compile_for_test(config : CompilerTestFrameworkConfiguration, in_ast : TopLevelModule) throws {
+    public static func compile_for_test(config : CompilerTestFrameworkConfiguration, in_ast : TopLevelModule, environment: Environment) throws {
         
-        let ast = insertConstructorFunc(ast: in_ast)
-        
-        let p = Parser(ast: ast)
-        let environment = p.getEnv()
+        var ast = in_ast
         
         // Run all of the passes. (Semantic checks)
         let passRunnerOutcome = ASTPassRunner(ast: ast)
@@ -245,8 +249,10 @@ extension Compiler {
             exit(0)
         }
         
+        ast = insertConstructorFunc(ast: passRunnerOutcome.element)
+        
         // Generate YUL IR code.
-        let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+        let irCode = IRCodeGenerator(topLevelModule: ast, environment: passRunnerOutcome.environment)
             .generateCode()
         
         // Compile the YUL IR code using solc.
