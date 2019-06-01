@@ -20,10 +20,11 @@ public class JSTranslator {
     public static let allFuncs = JSTranslator.callerOrStateFuncs + JSTranslator.genericAsserts + JSTranslator.utilityFuncs
     
     private let firstHalf : String
+    private let coverage : Bool
 
 
     // creates the JSTestSuite class
-    public init(ast: TopLevelModule) {
+    public init(ast: TopLevelModule, coverage: Bool = false) {
         self.contractName = ""
         self.filePath = ""
         self.testSuiteName = ""
@@ -35,6 +36,7 @@ public class JSTranslator {
         let path_to_test_framework = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_framework.js")
         self.firstHalf = try! String(contentsOf: path_to_test_framework)
         self.ast = ast
+        self.coverage = coverage
         loadLibraryFuncs()
         loadTestContractVars()
     }
@@ -135,7 +137,7 @@ public class JSTranslator {
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
-                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
+                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable || self.coverage
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
                         resultTypeVal = resultType.name

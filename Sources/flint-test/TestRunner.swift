@@ -41,7 +41,7 @@ struct TestRunner {
         }
         
         // create a JSTestSuite
-        let jsTestSuite = JSTranslator(ast: parserAST!)
+        let jsTestSuite = JSTranslator(ast: parserAST!, coverage: coverage)
         
         // extract the flint contract which is being tested
         let pathToFlintContract = jsTestSuite.getFilePathToFlintContract()
