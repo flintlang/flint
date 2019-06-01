@@ -41,7 +41,7 @@ public struct FunctionDeclaration: ASTNode {
   }
 
   public var isMutating: Bool {
-    return signature.mutates.filter({ $0.enclosingType == nil || $0.enclosingType == self.name }).count > 0
+    return signature.mutates.count > 0
   }
 
   public var mutates: [Identifier] {
