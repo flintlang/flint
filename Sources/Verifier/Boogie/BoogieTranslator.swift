@@ -192,6 +192,67 @@ class BoogieTranslator {
       )
     )
 
+    // Add global power function
+    // eg. power(n, e)
+    //function power(n: int, e: int) returns (i: int);
+    //axiom (forall n: int :: power(n, 0) == 1);
+    //axiom (forall n, e: int :: (e mod 2 == 0 && e > 0) ==> (power(n, e) == power(n, e div 2)*power(n, e div 2)));
+    //axiom (forall n, e: int :: (e mod 2 == 1 && e > 0) ==> (power(n, e) == power(n, (e-1) div 2) * power(n, (e-1) div 2)*n));
+
+
+    declarations.append(.functionDeclaration(BFunctionDeclaration(
+      name: "power",
+      returnType: .int,
+      returnName: "result",
+      parameters: [BParameterDeclaration(name: "n", rawName: "n", type: .int),
+                   BParameterDeclaration(name: "e", rawName: "e", type: .int)]
+    )))
+
+    let powerBaseCase: BExpression = .quantified(.forall,
+                                                 [BParameterDeclaration(name: "n", rawName: "n", type: .int)],
+                                                 .equals(.functionApplication("power", [
+                                                                                .identifier("n"),
+                                                                                .integer(0)
+                                                                              ]),
+                                                         .integer(1)))
+    let powerRecursiveCaseEven: BExpression =
+    .quantified(.forall, [BParameterDeclaration(name: "n", rawName: "n", type: .int),
+                          BParameterDeclaration(name: "e", rawName: "e", type: .int) ],
+                .implies(
+                  .and(.greaterThan(.identifier("e"), .integer(0)),
+                       .equals(.modulo(.identifier("e"), .integer(2)), .integer(0))),
+                  .equals(.functionApplication("power", [
+                                                 .identifier("n"),
+                                                 .identifier("e")
+                                               ]),
+                          .multiply(.functionApplication("power", [
+                                                         .identifier("n"),
+                                                         .divide(.identifier("e"), .integer(2))]),
+                                    .functionApplication("power", [
+                                                         .identifier("n"),
+                                                         .divide(.identifier("e"), .integer(2))])))))
+    let powerRecursiveCaseOdd: BExpression =
+    .quantified(.forall, [BParameterDeclaration(name: "n", rawName: "n", type: .int),
+                          BParameterDeclaration(name: "e", rawName: "e", type: .int) ],
+                .implies(
+                  .and(.greaterThan(.identifier("e"), .integer(0)),
+                       .equals(.modulo(.identifier("e"), .integer(2)), .integer(1))),
+                  .equals(.functionApplication("power", [
+                                                 .identifier("n"),
+                                                 .identifier("e")
+                                               ]),
+                          .multiply(.multiply(.functionApplication("power", [
+                                                         .identifier("n"),
+                                                         .divide(.subtract(.identifier("e"), .integer(1)), .integer(2))]),
+                                              .functionApplication("power", [
+                                                                   .identifier("n"),
+                                                                   .divide(.subtract(.identifier("e"), .integer(1)), .integer(2))])),
+                                    .identifier("n")))))
+
+    declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerBaseCase)))
+    declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerRecursiveCaseEven)))
+    declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerRecursiveCaseOdd)))
+
     var structInvariants = [BIRInvariant]()
     for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
       self.currentTLD = .structDeclaration(structDeclaration)

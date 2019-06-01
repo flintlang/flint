@@ -482,14 +482,15 @@ extension BoogieTranslator {
       return (.multiply(lhsExpr, rhsExpr), preStmts, postStmts)
     case .divide:
       return (.divide(lhsExpr, rhsExpr), preStmts, postStmts)
+    case .overflowingPlus:
+      return (.modulo(.add(lhsExpr, rhsExpr), .integer(BigUInt(2).power(256))), preStmts, postStmts)
+    case .overflowingMinus:
+      return (.modulo(.subtract(lhsExpr, rhsExpr), .integer(BigUInt(2).power(256))), preStmts, postStmts)
+    case .overflowingTimes:
+      return (.modulo(.multiply(lhsExpr, rhsExpr), .integer(BigUInt(2).power(256))), preStmts, postStmts)
 
-    //TODO Handle unsafe operators
-    //case .overflowingPlus:
-    //case .overflowingMinus:
-    //case .overflowingTimes:
-
-    //TODO: Handle power operator
-    //case .power:
+    case .power:
+      return (.functionApplication("power", [lhsExpr, rhsExpr]), preStmts, postStmts)
 
     // Comparisons
     case .doubleEqual:
