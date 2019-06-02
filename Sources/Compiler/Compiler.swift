@@ -232,9 +232,12 @@ extension Compiler {
     }
     
     
-    public static func compile_for_test(config : CompilerTestFrameworkConfiguration, in_ast : TopLevelModule, environment: Environment) throws {
+    public static func compile_for_test(config : CompilerTestFrameworkConfiguration, in_ast : TopLevelModule) throws {
         
         var ast = in_ast
+        
+        let p = Parser(ast: ast)
+        let environment = p.getEnv()
         
         // Run all of the passes. (Semantic checks)
         let passRunnerOutcome = ASTPassRunner(ast: ast)
