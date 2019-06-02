@@ -255,7 +255,7 @@ public class JSTranslator {
         var counter: Int = 0
         for tFnc in JSTestFuncs {
             fnc += "    let depContract_\(counter) = await deploy_contract(abi, bytecode); \n"
-            fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \" + depContract_\(counter).address); \n"
+            fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \" + depContract_\(counter).address + \"\\n\"); \n"
             fnc += "    await "  + tFnc.getFuncName() + "(depContract_\(counter)) \n"
             counter += 1
         }

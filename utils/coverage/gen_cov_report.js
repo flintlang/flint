@@ -85,8 +85,12 @@ async function main() {
 
 	var i;
 	for (i = 0; i < addresses.length; i++) {
-		let addr = addresses[i].split(":")[1].trim()
-		await get_events(abi, addr, res, found_counts);
+		if (addresses[i] === "") {
+
+		} else {
+			let addr = addresses[i].split(":")[1].trim()
+			await get_events(abi, addr, res, found_counts);
+		}
 	}
 
 	let da_records = []
@@ -107,6 +111,7 @@ async function main() {
 	});
 
 	let function_to_line = JSON.parse(fs.readFileSync("function_to_line.json").toString());
+
 
 	Object.entries(function_to_line).forEach(function(entry) {
 		fn_name_records.push("FN:" + entry[1] + ", " + entry[0]);
