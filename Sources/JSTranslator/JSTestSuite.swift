@@ -115,8 +115,15 @@ public class JSTranslator {
             let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath), isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
             let (_, environment, _) = Parser(tokens: tokens).parse()
             
-            let contractFunctions = environment.types[self.contractName]!.allFunctions
-            let contractEvents = environment.types[self.contractName]!.allEvents
+            
+            guard let envTypes = environment.types[self.contractName] else {
+                print("Could not load information about contract \(self.contractName)".lightRed.bold)
+                exit(0)
+            }
+            
+            let contractFunctions = envTypes.allFunctions
+            
+            let contractEvents = envTypes.allEvents
             
             // process contract event information
             for (eventName, allEventsWithName) in contractEvents {
