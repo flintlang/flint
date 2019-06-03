@@ -77,7 +77,8 @@ public class REPLCodeProcessor {
                     return nil
                 }
             } else {
-                print("Variable \(i.name) not in scope".lightRed.bold)
+                print("Variable \(i.name) not in scope in dot expr".lightRed.bold)
+                return nil
             }
         default:
             print("Only identifiers are allowed on the LHS of a dot expression".lightRed.bold)
