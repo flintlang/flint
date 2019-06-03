@@ -9,6 +9,11 @@ const defaultAcc = web3.personal.newAccount("1");
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
+
+function log(data) {
+	fs.appendFileSync("log_event.txt", data + "\n")
+}
+
 async function deploy_contract(abi, bytecode) {
     let gasEstimate = eth.estimateGas({data: bytecode});
     let localContract = eth.contract(JSON.parse(abi));
@@ -31,9 +36,15 @@ async function deploy_contract(abi, bytecode) {
 function getVal(value, type) {
 	if (type === "Int" || type === "Wei") {
 		return value.toNumber();
-	} else (type == "String" || type == "Address") 
+	} else if (type == "String" || type == "Address") 
 	{
               return ((web3.toAscii(value))).replace(/\0/g, '').trim();
+	} else if (type == "Bool") {
+		if (value == 0) {
+			return "false"
+		} else {
+			return "true"
+		}
 	}
 }
 
@@ -48,6 +59,7 @@ async function getEvents(contract, eventName, event_args) {
 
 
 async function main() {
+	fs.writeFileSync("log_event.txt", "");
 	let abi = process.argv[2]; 
 	let address  = process.argv[3].trim();
 	address = "" + address + ""; 
