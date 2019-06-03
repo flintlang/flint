@@ -27,7 +27,8 @@ public struct Compiler {
     Optimizer(),
     TraitResolver(),
     FunctionCallCompleter(),
-    CallGraphGenerator()]
+    CallGraphGenerator(),
+    ConstructorPreProcessor()]
 
   private static func exitWithFailure() -> Never {
     print("Failed to compile.")
