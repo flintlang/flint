@@ -5,6 +5,8 @@ contract Bank {
   var accounts: [Address]
   var lastIndex: Int = 0
 
+  invariant (lastIndex == accounts.size)
+
   var totalDonations: Wei
 
   event didCompleteTransfer (from: Address, to: Address, value: Int)

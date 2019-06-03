@@ -45,7 +45,7 @@ while True:
     print_failing_selection(failing_contracts + other_options)
 
     rawInput = input("Enter # to debug: ")
-    if len(rawInput) == 0:
+    if len(rawInput) == 0: # No input
         continue
     selection = int(rawInput)
 
@@ -55,7 +55,7 @@ while True:
         if dump_std_err:
             print(stderr)
     else:
-        selection %= len(failing_contracts)
+        selection %= (len(failing_contracts) or 1)
         if selection == 0:
             failing_contracts = run_verifier()
         elif selection == 1:

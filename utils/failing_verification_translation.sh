@@ -6,7 +6,7 @@ SUCCESS=0
 FAILURES=0
 FAILED=""
 
-for flintFile in `find . -not -path '*/\.*' -not -path './examples/future*' -not -path './examples/invalid*' -path './examples/*' -name *.flint`; do
+for flintFile in `find . -not -path '*/\.*' -not -path './examples/future*' -not -path './examples/invalid*' -path './examples/*' -name '*.flint'`; do
   $exe -g $flintFile >&2
   if [ $? -eq 0 ]
   then
