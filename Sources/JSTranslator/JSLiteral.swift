@@ -13,7 +13,11 @@ public enum JSLiteral : CustomStringConvertible {
         case .Address(let s):
             return "\"" + s + "\""
         case .Bool(let b):
-            return b.description
+            if b.description == "true" {
+                return 1.description
+            } else {
+                return 0.description
+            }
         }
     }
     
