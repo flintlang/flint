@@ -198,7 +198,7 @@ public class CoverageProvider {
         
         self.blockNum += 1
         ifBody.append(branch_event(line: ifS.ifToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
-        addToBranchDict(line: ifS.sourceLocation.line, blockNum: self.blockNum, branchNum: self.branchNumberCount)
+        addToBranchDict(line: ifS.sourceLocation.line, blockNum: self.blockNum, branchNum: 0)
         if (!ifS.body.isEmpty) {
             ifBody.append(contentsOf: intstrument_statements(stmts: ifS.body))
         }
@@ -209,15 +209,15 @@ public class CoverageProvider {
         if (!ifS.elseBody.isEmpty) {
             elseBody.append(branch_event(line: ifS.elseBody[0].sourceLocation.line - 1, branch: 1, blockNum: self.blockNum))
             elseBody.append(contentsOf: intstrument_statements(stmts: ifS.elseBody))
-            addToBranchDict(line: (ifS.elseBody[0].sourceLocation.line - 1), blockNum: self.blockNum, branchNum: self.branchNumberCount)
+            addToBranchDict(line: (ifS.elseBody[0].sourceLocation.line - 1), blockNum: self.blockNum, branchNum: 1)
 
         } else {
             if (ifS.body.isEmpty) {
                 elseBody.append(branch_event(line: ifS.ifToken.sourceLocation.line + 2, branch: 1, blockNum: self.blockNum))
-                addToBranchDict(line: ifS.ifToken.sourceLocation.line + 2, blockNum: self.blockNum, branchNum: self.branchNumberCount)
+                addToBranchDict(line: ifS.ifToken.sourceLocation.line + 2, blockNum: self.blockNum, branchNum: 1)
             } else {
                 elseBody.append(branch_event(line: ifS.body[ifS.body.count - 1].sourceLocation.line + 1, branch: 1, blockNum: self.blockNum))
-                addToBranchDict(line: ifS.body[ifS.body.count - 1].sourceLocation.line + 1, blockNum: self.blockNum, branchNum: self.branchNumberCount)
+                addToBranchDict(line: ifS.body[ifS.body.count - 1].sourceLocation.line + 1, blockNum: self.blockNum, branchNum: 1)
             }
         }
      
@@ -271,7 +271,7 @@ public class CoverageProvider {
         self.branchNumberCount += 1
         var body : [Statement] = []
         body.append(branch_event(line: forS.forToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
-        addToBranchDict(line: forS.forToken.sourceLocation.line, blockNum: self.blockNum, branchNum: self.branchNumberCount)
+        addToBranchDict(line: forS.forToken.sourceLocation.line, blockNum: self.blockNum, branchNum: 0)
         body.append(contentsOf: intstrument_statements(stmts: forS.body))
   
         var instForStmt = ForStatement(forToken: forS.forToken, variable: forS.variable, iterable: forS.iterable, statements: body)
