@@ -39,7 +39,11 @@ public struct ContractEventInfo {
                 case .Address(let s):
                     res_dict[event_args[numOfArg].0] = s.description
                 case .Bool(let b):
-                    res_dict[event_args[numOfArg].0] = b.description
+                    if b.description == "true" {
+                       res_dict[event_args[numOfArg].0] = 1.description
+                    } else {
+                       res_dict[event_args[numOfArg].0] = 0.description
+                    }
                 }
             case .Variable(let va):
                 res_dict[event_args[numOfArg].0] = va.description
