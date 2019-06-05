@@ -130,9 +130,24 @@ async function transactional_method_int(contract, methodName, args, hyperparam) 
     return {tx_hash: tx_hash, rVal: value};
 }
 
+async function transactional_method_bool(contract, methodName, args, hyperparam) {
+    var tx_hash = await transactional_method(contract, methodName, args, hyperparam);
+    var value = contract[methodName]['call'](...args).toNumber();
+
+    return {tx_hash: tx_hash, rVal: value};
+}
+
 function call_method_string(contract, methodName, args) {
     var value = ((web3.toAscii(contract[methodName]['call'](...args))).replace(/\0/g, '')).trim();
     return value 
+}
+
+function call_method_void(contract, methodName, args) {
+    return contract[methodName]['call'](...args);
+}
+
+function call_method_bool(contract, methodName, args) {
+    return contract[methodName]['call'](...args).toNumber();
 }
 
 function call_method_int(contract, methodName, args) {
