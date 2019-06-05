@@ -11,7 +11,7 @@ enum BoogieError {
 
   // Syntax / semantic errors
   case modifiesFailure(String)
-  case genericFailure(String)
+  case genericFailure(String, Int)
 
   ////case callPreConditionFailure(Int, String)
   //case loopInvariantMaintenanceFailure(Int, String)

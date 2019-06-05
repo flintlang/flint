@@ -65,14 +65,14 @@ public class BoogieVerifier: Verifier {
     let functionalVerification = boogieErrors.count == 0
 
     // Check for inconsistent assumptions
-    let inconsistentAssumptions = BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
-                                                                monoLocation: self.monoLocation,
-                                                                boogieLocation: self.boogieLocation).diagnose()
+    let inconsistentAssumptions = !functionalVerification ? [] : BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
+                                                                                               monoLocation: self.monoLocation,
+                                                                                               boogieLocation: self.boogieLocation).diagnose()
 
     // Check for unreachable code
-    let unreachableCode = BoogieUnreachableCode(boogie: translation.functionalProgram,
-                                                monoLocation: self.monoLocation,
-                                                boogieLocation: self.boogieLocation).diagnose()
+    let unreachableCode = !functionalVerification ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
+                                                                               monoLocation: self.monoLocation,
+                                                                               boogieLocation: self.boogieLocation).diagnose()
 
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
@@ -263,8 +263,12 @@ public class BoogieVerifier: Verifier {
       case .modifiesFailure(let line):
         print("Missing modifies clause: \(line)")
 
-      case .genericFailure(let line):
-        print("Boogie error: \(line)")
+      case .genericFailure://_, let line):
+        //let ti = lookupTranslationInformation(line: line, mapping: b2fSourceMapping)
+        flintErrors.append(Diagnostic(severity: .error,
+                                      sourceLocation: SourceLocation.INVALID,
+                                      message: "Flint to Boogie translation error. Unsupported construct used."))
+        //print("Boogie error: \(string)")
 
     //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
     //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {

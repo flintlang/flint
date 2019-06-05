@@ -67,8 +67,9 @@ class BoogieInconsistentAssumptions {
 
       default:
         // Should only see assertion failures - not calling other functions
-        print("Unhandled boogie failure type - inconsistent assumptions")
-        fatalError()
+        //print("Unhandled boogie failure type - inconsistent assumptions")
+        //fatalError()
+        break
       }
     }
 

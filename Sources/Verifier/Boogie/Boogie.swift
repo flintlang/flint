@@ -83,7 +83,8 @@ struct Boogie {
         if line.contains("modifies clause") {
           nonVerificationErrors.append(.modifiesFailure(line))
         } else {
-          nonVerificationErrors.append(.genericFailure(line))
+          nonVerificationErrors.append(.genericFailure(line,
+                                                       Boogie.parseErrorLineNumber(line: matches[0][0])))
         }
       }
     }
