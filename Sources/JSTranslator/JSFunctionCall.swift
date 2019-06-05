@@ -122,10 +122,12 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "Address") {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Bool") {
+                    fCall = "call_method_bool(t_contract, " + "'" + self.functionName + "'"
                 } else {
-                    print("Calling a constant function with no return type, this is not allowed".lightRed.bold)
-                    print("Function: \(self.functionName)".lightRed.bold)
-                    exit(0)
+                    print("WARNING: Calling a constant function with no return type".lightYellow.bold)
+                    print("Function: \(self.functionName)".lightYellow.bold)
+                    fCall = "call_method_void(t_contract, " + "'" + self.functionName + "'"
                 }
 
                 if args.count > 0 {
