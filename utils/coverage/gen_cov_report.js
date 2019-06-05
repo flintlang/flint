@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path'); 
-const { execSync } = require('child_process')
+const { execSync } = require('child_process') 
 const solc = require('solc');
 const chalk = require('chalk');
 const web3 = new Web3();
@@ -30,7 +30,11 @@ function process_stmc_event_logs(logs, result_dict, found_counts) {
 	logs.forEach(function(entry) {
 		let lineNo = entry.args["line"].toNumber();
 		if (lineNo in result_dict["DA"]) {
-			result_dict["DA"][lineNo] += 1
+			let curr_count = result_dict["DA"][lineNo];
+			if (curr_count === 0) {
+				found_counts["DA"] += 1	
+			}
+			result_dict["DA"][lineNo] += 1;
 		} 
 	});
 }
@@ -39,6 +43,10 @@ function process_funcC_event_logs(logs, result_dict, found_counts) {
 	logs.forEach(function(entry) {
 		let fncName = getString(entry.args["fName"]);
 		if (fncName in result_dict["functions"]) {
+			let curr_count = result_dict["functions"][fncName];
+			if (curr_count === 0) {
+				found_counts["functions"] += 1	
+			}
 			result_dict["functions"][fncName] += 1
 		} 
 	});
@@ -49,6 +57,10 @@ function process_branchC_event_logs(logs, result_dict, found_counts) {
 		let lineNo = entry.args["line"].toNumber();
 		let branchNum = entry.args["branch"].toNumber();
 		let blockNum = entry.args["blockNum"].toNumber();
+		let curr_count = result_dict["branch"][lineNo].count;
+		if (curr_count === 0) {
+			found_counts["branch"] += 1	
+		}
 		if (lineNo in result_dict["branch"]) {
 			result_dict["branch"][lineNo].count += 1
 		} 
