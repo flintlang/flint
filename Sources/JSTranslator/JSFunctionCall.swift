@@ -90,6 +90,8 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "Address") {
                     fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Bool") {
+                    fCall = "await transactional_method_bool(t_contract, " + "'" + self.functionName + "'"
                 } else {
                     fCall = "await transactional_method_void(t_contract, " + "'" + self.functionName + "'"
                 }
