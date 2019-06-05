@@ -240,11 +240,11 @@ public class FunctionTranslator {
         return nil
     }
     
-    private func process_func_call_args(args : [FunctionArgument]) -> [JSNode] {
+    private func process_func_call_args(args : [FunctionArgument], fncName: String = "") -> [JSNode] {
         
         var jsArgs : [JSNode] = []
         
-        for a in args {
+        for (i, a) in args.enumerated() {
             // create a JSNode for each of these but for now we will just do variables
             switch (a.expression)
             {
@@ -253,20 +253,20 @@ public class FunctionTranslator {
                 if let jsVar = varMap[i.name] {
                     jsArgs.append(.Variable(jsVar))
                 } else {
-                    error_array.append("Variable \(i.name) not in scope at \(i.sourceLocation)")
+                    error_array.append("Variable \(i.name) not in scope at \(i.sourceLocation) in function call \(fncName) at argument number \(i)")
                 }
             
             case .literal(let l):
                 if let lit = extract_literal(literalToken: l) {
                     jsArgs.append(lit)
                 } else {
-                    error_array.append("Invalid literal found at \(l.sourceLocation)")
+                    error_array.append("Invalid literal found at \(l.sourceLocation) in function call \(fncName) at argument number \(i)")
                 }
             case .binaryExpression(let be):
                 if let func_expr = process_binary_expression(binExp: be) {
                     jsArgs.append(func_expr)
                 } else {
-                    error_array.append("Invalid expression found in function call argument \(be) at \(be.sourceLocation)")
+                    error_array.append("Invalid expression found in function call \(fncName) at argument number \(i). Location: \(be.sourceLocation)")
                 }
             default:
                 break
