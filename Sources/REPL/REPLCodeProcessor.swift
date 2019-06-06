@@ -206,7 +206,6 @@ public class REPLCodeProcessor {
     
     private func process_arithmetic_expr(expr: BinaryExpression, op : REPLOperator) throws -> (String, String)? {
         
-     
         guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
             print("Could not process arithmetic expression".lightRed.bold)
             return nil
@@ -241,6 +240,41 @@ public class REPLCodeProcessor {
             return ((e1Int - e2Int).description, "Int")
         case .power:
             return ((e1Int ^ e2Int).description, "Int")
+        default:
+            print("Not an arithmetic operator".lightRed.bold)
+            return nil
+        }
+        
+    }
+    
+    private func process_logical_expr(expr: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
+        
+        guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
+            print("Could not process logical expression".lightRed.bold)
+            return nil
+        }
+        
+        guard let (e2, e2Type) = try process_expr(expr: expr.rhs) else {
+            print("Could not process logical expression".lightRed.bold)
+            return nil
+        }
+        
+        if e2Type != "Bool" || e1Type != "Bool" {
+            print("Invalid type passed to logical operation".lightRed.bold)
+            return nil
+        }
+
+        let e1ActualBool = e1 == "true"
+        let e2ActualBool = e2 == "true"
+        
+        switch (op) {
+        case .and:
+            return ((e1ActualBool && e2ActualBool).description, "Bool")
+        case .or:
+            return ((e2ActualBool || e2ActualBool).description, "Bool")
+        default:
+            print("Unsupported logical operator".lightRed.bold)
+            return nil
         }
         
     }
@@ -260,6 +294,14 @@ public class REPLCodeProcessor {
             return try process_arithmetic_expr(expr: expr, op: .divide)
         case .power:
             return try process_arithmetic_expr(expr: expr, op: .power)
+        case .and:
+            return try process_logical_expr(expr: expr, op: .and)
+        case .or:
+            return try process_logical_expr(expr: expr, op: .or)
+        case .notEqual:
+            print("not equal")
+        case .doubleEqual:
+            print("double equal")
         default:
             print("This expression is not supported: \(expr.description)".lightRed.bold)
         }
