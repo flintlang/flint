@@ -10,11 +10,12 @@ func main() {
         Flag("typestate information", flag:"t", description:"Information for typestates"),
         Flag("caller capability analysis", flag:"c", description:"Information for caller capabilites"),
         Flag("gas estimation", flag:"g", description:"gas estimation of contract and functions"),
+        Flag("function analysis", flag:"f", description:"run function analysis"),
         Flag("test harness", flag:"u", description:"run in test harness mode"),
         Argument<String> ("source code", description: "source code to verify"),
         Argument<String> ("file name", description: "file name")
     )
-    { typeStateDiagram, callerAnalysis, estimateGas, test_run, sourceCode, fileName in
+    { typeStateDiagram, callerAnalysis, estimateGas, fA, test_run, sourceCode, fileName in
         
         do {
             let a = Analyser(contractFile: fileName,
@@ -22,7 +23,8 @@ func main() {
                              estimateGas: estimateGas,
                              typeStateDiagram: typeStateDiagram,
                              callerCapabilityAnalysis: callerAnalysis,
-                             test_run: test_run)
+                             test_run: test_run,
+                             function_analysis: fA)
             try a.analyse()
             
         } catch let err {
@@ -32,17 +34,18 @@ func main() {
 }
 
 func main_d() throws {
-        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint"
+        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/state_test.flint"
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
     
         do {
              let a = Analyser(contractFile: fileName,
                          sourceCode: sourceCode,
-                         estimateGas: true,
+                         estimateGas: false,
                          typeStateDiagram: false,
                          callerCapabilityAnalysis: false,
-                         test_run: false)
+                         test_run: false,
+                         function_analysis: true)
              try a.analyse()
         
         } catch let err {
@@ -50,5 +53,5 @@ func main_d() throws {
         }
 }
 
-//try main_d()
-main()
+try main_d()
+//main()
