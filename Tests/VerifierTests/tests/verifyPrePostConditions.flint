@@ -1,6 +1,7 @@
 //VERIFY-CHECK
 contract VerifyPrePostConditions {
   var ten: Int = 10
+  var t: Int = 0
 
   invariant (10 == 10)
   invariant (ten == 10)
@@ -15,15 +16,21 @@ VerifyPrePostConditions :: (any) {
     assert (4 > 2)
   }
 
-  func testPostConditions()
-    post(1 == 1)
+  func testPostConditions(i: Int)
+    mutates (t, ten)
+
+    post(t == 3)
   {
+    self.ten -= i
+    self.t = 3
+    self.ten += i
   }
 
-  func testPrePostConditions()
-    pre (2 == 2)
-    post (1 == 1)
+  func testPrePostConditions(i: Int) -> Int
+    pre (i == 2)
+    post (returns 3)
   {
+    return i + 1
   }
 
   func testParamsPreConditions(input: Int, increment: Int)
@@ -33,32 +40,26 @@ VerifyPrePostConditions :: (any) {
     assert (input2 == 10 + increment)
   }
 
-  //VERIFY-WARNING
-  func testGlobals()
-    pre (ten == 5)
-  {
-    assert(ten != 10)
-  }
-
-  //VERIFY-WARNING
-  func testInconsistentPre()
-    pre (ten == 5)
-  {
-    // Pre condition contradicts what the invariant says
-    assert(false)
-  }
-
   func failPreCondition()
   {
+    testParamsPreConditions(input: 10, increment: 5)
+
     //VERIFY-FAIL
     testParamsPreConditions(input: 0, increment: 0)
   }
 
   //VERIFY-FAIL
-  func failPostCondition()
+  func failInvariant()
     mutates(ten)
-    post (ten == 10)
   {
     ten = 5
+  }
+
+  //VERIFY-FAIL
+  func failPost(i: Int)
+    mutates(t)
+    post (t == 4)
+  {
+    self.t = i
   }
 }

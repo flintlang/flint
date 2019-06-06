@@ -28,18 +28,21 @@ C :: (any) {
     assert (8 == 2 ** 2)
   }
 
-  func overflow()
+  func overflow1()
   {
     assert ((2 ** 255) &* 2 == 0)
     //VERIFY-FAIL
     assert ((2 ** 255) &* 3 == 0)
+  }
+
+  func overflow2()
+  {
+    assert (((2 ** 255) &+ (2**255)) == 0)
+    assert ((0 &- (2 ** 255)) == 2 ** 255)
     assert ((2 ** 255) &* 3 > 0)
     assert ((2 ** 255) * 2 == (2 ** 256))
     assert ((2 ** 255) &* 2 == 0)
+    //VERIFY-FAIL
     assert ((2 ** 255) &* 2 == 1)
-
-    assert (((2 ** 255) &+ (2**255)) == 0)
-
-    assert ((0 &- (2 ** 255)) == 2 ** 255)
   }
 }

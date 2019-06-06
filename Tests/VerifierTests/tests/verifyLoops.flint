@@ -20,6 +20,15 @@ struct L {
     }
   }
 
+  func assignmentLoop() {
+    var i: Int = 0
+    for let k: Int in (0..<10) {
+      i = 3
+    }
+
+    assert (i > 0)
+  }
+
   func indirectIterable() {
     var ks: [[Int]] = []
     ks[0] = [1]
@@ -52,7 +61,6 @@ struct L {
     }
   }
 
-  // Literal array not implemented yet
   func literalLoop() {
     for let j: Int in [1,2,3,4] {
       test(i: j)
@@ -76,27 +84,15 @@ struct L {
     }
   }
 
-  //func changeIterationConstruct() {
-  //  var ks: [[Int]] = []
-  //  ks[0] = [1,2,3]
-  //  ks[1] = [2,3,4]
-  //  var a: Int = 1
-  //  // I think this is a meaningless loop, what are its semantics?
-  //  for  let k: Int in ks[a] {
-  //    a += 1
-  //  }
-  //}
-
-  // Can't return array types?
-  //func loopFunctionCall() {
-  //  for let i: Int in getIterable() {
-  //    test(i: i)
-  //  }
-  //}
-
-  //func getIterable() -> [Int] {
-  //  return [1,2,3,4]
-  //}
+  func loopSum() -> Int
+    post (returns 15)
+  {
+    var total: Int = 0
+    for let t: Int in (0...5) {
+      total += t
+    }
+    return total
+  }
 
   func test() {
     var js: [Int] = [1,2,3]

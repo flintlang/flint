@@ -3,6 +3,7 @@ external trait Library {
   public func getValue() -> int256
   public func setValue(amount: int256) -> int256
 }
+
 contract C {
   var v: Int = 0
   var j: Int = 10
@@ -12,29 +13,38 @@ contract C {
 C :: (any) {
   public init() {}
 
-  public func test(extAddress: Address)
+  //VERIFY-FAIL
+  public func failingInvariant(extAddress: Address)
     mutates (v, j)
   {
     let libInstance: Library = Library(address: extAddress)
     do {
-      self.v = (call libInstance.getValue()) as! Int
-    do {
-      self.v = (call libInstance.getValue()) as! Int
+      self.j = (call libInstance.getValue()) as! Int
     } catch is ExternalCallError {
-      self.j = 3
-      fatalError()
-    }
-    } catch is ExternalCallError {
-      self.j = 2
       fatalError()
     }
   }
 
-  func violatedInvariant()
+  func globalVariablesCanChange(extAddress: Address)
+    mutates (v, j)
+  {
+    let libInstance: Library = Library(address: extAddress)
+    let oldV: Int = self.v
+    do {
+      let r:Int = (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      fatalError()
+    }
+
+    //VERIFY-FAIL
+    assert (oldV == self.v)
+  }
+
+  func violatedInvariant(extAddress: Address)
     mutates (j, v)
   {
     self.j = 5
-    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    let libInstance: Library = Library(address: extAddress)
     do {
       //VERIFY-FAIL
       (call libInstance.getValue()) as! Int
@@ -44,10 +54,10 @@ C :: (any) {
   }
 
   @payable
-  func violatedAssetAccountingInvariant(implicit w: Wei)
+  func violatedAssetAccountingInvariant(implicit w: Wei, extAddress: Address)
     mutates (Wei.rawValue, j, v)
   {
-    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    let libInstance: Library = Library(address: extAddress)
     var w1: Wei = w
     w1 = Wei(0)
     do {
@@ -58,32 +68,39 @@ C :: (any) {
     }
   }
 
-  func stateCouldChangeAfterExternalCall()
-    mutates (v, j)
+  func indirectExternalCall(extAddress: Address)
+    mutates (S.v, v, j)
   {
-    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
-    do {
-      let vOld: Int = v
-      (call libInstance.getValue()) as! Int
-      //VERIFY-FAIL
-      assert (self.v == vOld)
-    } catch is ExternalCallError {
-      fatalError()
-    }
+    let s: S = S()
+    let sVOld: Int = s.v
+    s.extCall(extAddress: extAddress)
+    //VERIFY-FAIL
+    assert (s.v == sVOld)
   }
 }
 
-struct TestStruct {
+struct S {
   var v: Int = 0
 
   invariant (v >= 0)
 
   public init() { }
 
-  func testStructCouldChange()
+  func extCall(extAddress: Address)
     mutates (v)
   {
-    let libInstance: Library = Library(address: 0x1111111111111111111111111111111111111111)
+    let libInstance: Library = Library(address: extAddress)
+    do {
+      (call libInstance.getValue()) as! Int
+    } catch is ExternalCallError {
+      fatalError()
+    }
+  }
+
+  func testStructCouldChange(extAddress: Address)
+    mutates (v)
+  {
+    let libInstance: Library = Library(address: extAddress)
     do {
       let vOld: Int = v
       (call libInstance.getValue()) as! Int

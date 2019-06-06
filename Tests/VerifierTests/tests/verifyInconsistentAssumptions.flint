@@ -22,4 +22,12 @@ InconsistentAssumptions :: (any) {
   func test2()
   {
   }
+
+  //VERIFY-WARNING
+  func testGlobals()
+    pre (i == 5)
+  {
+    assert(i != 10)
+  }
+
 }
