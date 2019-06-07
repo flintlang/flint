@@ -57,15 +57,20 @@ def test_contract(contract_path, fail_lines, warning_lines):
             contract_path
             ]
     finished_verify = subprocess.run(runArgs, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
+    try:
+        (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
 
-    if len(fail_lines) == 0:
-        expected_return_code = finished_verify.returncode == 0
-    else:
-        expected_return_code = finished_verify.returncode != 0
+        if len(fail_lines) == 0:
+            expected_return_code = finished_verify.returncode == 0
+        else:
+            expected_return_code = finished_verify.returncode != 0
 
-    # Store result
-    contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
+        # Store result
+        contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
+    except:
+        # Store result
+        contract_verify_result[contract_path]  = False
+
 
 test_contracts = [join(test_contracts_folder, f) for f in listdir(test_contracts_folder) \
         if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')]
