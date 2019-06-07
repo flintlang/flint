@@ -550,30 +550,37 @@ class BoogieTranslator {
     let name = parameter.identifier.name
     let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
+    let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
 
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
       // Can't call payable functions - internally
       switch parameter.type.rawType {
       case .inoutType(.userDefinedType("Wei")), .userDefinedType("Wei"):
-        // instance of Wei struct, where name < nextStruct
         // value of rawValue_Wei[name] >= 0
 
-        let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
-        declarations.append(BParameterDeclaration(name: translatedName,
-                                                  rawName: name,
-                                                  type: convertType(parameter.type)))
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)), .integer(BigUInt(0))), translationInformation))
-        functionPreAmble.append(.assume(.lessThan(.identifier(translatedName), .identifier(normaliser.generateStructInstanceVariable(structName: "Wei"))), translationInformation))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)),
+                                                            .integer(BigUInt(0))),
+                                        translationInformation))
       default: break
       }
-    } else {
-      //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
-      //let variables = generateParameters(parameter)
-      declarations.append(BParameterDeclaration(name: translatedName,
-                                                rawName: name,
-                                                type: convertType(parameter.type)))
     }
+
+    switch parameter.type.rawType {
+    case .inoutType(.userDefinedType(let udt)), .userDefinedType(let udt):
+      // instance of Wei struct, where name < nextStruct
+
+      functionPreAmble.append(.assume(.lessThan(.identifier(translatedName),
+                                                .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                                      translationInformation))
+    default: break
+    }
+
+    //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
+    //let variables = generateParameters(parameter)
+    declarations.append(BParameterDeclaration(name: translatedName,
+                                              rawName: name,
+                                              type: convertType(parameter.type)))
 
     let context = Context(environment: environment,
                           enclosingType: getCurrentTLDName(),

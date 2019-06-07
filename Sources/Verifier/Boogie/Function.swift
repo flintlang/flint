@@ -213,6 +213,10 @@ extension BoogieTranslator {
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, procedureName)
       return (.nop, triggerPreStmts + [functionCall], argumentPostStmts + triggerPostStmts)
+
+    case "prev":
+      return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
     default:
       // Check if a trait 'initialiser' is being called
       if environment.isTraitDeclared(rawFunctionName) {

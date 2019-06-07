@@ -96,4 +96,12 @@ Test :: (any) {
   {
     s.i = 0
   }
+
+  //func structValue(s: inout S)
+  //  pre (s.js.size == 0)
+  //{
+  //  assert (s.js.size == 0)
+  //  s.js[0] = 1
+  //  assert (s.js.size == 1)
+  //}
 }

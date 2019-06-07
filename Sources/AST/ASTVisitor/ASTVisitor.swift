@@ -669,6 +669,10 @@ public struct ASTVisitor {
       return processResult.combining(visit(parameter, passContext: processResult.passContext))
     }
 
+    processResult.element.prePostConditions = processResult.element.prePostConditions.map { prePostCondition in
+      return processResult.combining(visit(prePostCondition, passContext: processResult.passContext))
+    }
+
     if let resultType = processResult.element.resultType {
       processResult.element.resultType = processResult.combining(visit(resultType,
                                                                        passContext: processResult.passContext))
@@ -680,6 +684,21 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ prePostCondition: PrePostCondition,
+             passContext: ASTPassContext) -> ASTPassResult<PrePostCondition> {
+
+    switch prePostCondition {
+    case .pre(let e), .post(let e):
+      var processResult = pass.process(expression: e,
+                                       passContext: passContext)
+      let postProcessResult = pass.postProcess(expression: e,
+                                               passContext: processResult.passContext)
+      return ASTPassResult(element: prePostCondition.replace(e: postProcessResult.element),
+                           diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
+                           passContext: postProcessResult.passContext)
+    }
   }
 
   func visit(_ specialDeclaration: SpecialDeclaration,

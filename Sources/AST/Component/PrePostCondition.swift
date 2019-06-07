@@ -11,6 +11,15 @@ public enum PrePostCondition: Equatable {
     }
   }
 
+  func replace(e: Expression) -> PrePostCondition {
+    switch self {
+    case .pre:
+      return .pre(e)
+    case .post:
+      return .post(e)
+    }
+  }
+
   public func isPre() -> Bool {
     switch self {
     case .pre: return true

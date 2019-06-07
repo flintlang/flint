@@ -62,4 +62,21 @@ VerifyPrePostConditions :: (any) {
   {
     self.t = i
   }
+
+  func prevValuesInc()
+    mutates(t)
+
+    post (prev(t) < t)
+  {
+    self.t += 1
+  }
+
+  //VERIFY-FAIL
+  func prevValuesDec()
+    mutates(t)
+
+    post (prev(t) == t)
+  {
+    self.t += 1
+  }
 }

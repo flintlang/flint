@@ -797,6 +797,7 @@ extension BoogieTranslator {
     // Accessing property or function of UDT
     guard case .userDefinedType(let structName) = lhsType else {
       print("Not accessing property of a struct: \(lhsType)")
+      print(lhs.sourceLocation)
       fatalError()
     }
 
