@@ -865,6 +865,11 @@ extension BoogieTranslator {
 
       return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
     }
+
+    if let caller = self.currentCallerIdentifier, caller.name == identifier.name, identifier.enclosingType == nil {
+      return .identifier(translateGlobalIdentifierName("caller"))
+    }
+
     let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name,
                                                                                     enclosingTLD: enclosingTLD)
 

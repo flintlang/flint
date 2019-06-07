@@ -37,6 +37,8 @@ class BoogieTranslator {
   var currentBehaviourMember: ContractBehaviorMember?
   // Current top level declaration - contract behaviour / trait / struct ..
   var currentTLD: TopLevelDeclaration?
+  // Current Caller Identifier
+  var currentCallerIdentifier: Identifier?
 
   // Name of state variable for each contract
   var contractStateVariable = [String: String]()
@@ -506,12 +508,11 @@ class BoogieTranslator {
 
   func process(_ contractBehaviorDeclaration: ContractBehaviorDeclaration,
                structInvariants: [BIRInvariant]) -> [BIRTopLevelDeclaration] {
-    // TODO: Use type states, to generate pre-conditions
-    _ = contractBehaviorDeclaration.states
 
     var declarations = [BIRTopLevelDeclaration]()
 
     let callerBinding = contractBehaviorDeclaration.callerBinding
+    self.currentCallerIdentifier = callerBinding
     let callerProtections = contractBehaviorDeclaration.callerProtections
     let typeStates = contractBehaviorDeclaration.states
 
@@ -642,15 +643,16 @@ class BoogieTranslator {
                                  ) -> ([BPreCondition], [BStatement]) {
     var preStatements = [BStatement]()
     if let binding = binding {
-      let bindingName = binding.name
-      let translatedName = translateIdentifierName(bindingName)
+      //let bindingName = binding.name
+      //let translatedName = translateIdentifierName(bindingName)
+      // Don't need to do this, just directly reference "caller" variable, when bindinName used - processIdentifier
       // Create local variable (rawName = bindingName) which equals caller
-      addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
-                                                                 rawName: bindingName,
-                                                                 type: .userDefined("Address")))
-      preStatements.append(.assignment(.identifier(translatedName),
-                                       .identifier(translateGlobalIdentifierName("caller")),
-                                       TranslationInformation(sourceLocation: binding.sourceLocation)))
+      //addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
+      //                                                           rawName: bindingName,
+      //                                                           type: .userDefined("Address")))
+      //preStatements.append(.assignment(.identifier(translatedName),
+      //                                 .identifier(translateGlobalIdentifierName("caller")),
+      //                                 TranslationInformation(sourceLocation: binding.sourceLocation)))
     }
 
     var callerPreConditions = [BPreCondition]()

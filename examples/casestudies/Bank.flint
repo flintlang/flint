@@ -1,13 +1,13 @@
 // Contract declarations contain only their state properties.
 contract Bank {
   var manager: Address
-  var balances: [Address: Wei]
-  var accounts: [Address]
+  var balances: [Address: Wei] = [:]
+  var accounts: [Address] = []
   var lastIndex: Int = 0
 
   invariant (lastIndex == accounts.size)
 
-  var totalDonations: Wei
+  var totalDonations: Wei = Wei(0)
 
   event didCompleteTransfer (from: Address, to: Address, value: Int)
 }
@@ -19,9 +19,6 @@ Bank :: account <- (any) {
     mutates(Wei.rawValue)
   {
     self.manager = manager
-    balances = [:]
-    accounts = []
-    totalDonations = Wei(0)
   }
 
   // Returns the manager's address.
@@ -79,6 +76,8 @@ Bank :: account <- (accounts) {
 
   public func transfer(amount: Int, destination: Address)
     mutates (balances, Wei.rawValue)
+
+    pre (amount > 0)
   {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
@@ -98,6 +97,8 @@ Bank :: account <- (accounts) {
 
   public func withdraw(amount: Int)
     mutates(balances, Wei.rawValue)
+
+    pre (amount > 0)
   {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)

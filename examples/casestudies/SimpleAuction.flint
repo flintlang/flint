@@ -9,7 +9,7 @@ contract SimpleAuction {
   var hasAuctionEnded: Bool = false
 
   var highestBidder: Address
-  var highestBid: Wei
+  var highestBid: Wei = Wei(0)
 
   event highestBidDidIncrease (bidder: Address, amount: Int)
   event auctionDidEnd (winner: Address, bid: Int)
