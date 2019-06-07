@@ -553,36 +553,18 @@ class BoogieTranslator {
 
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
-      // Can't call payable functions
+      // Can't call payable functions - internally
       switch parameter.type.rawType {
       case .inoutType(.userDefinedType("Wei")), .userDefinedType("Wei"):
-        // Declare function variable for wei variable
-        // declare function variable for amount of wei received
-        // havoc rawValue
-        // assume rawValue > 0
-        // Allocate struct for incoming Wei (wei received)
-        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
-                                                                   rawName: name,
-                                                                   type: .int))
-        let weiAmount = generateRandomIdentifier(prefix: "implicit_amount_")
-        addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
-                                                                   rawName: weiAmount,
-                                                                   type: .int))
+        // instance of Wei struct, where name < nextStruct
+        // value of rawValue_Wei[name] >= 0
+
         let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
-        let procedureName = "initInt_Wei"
-        functionPreAmble.append(.havoc(weiAmount, translationInformation))
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), translationInformation))
-        functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
-                                                              procedureName: procedureName,
-                                                              arguments: [.integer(BigUInt(0))],
-                                                              ti: translationInformation)))
-        functionPreAmble.append(.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)), .identifier(weiAmount), translationInformation))
-        guard let currentFunctionName = getCurrentFunctionName() else {
-          print("unable to get current function name - while processing parameter")
-          fatalError()
-        }
-        // Add procedure call to callGraph
-        addProcedureCall(currentFunctionName, procedureName)
+        declarations.append(BParameterDeclaration(name: translatedName,
+                                                  rawName: name,
+                                                  type: convertType(parameter.type)))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)), .integer(BigUInt(0))), translationInformation))
+        functionPreAmble.append(.assume(.lessThan(.identifier(translatedName), .identifier(normaliser.generateStructInstanceVariable(structName: "Wei"))), translationInformation))
       default: break
       }
     } else {
@@ -642,18 +624,18 @@ class BoogieTranslator {
                                  _ binding: Identifier?
                                  ) -> ([BPreCondition], [BStatement]) {
     var preStatements = [BStatement]()
-    if let binding = binding {
-      //let bindingName = binding.name
-      //let translatedName = translateIdentifierName(bindingName)
-      // Don't need to do this, just directly reference "caller" variable, when bindinName used - processIdentifier
-      // Create local variable (rawName = bindingName) which equals caller
-      //addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
-      //                                                           rawName: bindingName,
-      //                                                           type: .userDefined("Address")))
-      //preStatements.append(.assignment(.identifier(translatedName),
-      //                                 .identifier(translateGlobalIdentifierName("caller")),
-      //                                 TranslationInformation(sourceLocation: binding.sourceLocation)))
-    }
+    //if let binding = binding {
+    //  let bindingName = binding.name
+    //  let translatedName = translateIdentifierName(bindingName)
+    //   Don't need to do this, just directly reference "caller" variable, when bindinName used - processIdentifier
+    //   Create local variable (rawName = bindingName) which equals caller
+    //  addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: translatedName,
+    //                                                             rawName: bindingName,
+    //                                                             type: .userDefined("Address")))
+    //  preStatements.append(.assignment(.identifier(translatedName),
+    //                                   .identifier(translateGlobalIdentifierName("caller")),
+    //                                   TranslationInformation(sourceLocation: binding.sourceLocation)))
+    //}
 
     var callerPreConditions = [BPreCondition]()
     for identifier in callerIdentifiers {

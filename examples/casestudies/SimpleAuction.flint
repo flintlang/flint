@@ -21,12 +21,13 @@ SimpleAuction :: caller <- (any) {
   {
     beneficiary = caller
     highestBidder = caller
-    highestBid = Wei(0)
   }
 
   @payable
   public func bid(implicit value: Wei)
     mutates (highestBidder, Wei.rawValue)
+
+    post ((value.rawValue <= prev(highestBid.rawValue)) || highestBidder == caller)
   {
     if hasAuctionEnded { fatalError() }
     if value.getRawValue() <= highestBid.getRawValue() { fatalError() }
