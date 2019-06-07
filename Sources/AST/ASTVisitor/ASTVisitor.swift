@@ -691,7 +691,7 @@ public struct ASTVisitor {
 
     switch prePostCondition {
     case .pre(let e), .post(let e):
-      var processResult = pass.process(expression: e,
+      let processResult = pass.process(expression: e,
                                        passContext: passContext)
       let postProcessResult = pass.postProcess(expression: e,
                                                passContext: processResult.passContext)

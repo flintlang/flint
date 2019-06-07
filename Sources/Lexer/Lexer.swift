@@ -138,6 +138,7 @@ public struct Lexer {
     "<=": .punctuation(.lessThanOrEqual),
     ">": .punctuation(.closeAngledBracket),
     ">=": .punctuation(.greaterThanOrEqual),
+    "==>": .punctuation(.implies),
     "||": .punctuation(.or),
     "&&": .punctuation(.and),
     "==": .punctuation(.doubleEqual),

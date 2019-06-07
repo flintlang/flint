@@ -48,7 +48,7 @@ extension TypeChecker {
                                     expectedTypes: [.basicType(.int)],
                                     expression: .binaryExpression(binaryExpression)))
       }
-    case .and, .or:
+    case .and, .or, .implies:
       // Both sides must have type Bool.
       if ![lhsType, rhsType].contains(.errorType),
         !lhsType.isCompatible(with: .basicType(.bool)) ||

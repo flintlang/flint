@@ -45,4 +45,13 @@ C :: (any) {
     //VERIFY-FAIL
     assert ((2 ** 255) &* 2 == 1)
   }
+
+  func implies(b: Bool)
+  {
+    assert (false ==> true)
+    assert (true ==> true)
+    assert (b ==> true)
+    //VERIFY-FAIL
+    assert (true ==> b)
+  }
 }

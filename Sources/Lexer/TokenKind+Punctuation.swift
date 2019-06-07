@@ -57,6 +57,7 @@ extension Token.Kind {
     case greaterThanOrEqual = ">="
     case or = "||"
     case and = "&&"
+    case implies = "==>"
 
     static var allBinaryOperators: [Punctuation] {
       return [
@@ -64,7 +65,7 @@ extension Token.Kind {
         .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
 
         .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,
-        .or, .and
+        .or, .and, .implies
       ]
     }
     public static var allBinaryOperatorsByIncreasingPrecedence: [Punctuation] {
@@ -78,13 +79,13 @@ extension Token.Kind {
     public var isBooleanOperator: Bool {
       return [
         .doubleEqual, .notEqual, .lessThanOrEqual, .greaterThanOrEqual,
-        .or, .and, .openAngledBracket, .closeAngledBracket
+        .or, .and, .openAngledBracket, .closeAngledBracket, .implies
         ].contains(self)
     }
 
     var precedence: Int {
       switch self {
-      case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual: return 10
+      case .equal, .plusEqual, .minusEqual, .timesEqual, .divideEqual, .implies: return 10
       case .or: return 11
       case .and: return 12
       case .closeAngledBracket, .openAngledBracket,

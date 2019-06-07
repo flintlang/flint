@@ -509,6 +509,8 @@ extension BoogieTranslator {
       return (.or(lhsExpr, rhsExpr), preStmts, postStmts)
     case .and:
       return (.and(lhsExpr, rhsExpr), preStmts, postStmts)
+    case .implies:
+      return (.implies(lhsExpr, rhsExpr), preStmts, postStmts)
 
     case .percent:
       return (.modulo(lhsExpr, rhsExpr), preStmts, postStmts)
