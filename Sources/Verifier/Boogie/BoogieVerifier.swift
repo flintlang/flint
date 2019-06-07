@@ -68,11 +68,12 @@ public class BoogieVerifier: Verifier {
     let inconsistentAssumptions = !functionalVerification ? [] : BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
                                                                                                monoLocation: self.monoLocation,
                                                                                                boogieLocation: self.boogieLocation).diagnose()
+    let inconsistentAssumptionsResult = !functionalVerification && inconsistentAssumptions.count == 0
 
     // Check for unreachable code
-    let unreachableCode = !functionalVerification ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
-                                                                               monoLocation: self.monoLocation,
-                                                                               boogieLocation: self.boogieLocation).diagnose()
+    let unreachableCode = !inconsistentAssumptionsResult ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
+                                                                                      monoLocation: self.monoLocation,
+                                                                                      boogieLocation: self.boogieLocation).diagnose()
 
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
