@@ -233,10 +233,10 @@ struct BProcedureDeclaration {
                                      .union(variablesMapping)
                                      .union(Set([ti]))
 
-    let inlineString = inline ? "{:inline \(procedureInlineDepth)}" : ""
+    let inlineAnnotation = inline ? "{:inline \(procedureInlineDepth)}" : ""
 
     let procedureString =  """
-    procedure \(inlineString) \(name)(\(parameterString))\(returnString)
+    procedure \(inlineAnnotation) \(name)(\(parameterString))\(returnString)
       // Pre Conditions
       \(preString)
       // Post Conditions

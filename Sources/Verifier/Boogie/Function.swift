@@ -217,7 +217,6 @@ extension BoogieTranslator {
     case "prev":
       return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
-
     case "returning":
       //returning(returnvalue, property over return value)
       assert (argumentsExpressions.count == 2)
@@ -228,6 +227,38 @@ extension BoogieTranslator {
       self.currentFunctionReturningValue = identifier.name
       let (expr, _, _) = process(functionCall.arguments[1].expression)
       return (expr, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
+    case "arrayContains":
+      // check array/dict contains values
+      // check calls should have 2 arguments:
+      assert (argumentsExpressions.count == 2)
+      // exists. i: typeof(arg1.keys) :: arg1[i] == arg2
+
+      let (sizeArgExpression, _, _) = process(functionCall.arguments[0].expression,
+                                              shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+      return (.quantified(.exists,
+                          [BParameterDeclaration(name: "i", rawName: "i", type: .int)],
+                          .and(.equals(.mapRead(argumentsExpressions[0], .identifier("i")), argumentsExpressions[1]),
+                               .and(.greaterThanOrEqual(.identifier("i"), .integer(0)),
+                                    .greaterThan(sizeArgExpression, .identifier("i"))))),
+              argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
+    case "dictContains":
+      // check array/dict contains values
+      // check calls should have 2 arguments:
+      assert (argumentsExpressions.count == 2)
+      // exists. i: typeof(arg1.keys) :: arg1[i] == arg2
+
+      let (sizeArgExpression, _, _) = process(functionCall.arguments[0].expression,
+                                              shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+      let (keysArgExpression, _, _) = process(functionCall.arguments[0].expression,
+                                              shadowVariablePrefix: normaliser.getShadowDictionaryKeysPrefix)
+      return (.quantified(.exists,
+                          [BParameterDeclaration(name: "i", rawName: "i", type: .int)],
+                          .and(.equals(.mapRead(keysArgExpression, .identifier("i")), argumentsExpressions[1]),
+                               .and(.greaterThanOrEqual(.identifier("i"), .integer(0)),
+                                    .greaterThan(sizeArgExpression, .identifier("i"))))),
+              argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     default:
       // Check if a trait 'initialiser' is being called

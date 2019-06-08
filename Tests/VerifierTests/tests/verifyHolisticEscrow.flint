@@ -1,15 +1,14 @@
 //VERIFY-CHECK
 contract Escrow(OPEN, SUCCESS, REFUND) {
-  var deposits: [Address: Wei]
+  var deposits: [Address: Wei] = [:]
   var owner: Address
   var beneficiary: Address
 }
 
 Escrow @(any) :: owner <- (any) {
   public init(b: Address) {
-    self.beneficiary = b;
+    self.beneficiary = b
     self.owner = owner
-    self.deposits = [:]
     become OPEN
   }
 }

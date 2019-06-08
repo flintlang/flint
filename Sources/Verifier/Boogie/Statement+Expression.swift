@@ -76,7 +76,7 @@ extension BoogieTranslator {
 
       var initialIndexValue: BExpression
       var finalIndexValue: BExpression
-      var assignValueToVariable: BStatement
+      var assignValueToVariable: [BStatement]
       // Statements required for the setup of the condition
       //var condStmts: BStatement
 
@@ -100,6 +100,8 @@ extension BoogieTranslator {
       let iterableType = environment.type(of: forStatement.iterable,
                                           enclosingType: getCurrentTLDName(),
                                           scopeContext: scopeContext)
+      let loopVariableType = forStatement.variable.type.rawType
+      let arrayDictIdentifier: String
 
       switch forStatement.iterable {
       case .range(let rangeExpression):
@@ -115,7 +117,7 @@ extension BoogieTranslator {
           finalIndexValue = bound
         }
 
-        assignValueToVariable = BStatement.assignment(loopVariable, index, TranslationInformation(sourceLocation: forStatement.sourceLocation))
+        assignValueToVariable = [BStatement.assignment(loopVariable, index, TranslationInformation(sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = start
 
       case .arrayLiteral:
@@ -129,9 +131,10 @@ extension BoogieTranslator {
           fatalError()
         }
 
-        assignValueToVariable = BStatement.assignment(loopVariable,
+        arrayDictIdentifier = arrayLitIdentifier
+        assignValueToVariable = [BStatement.assignment(loopVariable,
                                                       .mapRead(iterableIdentifier, index),
-                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))
+                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
 
@@ -146,11 +149,12 @@ extension BoogieTranslator {
           fatalError()
         }
 
+        arrayDictIdentifier = dictLitIdentifier
         let keysExpr = BExpression.identifier(normaliser.getShadowDictionaryKeysPrefix(depth: 0) + dictLitIdentifier)
-        assignValueToVariable = BStatement.assignment(loopVariable,
+        assignValueToVariable = [BStatement.assignment(loopVariable,
                                                       .mapRead(iterableIdentifier,
                                                                .mapRead(keysExpr, index)),
-                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))
+                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + dictLitIdentifier)
 
@@ -166,9 +170,12 @@ extension BoogieTranslator {
           postAmbleStmts += postIndexableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
 
-          assignValueToVariable = BStatement.assignment(loopVariable,
-                                                        .mapRead(indexableExpr, index),
-                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))
+          assignValueToVariable = [
+            BStatement.assignment(loopVariable,
+                                  .mapRead(indexableExpr, index),
+                                  TranslationInformation(sourceLocation: forStatement.sourceLocation))
+          ]
+
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
@@ -180,9 +187,9 @@ extension BoogieTranslator {
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
           let iterableKeys = getDictionaryKeysExpression(dict: forStatement.iterable)
 
-          assignValueToVariable = BStatement.assignment(loopVariable,
+          assignValueToVariable = [BStatement.assignment(loopVariable,
                                                         .mapRead(iterableExpr, .mapRead(iterableKeys, index)),
-                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))
+                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))]
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
@@ -191,6 +198,18 @@ extension BoogieTranslator {
           fatalError()
         }
       }
+
+      switch loopVariableType {
+      case .dictionaryType: break
+      case .arrayType, .fixedSizeArrayType: break
+        //BStatement.assignment(.identifier(normaliser.getShadowArraySizePrefix(depth: 0) + variableName),
+        //                      .mapRead(indexableExpr, index),
+        //                      TranslationInformation(sourceLocation: forStatement.sourceLocation)
+        //                      )
+        //assignValueToVariable.append()
+      default: break
+      }
+
 
       let assignIndexInitialValue = BStatement.assignment(index,
                                                           initialIndexValue,
@@ -201,7 +220,7 @@ extension BoogieTranslator {
       // - assign value of iterable[index] to variable name
       // - increment index until length of iterable - work out length of iterable
 
-      let body = [assignValueToVariable]
+      let body = assignValueToVariable
                + forStatement.body.flatMap({ process($0) })
                + [incrementIndex]
 
@@ -839,7 +858,16 @@ extension BoogieTranslator {
                                                                             structInstanceVariable: structExp,
                                                                             isBeingAssignedTo: isBeingAssignedTo)
       return (subExpr, structPreStmts + subPreStmts, subPostStmts + structPostStmts)
-    default: break
+    default:
+      let (structExp, structPreStmts, structPostStmts) = process(lhs,
+                                                                 isBeingAssignedTo: isBeingAssignedTo,
+                                                                 enclosingTLD: enclosingType)
+      let (rhsExpr, rhsPreStmts, rhsPostStmts) = process(rhs,
+                                                         localContext: false,
+                                                         shadowVariablePrefix: shadowVariablePrefix,
+                                                         isBeingAssignedTo: isBeingAssignedTo,
+                                                         enclosingTLD: structName)
+      return (.mapRead(rhsExpr, structExp), structPreStmts + rhsPreStmts, rhsPostStmts + structPostStmts)
     }
 
     print("Unknown type used with `dot` operator \(lhsType)")
