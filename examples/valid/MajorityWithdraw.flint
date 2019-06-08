@@ -25,6 +25,8 @@ MajorityWithdraw @(any) :: (any) {
 MajorityWithdraw @(Preparing) :: (leader) {
   public func addParticipant(participant: Address)
     mutates (participants, numParticipants)
+
+    post (participants.size == prev(participants.size) + 1)
   {
     participants[numParticipants] = participant
     numParticipants += 1

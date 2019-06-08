@@ -209,7 +209,7 @@ public final class SwiftLanguageServer<TransportType: MessageProtocol> {
 
         let tempSourceFile = (NSTemporaryDirectory() as NSString).appendingPathComponent(filename)
         let fileManager = FileManager.default
-        fileManager.createFile(atPath: tempSourceFile, contents: sourceCode.data(using: .utf8), attributes: nil)
+        _ = fileManager.createFile(atPath: tempSourceFile, contents: sourceCode.data(using: .utf8), attributes: nil)
 
         let response = doCompile(originalFile: originalFile, temporaryFile: "file://" + tempSourceFile)
 

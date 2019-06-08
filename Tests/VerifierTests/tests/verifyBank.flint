@@ -28,18 +28,25 @@ Bank :: account <- (any) {
   // Returns the manager's address.
   public func register()
     mutates (accounts, lastIndex)
+
+    post (lastIndex - 1 == prev(lastIndex))
+    post (accounts.size == 1 + prev(accounts.size))
   {
     accounts[lastIndex] = account
     lastIndex += 1
   }
 
-  public func getManager() -> Address {
+  public func getManager() -> Address
+    post (returns manager)
+  {
     return manager
   }
 
   @payable
   public func donate(implicit value: Wei)
     mutates (Wei.rawValue)
+
+    post (totalDonations.rawValue == prev(totalDonations.rawValue) + prev(value.rawValue))
   {
     // This will transfer the funds into totalDonations.
     totalDonations.transfer(source: &value)
@@ -65,6 +72,7 @@ Bank :: (manager) {
     mutates (balances, Wei.rawValue)
 
     pre (dictContains(balances, account))
+    post (balances[account].rawValue == 0)
   {
     // Wei could be being destroyed here
     //VERIFY-FAIL
@@ -72,7 +80,9 @@ Bank :: (manager) {
   }
 
   // This function is non-mutating.
-  public func getDonations() -> Int {
+  public func getDonations() -> Int
+    post (returns totalDonations.rawValue)
+  {
     return totalDonations.getRawValue()
   }
 }
@@ -82,6 +92,7 @@ Bank :: (manager) {
 Bank :: account <- (accounts) {
   public func getBalance() -> Int
     pre (dictContains(balances, account))
+    post (returns balances[account].rawValue)
   {
     return balances[account].getRawValue()
   }
@@ -91,6 +102,8 @@ Bank :: account <- (accounts) {
 
     pre(dictContains(balances, destination))
     pre(dictContains(balances, account))
+    pre (destination != account)
+    pre (amount > 0)
   {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
@@ -114,6 +127,7 @@ Bank :: account <- (accounts) {
     mutates(balances, Wei.rawValue, manager, accounts, lastIndex, totalDonations)
 
     pre(dictContains(balances, account))
+    pre(amount > 0)
   {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
