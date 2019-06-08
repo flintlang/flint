@@ -54,4 +54,17 @@ C :: (any) {
     //VERIFY-FAIL
     assert (true ==> b)
   }
+
+  func divideByZeroAndAssign()
+  {
+    var i: Int = 10
+    //VERIFY-FAIL
+    i /= 0
+  }
+
+  func divideByZero()
+  {
+    //VERIFY-FAIL
+    let i: Int = 100 / 0
+  }
 }

@@ -20,6 +20,9 @@ enum BoogieError {
 struct ErrorMsg {
   static let ArrayOutofBoundsAccess
     = "Potential out-of-bounds error: Could not verify that array access is within array bounds"
+
+  static let DivideByZero
+    = "Potential divide-by-zero error: Could not verify that denominator is not zero"
 }
 
 enum SymbooglixError {

@@ -486,10 +486,15 @@ extension BoogieTranslator {
                                               TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
               postStmts)
     case .divideEqual:
-      return (lhsExpr, preStmts + [.assignment(lhsExpr,
-                                              .divide(lhsExpr, rhsExpr),
-                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
-              postStmts)
+      // Check for divide-by-zero error
+      let ti = TranslationInformation(sourceLocation: rhs.sourceLocation,
+                                      isUserDirectCause: false,
+                                      failingMsg: ErrorMsg.DivideByZero)
+      return (lhsExpr, preStmts + [
+        BStatement.assertStatement(BAssertStatement(expression: .not(.equals(rhsExpr, .integer(0))), ti: ti)),
+        BStatement.assignment(lhsExpr,
+                              .divide(lhsExpr, rhsExpr),
+                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))], postStmts)
     case .plus:
       return (.add(lhsExpr, rhsExpr), preStmts, postStmts)
     case .minus:
@@ -497,7 +502,14 @@ extension BoogieTranslator {
     case .times:
       return (.multiply(lhsExpr, rhsExpr), preStmts, postStmts)
     case .divide:
-      return (.divide(lhsExpr, rhsExpr), preStmts, postStmts)
+      // Check for divide-by-zero error
+      let ti = TranslationInformation(sourceLocation: rhs.sourceLocation,
+                                      isUserDirectCause: false,
+                                      failingMsg: ErrorMsg.DivideByZero)
+
+      return (.divide(lhsExpr, rhsExpr),
+              preStmts + [BStatement.assertStatement(BAssertStatement(expression: .not(.equals(rhsExpr, .integer(0))), ti: ti))],
+              postStmts)
     case .overflowingPlus:
       return (.modulo(.add(lhsExpr, rhsExpr), .integer(BigUInt(2).power(256))), preStmts, postStmts)
     case .overflowingMinus:
