@@ -126,7 +126,6 @@ except getopt.GetoptError:
     sys.exit(2)
 
 print("Verification tests")
-print("Total: %i" % len(test_contracts))
 print("Passed: %i" % len(passed))
 if list_passed:
     for passed in passed:
@@ -139,3 +138,4 @@ print("Failed: %i" % len(failed))
 if list_failed:
     for fail in failed:
         print("\tFail: %s" % fail)
+print("Total: %i" % len(test_contracts))
