@@ -111,6 +111,16 @@ class ShadowVariablePass: ASTPass {
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
+  func process(functionCall: FunctionCall,
+               passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    if functionCall.identifier.name == "send" {
+      // Structs don't have state variables
+      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+    }
+
+    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
+
   func process(parameter: Parameter,
                passContext: ASTPassContext) -> ASTPassResult<Parameter> {
 

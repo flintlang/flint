@@ -204,15 +204,41 @@ extension BoogieTranslator {
       // send(account, &w)
       assert (argumentsExpressions.count == 2)
 
+      // Is an external call -> assert contract invariants hold
+      var stmts = [BStatement]()
+      // Only select 1 half of pre/post invariants
+      for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants + self.structInvariants {
+        let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation,
+                                        isExternalCall: true,
+                                        relatedTI: invariant.ti)
+        stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
+                                                       ti: ti)))
+      }
+
+      // Need to havoc global state - could be re-entered
+      let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation)
+      var trueStatements = [BStatement]()
+      // Havoc global state - to capture that the values of the global state can be changed,
+      for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
+        trueStatements.append(.havoc(variableName, ti))
+        // Add external call
+      }
+
+      // we can assume that the invariants will hold - as all the functions must hold the invariant
+      for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants + self.structInvariants {
+        trueStatements.append(.assume(invariant.expression, ti))
+      }
+
       let procedureName = "send"
       // Call Boogie send function
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                                  procedureName: procedureName,
                                                                  arguments: argumentsExpressions,
                                                                  ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, procedureName)
-      return (.nop, triggerPreStmts + [functionCall], argumentPostStmts + triggerPostStmts)
+      return (.nop, triggerPreStmts + stmts + [functionCall] + trueStatements, argumentPostStmts + triggerPostStmts)
 
     case "prev":
       return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)

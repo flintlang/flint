@@ -77,6 +77,25 @@ C :: (any) {
     //VERIFY-FAIL
     assert (s.v == sVOld)
   }
+
+  @payable
+  public func sendIsExternal(extAddress: Address, implicit value: Wei)
+    mutates (j, Wei.rawValue, S.v, v, j)
+  {
+    j = 1 // Violate invariant
+    //VERIFY-FAIL
+    send(extAddress, &value)
+  }
+
+  @payable
+  public func sendIsExternalStateChange(extAddress: Address, implicit value: Wei)
+    mutates (j, Wei.rawValue, S.v, v)
+  {
+    let vOld: Int = self.v
+    send(extAddress, &value)
+    //VERIFY-FAIL
+    assert (self.v == vOld)
+  }
 }
 
 struct S {

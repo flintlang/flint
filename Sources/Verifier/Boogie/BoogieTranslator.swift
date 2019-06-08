@@ -60,6 +60,8 @@ class BoogieTranslator {
   var tldInvariants = [String: [BIRInvariant]]()
   // Global invariants - must hold on all contract/struct methods
   var globalInvariants = [BIRInvariant]()
+  // List of struct invariants
+  var structInvariants = [BIRInvariant]()
 
   var enums = [String]()
 
@@ -260,7 +262,6 @@ class BoogieTranslator {
     declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerRecursiveCaseEven)))
     declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerRecursiveCaseOdd)))
 
-    var structInvariants = [BIRInvariant]()
     for case .structDeclaration(let structDeclaration) in topLevelModule.declarations where structDeclaration.identifier.name != "Flint$Global"{
       self.currentTLD = .structDeclaration(structDeclaration)
       let enclosingStruct = structDeclaration.identifier.name

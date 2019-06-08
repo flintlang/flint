@@ -40,7 +40,7 @@ Escrow @(any) :: (owner) {
 
 Escrow @(SUCCESS) :: (owner) {
   public func withdraw()
-    mutates (deposits, Wei.rawValue)
+    mutates (deposits, Wei.rawValue, owner, beneficiary)
   {
     var allDeposits: Wei = Wei(0)
     for let value: Wei in self.deposits {
@@ -53,7 +53,7 @@ Escrow @(SUCCESS) :: (owner) {
 
 Escrow @(REFUND) :: (owner) {
   public func claimRefund(p: Address)
-    mutates (deposits, Wei.rawValue)
+    mutates (deposits, Wei.rawValue, owner, beneficiary)
   {
     send(address: p, value: &self.deposits[p])
   }

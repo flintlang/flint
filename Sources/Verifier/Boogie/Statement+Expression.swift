@@ -293,7 +293,6 @@ extension BoogieTranslator {
     case .externalCall(let externalCall):
       switch externalCall.mode {
       case .normal:
-        //TODO: Finish
         // have to handle error being thrown
         // - assert invariants all hold
         // - get return type of external call
@@ -313,8 +312,6 @@ extension BoogieTranslator {
           stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
                                                          ti: ti)))
         }
-        // TODO: Need someway of specifying like related locations
-        // Want to say, this external call doesn't work -> this is failing invariant.
 
         guard let scopeContext = getCurrentScopeContext() else {
           print("couldn't get scope context of current function - used for updating shadow variable")

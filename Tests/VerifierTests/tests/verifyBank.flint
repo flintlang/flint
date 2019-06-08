@@ -111,7 +111,7 @@ Bank :: account <- (accounts) {
   }
 
   public func withdraw(amount: Int)
-    mutates(balances, Wei.rawValue)
+    mutates(balances, Wei.rawValue, manager, accounts, lastIndex, totalDonations)
 
     pre(dictContains(balances, account))
   {
