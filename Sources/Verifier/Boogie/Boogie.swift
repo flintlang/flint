@@ -7,8 +7,8 @@ struct Boogie {
     let (uncheckedOutput, terminationStatus) = Boogie.executeTask(executable: monoLocation,
                                                                    arguments: [boogieLocation,
                                                                      tempBoogieFile.path,
-                                                                     //"/inline:spec", // Boogie procedure inlining
-                                                                     "/inline:none", // No Boogie procedure inlining
+                                                                     "/inline:spec", // Boogie procedure inlining
+                                                                     //"/inline:none", // No Boogie procedure inlining
                                                                      "/loopUnroll:5"
                                                                    ])
     guard let output = uncheckedOutput else {
