@@ -902,7 +902,11 @@ extension BoogieTranslator {
     }
 
     if let returningValue = self.currentFunctionReturningValue, returningValue == identifier.name {
-      return .identifier(self.functionReturnVariableName[getCurrentFunctionName()!]!)
+      guard let returnValue = self.currentFunctionReturningValueValue else {
+        print("expecting returning value value, but found none")
+        fatalError()
+      }
+      return returnValue
     }
 
     let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name,

@@ -225,7 +225,12 @@ extension BoogieTranslator {
         fatalError()
       }
       self.currentFunctionReturningValue = identifier.name
+      self.currentFunctionReturningValueValue = .identifier(self.functionReturnVariableName[getCurrentFunctionName()!]!)
+
       let (expr, _, _) = process(functionCall.arguments[1].expression)
+
+      self.currentFunctionReturningValue = nil
+
       return (expr, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "arrayContains":
@@ -259,6 +264,35 @@ extension BoogieTranslator {
                                .and(.greaterThanOrEqual(.identifier("i"), .integer(0)),
                                     .greaterThan(sizeArgExpression, .identifier("i"))))),
               argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
+    case "arrayEach":
+      // check that each element of an array, satisfies a property
+      // check calls should have 3 arguments:
+      assert (argumentsExpressions.count == 3)
+      // eachArray(elem, array, property)
+      // forall i :: i >= 0 && i < size ==> property[elem/array[i]]
+
+      guard case .identifier(let identifier) = functionCall.arguments[0].expression else {
+        print("not an identifier was used for eachArray operator argument expression")
+        fatalError()
+      }
+
+      self.currentFunctionReturningValue = identifier.name
+      self.currentFunctionReturningValueValue = .mapRead(argumentsExpressions[1], .identifier("$i"))
+
+      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression,
+                                               shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+      self.currentFunctionReturningValue = nil
+
+      let (sizeArgExpression, _, _) = process(functionCall.arguments[1].expression,
+                                              shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+      return (.quantified(.forall,
+                          [BParameterDeclaration(name: "$i", rawName: "$i", type: .int)],
+                          .implies(.and(.greaterThanOrEqual(.identifier("$i"), .integer(0)),
+                                        .greaterThan(sizeArgExpression, .identifier("$i"))),
+                                   propertyExpression)),
+              argumentsStatements + triggerPreStmts,
+              argumentPostStmts + triggerPostStmts)
 
     default:
       // Check if a trait 'initialiser' is being called
