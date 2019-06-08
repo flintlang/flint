@@ -188,6 +188,7 @@ struct BProcedureDeclaration {
   let modifies: Set<BModifiesDeclaration>
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
+  let inline: Bool
   let ti: TranslationInformation
 
   private let procedureInlineDepth: Int = 10
@@ -215,7 +216,6 @@ struct BProcedureDeclaration {
                                      return ("\(x.0)\n\(y.0)", x.1.union(y.1))
                                    })
 
-
     let (statementsString, statementsMapping) = statements
       .map({ $0.render() }).reduce(("", Set<TranslationInformation>()), { x, y in
                                      return ("\(x.0)\n\(y.0)", x.1.union(y.1))
@@ -233,8 +233,10 @@ struct BProcedureDeclaration {
                                      .union(variablesMapping)
                                      .union(Set([ti]))
 
+    let inlineString = inline ? "{:inline \(procedureInlineDepth)}" : ""
+
     let procedureString =  """
-    procedure {:inline \(procedureInlineDepth)} \(name)(\(parameterString))\(returnString)
+    procedure \(inlineString) \(name)(\(parameterString))\(returnString)
       // Pre Conditions
       \(preString)
       // Post Conditions

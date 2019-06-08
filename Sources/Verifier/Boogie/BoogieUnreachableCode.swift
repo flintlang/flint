@@ -84,6 +84,7 @@ class BoogieUnreachableCode {
           modifies: procedureDeclaration.modifies,
           statements: newStatements,
           variables: procedureDeclaration.variables,
+          inline: procedureDeclaration.inline,
           ti: procedureDeclaration.ti), info!))
       }
     }

@@ -49,6 +49,7 @@ struct BIRProcedureDeclaration {
   let modifies: Set<BIRModifiesDeclaration>
   let statements: [BStatement]
   let variables: Set<BVariableDeclaration>
+  let inline: Bool
   let ti: TranslationInformation
 
   let isHolisticProcedure: Bool

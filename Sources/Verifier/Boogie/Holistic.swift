@@ -135,10 +135,11 @@ extension BoogieTranslator {
       postConditions: [],
       structInvariants: [],
       contractInvariants: [],
-      globalInvariants: [],
+      globalInvariants: self.globalInvariants,
       modifies: Set(), // All variables are modified - will be determined in IR resolution phase
       statements: procedureStmts,
       variables: procedureVariables,
+      inline: false,
       ti: translationInformation,
       isHolisticProcedure: true,
       isStructInit: false,
@@ -231,6 +232,7 @@ extension BoogieTranslator {
       modifies: Set(), // All variables are modified - will be determined in IR resolution phase
       statements: procedureStmts,
       variables: procedureVariables,
+      inline: false,
       ti: translationInformation,
       isHolisticProcedure: true,
       isStructInit: false,
@@ -466,6 +468,7 @@ extension BoogieTranslator {
       modifies: Set(), // All variables are modified - will be determined in IR resolution phase
       statements: selectionStmts,
       variables: procedureVariables,
+      inline: false,
       ti: translationInformation,
       isHolisticProcedure: true,
       isStructInit: false,

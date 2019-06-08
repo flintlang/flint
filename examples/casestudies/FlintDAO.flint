@@ -87,7 +87,6 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
   public func leave()
     mutates (Wei.rawValue)
   {
-    // TODO: BUG! -> Send  should modify Wei asset and thus global variable,
     // requiring mutating keyword
     send(caller, &balances[caller])
   }

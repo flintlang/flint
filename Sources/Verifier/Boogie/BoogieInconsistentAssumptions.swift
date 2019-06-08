@@ -44,6 +44,7 @@ class BoogieInconsistentAssumptions {
                                                        modifies: procedure.modifies,
                                                        statements: assertFalseBody,
                                                        variables: Set<BVariableDeclaration>(),
+                                                       inline: procedure.inline,
                                                        ti: procedure.ti)
       self.procedureMap[procedure.ti.sourceLocation] = procedure
       return .procedureDeclaration(replacementProcedure)

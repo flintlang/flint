@@ -94,6 +94,7 @@ class BoogieIRResolver: IRResolver {
                                  modifies: modifies,
                                  statements: irProcedureDeclaration.statements,
                                  variables: irProcedureDeclaration.variables,
+                                 inline: irProcedureDeclaration.inline,
                                  ti: irProcedureDeclaration.ti)
   }
 

@@ -188,6 +188,7 @@ class BoogieTranslator {
                                  TranslationInformation(sourceLocation: SourceLocation.DUMMY))],
 
         variables: [], // TODO: variables
+        inline: true,
         ti: TranslationInformation(sourceLocation: SourceLocation.DUMMY),
         isHolisticProcedure: false,
         isStructInit: false,
