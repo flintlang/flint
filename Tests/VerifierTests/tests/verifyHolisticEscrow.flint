@@ -18,8 +18,20 @@ Escrow @(any) :: (owner) {
   @payable
   public func deposit(p: Address, implicit value: Wei)
     mutates (deposits, Wei.rawValue)
+
+    pre (value.rawValue >= 0)
+    //post (deposits[p].rawValue == prev(value.rawValue))
   {
+    //let w: Wei = Wei(0)
+    //w.transfer(source: &value)
+
+    if self.deposits[p].rawValue < 0 {
+      fatalError()
+    }
+
     self.deposits[p].transfer(source: &value)
+    assert (value.rawValue == 0)
+    //assert (self.deposits[p].rawValue == 0)
   }
 
   public func close() {
