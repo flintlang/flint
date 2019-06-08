@@ -17,6 +17,7 @@ struct trait Asset {
 
   // Moves `amount` from `source` into `this` asset.
   func transfer(source: inout Self, amount: Int)
+    pre (amount >= 0)
   {
     if source.getRawValue() < amount {
       fatalError()
@@ -42,6 +43,8 @@ struct trait Asset {
 struct Wei: Asset {
   var rawValue: Int = 0
 
+  invariant (rawValue >= 0)
+
   init(unsafeRawValue: Int) {
     if unsafeRawValue != 0 {
       fatalError()
@@ -49,7 +52,9 @@ struct Wei: Asset {
     self.rawValue = unsafeRawValue
   }
 
-  init(source: inout Wei, amount: Int) {
+  init(source: inout Wei, amount: Int)
+    pre (amount >= 0)
+  {
     transfer(source: &source, amount: amount)
   }
 
@@ -60,6 +65,8 @@ struct Wei: Asset {
 
   func setRawValue(value: Int) -> Int
     mutates (rawValue)
+
+    pre(value >= 0)
     post(self.rawValue == value)
   {
     rawValue = value
@@ -68,6 +75,7 @@ struct Wei: Asset {
 
   func getRawValue() -> Int
     post(returns rawValue)
+    post(returning(r, r >= 0))
   {
     return rawValue
   }

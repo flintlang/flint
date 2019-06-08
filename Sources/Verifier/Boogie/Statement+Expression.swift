@@ -873,6 +873,10 @@ extension BoogieTranslator {
       return .identifier(translateGlobalIdentifierName("caller"))
     }
 
+    if let returningValue = self.currentFunctionReturningValue, returningValue == identifier.name {
+      return .identifier(self.functionReturnVariableName[getCurrentFunctionName()!]!)
+    }
+
     let translatedIdentifier = shadowVariablePrefix + translateGlobalIdentifierName(identifier.name,
                                                                                     enclosingTLD: enclosingTLD)
 

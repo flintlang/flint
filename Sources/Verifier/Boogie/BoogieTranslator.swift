@@ -21,6 +21,8 @@ class BoogieTranslator {
   var functionMapping = [String: BIRProcedureDeclaration]()
   // Name of procedure return variable
   var functionReturnVariableName = [String: String]()
+  // Current function returning placeholder variable name - for use in returning statement
+  var currentFunctionReturningValue: String?
   // Empty Map Properties, for each type
   var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
   // Map of function names to the shadow variables it modifies

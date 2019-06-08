@@ -27,15 +27,18 @@ SimpleAuction :: caller <- (any) {
   public func bid(implicit value: Wei)
     mutates (highestBidder, Wei.rawValue)
 
-    post ((value.rawValue <= prev(highestBid.rawValue)) || highestBidder == caller)
+    post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBidder == caller)
+    post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBid.rawValue == prev(value.rawValue))
   {
     if hasAuctionEnded { fatalError() }
-    if value.getRawValue() <= highestBid.getRawValue() { fatalError() }
+    if value.rawValue <= highestBid.rawValue { fatalError() }
 
-    if highestBid.getRawValue() > 0 {
+    if highestBid.rawValue > 0 {
       // Reimburse the previous highest bidder.
       send(highestBidder, &highestBid)
     }
+    assert (highestBid.rawValue >= 0)
+    assert (highestBid.rawValue == 0)
 
     // Set the new highest bidder.
     highestBidder = caller
@@ -43,7 +46,7 @@ SimpleAuction :: caller <- (any) {
     // Record the new highest bid.
     highestBid.transfer(source: &value)
 
-    let amount: Int = value.getRawValue()
+    let amount: Int = value.rawValue
     emit highestBidDidIncrease(bidder: caller, amount: amount)
   }
 
@@ -65,6 +68,7 @@ SimpleAuction :: (beneficiary) {
     hasAuctionEnded = true
 
     send(beneficiary, &highestBid)
+    assert (highestBid.rawValue == 0)
 
     let bid: Int = highestBid.getRawValue()
     emit auctionDidEnd(winner: highestBidder, bid: bid)

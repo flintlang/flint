@@ -217,6 +217,18 @@ extension BoogieTranslator {
     case "prev":
       return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
+
+    case "returning":
+      //returning(returnvalue, property over return value)
+      assert (argumentsExpressions.count == 2)
+      guard case .identifier(let identifier) = functionCall.arguments[0].expression else {
+        print("not an identifier was used for returning operator argument expression")
+        fatalError()
+      }
+      self.currentFunctionReturningValue = identifier.name
+      let (expr, _, _) = process(functionCall.arguments[1].expression)
+      return (expr, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
     default:
       // Check if a trait 'initialiser' is being called
       if environment.isTraitDeclared(rawFunctionName) {

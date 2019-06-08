@@ -62,23 +62,23 @@ public class BoogieVerifier: Verifier {
                                            boogieLocation: self.boogieLocation,
                                            printVerificationOutput: self.printVerificationOutput)
     let flintErrors = resolveBoogieErrors(errors: boogieErrors, mapping: functionalMapping)
-    let functionalVerification = boogieErrors.count == 0
+    let functionallyVerified = boogieErrors.count == 0
 
     // Check for inconsistent assumptions
-    let inconsistentAssumptions = !functionalVerification ? [] : BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
+    let inconsistentAssumptions = !functionallyVerified ? [] : BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
                                                                                                monoLocation: self.monoLocation,
                                                                                                boogieLocation: self.boogieLocation).diagnose()
-    let inconsistentAssumptionsResult = !functionalVerification && inconsistentAssumptions.count == 0
+    let noInconsistentAssumptions = functionallyVerified && inconsistentAssumptions.count == 0
 
     // Check for unreachable code
-    let unreachableCode = !inconsistentAssumptionsResult ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
+    let unreachableCode = !noInconsistentAssumptions ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
                                                                                       monoLocation: self.monoLocation,
                                                                                       boogieLocation: self.boogieLocation).diagnose()
 
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
     var holisticVerification = true
-    if functionalVerification && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
+    if functionallyVerified && !skipHolisticCheck && translation.holisticTestEntryPoints.count > 0 {
       for holisticRunInfo in executeSymbooglix(translation: translation,
                                                maxTimeout: self.maxHolisticTimeout,
                                                transactionDepth: self.maxTransactionDepth) {
@@ -90,7 +90,7 @@ public class BoogieVerifier: Verifier {
       }
     }
 
-    let verified = functionalVerification && holisticVerification
+    let verified = functionallyVerified && holisticVerification
     let verificationDiagnostics = flintErrors
                                 + inconsistentAssumptions
                                 + unreachableCode
