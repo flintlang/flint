@@ -525,7 +525,7 @@ extension BoogieTranslator {
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      inline: !functionDeclaration.isPublic,
+      inline: true, // !functionDeclaration.isPublic,
       ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
       isHolisticProcedure: false,
       isStructInit: isStructInit,

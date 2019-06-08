@@ -32,6 +32,7 @@ extension BoogieTranslator {
   // Also return a list of the entry points, for the symbolic executor
   func processHolisticSpecification(willSpec: Expression,
                                     contractName: String,
+                                    structInvariants: [BIRInvariant],
                                     transactionDepth: Int) -> (SourceLocation, [BIRTopLevelDeclaration], String) {
     let translationInformation = TranslationInformation(sourceLocation: willSpec.sourceLocation)
     let currentContract = contractName
@@ -63,7 +64,7 @@ extension BoogieTranslator {
     //Generate new procedure for each init function - check that for all initial conditions,
     // holistic spec holds
     let initProcedure = initProcedures.first!
-    let procedureName = entryPointBase + randomString(length: 5) //unique identifier 
+    let procedureName = entryPointBase + randomString(length: 5) //unique identifier
 
     let (callableFunctionsNum, callableFunctions, callableProcedure)
       = generateCallableFunctions(functions: publicFunctions,
@@ -116,6 +117,7 @@ extension BoogieTranslator {
                                                                  ti: translationInformation))
     let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
                                                     tld: currentContract)
+
     let callInit = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                            procedureName: translatedName,
                                                            arguments: [],
@@ -133,8 +135,8 @@ extension BoogieTranslator {
       parameters: [],
       preConditions: [],
       postConditions: [],
-      structInvariants: [],
-      contractInvariants: [],
+      structInvariants: structInvariants,
+      contractInvariants: (tldInvariants[currentContract] ?? []),
       globalInvariants: self.globalInvariants,
       modifies: Set(), // All variables are modified - will be determined in IR resolution phase
       statements: procedureStmts,
@@ -468,7 +470,7 @@ extension BoogieTranslator {
       modifies: Set(), // All variables are modified - will be determined in IR resolution phase
       statements: selectionStmts,
       variables: procedureVariables,
-      inline: false,
+      inline: true,
       ti: translationInformation,
       isHolisticProcedure: true,
       isStructInit: false,

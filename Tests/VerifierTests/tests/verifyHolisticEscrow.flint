@@ -18,7 +18,6 @@ Escrow @(any) :: (owner) {
   public func deposit(p: Address, implicit value: Wei)
     mutates (deposits, Wei.rawValue)
 
-    pre (value.rawValue >= 0)
     pre (dictContains(deposits, p))
     post (deposits[p].rawValue == prev(deposits[p].rawValue) + prev(value.rawValue))
   {

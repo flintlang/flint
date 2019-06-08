@@ -57,7 +57,7 @@ Test :: (any) {
     mutates (S.i, S.js, S.j, S.ks)
     pre(1==1)
   {
-    s = S()
+    self.s = S()
   }
 
   @payable

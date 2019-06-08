@@ -289,6 +289,11 @@ class BoogieTranslator {
       structInvariants.append(BIRInvariant(expression: .greaterThanOrEqual(.identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName())),
                                                                                 .integer(0)),
                                                 ti: TranslationInformation(sourceLocation: structDeclaration.sourceLocation)))
+
+      for variableDeclaration in structDeclaration.variableDeclarations {
+        let (_, invariants) = generateVariables(variableDeclaration, tldIsStruct: true)
+        structInvariants += invariants.map({ BIRInvariant(expression: $0, ti: TranslationInformation(sourceLocation: variableDeclaration.sourceLocation)) })
+      }
       self.currentTLD = nil
     }
 
@@ -342,6 +347,7 @@ class BoogieTranslator {
       let holisticTranslationInformation = contractDeclaration.holisticDeclarations.map({
                                               processHolisticSpecification(willSpec: $0,
                                                                            contractName: contractName,
+                                                                           structInvariants: structInvariants,
                                                                            transactionDepth: holisticTransactionDepth)
                                             })
       let (holisticDecls, entryPoints)
@@ -479,18 +485,14 @@ class BoogieTranslator {
                                                                   rawName: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
                                                                   type: .int)))
 
-    var structInvariantDeclarations = structInvariantDeclarations
-
     for variableDeclaration in structDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
       // Some variables require shadow variables, eg dictionaries need an array of keys
-      let (variableDeclarations, invariants) = generateVariables(variableDeclaration, tldIsStruct: true)
+      let (variableDeclarations, _/*invariants are added above*/) = generateVariables(variableDeclaration, tldIsStruct: true)
       for bvariableDeclaration in variableDeclarations {
         declarations.append(.variableDeclaration(bvariableDeclaration))
         structGlobalVariables.append(bvariableDeclaration.name)
       }
-
-      structInvariantDeclarations += invariants.map({ BIRInvariant(expression: $0, ti: TranslationInformation(sourceLocation: variableDeclaration.sourceLocation)) })
 
       // Record assignment to put in constructor procedure
       if tldConstructorInitialisations[structDeclaration.identifier.name] == nil {
@@ -839,7 +841,7 @@ class BoogieTranslator {
                                       [BParameterDeclaration(name: "i", rawName: "i", type: .int)],
                                       .and(.lessThan(.mapRead(.identifier(name), .identifier("i")),
                                                      .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
-                                           .greaterThanOrEqual(.identifier(name), .integer(0)))))
+                                           .greaterThanOrEqual(.mapRead(.identifier(name), .identifier("i")), .integer(0)))))
       } else {
         properties.append(.and(.lessThan(.identifier(name),
                                          .identifier(normaliser.generateStructInstanceVariable(structName: udt))),

@@ -53,6 +53,8 @@ Bank :: (manager) {
   // the contract's state.
   public func freeDeposit(account: Address, amount: Int)
     mutates (Wei.rawValue)
+
+    pre (dictContains(balances, account))
   {
     var i: Int = (0-1)
     var w: Wei = Wei(amount)
@@ -61,6 +63,8 @@ Bank :: (manager) {
 
   public func clear(account: Address)
     mutates (balances, Wei.rawValue)
+
+    pre (dictContains(balances, account))
   {
     // Wei could be being destroyed here
     //VERIFY-FAIL
@@ -76,12 +80,17 @@ Bank :: (manager) {
 // Any user in accounts can call these functions.
 // The matching user's address is bound to the variable account.
 Bank :: account <- (accounts) {
-  public func getBalance() -> Int {
+  public func getBalance() -> Int
+    pre (dictContains(balances, account))
+  {
     return balances[account].getRawValue()
   }
 
   public func transfer(amount: Int, destination: Address)
     mutates (balances, Wei.rawValue)
+
+    pre(dictContains(balances, destination))
+    pre(dictContains(balances, account))
   {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
@@ -95,12 +104,16 @@ Bank :: account <- (accounts) {
   @payable
   public func deposit(implicit value: Wei)
     mutates(Wei.rawValue)
+
+    pre(dictContains(balances, account))
   {
     balances[account].transfer(source: &value)
   }
 
   public func withdraw(amount: Int)
     mutates(balances, Wei.rawValue)
+
+    pre(dictContains(balances, account))
   {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
