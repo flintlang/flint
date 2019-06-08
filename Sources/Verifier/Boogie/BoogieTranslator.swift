@@ -259,10 +259,10 @@ class BoogieTranslator {
     declarations.append(.axiomDeclaration(BAxiomDeclaration(proposition: powerRecursiveCaseOdd)))
 
     var structInvariants = [BIRInvariant]()
-    for case .structDeclaration(let structDeclaration) in topLevelModule.declarations {
+    for case .structDeclaration(let structDeclaration) in topLevelModule.declarations where structDeclaration.identifier.name != "Flint$Global"{
       self.currentTLD = .structDeclaration(structDeclaration)
-
       let enclosingStruct = structDeclaration.identifier.name
+
       for declaration in structDeclaration.invariantDeclarations {
         //Invariants are turned into both pre and post conditions
         self.structInstanceVariableName = "i" // TODO: Check that i is unique
@@ -273,15 +273,22 @@ class BoogieTranslator {
         let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
                                                              rawName: structInstanceVariableName!,
                                                              type: .int)],
-                                         .implies(.lessThan(.identifier(self.structInstanceVariableName!),
-                                                            .identifier(normaliser.generateStructInstanceVariable(structName: enclosingStruct))),
+                                         .implies(.and(.lessThan(.identifier(self.structInstanceVariableName!),
+                                                                 .identifier(normaliser.generateStructInstanceVariable(structName: enclosingStruct))),
+                                                       .greaterThanOrEqual(.identifier(self.structInstanceVariableName!), .integer(0))),
                                                    expr))
 
         self.structInstanceVariableName = nil
 
         structInvariants.append(BIRInvariant(expression: inv,
                                              ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+
       }
+
+      // Generate invariant; 0 < nextInstance_tld
+      structInvariants.append(BIRInvariant(expression: .greaterThanOrEqual(.identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName())),
+                                                                                .integer(0)),
+                                                ti: TranslationInformation(sourceLocation: structDeclaration.sourceLocation)))
       self.currentTLD = nil
     }
 
@@ -355,15 +362,18 @@ class BoogieTranslator {
    func process(_ contractDeclaration: ContractDeclaration) -> [BIRTopLevelDeclaration] {
     var declarations = [BIRTopLevelDeclaration]()
     var contractGlobalVariables = [String]()
+    var invariantDeclarations = [BIRInvariant]()
 
     for variableDeclaration in contractDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
 
       //TODO: Handle dict/arrays -> generate assumes
       // Some variables require shadow variables, eg dictionaries need an array of keys
-      for bvariableDeclaration in generateVariables(variableDeclaration) {
+      let (variableDeclarations, invariants) = generateVariables(variableDeclaration)
+      for bvariableDeclaration in variableDeclarations {
         declarations.append(.variableDeclaration(bvariableDeclaration))
         contractGlobalVariables.append(bvariableDeclaration.name)
+
       }
 
       // If variable is of type array/dict, it's need to add assume stmt about it's size to
@@ -372,6 +382,8 @@ class BoogieTranslator {
                                                                          type: variableDeclaration.type.rawType,
                                                                          source: variableDeclaration.sourceLocation,
                                                                          isInStruct: false)
+
+      invariantDeclarations += invariants.map({ BIRInvariant(expression: $0, ti: TranslationInformation(sourceLocation: variableDeclaration.sourceLocation)) })
 
       // Record assignment to put in constructor procedure
       if tldConstructorInitialisations[contractDeclaration.identifier.name] == nil {
@@ -382,8 +394,8 @@ class BoogieTranslator {
       }
     }
 
+
     // TODO: Handle usage of += 1 and preStmts
-    var invariantDeclarations = [BIRInvariant]()
     for declaration in contractDeclaration.invariantDeclarations {
       //Invariants are turned into both pre and post conditions
       invariantDeclarations.append(BIRInvariant(expression: process(declaration).0,
@@ -467,13 +479,18 @@ class BoogieTranslator {
                                                                   rawName: normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()),
                                                                   type: .int)))
 
+    var structInvariantDeclarations = structInvariantDeclarations
+
     for variableDeclaration in structDeclaration.variableDeclarations {
       let name = translateGlobalIdentifierName(variableDeclaration.identifier.name)
       // Some variables require shadow variables, eg dictionaries need an array of keys
-      for bvariableDeclaration in generateVariables(variableDeclaration, tldIsStruct: true) {
+      let (variableDeclarations, invariants) = generateVariables(variableDeclaration, tldIsStruct: true)
+      for bvariableDeclaration in variableDeclarations {
         declarations.append(.variableDeclaration(bvariableDeclaration))
         structGlobalVariables.append(bvariableDeclaration.name)
       }
+
+      structInvariantDeclarations += invariants.map({ BIRInvariant(expression: $0, ti: TranslationInformation(sourceLocation: variableDeclaration.sourceLocation)) })
 
       // Record assignment to put in constructor procedure
       if tldConstructorInitialisations[structDeclaration.identifier.name] == nil {
@@ -549,7 +566,7 @@ class BoogieTranslator {
     return declarations
   }
 
-  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement], [String]) {
+  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BPreCondition], [BStatement], [String]) {
     let name = parameter.identifier.name
     let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
@@ -557,21 +574,22 @@ class BoogieTranslator {
 
     var modifies = [String]()
     var functionPreAmble = [BStatement]()
+    var functionPreCondition = [BPreCondition]()
     if parameter.isImplicit {
       // Can't call payable functions - internally
       switch parameter.type.rawType {
       case .inoutType(.userDefinedType("Wei")), .userDefinedType("Wei"):
         // value of rawValue_Wei[name] >= 0
 
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)),
-                                                            .integer(BigUInt(0))),
-                                        translationInformation))
+        functionPreCondition.append(BPreCondition(expression: .greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)),
+                                                                                  .integer(BigUInt(0))),
+                                                  ti: translationInformation))
 
         /// instance == nextInstance
         // increment nextInstace
-        functionPreAmble.append(.assume(.equals(.identifier(translatedName),
-                                                .identifier(normaliser.generateStructInstanceVariable(structName: "Wei"))),
-                                        translationInformation))
+        functionPreCondition.append(BPreCondition(expression: .equals(.identifier(translatedName),
+                                                                      .identifier(normaliser.generateStructInstanceVariable(structName: "Wei"))),
+                                                  ti: translationInformation))
 
         functionPreAmble.append(.assignment(.identifier(normaliser.generateStructInstanceVariable(structName: "Wei")),
                                             .add(.identifier(normaliser.generateStructInstanceVariable(structName: "Wei")), .integer(1)),
@@ -584,24 +602,29 @@ class BoogieTranslator {
       case .inoutType(.userDefinedType(let udt)):
         // instance of Wei struct, where name < nextStruct
 
-        functionPreAmble.append(.assume(.lessThan(.identifier(translatedName),
-                                                  .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
-                                        translationInformation))
+        functionPreCondition.append(BPreCondition(expression: .lessThan(.identifier(translatedName),
+                                                                   .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                                              ti: translationInformation))
       default: break
       }
     }
 
-    //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
-    //let variables = generateParameters(parameter)
-    declarations.append(BParameterDeclaration(name: translatedName,
-                                              rawName: name,
-                                              type: convertType(parameter.type)))
+    let (variableDeclarations, invariants) = generateVariables(parameter.asVariableDeclaration)
+    if !parameter.isImplicit {
+      functionPreCondition += invariants.map({ BPreCondition(expression: $0, ti: translationInformation) })
+    }
+
+    for bvariableDeclaration in variableDeclarations {
+      declarations.append(BParameterDeclaration(name: bvariableDeclaration.name,
+                                                rawName: bvariableDeclaration.rawName,
+                                                type: bvariableDeclaration.type))
+    }
 
     let context = Context(environment: environment,
                           enclosingType: getCurrentTLDName(),
                           scopeContext: getCurrentScopeContext() ?? ScopeContext())
     let (triggerPreStmts, triggerPostStmts) = triggers.lookup(parameter, context, extra: ["normalised_parameter_name": translatedName])
-    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts, modifies)
+    return (declarations, functionPreCondition, functionPreAmble + triggerPreStmts + triggerPostStmts, modifies)
   }
 
   func process(_ token: Token) -> BExpression {
@@ -751,7 +774,7 @@ class BoogieTranslator {
   }
 
   func generateVariables(_ variableDeclaration: VariableDeclaration,
-                         tldIsStruct: Bool = false) -> [BVariableDeclaration] {
+                         tldIsStruct: Bool = false) -> ([BVariableDeclaration], [BExpression]) {
     // If currently in a function, then generate name with function in it
     // If in (contract/struct)Declaration, then generate name with only contract in it
     let name = getCurrentFunctionName() == nil ?
@@ -759,6 +782,7 @@ class BoogieTranslator {
       : translateIdentifierName(variableDeclaration.identifier.name)
 
     var declarations = [BVariableDeclaration]()
+    var properties = [BExpression]()
 
     switch variableDeclaration.type.rawType {
     case .dictionaryType, .arrayType, .fixedSizeArrayType:
@@ -773,15 +797,105 @@ class BoogieTranslator {
       declarations += generateIterableShadowVariables(name: name,
                                                       type: variableDeclaration.type.rawType,
                                                       hole: hole)
+
     default:
       break
     }
+
+    // instance < nextInstance - could be super nested in array/dict
+    properties += generateUDTProperties(name: name, type: variableDeclaration.type.rawType, isStructTLD: tldIsStruct)
 
     let convertedType = convertType(variableDeclaration.type)
     declarations.append(BVariableDeclaration(name: name,
                                              rawName: variableDeclaration.identifier.name,
                                              type: tldIsStruct ? .map(.int, convertedType) : convertedType))
-    return declarations
+    return (declarations, properties)
+  }
+
+  private func generateUDTProperties(name: String, type: RawType, isStructTLD: Bool = false) -> [BExpression] {
+    var properties = [BExpression]()
+    switch type {
+    case .dictionaryType, .arrayType, .fixedSizeArrayType:
+      let (udt, isDict) = getDeepDictTypesTilUDT(type: type)
+      if udt == "" {
+        // No nested udt
+        return []
+      }
+      let namedParams = isDict.enumerated().map({ ("i\($0.0)", $0.1) })
+      let params = namedParams.map({ BParameterDeclaration(name: $0.0, rawName: $0.0, type: .int) })
+      let nestedReadsExpr = nestedReads(base: (isStructTLD ? { .mapRead(.identifier($0), .identifier("i")) } : { .identifier($0) }), params: namedParams, name: name)
+      let inSizeRange = sizeConstraints(base: { (isStructTLD ? .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name), .identifier("i")) : .identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name))}, paramNames: namedParams.map({ $0.0 }))
+      properties.append(.quantified(.forall,
+                                    (isStructTLD ? [BParameterDeclaration(name: "i", rawName: "i", type: .int)] : []) + params,
+                                    .implies(inSizeRange,
+                                             .and(.lessThan(nestedReadsExpr,
+                                                            .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                                                  .greaterThanOrEqual(nestedReadsExpr, .integer(0))))))
+
+    // If type is struct then invariant that value < nextInstance
+    case .inoutType(.userDefinedType(let udt)), .userDefinedType(let udt):
+      if isStructTLD {
+        properties.append(.quantified(.forall,
+                                      [BParameterDeclaration(name: "i", rawName: "i", type: .int)],
+                                      .and(.lessThan(.mapRead(.identifier(name), .identifier("i")),
+                                                     .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                                           .greaterThanOrEqual(.identifier(name), .integer(0)))))
+      } else {
+        properties.append(.and(.lessThan(.identifier(name),
+                                         .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                               .greaterThanOrEqual(.identifier(name), .integer(0))))
+      }
+    default: break
+    }
+    return properties
+  }
+
+  private func sizeConstraints(base: (Int) -> BExpression, paramNames: [String], count: Int = 0) -> BExpression {
+    if paramNames.count == 1 {
+      return .and(.greaterThan(base(count), .identifier(paramNames.first!)),
+                  .greaterThanOrEqual(.identifier(paramNames.first!), .integer(0)))
+    }
+
+    var paramNames = paramNames
+    let name = paramNames.remove(at: 0)
+    return .and(.and(.greaterThanOrEqual(.identifier(paramNames.first!), .integer(0)),
+                     .greaterThan(base(count), .identifier(name))),
+                sizeConstraints(base: { .mapRead(base($0), .identifier(name)) }, paramNames: paramNames, count: count + 1))
+  }
+
+  private func nestedReads(base: (String) -> BExpression, params: [(String, BType?)], name: String, count: Int = 0) -> BExpression {
+    if params.count == 0 {
+      return base(name)
+    }
+
+    var params = params
+    let (paramName, paramType) = params.remove(at: 0)
+    let index: BExpression
+    if paramType == nil {
+      index = .identifier(paramName)
+    } else {
+      index = .mapRead(base(normaliser.getShadowDictionaryKeysPrefix(depth: count) + name), .identifier(paramName))
+    }
+    return nestedReads(base: { .mapRead(base($0), index) }, params: params, name: name, count: count + 1)
+  }
+
+  private func getDeepDictTypesTilUDT(type: RawType) -> (String, [BType?]) {
+    switch type {
+    case .dictionaryType(let key, let value):
+      let (udt, types) = getDeepDictTypesTilUDT(type: value)
+      return (udt, [convertType(key)] + types)
+    case .arrayType(let type):
+      let (udt, types) = getDeepDictTypesTilUDT(type: type)
+      return (udt, [nil] + types)
+    case .fixedSizeArrayType(let type, _):
+      let (udt, types) = getDeepDictTypesTilUDT(type: type)
+      return (udt, [nil] + types)
+
+    // If type is struct then invariant that value < nextInstance
+    case .inoutType(.userDefinedType(let udt)), .userDefinedType(let udt):
+      return (udt, [])
+    default: return ("", [])
+    }
   }
 
   func generateIterableShadowVariables(name: String,

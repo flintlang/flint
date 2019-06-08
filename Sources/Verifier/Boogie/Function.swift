@@ -369,8 +369,9 @@ extension BoogieTranslator {
     var postConditions = [BPostCondition]()
     var bParameters = [BParameterDeclaration]()
     for param in parameters {
-      let (bParam, initStatements, modifiesStrings) = processParameter(param)
+      let (bParam, paramPreConditions, initStatements, modifiesStrings) = processParameter(param)
       functionPreAmble += initStatements
+      preConditions += paramPreConditions
       bParameters += bParam
       modifies += modifiesStrings
     }
@@ -420,7 +421,8 @@ extension BoogieTranslator {
           bParameters.insert(BParameterDeclaration(name: self.structInstanceVariableName!,
                                                    rawName: self.structInstanceVariableName!,
                                                    type: .int), at: 0)
-          preConditions.append(BPreCondition(expression: .lessThan(.identifier(self.structInstanceVariableName!), .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
+          preConditions.append(BPreCondition(expression: .and(.lessThan(.identifier(self.structInstanceVariableName!), .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
+                                                              .greaterThanOrEqual(.identifier(self.structInstanceVariableName!), .integer(0))),
                                              ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
                                              free: false))
         }

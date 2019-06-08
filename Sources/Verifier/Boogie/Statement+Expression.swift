@@ -70,7 +70,7 @@ extension BoogieTranslator {
       // Some variable types require shadow variables, eg dictionaries (array of keys)
       let variableName = translateIdentifierName(forStatement.variable.identifier.name)
       let loopVariable = BExpression.identifier(variableName)
-      for declaration in generateVariables(forStatement.variable) {
+      for declaration in generateVariables(forStatement.variable).0 {
         addCurrentFunctionVariableDeclaration(declaration)
       }
 
@@ -277,7 +277,7 @@ extension BoogieTranslator {
     switch expression {
     case .variableDeclaration(let variableDeclaration):
       // Some variable types require shadow variables, eg dictionaries (array of keys)
-      for declaration in generateVariables(variableDeclaration) {
+      for declaration in generateVariables(variableDeclaration).0 {
         addCurrentFunctionVariableDeclaration(declaration)
       }
       let shadowVariablePrefix = shadowVariablePrefix ?? { x in return "" }
