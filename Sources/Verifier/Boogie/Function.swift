@@ -364,13 +364,15 @@ extension BoogieTranslator {
     var functionPostAmble = [BStatement]()
     var functionPreAmble = [BStatement]()
 
+    var modifies = [String]()
     var preConditions = [BPreCondition]()
     var postConditions = [BPostCondition]()
     var bParameters = [BParameterDeclaration]()
     for param in parameters {
-      let (bParam, initStatements) = processParameter(param)
+      let (bParam, initStatements, modifiesStrings) = processParameter(param)
       functionPreAmble += initStatements
       bParameters += bParam
+      modifies += modifiesStrings
     }
     if let cTld = currentTLD {
       switch cTld {
@@ -420,7 +422,7 @@ extension BoogieTranslator {
                                                    type: .int), at: 0)
           preConditions.append(BPreCondition(expression: .lessThan(.identifier(self.structInstanceVariableName!), .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
                                              ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
-                                             free: true))
+                                             free: false))
         }
       default: break
       }
@@ -465,7 +467,6 @@ extension BoogieTranslator {
                     + body.flatMap({x in process(x, structInvariants: structInvariants)})
                     + functionPostAmble
 
-    var modifies = [String]()
     // Get mutates from function clause, or from environment if the function was made from a trait
     for mutates in functionDeclaration.mutates + (self.traitFunctionMutates[currentFunctionName] ?? []) {
       let enclosingType = mutates.enclosingType ?? getCurrentTLDName()

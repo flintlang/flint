@@ -549,12 +549,13 @@ class BoogieTranslator {
     return declarations
   }
 
-  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement]) {
+  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement], [String]) {
     let name = parameter.identifier.name
     let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
     let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
 
+    var modifies = [String]()
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
       // Can't call payable functions - internally
@@ -565,18 +566,29 @@ class BoogieTranslator {
         functionPreAmble.append(.assume(.greaterThanOrEqual(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)),
                                                             .integer(BigUInt(0))),
                                         translationInformation))
+
+        /// instance == nextInstance
+        // increment nextInstace
+        functionPreAmble.append(.assume(.equals(.identifier(translatedName),
+                                                .identifier(normaliser.generateStructInstanceVariable(structName: "Wei"))),
+                                        translationInformation))
+
+        functionPreAmble.append(.assignment(.identifier(normaliser.generateStructInstanceVariable(structName: "Wei")),
+                                            .add(.identifier(normaliser.generateStructInstanceVariable(structName: "Wei")), .integer(1)),
+                                            translationInformation))
+        modifies.append(normaliser.generateStructInstanceVariable(structName: "Wei"))
       default: break
       }
-    }
+    } else {
+      switch parameter.type.rawType {
+      case .inoutType(.userDefinedType(let udt)):
+        // instance of Wei struct, where name < nextStruct
 
-    switch parameter.type.rawType {
-    case .inoutType(.userDefinedType(let udt)), .userDefinedType(let udt):
-      // instance of Wei struct, where name < nextStruct
-
-      functionPreAmble.append(.assume(.lessThan(.identifier(translatedName),
-                                                .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
-                                      translationInformation))
-    default: break
+        functionPreAmble.append(.assume(.lessThan(.identifier(translatedName),
+                                                  .identifier(normaliser.generateStructInstanceVariable(structName: udt))),
+                                        translationInformation))
+      default: break
+      }
     }
 
     //TODO if type array/dict return shadow variables - size_0, 1, 2..  + keys
@@ -589,7 +601,7 @@ class BoogieTranslator {
                           enclosingType: getCurrentTLDName(),
                           scopeContext: getCurrentScopeContext() ?? ScopeContext())
     let (triggerPreStmts, triggerPostStmts) = triggers.lookup(parameter, context, extra: ["normalised_parameter_name": translatedName])
-    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts)
+    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts, modifies)
   }
 
   func process(_ token: Token) -> BExpression {
