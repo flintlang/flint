@@ -18,7 +18,7 @@ func main() {
     //TODO: Reached hard limit on # of arguments that Commander supports
     //Flag("print-holistic-run-stats", flag: "r", description: "Emit the holistic verifier's engine's run stats"),
     Option<Int>("max-transaction-depth", default: 5, description: "Set the max transaction depth to explore for the holistic verifier"),
-    //Option<Int>("holistic-max-timeout", default: -1, description: "Set the max timeout (s) for the holistic verifier"),
+    //Option<Int>("holistic-max-timeout", default: 86400, description: "Set the max timeout (s) for the holistic verifier"),
     Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
@@ -55,7 +55,7 @@ func main() {
         printVerificationOutput: printVerificationOutput,
         skipHolisticCheck: skipHolisticCheck,
         printHolisticRunStats: true, //printHolisticRunStats,
-        maxHolisticTimeout: -1, //maxHolisticTimeout,
+        maxHolisticTimeout: 86400, //maxHolisticTimeout,
         maxTransactionDepth: maxTransactionDepth,
         skipVerifier: skipVerifier,
         skipCodeGen: skipCodeGen,

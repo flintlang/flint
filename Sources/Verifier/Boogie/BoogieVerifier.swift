@@ -112,12 +112,9 @@ public class BoogieVerifier: Verifier {
         "--timeout", String(maxTimeout),
         "--output-dir", workingDir,
         "-e", entryPoint]
-      let (uncheckedOutput, _) = Boogie.executeTask(executable: monoLocation,
-                                                                  arguments: arguments)
-      if uncheckedOutput == nil {
-        print("Symbooglix produced no output")
-        fatalError()
-      }
+      (_, _) = Boogie.executeTask(executable: monoLocation,
+                                  arguments: arguments,
+                                  captureOutput: false)
 
       // exit code 4 == timeout
       //if !(terminationStatus == 4 || terminationStatus == 0) {

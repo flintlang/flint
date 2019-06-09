@@ -10,7 +10,8 @@ struct Boogie {
                                                                      "/inline:spec", // Boogie procedure inlining
                                                                      //"/inline:none", // No Boogie procedure inlining
                                                                      "/loopUnroll:5"
-                                                                   ])
+                                                                   ],
+                                                                   captureOutput: true)
     guard let output = uncheckedOutput else {
       print("Error during verification, could not decode verifier output")
       fatalError()
@@ -165,7 +166,7 @@ struct Boogie {
     }
   }
 
-  static func executeTask(executable: String, arguments: [String]) -> (String?, Int32) {
+  static func executeTask(executable: String, arguments: [String], captureOutput: Bool) -> (String?, Int32) {
     // Create a Task instance
     let task = Process()
 
@@ -176,16 +177,17 @@ struct Boogie {
     // Create a Pipe and make the task
     // put all the output there
     let pipe = Pipe()
-    task.standardOutput = pipe
-    task.standardError = Pipe()
-
+    task.standardOutput = captureOutput ? pipe : FileHandle(forWritingAtPath: "/dev/null")!
+    task.standardError = captureOutput ? Pipe() : FileHandle(forWritingAtPath: "/dev/null")!
     // Launch the task
     task.launch()
     task.waitUntilExit()
 
+    var uncheckedOutput: String?
+    if captureOutput {
+       uncheckedOutput = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: String.Encoding.utf8)
+    }
     // Get the data
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    let uncheckedOutput = String(data: data, encoding: String.Encoding.utf8)
     return (uncheckedOutput, task.terminationStatus)
   }
 
