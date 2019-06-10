@@ -25,7 +25,7 @@ SimpleAuction :: caller <- (any) {
 
   @payable
   public func bid(implicit value: Wei)
-    mutates (highestBidder, Wei.rawValue)
+    mutates (highestBidder, Wei.rawValue, beneficiary, hasAuctionEnded, highestBid)
 
     post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBidder == caller)
     post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBid.rawValue == prev(value.rawValue))
@@ -61,7 +61,7 @@ SimpleAuction :: caller <- (any) {
 
 SimpleAuction :: (beneficiary) {
   public func endAuction()
-    mutates (hasAuctionEnded, Wei.rawValue)
+    mutates (hasAuctionEnded, Wei.rawValue,  beneficiary, highestBid, highestBidder)
   {
     if hasAuctionEnded { fatalError() }
 

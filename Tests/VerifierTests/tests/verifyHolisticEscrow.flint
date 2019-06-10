@@ -3,6 +3,10 @@ contract Escrow(OPEN, SUCCESS, REFUND) {
   var deposits: [Address: Wei] = [:]
   var owner: Address
   var beneficiary: Address
+
+
+  // want to check that can't go from (SUCCESS/REFUND) -> (OPEN)
+  // check that all money is sent out of the contract?
 }
 
 Escrow @(any) :: owner <- (any) {
