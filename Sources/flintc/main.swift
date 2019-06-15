@@ -15,17 +15,16 @@ func main() {
     Flag("print-verifier-output", flag: "o", description: "Emit the verifier's raw verification output"),
     Flag("skip-holistic", flag: "l", description: "Skip checking holistic specifications"),
     Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),
-    //TODO: Reached hard limit on # of arguments that Commander supports
-    //Flag("print-holistic-run-stats", flag: "r", description: "Emit the holistic verifier's engine's run stats"),
+    Flag("print-holistic-run-stats", flag: "r", description: "Emit the holistic verifier's engine's run stats"),
     Option<Int>("max-transaction-depth", default: 5, description: "Set the max transaction depth to explore for the holistic verifier"),
-    //Option<Int>("holistic-max-timeout", default: 86400, description: "Set the max timeout (s) for the holistic verifier"),
+    Option<Int>("holistic-max-timeout", default: 86400, description: "Set the max timeout (s) for the holistic verifier"),
     Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
     Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
     Flag("no-stdlib", description: "Do not load the standard library"),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier, /*printHolisticRunStats,*/ maxTransactionDepth, /*maxHolisticTimeout,*/ skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier, printHolisticRunStats, maxTransactionDepth, maxHolisticTimeout, skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -54,8 +53,8 @@ func main() {
         dumpVerifierIR: dumpVerifierIR,
         printVerificationOutput: printVerificationOutput,
         skipHolisticCheck: skipHolisticCheck,
-        printHolisticRunStats: true, //printHolisticRunStats,
-        maxHolisticTimeout: 86400, //maxHolisticTimeout,
+        printHolisticRunStats: printHolisticRunStats,
+        maxHolisticTimeout: maxHolisticTimeout,
         maxTransactionDepth: maxTransactionDepth,
         skipVerifier: skipVerifier,
         skipCodeGen: skipCodeGen,
