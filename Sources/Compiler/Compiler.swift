@@ -142,7 +142,8 @@ extension Compiler {
 
     // Run final IRPreprocessor pass
     let irPreprocessOutcome = ASTPassRunner(ast: passRunnerOutcome.element).run(
-      passes: [PreConditionPreprocessor(), IRPreprocessor()],
+      passes: (!config.skipVerifier ? [AssertPreprocessor()] : []) + [PreConditionPreprocessor(checkAllFunctions: config.skipVerifier),
+              IRPreprocessor()],
       in: environment,
       sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {

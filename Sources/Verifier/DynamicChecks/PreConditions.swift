@@ -1,7 +1,5 @@
 import AST
-import Diagnostic
 import Lexer
-import Source
 
 public class PreConditionPreprocessor: ASTPass {
 
@@ -9,8 +7,11 @@ public class PreConditionPreprocessor: ASTPass {
   // for public functions with pre-conditions
 
   private var inContract = false
+  private let checkAllFunctions: Bool
 
-  public init() {}
+  public init(checkAllFunctions: Bool) {
+    self.checkAllFunctions = checkAllFunctions
+  }
 
   public func process(contractDeclaration: ContractDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
@@ -26,7 +27,7 @@ public class PreConditionPreprocessor: ASTPass {
 
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
-    if self.inContract && functionDeclaration.isPublic {
+    if self.checkAllFunctions || (self.inContract && functionDeclaration.isPublic) {
       let checks: [Statement] = functionDeclaration
       .signature
       .prePostConditions
@@ -53,7 +54,7 @@ public class PreConditionPreprocessor: ASTPass {
 
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
-    if self.inContract && specialDeclaration.isPublic {
+    if self.checkAllFunctions || (self.inContract && specialDeclaration.isPublic) {
       let checks: [Statement] = specialDeclaration
       .signature
       .prePostConditions
