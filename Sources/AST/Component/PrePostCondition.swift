@@ -2,7 +2,7 @@ public enum PrePostCondition: Equatable {
   case pre(Expression)
   case post(Expression)
 
-  private func lift() -> Expression {
+  public var lift: Expression {
     switch self {
     case .pre(let e):
       return e
@@ -28,7 +28,7 @@ public enum PrePostCondition: Equatable {
   }
 
   public func isPost() -> Bool {
-    return self.isPre()
+    return !self.isPre()
   }
 
   // MARK: - Equatable
