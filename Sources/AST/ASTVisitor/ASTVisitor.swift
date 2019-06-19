@@ -262,12 +262,14 @@ public struct ASTVisitor {
                                                         passContext: processResult.passContext)))
     case .invariantDeclaration(let expression):
       // Create empty scope
-      var newPassContext = processResult.passContext
-      newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
+      // TODO: decide compilation strategy for logical functions, such as prev()
+      //var newPassContext = processResult.passContext
+      //newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
 
-      processResult.element =
-        .invariantDeclaration(processResult.combining(visit(expression,
-                                                            passContext: newPassContext)))
+      //processResult.element =
+      //  .invariantDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: newPassContext)))
+      break
     case .holisticDeclaration(let expression):
       // Create empty scope
       var newPassContext = processResult.passContext
@@ -303,9 +305,11 @@ public struct ASTVisitor {
         .specialDeclaration(processResult.combining(visit(specialDeclaration,
                                                           passContext: processResult.passContext)))
     case .invariantDeclaration(let expression):
-      processResult.element =
-        .invariantDeclaration(processResult.combining(visit(expression,
-                                                            passContext: processResult.passContext)))
+      // TODO: Decide on logical predicate compilation approach
+      //processResult.element =
+      //  .invariantDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: processResult.passContext)))
+      break
     }
 
     let postProcessResult = pass.postProcess(structMember: processResult.element,

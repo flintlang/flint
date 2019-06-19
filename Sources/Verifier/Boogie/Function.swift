@@ -3,6 +3,8 @@ import Source
 import Lexer
 import Foundation
 
+import BigInt
+
 extension BoogieTranslator {
   func getCurrentFunction() -> FunctionDeclaration {
     if let behaviourDeclarationMember = currentBehaviourMember {
@@ -165,10 +167,6 @@ extension BoogieTranslator {
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
     var argumentPostStmts = [BStatement]()
-    guard let currentFunctionName = getCurrentFunctionName() else {
-      print("Unableto get current function name - while processing function call")
-      fatalError()
-    }
 
     // Process triggers
     let context = Context(environment: environment,
@@ -185,79 +183,23 @@ extension BoogieTranslator {
       argumentPostStmts += postStmts
     }
 
+    // Can be called not in function body
     switch rawFunctionName {
-    // Special case to handle assert functions
-    case "assert":
-      // assert that assert function call always has one argument
-      assert (argumentsExpressions.count == 1)
-      argumentsStatements.append(.assertStatement(BAssertStatement(expression: argumentsExpressions[0],
-                                                                   ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
-      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
-
-    // Handle fatal error case
-    case "fatalError":
-      argumentsStatements.append(.assume(.boolean(false), TranslationInformation(sourceLocation: functionCall.sourceLocation)))
-      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
-
-    case "send":
-      // send calls should have 2 arguments:
-      // send(account, &w)
-      assert (argumentsExpressions.count == 2)
-
-      // Is an external call -> assert contract invariants hold
-      var stmts = [BStatement]()
-      // Only select 1 half of pre/post invariants
-      for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants + self.structInvariants {
-        let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation,
-                                        isExternalCall: true,
-                                        relatedTI: invariant.ti)
-        stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
-                                                       ti: ti)))
-      }
-
-      // Need to havoc global state - could be re-entered
-      let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation)
-      var trueStatements = [BStatement]()
-      // Havoc global state - to capture that the values of the global state can be changed,
-      for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
-        trueStatements.append(.havoc(variableName, ti))
-        // Add external call
-      }
-
-      // we can assume that the invariants will hold - as all the functions must hold the invariant
-      for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants + self.structInvariants {
-        trueStatements.append(.assume(invariant.expression, ti))
-      }
-
-      let procedureName = "send"
-      // Call Boogie send function
-      let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
-                                                                 procedureName: procedureName,
-                                                                 arguments: argumentsExpressions,
-                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
-
-      // Add procedure call to callGraph
-      addProcedureCall(currentFunctionName, procedureName)
-      return (.nop, triggerPreStmts + stmts + [functionCall] + trueStatements, argumentPostStmts + triggerPostStmts)
-
     case "prev":
+      self.twoStateContextInvariant = true
       return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
-    case "returning":
-      //returning(returnvalue, property over return value)
-      assert (argumentsExpressions.count == 2)
-      guard case .identifier(let identifier) = functionCall.arguments[0].expression else {
-        print("not an identifier was used for returning operator argument expression")
+    case "STATE":
+      let stateVariable = getStateVariable()
+      let stateValue: Int
+      switch functionCall.arguments[0].expression {
+      case .identifier(let identifier):
+         stateValue = getStateVariableValue(identifier.name)
+      default:
+        print("Unknown expression in becomeStatement \(functionCall.arguments[0].expression)")
         fatalError()
       }
-      self.currentFunctionReturningValue = identifier.name
-      self.currentFunctionReturningValueValue = .identifier(self.functionReturnVariableName[getCurrentFunctionName()!]!)
-
-      let (expr, _, _) = process(functionCall.arguments[1].expression)
-
-      self.currentFunctionReturningValue = nil
-
-      return (expr, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+      return (.equals(.identifier(stateVariable), .integer(BigUInt(stateValue))), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "arrayContains":
       // check array/dict contains values
@@ -320,6 +262,86 @@ extension BoogieTranslator {
               argumentsStatements + triggerPreStmts,
               argumentPostStmts + triggerPostStmts)
 
+    default: break
+    }
+
+    guard let currentFunctionName = getCurrentFunctionName() else {
+      print("Unableto get current function name - while processing function call")
+      fatalError()
+    }
+
+    // Can only be called from within a function
+    switch rawFunctionName {
+    // Special case to handle assert functions
+    case "assert":
+      // assert that assert function call always has one argument
+      assert (argumentsExpressions.count == 1)
+      argumentsStatements.append(.assertStatement(BAssertStatement(expression: argumentsExpressions[0],
+                                                                   ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
+      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
+    // Handle fatal error case
+    case "fatalError":
+      argumentsStatements.append(.assume(.boolean(false), TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+      return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
+    case "send":
+      // send calls should have 2 arguments:
+      // send(account, &w)
+      assert (argumentsExpressions.count == 2)
+
+      // Is an external call -> assert contract invariants hold
+      var stmts = [BStatement]()
+      // Only select 1 half of pre/post invariants
+      for invariant in self.tldInvariants.values.flatMap({ $0 }) + self.globalInvariants + self.structInvariants {
+        let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation,
+                                        isExternalCall: true,
+                                        relatedTI: invariant.ti)
+        stmts.append(.assertStatement(BAssertStatement(expression: invariant.expression,
+                                                       ti: ti)))
+      }
+
+      // Need to havoc global state - could be re-entered
+      let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation)
+      var trueStatements = [BStatement]()
+      // Havoc global state - to capture that the values of the global state can be changed,
+      for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
+        trueStatements.append(.havoc(variableName, ti))
+        // Add external call
+      }
+
+      // we can assume that the invariants will hold - as all the functions must hold the invariant
+      for invariant in (self.tldInvariants[getCurrentTLDName()] ?? []) + self.globalInvariants + self.structInvariants {
+        trueStatements.append(.assume(invariant.expression, ti))
+      }
+
+      let procedureName = "send"
+      // Call Boogie send function
+      let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
+                                                                 procedureName: procedureName,
+                                                                 arguments: argumentsExpressions,
+                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+
+      // Add procedure call to callGraph
+      addProcedureCall(currentFunctionName, procedureName)
+      return (.nop, triggerPreStmts + stmts + [functionCall] + trueStatements, argumentPostStmts + triggerPostStmts)
+
+    case "returning":
+      //returning(returnvalue, property over return value)
+      assert (argumentsExpressions.count == 2)
+      guard case .identifier(let identifier) = functionCall.arguments[0].expression else {
+        print("not an identifier was used for returning operator argument expression")
+        fatalError()
+      }
+      self.currentFunctionReturningValue = identifier.name
+      self.currentFunctionReturningValueValue = .identifier(self.functionReturnVariableName[getCurrentFunctionName()!]!)
+
+      let (expr, _, _) = process(functionCall.arguments[1].expression)
+
+      self.currentFunctionReturningValue = nil
+
+      return (expr, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+
     default:
       // Check if a trait 'initialiser' is being called
       if environment.isTraitDeclared(rawFunctionName) {
@@ -327,6 +349,7 @@ extension BoogieTranslator {
         return (.integer(0), [], [])
       }
     }
+
 
     // TODO: Assert that contract invariant holds
     // TODO: Need to link the failing assert to the invariant =>

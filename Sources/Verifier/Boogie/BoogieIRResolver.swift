@@ -74,15 +74,23 @@ class BoogieIRResolver: IRResolver {
 
     for invariant in irProcedureDeclaration.structInvariants {
       // Add pre and post, even for struct inits, because nextInstance will have incremented for inits
-      preConditions.append(BPreCondition(expression: invariant.expression, ti: invariant.ti))
+      if !invariant.twoStateContext {
+        preConditions.append(BPreCondition(expression: invariant.expression, ti: invariant.ti))
+      }
       postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
     }
 
     for invariant in irProcedureDeclaration.contractInvariants + irProcedureDeclaration.globalInvariants {
-      if !irProcedureDeclaration.isContractInit {
+      // if contract init + is twoState context => don't add
+      // if not contract init + is twostate context => no pre
+      // if contract init + not twostate => add post
+      // if not contract init + not twostate contraxt =>add pre + post
+      if irProcedureDeclaration.isContractInit != invariant.twoStateContext {
+        postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
+      } else if !irProcedureDeclaration.isContractInit && !invariant.twoStateContext {
         preConditions.append(BPreCondition(expression: invariant.expression, ti: invariant.ti))
+        postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
       }
-      postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
     }
 
     return BProcedureDeclaration(name: irProcedureDeclaration.name,

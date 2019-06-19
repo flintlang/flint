@@ -68,6 +68,9 @@ class BoogieTranslator {
   // Current scope context - updated by functions, loops and if statements
   var currentScopeContext: ScopeContext?
 
+  var inInvariant: Bool = false
+  var twoStateContextInvariant: Bool = false
+
   // Struct function instance variable
   var structInstanceVariableName: String?
 
@@ -270,7 +273,9 @@ class BoogieTranslator {
         //Invariants are turned into both pre and post conditions
         self.structInstanceVariableName = "i" // TODO: Check that i is unique
 
+        self.inInvariant = true
         let expr = process(declaration).0 // TODO: Handle usage of += 1 and preStmts
+        self.inInvariant = false
 
         // All allocated structs, i < nextInstance => invariantExpr
         let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
@@ -284,7 +289,9 @@ class BoogieTranslator {
         self.structInstanceVariableName = nil
 
         structInvariants.append(BIRInvariant(expression: inv,
+                                             twoStateContext: self.twoStateContextInvariant,
                                              ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+        self.twoStateContextInvariant = false
 
       }
 
@@ -403,15 +410,6 @@ class BoogieTranslator {
       }
     }
 
-
-    // TODO: Handle usage of += 1 and preStmts
-    for declaration in contractDeclaration.invariantDeclarations {
-      //Invariants are turned into both pre and post conditions
-      invariantDeclarations.append(BIRInvariant(expression: process(declaration).0,
-                                                    ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
-    }
-    tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
-
     let stateVariableName = normaliser.generateStateVariable(contractDeclaration.identifier.name)
     contractStateVariable[contractDeclaration.identifier.name] = stateVariableName
     // Declare contract state variable
@@ -425,6 +423,19 @@ class BoogieTranslator {
       contractStateVariableStates[contractDeclaration.identifier.name]![typeState.name]
         = contractStateVariableStates[contractDeclaration.identifier.name]!.count
     }
+
+
+    // TODO: Handle usage of += 1 and preStmts
+    for declaration in contractDeclaration.invariantDeclarations {
+      //Invariants are turned into both pre and post conditions
+      self.inInvariant = true
+      invariantDeclarations.append(BIRInvariant(expression: process(declaration).0,
+                                                twoStateContext: self.twoStateContextInvariant,
+                                                ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+      self.twoStateContextInvariant = false
+      self.inInvariant = false
+    }
+    tldInvariants[contractDeclaration.identifier.name] = invariantDeclarations
 
     self.contractGlobalVariables[getCurrentTLDName()] = contractGlobalVariables
 
@@ -572,7 +583,6 @@ class BoogieTranslator {
   }
 
   func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BPreCondition], [BStatement], [String]) {
-    let name = parameter.identifier.name
     let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
     let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)

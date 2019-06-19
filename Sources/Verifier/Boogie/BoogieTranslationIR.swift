@@ -33,7 +33,20 @@ struct BIRModifiesDeclaration: Hashable {
 
 struct BIRInvariant {
   let expression: BExpression
+  let twoStateContext: Bool
   let ti: TranslationInformation
+
+  init(expression: BExpression, ti: TranslationInformation) {
+    self.expression = expression
+    self.twoStateContext = false
+    self.ti = ti
+  }
+
+  init(expression: BExpression, twoStateContext: Bool, ti: TranslationInformation) {
+    self.expression = expression
+    self.twoStateContext = twoStateContext
+    self.ti = ti
+  }
 }
 
 struct BIRProcedureDeclaration {
