@@ -29,6 +29,7 @@ utils/repl/log.txt
 utils/repl/result.txt
 utils/repl/error.txt
 utils/repl/event_result.txt
+utils/repl/gen_addr.txt
 
 utils/coverage/contract.json
 utils/coverage/address.txt
