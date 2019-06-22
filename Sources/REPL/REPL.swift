@@ -12,6 +12,7 @@ public class REPL {
     var contractInfoMap : [String : REPLContract] = [:]
     var variableMap : [String : REPLVariable] = [:]
     let contractFilePath : String
+    public var transactionAddress = ""
     
     public init(contractFilePath: String, contractAddress : String = "") {
         self.contractFilePath = contractFilePath

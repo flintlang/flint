@@ -1,5 +1,6 @@
 import AST
 import Rainbow
+import Foundation
 
 public class REPLCodeProcessor {
     
@@ -145,6 +146,30 @@ public class REPLCodeProcessor {
         return false
     }
     
+    private func getNewAddress() -> String {
+        let fileManager = FileManager.init()
+        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_address.js"
+        
+        if !(fileManager.fileExists(atPath: path)) {
+            print("FATAL ERROR: gen_address file does not exist, cannot gen new addr. Exiting.")
+            exit(0)
+        }
+        
+        let p = Process()
+        p.launchPath = "/usr/bin/env"
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.arguments = ["node", "--no-warnings", "gen_address.js"]
+        p.launch()
+        p.waitUntilExit()
+        
+        let addr_file_path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_addr.txt"
+        
+        let addr = try! String(contentsOf: URL(fileURLWithPath: addr_file_path))
+        
+        return addr
+        
+    }
+    
     public func process_expr(expr: Expression) throws -> (String, String)? {
         switch (expr) {
         case .binaryExpression(let binExp):
@@ -165,13 +190,44 @@ public class REPLCodeProcessor {
                 print("Variable \(i.name) not in scope".lightRed.bold)
             }
         case .functionCall(let fc):
-            print("NOT IMPLEMENTED YET".lightRed.bold)
             if fc.identifier.name == "newAddress" {
-    
-                // run generate new address
-                // return new address with associated type
+                let addr = getNewAddress()
                 
-                return ("addr", "Address")
+                return (addr, "Address")
+            } else if (fc.identifier.name == "setAddr") {
+                if (fc.arguments.count != 1) {
+                    print("Invalid number of arugments passed to setAddr".lightRed.bold)
+                }
+    
+                switch (fc.arguments[0].expression) {
+                case .identifier(let i):
+                    print(i)
+                    if let val = self.repl.queryVariableMap(variable: i.name) {
+                        let value = val.variableValue
+                        print(value)
+                        self.repl.transactionAddress = value
+                    } else {
+                        print("Variable \(i.description) is not in scope".lightRed.bold)
+                        return nil
+                    }
+                case .literal(let lit):
+                    switch (lit.kind) {
+                    case .literal(let literal):
+                        switch (literal) {
+                        case .address(let s):
+                            self.repl.transactionAddress = s
+                        default:
+                            print("Non-sddress literal passed into SetAddr".lightRed.bold)
+                        }
+                    default:
+                        print("Invalid expression passed to setAddr".lightRed.bold)
+                    }
+                default:
+                    print("Invalid expression passed to setAddr".lightRed.bold)
+                }
+                
+            } else if (fc.identifier.name == "unsetAddr") {
+                self.repl.transactionAddress = ""
                 
             } else {
                 print("Function \(fc.identifier.name) not in scope".lightRed.bold)
