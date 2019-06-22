@@ -92,6 +92,8 @@ contract SimpleDAO {
 	function leave() public 
 	onlyMember 
 	atStage(Stages.Propose) {
+	// the function body is as originally; but in the corrected version the call to msg.sender 
+        // should be at the end of the function body
 		uint256 balance = balances[msg.sender];
 		msg.sender.call.value((balance / totalSupply) * address(this). balance)();
 		totalSupply -= balance;
