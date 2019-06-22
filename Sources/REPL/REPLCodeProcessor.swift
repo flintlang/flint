@@ -248,7 +248,11 @@ public class REPLCodeProcessor {
                 case .address(let a):
                     return (a, "Address")
                 case .boolean(let b):
-                    return (b.rawValue, "Bool")
+                    if (b.rawValue == "true") {
+                        return ("1", "Bool")
+                    } else {
+                        return ("0", "Bool")
+                    }
                 }
             default:
                 print("ERROR: Invalid token found \(li.description)".lightRed.bold)
@@ -320,14 +324,22 @@ public class REPLCodeProcessor {
             return nil
         }
 
-        let e1ActualBool = e1 == "true"
-        let e2ActualBool = e2 == "true"
+        let e1ActualBool = e1 == "1"
+        let e2ActualBool = e2 == "1"
         
         switch (op) {
         case .and:
-            return ((e1ActualBool && e2ActualBool).description, "Bool")
+            var res = "0"
+            if ((e1ActualBool && e2ActualBool).description == "true") {
+                res = "1"
+            }
+            return (res, "Bool")
         case .or:
-            return ((e2ActualBool || e2ActualBool).description, "Bool")
+            var res = "0"
+            if ((e1ActualBool || e2ActualBool).description == "true") {
+                res = "1"
+            }
+            return (res, "Bool")
         default:
             print("Unsupported logical operator".lightRed.bold)
             return nil
