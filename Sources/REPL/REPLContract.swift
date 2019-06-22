@@ -174,6 +174,8 @@ public class REPLContract{
         
         let resType = funcInfo.getType()
         
+        var transactionAddress = self.repl.transactionAddress
+        
         let fileManager = FileManager.init()
         let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/run_function.js"
         
@@ -187,6 +189,9 @@ public class REPLContract{
         if let weiVal = wei_value {
             node_args = ["node", "run_function.js", self.abi, addr.trimmingCharacters(in: .whitespacesAndNewlines), fCall.identifier.name, isTransaction.description, resType, args, true.description, weiVal.description]
         }
+        
+       
+        node_args.append(transactionAddress)
         
         let p = Process()
         let pipe = Pipe()
