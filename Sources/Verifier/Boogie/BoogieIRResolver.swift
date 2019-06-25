@@ -81,10 +81,15 @@ class BoogieIRResolver: IRResolver {
     }
 
     for invariant in irProcedureDeclaration.contractInvariants + irProcedureDeclaration.globalInvariants {
+      // if holistic + is twostate context => don't add
       // if contract init + is twoState context => don't add
       // if not contract init + is twostate context => no pre
       // if contract init + not twostate => add post
       // if not contract init + not twostate contraxt =>add pre + post
+      if irProcedureDeclaration.isHolisticProcedure && invariant.twoStateContext {
+        continue
+      }
+
       if irProcedureDeclaration.isContractInit != invariant.twoStateContext {
         postConditions.append(BPostCondition(expression: invariant.expression, ti: invariant.ti))
       } else if !irProcedureDeclaration.isContractInit && !invariant.twoStateContext {

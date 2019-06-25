@@ -45,6 +45,7 @@ extension BoogieTranslator {
                                     .reduce([], +)
                                     .map({ $0.declaration })
                                     .filter({ $0.isPublic })
+                                    //.filter({ $0.isMutating })
     let initProcedures = self.environment.initializers(in: currentContract).map({ $0.declaration })
     if initProcedures.count > 1 {
       print("not implemented holistic spec for multiple contract inits")

@@ -272,12 +272,14 @@ public struct ASTVisitor {
       break
     case .holisticDeclaration(let expression):
       // Create empty scope
-      var newPassContext = processResult.passContext
-      newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
+      // TODO: decide compilation strategy for logical functions, such as prev()
+      //var newPassContext = processResult.passContext
+      //newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
 
-      processResult.element =
-        .holisticDeclaration(processResult.combining(visit(expression,
-                                                            passContext: newPassContext)))
+      //processResult.element =
+      //  .holisticDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: newPassContext)))
+      break
     }
 
     let postProcessResult = pass.postProcess(contractMember: processResult.element,

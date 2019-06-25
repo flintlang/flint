@@ -600,7 +600,7 @@ extension BoogieTranslator {
       returnTypes: returnTypes,
       returnNames: returnNames,
       parameters: bParameters,
-      preConditions: callerPreConds + typeStatePreConds + preConditions, //Inits should establish
+      preConditions: callerPreConds + (!isContractInit ? typeStatePreConds : []) + preConditions, //Inits should establish
       postConditions: postConditions,
       structInvariants: structInvariants,
       contractInvariants: contractInvariants,
