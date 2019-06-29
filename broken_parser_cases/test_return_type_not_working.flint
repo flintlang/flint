@@ -1,0 +1,15 @@
+contract Abc {
+  let x: Int = 1
+}
+
+Abc :: (any) {
+  public init() {} 
+
+  func test(x : Int) -> Int {
+      return  
+  }
+
+  func test_1(x : Int) -> Int {
+      return test(1,2)
+  }
+}

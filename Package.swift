@@ -18,12 +18,6 @@ let package = Package(
       ]
     ),
     .executable(
-      name: "langsrv",
-      targets: [
-        "langsrv",
-      ]
-    ),
-    .executable(
       name: "file-check",
       targets: [
         "file-check",
@@ -37,12 +31,23 @@ let package = Package(
     .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
-    .package(url: "https://github.com/theguild/json-swift.git", from: "4.0.0"),
-    .package(url: "https://github.com/flintrocks/swift-lsp.git", .branch("master")),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")
   ],
   targets: [
     // MARK: Source -
+    .target(
+      name: "flint-lsp",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "Compiler"]),
+    .target(
+      name: "flint-ca",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "ContractAnalysis", "Compiler"]),
+    .target(
+      name: "flint-test",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator", "Compiler", "Coverage"]),
+    .target(
+      name: "flint-repl",
+      dependencies: ["Commander", "Rainbow", "Symbolic", "Diagnostic", "REPL"]),
     .target(
       name: "Source",
       dependencies: []
@@ -293,20 +298,21 @@ let package = Package(
     // MARK: file-check
     .target(
         name: "file-check",
-        dependencies: [
-          "FileCheck",
-          "Commander",
-      ]
-    ),
-    // MARK: langsrv
+        dependencies: ["FileCheck", "Commander"]),
     .target(
-      name: "langsrv",
-      dependencies: [
-        "Compiler",
-        "JSONLib",
-        "LanguageServerProtocol",
-        "JsonRpcProtocol",
-      ],
-      path: "Sources/LSP/langsrv")
+        name: "LSP",
+        dependencies: ["Diagnostic", "AST"]),
+    .target(
+        name: "ContractAnalysis",
+        dependencies: ["AST"]),
+    .target(
+        name: "JSTranslator",
+        dependencies: ["AST", "Parser", "Lexer"]),
+    .target(
+        name: "REPL",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "JSTranslator", "SwiftyJSON", "Rainbow"]),
+    .target(
+        name: "Coverage",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "SwiftyJSON", "Rainbow"])
     ]
 )

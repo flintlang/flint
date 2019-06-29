@@ -1,0 +1,19 @@
+contract abc (Test, Test1) {
+   let  x:Int = 0
+   var  z:String = "sfsd"
+}
+
+
+abc @(Test, Test1) :: (any) {
+   public init() {
+        become Test1
+   }
+
+  // The IDE should be able to autocomplete payable straight away
+  @payable
+  func bid(implicit value: Wei) -> Bool{
+    // ...
+    // State is not explicitly changed.
+    return Bool
+  }
+}

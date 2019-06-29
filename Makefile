@@ -6,6 +6,15 @@ debug: generate-sources
 	swift build
 	cp -r stdlib .build/debug/
 
+.PHONY: all release zip test lint generate
+
+xcode:
+	swift package generate-xcodeproj
+
+run: 
+	swift build
+	swift run dev_version
+
 release: generate-sources
 	swift build	-c release --static-swift-stdlib
 	cp -r stdlib .build/release/
@@ -33,6 +42,7 @@ generate-mocks:
 	./generate_mocks.sh
 
 generate-sources:
+	cd utils/codegen && npm install && cd ../../
 	./utils/codegen/codegen.js
 
 clean:

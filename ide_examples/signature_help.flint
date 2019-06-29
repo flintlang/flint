@@ -1,0 +1,20 @@
+contract Iden {
+  let x : Int = "sdfsd"
+  var z : String = 0
+}
+
+Iden :: (any) {
+
+  public init() {}
+
+  func test(t : Int, t1: Int) -> Int {
+    return t
+  }
+
+  func test_two() -> Int {
+     // this should prompt a signature help when you start writng test, it should tell you the types of the arguments and the return type
+     return test(1)    
+  }
+}
+
+

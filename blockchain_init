@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "init" ]; then
+    cd utils/block
+    bash /Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/block/init.sh
+    bash /Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/block/run.sh
+elif [ "$1" == "run" ]; then
+    cd utils/block
+    bash /Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/block/script.sh
+fi

@@ -1,0 +1,4 @@
+digraph { 
+ graph [pad="0.5", nodesep="1", ranksep="2"]; 
+s1 -> s2 [label="changeS2"];
+}

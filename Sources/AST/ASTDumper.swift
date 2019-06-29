@@ -422,6 +422,7 @@ public class ASTDumper {
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
       case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly: fatalError()
+      case .emptyExpr(_): fatalError("EMPTY EXPR")
       }
     }
   }

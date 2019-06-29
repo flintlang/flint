@@ -17,13 +17,27 @@ public struct Lexer {
   var sourceCode: String
 
   var isFromStdlib: Bool
-
-  public init(sourceFile: URL, isFromStdlib: Bool = false) throws {
+  
+  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer : Bool = false, sourceCode: String = "") throws
+    {
     self.sourceFile = sourceFile
-    self.sourceCode = try String(contentsOf: sourceFile)
+        
+    if isForServer {
+       self.sourceCode = sourceCode
+    } else
+    {
+       self.sourceCode = try String(contentsOf: sourceFile)
+    }
+        
     self.isFromStdlib = isFromStdlib
   }
-
+    
+    public init(sourceCode : String) {
+        self.sourceFile = URL(fileURLWithPath: "REPL")
+        self.sourceCode = sourceCode
+        self.isFromStdlib = false
+    }
+    
   /// Converts the source code into a list of tokens.
   public func lex() -> [Token] {
     return lex(string: sourceCode)

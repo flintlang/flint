@@ -578,6 +578,7 @@ extension SemanticAnalyzer {
         return true
       case .attemptExpression:
         return true
+      case .emptyExpr: fatalError("EMPTY EXPR")
       }
     case .ifStatement:
       return false
