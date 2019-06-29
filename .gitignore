@@ -18,7 +18,7 @@ utils/testRunner/node_modules/*
 utils/gasEstimator/main.sol
 utils/gasEstimator/test.js
 utils/gasEstimator/*.bin
-utils/gasEstimator/node_modules/*
+utils/gasEstimator/node_modules/
 
 utils/repl/main.sol
 utils/repl/contract.json
