@@ -819,6 +819,7 @@ public struct ASTVisitor {
       processResult.element = .returnsExpression(processResult.combining(visit(returnsExpression,
                                                                                passContext: processResult.passContext)))
     case .rawAssembly: break
+    case .emptyExpr(_): fatalError("EMPTY EXPR")
     }
 
     let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)

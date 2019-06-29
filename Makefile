@@ -15,6 +15,13 @@ release: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE)
 	swift build -c release --static-swift-stdlib
 	cp -r stdlib .build/release/
 
+xcode:
+	swift package generate-xcodeproj
+
+run:
+	swift build
+	swift run dev_version
+
 zip: release
 	cp .build/release/flintc flintc
 	zip -r flintc.zip flintc stdlib
@@ -40,8 +47,7 @@ generate-mocks:
 	./generate_mocks.sh
 
 generate-sources: Sources/AST/ASTPass/ASTPass.generated.swift
-
-.derived-sources/AST/ASTPass/ASTPass.swift: Sources/AST/ASTPass/ASTPass.template.swift
+Sources/AST/ASTPass/ASTPass.generated.swift:
 	cd utils/codegen && npm install && cd ../..
 	./utils/codegen/codegen.js
 

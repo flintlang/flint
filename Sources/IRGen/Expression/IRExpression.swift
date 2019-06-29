@@ -71,6 +71,7 @@ struct IRExpression {
       return .inline(assembly)
     case .returnsExpression: fatalError("Returns expression shouldn't be rendered directly")
     case .range: fatalError("Range shouldn't be rendered directly")
+    case .emptyExpr: fatalError("EMPTY EXPR")
     }
 
   }

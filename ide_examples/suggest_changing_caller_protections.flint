@@ -1,0 +1,24 @@
+contract Bank {
+   var manager : Address
+   var person : Address
+}
+
+Bank :: (any)
+{
+public init(t : Address) {
+    self.manager = t
+    self.person = t
+}
+
+Bank :: (manager, person) {
+  func forManagerOrCustomers() {
+    // Error: "accounts" is not compatible with "manager"
+    // It should be able to suggest to the user to modify the caller protections
+    forManager()
+  }
+}
+
+Bank :: (manager) {
+  func forManager() {}
+}
+

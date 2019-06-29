@@ -1,0 +1,16 @@
+{
+  "name": "repl_temp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "solc": "^0.4.25",
+    "web3": "^0.20.7",
+    "why-is-node-running": "^2.1.0"
+  }
+}

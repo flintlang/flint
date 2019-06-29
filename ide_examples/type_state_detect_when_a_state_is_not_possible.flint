@@ -1,0 +1,23 @@
+contract abc (Test, Test1) {
+   let  x:Int = 0
+   var  z:String = "sfsd"
+}
+
+abc @(Test) :: (any) {
+    public init() {
+        become Test
+    }
+
+    func test() -> Int {
+     return 1
+    }
+}
+
+// The contract will never be in Test1 state - the IDE should be able to detect this
+abc @(Test1) :: (any) {
+
+    func test_1() -> Int {
+     return 1
+    }
+
+}

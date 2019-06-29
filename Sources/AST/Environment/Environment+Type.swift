@@ -286,6 +286,7 @@ extension Environment {
                    typeStates: typeStates,
                    callerProtections: callerProtections,
                    scopeContext: scopeContext)
+    case .emptyExpr(_): fatalError("Trying to compute the type of an empty expression")
     }
   }
 }

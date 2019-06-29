@@ -194,12 +194,8 @@ extension Parser {
         members.append(.invariantDeclaration(try parseExpression(upTo: newLine)))
       } else if first == .var || first == .let,
         attrs.isEmpty {
-        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
-          throw raise(.statementSameLine(at: latestSource))
-        }
         let decl = try parseVariableDeclaration(modifiers: modifiers,
-                                                enclosingType: structIdentifier.name,
-                                                upTo: newLine)
+                                                enclosingType: structIdentifier.name)
         members.append(.variableDeclaration(decl))
       } else if first == .punctuation(.closeBrace) {
         return members
@@ -380,12 +376,9 @@ extension Parser {
     }
 
     let modifiers = try parseModifiers()
-    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
-      throw raise(.statementSameLine(at: latestSource))
-    }
+  
     let variableDeclaration = try parseVariableDeclaration(modifiers: modifiers,
-                                                           enclosingType: enclosingType,
-                                                           upTo: newLine)
+                                                           enclosingType: enclosingType)
     return .variableDeclaration(variableDeclaration)
   }
 
@@ -395,10 +388,8 @@ extension Parser {
     while true {
       let modifiers = try parseModifiers()
       if currentToken?.kind == .var || currentToken?.kind == .let {
-        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
-          throw raise(.statementSameLine(at: latestSource))
-        }
-        let decl = try parseVariableDeclaration(modifiers: modifiers, enclosingType: enclosingType, upTo: newLine)
+
+        let decl = try parseVariableDeclaration(modifiers: modifiers, enclosingType: enclosingType)
         variableDeclarations.append(decl)
       } else {
         break
@@ -417,9 +408,20 @@ extension Parser {
   /// - Returns: The parsed `VariableDeclaration`.
   /// - Throws: If the token streams cannot be parsed as a `VariableDeclaration`.
   func parseVariableDeclaration(modifiers: [Token],
-                                enclosingType: RawTypeIdentifier? = nil,
-                                upTo: Int) throws -> VariableDeclaration {
-
+                                enclosingType: RawTypeIdentifier? = nil, upTo: Int = -1) throws -> VariableDeclaration {
+    
+    
+    var upTo = upTo
+    
+    if (upTo == -1)
+    {
+        guard let newLine = getNewLineIndex() else {
+            throw raise(.statementSameLine(at: latestSource))
+        }
+        
+        upTo = newLine
+    }
+    
     let declarationToken = try consume(anyOf: [.var, .let], or: .badDeclaration(at: latestSource))
 
     var name = try parseIdentifier()
@@ -428,6 +430,8 @@ extension Parser {
     }
 
     let typeAnnotation = try parseTypeAnnotation()
+    
+
 
     let assignedExpression: Expression?
 
@@ -442,6 +446,7 @@ extension Parser {
         _ = try consume(.punctuation(.equal), or: .expectedValidOperator(at: latestSource))
         assignedExpression = try parseExpression(upTo: upTo)
       } else {
+        consumeNewLines()
         assignedExpression = nil
       }
     } else {
@@ -454,6 +459,24 @@ extension Parser {
                                type: typeAnnotation.type,
                                assignedExpression: assignedExpression)
   }
+    
+    func getNewLineIndex() -> Int? {
+        
+        let upperBound = tokens.count
+        guard currentIndex <= upperBound else { return nil }
+        
+        let range = (currentIndex..<upperBound)
+        for index in range
+        {
+            let currentTok = tokens[index].kind
+            if currentTok == .newline
+            {
+                return index
+            }
+        }
+        
+        return nil
+    }
 
   func parseResult() throws -> Type {
     try consume(.punctuation(.arrow), or: .expectedRightArrow(at: latestSource))

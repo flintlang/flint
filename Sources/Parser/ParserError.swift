@@ -87,7 +87,7 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '->'")
   }
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation. A type annotation should be of the form '<var> : <type>'")
   }
   static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
@@ -163,6 +163,11 @@ extension Diagnostic {
   static func expectedRightChevron(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '>' to complete \(node)")
   }
+    
+   // MARK : Type States
+    static func expectedTypeStateCloseParen(at sourceLocation: SourceLocation) -> Diagnostic {
+        return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected close paren at the end of type state declaration")
+    }
 
   // MARK: Type
   static func expectedType(at sourceLocation: SourceLocation) -> Diagnostic {

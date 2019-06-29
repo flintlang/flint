@@ -47,15 +47,6 @@
         }
       },
       {
-        "package": "json-swift",
-        "repositoryURL": "https://github.com/theguild/json-swift.git",
-        "state": {
-          "branch": null,
-          "revision": "c81e14903222b2cb0a6a4b5ce5c91e73c4cf830a",
-          "version": "4.0.0"
-        }
-      },
-      {
         "package": "LiteSupport",
         "repositoryURL": "https://github.com/llvm-swift/Lite.git",
         "state": {
@@ -92,12 +83,12 @@
         }
       },
       {
-        "package": "LanguageServerProtocol",
-        "repositoryURL": "https://github.com/flintrocks/swift-lsp.git",
+        "package": "SwiftyJSON",
+        "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
         "state": {
-          "branch": "master",
-          "revision": "8b3b94f19d93b542be81312c62fc2b25fc0c3e58",
-          "version": null
+          "branch": null,
+          "revision": "184c6884998c41f71a73c459f9b525b7121be846",
+          "version": "4.2.0"
         }
       },
       {

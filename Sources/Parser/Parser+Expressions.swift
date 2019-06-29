@@ -85,12 +85,14 @@ extension Parser {
       if isRange {
         return .range(try parseRangeExpression())
       }
-
+        
       // Try to parse a bracketed expression.
       return .bracketedExpression(try parseBracketedExpression())
 
     }
     if case .punctuation(.openSquareBracket) = first {
+
+
       // Check for a dictionary by descending into the open bracket and looking for a colon
       currentIndex+=1
       let isDict = indexOfFirstAtCurrentDepth([.punctuation(.colon)], maxIndex: limitTokenIndex) != nil
@@ -114,7 +116,8 @@ extension Parser {
       return .variableDeclaration(try parseVariableDeclaration(modifiers: modifiers, upTo: limitTokenIndex))
     default:
       // Invalid expression
-      throw raise(.expectedExpr(at: latestSource))
+      try syncNewLine(diagnostic: .expectedExpr(at: latestSource))
+      return .emptyExpr(latestSource)
     }
   }
 
@@ -155,16 +158,26 @@ extension Parser {
 
   // MARK: Bracketed
   func parseBracketedExpression() throws -> BracketedExpression {
-    let openBracketToken = try consume(.punctuation(.openBracket), or: .expectedExpr(at: latestSource))
-    guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      throw raise(.expectedCloseParen(at: latestSource))
+    let openBracketToken = try consume(.punctuation(.openBracket), consumingTrailingNewlines: false, or: .expectedExpr(at: latestSource))
+    
+    if let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) {
+        let expression = try parseExpression(upTo: closeBracketIndex)
+        let closeBracketToken = try consume(.punctuation(.closeBracket), or: .dummy())
+        consumeNewLines()
+        
+        return BracketedExpression(expression: expression,
+                                   openBracketToken: openBracketToken,
+                                   closeBracketToken: closeBracketToken)
     }
-    let expression = try parseExpression(upTo: closeBracketIndex)
-    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .dummy())
-
-    return BracketedExpression(expression: expression,
-                               openBracketToken: openBracketToken,
-                               closeBracketToken: closeBracketToken)
+    else
+    {
+      try syncNewLine(diagnostic: .expectedCloseParen(at: latestSource))
+        
+        return BracketedExpression(
+            expression: .emptyExpr(latestSource),
+            openBracketToken: Token(kind:.punctuation(.openBracket), sourceLocation: latestSource),
+            closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: latestSource))
+    }
   }
 
   // MARK: Attempt
