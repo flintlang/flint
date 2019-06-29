@@ -69,8 +69,8 @@ $(Boogie_Z3_slink): $(Z3)
 
 $(Symbooglix_Z3_slink): $(Z3)
 	cd symbooglix \
-	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || ln -s ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe) \
-	  && (test -L src/Symbooglix/bin/Release/z3.exe || ln -s ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe) \
+	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || (mkdir -p src/SymbooglixDriver/bin/Release && ln -s ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe)) \
+	  && (test -L src/Symbooglix/bin/Release/z3.exe || (mkdir -p src/Symbooglix/bin/Release/z3.exe && ln -s ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe)) \
 	  && cd ..
 
 $(Z3):
