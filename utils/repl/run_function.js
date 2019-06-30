@@ -6,12 +6,12 @@ const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 /* CHECK THAT WE ARE ABLE TO FIND SOME ACCOUNTS */
-if (eth.accounts.length < 5) {
-	fs.writeFileSync("result.txt", "No test net was found, please launch one using flint-block");
-	process.exit(0);
-}
+//if (eth.accounts.length < 5) {
+//	fs.writeFileSync("result.txt", "No test net was found, please launch one using flint-block");
+//	process.exit(0);
+//}
 
-const defaultAcc = eth.accounts[4];
+let defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
@@ -41,7 +41,7 @@ async function transactional_method(contract, methodName, args, hyperparam) {
 		    if (!err) {
 		        resolve(result);
 		    } else {
-			console.log(err);
+	    		log(err)
 			resolve("ERROR:" + err);
 		    }
 		});
@@ -147,7 +147,13 @@ async function main() {
 	let isTransaction = process.argv[5];
 	let resType  = process.argv[6];
 	let args = process.argv[7];
-	let isPayable = process.argv[8];
+	let isPayable = process.argv[9];
+	let transactionAddress = process.argv[8];
+	if (!(transactionAddress === "")) {
+		defaultAcc = transactionAddress
+		web3.personal.unlockAccount(defaultAcc, "1", 1000);
+		web3.eth.defaultAccount = defaultAcc;
+	}
 	var json_args = []
 	if (!(args === "")) {
 	    json_args = JSON.parse(args); 
@@ -156,13 +162,13 @@ async function main() {
 	let hyperparam = {};
 
 	if (isPayable === "true") {
-		hyperparam = {value: process.argv[9]};
+		hyperparam = {value: process.argv[10]};
 	}
 
 	var res = "";
 
 	if (isTransaction === "true") {
-
+	
 	   if (resType === "Int") {
 		   let resObj = await transactional_method_int(instance, functionNameToBeExecuted, json_args, hyperparam);
 		   res = resObj.rVal;
