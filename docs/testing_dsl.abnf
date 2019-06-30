@@ -1,0 +1,69 @@
+; FLINT-TEST DSL GRAMMAR 
+
+; TOP LEVEL
+testFile = contractDeclaration contractBehaviourDeclaration
+
+; CONTRACTS
+contractDeclaration = %s"contract" SP identifier SP "{" *(WSP variableDeclaration CRLF) "}";
+
+; VARIABLES
+variableDeclaration = [*(modifier SP)] WSP (%s"var" / %s"let") SP identifier typeAnnotation WSP "=" WSP expression;
+
+; TYPES
+typeAnnotation = ":" WSP type;
+
+type = identifier 
+     / basicType
+
+basicType = %s"Bool"
+          / %s"Int"
+          / %s"String"
+          / %s"Address";
+
+; BEHAVIOUR
+contractBehaviourDeclaration = identifier WSP "::" WSP (any) WSP "{" *(WSP contractBehaviourMember CRLF) "}";
+
+contractBehaviourMember = functionDeclaration
+
+; FUNCTIONS + INITIALIZER 
+functionSignatureDeclaration    = functionHead SP identifier"()" 
+functionDeclaration             = functionSignatureDeclaration codeBlock;
+
+functionHead    =  [*(modifier SP)] %s"func";
+
+modifier  = %s"public"
+
+; STATEMENTS
+codeBlock = "{" [CRLF] *(WSP statement CRLF) WSP "}";
+statement = expression
+
+; EXPRESSIONS
+expression = identifier
+           / binaryExpression
+           / functionCall
+           / literal
+           / variableDeclaration
+
+binaryOp =  "="
+          / ".";
+
+binaryExpression = expression WSP binaryOp WSP expression;
+
+; FUNCTION CALLS
+functionCall = identifier "(" [expression *( "," WSP expression )] ")";
+
+; LITERALS
+identifier = ( ALPHA / "_" ) *( ALPHA / DIGIT / "$" / "_" );
+literal    = numericLiteral
+           / stringLiteral
+           / booleanLiteral
+           / addressLiteral;
+
+number         = 1*DIGIT;
+numericLiteral = decimalLiteral;
+decimalLiteral = number
+
+addressLiteral = %s"0x" 40HEXDIG;
+
+booleanLiteral = %s"true" / %s"false";
+stringLiteral  = """ identifier """;
