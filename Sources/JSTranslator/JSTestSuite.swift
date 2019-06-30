@@ -4,253 +4,27 @@ import Lexer
 import Foundation
 
 public class JSTranslator {
-    // for now lets write this to support a single test contract
     private var contractName: String
     private var filePath: String
     private var testSuiteName: String
     private let ast : TopLevelModule
     private var JSTestFuncs: [JSTestFunction]
     
-    private var isFuncTransaction : [String:Bool]
-    private var contractFunctionNames : [String]
-    private var contractFunctionInfo : [String : ContractFuncInfo]
-    private var contractEventInfo : [String : ContractEventInfo]
-    public static let testSuiteFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired"]
+    public var isFuncTransaction : [String:Bool]
+    public var contractFunctionNames : [String]
+    public var contractFunctionInfo : [String : ContractFuncInfo]
+    public var contractEventInfo : [String : ContractEventInfo]
+    public static let callerOrStateFuncs = ["assertCallerSat", "assertCallerUnsat", "assertCanCallInThisState", "assertCantCallInThisState", "assertEventFired", "assertWillThrow"]
+    public static let genericAsserts = ["assertEqual"]
+    public static let utilityFuncs = ["newAddress", "setAddr", "unsetAddr"]
+    public static let allFuncs = JSTranslator.callerOrStateFuncs + JSTranslator.genericAsserts + JSTranslator.utilityFuncs
     
-    private let firstHalf : String =
-"""
-const Web3 = require('web3');
-const fs = require('fs');
-const path = require('path');
-const solc = require('solc');
-const chalk = require('chalk');
-const emoji = require('node-emoji');
-const web3 = new Web3();
-const eth = web3.eth;
-web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
+    private let firstHalf : String
+    private let coverage : Bool
 
-const defaultAcc = web3.personal.newAccount("1");
-web3.personal.unlockAccount(defaultAcc, "1", 1000);
-web3.eth.defaultAccount = defaultAcc;
-
-function setAddr(addr) {
-    web3.personal.unlockAccount(addr, "1", 1000);
-    web3.eth.defaultAccount = addr;
-}
-
-function unsetAddr() {
-    web3.personal.unlockAccount(defaultAcc, "1", 1000);
-    web3.eth.defaultAccount = defaultAcc;
-}
-
-async function deploy_contract(abi, bytecode) {
-    let gasEstimate = eth.estimateGas({data: bytecode});
-    let localContract = eth.contract(JSON.parse(abi));
-
-    return new Promise (function(resolve, reject) {
-    localContract.new({
-      from:defaultAcc,
-      data:bytecode,
-      gas:gasEstimate}, function(err, contract){
-       if(!err) {
-          // NOTE: The callback will fire twice!
-          // Once the contract has the transactionHash property set and once its deployed on an address.
-           // e.g. check tx hash on the first call (transaction send)
-          if(!contract.address) {
-          //console.log(contract.transactionHash) // The hash of the transaction, which deploys the contract
-         
-          // check address on the second call (contract deployed)
-          } else {
-              //newContract = myContract;
-              //contractDeployed = true;
-              // setting the global instance to this contract
-              resolve(contract);
-          }
-           // Note that the returned "myContractReturned" === "myContract",
-          // so the returned "myContractReturned" object will also get the address set.
-       }
-     });
-    });
-}
-
-async function check_tx_mined(tx_hash) {
-    let txs = eth.getBlock("latest").transactions;
-    return new Promise(function(resolve, reject) {
-        while (!txs.includes(tx_hash)) {
-            txs = eth.getBlock("latest").transactions;
-        }
-        resolve("true");
-    });
-}
-
-async function transactional_method(contract, methodName, args) {
-    var tx_hash = await new Promise(function(resolve, reject) {
-        contract[methodName]['sendTransaction'](...args, function(err, result) {
-            resolve(result);
-        });
-    });
-
-    let isMined = await check_tx_mined(tx_hash);
-
-    return new Promise(function(resolve, reject) {
-        resolve(tx_hash);
-    });
-}
-
-async function transactional_method_void(contract, methodName, args) {
-    var value = contract[methodName]['call'](...args);
-    var tx_hash = await transactional_method(contract, methodName, args);
-
-    return {tx_hash: tx_hash, rVal: value};
-}
-
-async function transactional_method_string(contract, methodName, args) {
-    var value = web3.toAscii(contract[methodName]['call'](...args));
-    var tx_hash = await transactional_method(contract, methodName, args);
-
-    return {tx_hash: tx_hash, rVal: value};
-}
-
-async function transactional_method_int(contract, methodName, args) {
-    var value = contract[methodName]['call'](...args).toNumber();
-    var tx_hash = await transactional_method(contract, methodName, args);
-
-    return {tx_hash: tx_hash, rVal: value};
-}
-
-function call_method_string(contract, methodName, args) {
-    return contract[methodName]['call'](...args);
-}
-
-function call_method_int(contract, methodName, args) {
-    return contract[methodName]['call'](...args).toNumber();
-}
-
-function assertEqual(result_dict, expected, actual) {
-    let result = expected === actual;
-    result_dict['result'] = result && result_dict['result'];
-
-    if (result && result_dict['result']) {
-        result_dict['msg'] = "has Passed";
-    } else {
-        result_dict['msg'] = "has Failed";
-    }
-
-    return result_dict
-}
-
-async function assertEventFired(result_dict, eventName, event_args, t_contract) {
-   let result = await new Promise(function(resolve, reject) {
-        let cEvent = t_contract[eventName](event_args, {fromBlock: 0, toBlock: 'latest'});
-        cEvent.get(function(error, logs) {
-            if (logs.length > 0) {
-                resolve(true);
-            } else {
-                resolve(false);
-            }
-        });
-   });
-
-    result_dict['result'] = result && result_dict['result'];
-
-    if (result && result_dict['result']) {
-            result_dict['msg'] = "has Passed";
-    } else {
-           result_dict['msg'] = "has Failed";
-    }
-}
-
-async function isRevert(result_dict, fncName, args, t_contract) {
-    let tx_hash = await transactional_method(t_contract, fncName, args);
-    let receipt = eth.getTransactionReceipt(tx_hash);
-    let result = (receipt.status === "0x0");
-    return result
-}
-
-async function assertCallerUnsat(result_dict, fncName, args, t_contract) {
-    let result = await isRevert(result_dict, fncName, args, t_contract);
-
-    result_dict['result'] = result && result_dict['result'];
-
-    if (result && result_dict['result']) {
-            result_dict['msg'] = "has Passed";
-    } else {
-           result_dict['msg'] = "has Failed";
-    }
-}
-
-async function assertCallerSat(result_dict, fncName, args, t_contract) {
-    let result = await isRevert(result_dict, fncName, args, t_contract);
-    result = !result
-
-    result_dict['result'] = result && result_dict['result'];
-
-    if (result && result_dict['result']) {
-            result_dict['msg'] = "has Passed";
-    } else {
-           result_dict['msg'] = "has Failed";
-    }
-}
-
-async function assertCanCallInThisState(result_dict, fncName, args, t_contract) {
-    await assertCallerSat(result_dict, fncName, args, t_contract)
-}
-
-async function assertCantCallInThisState(result_dict, fncName, args, t_contract) {
-    await assertCallerUnsat(result_dict, fncName, args, t_contract)
-}
-
-function newAddress() {
-    let newAcc = web3.personal.newAccount("1");
-    web3.personal.unlockAccount(newAcc, "1", 1000);
-    return newAcc;
-}
-
-function produce_pass_msg(name) {
-    let len = name.length;
-    let passed_length = "passed".length;
-
-    let spaces_to_add = len - passed_length;
-    let passed_msg = "passed "
-    if (spaces_to_add > 0) {
-        passed_msg = new Array(spaces_to_add - 2).join(' ') + passed_msg
-    }
-
-    console.log(chalk.magentaBright.bold(name));
-    console.log(chalk.greenBright.bold(passed_msg) + emoji.get('white_check_mark'));
-    
-}
-
-function produce_fail_msg(name) {
-    let len = name.length;
-    let failed_length = "failed".length;
-
-    let spaces_to_add = len - failed_length;
-    let failed_msg = "failed "
-    if (spaces_to_add > 0) {
-        failed_msg = new Array(spaces_to_add - 2).join(' ') + failed_msg
-    }
-
-    console.log(chalk.magentaBright.bold(name));
-    console.log(chalk.red.bold(failed_msg) + emoji.get('x'));
-    
-}
-
-
-
-function process_test_result(res, test_name) {
-    if (res['result'])
-    {
-        produce_pass_msg(test_name)
-    } else {
-        produce_fail_msg(test_name)
-    }
-}
-
-"""
 
     // creates the JSTestSuite class
-    public init(ast: TopLevelModule) {
+    public init(ast: TopLevelModule, coverage: Bool = false) {
         self.contractName = ""
         self.filePath = ""
         self.testSuiteName = ""
@@ -259,8 +33,41 @@ function process_test_result(res, test_name) {
         self.contractFunctionNames = []
         self.contractFunctionInfo = [:]
         self.contractEventInfo = [:]
+        let path_to_test_framework = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_framework.js")
+        self.firstHalf = try! String(contentsOf: path_to_test_framework)
         self.ast = ast
+        self.coverage = coverage
+        loadLibraryFuncs()
         loadTestContractVars()
+    }
+    
+    private func loadLibraryFuncs() {
+        let assertEqualInfo = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertEqual"] = assertEqualInfo
+        
+        let newAddrInfo = ContractFuncInfo(resultType: "Address", payable: false, argTypes: [])
+        self.contractFunctionInfo["newAddress"] = newAddrInfo
+        
+        let setAddr =  ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["setAddr"] = setAddr
+        
+        let unsetAddr = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["unsetAddr"] = unsetAddr
+
+        let assertCallerSat = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertCallerSat"] = assertCallerSat
+        
+        let assertCallerUnSat = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertCallerUnSat"] = assertCallerUnSat
+        
+        let assertCanCallInThisState = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertCanCallInThisState"] = assertCanCallInThisState
+        
+        let assertCantCallInThisState = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertCantCallInThisState"] = assertCantCallInThisState
+        
+        let assertWillThrow = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
+        self.contractFunctionInfo["assertWillThrow"] = assertWillThrow
     }
     
     public func getFilePathToFlintContract() -> String {
@@ -308,8 +115,15 @@ function process_test_result(res, test_name) {
             let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath), isFromStdlib: false, isForServer: true, sourceCode: sourceCode).lex()
             let (_, environment, _) = Parser(tokens: tokens).parse()
             
-            let contractFunctions = environment.types[self.contractName]!.allFunctions
-            let contractEvents = environment.types[self.contractName]!.allEvents
+            
+            guard let envTypes = environment.types[self.contractName] else {
+                print("Could not load information about contract \(self.contractName)".lightRed.bold)
+                exit(0)
+            }
+            
+            let contractFunctions = envTypes.allFunctions
+            
+            let contractEvents = envTypes.allEvents
             
             // process contract event information
             for (eventName, allEventsWithName) in contractEvents {
@@ -330,13 +144,34 @@ function process_test_result(res, test_name) {
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
-                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
+                    isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable || self.coverage
+                    
+                    for stm in allFuncsWithName[0].declaration.body {
+                        switch (stm) {
+                        case .emitStatement(_):
+                            isFuncTransaction[fName] = true
+                        default:
+                            continue
+                        }
+                    }
+                    
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
                         resultTypeVal = resultType.name
                     }
                     
-                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable)
+                    var argTypes : [String] = []
+                    
+                    for a in allFuncsWithName[0].parameterTypes {
+                        switch (a) {
+                        case .basicType(let rt):
+                            argTypes.append(rt.rawValue)
+                        default:
+                            continue
+                        }
+                    }
+                    
+                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable, argTypes: argTypes)
                     contractFunctionNames.append(fName)
                 }
             }
@@ -353,311 +188,31 @@ function process_test_result(res, test_name) {
         
         let members : [ContractBehaviorMember] = contractBehaviour.members
         
-        // process each of the function declarations
         for m in members {
             switch (m) {
             case .functionDeclaration(let fdec):
-                if let fnc = processContractFunction(fdec: fdec) {
+                //
+                let fT = FunctionTranslator(jst: self)
+                let (jsFnc, errors) = fT.translate(funcDec: fdec)
+                
+                if errors.count > 0 {
+                    var error = ""
+                    for e in errors {
+                        error += e.lightRed.bold + "\n\n"
+                    }
+                    print(error)
+                    exit(0)
+                }
+                
+                if let fnc = jsFnc {
                     JSTestFuncs.append(fnc)
                 }
+                
             default:
                 continue
             }
         }
     }
-    
-    private func processContractFunction(fdec: FunctionDeclaration) -> JSTestFunction?
-    {
-        let fSignature : FunctionSignatureDeclaration = fdec.signature
-        
-        let fName : String = fSignature.identifier.name
-        
-        var jsStmts : [JSNode] = []
-        
-        // if this is not a test function then do not process
-        if (!fName.lowercased().contains("test"))
-        {
-            return nil
-        }
-        
-        let body : [Statement] = fdec.body
-        
-        for stmt in body {
-            switch (stmt) {
-            case .expression(let expr):
-                jsStmts.append(process_expr(expr: expr))
-            default:
-                continue
-            }
-        }
-        
-        return JSTestFunction(name: fName, stmts: jsStmts)
-    }
-    
-    private func extract_literal(literalToken : Token) -> JSNode? {
-        switch (literalToken.kind) {
-        case .literal(let lit):
-            switch (lit) {
-            case .decimal(let dec):
-                switch (dec) {
-                case .integer(let val):
-                    return .Literal(.Integer(val))
-                default:
-                    break
-                }
-            case .address(let s):
-                return .Literal(.String(s))
-            case .string(let s):
-                return .Literal(.String(s))
-            default:
-                return nil
-            }
-        default:
-            return nil
-        }
-        
-        return nil
-    }
-    
-    
-    private func process_func_call_args(args : [FunctionArgument]) -> [JSNode] {
-        
-        var jsArgs : [JSNode] = []
-        
-        for a in args {
-            // create a JSNode for each of these but for now we will just do variables
-            switch (a.expression)
-            {
-            case .identifier(let i):
-                jsArgs.append(.Variable(JSVariable(variable: i.name)))
-            case .literal(let l):
-                if let lit = extract_literal(literalToken: l) {
-                    jsArgs.append(lit)
-                }
-            case .binaryExpression(let be):
-                switch (be.opToken) {
-                case .dot:
-                    jsArgs.append(process_dot_expr(binExpr: be))
-                default:
-                    break
-                }
-        
-            default:
-                break
-            }
-        }
-        
-        return jsArgs
-    }
-
-    private func process_assignment_expr(binExp : BinaryExpression) -> JSNode
-    {
-        var rhsNode : JSNode? = nil
-        var type : Bool? = nil
-        var name: String? = nil
-        var resultType: String? = nil
-        var isInstantiation : Bool = false
-      
-        
-        switch (binExp.lhs) {
-        case .variableDeclaration(let vdec):
-            name = vdec.identifier.name
-            type = vdec.isConstant
-            switch (vdec.type.rawType) {
-            case .basicType(let rt):
-                switch (rt) {
-                case .string:
-                    resultType = "String"
-                case .int:
-                    resultType = "Int"
-                case .address:
-                    resultType = "Address"
-                case .bool:
-                    resultType = "Bool"
-                default:
-                    resultType = vdec.type.rawType.name
-                }
-            default:
-                resultType = vdec.type.rawType.name
-            }
-        default:
-            break
-        }
-        
-        
-        switch (binExp.rhs) {
-        case .binaryExpression(let binExpr):
-            switch (binExpr.op.kind) {
-            case .punctuation(let p):
-                switch (p) {
-                case .dot:
-                    rhsNode = process_dot_expr(binExpr: binExpr)
-                default:
-                    break
-                }
-            default:
-                break
-            }
-        case .functionCall(let fCall):
-            isInstantiation = !fCall.identifier.name.lowercased().contains("assert") && !contractFunctionNames.contains(fCall.identifier.name) && fCall.identifier.name.lowercased().contains(self.contractName.lowercased())
-            rhsNode = process_func_call(fCall: fCall)
-        case .literal(let li):
-            if let lit = extract_literal(literalToken: li) {
-                rhsNode = lit
-            }
-        default:
-            break
-        }
-
-        return .VariableAssignment(JSVariableAssignment(lhs: name!, rhs: rhsNode!, isConstant: type!, resultType: resultType!, isInstantiation: isInstantiation))
-    }
-    
-    private func process_dot_expr(binExpr : BinaryExpression) -> JSNode {
-        var lhsName : String = ""
-        var rhsNode : JSNode? = nil
-        
-        switch (binExpr.lhs) {
-        case .identifier(let i):
-            lhsName = i.name
-        default:
-            break
-        }
-        
-        switch (binExpr.rhs) {
-        case .functionCall(let fCall):
-            rhsNode = process_func_call(fCall: fCall, lhsName: lhsName)
-        case .identifier(let i):
-            rhsNode = .Variable(JSVariable(variable: i.name))
-        default:
-            break
-        }
-        
-        return rhsNode!
-    }
-    
-    private func extract_int_lit_from_expr(expr : Expression) -> Int? {
-        switch (expr) {
-        case .literal(let li):
-            switch (li.kind) {
-            case .literal(let lit):
-                switch (lit) {
-                case .decimal(let dec):
-                    switch (dec) {
-                    case .integer(let i):
-                        return i
-                    default:
-                        return nil
-                    }
-                default:
-                    return nil
-                }
-            default:
-                return nil
-            }
-        default:
-            return nil
-        }
-    }
-    
-    private func get_wei_val(args : [FunctionArgument]) -> (Int, Int)? {
-        for (i, a) in args.enumerated() {
-            if let label = a.identifier {
-                if (label.name == "_wei") {
-                    guard let wei_val = extract_int_lit_from_expr(expr: a.expression) else {
-                        print("Non numeric wei value found: \(a.expression.description)".lightRed.bold)
-                        exit(0)
-                    }
-                    
-                    return (i, wei_val)
-                }
-            }
-        }
-        
-        return nil
-    }
-    
-    private func process_func_call(fCall : FunctionCall, lhsName: String = "") -> JSNode {
-        let fName : String = fCall.identifier.name
-        var isTransaction = false
-        
-        if let isFuncTransaction = isFuncTransaction[fName] {
-            isTransaction = isFuncTransaction
-        }
-        
-        var resultType: String = ""
-        var isPayable : Bool = false
-        if let funcInfo = contractFunctionInfo[fName] {
-            resultType = funcInfo.getType()
-            isPayable = funcInfo.isPayable()
-        }
-        
-        var weiVal : Int? = nil
-        var funcCallArgs = fCall.arguments
-        if isPayable {
-            guard let (idx, weiAmt) = get_wei_val(args: fCall.arguments) else {
-                print("Payable function found but wei has not been sent, add wei with argument label _wei. Function Name: \(fCall.identifier.name)".lightRed.bold)
-                exit(0)
-            }
-            weiVal = weiAmt
-            var firstHalf : [FunctionArgument]
-            var secondHalf : [FunctionArgument]
-            
-            if idx > 0 {
-                firstHalf = Array(funcCallArgs[...(idx-1)])
-                secondHalf = Array(funcCallArgs[(idx+1)...])
-            } else {
-                 firstHalf = []
-                 secondHalf = Array(funcCallArgs[(idx+1)...])
-            }
-        
-            let completeArray = firstHalf + secondHalf
-            funcCallArgs = completeArray
-        }
-        
-        let funcArgs = process_func_call_args(args: funcCallArgs)
-        
-        var contractEventInfo : ContractEventInfo? = nil
-        if fName.contains("assertEventFired") {
-            if let eventInfo = self.contractEventInfo[funcArgs[0].description] {
-                contractEventInfo = eventInfo
-            } else {
-                print("The event " + funcArgs[0].description + " does not exist")
-                exit(0)
-            }
-        }
-        
-        let isAssert = fName.lowercased().contains("assert")
-        
-        return .FunctionCall(JSFunctionCall(contractCall: contractFunctionNames.contains(fName), transactionMethod: isTransaction, isAssert: isAssert, functionName: fName, contractName: lhsName, args: funcArgs, resultType: resultType, isPayable: isPayable, eventInformation: contractEventInfo, weiAmount: weiVal))
-    }
-    
-    
-    private func process_expr(expr : Expression) -> JSNode
-    {
-        var jsNode : JSNode? = nil
-        switch (expr) {
-        case .binaryExpression(let binExp):
-            switch (binExp.op.kind) {
-            case .punctuation(let punc):
-                switch (punc) {
-                case .equal:
-                    jsNode = process_assignment_expr(binExp: binExp)
-                case .dot:
-                    jsNode = process_dot_expr(binExpr: binExp)
-                default:
-                    break
-                }
-            default: break
-            }
-        case .functionCall(let fCall):
-            jsNode = process_func_call(fCall: fCall)
-        default:
-            break
-        }
-        
-        return jsNode!
-    }
-    
     
     
     private func processContract(contract : ContractDeclaration)
@@ -725,10 +280,12 @@ function process_test_result(res, test_name) {
         
         fnc += "    let bytecode = \"0x\" + compiledContract.contracts[':' + nameOfContract].bytecode; \n"
         
+        fnc += "     console.log(chalk.green(\"Running test suite: \(self.testSuiteName)\")); \n"
+        
         var counter: Int = 0
         for tFnc in JSTestFuncs {
             fnc += "    let depContract_\(counter) = await deploy_contract(abi, bytecode); \n"
-            fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \" + depContract_\(counter).address); \n"
+            fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \" + depContract_\(counter).address + \"\\n\"); \n"
             fnc += "    await "  + tFnc.getFuncName() + "(depContract_\(counter)) \n"
             counter += 1
         }

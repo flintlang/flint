@@ -1,5 +1,6 @@
 import AST
 import Rainbow
+import Foundation
 
 public class REPLCodeProcessor {
     
@@ -73,14 +74,15 @@ public class REPLCodeProcessor {
                     rC = rContract
                     variableName = i.name
                 } else {
-                    print("Variable is not mapped to a contract")
+                    print("Variable is not mapped to a contract".lightRed.bold)
                     return nil
                 }
             } else {
-                print("Variable \(i.name) not in scope")
+                print("Variable \(i.name) not in scope in dot expr".lightRed.bold)
+                return nil
             }
         default:
-            print("Only identifiers are allowed on the LHS of a dot expression")
+            print("Only identifiers are allowed on the LHS of a dot expression".lightRed.bold)
         }
         
         switch (expr.rhs) {
@@ -88,6 +90,19 @@ public class REPLCodeProcessor {
             if let res = rC?.run(fCall: fCall, instance: variableName) {
                 let resType = rC!.getResultType(fnc: fCall.identifier.name)
                 return (res, resType)
+            }
+            
+        case .identifier(let i):
+            let name = i.name
+            if let ev = rC!.getEventInfo(eventName: name) {
+                if let res = rC!.getEventLogs(instance: variableName, eventName: name) {
+                    return (res, "nil")
+                } else {
+                    print("Could not process logs for event \(name)".lightRed.bold)
+                    return nil
+                }
+            } else {
+               print("\(name) is not a member of contract \(variableName)".lightRed.bold)
             }
         default:
             print("Not supported yet")
@@ -131,6 +146,30 @@ public class REPLCodeProcessor {
         return false
     }
     
+    private func getNewAddress() -> String {
+        let fileManager = FileManager.init()
+        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_address.js"
+        
+        if !(fileManager.fileExists(atPath: path)) {
+            print("FATAL ERROR: gen_address file does not exist, cannot gen new addr. Exiting.")
+            exit(0)
+        }
+        
+        let p = Process()
+        p.launchPath = "/usr/bin/env"
+        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.arguments = ["node", "--no-warnings", "gen_address.js"]
+        p.launch()
+        p.waitUntilExit()
+        
+        let addr_file_path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_addr.txt"
+        
+        let addr = try! String(contentsOf: URL(fileURLWithPath: addr_file_path))
+        
+        return addr
+        
+    }
+    
     public func process_expr(expr: Expression) throws -> (String, String)? {
         switch (expr) {
         case .binaryExpression(let binExp):
@@ -150,7 +189,49 @@ public class REPLCodeProcessor {
             } else {
                 print("Variable \(i.name) not in scope".lightRed.bold)
             }
-            
+        case .functionCall(let fc):
+            if fc.identifier.name == "newAddress" {
+                let addr = getNewAddress()
+                
+                return (addr, "Address")
+            } else if (fc.identifier.name == "setAddr") {
+                if (fc.arguments.count != 1) {
+                    print("Invalid number of arugments passed to setAddr".lightRed.bold)
+                }
+    
+                switch (fc.arguments[0].expression) {
+                case .identifier(let i):
+                    print(i)
+                    if let val = self.repl.queryVariableMap(variable: i.name) {
+                        let value = val.variableValue
+                        print(value)
+                        self.repl.transactionAddress = value
+                    } else {
+                        print("Variable \(i.description) is not in scope".lightRed.bold)
+                        return nil
+                    }
+                case .literal(let lit):
+                    switch (lit.kind) {
+                    case .literal(let literal):
+                        switch (literal) {
+                        case .address(let s):
+                            self.repl.transactionAddress = s
+                        default:
+                            print("Non-sddress literal passed into SetAddr".lightRed.bold)
+                        }
+                    default:
+                        print("Invalid expression passed to setAddr".lightRed.bold)
+                    }
+                default:
+                    print("Invalid expression passed to setAddr".lightRed.bold)
+                }
+                
+            } else if (fc.identifier.name == "unsetAddr") {
+                self.repl.transactionAddress = ""
+                
+            } else {
+                print("Function \(fc.identifier.name) not in scope".lightRed.bold)
+            }
         case .literal(let li):
             switch (li.kind) {
             case .literal(let lit):
@@ -167,7 +248,11 @@ public class REPLCodeProcessor {
                 case .address(let a):
                     return (a, "Address")
                 case .boolean(let b):
-                    return (b.rawValue, "Bool")
+                    if (b.rawValue == "true") {
+                        return ("1", "Bool")
+                    } else {
+                        return ("0", "Bool")
+                    }
                 }
             default:
                 print("ERROR: Invalid token found \(li.description)".lightRed.bold)
@@ -181,7 +266,6 @@ public class REPLCodeProcessor {
     
     private func process_arithmetic_expr(expr: BinaryExpression, op : REPLOperator) throws -> (String, String)? {
         
-     
         guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
             print("Could not process arithmetic expression".lightRed.bold)
             return nil
@@ -216,6 +300,49 @@ public class REPLCodeProcessor {
             return ((e1Int - e2Int).description, "Int")
         case .power:
             return ((e1Int ^ e2Int).description, "Int")
+        default:
+            print("Not an arithmetic operator".lightRed.bold)
+            return nil
+        }
+        
+    }
+    
+    private func process_logical_expr(expr: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
+        
+        guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
+            print("Could not process logical expression".lightRed.bold)
+            return nil
+        }
+        
+        guard let (e2, e2Type) = try process_expr(expr: expr.rhs) else {
+            print("Could not process logical expression".lightRed.bold)
+            return nil
+        }
+        
+        if e2Type != "Bool" || e1Type != "Bool" {
+            print("Invalid type passed to logical operation".lightRed.bold)
+            return nil
+        }
+
+        let e1ActualBool = e1 == "1"
+        let e2ActualBool = e2 == "1"
+        
+        switch (op) {
+        case .and:
+            var res = "0"
+            if ((e1ActualBool && e2ActualBool).description == "true") {
+                res = "1"
+            }
+            return (res, "Bool")
+        case .or:
+            var res = "0"
+            if ((e1ActualBool || e2ActualBool).description == "true") {
+                res = "1"
+            }
+            return (res, "Bool")
+        default:
+            print("Unsupported logical operator".lightRed.bold)
+            return nil
         }
         
     }
@@ -235,6 +362,14 @@ public class REPLCodeProcessor {
             return try process_arithmetic_expr(expr: expr, op: .divide)
         case .power:
             return try process_arithmetic_expr(expr: expr, op: .power)
+        case .and:
+            return try process_logical_expr(expr: expr, op: .and)
+        case .or:
+            return try process_logical_expr(expr: expr, op: .or)
+        case .notEqual:
+            print("not equal")
+        case .doubleEqual:
+            print("double equal")
         default:
             print("This expression is not supported: \(expr.description)".lightRed.bold)
         }

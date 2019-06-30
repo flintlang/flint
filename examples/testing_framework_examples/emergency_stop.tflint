@@ -1,0 +1,17 @@
+contract TestEmergency {
+  let filePath : String = "[redacted]"
+  let contractName: String = "Emergency"   
+  let TestSuiteName : String  = "Emergency Tests"
+}
+
+TestEmergency :: (any) {
+
+  public func test_cannot_run_in_paused_state() {
+     let owner : Address = newAddress()
+     let e : Emergency = Emergency(owner)
+ 
+     assertCantCallInThisState("run")
+  }   
+
+}
+

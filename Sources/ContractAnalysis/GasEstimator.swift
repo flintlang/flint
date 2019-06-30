@@ -16,7 +16,7 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 const eth = web3.eth;
 
-const defaultAcc = web3.personal.newAccount("1");
+const defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
 web3.personal.unlockAccount(defaultAcc, "1", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
@@ -123,7 +123,16 @@ async function deploy_contract(abi, bytecode) {
         
         let funcs = env.types[contractName]!.allFunctions
         
-        for (fName, _) in funcs {
+        for (fName, fData) in funcs {
+            let expParams = fData[0].declaration.explicitParameters
+            if (fData[0].declaration.isPayable) {
+                continue
+            }
+            
+            if (expParams.count > 0) {
+                continue
+            }
+
             jsTestFile += "    res_dict[\"\(fName)\"] = c.\(fName).estimateGas(); \n"
         }
         

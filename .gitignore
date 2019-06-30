@@ -28,13 +28,23 @@ utils/repl/node_modules/*
 utils/repl/log.txt
 utils/repl/result.txt
 utils/repl/error.txt
+utils/repl/event_result.txt
+utils/repl/gen_addr.txt
 
 utils/coverage/contract.json
 utils/coverage/address.txt
 utils/coverage/counts.json
+utils/coverage/function.json
+utils/coverage/branch.json
+utils/coverage/function_to_line.json
+utils/coverage/statements.json
 utils/coverage/coverage.info
 utils/coverage/html/*
 utils/coverage/node_modules/*
+
+utils/block/keystore/*
+utils/block/geth/*
+utils/block/go-ethereum/*
 
 bin/
 contracts/

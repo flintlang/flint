@@ -12,6 +12,7 @@ public class REPL {
     var contractInfoMap : [String : REPLContract] = [:]
     var variableMap : [String : REPLVariable] = [:]
     let contractFilePath : String
+    public var transactionAddress = ""
     
     public init(contractFilePath: String, contractAddress : String = "") {
         self.contractFilePath = contractFilePath
@@ -26,15 +27,12 @@ public class REPL {
             exit(0)
         }
 
-        
-        
         let p = Process()
         p.launchPath = "/usr/bin/env"
         p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
-        p.arguments = ["node", "compile_contract.js"]
+        p.arguments = ["node", "--no-warnings", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
- 
  
         let contractJsonFilePath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/contract.json"
         
@@ -51,7 +49,7 @@ public class REPL {
         
         return nil
     }
-    
+        
     public func queryVariableMap(variable : String) -> REPLVariable? {
         if let rVar = variableMap[variable] {
             return rVar
@@ -75,6 +73,10 @@ public class REPL {
             var flintType = ""
             if argType == "uint256" {
                 flintType = "Int"
+            } else if argType == "bytes32" {
+                flintType = "String"
+            } else if argType == "address" {
+                flintType = "Address"
             } else {
                 flintType = argType
             }
@@ -114,7 +116,11 @@ public class REPL {
                 if isConstant {
                     abi_pretty_funcs.append(funcSignature.lightWhite + " (Constant)".lightCyan.bold)
                 } else {
-                    abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating)".lightYellow.bold)
+                    if payable {
+                        abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating, Payable)".lightYellow.bold)
+                    } else {
+                        abi_pretty_funcs.append(funcSignature.lightWhite + " (Mutating)".lightYellow.bold)
+                    }
                 }
             }
         }

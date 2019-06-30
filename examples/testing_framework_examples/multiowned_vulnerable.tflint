@@ -1,0 +1,18 @@
+contract TestMultiOwned {
+  let filePath : String = "[redacted]" 
+  let contractName : String = "MultiOwnable"
+  let TestSuiteName : String = "Unused"
+}
+
+TestMultiOwned :: (any) {
+   public func test_only_owners_can_add() {
+        let owner : Address = newAddress()
+        let not_owner : Address = newAddress()
+
+        let mo : MultiOwnable = MultiOwnable(owner)
+
+	setAddr(not_owner)
+        assertCallerUnsat("addOwner", not_owner)
+        unsetAddr() 
+   }
+}

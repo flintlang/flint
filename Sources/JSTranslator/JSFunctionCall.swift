@@ -13,7 +13,7 @@ public class JSFunctionCall : CustomStringConvertible {
     private let isPayable : Bool
     private let weiAmount : Int?
     
-    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "", isPayable: Bool, eventInformation : ContractEventInfo? = nil, weiAmount : Int? = nil) {
+    public init(contractCall: Bool, transactionMethod: Bool, isAssert: Bool, functionName: String, contractName : String, args : [JSNode], resultType: String = "nil", isPayable: Bool, eventInformation : ContractEventInfo? = nil, weiAmount : Int? = nil) {
         self.contractCall = contractCall
         self.transactionMethod = transactionMethod
         self.isAssert = isAssert
@@ -26,6 +26,10 @@ public class JSFunctionCall : CustomStringConvertible {
         self.eventInformation = eventInformation
     }
     
+    public func getType() -> String {
+        return resultType
+    }
+    
     
     public func generateExtraVarAssignment() -> Bool {
         return transactionMethod && (resultType != "")
@@ -36,7 +40,7 @@ public class JSFunctionCall : CustomStringConvertible {
             return ""
         }
         var desc = "await transactional_method(t_contract, \'testFrameworkConstructor\', "
-        desc += "[" + create_arg_list() + "]" + ")"
+        desc += "[" + create_arg_list() + "]" + ", {})"
         return desc
     }
     
@@ -74,7 +78,6 @@ public class JSFunctionCall : CustomStringConvertible {
     
    
     public var description: String {
-        // this is where you actually call the right
         var fCall = ""
         
         if (contractCall) {
@@ -86,6 +89,8 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "Address") {
                     fCall = "await transactional_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Bool") {
+                    fCall = "await transactional_method_bool(t_contract, " + "'" + self.functionName + "'"
                 } else {
                     fCall = "await transactional_method_void(t_contract, " + "'" + self.functionName + "'"
                 }
@@ -118,21 +123,23 @@ public class JSFunctionCall : CustomStringConvertible {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
                 } else if (resultType == "Address") {
                     fCall = "call_method_string(t_contract, " + "'" + self.functionName + "'"
+                } else if (resultType == "Bool") {
+                    fCall = "call_method_bool(t_contract, " + "'" + self.functionName + "'"
                 } else {
-                    print("Calling a constant function with no return type, this is not allowed".lightRed.bold)
-                    print("Function: \(self.functionName)".lightRed.bold)
-                    exit(0)
+                    print("WARNING: Calling a constant function with no return type".lightYellow.bold)
+                    print("Function: \(self.functionName)".lightYellow.bold)
+                    fCall = "call_method_void(t_contract, " + "'" + self.functionName + "'"
                 }
 
                 if args.count > 0 {
                     fCall += ", [" + create_arg_list() + "])"
                 } else {
-                    fCall += ", []);"
+                    fCall += ", [])"
                 }
             }
         } else {
             
-            let assertFuncs : [String] = JSTranslator.testSuiteFuncs
+            let assertFuncs : [String] = JSTranslator.callerOrStateFuncs
             
             let isCallerOrStateFunc = assertFuncs.contains(functionName)
             
@@ -158,7 +165,7 @@ public class JSFunctionCall : CustomStringConvertible {
                         print("Failed to construct event filter")
                         exit(0)
                     }
-                    fCall += "\"" + event_name + "\", "
+                    fCall += event_name + ", "
                     fCall += event_filter
                 } else {
                     print("No associated event information with this function call")
@@ -168,7 +175,6 @@ public class JSFunctionCall : CustomStringConvertible {
                 
                 if isCallerOrStateFunc {
 
-                    // I need to now verify
                     if args.count > 0 {
                         fCall +=  args[0].description
                     }
@@ -185,15 +191,13 @@ public class JSFunctionCall : CustomStringConvertible {
                         fCall += create_arg_list()
                     }
                 }
-                
-
             }
             
             if isCallerOrStateFunc {
                 fCall += ", t_contract"
             }
             
-            fCall += ");"
+            fCall += ")"
         }
     
         return fCall

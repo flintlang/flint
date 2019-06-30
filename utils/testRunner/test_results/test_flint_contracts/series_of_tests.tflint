@@ -9,11 +9,11 @@ TestCounter :: (any) {
   public func testCon2() {
    let c : Counter = Counter(1, "0x838c72b6db1c2e430699cbf56a304703371db140")
 
-   let v : String = c.getAddr()
-   let c : Int = c.getExtraValue()
+   let v : Address = c.getAddr()
+   let num : Int = c.getExtraValue()
 
    assertEqual("0x838c72b6db1c2e430699cbf56a304703371db140", v);
-   assertEqual(1, c);
+   assertEqual(1, num);
   }   
 
   public func testInc_1() {

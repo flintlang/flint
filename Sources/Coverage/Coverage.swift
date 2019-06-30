@@ -9,6 +9,12 @@ public class CoverageProvider {
     private var statementCount : Int = 0
     private var blockNum : Int = 0
     
+    
+    private var functionToLineNo : [String : Int] = [:]
+    private var statememtDict : [String: Int] = [:]
+    private var functionDict : [String : Int] = [:]
+    private var branchDict : [String : [String: Int]] = [:]
+    
     public init() {}
     
     public func instrument(ast : TopLevelModule) -> TopLevelModule {
@@ -30,9 +36,49 @@ public class CoverageProvider {
         counts["statements"] = statementCount
         counts["branch"] = branchNumberCount
         
-        let json = String(data: try! JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
+        do {
+            let data = try JSONSerialization.data(withJSONObject: statememtDict, options: [])
+            let json_statement_dict = String(data: data , encoding: .utf8)!
+            try json_statement_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/statements.json"), atomically: true, encoding: .utf8)
+        } catch {
+            print(error)
+            print("failed to write statements.json")
+        }
         
-        try! json.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json"), atomically: true, encoding: .utf8)
+        do {
+            let json_branch_dict = String(data: try JSONSerialization.data(withJSONObject: branchDict, options: []), encoding: .utf8)!
+            try json_branch_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/branch.json"), atomically: true, encoding: .utf8)
+        } catch (let e) {
+            print(e)
+            print("failed to write branch.json")
+        }
+        
+        do {
+            let json_function_dict = String(data: try JSONSerialization.data(withJSONObject: functionDict, options: []), encoding: .utf8)!
+            try json_function_dict.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function.json"), atomically: true, encoding: .utf8)
+            
+        } catch (let e) {
+            print(e)
+            print("failed to write function.json")
+        }
+        
+        do {
+            let json_function_to_line_no = String(data: try JSONSerialization.data(withJSONObject: functionToLineNo, options: []), encoding: .utf8)!
+            try json_function_to_line_no.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function_to_line.json"), atomically: true, encoding: .utf8)
+    
+        } catch (let e) {
+            print(e)
+            print("failed to write function_to_line.json")
+            
+        }
+        
+        do {
+              let json = String(data: try JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
+              try json.write(to: URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json"), atomically: true, encoding: .utf8)
+        } catch (let e) {
+            print(e)
+            print("failed to write counts.json")
+        }
         
         return TopLevelModule(declarations: new_decs)
     }
@@ -135,6 +181,16 @@ public class CoverageProvider {
         return stmtEventStmt
     }
     
+    private func addToBranchDict(line: Int, blockNum: Int, branchNum: Int) {
+        var innerDict : [String: Int] = [:]
+        innerDict["line"] = line
+        innerDict["blockNum"] = blockNum
+        innerDict["branchNum"] = branchNum
+        innerDict["count"] = 0
+        
+        self.branchDict[line.description] = innerDict
+    }
+    
     private func instrument_if(ifS : IfStatement) -> IfStatement {
         self.branchNumberCount += 2
         
@@ -142,6 +198,7 @@ public class CoverageProvider {
         
         self.blockNum += 1
         ifBody.append(branch_event(line: ifS.ifToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
+        addToBranchDict(line: ifS.sourceLocation.line, blockNum: self.blockNum, branchNum: 0)
         if (!ifS.body.isEmpty) {
             ifBody.append(contentsOf: intstrument_statements(stmts: ifS.body))
         }
@@ -152,11 +209,15 @@ public class CoverageProvider {
         if (!ifS.elseBody.isEmpty) {
             elseBody.append(branch_event(line: ifS.elseBody[0].sourceLocation.line - 1, branch: 1, blockNum: self.blockNum))
             elseBody.append(contentsOf: intstrument_statements(stmts: ifS.elseBody))
+            addToBranchDict(line: (ifS.elseBody[0].sourceLocation.line - 1), blockNum: self.blockNum, branchNum: 1)
+
         } else {
             if (ifS.body.isEmpty) {
-                elseBody.append(branch_event(line: ifS.ifToken.sourceLocation.line, branch: 1, blockNum: self.blockNum))
+                elseBody.append(branch_event(line: ifS.ifToken.sourceLocation.line + 2, branch: 1, blockNum: self.blockNum))
+                addToBranchDict(line: ifS.ifToken.sourceLocation.line + 2, blockNum: self.blockNum, branchNum: 1)
             } else {
-                elseBody.append(branch_event(line: ifS.body[0].sourceLocation.line + 1, branch: 1, blockNum: self.blockNum))
+                elseBody.append(branch_event(line: ifS.body[ifS.body.count - 1].sourceLocation.line + 1, branch: 1, blockNum: self.blockNum))
+                addToBranchDict(line: ifS.body[ifS.body.count - 1].sourceLocation.line + 1, blockNum: self.blockNum, branchNum: 1)
             }
         }
      
@@ -196,8 +257,9 @@ public class CoverageProvider {
                     self.blockNum += 1
                 }
                 self.statementCount += 1
-                body.append(stmt)
                 body.append(stmt_event(line: stmt.sourceLocation.line))
+                self.statememtDict[stmt.sourceLocation.line.description] = 0
+                body.append(stmt)
             }
         }
         
@@ -209,6 +271,7 @@ public class CoverageProvider {
         self.branchNumberCount += 1
         var body : [Statement] = []
         body.append(branch_event(line: forS.forToken.sourceLocation.line, branch: 0, blockNum: self.blockNum))
+        addToBranchDict(line: forS.forToken.sourceLocation.line, blockNum: self.blockNum, branchNum: 0)
         body.append(contentsOf: intstrument_statements(stmts: forS.body))
   
         var instForStmt = ForStatement(forToken: forS.forToken, variable: forS.variable, iterable: forS.iterable, statements: body)
@@ -222,6 +285,8 @@ public class CoverageProvider {
     private func instrument_function(fDec: FunctionDeclaration) -> FunctionDeclaration {
         self.functionsCount += 1
         self.blockNum += 1
+        self.functionToLineNo[fDec.name] = fDec.signature.sourceLocation.line
+        self.functionDict[fDec.name] = 0
         
         var body : [Statement]  = []
         

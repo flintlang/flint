@@ -4,8 +4,9 @@ public func produce_graphs_from_ev(ev : Environment) -> [Graph] {
     for c in ev.declaredContracts {
         let name = c.name
         
-        // search init function to find starting state
-        /*
+        var startingState = ""
+        
+     
         let initDecBody = ev.types[name]!.publicInitializer!.body
         for s in initDecBody {
             switch s {
@@ -21,8 +22,7 @@ public func produce_graphs_from_ev(ev : Environment) -> [Graph] {
                 break
             }
         }
-        */
-        
+ 
         // process the functions to get the state transitions (edges)
         
         let funcs = ev.types[name]!.functions
@@ -60,7 +60,7 @@ public func produce_graphs_from_ev(ev : Environment) -> [Graph] {
 
        }
         
-        let tsGraph = Graph(edges: edges)
+        let tsGraph = Graph(edges: edges, startingState: startingState)
         graphs.append(tsGraph)
           
     }
@@ -69,8 +69,8 @@ public func produce_graphs_from_ev(ev : Environment) -> [Graph] {
 
 public func produce_dot_graph(graph: Graph) -> String {
     var dotGraph = "digraph { \n graph [pad=\"0.5\", nodesep=\"1\", ranksep=\"2\"]; \n"
+    dotGraph += "\(graph.StartingState) [style=bold, color=purple] \n"
     for edge in graph.Edges {
-        // for each of the edges I want to
         let newEdge = edge.StartVertex + " -> " + edge.EndVertex + " [label=" + "\"\(edge.Label)\"];\n"
         dotGraph += newEdge
     }

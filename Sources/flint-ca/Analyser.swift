@@ -17,6 +17,7 @@ struct Analyser {
     let typeStateDiagram : Bool
     let callerCapabilityAnalysis : Bool
     let test_run : Bool
+    let function_analysis : Bool
     
 
     public func analyse() throws
@@ -33,6 +34,15 @@ struct Analyser {
                                                                                        sourceContext: SourceContext(sourceFiles: inputFiles, sourceCodeString: sourceCode, isForServer: true)))
        
         let (ast, environment) = try Compiler.getAST(config: config)
+        
+        if (function_analysis) {
+            let fA = FunctionAnalysis()
+            let graphs = fA.analyse(ev: environment)
+            for g in graphs {
+                print(g.produce_dot_graph())
+            }
+            
+        }
         
         if (estimateGas) {
             let gasEstimator = GasEstimator(test_run: test_run)

@@ -4,7 +4,6 @@ import Diagnostic
 import REPL
 
 
-/// The main function for the compiler.
 func main() {
     command (
         Argument<String> ("Contract path", description: "contract to be deployed"),
@@ -25,7 +24,7 @@ func main() {
 
 func main_d() throws {
     
-    let repl = REPL(contractFilePath : "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/wei_test.flint", contractAddress : "")
+    let repl = REPL(contractFilePath : "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/repl_eval/Counter.flint", contractAddress : "")
     do {
         try repl.run()
     } catch let err {
@@ -33,5 +32,5 @@ func main_d() throws {
     }
 }
 
-//main()
-try main_d()
+main()
+//try main_d()

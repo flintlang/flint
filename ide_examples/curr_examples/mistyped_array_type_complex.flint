@@ -1,8 +1,0 @@
-contract abc (Test1)  {
-   // I can handle mistype annotations
-   // so I can handle let z Int = 0
-   // I can handle it with the var declarations
-   // I can handle 
-   // let z : [Int: Int = [:]
-   let x  : Int[10 = []
-}

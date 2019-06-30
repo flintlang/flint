@@ -16,7 +16,7 @@ public class JSTestFunction : CustomStringConvertible {
         var body = ""
         let closeToken = "}"
         body += "   let assertResult012 = {result: true, msg:\"\"} \n"
-        body += "   console.log(chalk.yellow(\"Running \(name) test\")) \n"
+        body += "   console.log(chalk.yellow(\"Running \(name)\")) \n"
         for stm in stmts {
             body += "   " + stm.description + "\n"
         }

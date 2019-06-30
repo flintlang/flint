@@ -35,7 +35,7 @@ func main() {
 }
 
 func main_d() throws {
-    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/test.tflint"
+    let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/counter_ether.tflint"
     let inputFiles = [URL(fileURLWithPath: fileName)]
     let sourceCode = try String(contentsOf: inputFiles[0])
     
