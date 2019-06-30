@@ -42,31 +42,31 @@ public class JSTranslator {
     }
     
     private func loadLibraryFuncs() {
-        let assertEqualInfo = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertEqualInfo = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertEqual"] = assertEqualInfo
         
-        let newAddrInfo = ContractFuncInfo(resultType: "Address", payable: false)
+        let newAddrInfo = ContractFuncInfo(resultType: "Address", payable: false, argTypes: [])
         self.contractFunctionInfo["newAddress"] = newAddrInfo
         
-        let setAddr =  ContractFuncInfo(resultType: "nil", payable: false)
+        let setAddr =  ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["setAddr"] = setAddr
         
-        let unsetAddr = ContractFuncInfo(resultType: "nil", payable: false)
+        let unsetAddr = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["unsetAddr"] = unsetAddr
 
-        let assertCallerSat = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertCallerSat = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertCallerSat"] = assertCallerSat
         
-        let assertCallerUnSat = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertCallerUnSat = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertCallerUnSat"] = assertCallerUnSat
         
-        let assertCanCallInThisState = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertCanCallInThisState = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertCanCallInThisState"] = assertCanCallInThisState
         
-        let assertCantCallInThisState = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertCantCallInThisState = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertCantCallInThisState"] = assertCantCallInThisState
         
-        let assertWillThrow = ContractFuncInfo(resultType: "nil", payable: false)
+        let assertWillThrow = ContractFuncInfo(resultType: "nil", payable: false, argTypes: [])
         self.contractFunctionInfo["assertWillThrow"] = assertWillThrow
     }
     
@@ -145,12 +145,33 @@ public class JSTranslator {
                 if (allFuncsWithName.count > 0)
                 {
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable || self.coverage
+                    
+                    for stm in allFuncsWithName[0].declaration.body {
+                        switch (stm) {
+                        case .emitStatement(_):
+                            isFuncTransaction[fName] = true
+                        default:
+                            continue
+                        }
+                    }
+                    
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
                         resultTypeVal = resultType.name
                     }
                     
-                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable)
+                    var argTypes : [String] = []
+                    
+                    for a in allFuncsWithName[0].parameterTypes {
+                        switch (a) {
+                        case .basicType(let rt):
+                            argTypes.append(rt.rawValue)
+                        default:
+                            continue
+                        }
+                    }
+                    
+                    contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal, payable: allFuncsWithName[0].declaration.isPayable, argTypes: argTypes)
                     contractFunctionNames.append(fName)
                 }
             }
@@ -258,6 +279,8 @@ public class JSTranslator {
         fnc += "    let abi = compiledContract.contracts[':_Interface' + nameOfContract].interface; \n"
         
         fnc += "    let bytecode = \"0x\" + compiledContract.contracts[':' + nameOfContract].bytecode; \n"
+        
+        fnc += "     console.log(chalk.green(\"Running test suite: \(self.testSuiteName)\")); \n"
         
         var counter: Int = 0
         for tFnc in JSTestFuncs {
