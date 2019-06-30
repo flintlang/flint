@@ -1,0 +1,33 @@
+contract Emergency (Running, Paused) {
+  var owner: Address 
+}
+
+
+Emergency @(Paused) :: (any) {
+  public init(initial_owner: Address) {
+    self.owner = initial_owner
+    become Paused
+  }  
+}
+
+Emergency @(Paused) :: (owner) {
+
+  mutating public func unpause() {
+     become Running
+  }
+}
+
+Emergency @(Running) :: (owner) {
+
+  mutating public func pause() {
+    become Paused
+  }
+
+}
+
+Emergency @(Running) :: (any) {
+
+  public func run() {
+    // useful function for users
+  }
+}

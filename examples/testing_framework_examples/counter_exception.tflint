@@ -1,0 +1,15 @@
+contract TestCounter {
+  let filePath : String = "[redacted]"
+  let contractName: String = "Counter"   
+  let TestSuiteName : String  = "CounterTests"
+}
+
+TestCounter :: (any) {
+
+  public func testExceptionThrown() {
+    let c : Counter = Counter()
+
+    assertWillThrow(c.willThrow) 
+  }   
+}
+
