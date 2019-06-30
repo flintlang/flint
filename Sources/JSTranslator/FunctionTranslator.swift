@@ -245,11 +245,9 @@ public class FunctionTranslator {
         var jsArgs : [JSNode] = []
         
         for (i, a) in args.enumerated() {
-            // create a JSNode for each of these but for now we will just do variables
             switch (a.expression)
             {
             case .identifier(let i):
-                // I should look up the if the variable exists
                 if let jsVar = varMap[i.name] {
                     jsArgs.append(.Variable(jsVar))
                 } else {
@@ -276,7 +274,15 @@ public class FunctionTranslator {
         return jsArgs
     }
     
-    private func checkFuncArgs(fArgs : [FunctionArgument]) -> Bool {
+    private func checkFuncArgs(fArgs : [FunctionArgument], argTypes: [String]) -> Bool {
+        if argTypes.count == 0 {
+            return true
+        }
+        
+        if argTypes.count != fArgs.count {
+            return false
+        }
+    
         return true
     }
     
@@ -344,18 +350,22 @@ public class FunctionTranslator {
         }
         
         var isPayable : Bool = false
+        var argTypes : [String] = []
         if let funcInfo = jst.contractFunctionInfo[fName] {
             resultType = funcInfo.getType()
             isPayable = funcInfo.isPayable()
+            argTypes = funcInfo.getArgTypes()
         }
         
         var weiVal : Int? = nil
         var funcCallArgs = fCall.arguments
         
-        if !checkFuncArgs(fArgs: funcCallArgs) {
+        /*
+        if !checkFuncArgs(fArgs: funcCallArgs, argTypes: argTypes) {
             error_array.append("Mismatch argument in function call \(fCall.identifier.name) at \(fCall.sourceLocation)")
             return nil
         }
+        */
         
         
         if isPayable {
@@ -379,7 +389,7 @@ public class FunctionTranslator {
             funcCallArgs = completeArray
         }
  
-        let funcArgs = process_func_call_args(args: funcCallArgs)
+        let funcArgs = process_func_call_args(args: funcCallArgs, fncName: fName)
         
         var contractEventInfo : ContractEventInfo? = nil
         if fName.contains("assertEventFired") {

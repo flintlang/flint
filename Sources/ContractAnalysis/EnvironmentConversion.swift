@@ -71,7 +71,6 @@ public func produce_dot_graph(graph: Graph) -> String {
     var dotGraph = "digraph { \n graph [pad=\"0.5\", nodesep=\"1\", ranksep=\"2\"]; \n"
     dotGraph += "\(graph.StartingState) [style=bold, color=purple] \n"
     for edge in graph.Edges {
-        // for each of the edges I want to
         let newEdge = edge.StartVertex + " -> " + edge.EndVertex + " [label=" + "\"\(edge.Label)\"];\n"
         dotGraph += newEdge
     }

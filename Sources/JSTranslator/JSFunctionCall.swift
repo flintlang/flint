@@ -78,7 +78,6 @@ public class JSFunctionCall : CustomStringConvertible {
     
    
     public var description: String {
-        // this is where you actually call the right
         var fCall = ""
         
         if (contractCall) {
@@ -176,7 +175,6 @@ public class JSFunctionCall : CustomStringConvertible {
                 
                 if isCallerOrStateFunc {
 
-                    // I need to now verify
                     if args.count > 0 {
                         fCall +=  args[0].description
                     }
