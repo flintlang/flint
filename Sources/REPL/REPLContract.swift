@@ -184,15 +184,13 @@ public class REPLContract{
             exit(0)
         }
         
-        var node_args = ["node", "run_function.js", self.abi, addr, fCall.identifier.name, isTransaction.description, resType, args, false.description]
+        var node_args = ["node", "run_function.js", self.abi, addr, fCall.identifier.name, isTransaction.description, resType, args, transactionAddress, false.description]
         
         if let weiVal = wei_value {
-            node_args = ["node", "run_function.js", self.abi, addr.trimmingCharacters(in: .whitespacesAndNewlines), fCall.identifier.name, isTransaction.description, resType, args, true.description, weiVal.description]
+            node_args = ["node", "run_function.js", self.abi, addr.trimmingCharacters(in: .whitespacesAndNewlines), fCall.identifier.name, isTransaction.description, resType, args, transactionAddress, true.description, weiVal.description]
         }
         
-       
-        node_args.append(transactionAddress)
-        
+ 
         let p = Process()
         let pipe = Pipe()
         p.launchPath = "/usr/bin/env"
@@ -387,7 +385,18 @@ public class REPLContract{
             for (fName, allFuncsWithName) in contractFunctions {
                 if (allFuncsWithName.count > 0)
                 {
+                    
                     isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
+                    
+                    for stm in allFuncsWithName[0].declaration.body {
+                        switch (stm) {
+                        case .emitStatement(_):
+                            isFuncTransaction[fName] = true
+                        default:
+                            continue
+                        }
+                    }
+                    
                     
                     var resultTypeVal = "nil"
                     if let resultType = allFuncsWithName[0].declaration.signature.resultType {
