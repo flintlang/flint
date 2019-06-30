@@ -11,7 +11,8 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 // add checks to see if test net is operating
 let defaultAcc;
 try {
-	defaultAcc = eth.accounts[3];
+	//defaultAcc = web3.personal.newAccount("1");//eth.accounts[3];
+	defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
 	web3.personal.unlockAccount(defaultAcc, "1", 1000);
 	web3.eth.defaultAccount = defaultAcc;	
 } catch(err) {

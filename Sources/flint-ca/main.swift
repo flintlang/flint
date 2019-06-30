@@ -34,18 +34,18 @@ func main() {
 }
 
 func main_d() throws {
-        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/state_test.flint"
+        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/flint_contracts/demo/counter.flint"
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
     
         do {
              let a = Analyser(contractFile: fileName,
                          sourceCode: sourceCode,
-                         estimateGas: false,
+                         estimateGas: true,
                          typeStateDiagram: false,
                          callerCapabilityAnalysis: false,
                          test_run: false,
-                         function_analysis: true)
+                         function_analysis: false)
              try a.analyse()
         
         } catch let err {
@@ -53,5 +53,5 @@ func main_d() throws {
         }
 }
 
-try main_d()
-//main()
+//try main_d()
+main()
