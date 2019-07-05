@@ -19,7 +19,7 @@ struct Transaction {
   let value: Wei
   let data: Int
 
-  public init(to: Address, value: Wei, data: Int){
+  public init(to: Address, value: inout Wei, data: Int){
     self.to = to
     self.value = value
     self.data = data
@@ -54,62 +54,62 @@ contract WalletLibrary {
 
   // EVENTS //
   // Confirmation - owner and operation hash
-  event Confirmation {
-    let owner: Address
-    let operation: Int
-  }
-  event Revoke {
-    let owner: Address
-    let operation: Int
-  }
+  event Confirmation (
+    owner: Address,
+    operation: Int
+  )
+  event Revoke (
+    owner: Address,
+    operation: Int
+  )
 
   // Changing owner
-  event OwnerChanged {
-    let oldOwner: Address
-    let newOwner: Address
-  }
-  event OwnerAdded {
-    let newOwner: Address
-  }
-  event OwnerRemoved {
-    let oldOwner: Address
-  }
+  event OwnerChanged (
+    oldOwner: Address,
+    newOwner: Address
+  )
+  event OwnerAdded (
+    newOwner: Address
+  )
+  event OwnerRemoved (
+    oldOwner: Address
+  )
 
   // Requirement signature change
-  event RequirementChanged {
-    let newRequirement: Int
-  }
+  event RequirementChanged (
+    newRequirement: Int
+  )
 
-  // Funds has arrived into the wallet (record how much).
-  event Deposit {
-    let _from: Address
-    let value: Int
-  }
-  // Single transaction going out of the wallet (record who signed for it, how much, and to whom it's going).
-  event SingleTransact {
-    let owner: Address
-    let value: Int
-    let to: Address
-    let data: Int
-    let created: Address
-  }
-  // Multi-sig transaction going out of the wallet (record who signed for it last, the operation hash, how much, and to whom it's going).
-  event MultiTransact {
-    let owner: Address
-    let operation: Int
-    let value: Int
-    let to: Address
-    let data: Int
-    let created: Address
-  }
+  // Funds has arrived into the wallet (record how much(.
+  event Deposit (
+    _from: Address,
+    value: Int
+  )
+  // Single transaction going out of the wallet (record who signed for it, how much, and to whom it's going(.
+  event SingleTransact (
+    owner: Address,
+    value: Int,
+    to: Address,
+    data: Int,
+    created: Address
+  )
+  // Multi-sig transaction going out of the wallet (record who signed for it last, the operation hash, how much, and to whom it's going(.
+  event MultiTransact (
+    owner: Address,
+    operation: Int,
+    value: Int,
+    to: Address,
+    data: Int,
+    created: Address
+  )
   // Confirmation still needed for a transaction.
-  event ConfirmationNeeded {
-    let operation: Int
-    let initiator: Address
-    let value: Int
-    let to: Address
-    let data: Int
-  }
+  event ConfirmationNeeded (
+    operation: Int,
+    initiator: Address,
+    value: Int,
+    to: Address,
+    data: Int
+  )
 }
 
 WalletLibrary :: caller <- (any) {
@@ -155,8 +155,10 @@ WalletLibrary :: caller <- (owners) {
     //}
   }
 
-  public mutating func changeOwner(_from: Address, _to: Address) {
-    if (isOwner(_to) == false) && isOwner(_from) {
+  public func changeOwner(_from: Address, _to: Address)
+    mutates (owners, ownerIndex)
+  {
+    if (isOwner(_owner: _to) == false) && isOwner(_owner: _from) {
       //clearPending()
       // BUG: should be let
       var currentOwner: Int = self.ownerIndex[_from]

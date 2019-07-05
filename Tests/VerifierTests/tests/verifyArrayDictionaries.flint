@@ -1,0 +1,65 @@
+//VERIFY-CHECK
+contract Array {
+  var As: [Int]
+  var bs: [Int: Int]
+
+  var cs: [[Int]]
+  var ds: [[[Int]]]// = []
+  var es: [Int: [[Int]]]// = [:]
+}
+
+Array :: (any) {
+  public init() {
+    As = []
+    bs = [:]
+    cs = []
+    ds = []
+    es = [:]
+  }
+
+  func arrayLiteral()
+    mutates (As, bs, cs)
+  {
+    As[0] = 0
+    bs[10] = 5
+    cs[0] = []
+    cs[0][0] = 0
+
+    //let b: [[Int]] = []
+  }
+
+  func arrayDictSize() {
+    let asSize: Int = As.size
+    let bsSize: Int = bs.size
+  }
+
+  func dictKeys() {
+    let bsKeys: [Int] = bs.keys
+
+    let esKeys: [Int] = es.keys
+    if esKeys.size > 0 {
+      let esSubSize: Int = es[esKeys[0]].size
+    }
+  }
+
+  func growSize(a: Address) {
+    var bs: [Int] = [1,2,3,4]
+    let bs_size_before: Int = bs.size
+    bs[4] = 5
+    assert(bs_size_before + 1 == bs.size)
+
+    var As: [Address: Int] = [:]
+    let as_size_before: Int = As.size
+    As[a] = 5
+    assert(as_size_before + 1 == As.size)
+  }
+
+  //func callFuncIterable() {
+  //  iterableParam(self.As, self.bs)
+  //}
+
+  //func iterableParam(As: [Int], bs: [Int: Int]) {
+  //  let aSize: Int = As.size
+  //  let bSize: Int = bs.size
+  //}
+}

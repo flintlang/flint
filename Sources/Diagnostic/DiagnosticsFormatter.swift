@@ -42,8 +42,8 @@ public struct DiagnosticsFormatter {
     let infoLine = "\(infoTopic)\(sourceFileText):"
     let body: String
 
-    if let sourceContext = sourceContext, let file = diagnosticFile {
-      let sourceCode = try sourceContext.sourceCode(in: file)
+    if let sourceContext = sourceContext, let file = diagnosticFile,
+       let sourceCode = try? sourceContext.sourceCode(in: file) {
       let sourcePreview = renderSourcePreview(at: diagnostic.sourceLocation,
                                               sourceCode: sourceCode, highlightColor: highlightColor, style: style)
       body = """

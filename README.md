@@ -12,7 +12,7 @@ Programmin 2018! paper: [Writing Safe Smart Contracts in Flint](https://dl.acm.o
 
 Current working paper: [Flint for Safer Smart Contracts](https://arxiv.org/abs/1904.06534)
 
-Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdf) and the codebase is [here](https://github.com/flintlang/flint).
+Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdf) and the codebase is [here](https://github.com/flintlang/flint). We are very pleased to have support from the [Ethereum Foundation ](https://blog.ethereum.org/2018/10/15/ethereum-foundation-grants-update-wave-4/) for this work.
 
 ## Language Overview
 
@@ -152,6 +152,19 @@ Instructions for installing using a binary package or from source are available 
 Contributions to Flint are highly welcomed! [Contribution Guide](contributing.md) The Issues page tracks the tasks which have yet to be completed.
 
 Flint Improvement Proposals \(FIPs\) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).
+
+## Cloning Repo
+
+```bash
+git clone --recurse-submodules https://github.com/flintlang/flint
+```
+Or if you cloned normally, make sure to
+```bash
+git submodules init
+git submodules update
+```
+
+Make sure you have Mono installed
 
 ## Future plans
 

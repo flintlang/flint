@@ -186,6 +186,12 @@ extension Parser {
       } else if first == .init || first == .fallback {
         let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
         members.append(.specialDeclaration(decl))
+      } else if first == .invariant {
+        _ = try consume(anyOf: [.invariant], or: .expectedInvariantDeclaration(at: latestSource))
+        guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+          throw raise(.expectedInvariantDeclaration(at: latestSource))
+        }
+        members.append(.invariantDeclaration(try parseExpression(upTo: newLine)))
       } else if first == .var || first == .let,
         attrs.isEmpty {
         let decl = try parseVariableDeclaration(modifiers: modifiers,
@@ -258,31 +264,27 @@ extension Parser {
 
     let attrs = try parseAttributes()
     let modifiers = try parseModifiers()
-    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
-      throw raise(.statementSameLine(at: latestSource))
-    }
-    let signatureDeclaration: Bool
-    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
-      signatureDeclaration = false
-    } else {
-      signatureDeclaration = true
-    }
 
     let declType = currentToken?.kind
     if .func == declType {
-      if signatureDeclaration {
-        return .functionSignatureDeclaration(
-          try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      } else {
-        return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      // parse function signature, and if there's a body, parse that
+      let signature = try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .functionDeclaration(FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
+      return .functionSignatureDeclaration(signature)
     } else if .init == declType {
-      if signatureDeclaration {
-        return .specialSignatureDeclaration(
-          try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      } else {
-        return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
+      let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .specialDeclaration(SpecialDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
+      return .specialSignatureDeclaration(signature)
     } else {
       throw raise(.badMember(in: "trait", at: latestSource))
     }
@@ -293,7 +295,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .func, .init, .fallback, .public, .visible, .mutating, .punctuation(.at):
+      case .func, .init, .fallback, .public, .visible, .punctuation(.at):
         members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
       case .punctuation(.closeBrace):
         return members
@@ -308,33 +310,32 @@ extension Parser {
 
     let attrs = try parseAttributes()
     let modifiers = try parseModifiers()
-    guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+    guard let _ = indexOfFirstAtCurrentDepth([.newline]) else {
       throw raise(.statementSameLine(at: latestSource))
     }
-    let signatureDeclaration: Bool
-    if let openBrace = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]), openBrace < newLine {
-      signatureDeclaration = false
-    } else {
-      signatureDeclaration = true
-    }
 
-    let first = currentToken?.kind
+    let declType = currentToken?.kind
+    if .func == declType {
+      // parse function signature, and if there's a body, parse that
+      let signature = try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
 
-    if .func == first {
-      if signatureDeclaration {
-        return .functionSignatureDeclaration(
-          try parseFunctionSignatureDeclaration(attributes: attrs, modifiers: modifiers))
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .functionDeclaration(FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
-      return .functionDeclaration(try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers))
+      return .functionSignatureDeclaration(signature)
+    } else if .init == declType || .fallback == declType {
+      let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
+      consumeNewLines()
+
+      if currentToken?.kind == .punctuation(.openBrace) {
+        let (body, closeBraceToken) = try parseCodeBlock()
+        return .specialDeclaration(SpecialDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
+      }
+      return .specialSignatureDeclaration(signature)
     }
 
-    if .init == first  || .fallback == first {
-      if signatureDeclaration {
-        return .specialSignatureDeclaration(
-          try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers))
-      }
-      return .specialDeclaration(try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers))
-    }
     throw raise(.badMember(in: "contract behaviour", at: latestSource))
   }
 
@@ -343,7 +344,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .event, .public, .visible, .mutating, .var, .let:
+      case .event, .public, .visible, .mutating, .var, .let, .invariant, .will:
         members.append(try parseContractMember(enclosingType: enclosingType))
       case .punctuation(.closeBrace):
         return members
@@ -355,11 +356,23 @@ extension Parser {
   }
 
   func parseContractMember(enclosingType: RawTypeIdentifier) throws -> ContractMember {
-
     let first = currentToken?.kind
 
     if first == .event {
       return .eventDeclaration(try parseEventDeclaration())
+
+    } else if first == .invariant {
+      _ = try consume(anyOf: [.invariant], or: .expectedInvariantDeclaration(at: latestSource))
+      guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+        throw raise(.expectedInvariantDeclaration(at: latestSource))
+      }
+      return .invariantDeclaration(try parseExpression(upTo: newLine))
+    } else if first == .will {
+      _ = try consume(anyOf: [.will], or: .expectedHolisticDeclaration(at: latestSource))
+      guard let newLine = indexOfFirstAtCurrentDepth([.newline]) else {
+        throw raise(.expectedHolisticDeclaration(at: latestSource))
+      }
+      return .holisticDeclaration(try parseExpression(upTo: newLine))
     }
 
     let modifiers = try parseModifiers()
@@ -367,7 +380,6 @@ extension Parser {
     let variableDeclaration = try parseVariableDeclaration(modifiers: modifiers,
                                                            enclosingType: enclosingType)
     return .variableDeclaration(variableDeclaration)
-
   }
 
   // MARK: Declarations
@@ -472,6 +484,29 @@ extension Parser {
     return Type(identifier: identifier)
   }
 
+  func parsePrePostConditions() throws -> [PrePostCondition] {
+    var conditions = [PrePostCondition]()
+
+    OUTER:
+    while let condType = currentToken?.kind {
+      switch condType {
+      case .pre:
+        conditions.append(.pre(try parsePrePostCondition()))
+      case .post:
+        conditions.append(.post(try parsePrePostCondition()))
+      default:
+        break OUTER
+      }
+    }
+    return conditions
+  }
+
+  func parsePrePostCondition() throws -> Expression {
+    _ = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
+    let expression = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
+    return expression
+  }
+
   func parseFunctionDeclaration(attributes: [Attribute], modifiers: [Token]) throws -> FunctionDeclaration {
     let signature = try parseFunctionSignatureDeclaration(attributes: attributes, modifiers: modifiers)
     let (body, closeBraceToken) = try parseCodeBlock()
@@ -490,13 +525,17 @@ extension Parser {
     } else {
       resultType = nil
     }
+    let mutates = try parseMutates()
+    let prePostConditions = try parsePrePostConditions()
 
     return FunctionSignatureDeclaration(
       funcToken: funcToken,
       attributes: attributes,
       modifiers: modifiers,
+      mutates: mutates,
       identifier: identifier,
       parameters: parameters,
+      prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken,
       resultType: resultType
     )
@@ -512,12 +551,16 @@ extension Parser {
                                         modifiers: [Token]) throws -> SpecialSignatureDeclaration {
     let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
     let (parameters, closeBracketToken) = try parseParameters()
+    let mutates = try parseMutates()
+    let prePostConditions = try parsePrePostConditions()
 
     return SpecialSignatureDeclaration(
       specialToken: specialToken,
       attributes: attributes,
       modifiers: modifiers,
+      mutates: mutates,
       parameters: parameters,
+      prePostConditions: prePostConditions,
       closeBracketToken: closeBracketToken
     )
   }

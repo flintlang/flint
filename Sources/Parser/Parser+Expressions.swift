@@ -29,6 +29,12 @@ extension Parser {
       return .inoutExpression(try parseInoutExpression())
     }
 
+    // Try to parse a returns expression (e.g. returns 1+1)
+    if case .returns = first {
+      currentIndex+=1
+      return .returnsExpression(try parseExpression(upTo: limitTokenIndex))
+    }
+
     if case .call = first {
       return .externalCall(try parseExternalCall(upTo: limitTokenIndex))
     }
@@ -82,6 +88,7 @@ extension Parser {
         
       // Try to parse a bracketed expression.
       return .bracketedExpression(try parseBracketedExpression())
+
     }
     if case .punctuation(.openSquareBracket) = first {
 

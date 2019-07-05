@@ -1,0 +1,82 @@
+//VERIFY-CHECK
+contract VerifyPrePostConditions {
+  var ten: Int = 10
+  var t: Int = 0
+
+  invariant (10 == 10)
+  invariant (ten == 10)
+}
+
+VerifyPrePostConditions :: (any) {
+  public init() { }
+
+  func testPreConditions()
+    pre (1 == 1)
+  {
+    assert (4 > 2)
+  }
+
+  func testPostConditions(i: Int)
+    mutates (t, ten)
+
+    post(t == 3)
+  {
+    self.ten -= i
+    self.t = 3
+    self.ten += i
+  }
+
+  func testPrePostConditions(i: Int) -> Int
+    pre (i == 2)
+    post (returns 3)
+  {
+    return i + 1
+  }
+
+  func testParamsPreConditions(input: Int, increment: Int)
+    pre (input == 10)
+  {
+    let input2: Int = input + increment
+    assert (input2 == 10 + increment)
+  }
+
+  func failPreCondition()
+  {
+    testParamsPreConditions(input: 10, increment: 5)
+
+    //VERIFY-FAIL
+    testParamsPreConditions(input: 0, increment: 0)
+  }
+
+  //VERIFY-FAIL
+  func failInvariant()
+    mutates(ten)
+  {
+    ten = 5
+  }
+
+  //VERIFY-FAIL
+  func failPost(i: Int)
+    mutates(t)
+    post (t == 4)
+  {
+    self.t = i
+  }
+
+  func prevValuesInc()
+    mutates(t)
+
+    post (prev(t) < t)
+  {
+    self.t += 1
+  }
+
+  //VERIFY-FAIL
+  func prevValuesDec()
+    mutates(t)
+
+    post (prev(t) == t)
+  {
+    self.t += 1
+  }
+}

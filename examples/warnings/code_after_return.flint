@@ -1,6 +1,8 @@
 contract CodeAfterReturn {}
 
 CodeAfterReturn :: (any) {
+  public init() {}
+
   func foo() -> Int {
     return 3
     var a: Int = 2

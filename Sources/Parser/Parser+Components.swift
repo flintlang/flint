@@ -58,10 +58,8 @@ extension Parser {
   // MARK: Attribute
   func parseAttribute() throws -> Attribute {
     let at = try consume(.punctuation(.at), or: .expectedAttribute(at: latestSource))
-    guard let token = currentToken, let attribute = Attribute(atToken: at, identifierToken: token) else {
-     throw raise(.missingAttributeName(at: latestSource))
-    }
-    currentIndex += 1
+    let identifier = try parseIdentifier()
+    let attribute = Attribute(atToken: at, identifierToken: identifier.identifierToken)
     consumeNewLines()
     return attribute
   }
@@ -78,7 +76,7 @@ extension Parser {
   // MARK: Modifiers
   func parseModifiers() throws -> [Token] {
     var modifiers = [Token]()
-    let modifierTokens: [Token.Kind] = [.public, .mutating, .visible]
+    let modifierTokens: [Token.Kind] = [.public, .visible]
     // Parse function modifiers.
     while let first = currentToken?.kind {
       if modifierTokens.contains(first) {
@@ -88,6 +86,39 @@ extension Parser {
       }
     }
     return modifiers
+  }
+
+  // MARK: Mutates
+  func parseMutates() throws -> [Identifier] {
+    var mutates = [Identifier]()
+    let modifierToken: Token.Kind = .mutates
+    if let first = currentToken?.kind, first != modifierToken {
+      return mutates
+    }
+    try consume(modifierToken, or: .expectedModifier(at: latestSource))
+    try consume(.punctuation(.openBracket), or: .expectedIdentifier(at: latestSource))
+    // Parse mutated variables
+    while let first = currentToken?.kind {
+      if first == .punctuation(.comma) {
+        try consume(.punctuation(.comma), or: .expectedIdentifier(at: latestSource))
+      } else if first != .punctuation(.closeBracket) {
+        var enclosingType: Identifier? = try parseIdentifier()
+        var identifier: Identifier
+        if currentToken?.kind == .punctuation(.dot) {
+          try consume(.punctuation(.dot), or: .expectedIdentifier(at: latestSource))
+          identifier = try parseIdentifier()
+        } else {
+          identifier = enclosingType!
+          enclosingType = nil
+        }
+        identifier.enclosingType = enclosingType?.name
+        mutates.append(identifier)
+      } else {
+        try consume(.punctuation(.closeBracket), or: .expectedIdentifier(at: latestSource))
+        break
+      }
+    }
+    return mutates
   }
 
   // MARK: Literals

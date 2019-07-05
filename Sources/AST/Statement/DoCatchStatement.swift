@@ -12,8 +12,8 @@ public struct DoCatchStatement: ASTNode {
   public var doBody: [Statement]
   public var catchBody: [Statement]
   public var error: Expression
-  var startToken: Token
-  var endToken: Token
+  public var startToken: Token
+  public var endToken: Token
 
   public init(doBody: [Statement], catchBody: [Statement], error: Expression, startToken: Token, endToken: Token) {
     self.doBody = doBody

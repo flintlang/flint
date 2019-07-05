@@ -1,0 +1,44 @@
+//VERIFY-CHECK
+contract Unreachable {
+  var i: Int = 10
+  invariant (i == 10)
+
+  var j: Int = 0
+}
+
+Unreachable :: (any) {
+  public init() {}
+
+  func test() {
+    //VERIFY-WARNING
+    if true {
+
+    }
+
+    //VERIFY-WARNING
+    if false {
+    }
+  }
+
+  func test2() {
+    //VERIFY-WARNING
+    if i > 10 {
+    }
+
+
+    if j == 2 {
+    }
+  }
+
+  func test3() {
+    for let i: Int in (0...5) {
+      //VERIFY-WARNING
+      if i >= 0 {
+      }
+
+      //VERIFY-WARNING
+      if i < 0 {
+      }
+    }
+  }
+}

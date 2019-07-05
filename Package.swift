@@ -27,15 +27,16 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
     .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
-    .package(url: "https://github.com/kylef/Commander", from: "0.8.0"),
+    .package(url: "https://github.com/kylef/Commander", from: "0.9.0"),
     .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
+    .package(url: "https://github.com/attaswift/BigInt.git", from: "4.0.0"),
     .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")
   ],
   targets: [
-    // MARK: Source -
     .target(
       name: "flint-lsp",
       dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "Compiler"]),
@@ -71,6 +72,7 @@ let package = Package(
         "TypeChecker",
         "Optimizer",
         "IRGen",
+        "Verifier",
         "Commander",
         "Rainbow",
         "Symbolic",
@@ -207,6 +209,17 @@ let package = Package(
       sources: [".", "../../.derived-tests/TypeChecker"]
     ),
     // MARK: Optimizer -
+    .target(
+      name: "Verifier",
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST",
+        "Lexer",
+        "Yaml",
+        "BigInt",
+      ]
+    ),
     .target(
       name: "Optimizer",
       dependencies: [

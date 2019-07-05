@@ -5,6 +5,7 @@
 //  Created by Yicheng Luo on 11/14/18.
 //
 import AST
+import Lexer
 import YUL
 
 /// Generates code for an external call.
@@ -135,6 +136,9 @@ struct IRExternalCall {
       VariableDeclaration([(callOutput, .any)], IRRuntimeFunction.allocateMemory(size: outputSize))
     )))
 
+    let previousStateVariable = saveTypeState(functionContext)
+    enterProtectorTypeState(functionContext)
+
     functionContext.emit(.expression(.variableDeclaration(
       VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call",
         gasExpression,
@@ -146,6 +150,8 @@ struct IRExternalCall {
         .literal(.num(outputSize))
       )))
     )))
+
+    restoreTypeState(functionContext, savedVariableName: previousStateVariable)
 
     functionContext.emit(.expression(.assignment(
       Assignment([callOutput], .functionCall(FunctionCall("mload", .identifier(callOutput))))
@@ -159,5 +165,62 @@ struct IRExternalCall {
     case .isForced:
       return .identifier(callOutput)
     }
+  }
+
+  func saveTypeState(_ functionContext: FunctionContext) -> String {
+    let savedVariableName = functionContext.freshVariable()
+
+    let stateVariable: AST.Expression = .identifier(
+      Identifier(name: IRContract.stateVariablePrefix + functionContext.enclosingTypeName,
+                 sourceLocation: .DUMMY))
+    let selfState: AST.Expression = .binaryExpression(
+      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+                       op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+                       rhs: stateVariable))
+    let stateVariableRendered = IRExpression(expression: selfState, asLValue: false)
+      .rendered(functionContext: functionContext)
+
+    functionContext.emit(.expression(.variableDeclaration(
+      VariableDeclaration([(savedVariableName, .any)],
+                          .inline(stateVariableRendered.description))
+    )))
+
+    return savedVariableName
+  }
+
+  func enterProtectorTypeState(_ functionContext: FunctionContext) {
+    let stateVariable: AST.Expression = .identifier(
+      Identifier(name: IRContract.stateVariablePrefix + functionContext.enclosingTypeName,
+                 sourceLocation: .DUMMY))
+    let selfState: AST.Expression = .binaryExpression(
+      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+                       op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+                       rhs: stateVariable))
+    let stateVariableRendered = IRExpression(expression: selfState, asLValue: true)
+      .rendered(functionContext: functionContext)
+
+    functionContext.emit(.expression(
+      IRRuntimeFunction.store(address: stateVariableRendered,
+                              value: .inline("\(IRContract.reentrancyProtectorValue)"),
+                              inMemory: false)
+    ))
+  }
+
+  func restoreTypeState(_ functionContext: FunctionContext, savedVariableName: String) {
+    let stateVariable: AST.Expression = .identifier(
+      Identifier(name: IRContract.stateVariablePrefix + functionContext.enclosingTypeName,
+                 sourceLocation: .DUMMY))
+    let selfState: AST.Expression = .binaryExpression(
+      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+                       op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+                       rhs: stateVariable))
+    let stateVariableRendered = IRExpression(expression: selfState, asLValue: true)
+      .rendered(functionContext: functionContext)
+
+    functionContext.emit(.expression(
+      IRRuntimeFunction.store(address: stateVariableRendered,
+                              value: .inline(savedVariableName),
+                              inMemory: false)
+    ))
   }
 }

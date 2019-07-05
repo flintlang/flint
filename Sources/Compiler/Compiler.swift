@@ -15,6 +15,7 @@ import SemanticAnalyzer
 import TypeChecker
 import Optimizer
 import IRGen
+import Verifier
 
 
 /// Runs the different stages of the compiler.
@@ -27,7 +28,8 @@ public struct Compiler {
     Optimizer(),
     TraitResolver(),
     FunctionCallCompleter(),
-    IRPreprocessor()]
+    CallGraphGenerator(),
+    ConstructorPreProcessor()]
 
   private static func exitWithFailure() -> Never {
     print("ERROR")
@@ -98,17 +100,12 @@ extension Compiler {
       exitWithFailure()
     }
 
-    if config.dumpAST {
-      print(ASTDumper(topLevelModule: ast).dump())
-      exit(0)
-    }
+    let sourceContext = SourceContext(sourceFiles: config.inputFiles)
 
     // Run all of the passes.
-    let passRunnerOutcome = ASTPassRunner(ast: ast).run(
-      passes: config.astPasses,
-      in: environment,
-      sourceContext: SourceContext(sourceFiles: config.inputFiles))
-    
+    let passRunnerOutcome = ASTPassRunner(ast: ast).run(passes: config.astPasses,
+                                                        in: environment,
+                                                        sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
@@ -116,8 +113,56 @@ extension Compiler {
       exit(0)
     }
 
+    if config.dumpAST {
+      print(ASTDumper(topLevelModule: passRunnerOutcome.element).dump())
+      exit(0)
+    }
+
+    // Run verifier
+    if !config.skipVerifier {
+      let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
+                                              printVerificationOutput: config.printVerificationOutput,
+                                              skipHolisticCheck: config.skipHolisticCheck,
+                                              printHolisticRunStats: config.printHolisticRunStats,
+                                              boogieLocation: "boogie/Binaries/Boogie.exe",
+                                              symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
+                                              maxTransactionDepth: config.maxTransactionDepth,
+                                              maxHolisticTimeout: config.maxHolisticTimeout,
+                                              monoLocation: "/usr/bin/mono",
+                                              topLevelModule: passRunnerOutcome.element,
+                                              environment: passRunnerOutcome.environment,
+                                              sourceContext: sourceContext,
+                                              normaliser: IdentifierNormaliser()).verify()
+
+      _ = try config.diagnostics.checkpoint(errors)
+      if verified {
+        _ = try config.diagnostics.display()
+        print("Contract specification verified!")
+      } else {
+        print("Contract specification not verified")
+        exitWithFailure()
+      }
+    }
+
+    if config.skipCodeGen {
+      exit(0)
+    }
+
+    // Run final IRPreprocessor pass
+    let irPreprocessOutcome = ASTPassRunner(ast: passRunnerOutcome.element).run(
+      passes: (!config.skipVerifier ? [AssertPreprocessor()] : []) + [PreConditionPreprocessor(checkAllFunctions: config.skipVerifier),
+              IRPreprocessor()],
+      in: environment,
+      sourceContext: sourceContext)
+    if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {
+      if failed {
+        exitWithFailure()
+      }
+      exit(0)
+    }
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+    let irCode = IRCodeGenerator(topLevelModule: irPreprocessOutcome.element,
+                                 environment: irPreprocessOutcome.environment)
       .generateCode()
 
     // Compile the YUL IR code using solc.
@@ -148,7 +193,9 @@ extension Compiler {
         var sig = constructor.signature
         sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
         let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
-        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "testFrameworkConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
+
+        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, mutates: [], identifier: Identifier(name: "testFrameworkConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters,  prePostConditions: [], closeBracketToken: sig.closeBracketToken, resultType: nil)
+        
         var newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken, scopeContext: constructor.scopeContext)
         
         let parameters = newFunc.signature.parameters.rawTypes
@@ -366,7 +413,7 @@ extension Compiler {
         var sig = constructor.signature
         sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation : sig.sourceLocation))
         let tok : Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
-        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, identifier: Identifier(name: "replConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, closeBracketToken: sig.closeBracketToken, resultType: nil)
+        let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes, modifiers: sig.modifiers, mutates: [], identifier: Identifier(name: "replConstructor", sourceLocation: sig.sourceLocation), parameters: sig.parameters, prePostConditions: [], closeBracketToken: sig.closeBracketToken, resultType: nil)
         let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body, closeBraceToken: constructor.closeBraceToken)
         
         return newFunc
@@ -622,6 +669,14 @@ public struct CompilerConfiguration {
   public let outputDirectory: URL
   public let dumpAST: Bool
   public let emitBytecode: Bool
+  public let dumpVerifierIR: Bool
+  public let printVerificationOutput: Bool
+  public let skipHolisticCheck: Bool
+  public let skipVerifier: Bool
+  public let printHolisticRunStats: Bool
+  public let maxHolisticTimeout: Int
+  public let maxTransactionDepth: Int
+  public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
   public let loadStdlib: Bool
   public let astPasses: [ASTPass]
@@ -631,6 +686,14 @@ public struct CompilerConfiguration {
               outputDirectory: URL,
               dumpAST: Bool,
               emitBytecode: Bool,
+              dumpVerifierIR: Bool,
+              printVerificationOutput: Bool,
+              skipHolisticCheck: Bool,
+              printHolisticRunStats: Bool,
+              maxHolisticTimeout: Int,
+              maxTransactionDepth: Int,
+              skipVerifier: Bool,
+              skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
               loadStdlib: Bool = true,
               astPasses: [ASTPass] = Compiler.defaultASTPasses) {
@@ -639,6 +702,14 @@ public struct CompilerConfiguration {
     self.outputDirectory = outputDirectory
     self.dumpAST = dumpAST
     self.emitBytecode = emitBytecode
+    self.dumpVerifierIR = dumpVerifierIR
+    self.printVerificationOutput = printVerificationOutput
+    self.skipHolisticCheck = skipHolisticCheck
+    self.printHolisticRunStats = printHolisticRunStats
+    self.maxHolisticTimeout = maxHolisticTimeout
+    self.maxTransactionDepth = maxTransactionDepth
+    self.skipVerifier = skipVerifier
+    self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics
     self.astPasses = astPasses
     self.loadStdlib = loadStdlib

@@ -3,25 +3,15 @@
 // Based on openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 // ----------------------------------------------------------------------------
 
-trait ERC20 {
-  event transfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
-  event approval {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
+struct trait ERC20 {
+  event transfer (from: Address, to: Address, value: Int)
+  event approval (from: Address, to: Address, value: Int)
 
-  self :: caller <- (any) {
-    public func totalSupply() -> Int
-    public func balanceOf(owner: Address) -> Int
-    public func allowance(owner: Address, spender: Address) -> Int
+  public func totalSupply() -> Int
+  public func balanceOf(owner: Address) -> Int
+  public func allowance(owner: Address, spender: Address) -> Int
 
-    public mutating func transfer(to: Address, value: Int) -> Bool
-    public mutating func approve(spender: Address, value: Int) -> Bool
-    public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool
-  }
+  public func transfer(to: Address, value: Int) -> Bool
+  public func approve(spender: Address, value: Int) -> Bool
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
 }

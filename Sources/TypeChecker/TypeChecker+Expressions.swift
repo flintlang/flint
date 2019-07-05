@@ -35,7 +35,7 @@ extension TypeChecker {
                                                    expression: .binaryExpression(binaryExpression)))
       }
     case .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes,
-         .power, .divide, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
+         .power, .divide, .percent, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
          .openAngledBracket, .closeAngledBracket, .lessThanOrEqual, .greaterThanOrEqual:
       // Both sides must have type Int.
       if ![lhsType, rhsType].contains(.errorType),
@@ -48,7 +48,7 @@ extension TypeChecker {
                                     expectedTypes: [.basicType(.int)],
                                     expression: .binaryExpression(binaryExpression)))
       }
-    case .and, .or:
+    case .and, .or, .implies:
       // Both sides must have type Bool.
       if ![lhsType, rhsType].contains(.errorType),
         !lhsType.isCompatible(with: .basicType(.bool)) ||

@@ -5,23 +5,26 @@ contract Bank {
   var accounts: [Address] = []
   var lastIndex: Int = 0
 
+  invariant (lastIndex == accounts.size)
+
   var totalDonations: Wei = Wei(0)
 
-  event didCompleteTransfer {
-    let from: Address
-    let to: Address
-    let value: Int
-  }
+  event didCompleteTransfer (from: Address, to: Address, value: Int)
 }
 
 // The functions in this block can be called by any user.
 Bank :: account <- (any) {
-  public init(manager: Address) {
+  public init(manager: Address)
+  // Specify Wei.rawValue, as this state is not defined in current contract
+    mutates(Wei.rawValue)
+  {
     self.manager = manager
   }
 
   // Returns the manager's address.
-  public mutating func register() {
+  public func register()
+    mutates (accounts, lastIndex)
+  {
     accounts[lastIndex] = account
     lastIndex += 1
   }
@@ -31,9 +34,11 @@ Bank :: account <- (any) {
   }
 
   @payable
-  public mutating func donate(implicit value: Wei) {
+  public func donate(implicit value: Wei)
+    mutates (totalDonations, Wei.rawValue)
+  {
     // This will transfer the funds into totalDonations.
-    totalDonations.transfer(&value)
+    totalDonations.transfer(source: &value)
   }
 }
 
@@ -42,12 +47,17 @@ Bank :: (manager) {
 
   // This function needs to be declared "mutating" as its body mutates
   // the contract's state.
-  public mutating func freeDeposit(account: Address, amount: Int) {
+  public func freeDeposit(account: Address, amount: Int)
+    mutates (balances, Wei.rawValue)
+  {
+    var i: Int = (0-1)
     var w: Wei = Wei(amount)
-    balances[account].transfer(&w)
+    balances[account].transfer(source: &w)
   }
 
-  public mutating func clear(account: Int) {
+  public func clear(account: Address)
+    mutates (balances, Wei.rawValue)
+  {
     balances[account] = Wei(0)
   }
 
@@ -64,26 +74,37 @@ Bank :: account <- (accounts) {
     return balances[account].getRawValue()
   }
 
-  public mutating func transfer(amount: Int, destination: Address) {
+  public func transfer(amount: Int, destination: Address)
+    mutates (balances, Wei.rawValue)
+
+    pre (amount > 0)
+  {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
     // Crashes if balances[account] doesn't have enough Wei.
-    balances[destination].transfer(&balances[account], amount)
+    balances[destination].transfer(source: &balances[account], amount: amount)
 
     // Emit the Ethereum event.
     emit didCompleteTransfer(from: account, to: destination, value: amount)
   }
 
   @payable
-  public mutating func deposit(implicit value: Wei) {
-    balances[account].transfer(&value)
+  public func deposit(implicit value: Wei)
+    mutates(balances, Wei.rawValue)
+  {
+    balances[account].transfer(source: &value)
   }
 
-  public mutating func withdraw(amount: Int) {
+  public func withdraw(amount: Int)
+    mutates(balances, Wei.rawValue, manager, accounts, lastIndex,totalDonations)
+
+    pre (amount > 0)
+  {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
 
     // Send the amount back to the Ethereum user.
     send(account, &w)
+    assert(w.getRawValue() == 0)
   }
 }

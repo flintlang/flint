@@ -131,9 +131,10 @@ extension SemanticAnalyzer {
         // The variable is being mutated in a function.
         if !functionDeclarationContext.isMutating {
           // The function is declared non-mutating.
-          diagnostics.append(
-            .useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier),
-                                                          functionDeclaration: functionDeclarationContext.declaration))
+        // TODO: Must become make function be explicitly marked mutating?
+        //  diagnostics.append(
+        //    .useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier),
+        //                                                  functionDeclaration: functionDeclarationContext.declaration))
         }
         // Record the mutating expression in the context.
         addMutatingExpression(.identifier(identifier), passContext: &passContext)

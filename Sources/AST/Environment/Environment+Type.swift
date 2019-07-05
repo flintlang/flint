@@ -165,7 +165,6 @@ extension Environment {
                    typeStates: [TypeState] = [],
                    callerProtections: [CallerProtection] = [],
                    scopeContext: ScopeContext) -> RawType {
-
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression,
@@ -199,9 +198,11 @@ extension Environment {
           } else {
             fatalError()
           }
-        case .dictionaryType:
+        case .dictionaryType(let keyType, _):
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
+          } else if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "keys" {
+            return .arrayType(keyType)
           } else {
             fatalError()
           }
@@ -279,6 +280,12 @@ extension Environment {
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence: fatalError()
     case .rawAssembly(_, let resultType): return resultType!
+    case .returnsExpression(let returnsExpression):
+       return type(of: returnsExpression,
+                   enclosingType: enclosingType,
+                   typeStates: typeStates,
+                   callerProtections: callerProtections,
+                   scopeContext: scopeContext)
     case .emptyExpr(_): fatalError("Trying to compute the type of an empty expression")
     }
   }

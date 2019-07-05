@@ -40,8 +40,8 @@ syn keyword flintIdentifierKeyword
 syn keyword flintFuncKeywordGeneral skipwhite nextgroup=flintTypeParameters
       \ init
 
-syn keyword flintMutating skipwhite nextgroup=flintFuncDefinition
-      \ mutating
+syn keyword flintMutates skipwhite nextgroup=flintFuncDefinition
+      \ mutates
 
 syn keyword flintFuncDefinition skipwhite nextgroup=flintTypeName,flintOperator
       \ func
@@ -173,7 +173,7 @@ hi def link flintBin Number
 hi def link flintOperator Function
 hi def link flintChar Character
 hi def link flintLabel Operator
-hi def link flintMutating Statement
+hi def link flintMutates Statement
 hi def link flintPreproc PreCondit
 hi def link flintPreprocFalse Comment
 hi def link flintAttribute Type

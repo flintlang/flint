@@ -1,0 +1,21 @@
+//VERIFY-CHECK
+contract C {
+  var selected: Bool = false
+  var selection: Bool = false
+
+  //VERIFY-FAIL
+  will(selected && selection == false)
+}
+
+C :: (any) {
+  public init() {}
+
+  public func select(b: Bool)
+    mutates (selection, selected)
+  {
+    if (self.selected != true) {
+      self.selection = b
+      self.selected = true
+    }
+  }
+}

@@ -18,16 +18,24 @@ struct IRFunctionSelector {
   var environment: Environment
 
   func rendered() -> String {
+    let reentrancyProtection = renderReentrancyProtection()
     let cases = renderCases()
     let fallback = renderFallback()
 
     return """
+    \(reentrancyProtection)
     switch \(IRRuntimeFunction.selector())
     \(cases)
     default {
       \(fallback)
     }
     """
+  }
+
+  func renderReentrancyProtection() -> String {
+    let reentrancyProtection = IRReentrancyProtection()
+        .rendered(enclosingType: enclosingType.name, environment: environment)
+    return reentrancyProtection.description
   }
 
   func renderFallback() -> String {
@@ -92,6 +100,27 @@ struct IRFunctionSelector {
     }
 
     return "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
+  }
+}
+
+/// Checks that we are not inside a non-reentrant external call.
+struct IRReentrancyProtection {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
+    let stateVariable: AST.Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
+                                                           sourceLocation: .DUMMY))
+    let selfState: AST.Expression = .binaryExpression(BinaryExpression(
+      lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+      op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+      rhs: stateVariable))
+    let stateVariableRendered = IRExpression(expression: selfState, asLValue: false)
+      .rendered(functionContext: FunctionContext(environment: environment,
+                                                 scopeContext: ScopeContext(),
+                                                 enclosingTypeName: enclosingType,
+                                                 isInStructFunction: false))
+
+    return .inline("""
+    if eq(\(stateVariableRendered.description), \(IRContract.reentrancyProtectorValue)) { revert(0, 0) }
+    """)
   }
 }
 

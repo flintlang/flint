@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "init" ]; then
+    cd block
+    bash init.sh
+    bash run.sh
+elif [ "$1" == "run" ]; then
+    cd block
+    bash script.sh
+fi

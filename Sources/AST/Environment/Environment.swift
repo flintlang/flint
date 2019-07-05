@@ -27,6 +27,12 @@ public class Environment {
     
   public var syntaxErrors : Bool = false
 
+  // Call graph - using normalised names
+  public var callGraph = [String: [(String, FunctionDeclaration)]]()
+
+  // Which functions have external calls
+  public var functionCallsExternal = [String: Bool]()
+
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
 
@@ -58,6 +64,11 @@ public class Environment {
   /// The list of conforming functions in a type.
   public func conformingFunctions(in enclosingType: RawTypeIdentifier) -> [FunctionInformation] {
     return types[enclosingType]!.conformingFunctions
+  }
+
+  /// The list of functions in a type
+  public func functions(in enclosingType: RawTypeIdentifier) -> [String: [FunctionInformation]] {
+    return types[enclosingType]!.allFunctions
   }
 
   /// The list of initializers in a type.
