@@ -1,0 +1,32 @@
+contract Counter {
+  var value: Int = 0
+  var extraValue : Int
+  var address : Address
+}
+
+Counter :: (any) {
+  public init(value: Int, addr: Address) {
+    self.extraValue = value
+    self.address = addr
+  }
+
+  public func getAddr() -> Address {
+      return address
+  }
+
+  public func getValue() -> Int {
+    return value
+  }
+
+  public func getExtraValue() -> Int {
+    return extraValue
+  }
+
+  mutating public func increment() {
+     self.value += 1
+  }
+
+  mutating public func set(value: Int) {
+    self.value = value
+  }
+}

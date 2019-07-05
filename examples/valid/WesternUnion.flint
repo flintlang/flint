@@ -1,0 +1,51 @@
+contract WesternUnion {
+  // only manager can add customers
+  let manager: Address
+
+  var customers: [Address]
+  var numCustomers: Int = 0
+
+  invariant (numCustomers == customers.size)
+
+  //only customers can withdraw money from bank
+
+  // customer can only withdraw the amount of money in their account
+  // customer cannot withdraw more money than is in their account
+  var accounts: [Address: Wei] //= [:]
+}
+
+
+WesternUnion :: (any) {
+  public init(manager: Address) {
+    self.manager = manager
+    self.customers = []
+    self.accounts = [:]
+  }
+}
+
+WesternUnion :: (manager) {
+  public func addCustomer(customer: Address)
+    mutates (customers, numCustomers)
+  {
+    customers[numCustomers] = customer
+    numCustomers += 1 //Issue if we don't increment numCustomers
+  }
+}
+
+
+WesternUnion :: customer <- (customers) {
+  @payable
+  public func deposit(implicit amount: Wei, recipient: Address)
+    mutates (accounts, Wei.rawValue)
+  {
+    accounts[recipient].transfer(source: &amount)
+    var a: Wei = Wei(0-1);
+  }
+
+  public func withdraw()
+    mutates (accounts, Wei.rawValue)
+  {
+    var amt: Wei = Wei(&accounts[customer])
+    send(customer, &amt)
+  }
+}

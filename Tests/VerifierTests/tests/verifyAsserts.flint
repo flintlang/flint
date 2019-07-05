@@ -1,0 +1,37 @@
+//VERIFY-CHECK
+contract VerifyAsserts  {
+}
+
+VerifyAsserts :: (any) {
+  public init() {}
+
+  func testAssert1()
+  {
+    assert (1 == 1)
+    var i: Int = 10
+    let j: Int = 20
+    i += 5
+    i += 5
+    assert (i == j)
+  }
+
+  func testAssert2(ten: Int)
+  {
+    assert (1 == 1)
+  }
+
+  func testIfStatementAssert(i: Int)
+  {
+    if i > 0 {
+      assert (i >= 1)
+    } else {
+      assert (i <= 0)
+    }
+  }
+
+  func failingAssertion(j: Int)
+  {
+    //VERIFY-FAIL
+    assert (j == 0)
+  }
+}

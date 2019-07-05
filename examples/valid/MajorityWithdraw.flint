@@ -1,0 +1,65 @@
+contract MajorityWithdraw (Preparing, Voting, Completed) {
+  var amount: Wei
+
+  var participants: [Address]
+  var numParticipants: Int = 0
+  invariant (numParticipants == participants.size)
+
+  var participantVotes: [Address: Bool]
+
+  let leader: Address
+}
+
+MajorityWithdraw @(any) :: (any) {
+  public init(leader: Address)
+    mutates (Wei.rawValue)
+  {
+    self.leader = leader
+    self.amount = Wei(0)
+    self.participants =  []
+    self.participantVotes = [:]
+    become Preparing
+  }
+}
+
+MajorityWithdraw @(Preparing) :: (leader) {
+  public func addParticipant(participant: Address)
+    mutates (participants, numParticipants)
+
+    post (participants.size == prev(participants.size) + 1)
+  {
+    participants[numParticipants] = participant
+    numParticipants += 1
+  }
+
+  public func openVoting() {
+    become Voting
+  }
+}
+
+MajorityWithdraw @(Voting) :: (leader) {
+  public func closeVoting() {
+    become Completed
+  }
+}
+
+MajorityWithdraw @(Voting) :: participant <- (participants) {
+  public func vote(vote: Bool)
+    mutates (participantVotes)
+  {
+    participantVotes[participant] = vote
+  }
+}
+
+MajorityWithdraw @(Completed) :: participant <- (participants) {
+  public func getResult() -> Bool {
+    var count: Int = 0
+    for let p: Address in participants {
+      if participantVotes[p] {
+        count += 1
+      }
+    }
+
+    return (count * 100 / numParticipants) >= 50
+  }
+}

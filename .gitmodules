@@ -1,0 +1,12 @@
+[submodule "boogie"]
+	path = boogie
+	url = https://github.com/boogie-org/boogie/
+        ignore = untracked
+[submodule "z3"]
+	path = z3
+	url = https://github.com/Z3Prover/z3
+        ignore = untracked
+[submodule "symbooglix"]
+	path = symbooglix
+	url = https://github.com/boogie-org/symbooglix
+        ignore = untracked

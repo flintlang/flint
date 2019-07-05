@@ -1,7 +1,7 @@
 contract Test {
   var test: Int = 0
-  var dict: [Address: Int] = [:]
-  var arr: Address[10] = []
+  var dict: [Address: Int]
+  var arr: Address[10]
   var p1: Address
   var p2: Address
 }
@@ -10,29 +10,46 @@ Test :: (any) {
   public init(p1: Address, p2: Address) {
     self.p1 = p1
     self.p2 = p2
+    self.arr = []
+    self.dict = [:]
   }
 
-  public mutating func setP1(p1: Address) {
+  public func setP1(p1: Address)
+    mutates (p1)
+  {
     self.p1 = p1
   }
 
-  public mutating func setP2(p2: Address) {
+  public func setP2(p2: Address)
+    mutates (p2)
+  {
     self.p2 = p2
   }
 }
 
 Test :: (p1, p2) {
-  public mutating func setPosition(addr: Address, position: Int) { 
-    arr[position] = addr
+  public func setPosition(addr: Address, position: Int)
+    mutates (arr)
+  {
+    if position < arr.size {
+      arr[position] = addr
+    }
   }
 
-  public mutating func write(pos: Int, value: Int) {
-    var key: Address = arr[pos]
-    dict[key] = value
+  public func write(pos: Int, value: Int)
+    mutates (dict)
+  {
+    if pos < arr.size {
+      var key: Address = arr[pos]
+      dict[key] = value
+    }
   }
 
   public func getValue(pos: Int) -> Int {
-    var key: Address = arr[pos]
-    return dict[key]
+    if pos < arr.size {
+      var key: Address = arr[pos]
+      return dict[key]
+    }
+    return 0
   }
 }

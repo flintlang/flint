@@ -11,10 +11,12 @@ import Lexer
 ///
 /// - variableDeclaration: The declaration of a variable.
 /// - functionDeclaration: The declaration of a function.
+/// - invariantDeclaration: The declaration of an invariant.
 public enum StructMember: ASTNode {
   case variableDeclaration(VariableDeclaration)
   case functionDeclaration(FunctionDeclaration)
   case specialDeclaration(SpecialDeclaration)
+  case invariantDeclaration(Expression)
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
@@ -25,6 +27,8 @@ public enum StructMember: ASTNode {
       return functionDeclaration.sourceLocation
     case .specialDeclaration(let specialDeclaration):
       return specialDeclaration.sourceLocation
+    case .invariantDeclaration(let expression):
+      return expression.sourceLocation
     }
   }
 
@@ -36,6 +40,8 @@ public enum StructMember: ASTNode {
       return functionDeclaration.description
     case .specialDeclaration(let specialDeclaration):
       return specialDeclaration.description
+    case .invariantDeclaration(let expression):
+      return expression.description
     }
   }
 }

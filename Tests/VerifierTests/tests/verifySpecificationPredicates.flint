@@ -1,0 +1,61 @@
+//VERIFY-CHECK
+
+contract C {
+  var cs: [Int] = [1,2,3,4,5]
+
+  var bs: [Address: Wei] = [:]
+
+}
+
+C :: caller <- (any) {
+  public init() {}
+
+  public func prevTest()
+    mutates (cs)
+
+    pre (cs[0] == 1)
+    post (prev(cs[0]) == 1)
+  {
+    self.cs[0] = 2
+  }
+
+  public func containsTest()
+    mutates (cs, bs, Wei.rawValue)
+
+    pre (cs.size > 1)
+    pre (dictContains(bs, caller))
+    pre (bs[caller].rawValue == 0)
+
+    post (arrayContains(cs, 10))
+  {
+    self.cs[1] = 10
+    self.bs[caller] = Wei(0)
+  }
+
+  public func returnsF() -> Int
+    post(returns 10)
+  {
+    return 10
+  }
+
+  public func returningF() -> Int
+    post (returning(r, r > 10 && r < 20))
+  {
+    return 15
+  }
+
+  public func eachElem()
+    mutates (cs, bs)
+
+    pre (cs.size == 3)
+
+    //post (dictEach(e, bs, e.rawValue >= 0))
+    pre (arrayEach(e, cs, e >= 5))
+    post (arrayEach(e, cs, e >= 6))
+    //post (dictEach(e, bs, e.rawValue >= 0))
+  {
+    self.cs[0] += 1
+    self.cs[1] += 1
+    self.cs[2] += 1
+  }
+}

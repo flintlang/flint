@@ -21,7 +21,7 @@ public struct FunctionInformation {
     return declaration.signature.parameters.map { $0.identifier }
   }
 
-  var resultType: RawType {
+  public var resultType: RawType {
     return declaration.signature.rawType
   }
 

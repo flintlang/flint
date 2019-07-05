@@ -87,11 +87,19 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '->'")
   }
   static func expectedTypeAnnotation(at sourceLocation: SourceLocation) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation")
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected type annotation. A type annotation should be of the form '<var> : <type>'")
   }
   static func expectedConformance(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation,
                       message: "Expected a trait identifier to conform to")
+  }
+  static func expectedInvariantDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'invariant' declaration within contract")
+  }
+  static func expectedHolisticDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'holistic' declaration within contract")
   }
 
   // MARK: Enum
@@ -105,6 +113,10 @@ extension Diagnostic {
   }
   static func expectedParameterCloseParenthesis(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected ')' in parameter")
+  }
+  static func badPrePostConditionDeclaration(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Expected 'pre' or 'post' in function pre/post declaration")
   }
 
   // MARK: Expressions
@@ -151,6 +163,11 @@ extension Diagnostic {
   static func expectedRightChevron(in node: String, at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '>' to complete \(node)")
   }
+    
+   // MARK : Type States
+    static func expectedTypeStateCloseParen(at sourceLocation: SourceLocation) -> Diagnostic {
+        return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected close paren at the end of type state declaration")
+    }
 
   // MARK: Type
   static func expectedType(at sourceLocation: SourceLocation) -> Diagnostic {

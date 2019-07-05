@@ -1,0 +1,17 @@
+//VERIFY-CHECK
+contract D {
+  var i: Int = 2
+
+  //VERIFY-FAIL
+  will (i == 10)
+}
+
+D :: (any) {
+  public init() {}
+
+  public func add()
+    mutates (i)
+  {
+    i += 3
+  }
+}

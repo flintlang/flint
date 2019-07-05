@@ -5,10 +5,10 @@ contract FlightManager {
   
   var numRemainingSeats: Int
 
-  var passengers: [Address] = []
+  var passengers: [Address]
   var numPassengers: Int = 0
 
-  var amountPaid: [Address: Wei] = [:]
+  var amountPaid: [Address: Wei]
 }
 
 FlightManager :: caller <- (any) {
@@ -20,17 +20,21 @@ FlightManager :: caller <- (any) {
     self.admin = admin
     self.ticketPrice = ticketPrice
     self.numRemainingSeats = numSeats
+    self.passengers = []
+    self.amountPaid = [:]
   }
 
   @payable
-  mutating public func buy(implicit value: Wei) {
+  public func buy(implicit value: Wei)
+    mutates (amountPaid, numPassengers, numRemainingSeats, passengers, Wei.rawValue)
+  {
     let amountGiven: Int = value.getRawValue()
     assert(amountGiven == ticketPrice)
     assert(numRemainingSeats > 0)
     assert(flightInformation.isCancelled == false)
 
     // Record the received Ether in the contract's state.
-    amountPaid[caller].transfer(&value)
+    amountPaid[caller].transfer(source: &value)
 
     passengers[numPassengers] = caller
     numPassengers += 1
@@ -56,7 +60,9 @@ FlightManager :: caller <- (any) {
 }
 
 FlightManager :: (admin) {
-  mutating public func cancelFlight() {
+  public func cancelFlight()
+    mutates (FlightInformation.isCancelled)
+  {
     flightInformation.cancelFlight()
   }
 }
@@ -76,7 +82,9 @@ struct FlightInformation {
     self.flightID = flightID
   }
 
-  mutating func cancelFlight() {
+  func cancelFlight()
+    mutates (isCancelled)
+  {
     isCancelled = true
   }
 }

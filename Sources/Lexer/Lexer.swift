@@ -17,13 +17,27 @@ public struct Lexer {
   var sourceCode: String
 
   var isFromStdlib: Bool
-
-  public init(sourceFile: URL, isFromStdlib: Bool = false) throws {
+  
+  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer : Bool = false, sourceCode: String = "") throws
+    {
     self.sourceFile = sourceFile
-    self.sourceCode = try String(contentsOf: sourceFile)
+        
+    if isForServer {
+       self.sourceCode = sourceCode
+    } else
+    {
+       self.sourceCode = try String(contentsOf: sourceFile)
+    }
+        
     self.isFromStdlib = isFromStdlib
   }
-
+    
+    public init(sourceCode : String) {
+        self.sourceFile = URL(fileURLWithPath: "REPL")
+        self.sourceCode = sourceCode
+        self.isFromStdlib = false
+    }
+    
   /// Converts the source code into a list of tokens.
   public func lex() -> [Token] {
     return lex(string: sourceCode)
@@ -86,10 +100,16 @@ public struct Lexer {
     "trait": .trait,
     "init": .init,
     "fallback": .fallback,
+    "pre": .pre,
+    "post": .post,
+    "invariant": .invariant,
+    "will": .will,
     "try": .try,
+    "mutates": .mutates,
     "mutating": .mutating,
     "external": .external,
     "return": .return,
+    "returns": .returns,
     "become": .become,
     "emit": .emit,
     "call": .call,
@@ -115,6 +135,7 @@ public struct Lexer {
     "&*": .punctuation(.overflowingTimes),
     "**": .punctuation(.power),
     "/": .punctuation(.divide),
+    "%": .punctuation(.percent),
     "=": .punctuation(.equal),
     "+=": .punctuation(.plusEqual),
     "-=": .punctuation(.minusEqual),
@@ -131,6 +152,7 @@ public struct Lexer {
     "<=": .punctuation(.lessThanOrEqual),
     ">": .punctuation(.closeAngledBracket),
     ">=": .punctuation(.greaterThanOrEqual),
+    "==>": .punctuation(.implies),
     "||": .punctuation(.or),
     "&&": .punctuation(.and),
     "==": .punctuation(.doubleEqual),

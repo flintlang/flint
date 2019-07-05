@@ -9,11 +9,11 @@
 public struct TypeInformation {
   var orderedProperties = [String]()
   var properties = [String: PropertyInformation]()
-  var functions = [String: [FunctionInformation]]()
+  public var functions = [String: [FunctionInformation]]()
   var events = [String: [EventInformation]]()
   var initializers = [SpecialInformation]()
   var fallbacks = [SpecialInformation]()
-  var publicInitializer: SpecialDeclaration?
+  public var publicInitializer: SpecialDeclaration?
   var publicFallback: SpecialDeclaration?
 
   var conformances: [TypeInformation] = []

@@ -1,0 +1,16 @@
+contract TestCounter {
+  let filePath : String = "[redacted]"
+  let contractName: String = "Bribe"   
+  let TestSuiteName : String  = "BribeTests" 
+}
+
+TestCounter :: (any) {
+
+  public func test_was_bribed() {
+      let b : Bribe = Bribe()
+      b.bribe(_wei: 150)
+      assertEventFired(b.Bribed, true)
+  }   
+
+}
+

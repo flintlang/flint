@@ -1,0 +1,19 @@
+contract TestCounter {
+  let filePath : String = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/flint_contracts/test_counter.flint"
+  let contractName: String = "Counter"   
+  let TestSuiteName : String  = "<Add a name for this test suite>"
+}
+
+TestCounter :: (any) {
+
+  public func testCon2() {
+   let c : Counter = Counter(1, "0x838c72b6db1c2e430699cbf56a304703371db140")
+
+   let v : Address = c.getAddr()
+   let e : Int = c.getExtraValue()
+
+   assertEqual("0x838c72b6db1c2e430699cbf56a304703371db140", v);
+   assertEqual(1, e);
+  }  
+}
+
