@@ -7,12 +7,12 @@
 
 import AST
 
-struct Mangler {
+public struct Mangler {
   static func mangleName(_ name: String) -> String {
     return "_\(name)"
   }
 
-  static func mangleFunctionName(_ name: String, parameterTypes: [RawType], enclosingType: String) -> String {
+  public static func mangleFunctionName(_ name: String, parameterTypes: [RawType], enclosingType: String) -> String {
     let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
     let dollar = parameters.isEmpty ? "" : "$"
     return "\(enclosingType)$\(name)\(dollar)\(parameters)"

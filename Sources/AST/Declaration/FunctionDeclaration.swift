@@ -41,7 +41,11 @@ public struct FunctionDeclaration: ASTNode {
   }
 
   public var isMutating: Bool {
-    return signature.hasModifier(kind: .mutating)
+    return signature.mutates.count > 0
+  }
+
+  public var mutates: [Identifier] {
+    return signature.mutates
   }
 
   public var isPayable: Bool {
@@ -60,10 +64,6 @@ public struct FunctionDeclaration: ASTNode {
   /// The non-implicit parameters of the function.
   public var explicitParameters: [Parameter] {
     return signature.parameters.filter { !$0.isImplicit }
-  }
-
-  public var mutatingToken: Token {
-    return signature.modifiers.first { $0.kind == .mutating }!
   }
 
   public var isPublic: Bool {

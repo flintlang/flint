@@ -1,0 +1,16 @@
+contract TestCounter {
+  let filePath : String = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_results/flint_contracts/counter_event.flint"
+  let contractName: String = "Counter"   
+  let TestSuiteName : String  = "<Add a name for this test suite>"
+}
+
+TestCounter :: (any) {
+
+  public func test_event_fired() {
+	   let c : Counter = Counter()
+	   c.increment()
+     assertEventFired(c.didComplete, 1);
+  }   
+
+}
+

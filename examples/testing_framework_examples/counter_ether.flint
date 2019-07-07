@@ -1,0 +1,19 @@
+contract Bribe { 
+  var value : Int = 0
+  event Bribed(bribe: Bool)
+}
+
+Bribe :: (any) {
+  public init() {}
+
+  @payable
+  public func bribe(implicit w: Wei) {
+    let rawVal : Int = w.getRawValue()
+    var bribed: Bool = false
+    if (rawVal > 100) {
+      bribed = true
+    }
+
+    emit Bribed(bribe: bribed)
+  }
+}

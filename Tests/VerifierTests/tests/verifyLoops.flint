@@ -1,0 +1,114 @@
+//VERIFY-CHECK
+struct L {
+  public init() {}
+
+  public func loopTest() {
+    var js: [Int] = [1,2,3]
+    for let j: Int in js {
+      test(i: j)
+      assert(j <= 3)
+    }
+
+    for let j: Int in (0...5) {
+      test(i: j)
+    }
+
+    var bound: Int = 10
+    for let k: Int in (0..<10) {
+      test(i: k)
+      assert (k < bound)
+    }
+  }
+
+  func assignmentLoop() {
+    var i: Int = 0
+    for let k: Int in (0..<10) {
+      i = 3
+    }
+
+    assert (i > 0)
+  }
+
+  func indirectIterable() {
+    var ks: [[Int]] = []
+    ks[0] = [1]
+    ks[1] = [2]
+    for let k: [Int] in ks {
+      for let l: Int in k {
+        test(i: l)
+      }
+    }
+
+    var js: [[Int]] = []
+    js[0] = [1,2,3,4]
+    assert(js[0][0] == 1)
+    assert(js[0][1] == 2)
+    assert(js[0][2] == 3)
+    assert(js[0][3] == 4)
+    var counter: Int = 0
+    var js0_copy: [Int] = js[0]
+    assert(js0_copy.size == 4)
+    assert(js[0].size == 4)
+    for let j: Int in js[0] {
+      assert(j<5)
+      assert(counter >= 0)
+      assert(js0_copy.size == js[0].size)
+      assert(counter < js0_copy.size)
+      assert(counter < js[0].size)
+      assert(js[0][counter] == j)
+      //assert(js0_copy[counter] == j)
+      counter += 1
+    }
+  }
+
+  func literalLoop() {
+    for let j: Int in [1,2,3,4] {
+      test(i: j)
+      assert(j<5)
+    }
+  }
+
+  func dictLoop() {
+    var d: [Int: Address] = [:]
+    for let v: Address in d {
+      test(i: 1, a: v)
+    }
+  }
+
+  func dictLoop2() {
+    var d: [Int: Int] = [:]
+    d[2] = 4
+    d[4] = 6
+    for let v: Int in d {
+      assert(d[2] == v || d[4] == v)
+    }
+  }
+
+  func loopSum() -> Int
+    post (returns 15)
+  {
+    var total: Int = 0
+    for let t: Int in (0...5) {
+      total += t
+    }
+    return total
+  }
+
+  func test() {
+    var js: [Int] = [1,2,3]
+    assert (js.size == 3)
+
+    var ks: [Int: Int] = [:]
+    assert (ks.size == 0)
+  }
+
+  func test(i: Int) { }
+
+  func test(i:  Int, a: Address) { }
+}
+
+contract C {}
+
+C :: (any) {
+  public init() {}
+}

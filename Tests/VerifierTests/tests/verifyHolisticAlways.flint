@@ -1,0 +1,94 @@
+//VERIFY-CHECK
+contract C(S1, S2) {
+  var i: Int = 0
+
+  invariant(STATE(S1) ==> prev(i) != i)
+
+  invariant(i == 30 ==> STATE(S2))
+  //invariant(prev(i) != i ==> FUNCTION())
+}
+
+C@(S1) :: (any) {
+  public init() {
+    become S1
+  }
+
+  public func change()
+    mutates (i)
+    pre(i != 10)
+  {
+    i = 10
+  }
+
+  //VERIFY-FAIL
+  public func badChange()
+    mutates (i)
+    pre(i == 10)
+  {
+    i = 10
+  }
+
+  public func checkState()
+    mutates (i)
+
+    pre (i == 10)
+    post (STATE(S1))
+  {
+    i = 20
+  }
+
+  //VERIFY-FAIL
+  public func checkStateFail()
+    mutates (i)
+
+    pre (i == 10)
+    post (STATE(S2))
+  {
+    i = 20
+  }
+
+  public func changeState()
+    mutates (i)
+  {
+    i = 30
+    become S2
+  }
+}
+
+C@(S2) :: (any) {
+  public func correctState()
+    mutates (i)
+  {
+    i = 30
+  }
+
+  //VERIFY-FAIL
+  public func incorrectState()
+    mutates(i)
+    pre(i == 10)
+  {
+    i = 30
+    become S1
+  }
+}
+
+struct S {
+  var i: Int = 10
+
+  init() {}
+
+  public func change()
+    mutates (i)
+    pre(i != 10)
+  {
+    i = 10
+  }
+
+  public func badChange()
+    mutates (i)
+    pre(i == 10)
+  {
+    //VERIFY-FAIL
+    i = 10
+  }
+}

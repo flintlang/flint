@@ -2,12 +2,21 @@
   "object": {
     "pins": [
       {
+        "package": "BigInt",
+        "repositoryURL": "https://github.com/attaswift/BigInt.git",
+        "state": {
+          "branch": null,
+          "revision": "108801d539eb014469c758bc0d7f734690791fb4",
+          "version": "4.0.0"
+        }
+      },
+      {
         "package": "Commander",
         "repositoryURL": "https://github.com/kylef/Commander",
         "state": {
           "branch": null,
-          "revision": "e5b50ad7b2e91eeb828393e89b03577b16be7db9",
-          "version": "0.8.0"
+          "revision": "dc97e80a1cf5df6c5768528f039c65ad8c564712",
+          "version": "0.9.0"
         }
       },
       {
@@ -35,15 +44,6 @@
           "branch": null,
           "revision": "89b8480055f9adf8ce2f9ad5e2fac7ac1076242e",
           "version": "0.0.8"
-        }
-      },
-      {
-        "package": "json-swift",
-        "repositoryURL": "https://github.com/theguild/json-swift.git",
-        "state": {
-          "branch": null,
-          "revision": "c81e14903222b2cb0a6a4b5ce5c91e73c4cf830a",
-          "version": "4.0.0"
         }
       },
       {
@@ -83,12 +83,12 @@
         }
       },
       {
-        "package": "LanguageServerProtocol",
-        "repositoryURL": "https://github.com/flintrocks/swift-lsp.git",
+        "package": "SwiftyJSON",
+        "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
         "state": {
-          "branch": "master",
-          "revision": "8b3b94f19d93b542be81312c62fc2b25fc0c3e58",
-          "version": null
+          "branch": null,
+          "revision": "184c6884998c41f71a73c459f9b525b7121be846",
+          "version": "4.2.0"
         }
       },
       {
@@ -98,6 +98,15 @@
           "branch": null,
           "revision": "c5f4d0fcc699c4a72fdb2478ea17ff4722bf229b",
           "version": "0.0.2"
+        }
+      },
+      {
+        "package": "Yaml",
+        "repositoryURL": "https://github.com/behrang/YamlSwift.git",
+        "state": {
+          "branch": "master",
+          "revision": "287f5cab7da0d92eb947b5fd8151b203ae04a9a3",
+          "version": null
         }
       }
     ]

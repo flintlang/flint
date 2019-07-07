@@ -1,0 +1,34 @@
+contract Counter (s1, s2) {
+  var value: Int = 0
+  var owner: Address
+
+  event didComplete(val: Int)
+}
+
+Counter @(s1) :: (any) {
+  public init(owner: Address) {
+    self.owner = owner
+    become s1
+  } 
+
+  mutating public func increment() {
+      self.value += 1
+      emit didComplete(val: self.value)
+  }
+
+  mutating public func changeS2() {
+    become s2
+  }
+}
+
+Counter @(s1) :: (owner) {
+  public func getValue() -> Int {
+    return value
+  } 
+}
+
+Counter @(s2) :: (any) {
+  mutating public func increment1() {
+      value += 1
+  }
+}

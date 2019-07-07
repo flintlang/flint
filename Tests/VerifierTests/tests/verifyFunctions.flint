@@ -1,0 +1,54 @@
+//VERIFY-CHECK
+contract C {
+  var x: Int = 0
+
+  var a: Int = 0
+  invariant (a >= 0)
+}
+
+C :: (any) {
+  public init() {}
+
+  func f()
+    mutates (x)
+    pre (x < 10000)
+  {
+    x = x + 1
+  }
+
+  func g(b: Bool)
+    mutates (x)
+  {
+    x = 0
+    if (b) {
+      f()
+    }
+    //VERIFY-FAIL
+    assert(x == 0)
+  }
+
+  func h(x: Int) -> Int {
+    return k(x: x)
+  }
+
+  func k(x: Int) -> Int {
+    return x
+  }
+
+  func m() {
+    let x: Int = h(x: 2);
+    assert(x > 0)
+  }
+
+
+  func l()
+    mutates (a)
+  {
+    if (a > 0) {
+      a = a - 1
+      l()
+    } else {
+      assert(a == 0)
+    }
+  }
+}

@@ -36,8 +36,10 @@ public struct SpecialDeclaration: ASTNode {
       funcToken: signature.specialToken,
       attributes: signature.attributes,
       modifiers: signature.modifiers,
+      mutates: signature.mutates,
       identifier: dummyIdentifier,
       parameters: signature.parameters,
+      prePostConditions: signature.prePostConditions,
       closeBracketToken: signature.closeBracketToken,
       resultType: nil)
 
@@ -74,7 +76,9 @@ public struct SpecialDeclaration: ASTNode {
     self.signature = SpecialSignatureDeclaration(specialToken: functionDeclaration.signature.funcToken,
                                                  attributes: functionDeclaration.signature.attributes,
                                                  modifiers: functionDeclaration.signature.modifiers,
+                                                 mutates: functionDeclaration.signature.mutates,
                                                  parameters: functionDeclaration.signature.parameters,
+                                                 prePostConditions: functionDeclaration.signature.prePostConditions,
                                                  closeBracketToken: functionDeclaration.signature.closeBracketToken)
     self.body = functionDeclaration.body
     self.closeBraceToken = functionDeclaration.closeBraceToken

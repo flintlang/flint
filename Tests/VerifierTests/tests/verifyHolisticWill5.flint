@@ -1,0 +1,30 @@
+//VERIFY-CHECK
+contract C {
+  var i: Int = 0
+
+  //VERIFY-FAIL
+  will (i == 2)
+
+  will (i == 3)
+}
+
+C :: (any) {
+  public init() {}
+
+  public func add1()
+    mutates (i)
+
+    pre (i % 2 == 0)
+  {
+    self.i += 1
+  }
+
+  public func add2()
+    mutates (i)
+
+    pre (i % 2 == 1)
+  {
+    self.i += 2
+  }
+}
+

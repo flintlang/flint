@@ -6,14 +6,18 @@ contract KotET {
 }
 
 KotET :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
     self.owner = caller
     self.king = caller
     self.pot = Wei(0)
   }
 
   @payable
-  public mutating func dethrone(implicit value: Wei) {
+  public func dethrone(implicit value: Wei)
+    mutates (Wei.rawValue, king, claimPrice, pot)
+  {
     if value.getRawValue() < claimPrice {
       fatalError()
     }
@@ -21,10 +25,10 @@ KotET :: caller <- (any) {
     let oldKing: Address = king
     let compensation: Wei = Wei(&pot, calculateCompensation())
 
-    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.claimPrice = calculateNewPrice(bid: value.getRawValue())
     self.king = caller
 
-    pot.transfer(&value)
+    pot.transfer(source: &value)
     send(oldKing, &compensation) // To add new external call syntax
     // Currently vulnerable to an oldKing that throws when sending
     // Should delegate to another function to call
@@ -44,27 +48,33 @@ contract ValidKotET {
   visible var claimPrice: Int = 100
   var owner: Address
   var pot: Wei
-  var pastKings: [Address: Wei] = [:]
+  var pastKings: [Address: Wei]
 }
 
 ValidKotET :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
+    self.pastKings = [:]
+
     self.owner = caller
     self.king = caller
     self.pot = Wei(0)
   }
 
   @payable
-  public mutating func dethrone(implicit value: Wei) {
+  public func dethrone(implicit value: Wei)
+    mutates (Wei.rawValue, claimPrice, king, pot, pastKings)
+  {
     if value.getRawValue() < claimPrice {
       fatalError()
     }
     pastKings[king] = Wei(&pot, calculateCompensation())
 
-    self.claimPrice = calculateNewPrice(value.getRawValue())
+    self.claimPrice = calculateNewPrice(bid: value.getRawValue())
     self.king = caller
 
-    pot.transfer(&value)
+    pot.transfer(source: &value)
   }
 
   func calculateNewPrice(bid: Int) -> Int {
@@ -81,7 +91,9 @@ ValidKotET :: caller <- (any) {
 ValidKotET :: king <- (any) {
   // should be mutating, but send is not a mutating function although it should
   // be in this case
-  public func withdrawCompensation() {
+  public func withdrawCompensation()
+    mutates (Wei.rawValue)
+  {
     send(king, &pastKings[king])
   }
 }

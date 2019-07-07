@@ -153,6 +153,19 @@ Contributions to Flint are highly welcomed! [Contribution Guide](contributing.md
 
 Flint Improvement Proposals \(FIPs\) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).
 
+## Cloning Repo
+
+```bash
+git clone --recurse-submodules https://github.com/flintlang/flint
+```
+Or if you cloned normally, make sure to
+```bash
+git submodules init
+git submodules update
+```
+
+Make sure you have Mono installed
+
 ## Future plans
 
 Future plans for Flint are numerous, and include:

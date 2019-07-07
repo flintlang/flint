@@ -1,0 +1,13 @@
+contract Shadow { 
+  let n : Int  = 2
+}
+
+Shadow :: (any) {
+  public init() {} 
+
+  public func test1(n :Int) -> Int {
+      return n // shadowing contract variable
+  }
+
+}
+

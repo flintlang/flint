@@ -1,0 +1,107 @@
+//VERIFY-CHECK
+contract Test {
+  var s: S
+}
+
+struct J {
+  var s: S
+  var ss: [Int: S]
+
+  public init(s: inout S)
+  {
+    self.s = s
+    self.ss = [:]
+    // Contract fails to verify because of this line
+    //  - nextInstance postCond failure
+    //let j: J = J(&s)
+  }
+
+  public init()
+    mutates (S.i, S.js, S.ks, S.j)
+  {
+    self.s = S()
+    self.ss = [:]
+  }
+}
+
+struct S {
+  var i: Int
+  var js: [Int]
+  var ks: [[[Int]]]
+  var j: Int = 0
+
+  invariant (i > 0)
+
+
+  public init()
+    pre (1==1)
+  {
+    self.js = []
+    self.ks = []
+    i = 1
+  }
+
+  public func wow()
+    mutates (js, j)
+    pre(2 == 2)
+    pre (j < 10)
+    post (j < 10)
+  {
+    js[0] = 0
+    j = 1
+  }
+}
+
+Test :: (any) {
+  public init()
+    mutates (S.i, S.js, S.j, S.ks)
+    pre(1==1)
+  {
+    self.s = S()
+  }
+
+  @payable
+  public func t(implicit w: Wei)
+    mutates (s, S.i, S.js, S.j, S.ks, J.s, J.ss, Wei.rawValue)
+  {
+    let v: Int = w.getRawValue()
+    let i: Int = s.i
+
+    //Would violate S's invariant - call J() picks up the error, as it requires it as a pre-condition
+    //s.i = 0
+
+    let j: J = J(&s)
+    // Fails out-of-bounds check
+    //VERIFY-FAIL
+    let k: Int = j.ss[i+=1].js[1]
+  }
+
+  public func s()
+    mutates (s, S.i, S.js, S.j, S.ks, J.s, J.ss, Wei.rawValue)
+  {
+    //Fail out of bounds check
+    s.ks = []
+    s.ks[0] = []
+    //s.ks[0][0] = [1]
+    s.ks[0][0] = []
+    s.ks[0][0][0] = 1
+    let size1: Int = s.ks[0][0].size
+    assert(size1 == 1)
+    assert(s.ks[0][0][0] == 1)
+  }
+
+  //VERIFY-FAIL
+  public func violateSInvariant()
+    mutates (s, S.i)
+  {
+    s.i = 0
+  }
+
+  //func structValue(s: inout S)
+  //  pre (s.js.size == 0)
+  //{
+  //  assert (s.js.size == 0)
+  //  s.js[0] = 1
+  //  assert (s.js.size == 1)
+  //}
+}

@@ -159,6 +159,8 @@ extension SemanticAnalyzer {
       }
     }
 
+    addMutatingExpression(.externalCall(externalCall), passContext: &passContext)
+
     // Ensure a return value is not ignored
     if environment.type(of: externalCall.functionCall.rhs,
                         enclosingType: enclosingType,

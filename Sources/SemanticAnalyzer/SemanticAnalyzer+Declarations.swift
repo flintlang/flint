@@ -243,9 +243,9 @@ extension SemanticAnalyzer {
   func isStructTraitMember(member: TraitMember) -> Bool {
     switch member {
     case .functionDeclaration, .specialDeclaration,
-         .functionSignatureDeclaration, .specialSignatureDeclaration:
+         .functionSignatureDeclaration, .specialSignatureDeclaration, .eventDeclaration:
       return true
-    case .contractBehaviourDeclaration, .eventDeclaration:
+    case .contractBehaviourDeclaration:
       return false
     }
   }
@@ -408,6 +408,13 @@ extension SemanticAnalyzer {
       diagnostics.append(.invalidReturnTypeInFunction(functionDeclaration))
     }
 
+    // A function can only mutate modifiers which are declared
+    let mutates = signature.mutates
+    for identifier in mutates {
+      // TODO: This is a hack - should add to AST visitor
+      _ = process(identifier: identifier, passContext: passContext)
+    }
+
     let statements = functionDeclaration.body
 
     // Find a statement after the first return/become in the function.
@@ -498,7 +505,8 @@ extension SemanticAnalyzer {
     if functionDeclaration.isMutating, mutatingExpressions.isEmpty,
       !environment.isConforming(functionDeclaration, in: enclosingType) {
       // The function is declared mutating but its body does not contain any mutating expression.
-      diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.mutatingToken))
+        //TODO: Need to make structs mutating functions
+        // diagnostics.append(.functionCanBeDeclaredNonMutating(functionDeclaration.identifier.identifierToken))
     }
 
     // Clear the context in preparation for the next time we visit a special or function declaration.
@@ -572,12 +580,13 @@ extension SemanticAnalyzer {
         return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
            .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
-           .subscriptExpression, .range:
+           .subscriptExpression, .range, .returnsExpression:
         return false
       case .rawAssembly, .sequence:
         return true
       case .attemptExpression:
         return true
+      case .emptyExpr: fatalError("EMPTY EXPR")
       }
     case .ifStatement:
       return false

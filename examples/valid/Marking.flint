@@ -1,26 +1,33 @@
 contract Marking {
   var lecturer: Address
-  var markers: [Address] = []
+  var markers: [Address]
   var numMarkers: Int = 0
-  
-  var grades: [Address: Int] = [:]
+  invariant(numMarkers == markers.size)
+
+  var grades: [Address: Int]
 }
 
 Marking :: (any) {
   public init(lecturer: Address) {
     self.lecturer = lecturer
+    self.markers = []
+    self.grades = [:]
   }
 }
 
 Marking :: (lecturer) {
-  public mutating func addMarker(marker: Address) {
+  public func addMarker(marker: Address)
+    mutates (markers, numMarkers)
+  {
     markers[numMarkers] = marker
     numMarkers += 1
   }
 }
 
 Marking :: (markers) {
-  public mutating func assignGrade(student: Address, grade: Int) {
+  public func assignGrade(student: Address, grade: Int)
+    mutates (grades)
+  {
     grades[student] = grade
   }
 }
