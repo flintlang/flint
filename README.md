@@ -12,8 +12,7 @@ Programming 2018! paper: [Writing Safe Smart Contracts in Flint](https://dl.acm.
 
 Current working paper: [Flint for Safer Smart Contracts](https://arxiv.org/abs/1904.06534)
 
-Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdfs%20(student%20theses) and the codebase is [here](https://github.com/flintlang/flint). We are very pleased to have support from the [Ethereum Foundation ](https://blog.ethereum.org/2018/10/15/ethereum-foundation-grants-update-wave-4/) for this work.
-https://github.com/flintlang/flint/tree/master/docs/pdfs%20(student%20theses)
+Flint has been developed as part of projects and summer work at [Imperial College Department of Computing](https://www.doc.ic.ac.uk) under the supervision of Professors Susan Eisenbach and Sophia Drossopoulou. Its original developer was Franklin Schrans for his MEng thesis and then continued as a group project. The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdfs%20(student%20theses)) and the codebase is [here](https://github.com/flintlang/flint). We are very pleased to have support from the [Ethereum Foundation ](https://blog.ethereum.org/2018/10/15/ethereum-foundation-grants-update-wave-4/) for this work.
 
 ## Language Overview
 
