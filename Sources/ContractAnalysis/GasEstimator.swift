@@ -1,5 +1,6 @@
 import AST
 import Foundation
+import Utils
 
 public class GasEstimator {
     
@@ -159,11 +160,12 @@ async function deploy_contract(abi, bytecode) {
         let fileManager = FileManager.init()
         //let outputfile = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: false).appendingPathComponent("utils").appendingPathComponent("gasEstimator").appendingPathComponent("test.js", isDirectory: false)
         //let outputfile = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator")
-        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator/test.js"
+        //let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator/test.js"
+        let path = Path.getFullUrl(path: "utils/gasEstimator/test.js").absoluteString
         let outputfile = URL(fileURLWithPath: path)
         
         if !(fileManager.fileExists(atPath: path)) {
-            fileManager.createFile(atPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator/test.js", contents: nil)
+            fileManager.createFile(atPath: Path.getFullUrl(path: "utils/gasEstimator/test.js").absoluteString, contents: nil)
         }
  
         try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
@@ -171,7 +173,7 @@ async function deploy_contract(abi, bytecode) {
         let p = Process()
         let pipe = Pipe()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator"
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/gasEstimator").absoluteString
         p.arguments = ["node", "test.js"]
         p.standardOutput = pipe
         p.launch()

@@ -4,6 +4,7 @@ import AST
 import LSP
 import Diagnostic
 import Compiler
+import Utils
 
 /// The main function for the compiler.
 func main() {
@@ -38,7 +39,7 @@ func main() {
 }
 
 func main_d() throws {
-        let fileName = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint"
+        let fileName = Path.getFullUrl(path: "ide_examples/curr_examples/test.flint").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint" */
         let inputFiles = [URL(fileURLWithPath: fileName)]
         let sourceCode = try String(contentsOf: inputFiles[0])
         do {

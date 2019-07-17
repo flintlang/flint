@@ -27,7 +27,7 @@ zip: release
 	zip -r flintc.zip flintc stdlib
 	rm flintc
 
-test: lint generate-mocks release
+test: generate-mocks release
 	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py

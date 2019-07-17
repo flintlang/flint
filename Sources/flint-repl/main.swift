@@ -2,7 +2,7 @@ import Foundation
 import Commander
 import Diagnostic
 import REPL
-
+import Utils
 
 func main() {
     command (
@@ -24,7 +24,7 @@ func main() {
 
 func main_d() throws {
     
-    let repl = REPL(contractFilePath : "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/repl_eval/Counter.flint", contractAddress : "")
+    let repl = REPL(contractFilePath : Path.getFullUrl(path: "repl_eval/Counter.flint").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/repl_eval/Counter.flint" */, contractAddress : "")
     do {
         try repl.run()
     } catch let err {

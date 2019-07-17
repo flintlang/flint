@@ -2,6 +2,7 @@ import AST
 import Parser
 import Lexer
 import Foundation
+import Utils
 
 public class JSTranslator {
     private var contractName: String
@@ -33,7 +34,7 @@ public class JSTranslator {
         self.contractFunctionNames = []
         self.contractFunctionInfo = [:]
         self.contractEventInfo = [:]
-        let path_to_test_framework = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_framework.js")
+        let path_to_test_framework = URL(fileURLWithPath: Path.getFullUrl(path: "utils/testRunner/test_framework.js").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner/test_framework.js" */)
         self.firstHalf = try! String(contentsOf: path_to_test_framework)
         self.ast = ast
         self.coverage = coverage

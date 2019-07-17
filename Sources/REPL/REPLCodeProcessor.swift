@@ -1,6 +1,7 @@
 import AST
 import Rainbow
 import Foundation
+import Utils
 
 public class REPLCodeProcessor {
     
@@ -148,7 +149,7 @@ public class REPLCodeProcessor {
     
     private func getNewAddress() -> String {
         let fileManager = FileManager.init()
-        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_address.js"
+        let path = Path.getFullUrl(path: "utils/repl/gen_address.js").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_address.js" */
         
         if !(fileManager.fileExists(atPath: path)) {
             print("FATAL ERROR: gen_address file does not exist, cannot gen new addr. Exiting.")
@@ -157,12 +158,12 @@ public class REPLCodeProcessor {
         
         let p = Process()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
         p.arguments = ["node", "--no-warnings", "gen_address.js"]
         p.launch()
         p.waitUntilExit()
         
-        let addr_file_path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_addr.txt"
+        let addr_file_path = Path.getFullUrl(path: "utils/repl/gen_addr.txt").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_addr.txt" */
         
         let addr = try! String(contentsOf: URL(fileURLWithPath: addr_file_path))
         

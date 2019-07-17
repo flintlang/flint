@@ -9,6 +9,7 @@ import Optimizer
 import ContractAnalysis
 import IRGen
 import Compiler
+import Utils
 
 struct Analyser {
     let contractFile : String
@@ -23,7 +24,7 @@ struct Analyser {
     public func analyse() throws
     {
         let inputFiles = [URL(fileURLWithPath: contractFile)]
-        let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator")
+        let outputDirectory = URL(fileURLWithPath: Path.getFullUrl(path: "utils/gasEstimator").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/gasEstimator" */)
         
         let config = CompilerContractAnalyserConfiguration(sourceFiles: inputFiles,
                                                            sourceCode: sourceCode,

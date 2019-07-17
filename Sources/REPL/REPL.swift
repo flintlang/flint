@@ -7,6 +7,7 @@ import Foundation
 import JSTranslator
 import SwiftyJSON
 import Rainbow
+import Utils
 
 public class REPL {
     var contractInfoMap : [String : REPLContract] = [:]
@@ -20,7 +21,8 @@ public class REPL {
     
     func getContractData() throws -> String {
         let fileManager = FileManager.init()
-        let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/compile_contract.js"
+        //let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/compile_contract.js"
+        let path = Path.getFullUrl(path: "utils/repl/compile_contract.js").absoluteString
     
         if !(fileManager.fileExists(atPath: path)) {
             print("FATAL ERROR: compile_contract file does not exist, cannot compile contract for repl. Exiting.")
@@ -29,12 +31,13 @@ public class REPL {
 
         let p = Process()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        //p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString
         p.arguments = ["node", "--no-warnings", "compile_contract.js"]
         p.launch()
         p.waitUntilExit()
  
-        let contractJsonFilePath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/contract.json"
+        let contractJsonFilePath = Path.getFullUrl(path: "utils/repl/contract.json").absoluteString
         
         let get_contents_of_json = try String(contentsOf: URL(fileURLWithPath: contractJsonFilePath))
         
@@ -136,7 +139,7 @@ public class REPL {
     
     private func deploy_contracts() {
         let inputFiles = [URL(fileURLWithPath: self.contractFilePath)]
-        let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl")
+        let outputDirectory = URL(fileURLWithPath: Path.getFullUrl(path: "utils/repl").absoluteString)
         let config =  CompilerReplConfiguration(sourceFiles: inputFiles, stdlibFiles: StandardLibrary.default.files, outputDirectory: outputDirectory, diagnostics: DiagnosticPool(shouldVerify: false, quiet: false, sourceContext: SourceContext(sourceFiles: inputFiles)))
   
         do {

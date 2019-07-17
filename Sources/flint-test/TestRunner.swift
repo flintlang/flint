@@ -11,7 +11,7 @@ import IRGen
 import JSTranslator
 import Compiler
 import Coverage
-
+import Utils
 
 struct TestRunner {
     let testFile : URL
@@ -47,7 +47,8 @@ struct TestRunner {
         let pathToFlintContract = jsTestSuite.getFilePathToFlintContract()
         
         let inputFiles = [URL(fileURLWithPath: pathToFlintContract)]
-        let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner")
+        //let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner")
+        let outputDirectory = Path.getFullUrl(path: "utils/testRunner")
         let contract_sourceCode = try String(contentsOf: inputFiles[0])
         
         let config = CompilerTestFrameworkConfiguration(sourceFiles: inputFiles,
@@ -90,7 +91,8 @@ struct TestRunner {
     func genCovReport(contract_name: String, contract_file_path: String) throws {
         let p = Process()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage"
+        // p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage"
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/coverage").absoluteString
         p.arguments = ["node", "--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
         p.launch()
         p.waitUntilExit()
@@ -103,7 +105,7 @@ struct TestRunner {
         
         let p = Process()
         p.launchPath = "/usr/bin/env"
-        p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner"
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/testRunner").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner" */
         p.arguments = ["node", "--no-warnings", "test.js"]
         p.launch()
         p.waitUntilExit()

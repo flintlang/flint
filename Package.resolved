@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "874280173e082cdd7ac6602be235914efe3f4dbc",
-          "version": "0.13.0"
+          "revision": "5da70ba744d58d772201f03600eb16c53197652d",
+          "version": "0.15.0"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/llvm-swift/FileCheck.git",
         "state": {
           "branch": null,
-          "revision": "89b8480055f9adf8ce2f9ad5e2fac7ac1076242e",
-          "version": "0.0.8"
+          "revision": "00945abac615e5203701be0f090ed0e2d2ff15bf",
+          "version": "0.2.0"
         }
       },
       {
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/llvm-swift/Lite.git",
         "state": {
           "branch": null,
-          "revision": "bc3598f1b7854a9a1ab8037fc4b2aeee243076cf",
-          "version": "0.0.13"
+          "revision": "8ff935d02ed0174c616a899b463780ecc7e70937",
+          "version": "0.2.0"
         }
       },
       {
@@ -60,17 +60,8 @@
         "repositoryURL": "https://github.com/onevcat/Rainbow.git",
         "state": {
           "branch": null,
-          "revision": "797a68d0a642609424b08f11eb56974a54d5f6e2",
-          "version": "3.1.4"
-        }
-      },
-      {
-        "package": "ShellOut",
-        "repositoryURL": "https://github.com/JohnSundell/ShellOut.git",
-        "state": {
-          "branch": null,
-          "revision": "f1c253a34a40df4bfd268b09fdb101b059f6d52d",
-          "version": "2.1.0"
+          "revision": "9c52c1952e9b2305d4507cf473392ac2d7c9b155",
+          "version": "3.1.5"
         }
       },
       {
@@ -83,12 +74,30 @@
         }
       },
       {
+        "package": "llbuild",
+        "repositoryURL": "https://github.com/apple/swift-llbuild.git",
+        "state": {
+          "branch": null,
+          "revision": "f1c9ad9a253cdf1aa89a7f5c99c30b4513b06ddb",
+          "version": "0.1.1"
+        }
+      },
+      {
+        "package": "SwiftPM",
+        "repositoryURL": "https://github.com/apple/swift-package-manager.git",
+        "state": {
+          "branch": null,
+          "revision": "8656a25cb906c1896339f950ac960ee1b4fe8034",
+          "version": "0.4.0"
+        }
+      },
+      {
         "package": "SwiftyJSON",
         "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
         "state": {
           "branch": null,
-          "revision": "184c6884998c41f71a73c459f9b525b7121be846",
-          "version": "4.2.0"
+          "revision": "2b6054efa051565954e1d2b9da831680026cd768",
+          "version": "4.3.0"
         }
       },
       {
