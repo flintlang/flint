@@ -1,0 +1,460 @@
+swift package resolve
+./generate_mocks.sh
+~/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo ~/Documents/flint_build_attempt2/flint
+Found Cuckoo Generator at: /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator
+~/Documents/flint_build_attempt2/flint
+Generating Mocks...
+ -- Creating .derived-tests/ABI
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable ABI --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/ABI/ABIGeneratedMocks.swift Sources/ABI/ABI.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/AST
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable AST --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/AST/ASTGeneratedMocks.swift Sources/AST/Statement/DoCatchStatement.swift Sources/AST/Statement/ForStatement.swift Sources/AST/Statement/ReturnStatement.swift Sources/AST/Statement/IfStatement.swift Sources/AST/Statement/EmitStatement.swift Sources/AST/Statement/BecomeStatement.swift Sources/AST/Statement/Statement.swift Sources/AST/Environment/Environment+Type.swift Sources/AST/Environment/Environment+Memory.swift Sources/AST/Environment/Environment+MatchFunction.swift Sources/AST/Environment/Information/TypeInformation.swift Sources/AST/Environment/Information/PropertyInformation.swift Sources/AST/Environment/Information/EventInformation.swift Sources/AST/Environment/Information/FunctionInformation.swift Sources/AST/Environment/Information/SpecialInformation.swift Sources/AST/Environment/Information/CallableInformation.swift Sources/AST/Environment/Environment+MatchEvent.swift Sources/AST/Environment/Property.swift Sources/AST/Environment/Environment.swift Sources/AST/Environment/Environment+Additions.swift Sources/AST/ASTDumper.swift Sources/AST/Component/Parameter.swift Sources/AST/Component/TypeAnnotation.swift Sources/AST/Component/Attribute.swift Sources/AST/Component/TypeState.swift Sources/AST/Component/FunctionArgument.swift Sources/AST/Component/Identifier.swift Sources/AST/Component/CallerProtection.swift Sources/AST/Component/PrePostCondition.swift Sources/AST/Component/Conformance.swift Sources/AST/Type.swift Sources/AST/ASTPass/ASTPassResult.swift Sources/AST/ASTPass/ASTPassContext.swift Sources/AST/ASTPass/ASTPassRunner.swift Sources/AST/ASTPass/ASTPass.generated.swift Sources/AST/ASTNode.swift Sources/AST/Array+Parameter.swift Sources/AST/TopLevelModule.swift Sources/AST/Declaration/TopLevelDeclaration.swift Sources/AST/Declaration/VariableDeclaration.swift Sources/AST/Declaration/StructDeclaration.swift Sources/AST/Declaration/ContractDeclaration.swift Sources/AST/Declaration/FunctionSignatureDeclaration.swift Sources/AST/Declaration/EventDeclaration.swift Sources/AST/Declaration/SpecialSignatureDeclaration.swift Sources/AST/Declaration/TraitDeclaration.swift Sources/AST/Declaration/Member/ContractBehaviourMember.swift Sources/AST/Declaration/Member/StructMember.swift Sources/AST/Declaration/Member/TraitMember.swift Sources/AST/Declaration/Member/EnumMember.swift Sources/AST/Declaration/Member/ContractMember.swift Sources/AST/Declaration/BracketedExpression.swift Sources/AST/Declaration/FunctionDeclaration.swift Sources/AST/Declaration/SpecialDeclaration.swift Sources/AST/Declaration/ContractBehaviorDeclaration.swift Sources/AST/Declaration/EnumDeclaration.swift Sources/AST/Expression/Expression.swift Sources/AST/Expression/InoutExpression.swift Sources/AST/Expression/ExternalCall.swift Sources/AST/Expression/SubscriptExpression.swift Sources/AST/Expression/RangeExpression.swift Sources/AST/Expression/LiteralExpression.swift Sources/AST/Expression/FunctionCall.swift Sources/AST/Expression/AttemptExpression.swift Sources/AST/Expression/BinaryExpression.swift Sources/AST/Expression/TypeConversionExpression.swift Sources/AST/ASTVisitor/ASTVisitor.swift Sources/AST/ASTVisitor/ASTVisitorContext.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+error: Type of instance variable functionCallsExternal could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/Environment/Environment.swift)
+ -- Creating .derived-tests/ASTPreprocessor
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable ASTPreprocessor --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/ASTPreprocessor/ASTPreprocessorGeneratedMocks.swift Sources/ASTPreprocessor/EnclosingTypeAssigner.swift Sources/ASTPreprocessor/ASTPreprocessor.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Compiler
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Compiler --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Compiler/CompilerGeneratedMocks.swift Sources/Compiler/ExitCodes.swift Sources/Compiler/Compiler.swift Sources/Compiler/SolcCompiler.swift Sources/Compiler/StandardLibrary.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/ContractAnalysis
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable ContractAnalysis --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/ContractAnalysis/ContractAnalysisGeneratedMocks.swift Sources/ContractAnalysis/FunctionAnalysis.swift Sources/ContractAnalysis/CallAnalysis.swift Sources/ContractAnalysis/GasEstimator.swift Sources/ContractAnalysis/Edge.swift Sources/ContractAnalysis/TypeStateGraph.swift Sources/ContractAnalysis/FunctionEdge.swift Sources/ContractAnalysis/EnvironmentConversion.swift Sources/ContractAnalysis/FunctionGraph.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Coverage
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Coverage --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Coverage/CoverageGeneratedMocks.swift Sources/Coverage/Coverage.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Diagnostic
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Diagnostic --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Diagnostic/DiagnosticGeneratedMocks.swift Sources/Diagnostic/DiagnosticPool.swift Sources/Diagnostic/DiagnosticsVerifier.swift Sources/Diagnostic/DiagnosticsFormatter.swift Sources/Diagnostic/Diagnostic.swift Sources/Diagnostic/SourceContext.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/file-check
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable file-check --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/file-check/file-checkGeneratedMocks.swift Sources/file-check/main.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/flintc
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable flintc --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/flintc/flintcGeneratedMocks.swift Sources/flintc/main.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/flint-ca
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable flint-ca --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/flint-ca/flint-caGeneratedMocks.swift Sources/flint-ca/main.swift Sources/flint-ca/Analyser.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/flint-lsp
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable flint-lsp --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/flint-lsp/flint-lspGeneratedMocks.swift Sources/flint-lsp/main.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/flint-repl
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable flint-repl --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/flint-repl/flint-replGeneratedMocks.swift Sources/flint-repl/main.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/flint-test
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable flint-test --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/flint-test/flint-testGeneratedMocks.swift Sources/flint-test/main.swift Sources/flint-test/TestRunner.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/IRGen
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable IRGen --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/IRGen/IRGenGeneratedMocks.swift Sources/IRGen/IRContract.swift Sources/IRGen/EVM.swift Sources/IRGen/IRCodeGenerator.swift Sources/IRGen/IRCanonicalType.swift Sources/IRGen/Mangler.swift Sources/IRGen/Function/IRFunction.swift Sources/IRGen/Function/FunctionContext.swift Sources/IRGen/Function/IRContractInitializer.swift Sources/IRGen/Function/IRStatement.swift Sources/IRGen/Function/IRFallback.swift Sources/IRGen/FunctionCallCompletion/FunctionCallCompleter.swift Sources/IRGen/IRStruct.swift Sources/IRGen/Preprocessor/IRPreprocessor.swift Sources/IRGen/Preprocessor/IRPreprocessor+Expressions.swift Sources/IRGen/Component/IRAssignment.swift Sources/IRGen/Component/IRSelf.swift Sources/IRGen/Component/IRIdentifier.swift Sources/IRGen/Component/IRLiteralToken.swift Sources/IRGen/IRInterface.swift Sources/IRGen/Property/IRPropertyAccess.swift Sources/IRGen/Property/IRPropertyOffset.swift Sources/IRGen/Runtime/IRRuntimeFunction.swift Sources/IRGen/Runtime/IRCallerProtectionChecks.swift Sources/IRGen/Runtime/IRWrapperFunction.swift Sources/IRGen/Runtime/IRFunctionSelector.swift Sources/IRGen/Declaration/IRVariableDeclaration.swift Sources/IRGen/Conformance/TraitResolver.swift Sources/IRGen/Expression/IRExpression.swift Sources/IRGen/Expression/IRExternalCall.swift Sources/IRGen/Expression/IRAttemptExpression.swift Sources/IRGen/Expression/IRSubscriptExpression.swift Sources/IRGen/Expression/IRFunctionCall.swift Sources/IRGen/Expression/IRTypeConversionExpression.swift Sources/IRGen/Expression/IRBinaryExpression.swift Sources/IRGen/Expression/IREventCall.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/JSTranslator
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable JSTranslator --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/JSTranslator/JSTranslatorGeneratedMocks.swift Sources/JSTranslator/JSLiteral.swift Sources/JSTranslator/JSTestFunctions.swift Sources/JSTranslator/FunctionTranslator.swift Sources/JSTranslator/ContractEventInfo.swift Sources/JSTranslator/JSVariableAssignment.swift Sources/JSTranslator/JSNodes.swift Sources/JSTranslator/ContractFuncInfo.swift Sources/JSTranslator/JSTestSuite.swift Sources/JSTranslator/JSVariable.swift Sources/JSTranslator/JSFunctionCall.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Lexer
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Lexer --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Lexer/LexerGeneratedMocks.swift Sources/Lexer/TokenKind+Punctuation.swift Sources/Lexer/Lexer.swift Sources/Lexer/Token.swift Sources/Lexer/TokenKind+Literal.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/lite
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable lite --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/lite/liteGeneratedMocks.swift Sources/lite/main.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/LSP
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable LSP --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/LSP/LSPGeneratedMocks.swift Sources/LSP/LSPRange.swift Sources/LSP/LSPDiagnosticRelatedInformation.swift Sources/LSP/LSPEncoder.swift Sources/LSP/Severity.swift Sources/LSP/LSPDiagnostic.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Optimizer
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Optimizer --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Optimizer/OptimizerGeneratedMocks.swift Sources/Optimizer/Optimizer.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Parser
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Parser --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Parser/ParserGeneratedMocks.swift Sources/Parser/Parser+Declaration.swift Sources/Parser/Parser+Statements.swift Sources/Parser/Parser+Expressions.swift Sources/Parser/Parser+Components.swift Sources/Parser/Parser+Utils.swift Sources/Parser/ParserError.swift Sources/Parser/Parser.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/REPL
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable REPL --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/REPL/REPLGeneratedMocks.swift Sources/REPL/REPLCodeProcessor.swift Sources/REPL/REPLContract.swift Sources/REPL/REPL.swift Sources/REPL/ContractInfo.swift Sources/REPL/REPLVariable.swift Sources/REPL/REPLOperators.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+error: Type of instance variable transactionAddress could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift)
+ -- Creating .derived-tests/SemanticAnalyzer
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable SemanticAnalyzer --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/SemanticAnalyzer/SemanticAnalyzerGeneratedMocks.swift Sources/SemanticAnalyzer/SemanticAnalyzer+Statements.swift Sources/SemanticAnalyzer/SemanticAnalyzer+Components.swift Sources/SemanticAnalyzer/SemanticError.swift Sources/SemanticAnalyzer/SemanticAnalyzer.swift Sources/SemanticAnalyzer/SemanticAnalyzer+Declarations.swift Sources/SemanticAnalyzer/SemanticAnalyzer+Expressions.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Source
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Source --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Source/SourceGeneratedMocks.swift Sources/Source/SourceEntity.swift Sources/Source/SourceLocation.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/TypeChecker
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable TypeChecker --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/TypeChecker/TypeCheckerGeneratedMocks.swift Sources/TypeChecker/TypeChecker+Statements.swift Sources/TypeChecker/TypeChecker.swift Sources/TypeChecker/TypeError.swift Sources/TypeChecker/TypeChecker+Expressions.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Utils
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Utils --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Utils/UtilsGeneratedMocks.swift Sources/Utils/Path.swift Sources/Utils/String+Indentation.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+ -- Creating .derived-tests/Verifier
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable Verifier --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/Verifier/VerifierGeneratedMocks.swift Sources/Verifier/CallGraphGenerator.swift Sources/Verifier/ShadowVariablePass.swift Sources/Verifier/DynamicChecks/RemoveAsserts.swift Sources/Verifier/DynamicChecks/PreConditions.swift Sources/Verifier/TriggerRule/Wei.swift Sources/Verifier/Verifier.swift Sources/Verifier/Boogie/BoogieTranslationIR.swift Sources/Verifier/Boogie/Statement+Expression.swift Sources/Verifier/Boogie/Boogie.swift Sources/Verifier/Boogie/BoogieAST.swift Sources/Verifier/Boogie/BoogieComponents.swift Sources/Verifier/Boogie/BoogieUnreachableCode.swift Sources/Verifier/Boogie/Holistic.swift Sources/Verifier/Boogie/BoogieIRResolver.swift Sources/Verifier/Boogie/BoogieConstructorPreProcessor.swift Sources/Verifier/Boogie/BoogieVerifier.swift Sources/Verifier/Boogie/BoogieInconsistentAssumptions.swift Sources/Verifier/Boogie/Function.swift Sources/Verifier/Boogie/BoogieTranslator.swift Sources/Verifier/Triggers.swift Sources/Verifier/IRResolver.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+error: Type of instance variable assignedStatements could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieConstructorPreProcessor.swift)
+error: Type of instance variable procedureModifies could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieIRResolver.swift)
+error: Type of instance variable functionVariableDeclarations could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable functionParameters could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable functionMapping could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable functionReturnVariableName could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable emptyMapProperties could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable functionModifiesShadow could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable traitFunctionMutates could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable functionIterableSizeAssumptions could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable callGraph could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable contractStateVariable could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable contractStateVariableStates could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable tldConstructorInitialisations could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable contractGlobalVariables could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable structGlobalVariables could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable tldInvariants could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable globalInvariants could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable structInvariants could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable enums could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable enclosingDoBody could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable enclosingCatchBody could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslator.swift)
+error: Type of instance variable inContract could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/DynamicChecks/PreConditions.swift)
+error: Type of instance variable modifies could not be inferred. Please specify it explicitly. (/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/ShadowVariablePass.swift)
+ -- Creating .derived-tests/YUL
++ /home/matteo/Documents/flint_build_attempt2/flint/.build/checkouts/Cuckoo/Generator/.build/release/cuckoo_generator generate --no-header --testable YUL --exclude ASTNode,PassContextEntry,SourceEntity --output .derived-tests/YUL/YULGeneratedMocks.swift Sources/YUL/Literal.swift Sources/YUL/VariableDeclaration.swift Sources/YUL/Throwing.swift Sources/YUL/Switch.swift Sources/YUL/Expression.swift Sources/YUL/ForLoop.swift Sources/YUL/If.swift Sources/YUL/Assignment.swift Sources/YUL/FunctionCall.swift Sources/YUL/Identifier.swift Sources/YUL/Type.swift Sources/YUL/Block.swift Sources/YUL/FunctionDefinition.swift Sources/YUL/Statement.swift
+/usr/bin/which: no swiftenv in (/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/matteo/.scripts)
+Symlinking...
+~/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer ~/Documents/flint_build_attempt2/flint
+~/Documents/flint_build_attempt2/flint
+swift build -c release --static-swift-stdlib
+[1/24] Compiling Swift Module 'AST' (68 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/ASTVisitor/ASTVisitor.swift:263:36: warning: immutable value 'expression' was never used; consider replacing with '_' or removing it
+    case .invariantDeclaration(let expression):
+                                   ^~~~~~~~~~
+                                   _
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/ASTVisitor/ASTVisitor.swift:273:35: warning: immutable value 'expression' was never used; consider replacing with '_' or removing it
+    case .holisticDeclaration(let expression):
+                                  ^~~~~~~~~~
+                                  _
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/ASTVisitor/ASTVisitor.swift:309:36: warning: immutable value 'expression' was never used; consider replacing with '_' or removing it
+    case .invariantDeclaration(let expression):
+                                   ^~~~~~~~~~
+                                   _
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/Component/Identifier.swift:46:3: warning: 'public' modifier is redundant for static property declared in a public extension
+  public static let DUMMY = Identifier(identifierToken: Token(kind: .identifier(":DUMMY:"), sourceLocation: .DUMMY))
+  ^~~~~~~
+  
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/AST/Component/Identifier.swift:31:14: warning: 'Hashable.hashValue' is deprecated as a protocol requirement; conform type 'Identifier' to 'Hashable' by implementing 'hash(into:)' instead
+  public var hashValue: Int {
+             ^
+[2/24] Compiling Swift Module 'TypeChecker' (4 sources)
+[3/24] Compiling Swift Module 'SemanticAnalyzer' (6 sources)
+[4/24] Compiling Swift Module 'Parser' (7 sources)
+[5/24] Compiling Swift Module 'Optimizer' (1 sources)
+[6/24] Compiling Swift Module 'ASTPreprocessor' (2 sources)
+[7/24] Compiling Swift Module 'LSP' (5 sources)
+[8/24] Compiling Swift Module 'Verifier' (21 sources)
+[9/24] Compiling Swift Module 'ContractAnalysis' (8 sources)
+[10/24] Compiling Swift Module 'IRGen' (35 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:85:51: warning: immutable value 'cbDec' was never used; consider replacing with '_' or removing it
+            case .contractBehaviorDeclaration(let cbDec):
+                                                  ^~~~~
+                                                  _
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:175:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:175:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:176:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/gasEstimator").absoluteString
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:176:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/gasEstimator").absoluteString
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:179:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/ContractAnalysis/GasEstimator.swift:179:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/SemanticAnalyzer/SemanticAnalyzer+Declarations.swift:503:9: warning: variable 'diagnostics' was never mutated; consider changing to 'let' constant
+    var diagnostics = [Diagnostic]()
+    ~~~ ^
+    let
+[11/24] Compiling Swift Module 'JSTranslator' (10 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/JSTranslator/FunctionTranslator.swift:353:13: warning: variable 'argTypes' was written to, but never read
+        var argTypes : [String] = []
+            ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/JSTranslator/FunctionTranslator.swift:67:9: warning: will never be executed
+        return nil
+        ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/JSTranslator/FunctionTranslator.swift:64:13: note: a call to a never-returning function
+            exit(0)
+            ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieComponents.swift:29:13: warning: enum element with associated values must have at least one associated value; this will be an error in the future version of Swift
+  case error()
+            ^~
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieComponents.swift:29:13: note: did you mean to remove the empty associated value list?
+  case error()
+            ^
+            
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieComponents.swift:29:13: note: did you mean to explicitly add a 'Void' associated value?
+  case error()
+            ^
+            Void
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Boogie.swift:174:10: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+    task.launchPath = executable
+         ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Boogie.swift:174:10: note: use 'executableURL' instead
+    task.launchPath = executable
+         ^~~~~~~~~~
+         executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Boogie.swift:183:10: warning: 'launch()' is deprecated: renamed to 'run'
+    task.launch()
+         ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Boogie.swift:183:10: note: use 'run' instead
+    task.launch()
+         ^~~~~~
+         run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieAST.swift:106:7: warning: 'Hashable.hashValue' is deprecated as a protocol requirement; conform type 'BVariableDeclaration' to 'Hashable' by implementing 'hash(into:)' instead
+  var hashValue: Int {
+      ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieAST.swift:268:7: warning: 'Hashable.hashValue' is deprecated as a protocol requirement; conform type 'BModifiesDeclaration' to 'Hashable' by implementing 'hash(into:)' instead
+  var hashValue: Int {
+      ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieAST.swift:501:7: warning: 'Hashable.hashValue' is deprecated as a protocol requirement; conform type 'BType' to 'Hashable' by implementing 'hash(into:)' instead
+  var hashValue: Int {
+      ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/BoogieTranslationIR.swift:29:7: warning: 'Hashable.hashValue' is deprecated as a protocol requirement; conform type 'BIRModifiesDeclaration' to 'Hashable' by implementing 'hash(into:)' instead
+  var hashValue: Int {
+      ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Statement+Expression.swift:104:11: warning: immutable value 'arrayDictIdentifier' was never used; consider removing it
+      let arrayDictIdentifier: String
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Verifier/Boogie/Statement+Expression.swift:882:5: warning: will never be executed
+    print("Unknown type used with `dot` operator \(lhsType)")
+    ^
+[12/24] Compiling Swift Module 'Compiler' (4 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/Compiler.swift:220:43: warning: immutable value 'cdec' was never used; consider replacing with '_' or removing it
+            case .contractDeclaration(let cdec):
+                                          ^~~~
+                                          _
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:23:13: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+    process.launchPath = "/usr/bin/env"
+            ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:23:13: note: use 'executableURL' instead
+    process.launchPath = "/usr/bin/env"
+            ^~~~~~~~~~
+            executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:25:36: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+    verifySolc(launchPath: process.launchPath!)
+                                   ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:25:36: note: use 'executableURL' instead
+    verifySolc(launchPath: process.launchPath!)
+                                   ^~~~~~~~~~
+                                   executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:40:13: warning: 'launch()' is deprecated: renamed to 'run'
+    process.launch()
+            ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/Compiler/SolcCompiler.swift:40:13: note: use 'run' instead
+    process.launch()
+            ^~~~~~
+            run
+[13/24] Compiling Swift Module 'flintc' (1 sources)
+[14/24] Compiling Swift Module 'flint_ca' (2 sources)
+[15/24] Compiling Swift Module 'flint_lsp' (1 sources)
+[16/24] Compiling Swift Module 'REPL' (6 sources)
+[17/24] Compiling Swift Module 'Coverage' (1 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flintc/main.swift:26:5: warning: 'VariadicArgument' is deprecated: use array as an ArgumentConvertible
+    VariadicArgument<String>("input files", description: "The input files to compile.")
+    ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:33:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:33:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:35:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:35:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:37:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPL.swift:37:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:98:20: warning: value 'ev' was defined but never used; consider replacing with boolean test
+            if let ev = rC!.getEventInfo(eventName: name) {
+               ~~~~^~~~~
+                                                          != nil
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:160:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:160:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:161:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:161:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:163:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLCodeProcessor.swift:163:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:72:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:72:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:74:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:74:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:76:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:76:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:198:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:198:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:200:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:200:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:202:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:202:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:179:13: warning: variable 'transactionAddress' was never mutated; consider changing to 'let' constant
+        var transactionAddress = self.repl.transactionAddress
+        ~~~ ^
+        let
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:344:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:344:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:346:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:346:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/repl").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl" */
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:348:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/REPL/REPLContract.swift:348:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+[18/21] Compiling Swift Module 'flint_test' (2 sources)
+[19/21] Compiling Swift Module 'flint_repl' (1 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:93:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:93:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:95:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/coverage").absoluteString
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:95:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/coverage").absoluteString
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:97:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:97:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:107:11: warning: 'launchPath' is deprecated: renamed to 'executableURL'
+        p.launchPath = "/usr/bin/env"
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:107:11: note: use 'executableURL' instead
+        p.launchPath = "/usr/bin/env"
+          ^~~~~~~~~~
+          executableURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:108:11: warning: 'currentDirectoryPath' is deprecated: renamed to 'currentDirectoryURL'
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/testRunner").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner" */
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:108:11: note: use 'currentDirectoryURL' instead
+        p.currentDirectoryPath = Path.getFullUrl(path: "utils/testRunner").absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner" */
+          ^~~~~~~~~~~~~~~~~~~~
+          currentDirectoryURL
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:110:11: warning: 'launch()' is deprecated: renamed to 'run'
+        p.launch()
+          ^
+/home/matteo/Documents/flint_build_attempt2/flint/Sources/flint-test/TestRunner.swift:110:11: note: use 'run' instead
+        p.launch()
+          ^~~~~~
+          run
+cp -r stdlib .build/release/
+swift test
+[1/15] Compiling Swift Module 'SemanticAnalyzerTests' (5 sources)
+[2/15] Compiling Swift Module 'IRGenTests' (3 sources)
+[3/15] Compiling Swift Module 'TypeCheckerTests' (3 sources)
+[4/15] Compiling Swift Module 'UtilsTests' (3 sources)
+[5/15] Compiling Swift Module 'ParserTests' (3 sources)
+[6/15] Compiling Swift Module 'SourceTests' (3 sources)
+[7/15] Compiling Swift Module 'LexerTests' (3 sources)
+[8/15] Compiling Swift Module 'OptimizerTests' (3 sources)
+[9/15] Compiling Swift Module 'CompilerTests' (3 sources)
+[10/15] Compiling Swift Module 'DiagnosticTests' (3 sources)
+[11/15] Compiling Swift Module 'ASTTests' (4 sources)
+[12/15] Compiling Swift Module 'ASTPreprocessorTests' (3 sources)
+[13/15] Compiling Swift Module 'ABITests' (3 sources)
+/home/matteo/Documents/flint_build_attempt2/flint/Tests/SemanticAnalyzerTests/SemanticAnalyzerTests.swift:31:22: error: missing argument for parameter 'mutates' in call
+        modifiers: [],
+                     ^
+                     , mutates: <#[Identifier]#>
+AST.FunctionSignatureDeclaration:13:12: note: 'init(funcToken:attributes:modifiers:mutates:identifier:parameters:prePostConditions:closeBracketToken:resultType:)' declared here
+    public init(funcToken: Lexer.Token, attributes: [AST.Attribute], modifiers: [Lexer.Token], mutates: [AST.Identifier], identifier: AST.Identifier, parameters: [AST.Parameter], prePostConditions: [AST.PrePostCondition], closeBracketToken: Lexer.Token, resultType: AST.Type?)
+           ^
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:4870:48: error: use of undeclared type '__UnknownType'
+    public override var functionCallsExternal: __UnknownType {
+                                               ^~~~~~~~~~~~~
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:4870:25: error: property does not override any property from its superclass
+    public override var functionCallsExternal: __UnknownType {
+           ~~~~~~~~     ^
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:5534:82: error: use of undeclared type '__UnknownType'
+            var functionCallsExternal: Cuckoo.ClassToBeStubbedProperty<MockEnvironment, __UnknownType> {
+                                                                                        ^~~~~~~~~~~~~
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:5796:55: error: use of undeclared type '__UnknownType'
+            var functionCallsExternal: Cuckoo.VerifyProperty<__UnknownType> {
+                                                             ^~~~~~~~~~~~~
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:6129:48: error: use of undeclared type '__UnknownType'
+    public override var functionCallsExternal: __UnknownType {
+                                               ^~~~~~~~~~~~~
+/home/matteo/Documents/flint_build_attempt2/flint/.derived-tests/SemanticAnalyzer/ASTGeneratedMocks.swift:6129:25: error: property does not override any property from its superclass
+    public override var functionCallsExternal: __UnknownType {
+           ~~~~~~~~     ^
+make: *** [Makefile:31: test] Error 1

@@ -14,28 +14,28 @@ class BoogieTranslator {
   let triggers: Trigger
 
   // Variables declared in each function
-  var functionVariableDeclarations = [String: Set<BVariableDeclaration>]()
+  var functionVariableDeclarations: [String: Set<BVariableDeclaration>] = [:]
   // Procedure paramters
-  var functionParameters = [String: [BParameterDeclaration]]()
+  var functionParameters: [String: [BParameterDeclaration]] = [:]
   // Procedure mapping
-  var functionMapping = [String: BIRProcedureDeclaration]()
+  var functionMapping: [String: BIRProcedureDeclaration] = [:]
   // Name of procedure return variable
-  var functionReturnVariableName = [String: String]()
+  var functionReturnVariableName: [String: String] = [:]
   // Current function returning placeholder variable name - for use in returning statement
   var currentFunctionReturningValue: String?
   // Current function returning value, to replace placeholder with
   var currentFunctionReturningValueValue: BExpression?
   // Empty Map Properties, for each type
-  var emptyMapProperties = [BType: (BFunctionDeclaration, BAxiomDeclaration, String)]()
+  var emptyMapProperties: [BType: (BFunctionDeclaration, BAxiomDeclaration, String)] = [:]
   // Map of function names to the shadow variables it modifies
-  var functionModifiesShadow = [String: Set<String>]()
+  var functionModifiesShadow: [String: Set<String>] = [:]
   // Map of (trait) function names to the variables it's callee's modify
-  var traitFunctionMutates = [String: [Identifier]]()
+  var traitFunctionMutates: [String: [Identifier]] = [:]
   // Contract dict/array size assume statements - placed at start of each function
-  var functionIterableSizeAssumptions = [BStatement]()
+  var functionIterableSizeAssumptions: [BStatement] = []
 
   // Call Graph of Boogie procedures
-  var callGraph = [String: Set<String>]()
+  var callGraph: [String: Set<String>] = [:]
 
   // Current behaviour member - function / special / signature declaration ..
   var currentBehaviourMember: ContractBehaviorMember?
@@ -45,25 +45,25 @@ class BoogieTranslator {
   var currentCallerIdentifier: Identifier?
 
   // Name of state variable for each contract
-  var contractStateVariable = [String: String]()
+  var contractStateVariable: [String: String] = [:]
   // Mapping of each state name, for each contract state variable
-  var contractStateVariableStates = [String: [String: Int]]()
+  var contractStateVariableStates: [String: [String: Int]] = [:]
   // Statements to be placed in the constructor of the contract
-  var tldConstructorInitialisations = [String: [(String, Expression)]]()
+  var tldConstructorInitialisations: [String: [(String, Expression)]] = [:]
 
   // Name of global variables in the contract
-  var contractGlobalVariables = [String: [String]]()
+  var contractGlobalVariables: [String: [String]] = [:]
   // Name of global variables in struct
-  var structGlobalVariables = [String: [String]]()
+  var structGlobalVariables: [String: [String]] = [:]
 
   // List of invariants for each tld
-  var tldInvariants = [String: [BIRInvariant]]()
+  var tldInvariants: [String: [BIRInvariant]] = [:]
   // Global invariants - must hold on all contract/struct methods
-  var globalInvariants = [BIRInvariant]()
+  var globalInvariants: [BIRInvariant] = []
   // List of struct invariants
-  var structInvariants = [BIRInvariant]()
+  var structInvariants: [BIRInvariant] = []
 
-  var enums = [String]()
+  var enums: [String] = []
 
   // Current scope context - updated by functions, loops and if statements
   var currentScopeContext: ScopeContext?
@@ -75,8 +75,8 @@ class BoogieTranslator {
   var structInstanceVariableName: String?
 
   // To track whether the current statement we're processing is in do-catch block
-  var enclosingDoBody = [Statement]()
-  var enclosingCatchBody = [BStatement]()
+  var enclosingDoBody: [Statement] = []
+  var enclosingCatchBody: [BStatement] = []
 
   public init(topLevelModule: TopLevelModule,
               environment: Environment,
@@ -110,7 +110,7 @@ class BoogieTranslator {
   // If trait calls function which is implemented elsewhere, and that function mutates a value,
   // then the trait method mutates that value
   func resolveTraitMutations() {
-    var functionsToFlow = [String]()
+    var functionsToFlow: [String] = []
     // Get functions in struct, which were defined in trait, for those functions,
     // add the mutated variables to their function declarations
     for case .structDeclaration(let structDeclaration) in self.topLevelModule.declarations {
@@ -160,7 +160,7 @@ class BoogieTranslator {
   }
 
   func generateAST(holisticTransactionDepth: Int) -> BoogieTranslationIR {
-    var declarations = [BIRTopLevelDeclaration]()
+    var declarations: [BIRTopLevelDeclaration] = []
 
     // Triggers
     //TODO: Actually parse? expression rules in some format, and use that to register sourceLocations

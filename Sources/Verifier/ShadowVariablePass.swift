@@ -4,7 +4,7 @@ import AST
 class ShadowVariablePass: ASTPass {
   private let normaliser: IdentifierNormaliser
   private let triggers: Trigger
-  var modifies = [String: Set<String>]()
+  var modifies: [String: Set<String>] = [:]
 
   private var callerFunctionName: String?
 

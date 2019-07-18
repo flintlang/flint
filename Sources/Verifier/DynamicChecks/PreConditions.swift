@@ -6,7 +6,7 @@ public class PreConditionPreprocessor: ASTPass {
   // Insert assertions at the beginning of function bodies
   // for public functions with pre-conditions
 
-  private var inContract = false
+  private var inContract:Bool = false
   private let checkAllFunctions: Bool
 
   public init(checkAllFunctions: Bool) {

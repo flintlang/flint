@@ -73,10 +73,6 @@ $(Symbooglix_Z3_slink): $(Z3)
 	  && (test -L src/Symbooglix/bin/Release/z3.exe || (mkdir -p src/Symbooglix/bin/Release/z3.exe && ln -s ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe)) \
 	  && cd ..
 
-$(Z3):
-	cd z3 && python scripts/mk_make.py --prefix=$(pwd)/bin \
-	  && cd build && make && cd ../..
-
 clean:
 	-swift package clean
 	-rm -rf .build
@@ -86,4 +82,3 @@ clean:
 	-rm boogie/Binaries/*.{dll,pdb,config}
 	-rm $(Symbooglix_Z3_slink)
 	-cd symbooglix/src && msbuild /t:Clean && cd ../..
-	-rm -r z3/build
