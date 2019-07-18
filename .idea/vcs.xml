@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/BigInt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Commander" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/CryptoSwift" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant/Carthage/Checkouts/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant/Carthage/Checkouts/Quick" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant/Carthage/Checkouts/Quick/Externals/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant/Carthage/Checkouts/Result" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Commandant/Carthage/Checkouts/xcconfigs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/FileKitLinux" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/PathKit" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Quick" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Quick/Externals/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Result" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SWXMLHash" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant/Carthage/Checkouts/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant/Carthage/Checkouts/Quick" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant/Carthage/Checkouts/Quick/Externals/Nimble" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant/Carthage/Checkouts/Result" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Commandant/Carthage/Checkouts/xcconfigs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Result" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/SWXMLHash" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/Yams" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/SourceKitten/Carthage/Checkouts/xcconfigs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Spectre" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Stencil" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Cuckoo/Generator/.build/checkouts/Yams" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/FileCheck" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Lite" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Rainbow" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Spectre" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/SwiftyJSON" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/Symbolic" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/YamlSwift" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/swift-llbuild" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/.build/checkouts/swift-package-manager" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/boogie" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/symbooglix" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/symbooglix/ExternalLibs/Boogie" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/z3" vcs="Git" />
+  </component>
+</project>

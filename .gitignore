@@ -4,6 +4,7 @@
 /Packages
 /*.xcodeproj
 /node_modules
+.idea
 
 *.sol
 !sol_emitter.sol
