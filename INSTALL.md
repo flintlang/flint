@@ -22,6 +22,7 @@ This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-ce
 sudo apt install nodejs npm clang
 
 # Mono - https://www.mono-project.com/download/stable/
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" \
   | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
 sudo apt install mono-devel
@@ -38,6 +39,7 @@ In your terminal, run the following commands
 ```bash
 # Use -jN for multi-core speedup (N >= 2)
 git clone --recurse-submodules https://github.com/flintlang/flint.git
+cd flint
 # No need iff swiftenv already installed relevent swift version or not using swiftenv
 swiftenv install
 swift package update
