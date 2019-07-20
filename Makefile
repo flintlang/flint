@@ -29,14 +29,14 @@ zip: release
 
 test: generate-mocks release
 	swift test
-	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
-	./Tests/VerifierTests/run_verifier_tests.py
+	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh # && ./run_behavior_tests.sh
+	./Tests/VerifierTests/run_verifier_tests.py -f
 	swift run -c release lite
 
 test-nogen: lint release
 	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
-	./Tests/VerifierTests/run_verifier_tests.py
+	./Tests/VerifierTests/run_verifier_tests.py -f
 	swift run -c release lite
 
 lint:

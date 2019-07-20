@@ -16,6 +16,7 @@ import TypeChecker
 import Optimizer
 import IRGen
 import Verifier
+import Utils
 
 
 /// Runs the different stages of the compiler.
@@ -124,11 +125,11 @@ extension Compiler {
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
-                                              boogieLocation: "boogie/Binaries/Boogie.exe",
-                                              symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
+                                              boogieLocation: Path.getFullUrl(path: "boogie/Binaries/Boogie.exe").absoluteString,
+                                              symbooglixLocation: Path.getFullUrl(path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe").absoluteString,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: "/usr/bin/mono",
+                                              monoLocation: "/Library/Frameworks/Mono.framework/Versions/Current/bin//mono" /*"/usr/bin/mono"*/,
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
