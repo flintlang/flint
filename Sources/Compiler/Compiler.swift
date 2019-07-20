@@ -129,7 +129,7 @@ extension Compiler {
                                               symbooglixLocation: Path.getFullUrl(path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe").absoluteString,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: "/Library/Frameworks/Mono.framework/Versions/Current/bin//mono" /*"/usr/bin/mono"*/,
+                                              monoLocation: "/usr/bin/mono",
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
