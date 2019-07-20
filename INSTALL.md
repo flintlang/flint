@@ -14,7 +14,7 @@ The following must be installed to build Flint:
 
 ### Additionally for testing
 To run the testing libraries, install:
-* truffle [Matteo knows version No.]
+* truffle 4
 
 ### On Ubuntu 18.04 LTS
 This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus ammendments will need to be made to this process.
