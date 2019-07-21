@@ -1,5 +1,6 @@
 import AST
 import Source
+import Utils
 
 import Foundation
 
@@ -126,7 +127,7 @@ extension TriggerRule {
     static func weiInvariants() -> [BIRInvariant] {
       // TODO: Pass in SourceLocation - for Wei - determine the syntax needed for this
       let source = SourceLocation(line: 2, column: 3, length: 51,
-                                  file: URL(fileURLWithPath: "/home/yianni/Projects/flint/stdlib/WeiAccounting.inv"),
+                                  file: Path.getFullUrl(path: "stdlib/WeiAccounting.inv"),
                                   isFromStdlib: false)
       return [(BIRInvariant(expression: .equals(.identifier("totalValue_Wei"),
                                                 .subtract(.identifier("receivedValue_Wei"),

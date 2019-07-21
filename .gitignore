@@ -5,6 +5,7 @@
 /*.xcodeproj
 /node_modules
 .idea
+venv
 
 *.sol
 !sol_emitter.sol
