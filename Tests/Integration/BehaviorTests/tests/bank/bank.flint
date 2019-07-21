@@ -12,7 +12,7 @@ Bank :: account <- (any) {
     self.manager = manager
   }
 
-  public mutating func register() {
+  public func register() mutates (accounts, lastIndex) {
     accounts[lastIndex] = account
     lastIndex += 1
   }
@@ -22,18 +22,18 @@ Bank :: account <- (any) {
   }
 
   @payable
-  public mutating func donate(implicit value: Wei) {
+  public func donate(implicit value: Wei) mutates (totalDonations, value) {
     totalDonations.transfer(source: &value)
   }
 }
 
 Bank :: (manager) {
-  public mutating func freeDeposit(account: Address, amount: Int) {
+  public func freeDeposit(account: Address, amount: Int) mutates (balances) {
     var w: Wei = Wei(amount)
     balances[account].transfer(source: &w)
   }
 
-  public mutating func clear(account: Address) {
+  public func clear(account: Address) mutates (balances) {
     balances[account] = Wei(0)
   }
 
@@ -48,15 +48,15 @@ Bank :: account <- (accounts) {
   }
 
   @payable
-  public mutating func deposit(implicit value: Wei) {
+  public func deposit(implicit value: Wei) mutates (balances, value) {
     balances[account].transfer(source: &value)
   }
 
-  public mutating func transfer(amount: Int, destination: Address) {
+  public func transfer(amount: Int, destination: Address) mutates(balances) {
     balances[destination].transfer(source: &balances[account], amount: amount)
   }
 
-  public mutating func withdraw(amount: Int) {
+  public func withdraw(amount: Int) mutates(amount) {
     let w: Wei = Wei(&balances[account], amount)
     send(account, &w)
   }
