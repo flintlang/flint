@@ -176,10 +176,19 @@ git clone --recurse-submodules https://github.com/flintlang/flint
 Or if you cloned normally, make sure to
 ```bash
 git submodules init
-git submodules update
+git submodules update --recursive
 ```
 
-Make sure you have Mono installed
+## Building the compiler
+
+You will need to install [Mono](https://www.mono-project.com/), [Node](https://nodejs.org/en/) and [Swift](https://swift.org/).
+
+Once the dependancies have been installed, run
+```bash
+make
+```
+
+The flint compiler will be outputted to the .build/ directory.
 
 ## Future plans
 
