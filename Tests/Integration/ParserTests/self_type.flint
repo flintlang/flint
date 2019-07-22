@@ -8,28 +8,28 @@
 // CHECK-AST:     )
 struct trait MyTrait {
 
-// CHECK-AST:   FunctionSignatureDeclaration (
-// CHECK-AST:     token: func
-// CHECK-AST:       Identifier (
-// CHECK-AST:         token: identifier "transfer"
-// CHECK-AST:       )
-// CHECK-AST:       Parameter (
-// CHECK-AST:         Identifier (
-// CHECK-AST:           token: identifier "quantity"
-// CHECK-AST:         )
-// CHECK-AST:         inout
-// CHECK-AST:         Type (
-// CHECK-AST:           inout type (
-// CHECK-AST:             Self type (
-// CHECK-AST:             )
-// CHECK-AST:           )
-// CHECK-AST:           Generic Arguments (
-// CHECK-AST:           )
-// CHECK-AST:         )
-// CHECK-AST:       )
-// CHECK-AST:       token: )
-// CHECK-AST:     )
-// CHECK-AST:   )
+// CHECKN'T-AST:   FunctionSignatureDeclaration (
+// CHECKN'T-AST:     token: func
+// CHECKN'T-AST:       Identifier (
+// CHECKN'T-AST:         token: identifier "transfer"
+// CHECKN'T-AST:       )
+// CHECKN'T-AST:       Parameter (
+// CHECKN'T-AST:         Identifier (
+// CHECKN'T-AST:           token: identifier "quantity"
+// CHECKN'T-AST:         )
+// CHECKN'T-AST:         inout
+// CHECKN'T-AST:         Type (
+// CHECKN'T-AST:           inout type (
+// CHECKN'T-AST:             Self type (
+// CHECKN'T-AST:             )
+// CHECKN'T-AST:           )
+// CHECKN'T-AST:           Generic Arguments (
+// CHECKN'T-AST:           )
+// CHECKN'T-AST:         )
+// CHECKN'T-AST:       )
+// CHECKN'T-AST:       token: )
+// CHECKN'T-AST:     )
+// CHECKN'T-AST:   )
     func transfer(quantity: inout Self)
 }
                                 
