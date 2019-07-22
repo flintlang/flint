@@ -15,30 +15,31 @@ Test :: (any) {
     self.d = 0
   }
 
-  mutating func set(a: Int, b: Int, c: Int = 10, e: Int = 20) {
+  func set(a: Int, b: Int, c: Int = 10, e: Int = 20)
+    mutates (a, b, c, d) {
     self.a = a
     self.b = b
     self.c = c
     self.d = e
   }
 
-  public mutating func test1() {
+  public func test1() mutates (a, b) {
     set(a: 1, b: 1)
   }
 
-  public mutating func test2() {
+  public func test2() mutates (a, b, c) {
     set(a: 5, b: 10, c: 5)
   }
 
-  public mutating func test3() {
+  public func test3() mutates (a, b, e) {
     set(a: 7, b: 9, e: 66)
   }
 
-  public mutating func test4() {
+  public func test4() mutates (a, b, c, e) {
     set(a: 11, b: 12, c: 7, e: 90)
   }
 
-  public mutating func test5() {
+  public func test5() mutates (a, b, c, e) {
     set(a: 15, b: 15, c: 7, e: 90)
   }
 

@@ -4,8 +4,10 @@
 /Packages
 /*.xcodeproj
 /node_modules
+
 .idea
 venv
+/.vscode
 
 *.sol
 !sol_emitter.sol

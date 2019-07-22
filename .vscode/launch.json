@@ -11,7 +11,7 @@
             "args": [
                 "--print-verifier-output",
                 "--verify",
-                "${workspaceFolder}/Tests/Integration/BehaviorTests/tests/currency/currency.flint"],
+                "${workspaceFolder}/Tests/Integration/BehaviorTests/tests/synthesize/synthesize.flint"],
             "env": {
                 "FLINTPATH": "${workspaceFolder}"
             },
