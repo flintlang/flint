@@ -32,7 +32,7 @@ Wallet :: (any) {
 // CHECK-AST:            n
 // CHECK-AST:            -
 // CHECK-AST:            1
-    return n * factorial(n - 1)
+    return n * factorial(n: n - 1)
   }
 
 // CHECK-AST: IfStatement

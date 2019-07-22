@@ -16,20 +16,17 @@ contract Test {
 // CHECK-AST:   FixedSizeArrayType
 // CHECK-AST:     built-in type Int
 // CHECK-AST:     size 4
-// CHECK-AST:   ArrayLiteral
                var arr: Int[4] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "arr2"
 // CHECK-AST:   ArrayType
 // CHECK-AST:     built-in type Int
-// CHECK-AST:   ArrayLiteral
 	var arr2: [Int] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "numWrites"
 // CHECK-AST:   built-in type Int
-// CHECK-AST:   0
 		var numWrites: Int = 0
 }
 
@@ -44,6 +41,41 @@ contract Test {
 // CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr2"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "numWrites"
+// CHECK-AST:     =
+// CHECK-AST:     0
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "owner"
+// CHECK-AST:     =
+// CHECK-AST:     identifier "caller"
 	  self.owner = caller
   }
 }

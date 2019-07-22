@@ -117,7 +117,7 @@ public struct TopLevelModule: ASTNode {
                                                             Token(kind: .public,
                                                                   sourceLocation: variable.sourceLocation)
                                                           ],
-                                                          mutates: [],
+                                                          mutates: [Identifier(identifierToken: valueIdentifier.identifierToken)],
                                                           identifier: identifier,
                                                           parameters: parameters + [valueParameter],
                                                           prePostConditions: [],

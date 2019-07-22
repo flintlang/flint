@@ -29,7 +29,7 @@ class BoogieTranslator {
   var emptyMapProperties: [BType: (BFunctionDeclaration, BAxiomDeclaration, String)] = [:]
   // Map of function names to the shadow variables it modifies
   var functionModifiesShadow: [String: Set<String>] = [:]
-  // Map of (trait) function names to the variables it's callee's modify
+  // Map of (trait) function names to the variables its callee's modify
   var traitFunctionMutates: [String: [Identifier]] = [:]
   // Contract dict/array size assume statements - placed at start of each function
   var functionIterableSizeAssumptions: [BStatement] = []

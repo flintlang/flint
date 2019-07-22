@@ -7,7 +7,6 @@ contract Foo {
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:  FixedSizeArrayType
 // CHECK-AST:   built-in type Int
-// CHECK-AST:   size 16
   var array: Int[16] = []
 
 // CHECK-AST: VariableDeclaration
@@ -15,7 +14,6 @@ contract Foo {
 // CHECK-AST:    DictionaryType
 // CHECK-AST:      built-in type Address
 // CHECK-AST:      built-in type Int
-// CHECK-AST:   DictionaryLiteral
   var dictionary: [Address: Int] = [:]
 
 // CHECK-AST: VariableDeclaration
@@ -26,15 +24,11 @@ contract Foo {
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "s"
 // CHECK-AST:   user-defined type S
-// CHECK-AST:   FunctionCall
-// CHECK-AST:     identifier "S"
-// CHECK-AST:     literal 0
   var s: S = S(0)
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "assignedValue"
 // CHECK-AST:   built-in type Int
-// CHECK-AST:   literal 2
   var assignedValue: Int = 2
 }
 
