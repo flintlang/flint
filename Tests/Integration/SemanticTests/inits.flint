@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 contract Test {
   let a: Address
@@ -38,7 +38,7 @@ Test :: caller <- (any) {
     x = B(0, false)
   }
 
-  mutating func foo() {
+  func foo() mutates (x) {
     x = B(1, true)
     x = C(1) // expected-error {{Incompatible assignment between values of type 'B' and 'C'}}
     D() // expected-error {{Cannot call struct initializer 'D' without receiver assignment}}

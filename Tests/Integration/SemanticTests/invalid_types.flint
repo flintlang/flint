@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 contract InvalidTypes {
   var int: Int = 0
@@ -18,7 +18,7 @@ InvalidTypes :: (any) {
     return 2 // expected-error {{Cannot convert expression of type 'Int' to expected return type 'Void'}}
   }
 
-  mutating func baz() {
+  func baz() mutates (arr, int) {
     var a: Bool = true
     a = b // expected-error {{Use of undeclared identifier 'b'}}
 

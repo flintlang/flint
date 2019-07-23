@@ -29,8 +29,10 @@ public struct Compiler {
     Optimizer(),
     TraitResolver(),
     FunctionCallCompleter(),
-    CallGraphGenerator(),
     ConstructorPreProcessor()]
+
+  public static let verifierASTPasses: [ASTPass] = [
+    CallGraphGenerator()]
 
   private static func exitWithFailure() -> Never {
     print("ERROR")
@@ -218,7 +220,7 @@ extension Compiler {
         
         for m in decWithoutStdlib {
             switch (m) {
-            case .contractDeclaration(let cdec):
+            case .contractDeclaration(let _):
                 newDecs.append(m)
             case .contractBehaviorDeclaration(var cbdec):
                 var mems : [ContractBehaviorMember] = []
@@ -697,7 +699,7 @@ public struct CompilerConfiguration {
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
               loadStdlib: Bool = true,
-              astPasses: [ASTPass] = Compiler.defaultASTPasses) {
+              astPasses: [ASTPass]? = nil) {
     self.inputFiles = inputFiles
     self.stdlibFiles = stdlibFiles
     self.outputDirectory = outputDirectory
@@ -711,8 +713,10 @@ public struct CompilerConfiguration {
     self.maxTransactionDepth = maxTransactionDepth
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
-    self.diagnostics = diagnostics
-    self.astPasses = astPasses
+    self.diagnostics = diagnostics //Compiler.defaultASTPasses
+    self.astPasses = astPasses ?? (
+        Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses)
+    )
     self.loadStdlib = loadStdlib
   }
 }

@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --skip-verifier --verify
 
 contract Test {
   var a: Int = 0
@@ -10,12 +10,12 @@ Test :: (any) {
 }
 
 Test :: caller <- (any) {
-  mutating func test1(a: Int = 0, b: Int = 1) {
+  func test1(a: Int = 0, b: Int = 1) mutates (a, b) {
     self.a = a
     self.b = b
   }
 
-  mutating func test2() {
+  func test2() mutates (a, b) {
     test1()
     test1(a:2)
     test1(b:5)
@@ -30,12 +30,12 @@ Test :: caller <- (any) {
   func good_declaration(b: Address, a: Int = 0) {}
   func duplicate_declaration(a: Int, a: Int) {} // expected-error {{Duplicate parameter declarations in function declaration}}
 
-  mutating func test3(a: Int, b: Int = 1) {
+  func test3(a: Int, b: Int = 1) mutates (a, b) {
     self.a = a
     self.b = b
   }
 
-  mutating func test4() {
+  func test4() mutates (a, b) {
     test3() // expected-error {{Function 'test3' is not in scope}}
     test3(1) // expected-error {{All arguments of a function call should be labeled}}
     test3(b: 3) // expected-error {{Function 'test3' is not in scope}}

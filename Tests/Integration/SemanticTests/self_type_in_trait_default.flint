@@ -1,12 +1,12 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 struct trait Trait {
-  mutating func function()
+  func function () mutates (any)
 
   // NOT YET IMPLEMENTED (#21) mutating func notDefaulted(thisParam: inout Self)
 
   // Accept Self parameter
-  mutating func defaulted(thisParam: inout Self, anotherOne: inout Self) {
+  func defaulted(thisParam: inout Self, anotherOne: inout Self) mutates (any) {
     // Variable declaration
     var this: Self = self
     // Variable assignment
@@ -22,11 +22,11 @@ struct trait Trait {
 // An implementation of struct trait Trait
 struct Implementation: Trait {
   // Implementation of trait function calling defaulted function with self param
-  mutating func function() {
+  func function() mutates (any) {
     defaulted(thisParam: &self, anotherOne: &self)
   }
 
-  mutating func comparison(thisParam: inout Implementation) {
+  func comparison(thisParam: inout Implementation) mutates (any) {
     // Variable declaration
     var this: Implementation = self
     // Variable assignment

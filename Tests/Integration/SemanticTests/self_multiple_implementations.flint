@@ -1,8 +1,8 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 struct trait TheAsset {
   // Moves `amount` from `source` into `this` asset.
-  mutating func transfer(source: inout Self, amount: Int) {
+  func transfer(source: inout Self, amount: Int) {
     if source.getRawValue() < amount {
       fatalError()
     }
@@ -12,7 +12,7 @@ struct trait TheAsset {
   }
 
   // Returns the funds contained in this asset, as an integer.
-  mutating func setRawValue(value: Int) -> Int
+  func setRawValue(value: Int) -> Int
 
   // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
@@ -21,7 +21,7 @@ struct trait TheAsset {
 struct TheAssetOne: TheAsset {
   var value: Int = 0
 
-  mutating func setRawValue(value: Int) -> Int {
+  func setRawValue(value: Int) -> Int mutates (value) {
     self.value = value
     return value
   }
@@ -34,7 +34,7 @@ struct TheAssetOne: TheAsset {
 struct TheAssetTwo: TheAsset {
   var value: Int = 0
 
-  mutating func setRawValue(value: Int) -> Int {
+  func setRawValue(value: Int) -> Int mutates (value) {
     self.value = value
     return value
   }
@@ -47,7 +47,7 @@ struct TheAssetTwo: TheAsset {
 struct Comparisoin {
   init() {}
 
-  mutating func transfer() {
+  func transfer() {
     var assetOneDestination: TheAssetOne = TheAssetOne()
     var assetOneSource: TheAssetOne = TheAssetOne()
 
@@ -65,7 +65,7 @@ contract A {}
 A :: (any) {
   public init() {}
 
-  public mutating func transfer() -> Bool {
+  public func transfer() -> Bool {
     var assetOneDestination: TheAssetOne = TheAssetOne()
     var assetOneSource: TheAssetOne = TheAssetOne()
 
