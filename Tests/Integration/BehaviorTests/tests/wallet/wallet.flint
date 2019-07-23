@@ -1,0 +1,34 @@
+contract Wallet {
+  var owner: Address
+  var contents: Wei = Wei(0)
+  var numDeposits: Int = 0
+}
+
+Wallet :: caller <- (any) {
+  public init() {
+    owner = caller
+  }
+
+  @payable
+  public func deposit(implicit value: inout Wei)
+  mutates (numDeposits, Wei.rawValue) {
+    contents.transfer(source: &value)
+    numDeposits += 1
+  }
+}
+
+Wallet :: (owner) {
+  public func withdraw(value: Int) 
+  mutates (contents, Wei.rawValue, owner, numDeposits) {
+    var withdrawn: Wei = Wei(&contents, value)
+    send(owner, &withdrawn)
+  }
+
+  public func getBalance() -> Int {
+    return contents.getRawValue()
+  }
+
+  public func getNumDeposits() -> Int {
+    return numDeposits
+  }
+}

@@ -41,9 +41,9 @@ struct Wei: Asset {
   var rawValue: Int = 0
 
   init(unsafeRawValue: Int) {
-    if unsafeRawValue != 0 {
-      fatalError()
-    }
+    //if unsafeRawValue != 0 {
+    //  fatalError()
+    //}
     self.rawValue = unsafeRawValue
   }
 
@@ -53,8 +53,9 @@ struct Wei: Asset {
   }
 
   init(source: inout Wei) {
-    let amount: Int = source.getRawValue()
-    transfer(source: &source, amount: amount)
+    transfer(source: &source)
+    //let amount: Int = source.getRawValue()
+    //transfer(source: &source, amount: amount)
   }
 
   func setRawValue(value: Int) -> Int

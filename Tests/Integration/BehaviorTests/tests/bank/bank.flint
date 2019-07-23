@@ -3,72 +3,66 @@ contract Bank {
   var balances: [Address: Wei] = [:]
   var accounts: [Address] = []
   var lastIndex: Int = 0
-
+​
   var totalDonations: Wei = Wei(0)
 }
-
+​
 Bank :: account <- (any) {
-  public init(manager: Address) {
+  public init(manager: Address) mutates (Wei.rawValue) {
     self.manager = manager
   }
-
+​
   public func register() 
   mutates (accounts, lastIndex, balances, Wei.rawValue) {
     accounts[lastIndex] = account
     //balances[account] = Wei(0)
     lastIndex += 1
   }
-
+​
   public func getManager() -> Address {
     return manager
   }
-
+​
   @payable
   public func donate(implicit value: inout Wei) 
   mutates (totalDonations, Wei.rawValue) {
     totalDonations.transfer(source: &value)
   }
 }
-
+​
 Bank :: (manager) {
   //public func freeDeposit(account: Address, amount: Int) mutates (balances) {
   //  var w: Wei = Wei(amount)
   //  balances[account].transfer(source: &w)
   //}
-
+​
   
   public func clear(account: Address) 
   mutates (balances, Wei.rawValue) {
-    // Shouldn't this be impossible? We could be losing Wei!
     balances[account] = Wei(0)
   }
-
+​
   public func getDonations() -> Int {
     return totalDonations.getRawValue()
   }
 }
-
+​
 Bank :: account <- (accounts) {
   public func getBalance() -> Int {
     return balances[account].getRawValue()
   }
-
+​
   @payable
   public func deposit(implicit value: inout Wei) 
   mutates (Wei.rawValue) {
-    let balance: Wei = balances[account]
-    balance.transfer(source: &value)
+    balances[account].transfer(source: &value)
   }
-
+​
   public func transfer(amount: Int, destination: Address) 
   mutates(Wei.rawValue) {
-    let destinationBalance: Wei = balances[destination]
-    let sourceBalance: Wei = balances[account]
-    destinationBalance.transfer(source: &sourceBalance, amount: amount)
+    balances[destination].transfer(source: &balances[account], amount: amount)
   }
-
-
-
+​
   public func withdraw(amount: Int) 
   mutates(balances, Wei.rawValue, manager, accounts, lastIndex, totalDonations) {
     let w: Wei = Wei(&balances[account], amount)
