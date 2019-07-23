@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 // expected-warning@0 {{No contract declaration in top level module}}
 
@@ -24,7 +24,7 @@ external trait ExternalTrait {
 }
 
 struct trait FalseStructureTrait {
-  event e() // expected-error {{Member invalid in struct trait context}}
+  event e() // TODO no error currently produced here, is this intentional?; expected-error {{Member invalid in struct trait context}}
 
   self :: (any) { // expected-error {{Member invalid in struct trait context}}
     public init() {}

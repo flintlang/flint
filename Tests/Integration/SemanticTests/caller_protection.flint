@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 contract Test {
   var owners: [Int: Address]

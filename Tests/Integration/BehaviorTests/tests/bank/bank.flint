@@ -8,7 +8,7 @@ contract Bank {
 }
 
 Bank :: account <- (any) {
-  public init(manager: Address) {
+  public init(manager: Address) mutates (Wei.rawValue) {
     self.manager = manager
   }
 
@@ -56,8 +56,7 @@ Bank :: account <- (accounts) {
   @payable
   public func deposit(implicit value: inout Wei) 
   mutates (Wei.rawValue) {
-    let balance: Wei = balances[account]
-    balance.transfer(source: &value)
+    balances[account].transfer(source: &value)
   }
 
   public func transfer(amount: Int, destination: Address) 

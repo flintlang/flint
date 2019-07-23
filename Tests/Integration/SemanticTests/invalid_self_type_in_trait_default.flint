@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 struct Implementation {
   // Self should only be allowed in traits
@@ -12,7 +12,7 @@ struct Implementation {
   // Self parameter should not be allowed here
   let selfParameter: Self = self // expected-error {{Use of Self is only allowed in traits}}
                                  // expected-error@-1 {{Incompatible assignment between values of type 'Self' and 'Implementation'}}
-  mutating func functionIncludingAssignmentToSelf() {
+  func functionIncludingAssignmentToSelf() mutates (any) {
     let this: Self = self // expected-error {{Use of Self is only allowed in traits}}
                           // expected-error@-1 {{Incompatible assignment between values of type 'Self' and 'Implementation'}}
     this.functionAcceptingSelf(this: &self) // expected-error {{Use of Self is only allowed in traits}}
