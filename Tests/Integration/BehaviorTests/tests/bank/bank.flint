@@ -61,9 +61,7 @@ Bank :: account <- (accounts) {
 
   public func transfer(amount: Int, destination: Address) 
   mutates(Wei.rawValue) {
-    let destinationBalance: Wei = balances[destination]
-    let sourceBalance: Wei = balances[account]
-    destinationBalance.transfer(source: &sourceBalance, amount: amount)
+    balances[destination].transfer(source: &balances[account], amount: amount)
   }
 
 
