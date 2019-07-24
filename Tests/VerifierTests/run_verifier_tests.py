@@ -66,8 +66,17 @@ def test_contract(contract_path, fail_lines, warning_lines):
             expected_return_code = finished_verify.returncode != 0
 
         # Store result
-        contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
-    except:
+        contract_verify_result[contract_path] = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
+        if verbose:
+            if contract_verify_result[contract_path]:
+                print(f"{contract_path}: Contract Passed")
+            else:
+                print(f"{contract_path}:\n fail_lines = {fail_lines !r:>23} failed = {failed_verification_lines !r:>20}\n"
+                      f" warning_lines = {warning_lines !r:>20} warned = {warning_verification_lines !r:>20}")
+                print("Contract Failed\n")
+    except Exception as e:
+        if verbose:
+            print(f"Exception on run, assuming contract fail: {e}")
         # Store result
         contract_verify_result[contract_path]  = False
 
@@ -80,6 +89,28 @@ def batch(iterable, n = 1):
     for ndx in range(0, l, n):
         yield iterable[ndx:min(ndx + n, l)]
 
+# Read in from command line
+list_failed = False
+list_skipped = False
+list_passed = False
+verbose = False
+try:
+    opts, args = getopt.getopt(sys.argv[1:],"fspv",["list-failed","list-skipped", "list-passed", "verbose"])
+    for opt, arg in opts:
+        if opt in ("-f", "--list-failed"):
+            list_failed = True
+        elif opt in ("-s", "--list-skipped"):
+            list_skipped = True
+        elif opt in ("-p", "--list-passed"):
+            list_passed = True
+        elif opt in ("-v", "--verbose"):
+            verbose = True
+            print("Note: Verbose output has been enabled")
+except getopt.GetoptError:
+    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped] [-p|--list-passed] [-v|--verbose]')
+    sys.exit(2)
+
+# Start jobs
 skipped = []
 pending_jobs = []
 for contract in test_contracts:
@@ -108,22 +139,6 @@ for contract, result in contract_verify_result.items():
         passed.append(contract)
     else:
         failed.append(contract)
-
-list_failed = False
-list_skipped = False
-list_passed = False
-try:
-    opts, args = getopt.getopt(sys.argv[1:],"fsp",["list-failed","list-skipped", "list-passed"])
-    for opt, arg in opts:
-        if opt in ("-f", "--list-failed"):
-            list_failed = True
-        elif opt in ("-s", "--list-skipped"):
-            list_skipped = True
-        elif opt in ("-p", "--list-passed"):
-            list_passed = True
-except getopt.GetoptError:
-    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped], [-p|--list-passed]')
-    sys.exit(2)
 
 print("Verification tests")
 print("Passed: %i" % len(passed))

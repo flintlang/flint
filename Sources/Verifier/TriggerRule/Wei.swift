@@ -93,7 +93,8 @@ extension TriggerRule {
         // totalValue -= totalValue_Wei[lhs]
         let lhsBExpr = e["lhs_translated_expression"] as! BExpression
         let update = BStatement.assignment(.identifier("totalValue_Wei"),
-                                           .subtract(.identifier("totalValue_Wei"), lhsBExpr),
+                                           .subtract(.identifier("totalValue_Wei"), .mapRead(.identifier("rawValue_Wei"),
+                                               lhsBExpr)),
                                            TranslationInformation(sourceLocation: binaryExpression.sourceLocation))
         return ([update], [])
       }
