@@ -26,12 +26,11 @@ matrix:
     script:
     - export FLINTPATH=$(pwd)
     - make
-    - .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift"
+    - sed -i -e "s/ as / as! /g" ".build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift" 
     - make test
 before_deploy:
 - swift package update
 - make release
-- sed -i -e "s/ as / as! /g" ".build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift"
 - make zip
 deploy:
   provider: releases
