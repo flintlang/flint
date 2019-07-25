@@ -15,11 +15,11 @@ extension Parser {
     endStatement: while let first = currentToken {
       switch first.kind {
       case .punctuation(.semicolon), .newline:
-        currentIndex+=1
-     // Valid starting tokens for statements
+        currentIndex += 1
+          // Valid starting tokens for statements
       case .return, .become, .emit, .call, .for, .if, .identifier,
            .punctuation(.ampersand), .punctuation(.openSquareBracket),
-           .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try, .do:
+           .punctuation(.openBracket), .`self`, .var, .let, .public, .visible, .mutating, .try, .do:
         statements.append(try parseStatement())
       default:
         break endStatement
@@ -34,12 +34,12 @@ extension Parser {
     }
 
     guard let statementEndIndex = indexOfFirstAtCurrentDepth(
-      [
-        .punctuation(.semicolon),
-        .newline,
-        .punctuation(.closeBrace)
-      ],
-      maxIndex: tokens.count) else {
+        [
+          .punctuation(.semicolon),
+          .newline,
+          .punctuation(.closeBrace)
+        ],
+        maxIndex: tokens.count) else {
       throw raise(.statementSameLine(at: latestSource))
     }
     let statement: Statement
@@ -63,9 +63,9 @@ extension Parser {
     case .do:
       let doCatchStatement = try parseDoCatchStatement()
       statement = .doCatchStatement(doCatchStatement)
-    // Valid starting tokens for expressions
+        // Valid starting tokens for expressions
     case .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
-         .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try, .call:
+         .punctuation(.openBracket), .`self`, .var, .let, .public, .visible, .mutating, .try, .call:
       let expression = try parseExpression(upTo: statementEndIndex)
       statement = .expression(expression)
     default:

@@ -19,8 +19,8 @@ class ShadowVariablePass: ASTPass {
     let functionName = functionDeclaration.name
     let parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
-                                               parameterTypes: parameterTypes,
-                                               enclosingType: enclosingType)
+                                                    parameterTypes: parameterTypes,
+                                                    enclosingType: enclosingType)
 
     // Process for trigger
     let scopeContext = passContext.scopeContext ?? ScopeContext()
@@ -49,15 +49,17 @@ class ShadowVariablePass: ASTPass {
                                                     enclosingType: enclosingType)
     if specialDeclaration.isInit,
        passContext.environment!.isStructDeclared(enclosingType) {
-        // Struct initialiser modifies next instance
-        addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: passContext.enclosingTypeIdentifier!.name))
+      // Struct initialiser modifies next instance
+      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(
+          structName: passContext.enclosingTypeIdentifier!.name))
     }
 
     // Process for trigger
     let scopeContext = passContext.scopeContext ?? ScopeContext()
-    for mutates in triggers.mutates(specialDeclaration.asFunctionDeclaration, Context(environment: passContext.environment!,
-                                                                 enclosingType: enclosingType,
-                                                                 scopeContext: scopeContext)) {
+    for mutates in triggers.mutates(specialDeclaration.asFunctionDeclaration,
+                                    Context(environment: passContext.environment!,
+                                            enclosingType: enclosingType,
+                                            scopeContext: scopeContext)) {
       addCurrentFunctionModifies(shadowVariableName: mutates)
     }
 
@@ -72,7 +74,8 @@ class ShadowVariablePass: ASTPass {
 
   func process(becomeStatement: BecomeStatement,
                passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
-    addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+    addCurrentFunctionModifies(
+        shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
 
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
@@ -82,12 +85,12 @@ class ShadowVariablePass: ASTPass {
                passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
     if passContext.structDeclarationContext == nil {
       // Structs don't have state variables
-      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+      addCurrentFunctionModifies(
+          shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
     }
 
     return ASTPassResult(element: externalCall, diagnostics: [], passContext: passContext)
   }
-
 
   func process(binaryExpression: BinaryExpression,
                passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
@@ -115,7 +118,8 @@ class ShadowVariablePass: ASTPass {
                passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     if functionCall.identifier.name == "send" {
       // Structs don't have state variables
-      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
+      addCurrentFunctionModifies(
+          shadowVariableName: normaliser.generateStateVariable(passContext.enclosingTypeIdentifier!.name))
     }
 
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
@@ -125,7 +129,8 @@ class ShadowVariablePass: ASTPass {
                passContext: ASTPassContext) -> ASTPassResult<Parameter> {
 
     if parameter.isImplicit, case .inoutType(let innerType) = parameter.type.rawType {
-      addCurrentFunctionModifies(shadowVariableName: normaliser.generateStructInstanceVariable(structName: innerType.name))
+      addCurrentFunctionModifies(
+          shadowVariableName: normaliser.generateStructInstanceVariable(structName: innerType.name))
     }
 
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -141,8 +146,8 @@ class ShadowVariablePass: ASTPass {
   private func normaliseFunctionName(functionName: String,
                                      parameterTypes: [RawType],
                                      enclosingType: String) -> String {
-      return normaliser.translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }),
-                                                      tld: enclosingType)
+    return normaliser.translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }),
+                                                    tld: enclosingType)
   }
 
   private func addCurrentFunctionModifies(shadowVariableName: String) {

@@ -65,15 +65,17 @@ public class BoogieVerifier: Verifier {
     let functionallyVerified = boogieErrors.count == 0
 
     // Check for inconsistent assumptions
-    let inconsistentAssumptions = !functionallyVerified ? [] : BoogieInconsistentAssumptions(boogie: translation.functionalProgram,
-                                                                                               monoLocation: self.monoLocation,
-                                                                                               boogieLocation: self.boogieLocation).diagnose()
+    let inconsistentAssumptions = !functionallyVerified ? [] : BoogieInconsistentAssumptions(
+        boogie: translation.functionalProgram,
+        monoLocation: self.monoLocation,
+        boogieLocation: self.boogieLocation).diagnose()
     let noInconsistentAssumptions = functionallyVerified && inconsistentAssumptions.count == 0
 
     // Check for unreachable code
     let unreachableCode = !noInconsistentAssumptions ? [] : BoogieUnreachableCode(boogie: translation.functionalProgram,
-                                                                                      monoLocation: self.monoLocation,
-                                                                                      boogieLocation: self.boogieLocation).diagnose()
+                                                                                  monoLocation: self.monoLocation,
+                                                                                  boogieLocation: self.boogieLocation
+    ).diagnose()
 
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
@@ -92,9 +94,9 @@ public class BoogieVerifier: Verifier {
 
     let verified = functionallyVerified && holisticVerification
     let verificationDiagnostics = flintErrors
-                                + inconsistentAssumptions
-                                + unreachableCode
-                                + holisticErrors
+    + inconsistentAssumptions
+    + unreachableCode
+    + holisticErrors
 
     return (verified, verificationDiagnostics)
   }
@@ -103,15 +105,16 @@ public class BoogieVerifier: Verifier {
                                  maxTimeout: Int,
                                  transactionDepth: Int) -> [HolisticRunInfo] {
     var runInfo = [HolisticRunInfo]()
-    for ((holisticSpec, holisticProgram), entryPoint) in zip(translation.holisticPrograms, translation.holisticTestEntryPoints) {
+    for ((holisticSpec, holisticProgram), entryPoint) in zip(translation.holisticPrograms,
+                                                             translation.holisticTestEntryPoints) {
       let (holisticBoogieSource, _) = holisticProgram.render()
 
       let tempHolisticFile = Boogie.writeToTempFile(data: holisticBoogieSource)
       let workingDir = NSTemporaryDirectory() + UUID().uuidString
       let arguments = [symbooglixLocation, tempHolisticFile.path,
-        "--timeout", String(maxTimeout),
-        "--output-dir", workingDir,
-        "-e", entryPoint]
+                       "--timeout", String(maxTimeout),
+                       "--output-dir", workingDir,
+                       "-e", entryPoint]
       (_, _) = Boogie.executeTask(executable: monoLocation,
                                   arguments: arguments,
                                   captureOutput: false)
@@ -138,10 +141,10 @@ public class BoogieVerifier: Verifier {
       notes.append(Diagnostic(severity: .warning,
                               sourceLocation: SourceLocation.DUMMY,
                               message: """
-                                 Number of runs: \(holisticRunInfo.totalRuns)
-                                 Number of successes: \(holisticRunInfo.successfulRuns)
-                                 Number of failures: \(holisticRunInfo.failedRuns)
-                              """))
+                                          Number of runs: \(holisticRunInfo.totalRuns)
+                                          Number of successes: \(holisticRunInfo.successfulRuns)
+                                          Number of failures: \(holisticRunInfo.failedRuns)
+                                       """))
     }
     return Diagnostic(severity: .error,
                       sourceLocation: holisticRunInfo.responsibleSpec,
@@ -168,7 +171,7 @@ public class BoogieVerifier: Verifier {
 
     }
     let successfulRuns = resultDict["TerminatedWithoutError"]!.int!
-    let totalRuns = resultDict.reduce(0, { $0 + $1.value.int!})
+    let totalRuns = resultDict.reduce(0, { $0 + $1.value.int! })
     return HolisticRunInfo(totalRuns: totalRuns,
                            successfulRuns: successfulRuns,
                            responsibleSpec: spec)
@@ -180,8 +183,8 @@ public class BoogieVerifier: Verifier {
     let failingItem = preCondTi.isInvariant ? "invariant" : "pre-condition"
     let triggerResponsible = preCondTi.triggerName == nil ? "" : "Caused by \(preCondTi.triggerName!) trigger"
     let errorMsg = "Could not verify "
-                 + failingItem
-                 + " holds on function call"
+    + failingItem
+    + " holds on function call"
 
     return Diagnostic(severity: .error,
                       sourceLocation: procTi.sourceLocation,
@@ -199,8 +202,8 @@ public class BoogieVerifier: Verifier {
     let failingItem = postCondTi.isInvariant ? "invariant" : "post-condition"
     let triggerResponsible = postCondTi.triggerName == nil ? "" : "Caused by \(postCondTi.triggerName!) trigger"
     let errorMsg = "Could not verify "
-                 + failingItem
-                 + " holds by end of function"
+    + failingItem
+    + " holds by end of function"
 
     return Diagnostic(severity: .error,
                       sourceLocation: procTi.sourceLocation,
@@ -241,15 +244,18 @@ public class BoogieVerifier: Verifier {
     for error in boogieErrors {
       switch error {
       case .assertionFailure(let lineNumber):
-        flintErrors.append(diagnoseFailingAssertion(lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)))
+        flintErrors.append(
+            diagnoseFailingAssertion(lookupTranslationInformation(line: lineNumber, mapping: b2fSourceMapping)))
 
       case .preConditionFailure(let procedureCallLine, let preConditionLine):
-        flintErrors.append(diagnoseFailingPreCondition(lookupTranslationInformation(line: procedureCallLine, mapping: b2fSourceMapping),
-                                                       lookupTranslationInformation(line: preConditionLine, mapping: b2fSourceMapping)))
+        flintErrors.append(diagnoseFailingPreCondition(
+            lookupTranslationInformation(line: procedureCallLine, mapping: b2fSourceMapping),
+            lookupTranslationInformation(line: preConditionLine, mapping: b2fSourceMapping)))
 
       case .postConditionFailure(let procedureLine, let postLine):
-        flintErrors.append(diagnoseFailingPostCondition(lookupTranslationInformation(line: procedureLine, mapping: b2fSourceMapping),
-                                                       lookupTranslationInformation(line: postLine, mapping: b2fSourceMapping)))
+        flintErrors.append(
+            diagnoseFailingPostCondition(lookupTranslationInformation(line: procedureLine, mapping: b2fSourceMapping),
+                                         lookupTranslationInformation(line: postLine, mapping: b2fSourceMapping)))
 
       case .loopInvariantEntryFailure(let invariantLine):
         let invariantTi = lookupTranslationInformation(line: invariantLine, mapping: b2fSourceMapping)
@@ -271,22 +277,23 @@ public class BoogieVerifier: Verifier {
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: SourceLocation.INVALID,
                                       message: "Flint to Boogie translation error. Unsupported construct used."))
-        //print("Boogie error: \(string)")
+          //print("Boogie error: \(string)")
 
-    //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
-    //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
-    //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
-    //      fatalError()
-    //    }
-    //    flintErrors.append(Diagnostic(severity: .error,
-    //                                  sourceLocation: sourceLocation,
-    //                                  message: "Could not verify loop body \(line)"))
+          //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
+          //    guard let sourceLocation = b2fSourceMapping[lineNumber] else {
+          //      print("cannot find mapping for failing proof obligation on line \(lineNumber)")
+          //      fatalError()
+          //    }
+          //    flintErrors.append(Diagnostic(severity: .error,
+          //                                  sourceLocation: sourceLocation,
+          //                                  message: "Could not verify loop body \(line)"))
       }
     }
     return flintErrors
   }
 
-  private func lookupTranslationInformation(line: Int, mapping: [Int: TranslationInformation]) -> TranslationInformation {
+  private func lookupTranslationInformation(line: Int,
+                                            mapping: [Int: TranslationInformation]) -> TranslationInformation {
     guard let translationInformation = mapping[line] else {
       print("cannot find mapping for failing proof obligation on line \(line)")
       fatalError()
@@ -294,4 +301,5 @@ public class BoogieVerifier: Verifier {
     return translationInformation
   }
 }
+
 // swiftlint:enable all

@@ -26,8 +26,12 @@ struct BIRModifiesDeclaration: Hashable {
   let variable: String
   let userDefined: Bool
 
-  var hashValue: Int {
+  /* var hashValue: Int {
     return variable.hashValue
+  } */
+
+  func hasher(into hasher: inout Hasher) {
+    hasher.combine(variable)
   }
 }
 

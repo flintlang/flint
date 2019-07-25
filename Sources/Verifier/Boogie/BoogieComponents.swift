@@ -26,7 +26,7 @@ struct ErrorMsg {
 }
 
 enum SymbooglixError {
-  case error()
+  case error
 }
 
 struct HolisticRunInfo {

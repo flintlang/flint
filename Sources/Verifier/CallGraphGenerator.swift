@@ -13,8 +13,8 @@ public class CallGraphGenerator: ASTPass {
     let functionName = functionDeclaration.name
     let parameterTypes = functionDeclaration.signature.parameters.map({ $0.type.rawType })
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
-                                               parameterTypes: parameterTypes,
-                                               enclosingType: enclosingType)
+                                                    parameterTypes: parameterTypes,
+                                                    enclosingType: enclosingType)
 
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -32,8 +32,8 @@ public class CallGraphGenerator: ASTPass {
     let functionName = specialDeclaration.asFunctionDeclaration.name
     let parameterTypes = specialDeclaration.asFunctionDeclaration.signature.parameters.map({ $0.type.rawType })
     self.callerFunctionName = normaliseFunctionName(functionName: functionName,
-                                               parameterTypes: parameterTypes,
-                                               enclosingType: enclosingType)
+                                                    parameterTypes: parameterTypes,
+                                                    enclosingType: enclosingType)
 
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -80,10 +80,10 @@ public class CallGraphGenerator: ASTPass {
       functionCallSwitch: switch matchedCall {
       case .matchedFunction(let functionInformation):
         let normalisedFunctionName = normaliseFunctionName(functionName: functionCall.identifier.name,
-                                                   parameterTypes: functionInformation.parameterTypes,
-                                                   enclosingType: enclosingType)
+                                                           parameterTypes: functionInformation.parameterTypes,
+                                                           enclosingType: enclosingType)
         environment.addFunctionCall(caller: currentFunction, callee: (normalisedFunctionName,
-                                                                      functionInformation.declaration))
+            functionInformation.declaration))
         updatedContext.environment = environment
 
       case .matchedInitializer(let specialInformation):
@@ -92,11 +92,12 @@ public class CallGraphGenerator: ASTPass {
 
         // This only works for struct initialisers.
 
-        let normalisedFunctionName = normaliseFunctionName(functionName: specialInformation.declaration.asFunctionDeclaration.name,
-                                                           parameterTypes: specialInformation.parameterTypes,
-                                                           enclosingType: functionCall.identifier.name)
+        let normalisedFunctionName = normaliseFunctionName(
+            functionName: specialInformation.declaration.asFunctionDeclaration.name,
+            parameterTypes: specialInformation.parameterTypes,
+            enclosingType: functionCall.identifier.name)
         environment.addFunctionCall(caller: currentFunction, callee: (normalisedFunctionName,
-                                                                      specialInformation.declaration.asFunctionDeclaration))
+            specialInformation.declaration.asFunctionDeclaration))
         updatedContext.environment = environment
 
       case .failure: //(let candidates):
@@ -112,15 +113,14 @@ public class CallGraphGenerator: ASTPass {
         //TODO: Check that is actually an external trait function call
         // For time, assume that it is
         // External trait calls -> ignore, don't add to call graph
-        break
 
-        //print("call graph generation - could not find function for call: \(functionCall)")
-        //print(scopeContext)
-        //print(functionCall)
-        //print(currentType)
-        //print(enclosingType)
-        //print(candidates)
-        //fatalError()
+          //print("call graph generation - could not find function for call: \(functionCall)")
+          //print(scopeContext)
+          //print(functionCall)
+          //print(currentType)
+          //print(enclosingType)
+          //print(candidates)
+          //fatalError()
 
       default:
         print("call graph generation - default: \(functionCall)")
@@ -149,7 +149,7 @@ public class CallGraphGenerator: ASTPass {
   private func normaliseFunctionName(functionName: String,
                                      parameterTypes: [RawType],
                                      enclosingType: String) -> String {
-      return normaliser.translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }),
-                                                      tld: enclosingType)
+    return normaliser.translateGlobalIdentifierName(functionName + parameterTypes.reduce("", { $0 + $1.name }),
+                                                    tld: enclosingType)
   }
 }

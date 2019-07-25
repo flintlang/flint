@@ -102,5 +102,5 @@ public struct Token: Equatable, SourceEntity, CustomStringConvertible {
 }
 
 public extension Token {
-  public static let DUMMY = Token(kind: .public, sourceLocation: .DUMMY)
+  static let DUMMY = Token(kind: .public, sourceLocation: .DUMMY)
 }

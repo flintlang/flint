@@ -15,7 +15,6 @@ extension Parser {
     return ParserError.emit(diag)
   }
 
-
   /// Consumes the given token from the given list, i.e. discard it and move on to the next one. Throws if the current
   /// token being processed isn't equal to the given token.
   ///
@@ -25,16 +24,17 @@ extension Parser {
   /// - Returns: The token which was consumed.
   /// - Throws: A `ParserError.expectedToken` if the current token being processed isn't equal to the given token.
   @discardableResult
-  func tryConsume(_ token: Token.Kind, consumingTrailingNewlines: Bool = true, or diagnostic: Diagnostic, _ syncSet: [Token.Kind]) throws -> Token {
-    
+  func tryConsume(_ token: Token.Kind, consumingTrailingNewlines: Bool = true, or diagnostic: Diagnostic,
+                  _ syncSet: [Token.Kind]) throws -> Token {
+
     guard let first = currentToken, first.kind == token else {
-        
-    currentIndex -= 1
-    let prevToken = currentToken
-    currentIndex += 1
-        
-    return try sync(syncSet, diagnostic, prevToken!)
-        
+
+      currentIndex -= 1
+      let prevToken = currentToken
+      currentIndex += 1
+
+      return try sync(syncSet, diagnostic, prevToken!)
+
     }
     currentIndex += 1
 
@@ -44,58 +44,53 @@ extension Parser {
 
     return first
   }
-    @discardableResult
-    func sync(_ syncSet: [Token.Kind], _ diagnostic : Diagnostic, _ prevToken: Token) throws -> Token  {
-        var kind = currentToken?.kind
-        while (!checkExistence(syncSet, kind!) &&  currentToken != nil)
-        {
-            currentIndex += 1
-            if (currentToken != nil)
-            {
-                kind = currentToken?.kind
-            }
-        }
-        
-        if let _ = currentToken {
-            diagnostics.append(diagnostic)
-            return prevToken
-        } else {
-            // we have consumed all of the input
-            // exit parsing
-            throw raise(diagnostic)
-        }
+
+  @discardableResult
+  func sync(_ syncSet: [Token.Kind], _ diagnostic: Diagnostic, _ prevToken: Token) throws -> Token {
+    var kind = currentToken?.kind
+    while !checkExistence(syncSet, kind!) && currentToken != nil {
+      currentIndex += 1
+      if currentToken != nil {
+        kind = currentToken?.kind
+      }
     }
-    
-    func checkExistence(_ set: [Token.Kind], _ kind: Token.Kind) -> Bool {
-        for tok in set {
-            if tok == kind
-            {
-                return true
-            }
-        }
-        return false
+
+    if nil != currentToken {
+      diagnostics.append(diagnostic)
+      return prevToken
+    } else {
+      // we have consumed all of the input
+      // exit parsing
+      throw raise(diagnostic)
     }
-    
-    func syncNewLine(diagnostic : Diagnostic) throws {
-        // add the new diagnostics
-        diagnostics.append(diagnostic)
-        while (true) {
-            let tok = currentToken
-            if (tok == nil)
-            {
-                throw raise(diagnostic)
-            }
-            
-            if (tok!.kind == .newline)
-            {
-                consumeNewLines()
-                return
-            }
-            currentIndex += 1
-        }
-        
+  }
+
+  func checkExistence(_ set: [Token.Kind], _ kind: Token.Kind) -> Bool {
+    for tok in set where tok == kind {
+      return true
+
     }
-    
+    return false
+  }
+
+  func syncNewLine(diagnostic: Diagnostic) throws {
+    // add the new diagnostics
+    diagnostics.append(diagnostic)
+    while true {
+      let tok = currentToken
+      if tok == nil {
+        throw raise(diagnostic)
+      }
+
+      if tok!.kind == .newline {
+        consumeNewLines()
+        return
+      }
+      currentIndex += 1
+    }
+
+  }
+
   /// Consumes the given token from the given list, i.e. discard it and move on to the next one. Throws if the current
   /// token being processed isn't equal to the given token.
   ///
