@@ -4,7 +4,7 @@ EXCLUDE="ASTNode,PassContextEntry,SourceEntity"
 
 # Locate Cuckoo
 shopt -s nullglob
-CUCKOO_DIR=(./.build/checkouts/Cuckoo)
+CUCKOO_DIR=(./.build/checkouts/Cuckoo.git-*)
 shopt -u nullglob
 
 if [ -z $CUCKOO_DIR ]; then
