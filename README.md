@@ -1,4 +1,5 @@
 # The Flint Programming Language
+[![Build Status](https://travis-ci.org/matteobilardi/flint.svg?branch=master)](https://travis-ci.org/matteobilardi/flint)
 
 ![](.gitbook/assets/flint_small.png)
 
