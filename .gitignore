@@ -8,6 +8,7 @@ Sources.old
 .idea
 venv
 /.vscode
+/temp
 
 *.sol
 !sol_emitter.sol

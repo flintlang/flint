@@ -11,7 +11,7 @@
             "args": [
                 "--print-verifier-output",
                 "--verify",
-                "${workspaceFolder}/Tests/Integration/BehaviorTests/tests/synthesize/synthesize.flint"],
+                "${workspaceFolder}/dictLoop2.flint"],
             "env": {
                 "FLINTPATH": "${workspaceFolder}"
             },
