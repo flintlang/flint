@@ -22,12 +22,16 @@ matrix:
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
     install:
     - "swiftenv install 5.0.2 || true"
+    - "swiftenv install 4.2 || true"
     script:
     - export FLINTPATH=$(pwd)
+    - make
+    - .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift"
     - make test
 before_deploy:
 - swift package update
 - make release
+- sed -i -e "s/ as / as! /g" ".build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift"
 - make zip
 deploy:
   provider: releases
