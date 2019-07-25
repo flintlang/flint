@@ -461,7 +461,7 @@ extension BoogieTranslator {
                           scopeContext: getCurrentScopeContext() ?? ScopeContext())
 
       let(triggerPreStmts, triggerPostStmts) = triggers.lookup(binaryExpression, context, extra: ["lhs_translated_expression": e, "enclosing_function": getCurrentFunction().name]) // TODO: Bad. only works because I know that rn an assignment rule is the only one that could trigger.
-      return (e, preStmts + triggerPreStmts, postStmts + triggerPostStmts)
+      return (e, triggerPreStmts + preStmts, postStmts + triggerPostStmts)
     default: break
     }
 

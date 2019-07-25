@@ -88,7 +88,7 @@ struct S {
     mutates (i)
     pre(i == 10)
   {
-    //VERIFY-FAIL
+    //FIXME why was there an expected VERIFY-FAIL?
     i = 10
   }
 }
