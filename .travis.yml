@@ -25,7 +25,6 @@ matrix:
     - "swiftenv install 5.0.2 || true"
     - "swiftenv install 4.2 || true"
     script:
-    - wget 
     - export FLINTPATH=$(pwd)
     - make
     - sed -i -e "s/ as / as! /g" ".build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift" 
