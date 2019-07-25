@@ -183,6 +183,22 @@ extension BoogieTranslator {
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
+          switch loopVariableType {
+          case .dictionaryType: break
+          case .arrayType, .fixedSizeArrayType:
+            guard case .identifier(let arrayIdentifer) = indexableExpr else {
+              print("Currently, only variable multidimensional arrays may work, fatal error")
+              fatalError()
+            }
+            let bStatement = BStatement.assignment(
+                .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + variableName),
+                .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: 1) + arrayIdentifer), index),
+                TranslationInformation(sourceLocation: forStatement.sourceLocation)
+            )
+            assignValueToVariable.append(bStatement)
+          default: break
+          }
+
         case .dictionaryType:
           // Dictionary type - iterate through the values of the dict, accessed via it's keys
           let (iterableExpr, iterableStmts, postIterableStmts) = process(forStatement.iterable)
@@ -202,17 +218,6 @@ extension BoogieTranslator {
           print("unknown sequence type used for for-loop iterable \(iterableType)")
           fatalError()
         }
-      }
-
-      switch loopVariableType {
-      case .dictionaryType: break
-      case .arrayType, .fixedSizeArrayType: break
-          //BStatement.assignment(.identifier(normaliser.getShadowArraySizePrefix(depth: 0) + variableName),
-          //                      .mapRead(indexableExpr, index),
-          //                      TranslationInformation(sourceLocation: forStatement.sourceLocation)
-          //                      )
-          //assignValueToVariable.append()
-      default: break
       }
 
       let assignIndexInitialValue = BStatement.assignment(index,
@@ -964,7 +969,7 @@ extension BoogieTranslator {
                                           subscriptDepth: Int = 0,
                                           localContext: Bool = true,
                                           isBeingAssignedTo: Bool = false
-                                          ) -> (BExpression, [BStatement], [BStatement]) {
+  ) -> (BExpression, [BStatement], [BStatement]) {
     var postAmble = [BStatement]()
     let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
                                                     localContext: localContext,
@@ -1070,7 +1075,7 @@ extension BoogieTranslator {
                                     .assignment(.mapRead(keysShadowVariable, sizeShadowVariable),
                                                 indxExpr,
                                                 TranslationInformation(
-                                                  sourceLocation: subscriptExpression.sourceLocation)),
+                                                    sourceLocation: subscriptExpression.sourceLocation)),
                                     // increment size variable
                                     .assignment(sizeShadowVariable,
                                                 .add(sizeShadowVariable, .integer(BigUInt(1))),

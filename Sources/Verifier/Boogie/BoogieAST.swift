@@ -273,7 +273,7 @@ struct BModifiesDeclaration: CustomStringConvertible, Hashable {
     return variable.hashValue
   } */
 
-  func hash(into hasher: inout Hasher) {
+  public func hash(into hasher: inout Hasher) {
     hasher.combine(variable)
   }
 }
