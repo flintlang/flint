@@ -4,14 +4,15 @@ struct Boogie {
   static func verifyBoogie(boogie: String, monoLocation: String, boogieLocation: String,
                            printVerificationOutput: Bool) -> [BoogieError] {
     let tempBoogieFile = Boogie.writeToTempFile(data: boogie)
-    let (uncheckedOutput, terminationStatus) = Boogie.executeTask(executable: monoLocation,
-                                                                   arguments: [boogieLocation,
-                                                                     tempBoogieFile.path,
-                                                                     "/inline:spec", // Boogie procedure inlining
-                                                                     //"/inline:none", // No Boogie procedure inlining
-                                                                     "/loopUnroll:5"
-                                                                   ],
-                                                                   captureOutput: true)
+    let (uncheckedOutput, terminationStatus) =
+        Boogie.executeTask(executable: monoLocation,
+                           arguments: [boogieLocation,
+                                       tempBoogieFile.path,
+                                       "/inline:spec", // Boogie procedure inlining
+                                       //"/inline:none", // No Boogie procedure inlining
+                                       "/loopUnroll:5"
+                           ],
+                           captureOutput: true)
     guard let output = uncheckedOutput else {
       print("Error during verification, could not decode verifier output")
       fatalError()
@@ -67,14 +68,15 @@ struct Boogie {
     Boogie program verifier finished with 13 verified, 5 errors
 
 
-    935-ADAC-1E81E2A8A081.bpl(209,0): Error: command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
+    935-ADAC-1E81E2A8A081.bpl(209,0): Error: \
+        command assigns to a global variable that is not in the enclosing procedure's modifies clause: nextInstance_Wei
 
     Boogie program verifier finished with 10 verified, 1 error
 
 
     */
     var rawLines = rawBoogieOutput.trimmingCharacters(in: .whitespacesAndNewlines)
-                               .components(separatedBy: "\n")
+        .components(separatedBy: "\n")
     rawLines.removeFirst() // Discard first line - contains Boogie version info
 
     // Check if output contains non-verification errors (syntax ...)
@@ -84,7 +86,7 @@ struct Boogie {
       let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): [eE]rror:")
       if matches.count > 0 {
         if line.contains("modifies clause") {
-          nonVerificationErrors.append(.modifiesFailure(line))
+          nonVerificationErrors.append(.modifiesFailure(Boogie.parseErrorLineNumber(line: matches[0][0])))
         } else {
           nonVerificationErrors.append(.genericFailure(line,
                                                        Boogie.parseErrorLineNumber(line: matches[0][0])))
@@ -104,7 +106,7 @@ struct Boogie {
       }
 
       if groupedErrorLines.count > 0 {
-        groupedErrorLines[groupedErrorLines.count-1].1.append(line)
+        groupedErrorLines[groupedErrorLines.count - 1].1.append(line)
       }
     }
 
@@ -171,7 +173,7 @@ struct Boogie {
     let task = Process()
 
     // Set the task parameters
-    task.launchPath = executable
+    task.executableURL = URL(string: executable)
     task.arguments = arguments
 
     // Create a Pipe and make the task
@@ -180,12 +182,12 @@ struct Boogie {
     task.standardOutput = captureOutput ? pipe : FileHandle(forWritingAtPath: "/dev/null")!
     task.standardError = captureOutput ? Pipe() : FileHandle(forWritingAtPath: "/dev/null")!
     // Launch the task
-    task.launch()
+    try! task.run()
     task.waitUntilExit()
 
     var uncheckedOutput: String?
     if captureOutput {
-       uncheckedOutput = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: String.Encoding.utf8)
+      uncheckedOutput = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: String.Encoding.utf8)
     }
     // Get the data
     return (uncheckedOutput, task.terminationStatus)
@@ -194,7 +196,7 @@ struct Boogie {
   static func writeToTempFile(data: String) -> URL {
     let uniqueFileName = UUID().uuidString + ".bpl"
     let tempFile = URL(fileURLWithPath: NSTemporaryDirectory(),
-                             isDirectory: true).appendingPathComponent(uniqueFileName)
+                       isDirectory: true).appendingPathComponent(uniqueFileName)
     do {
       // Safely force unwrap as Swift uses unicode internally
       try data.data(using: .utf8)!.write(to: tempFile, options: [.atomic])

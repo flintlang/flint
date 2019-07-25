@@ -16,14 +16,14 @@ public class DiagnosticPool {
   public var hasError: Bool {
     return diagnostics.contains(where: { $0.isError })
   }
-    
+
   public init(shouldVerify: Bool, quiet: Bool, sourceContext: SourceContext) {
     self.diagnostics = []
     self.sourceContext = sourceContext
     self.quiet = quiet
     self.shouldVerify = shouldVerify
   }
-    
+
   public func getDiagnostics() -> [Diagnostic] {
        return diagnostics
   }
@@ -31,8 +31,8 @@ public class DiagnosticPool {
   public func append(_ diagnostic: Diagnostic) {
     diagnostics.append(diagnostic)
   }
-    
-  public func appendAll(_ additions : [Diagnostic]) {
+
+  public func appendAll(_ additions: [Diagnostic]) {
         diagnostics.append(contentsOf: additions)
   }
 

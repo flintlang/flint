@@ -10,7 +10,7 @@ enum BoogieError {
   case loopInvariantEntryFailure(Int) // Location of failing loop invariant
 
   // Syntax / semantic errors
-  case modifiesFailure(String)
+  case modifiesFailure(Int)
   case genericFailure(String, Int)
 
   ////case callPreConditionFailure(Int, String)
@@ -26,7 +26,7 @@ struct ErrorMsg {
 }
 
 enum SymbooglixError {
-  case error()
+  case error
 }
 
 struct HolisticRunInfo {

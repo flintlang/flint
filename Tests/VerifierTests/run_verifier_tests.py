@@ -154,3 +154,8 @@ if list_failed:
     for fail in failed:
         print("\tFail: %s" % fail)
 print("Total: %i" % len(test_contracts))
+
+if len(failed):
+    sys.exit(min(255, len(failed))) # Error on failures to stop make test passing
+else:
+    print("\nAll verification tests succeeded 🥳")

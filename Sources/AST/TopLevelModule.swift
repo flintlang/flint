@@ -4,6 +4,7 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+
 import Source
 import Lexer
 
@@ -31,10 +32,10 @@ public struct TopLevelModule: ASTNode {
     let visibleVariables = contract.variableDeclarations.filter({ $0.isVisible })
     let accessorVariables = mutatorVariables + visibleVariables
 
-    let accessors: [ContractBehaviorMember] = accessorVariables.compactMap { synthesizeAccessor(variable: $0)}
-                                                               .map { .functionDeclaration($0) }
-    let mutators: [ContractBehaviorMember] = mutatorVariables.compactMap { synthesizeMutator(variable: $0)}
-      .map { .functionDeclaration($0) }
+    let accessors: [ContractBehaviorMember] = accessorVariables.compactMap { synthesizeAccessor(variable: $0) }
+        .map { .functionDeclaration($0) }
+    let mutators: [ContractBehaviorMember] = mutatorVariables.compactMap { synthesizeMutator(variable: $0) }
+        .map { .functionDeclaration($0) }
 
     let dummyCloseToken = Token(kind: .punctuation(.closeBrace), sourceLocation: contract.sourceLocation)
     let anyIdentifier = Identifier(identifierToken: Token(kind: .identifier("any"),
@@ -56,7 +57,7 @@ public struct TopLevelModule: ASTNode {
 
     let capitalisedFirst = variable.identifier.name.prefix(1).uppercased() + variable.identifier.name.dropFirst()
 
-    let identifier = Identifier(identifierToken: Token(kind: .identifier("get"+capitalisedFirst),
+    let identifier = Identifier(identifierToken: Token(kind: .identifier("get" + capitalisedFirst),
                                                        sourceLocation: variable.identifier.sourceLocation))
     guard let (parameters, expression, resultType) = getProperty(identifier: variable.identifier,
                                                                  variableType: variable.type,
@@ -65,15 +66,15 @@ public struct TopLevelModule: ASTNode {
     }
     let body = [
       Statement.returnStatement(
-        ReturnStatement(returnToken: Token(kind: .return, sourceLocation: variable.sourceLocation),
-                        expression: expression)
+          ReturnStatement(returnToken: Token(kind: .return, sourceLocation: variable.sourceLocation),
+                          expression: expression)
       )
     ]
 
     let functionSignature = FunctionSignatureDeclaration(funcToken: dummyFuncToken,
                                                          attributes: [],
                                                          modifiers: [
-                                                          Token(kind: .public, sourceLocation: variable.sourceLocation)
+                                                           Token(kind: .public, sourceLocation: variable.sourceLocation)
                                                          ],
                                                          mutates: [],
                                                          identifier: identifier,
@@ -91,7 +92,7 @@ public struct TopLevelModule: ASTNode {
 
     let capitalisedFirst = variable.identifier.name.prefix(1).uppercased() + variable.identifier.name.dropFirst()
 
-    let identifier = Identifier(identifierToken: Token(kind: .identifier("set"+capitalisedFirst),
+    let identifier = Identifier(identifierToken: Token(kind: .identifier("set" + capitalisedFirst),
                                                        sourceLocation: variable.identifier.sourceLocation))
     guard let (parameters, expression, resultType) = getProperty(identifier: variable.identifier,
                                                                  variableType: variable.type,
@@ -106,23 +107,24 @@ public struct TopLevelModule: ASTNode {
                                    assignedExpression: nil)
     let body = [
       Statement.expression(.binaryExpression(
-        BinaryExpression(lhs: expression,
-                         op: Token(kind: .punctuation(.equal), sourceLocation: variable.sourceLocation),
-                         rhs: .identifier(valueIdentifier))))
+          BinaryExpression(lhs: expression,
+                           op: Token(kind: .punctuation(.equal), sourceLocation: variable.sourceLocation),
+                           rhs: .identifier(valueIdentifier))))
     ]
 
     let functionSignature = FunctionSignatureDeclaration(funcToken: dummyFuncToken,
-                                                          attributes: [],
-                                                          modifiers: [
-                                                            Token(kind: .public,
-                                                                  sourceLocation: variable.sourceLocation)
-                                                          ],
-                                                          mutates: [Identifier(identifierToken: valueIdentifier.identifierToken)],
-                                                          identifier: identifier,
-                                                          parameters: parameters + [valueParameter],
-                                                          prePostConditions: [],
-                                                          closeBracketToken: dummyCloseToken,
-                                                          resultType: nil)
+                                                         attributes: [],
+                                                         modifiers: [
+                                                           Token(kind: .public,
+                                                                 sourceLocation: variable.sourceLocation)
+                                                         ],
+                                                         mutates: [Identifier(
+                                                             identifierToken: valueIdentifier.identifierToken)],
+                                                         identifier: identifier,
+                                                         parameters: parameters + [valueParameter],
+                                                         prePostConditions: [],
+                                                         closeBracketToken: dummyCloseToken,
+                                                         resultType: nil)
 
     return FunctionDeclaration(signature: functionSignature, body: body, closeBraceToken: dummyCloseToken)
   }
@@ -162,13 +164,13 @@ public struct TopLevelModule: ASTNode {
       }
 
       let subscriptExpression =
-        identifiers.reduce(.identifier(identifier), { (currentExpression, identifier) -> Expression in
-        return .subscriptExpression(
-          SubscriptExpression(baseExpression: currentExpression,
-                              indexExpression: .identifier(identifier),
-                              closeSquareBracketToken: Token(kind: .punctuation(.closeSquareBracket),
-                                                             sourceLocation: sourceLocation)))
-      })
+          identifiers.reduce(.identifier(identifier), { (currentExpression, identifier) -> Expression in
+            return .subscriptExpression(
+                SubscriptExpression(baseExpression: currentExpression,
+                                    indexExpression: .identifier(identifier),
+                                    closeSquareBracketToken: Token(kind: .punctuation(.closeSquareBracket),
+                                                                   sourceLocation: sourceLocation)))
+          })
 
       return (parameters, subscriptExpression, Type(inferredType: currentType, identifier: identifier))
     case .dictionaryType(let key, let value):
@@ -191,8 +193,8 @@ public struct TopLevelModule: ASTNode {
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
     guard let firstTLD = declarations.first,
-      let lastTLD = declarations.last else {
-        return .INVALID
+          let lastTLD = declarations.last else {
+      return .INVALID
     }
     return .spanning(firstTLD, to: lastTLD)
   }

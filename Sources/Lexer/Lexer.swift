@@ -17,27 +17,25 @@ public struct Lexer {
   var sourceCode: String
 
   var isFromStdlib: Bool
-  
-  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer : Bool = false, sourceCode: String = "") throws
-    {
+
+  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer: Bool = false, sourceCode: String = "") throws {
     self.sourceFile = sourceFile
-        
+
     if isForServer {
-       self.sourceCode = sourceCode
-    } else
-    {
-       self.sourceCode = try String(contentsOf: sourceFile)
+      self.sourceCode = sourceCode
+    } else {
+      self.sourceCode = try String(contentsOf: sourceFile)
     }
-        
+
     self.isFromStdlib = isFromStdlib
   }
-    
-    public init(sourceCode : String) {
-        self.sourceFile = URL(fileURLWithPath: "REPL")
-        self.sourceCode = sourceCode
-        self.isFromStdlib = false
-    }
-    
+
+  public init(sourceCode: String) {
+    self.sourceFile = URL(fileURLWithPath: "REPL")
+    self.sourceCode = sourceCode
+    self.isFromStdlib = false
+  }
+
   /// Converts the source code into a list of tokens.
   public func lex() -> [Token] {
     return lex(string: sourceCode)
@@ -58,11 +56,11 @@ public struct Lexer {
         tokens.append(Token(kind: token, sourceLocation: sourceLocation))
       } else if let num = toInt(component) {
         // The token is a number literal.
-        let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
+        let lastTwoTokens = tokens[tokens.count - 2..<tokens.count]
 
         if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind,
-            lastTwoTokens.last!.kind == .punctuation(.dot) {
-          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
+           lastTwoTokens.last!.kind == .punctuation(.dot) {
+          tokens[tokens.count - 2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
           tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
@@ -75,7 +73,7 @@ public struct Lexer {
         // The token is a string literal.
         let componentSubstring = component[
             (component.index(after: component.startIndex)..<component.index(before: component.endIndex))
-        ]
+            ]
         tokens.append(Token(kind: .literal(.string(String(componentSubstring))), sourceLocation: sourceLocation))
       } else {
         // The token is an identifier.
@@ -119,7 +117,7 @@ public struct Lexer {
     "else": .else,
     "for": .for,
     "in": .in,
-    "self": .self,
+    "self": .`self`,
     "Self": .selfType,
     "implicit": .implicit,
     "inout": .inout,

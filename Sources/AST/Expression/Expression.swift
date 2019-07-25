@@ -4,6 +4,7 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+
 import Source
 import Lexer
 
@@ -68,7 +69,7 @@ public indirect enum Expression: ASTNode {
         return identifier.enclosingType
       }
       return nil
-    default : return nil
+    default: return nil
     }
   }
 
@@ -82,7 +83,7 @@ public indirect enum Expression: ASTNode {
     case .functionCall(let functionCall): return functionCall.identifier
     case .externalCall(let externalCall): return externalCall.functionCall.lhs.enclosingIdentifier
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.baseExpression.enclosingIdentifier
-    default : return nil
+    default: return nil
     }
   }
 
@@ -107,7 +108,7 @@ public indirect enum Expression: ASTNode {
     case .sequence(let expressions): return expressions.first!.sourceLocation
     case .returnsExpression(let returnsExpression): return returnsExpression.sourceLocation
     case .rawAssembly: fatalError()
-    case .emptyExpr(_): fatalError("EMPTY EXPR")
+    case .emptyExpr: fatalError("EMPTY EXPR")
     }
   }
   public var description: String {
@@ -128,9 +129,9 @@ public indirect enum Expression: ASTNode {
     case .attemptExpression(let attemptExpression): return attemptExpression.description
     case .range(let rangeExpression): return rangeExpression.description
     case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
-    case .returnsExpression(let returnsExpression): return "returns " +  returnsExpression.description
+    case .returnsExpression(let returnsExpression): return "returns " + returnsExpression.description
     case .rawAssembly: fatalError()
-    case .emptyExpr(_): fatalError("EMPTY EXPR")
+    case .emptyExpr: fatalError("EMPTY EXPR")
     }
   }
 }

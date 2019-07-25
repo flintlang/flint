@@ -15,11 +15,11 @@ import Source
 public struct DiagnosticsVerifier {
   // swiftlint:disable force_try
   private let diagnosticRegex =
-    try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
+      try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticLineRegex =
-    try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
+      try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(\\d+)\\s+\\{\\{(.*)\\}\\}")
   private let diagnosticOffsetRegex =
-    try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
+      try! NSRegularExpression(pattern: "//\\s*expected-(error|note|warning)\\s*@(-|\\+)(\\d+)\\s+\\{\\{(.*)\\}\\}")
   // swiftlint:enable force_try
 
   private let sourceContext: SourceContext
@@ -56,8 +56,8 @@ public struct DiagnosticsVerifier {
         }
 
         return diagnostic.message == expectation.message &&
-            diagnostic.severity == expectation.severity &&
-            equalLineLocation
+        diagnostic.severity == expectation.severity &&
+        equalLineLocation
       })
 
       if let index = index {
@@ -65,9 +65,9 @@ public struct DiagnosticsVerifier {
       } else {
         let sourceLocation: SourceLocation?
         if expectation.line == 0 {
-            sourceLocation = nil
+          sourceLocation = nil
         } else {
-            sourceLocation = SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile)
+          sourceLocation = SourceLocation(line: expectation.line, column: 0, length: 0, file: sourceFile)
         }
 
         let diagnostic =
@@ -79,11 +79,11 @@ public struct DiagnosticsVerifier {
     }
 
     for producedDiagnostic in producedDiagnostics where producedDiagnostic.severity != .note {
-        let diagnostic =
-            Diagnostic(severity: .error,
-                       sourceLocation: producedDiagnostic.sourceLocation,
-                       message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\"")
-        verifyDiagnostics.append(diagnostic)
+      let diagnostic =
+          Diagnostic(severity: .error,
+                     sourceLocation: producedDiagnostic.sourceLocation,
+                     message: "Verify: Unexpected \(producedDiagnostic.severity) \"\(producedDiagnostic.message)\"")
+      verifyDiagnostics.append(diagnostic)
     }
 
     let output = try DiagnosticsFormatter(diagnostics: verifyDiagnostics, sourceContext: sourceContext).rendered()
@@ -142,7 +142,7 @@ public struct DiagnosticsVerifier {
 
       let biasRange = Range(match.range(at: 2), in: sourceLine)
       let biasString = String(sourceLine[biasRange!])
-      let biasFunc: (Int, Int) -> Int = biasString == "+" ? {$0 + $1} : {$0 - $1}
+      let biasFunc: (Int, Int) -> Int = biasString == "+" ? { $0 + $1 } : { $0 - $1 }
 
       let expectedLineRange = Range(match.range(at: 3), in: sourceLine)!
       let expectedLine = Int(sourceLine[expectedLineRange])!
@@ -165,8 +165,13 @@ extension DiagnosticsVerifier {
     var message: String
     var line: Int
 
-    var hashValue: Int {
+    /* var hashValue: Int {
       return message.hashValue ^ severity.hashValue
+    } */
+
+    func hash(into hasher: inout Hasher) {
+      hasher.combine(message)
+      hasher.combine(severity)
     }
   }
 }

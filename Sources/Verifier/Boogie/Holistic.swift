@@ -4,29 +4,29 @@ import Source
 import BigInt
 
 extension BoogieTranslator {
-    /* Example translated holistic spec - will(ten mod 5 == 0)
-      procedure Main()
-        modifies ten_LocalVariables;
-        modifies stateVariable_LocalVariables;
-        modifies size_0_js_LocalVariables;
-        modifies js_LocalVariables;
-      {
-      var unsat: bool;
-      bound := TRANSACTION_DEPTH;
+  /* Example translated holistic spec - will(ten mod 5 == 0)
+    procedure Main()
+      modifies ten_LocalVariables;
+      modifies stateVariable_LocalVariables;
+      modifies size_0_js_LocalVariables;
+      modifies js_LocalVariables;
+    {
+    var unsat: bool;
+    bound := TRANSACTION_DEPTH;
 
-      call init_LocalVariables();
-      while (!(ten_LocalVariables mod 5 == 0) && bound > 0) {
-        call number, availableFunctions := CallableFunctions();
-        if (number == 0) {
-          break;
-        }
-        call SelectFunction(number, availableFunctions);
-        bound := bound - 1;
+    call init_LocalVariables();
+    while (!(ten_LocalVariables mod 5 == 0) && bound > 0) {
+      call number, availableFunctions := CallableFunctions();
+      if (number == 0) {
+        break;
       }
+      call SelectFunction(number, availableFunctions);
+      bound := bound - 1;
+    }
 
-      assert (ten_LocalVariables mod 5 == 0);
-      }
-    */
+    assert (ten_LocalVariables mod 5 == 0);
+    }
+  */
 
   // Return Boogie declarations whic htest the specification
   // Also return a list of the entry points, for the symbolic executor
@@ -41,11 +41,11 @@ extension BoogieTranslator {
     let bSpec = process(willSpec).0 // TODO: Handle +=1 in spec
     let entryPointBase = "Main_"
     let publicFunctions = self.environment.functions(in: currentContract)
-                                    .map({ $0.value })
-                                    .reduce([], +)
-                                    .map({ $0.declaration })
-                                    .filter({ $0.isPublic })
-                                    //.filter({ $0.isMutating })
+        .map({ $0.value })
+        .reduce([], +)
+        .map({ $0.declaration })
+        .filter({ $0.isPublic })
+    //.filter({ $0.isMutating })
     let initProcedures = self.environment.initializers(in: currentContract).map({ $0.declaration })
     if initProcedures.count > 1 {
       print("not implemented holistic spec for multiple contract inits")
@@ -68,9 +68,9 @@ extension BoogieTranslator {
     let procedureName = entryPointBase + randomString(length: 5) //unique identifier
 
     let (callableFunctionsNum, callableFunctions, callableProcedure)
-      = generateCallableFunctions(functions: publicFunctions,
-                                  tld: currentContract,
-                                  translationInformation: translationInformation)
+        = generateCallableFunctions(functions: publicFunctions,
+                                    tld: currentContract,
+                                    translationInformation: translationInformation)
 
     procedureVariables.insert(BVariableDeclaration(name: callableFunctionsNum,
                                                    rawName: callableFunctionsNum,
@@ -79,16 +79,19 @@ extension BoogieTranslator {
                                                    rawName: callableFunctions,
                                                    type: .map(.int, .int)))
 
-    let getCallableFunctions = BStatement.callProcedure(BCallProcedure(returnedValues: [callableFunctionsNum, callableFunctions],
-                                                                       procedureName: callableProcedure.name,
-                                                                       arguments: [],
-                                                                       ti: translationInformation))
+    let getCallableFunctions = BStatement.callProcedure(
+        BCallProcedure(
+            returnedValues: [callableFunctionsNum, callableFunctions],
+            procedureName: callableProcedure.name,
+            arguments: [],
+            ti: translationInformation))
 
-    let checkNumCallableFunctions = BStatement.ifStatement(BIfStatement(condition: .equals(.identifier(callableFunctionsNum),
-                                                                                           .integer(0)),
-                                                                        trueCase: [.breakStatement],
-                                                                        falseCase: [],
-                                                                        ti: translationInformation))
+    let checkNumCallableFunctions = BStatement.ifStatement(
+        BIfStatement(
+            condition: .equals(.identifier(callableFunctionsNum), .integer(0)),
+            trueCase: [.breakStatement],
+            falseCase: [],
+            ti: translationInformation))
 
     let selectFunctionProcedure = generateSelectFunction(functions: publicFunctions,
                                                          tld: currentContract,
@@ -96,7 +99,8 @@ extension BoogieTranslator {
 
     let callSelectFunction = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                                      procedureName: selectFunctionProcedure.name,
-                                                                     arguments: [.identifier(callableFunctionsNum), .identifier(callableFunctions)],
+                                                                     arguments: [.identifier(callableFunctionsNum
+                                                                     ), .identifier(callableFunctions)],
                                                                      ti: translationInformation))
 
     let whileBody = [
@@ -110,10 +114,11 @@ extension BoogieTranslator {
       decrementBound
     ]
 
-    let whileUnsat = BStatement.whileStatement(BWhileStatement(condition: .and(.greaterThan(bound, .integer(0)), .not(bSpec)),
-                                                               body: whileBody,
-                                                               invariants: [],
-                                                               ti: translationInformation))
+    let whileUnsat = BStatement.whileStatement(
+        BWhileStatement(condition: .and(.greaterThan(bound, .integer(0)), .not(bSpec)),
+                        body: whileBody,
+                        invariants: [],
+                        ti: translationInformation))
     let assertSpec = BStatement.assertStatement(BAssertStatement(expression: bSpec,
                                                                  ti: translationInformation))
     let translatedName = normaliser.getFunctionName(function: .specialDeclaration(initProcedure),
@@ -130,23 +135,23 @@ extension BoogieTranslator {
 
     let procedureStmts = [setBound, callInit, whileUnsat, assertSpec]
     let specProcedure = BIRProcedureDeclaration(
-      name: procedureName,
-      returnTypes: nil,
-      returnNames: nil,
-      parameters: [],
-      preConditions: [],
-      postConditions: [],
-      structInvariants: structInvariants,
-      contractInvariants: (tldInvariants[currentContract] ?? []),
-      globalInvariants: self.globalInvariants,
-      modifies: Set(), // All variables are modified - will be determined in IR resolution phase
-      statements: procedureStmts,
-      variables: procedureVariables,
-      inline: false,
-      ti: translationInformation,
-      isHolisticProcedure: true,
-      isStructInit: false,
-      isContractInit: false
+        name: procedureName,
+        returnTypes: nil,
+        returnNames: nil,
+        parameters: [],
+        preConditions: [],
+        postConditions: [],
+        structInvariants: structInvariants,
+        contractInvariants: (tldInvariants[currentContract] ?? []),
+        globalInvariants: self.globalInvariants,
+        modifies: Set(), // All variables are modified - will be determined in IR resolution phase
+        statements: procedureStmts,
+        variables: procedureVariables,
+        inline: false,
+        ti: translationInformation,
+        isHolisticProcedure: true,
+        isStructInit: false,
+        isContractInit: false
     )
 
     let declaredProcedures: [BIRTopLevelDeclaration] = [
@@ -160,7 +165,8 @@ extension BoogieTranslator {
 
   private func generateCallableFunctions(functions: [FunctionDeclaration],
                                          tld: String,
-                                         translationInformation: TranslationInformation) -> (String, String, BIRProcedureDeclaration) {
+                                         translationInformation: TranslationInformation
+                                        ) -> (String, String, BIRProcedureDeclaration) {
     /*
         procedure CallableFunctions() returns (functions: int, callable_functions: [int]int)
         {
@@ -200,7 +206,8 @@ extension BoogieTranslator {
     for function in functions {
       let funcID = count
       let ifPreTrue: [BStatement] = [
-        .assignment(.mapRead(.identifier("tmp_callable_functions"), .identifier("count")), .integer(BigUInt(funcID)), translationInformation),
+        .assignment(.mapRead(.identifier("tmp_callable_functions"), .identifier("count")), .integer(BigUInt(funcID)),
+                    translationInformation),
         .assignment(.identifier("count"), .add(.identifier("count"), .integer(1)), translationInformation)
       ]
 
@@ -220,36 +227,38 @@ extension BoogieTranslator {
     }
 
     procedureStmts.append(.assignment(.identifier("functions"), .identifier("count"), translationInformation))
-    procedureStmts.append(.assignment(.identifier("callable_functions"), .identifier("tmp_callable_functions"), translationInformation))
+    procedureStmts.append(
+        .assignment(.identifier("callable_functions"), .identifier("tmp_callable_functions"), translationInformation))
 
     return ("functions", "callable_functions", BIRProcedureDeclaration(
-      name: "CallableFunctions",
-      returnTypes: [BType.int, BType.map(.int, .int)],
-      returnNames: ["functions", "callable_functions"],
-      parameters: [],
-      preConditions: [],
-      postConditions: [],
-      structInvariants: [],
-      contractInvariants: [],
-      globalInvariants: [],
-      modifies: Set(), // All variables are modified - will be determined in IR resolution phase
-      statements: procedureStmts,
-      variables: procedureVariables,
-      inline: false,
-      ti: translationInformation,
-      isHolisticProcedure: true,
-      isStructInit: false,
-      isContractInit: false
+        name: "CallableFunctions",
+        returnTypes: [BType.int, BType.map(.int, .int)],
+        returnNames: ["functions", "callable_functions"],
+        parameters: [],
+        preConditions: [],
+        postConditions: [],
+        structInvariants: [],
+        contractInvariants: [],
+        globalInvariants: [],
+        modifies: Set(), // All variables are modified - will be determined in IR resolution phase
+        statements: procedureStmts,
+        variables: procedureVariables,
+        inline: false,
+        ti: translationInformation,
+        isHolisticProcedure: true,
+        isStructInit: false,
+        isContractInit: false
     ))
   }
 
   private func generateFunctionPreConditionTest(function: FunctionDeclaration,
                                                 tld: String,
-                                                localVariables: [String: String]? = nil) -> (BExpression, Set<BVariableDeclaration>) {
-      // Get function arguments
-      // - create local versions (rename them)
-      // - replace pre-condition uses of them with local versions
-      // - use that to test pre-conditions on
+                                                localVariables: [String: String]? = nil
+                                                ) -> (BExpression, Set<BVariableDeclaration>) {
+    // Get function arguments
+    // - create local versions (rename them)
+    // - replace pre-condition uses of them with local versions
+    // - use that to test pre-conditions on
 
     let procedureName = normaliser.getFunctionName(function: .functionDeclaration(function), tld: tld)
     guard let procedure = self.functionMapping[procedureName] else {
@@ -258,15 +267,19 @@ extension BoogieTranslator {
     }
 
     let parameters = procedure.parameters.map({ ($0.name, $0.type) })
-    var localVariables = localVariables ?? Dictionary(uniqueKeysWithValues: parameters.map({ ($0.0, $0.0 + randomString(length: 5)) }))
+    var localVariables = localVariables ?? Dictionary(
+        uniqueKeysWithValues: parameters.map({ ($0.0, $0.0 + randomString(length: 5)) }))
     let paramType = Dictionary(uniqueKeysWithValues: parameters.map({ (localVariables[$0.0] ?? "", $0.1) }))
-    let preConditions = procedure.preConditions.map({ replaceParameterNames(preCondition: $0,
-                                                                            variableReplace: localVariables) })
+    let preConditions = procedure.preConditions.map({
+      replaceParameterNames(preCondition: $0,
+                            variableReplace: localVariables)
+    })
 
     // combine pre conditions
     let preConditionTest = preConditions.reduce(BExpression.boolean(true), { BExpression.and($0, $1.expression) })
 
-    return (preConditionTest, Set(localVariables.values.map({ BVariableDeclaration(name: $0, rawName: $0, type: paramType[$0]!) })))
+    return (preConditionTest,
+        Set(localVariables.values.map({ BVariableDeclaration(name: $0, rawName: $0, type: paramType[$0]!) })))
   }
 
   private func replaceParameterNames(preCondition: BPreCondition,
@@ -303,7 +316,7 @@ extension BoogieTranslator {
                               replaceIdentifiers(expression: rhs, variableReplace: variableReplace))
     case .greaterThan(let lhs, let rhs):
       return .greaterThan(replaceIdentifiers(expression: lhs, variableReplace: variableReplace),
-                         replaceIdentifiers(expression: rhs, variableReplace: variableReplace))
+                          replaceIdentifiers(expression: rhs, variableReplace: variableReplace))
     case .greaterThanOrEqual(let lhs, let rhs):
       return .greaterThanOrEqual(replaceIdentifiers(expression: lhs, variableReplace: variableReplace),
                                  replaceIdentifiers(expression: rhs, variableReplace: variableReplace))
@@ -386,12 +399,14 @@ extension BoogieTranslator {
 
     let havocSelector = BStatement.havoc("selector", translationInformation)
     let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
-                                                    .lessThan(selector, .identifier(numFunctions))), translationInformation)
+                                                .lessThan(selector, .identifier(numFunctions))), translationInformation)
     let selectedFunction = BExpression.identifier("selectedFunction")
     procedureVariables.insert(BVariableDeclaration(name: "selectedFunction",
                                                    rawName: "selectedFunction",
                                                    type: .int))
-    let assignSelectedFunction = BStatement.assignment(selectedFunction, .mapRead(.identifier(callableFunctions), selector), translationInformation)
+    let assignSelectedFunction = BStatement.assignment(selectedFunction,
+                                                       .mapRead(.identifier(callableFunctions), selector),
+                                                       translationInformation)
 
     var selectionStmts = [BStatement]()
     selectionStmts.append(havocSelector)
@@ -419,8 +434,8 @@ extension BoogieTranslator {
         let argumentName = "arg_" + randomString(length: 10)
         localVariableMapping[parameter.name] = argumentName
         procedureVariables.insert(BVariableDeclaration(name: argumentName,
-                                              rawName: argumentName,
-                                              type: parameter.type))
+                                                       rawName: argumentName,
+                                                       type: parameter.type))
         ifStmts.append(.havoc(argumentName, translationInformation))
         arguments.append(.identifier(argumentName))
       }
@@ -428,8 +443,8 @@ extension BoogieTranslator {
       if let returnType = returnType {
         let returnVariable = "return_" + randomString(length: 10)
         procedureVariables.insert(BVariableDeclaration(name: returnVariable,
-                                              rawName: returnVariable,
-                                              type: convertType(returnType)))
+                                                       rawName: returnVariable,
+                                                       type: convertType(returnType)))
 
         returnedValues.append(returnVariable)
       }
@@ -441,8 +456,8 @@ extension BoogieTranslator {
       // Get function pre-conditions
       // TODO: Also get caller capabilities
       let (testExpr, _) = generateFunctionPreConditionTest(function: function,
-                                                                        tld: tld,
-                                                                        localVariables: localVariableMapping)
+                                                           tld: tld,
+                                                           localVariables: localVariableMapping)
       ifStmts.append(.assume(testExpr, translationInformation))
 
       // Add procedure call to callGraph
@@ -451,31 +466,32 @@ extension BoogieTranslator {
 
       let selectedFunctionTest = BExpression.equals(selectedFunction, .integer(BigUInt(counter)))
       selectionStmts.append(.ifStatement(BIfStatement(condition: selectedFunctionTest,
-                                                 trueCase: ifStmts,
-                                                 falseCase: [],
-                                                 ti: translationInformation)))
+                                                      trueCase: ifStmts,
+                                                      falseCase: [],
+                                                      ti: translationInformation)))
 
       counter += 1
     }
 
     return BIRProcedureDeclaration(
-      name: "SelectFunction",
-      returnTypes: nil,
-      returnNames: nil,
-      parameters: [BParameterDeclaration(name: numFunctions, rawName: numFunctions, type: .int), BParameterDeclaration(name: callableFunctions, rawName: callableFunctions, type: .map(.int, .int))],
-      preConditions: [],
-      postConditions: [],
-      structInvariants: [],
-      contractInvariants: [],
-      globalInvariants: [],
-      modifies: Set(), // All variables are modified - will be determined in IR resolution phase
-      statements: selectionStmts,
-      variables: procedureVariables,
-      inline: true,
-      ti: translationInformation,
-      isHolisticProcedure: true,
-      isStructInit: false,
-      isContractInit: false
+        name: "SelectFunction",
+        returnTypes: nil,
+        returnNames: nil,
+        parameters: [BParameterDeclaration(name: numFunctions, rawName: numFunctions, type: .int
+        ), BParameterDeclaration(name: callableFunctions, rawName: callableFunctions, type: .map(.int, .int))],
+        preConditions: [],
+        postConditions: [],
+        structInvariants: [],
+        contractInvariants: [],
+        globalInvariants: [],
+        modifies: Set(), // All variables are modified - will be determined in IR resolution phase
+        statements: selectionStmts,
+        variables: procedureVariables,
+        inline: true,
+        ti: translationInformation,
+        isHolisticProcedure: true,
+        isStructInit: false,
+        isContractInit: false
     )
   }
 }
