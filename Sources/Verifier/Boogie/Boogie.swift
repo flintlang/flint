@@ -84,7 +84,7 @@ struct Boogie {
       let matches = line.groups(for: "\\([0-9]+,[0-9]+\\): [eE]rror:")
       if matches.count > 0 {
         if line.contains("modifies clause") {
-          nonVerificationErrors.append(.modifiesFailure(line))
+          nonVerificationErrors.append(.modifiesFailure(Boogie.parseErrorLineNumber(line: matches[0][0])))
         } else {
           nonVerificationErrors.append(.genericFailure(line,
                                                        Boogie.parseErrorLineNumber(line: matches[0][0])))

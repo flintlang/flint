@@ -259,7 +259,12 @@ public class BoogieVerifier: Verifier {
                                       message: errorMsg))
 
       case .modifiesFailure(let line):
-        print("Missing modifies clause: \(line)")
+        let invariantTi = lookupTranslationInformation(line: line, mapping: b2fSourceMapping)
+        flintErrors.append(Diagnostic(
+            severity: .error,
+            sourceLocation: invariantTi.sourceLocation,
+            message: "Illegal modification of variable not declared in `mutates(...)'"
+        ))
 
       case .genericFailure://_, let line):
         //let ti = lookupTranslationInformation(line: line, mapping: b2fSourceMapping)
