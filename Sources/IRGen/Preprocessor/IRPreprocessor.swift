@@ -86,6 +86,8 @@ public struct IRPreprocessor: ASTPass {
       let wei = FunctionCall(identifier: weiType,
                              arguments: [
                                FunctionArgument(identifier: nil,
+                                               expression: .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: payableParameterIdentifier.sourceLocation))),
+                               FunctionArgument(identifier: nil,
                                                 expression: .rawAssembly(IRRuntimeFunction.callvalue(),
                                                                          resultType: .basicType(.int)))
                              ],

@@ -3,6 +3,7 @@
 // `getRawValue` and `setRawValue` need to be implemented.
 
 struct trait Asset {
+
   // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
   init(unsafeRawValue: Int)
 
@@ -42,6 +43,14 @@ struct Wei: Asset {
 
   init(unsafeRawValue: Int)  {
     if unsafeRawValue != 0 {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  // Should be invisible to the user and implemented internally
+  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
+    if youAreTheCompiler == false {
       fatalError()
     }
     self.rawValue = unsafeRawValue
