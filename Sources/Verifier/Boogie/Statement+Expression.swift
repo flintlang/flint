@@ -1069,7 +1069,8 @@ extension BoogieTranslator {
                                     // add dictionary entry
                                     .assignment(.mapRead(keysShadowVariable, sizeShadowVariable),
                                                 indxExpr,
-                                                TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)),
+                                                TranslationInformation(
+                                                  sourceLocation: subscriptExpression.sourceLocation)),
                                     // increment size variable
                                     .assignment(sizeShadowVariable,
                                                 .add(sizeShadowVariable, .integer(BigUInt(1))),
