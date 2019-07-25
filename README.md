@@ -22,7 +22,7 @@ Daniel Hails,
 Alexander Harkness,
 Constantin Mueller,
 Yicheng Leo,
-Matthew Rachar,
+Matthew Ross Rachar,
 Franklin Schrans,
 Nklas Vangerow, and
 Manshu Wang.
@@ -83,11 +83,11 @@ Auction @(Preparing, InProgress) :: caller <- (any) {
 }
 
 Auction @(Preparing) :: (beneficiary) {
-  public mutating func setBeneficiary(beneficiary: Address) {
+  public func setBeneficiary(beneficiary: Address) mutates (beneficiary) {
     self.beneficiary = beneficiary
   }
 
-  mutating func openAuction() -> Bool {
+  func openAuction() -> Bool {
     // ...
     become InProgress
   }
@@ -96,13 +96,13 @@ Auction @(Preparing) :: (beneficiary) {
 
 ### Immutability by default
 
-**Restricting writes to state** in functions helps programmers more easily reason about the smart contract. A function which writes to the contract’s state needs to be annotated with the `mutating` keyword.
+**Restricting writes to state** in functions helps programmers more easily reason about the smart contract. A function which writes to the contract’s state needs to be annotated with the `mutates (...)` keyword, giving the list of variables that are mutated.
 
 Example:
 
 ```swift
 Bank :: (any) {
-  mutating func incrementCount() {
+  func incrementCount() mutates (count) {
     // count is a state property
     count += 1
   }
@@ -131,12 +131,12 @@ Example use:
 ```swift
 Bank :: account <- (balances.keys) {
   @payable
-  mutating func deposit(implicit value: inout Wei) {
+   func deposit(implicit value: inout Wei) mutates (balances) {
     // Omitting this line causes a compiler warning: the value received should be recorded.
     balances[address].transfer(&value)
   }
 
-  mutating func withdraw() {
+  func withdraw() mutates(account, balances) {
     // balances[account] is automatically set to 0 before transferring.
     send(account, &balances[account])
   }
