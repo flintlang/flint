@@ -10,12 +10,14 @@ sudo apt-get update
 sudo apt-get install -y solc nodejs mono-complete clang
 npm install
 npm install -g truffle@4
-eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+source ~/.bash_profile && swiftenv install 5.0.2 && swiftenv install 4.2
 git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
 (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
-export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
-swiftenv install 5.0.2
-swiftenv install 4.2
-echo 'export FLINTPATH="$PWD"' >> ~/.bash_profile
-source ~/.bash_profile
+echo 'export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"' >> ~/.bash_profile
+echo 'export FLINTPATH="$(pwd)"' >> ~/.bash_profile
 make
+# RUN source ~/.bash_profile after you have run this script
