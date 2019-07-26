@@ -67,7 +67,7 @@ contract A {}
 A :: (any) {
   public init() {}
 
-  public func transfer() -> Bool mutates (any) {
+  public func transfer() -> Bool mutates (Wei.rawValue) {
     var assetOneDestination: TheAssetOne = TheAssetOne()
     var assetOneSource: TheAssetOne = TheAssetOne()
 

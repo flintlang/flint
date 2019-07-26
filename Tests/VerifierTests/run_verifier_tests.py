@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Locate flint contracts
 # Parse contracts
@@ -34,6 +35,7 @@ def parse_flint_errors(stdout_lines):
 
     return (error_lines, warning_lines)
 
+
 def parse_fail_lines(flint_lines):
     fail_lines = set()
     warning_lines = set()
@@ -46,17 +48,17 @@ def parse_fail_lines(flint_lines):
             warning_lines.add(current_line + 1)
 
         current_line += 1
-    return (fail_lines, warning_lines)
+    return fail_lines, warning_lines
 
 
 contract_verify_result = {}
 def test_contract(contract_path, fail_lines, warning_lines):
-    runArgs = [
+    run_args = [
             flintc,
             "-g", # Only verify
             contract_path
             ]
-    finished_verify = subprocess.run(runArgs, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    finished_verify = subprocess.run(run_args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     try:
         (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
 
@@ -69,11 +71,11 @@ def test_contract(contract_path, fail_lines, warning_lines):
         contract_verify_result[contract_path] = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
         if verbose:
             if contract_verify_result[contract_path]:
-                print(f"{contract_path}: passed")
+                print(f"{contract_path}: ✔ passed")
             else:
                 print(f"{contract_path}:\n fail_lines = {fail_lines !r:>23} failed = {failed_verification_lines !r:>20}\n"
                       f" warning_lines = {warning_lines !r:>20} warned = {warning_verification_lines !r:>20}")
-                print("x failed\n")
+                print("❌ failed\n")
     except Exception as e:
         if verbose:
             print(f"Exception on run, assuming contract fail: {e}")
@@ -81,13 +83,18 @@ def test_contract(contract_path, fail_lines, warning_lines):
         contract_verify_result[contract_path]  = False
 
 
-test_contracts = [join(test_contracts_folder, f) for f in listdir(test_contracts_folder) \
-        if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')]
+test_contracts = [
+    join(test_contracts_folder, f)
+    for f in listdir(test_contracts_folder)
+    if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')
+]
 
-def batch(iterable, n = 1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx:min(ndx + n, l)]
+
+def batch(iterable, n=1):
+    length = len(iterable)
+    for ndx in range(0, length, n):
+        yield iterable[ndx:min(ndx + n, length)]
+
 
 # Read in from command line
 list_failed = False
@@ -156,6 +163,6 @@ if list_failed:
 print("Total: %i" % len(test_contracts))
 
 if len(failed):
-    sys.exit(min(255, len(failed))) # Error on failures to stop make test passing
+    sys.exit(min(255, len(failed)))  # Error on failures to stop make test passing
 else:
     print("\nAll verification tests succeeded 🥳")
