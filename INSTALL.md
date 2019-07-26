@@ -17,7 +17,7 @@ To run the testing libraries, install:
 * truffle 4
 
 ### On Ubuntu 18.04 LTS
-This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus ammendments will need to be made to this process.
+This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments will need to be made to this process.
 ```bash
 sudo apt install nodejs npm clang
 
@@ -41,9 +41,12 @@ In your terminal, run the following commands
 # Use -jN for multi-core speedup (N >= 2)
 git clone --recurse-submodules https://github.com/flintlang/flint.git
 cd flint
-# No need iff swiftenv already installed relevent swift version or not using swiftenv
+# No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
 swift package update
+# Create a FLINTPATH for the compiler to run (this may be removed in a future version)
+echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
+source ~/.bash_profile
 
 make
 ```
