@@ -28,8 +28,9 @@ zip: release
 	rm flintc
 
 test: lint generate-mocks release
+	sed -i -e "s/ as / as! /g" .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift
 	swift test
-	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh # && ./run_behavior_tests.sh
+	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 

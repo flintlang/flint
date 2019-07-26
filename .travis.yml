@@ -26,8 +26,7 @@ matrix:
     - "swiftenv install 4.2 || true"
     script:
     - export FLINTPATH=$(pwd)
-    - make
-    - sed -i -e "s/ as / as! /g" ".build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift" 
+    - make 
     - make test
 before_deploy:
 - swift package update
