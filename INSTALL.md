@@ -44,6 +44,9 @@ cd flint
 # No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
 swift package update
+# Create a FLINTPATH for the compiler to run (this may be removed in a future version)
+echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
+source ~/.bash_profile
 
 make
 ```
