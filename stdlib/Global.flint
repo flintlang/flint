@@ -5,7 +5,7 @@ struct Flint$Global {
     let w: Wei = Wei(&value)
     flint$send(w.getRawValue(), address)
   }
-
+  
   // Aborts the Ethereum transaction with an error.
   func fatalError() {
     flint$fatalError()

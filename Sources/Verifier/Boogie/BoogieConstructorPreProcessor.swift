@@ -8,7 +8,7 @@ public class ConstructorPreProcessor: ASTPass {
   // Get all variable declarations, extract expression assignments (if any)
   // Add expression assignments to contract constructor
 
-  private var assignedStatements = [String: [Statement]]()
+  private var assignedStatements: [String: [Statement]] = [:]
 
   public init() {}
 

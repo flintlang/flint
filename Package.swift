@@ -39,16 +39,16 @@ let package = Package(
   targets: [
     .target(
       name: "flint-lsp",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "Compiler"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "Compiler", "Utils"]),
     .target(
       name: "flint-ca",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "ContractAnalysis", "Compiler"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "ContractAnalysis", "Compiler", "Utils"]),
     .target(
       name: "flint-test",
-      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator", "Compiler", "Coverage"]),
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator", "Compiler", "Coverage", "Utils"]),
     .target(
       name: "flint-repl",
-      dependencies: ["Commander", "Rainbow", "Symbolic", "Diagnostic", "REPL"]),
+      dependencies: ["Commander", "Rainbow", "Symbolic", "Diagnostic", "REPL", "Utils"]),
     .target(
       name: "Source",
       dependencies: []
@@ -77,6 +77,7 @@ let package = Package(
         "Rainbow",
         "Symbolic",
         "Diagnostic",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -128,6 +129,7 @@ let package = Package(
         "Diagnostic",
         "Lexer",
         "ABI",
+        "Utils",
       ],
       exclude: ["ASTPass/ASTPass.template.swift"]
     ),
@@ -136,6 +138,7 @@ let package = Package(
       dependencies: [
         "AST",
         "Cuckoo",
+        "Utils",
       ],
       sources: [".", "../../.derived-tests/AST"]
     ),
@@ -147,6 +150,7 @@ let package = Package(
         "Diagnostic",
         "AST",
         "Lexer",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -154,6 +158,7 @@ let package = Package(
       dependencies: [
         "Parser",
         "Cuckoo",
+        "Utils",
       ],
       sources: [".", "../../.derived-tests/Parser"]
     ),
@@ -164,6 +169,7 @@ let package = Package(
         "Source",
         "Diagnostic",
         "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -180,7 +186,8 @@ let package = Package(
       dependencies: [
         "Source",
         "Diagnostic",
-        "AST"
+        "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -188,6 +195,7 @@ let package = Package(
       dependencies: [
         "ASTPreprocessor",
         "Cuckoo",
+        "Utils",
         ],
       sources: [".", "../../.derived-tests/ASTPreprocessor"]
     ),
@@ -198,6 +206,7 @@ let package = Package(
         "Source",
         "Diagnostic",
         "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -282,7 +291,7 @@ let package = Package(
     // MARK: Utils -
     .target(
       name: "Utils",
-      dependencies: []
+      dependencies: ["Symbolic"]
     ),
     .testTarget(
       name: "UtilsTests",

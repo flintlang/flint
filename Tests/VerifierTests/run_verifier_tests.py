@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Locate flint contracts
 # Parse contracts
@@ -34,6 +35,7 @@ def parse_flint_errors(stdout_lines):
 
     return (error_lines, warning_lines)
 
+
 def parse_fail_lines(flint_lines):
     fail_lines = set()
     warning_lines = set()
@@ -46,17 +48,17 @@ def parse_fail_lines(flint_lines):
             warning_lines.add(current_line + 1)
 
         current_line += 1
-    return (fail_lines, warning_lines)
+    return fail_lines, warning_lines
 
 
 contract_verify_result = {}
 def test_contract(contract_path, fail_lines, warning_lines):
-    runArgs = [
+    run_args = [
             flintc,
             "-g", # Only verify
             contract_path
             ]
-    finished_verify = subprocess.run(runArgs, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    finished_verify = subprocess.run(run_args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     try:
         (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
 
@@ -66,20 +68,56 @@ def test_contract(contract_path, fail_lines, warning_lines):
             expected_return_code = finished_verify.returncode != 0
 
         # Store result
-        contract_verify_result[contract_path]  = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
-    except:
+        contract_verify_result[contract_path] = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
+        if verbose:
+            if contract_verify_result[contract_path]:
+                print(f"{contract_path}: ✔ passed")
+            else:
+                print(f"{contract_path}:\n fail_lines = {fail_lines !r:>23} failed = {failed_verification_lines !r:>20}\n"
+                      f" warning_lines = {warning_lines !r:>20} warned = {warning_verification_lines !r:>20}")
+                print("❌ failed\n")
+    except Exception as e:
+        if verbose:
+            print(f"Exception on run, assuming contract fail: {e}")
         # Store result
         contract_verify_result[contract_path]  = False
 
 
-test_contracts = [join(test_contracts_folder, f) for f in listdir(test_contracts_folder) \
-        if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')]
+test_contracts = [
+    join(test_contracts_folder, f)
+    for f in listdir(test_contracts_folder)
+    if isfile(join(test_contracts_folder, f)) and not f.startswith('.') and f.endswith('.flint')
+]
 
-def batch(iterable, n = 1):
-    l = len(iterable)
-    for ndx in range(0, l, n):
-        yield iterable[ndx:min(ndx + n, l)]
 
+def batch(iterable, n=1):
+    length = len(iterable)
+    for ndx in range(0, length, n):
+        yield iterable[ndx:min(ndx + n, length)]
+
+
+# Read in from command line
+list_failed = False
+list_skipped = False
+list_passed = False
+verbose = False
+try:
+    opts, args = getopt.getopt(sys.argv[1:],"fspv",["list-failed","list-skipped", "list-passed", "verbose"])
+    for opt, arg in opts:
+        if opt in ("-f", "--list-failed"):
+            list_failed = True
+        elif opt in ("-s", "--list-skipped"):
+            list_skipped = True
+        elif opt in ("-p", "--list-passed"):
+            list_passed = True
+        elif opt in ("-v", "--verbose"):
+            verbose = True
+            print("Note: Verbose output has been enabled")
+except getopt.GetoptError:
+    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped] [-p|--list-passed] [-v|--verbose]')
+    sys.exit(2)
+
+# Start jobs
 skipped = []
 pending_jobs = []
 for contract in test_contracts:
@@ -109,22 +147,6 @@ for contract, result in contract_verify_result.items():
     else:
         failed.append(contract)
 
-list_failed = False
-list_skipped = False
-list_passed = False
-try:
-    opts, args = getopt.getopt(sys.argv[1:],"fsp",["list-failed","list-skipped", "list-passed"])
-    for opt, arg in opts:
-        if opt in ("-f", "--list-failed"):
-            list_failed = True
-        elif opt in ("-s", "--list-skipped"):
-            list_skipped = True
-        elif opt in ("-p", "--list-passed"):
-            list_passed = True
-except getopt.GetoptError:
-    print('run_verifier_tests.py [-f|--list-failed] [-s|--list-skipped], [-p|--list-passed]')
-    sys.exit(2)
-
 print("Verification tests")
 print("Passed: %i" % len(passed))
 if list_passed:
@@ -139,3 +161,8 @@ if list_failed:
     for fail in failed:
         print("\tFail: %s" % fail)
 print("Total: %i" % len(test_contracts))
+
+if len(failed):
+    sys.exit(min(255, len(failed)))  # Error on failures to stop make test passing
+else:
+    print("\nAll verification tests succeeded 🥳")

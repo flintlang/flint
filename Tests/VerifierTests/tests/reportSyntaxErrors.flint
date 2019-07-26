@@ -8,10 +8,10 @@ C :: (any) {
   public init() {}
 
   // No modifies clause
-  //VERIFY-FAIL
   func H()
     mutates (j)
   {
+    //VERIFY-FAIL
     i = 3
   }
 }

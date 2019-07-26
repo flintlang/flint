@@ -29,7 +29,7 @@ Test :: (any) {
     self.enumC = C.a
   }
 
-  public mutating func assignA(i: Int) {
+  public func assignA(i: Int) mutates(enumA) {
     if i == 0 {
       enumA = A.a
     }
@@ -41,7 +41,7 @@ Test :: (any) {
     }
   }
 
-  public mutating func assignB(i: Int) {
+  public func assignB(i: Int) mutates(enumB) {
     if i == 0 {
     enumB = B.a
     }
@@ -53,7 +53,7 @@ Test :: (any) {
     }
   }
 
-  public mutating func assignC(i: Int) {
+  public func assignC(i: Int) mutates(enumC) {
     if i == 0 {
       enumC = C.a
     }

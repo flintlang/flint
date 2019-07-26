@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 struct Test {
   var a: Int = 0
@@ -28,7 +28,7 @@ Foo :: (any) {
     return a.a + a.foo() + b.a.a
   }
 
-  public mutating func baz() {
+  public func baz() mutates (a) {
     a.a = 2
   }
 
@@ -36,12 +36,12 @@ Foo :: (any) {
     b.a.a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
   }
 
-  mutating func a() {
+  func a() mutates (a, b) {
     b(b: &a)
     b(&b) // expected-error {{Function 'b' is not in scope}}
   }
 
-  mutating func b(b: inout Test) {
+  func b(b: inout Test) {
     b(b: &b)
     b(&self.b) // expected-error {{Function 'b' is not in scope}}
   }

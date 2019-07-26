@@ -4,6 +4,11 @@
 /Packages
 /*.xcodeproj
 /node_modules
+Sources.old
+.idea
+venv
+/.vscode
+/temp
 
 *.sol
 !sol_emitter.sol
@@ -32,7 +37,7 @@ utils/repl/event_result.txt
 utils/repl/gen_addr.txt
 
 utils/coverage/contract.json
-utils/coverage/address.txt
+utils/coverage/// swift-tools-version:5.0address.txt
 utils/coverage/counts.json
 utils/coverage/function.json
 utils/coverage/branch.json
@@ -51,3 +56,4 @@ contracts/
 build/
 
 *.generated.swift
+Package.resolved

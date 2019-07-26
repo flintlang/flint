@@ -61,7 +61,8 @@ extension Token.Kind {
 
     static var allBinaryOperators: [Punctuation] {
       return [
-        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .percent, .equal,
+        .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes, .power, .divide, .percent,
+        .equal,
         .plusEqual, .minusEqual, .timesEqual, .divideEqual, .dot,
 
         .closeAngledBracket, .lessThanOrEqual, .openAngledBracket, .greaterThanOrEqual, .doubleEqual, .notEqual,

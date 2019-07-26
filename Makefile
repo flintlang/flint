@@ -28,15 +28,16 @@ zip: release
 	rm flintc
 
 test: lint generate-mocks release
+	sed -i -e "s/ as / as! /g" .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift
 	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
-	./Tests/VerifierTests/run_verifier_tests.py
+	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 
 test-nogen: lint release
 	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
-	./Tests/VerifierTests/run_verifier_tests.py
+	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 
 lint:
@@ -69,8 +70,8 @@ $(Boogie_Z3_slink): $(Z3)
 
 $(Symbooglix_Z3_slink): $(Z3)
 	cd symbooglix \
-	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || (mkdir -p src/SymbooglixDriver/bin/Release && ln -s ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe)) \
-	  && (test -L src/Symbooglix/bin/Release/z3.exe || (mkdir -p src/Symbooglix/bin/Release/z3.exe && ln -s ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe)) \
+	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || (mkdir -p src/SymbooglixDriver/bin/Release && ln -sf ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe)) \
+	  && (test -L src/Symbooglix/bin/Release/z3.exe || (mkdir -p src/Symbooglix/bin/Release/z3.exe && ln -sf ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe)) \
 	  && cd ..
 
 $(Z3):
@@ -86,4 +87,3 @@ clean:
 	-rm boogie/Binaries/*.{dll,pdb,config}
 	-rm $(Symbooglix_Z3_slink)
 	-cd symbooglix/src && msbuild /t:Clean && cd ../..
-	-rm -r z3/build

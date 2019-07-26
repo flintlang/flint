@@ -20,9 +20,9 @@ struct SolcCompiler {
 
     let process = Process()
 
-    process.launchPath = "/usr/bin/env"
+    process.executableURL = URL(string: "/usr/bin/env")
 
-    verifySolc(launchPath: process.launchPath!)
+    verifySolc(launchPath: process.executableURL!.absoluteString)
     process.standardError = Pipe()
     process.arguments = Array([
       [
@@ -37,7 +37,7 @@ struct SolcCompiler {
       ]
     ].joined())
 
-    process.launch()
+    try! process.run()
     process.waitUntilExit()
   }
 

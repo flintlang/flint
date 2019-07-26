@@ -1,4 +1,4 @@
-// RUN: %flintc %s --verify
+// RUN: %flintc %s --verify --skip-verifier
 
 struct trait Trait {
   // A function signature that conforming structures need to implement,

@@ -3,7 +3,7 @@ import AST
 import BigInt
 
 extension BoogieTranslator {
-   func process(_ statement: Statement, structInvariants: [BIRInvariant] = []) -> [BStatement] {
+  func process(_ statement: Statement, structInvariants: [BIRInvariant] = []) -> [BStatement] {
     switch statement {
     case .expression(let expression):
       // Expresson can return statements -> assignments, or assertions..
@@ -33,19 +33,20 @@ extension BoogieTranslator {
       let stateValue: Int
       switch becomeStatement.expression {
       case .identifier(let identifier):
-         stateValue = getStateVariableValue(identifier.name)
+        stateValue = getStateVariableValue(identifier.name)
       default:
         print("Unknown expression in becomeStatement \(becomeStatement.expression)")
         fatalError()
       }
-      return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)), TranslationInformation(sourceLocation: becomeStatement.sourceLocation))]
+      return [.assignment(.identifier(stateVariable), .integer(BigUInt(stateValue)),
+                          TranslationInformation(sourceLocation: becomeStatement.sourceLocation))]
 
     case .ifStatement(let ifStatement):
       let (condExpr, condStmt, postCondStmt) = process(ifStatement.condition, structInvariants: structInvariants)
       let oldCtx = setCurrentScopeContext(ifStatement.ifBodyScopeContext)
-      let trueCase = ifStatement.body.flatMap({x in process(x, structInvariants: structInvariants)})
+      let trueCase = ifStatement.body.flatMap({ x in process(x, structInvariants: structInvariants) })
       _ = setCurrentScopeContext(ifStatement.elseBodyScopeContext)
-      let falseCase = ifStatement.elseBody.flatMap({x in process(x, structInvariants: structInvariants)})
+      let falseCase = ifStatement.elseBody.flatMap({ x in process(x, structInvariants: structInvariants) })
       _ = setCurrentScopeContext(oldCtx)
       return condStmt + [
         .ifStatement(BIfStatement(condition: condExpr,
@@ -101,7 +102,6 @@ extension BoogieTranslator {
                                           enclosingType: getCurrentTLDName(),
                                           scopeContext: scopeContext)
       let loopVariableType = forStatement.variable.type.rawType
-      let arrayDictIdentifier: String
 
       switch forStatement.iterable {
       case .range(let rangeExpression):
@@ -117,12 +117,14 @@ extension BoogieTranslator {
           finalIndexValue = bound
         }
 
-        assignValueToVariable = [BStatement.assignment(loopVariable, index, TranslationInformation(sourceLocation: forStatement.sourceLocation))]
+        assignValueToVariable = [BStatement.assignment(loopVariable, index, TranslationInformation(
+            sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = start
 
       case .arrayLiteral:
-        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(iterable: forStatement.iterable,
-                                                                                             iterableType: iterableType)
+        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(
+            iterable: forStatement.iterable,
+            iterableType: iterableType)
         preAmbleStmts += iterableStmts
         postAmbleStmts += iterablePostStmts
 
@@ -131,16 +133,17 @@ extension BoogieTranslator {
           fatalError()
         }
 
-        arrayDictIdentifier = arrayLitIdentifier
         assignValueToVariable = [BStatement.assignment(loopVariable,
-                                                      .mapRead(iterableIdentifier, index),
-                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))]
+                                                       .mapRead(iterableIdentifier, index),
+                                                       TranslationInformation(
+                                                           sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + arrayLitIdentifier)
 
       case .dictionaryLiteral:
-        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(iterable: forStatement.iterable,
-                                                                                             iterableType: iterableType)
+        let (iterableIdentifier, iterableStmts, iterablePostStmts) = processIterableLiterals(
+            iterable: forStatement.iterable,
+            iterableType: iterableType)
         preAmbleStmts += iterableStmts
         postAmbleStmts += iterablePostStmts
 
@@ -149,12 +152,12 @@ extension BoogieTranslator {
           fatalError()
         }
 
-        arrayDictIdentifier = dictLitIdentifier
         let keysExpr = BExpression.identifier(normaliser.getShadowDictionaryKeysPrefix(depth: 0) + dictLitIdentifier)
         assignValueToVariable = [BStatement.assignment(loopVariable,
-                                                      .mapRead(iterableIdentifier,
-                                                               .mapRead(keysExpr, index)),
-                                                      TranslationInformation(sourceLocation: forStatement.sourceLocation))]
+                                                       .mapRead(iterableIdentifier,
+                                                                .mapRead(keysExpr, index)),
+                                                       TranslationInformation(
+                                                           sourceLocation: forStatement.sourceLocation))]
         initialIndexValue = BExpression.integer(BigUInt(0))
         finalIndexValue = .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + dictLitIdentifier)
 
@@ -165,7 +168,8 @@ extension BoogieTranslator {
         switch iterableType {
         case .arrayType:
           // Array type - the resulting expression is indexable
-          let (indexableExpr, indexableStmts, postIndexableStmts) = process(forStatement.iterable, structInvariants: structInvariants)
+          let (indexableExpr, indexableStmts, postIndexableStmts) = process(forStatement.iterable,
+                                                                            structInvariants: structInvariants)
           preAmbleStmts += indexableStmts
           postAmbleStmts += postIndexableStmts
           let iterableSize = getIterableSizeExpression(iterable: forStatement.iterable)
@@ -179,6 +183,22 @@ extension BoogieTranslator {
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
+          switch loopVariableType {
+          case .dictionaryType: break
+          case .arrayType, .fixedSizeArrayType:
+            guard case .identifier(let arrayIdentifer) = indexableExpr else {
+              print("Currently, only variable multidimensional arrays may work, fatal error")
+              fatalError()
+            }
+            let bStatement = BStatement.assignment(
+                .identifier(normaliser.getShadowArraySizePrefix(depth: 0) + variableName),
+                .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: 1) + arrayIdentifer), index),
+                TranslationInformation(sourceLocation: forStatement.sourceLocation)
+            )
+            assignValueToVariable.append(bStatement)
+          default: break
+          }
+
         case .dictionaryType:
           // Dictionary type - iterate through the values of the dict, accessed via it's keys
           let (iterableExpr, iterableStmts, postIterableStmts) = process(forStatement.iterable)
@@ -188,8 +208,9 @@ extension BoogieTranslator {
           let iterableKeys = getDictionaryKeysExpression(dict: forStatement.iterable)
 
           assignValueToVariable = [BStatement.assignment(loopVariable,
-                                                        .mapRead(iterableExpr, .mapRead(iterableKeys, index)),
-                                                        TranslationInformation(sourceLocation: forStatement.sourceLocation))]
+                                                         .mapRead(iterableExpr, .mapRead(iterableKeys, index)),
+                                                         TranslationInformation(
+                                                             sourceLocation: forStatement.sourceLocation))]
           initialIndexValue = BExpression.integer(BigUInt(0))
           finalIndexValue = iterableSize
 
@@ -199,21 +220,10 @@ extension BoogieTranslator {
         }
       }
 
-      switch loopVariableType {
-      case .dictionaryType: break
-      case .arrayType, .fixedSizeArrayType: break
-        //BStatement.assignment(.identifier(normaliser.getShadowArraySizePrefix(depth: 0) + variableName),
-        //                      .mapRead(indexableExpr, index),
-        //                      TranslationInformation(sourceLocation: forStatement.sourceLocation)
-        //                      )
-        //assignValueToVariable.append()
-      default: break
-      }
-
-
       let assignIndexInitialValue = BStatement.assignment(index,
                                                           initialIndexValue,
-                                                          TranslationInformation(sourceLocation: forStatement.sourceLocation))
+                                                          TranslationInformation(
+                                                              sourceLocation: forStatement.sourceLocation))
 
       // - create invariant, which says it's always increasing
       // - use to index into iterable - work out how to index into iterable (helper?)
@@ -221,25 +231,25 @@ extension BoogieTranslator {
       // - increment index until length of iterable - work out length of iterable
 
       let body = assignValueToVariable
-               + forStatement.body.flatMap({ process($0) })
-               + [incrementIndex]
+      + forStatement.body.flatMap({ process($0) })
+      + [incrementIndex]
 
       // index should be less than finalIndexValue
       let loopInvariantExpression: BExpression = .lessThanOrEqual(index, finalIndexValue)
       //.lessThan(.old(index), index)
       let loopInvariants = [BLoopInvariant(expression: loopInvariantExpression,
                                            ti: TranslationInformation(sourceLocation: forStatement.sourceLocation))
-                           ]
+      ]
       // Reset old context
       _ = setCurrentScopeContext(oldCtx)
       return /*condStmt +*/ preAmbleStmts + [assignIndexInitialValue,
-        .whileStatement(BWhileStatement(
-          condition: .lessThan(index, finalIndexValue),
-          body: body,
-          invariants: loopInvariants,
-          ti: TranslationInformation(sourceLocation: forStatement.sourceLocation)
-        )
-        )] + postAmbleStmts
+                                             .whileStatement(BWhileStatement(
+                                                 condition: .lessThan(index, finalIndexValue),
+                                                 body: body,
+                                                 invariants: loopInvariants,
+                                                 ti: TranslationInformation(sourceLocation: forStatement.sourceLocation)
+                                             )
+                                             )] + postAmbleStmts
 
     case .emitStatement:
       // Ignore emit statements
@@ -287,7 +297,7 @@ extension BoogieTranslator {
 
     case .functionCall(let functionCall):
       let structInstance = structInstanceVariable ?? (self.structInstanceVariableName == nil ? nil :
-                                  .identifier(self.structInstanceVariableName!))
+      .identifier(self.structInstanceVariableName!))
       return handleFunctionCall(functionCall, structInstance: structInstance)
 
     case .externalCall(let externalCall):
@@ -343,7 +353,8 @@ extension BoogieTranslator {
 
         var trueStatements = [BStatement]()
         // Havoc global state - to capture that the values of the global state can be changed,
-        for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
+        for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (
+            self.structGlobalVariables[getCurrentTLDName()] ?? []) {
           trueStatements.append(.havoc(variableName, ti))
           // Add external call
         }
@@ -423,16 +434,16 @@ extension BoogieTranslator {
 
     case .returnsExpression(let returnsExpression):
       let (returnsExpr, _, _) = process(returnsExpression, structInvariants: structInvariants)
-        return (.equals(.identifier(self.getFunctionReturnVariable()), returnsExpr), [], [])
+      return (.equals(.identifier(self.getFunctionReturnVariable()), returnsExpr), [], [])
 
-    // Assumption - can only be used as iterables in for-loops
-    //case .range(let rangeExpression):
+        // Assumption - can only be used as iterables in for-loops
+        //case .range(let rangeExpression):
 
-      // TODO: Implement expressions
-    /*
-    case .attemptExpression(let attemptExpression):
-    case .sequence(let expressions: [Expression]):
-      */
+        // TODO: Implement expressions
+        /*
+        case .attemptExpression(let attemptExpression):
+        case .sequence(let expressions: [Expression]):
+          */
 
     default:
       print("Not implemented translating \(expression)")
@@ -457,11 +468,15 @@ extension BoogieTranslator {
     case .equal:
       let (e, preStmts, postStmts) = handleAssignment(lhs, rhs)
       let context = Context(environment: environment,
-                          enclosingType: getCurrentTLDName(),
-                          scopeContext: getCurrentScopeContext() ?? ScopeContext())
+                            enclosingType: getCurrentTLDName(),
+                            scopeContext: getCurrentScopeContext() ?? ScopeContext())
 
-      let(triggerPreStmts, triggerPostStmts) = triggers.lookup(binaryExpression, context, extra: ["lhs_translated_expression": e, "enclosing_function": getCurrentFunction().name]) // TODO: Bad. only works because I know that rn an assignment rule is the only one that could trigger.
-      return (e, preStmts + triggerPreStmts, postStmts + triggerPostStmts)
+      let (triggerPreStmts, triggerPostStmts) =
+          triggers.lookup(binaryExpression,
+                          context,
+                          extra: ["lhs_translated_expression": e, "enclosing_function": getCurrentFunction().name]
+          ) // TODO: Bad. only works because I know that rn an assignment rule is the only one that could trigger.
+      return (e, triggerPreStmts + preStmts, postStmts + triggerPostStmts)
     default: break
     }
 
@@ -472,19 +487,22 @@ extension BoogieTranslator {
     switch binaryExpression.opToken {
     case .plusEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
-                                              .add(lhsExpr, rhsExpr),
-                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
-             postStmts)
+                                               .add(lhsExpr, rhsExpr),
+                                               TranslationInformation(sourceLocation: binaryExpression.sourceLocation)
+      )],
+          postStmts)
     case .minusEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
-                                              .subtract(lhsExpr, rhsExpr),
-                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
-             postStmts)
+                                               .subtract(lhsExpr, rhsExpr),
+                                               TranslationInformation(sourceLocation: binaryExpression.sourceLocation)
+      )],
+          postStmts)
     case .timesEqual:
       return (lhsExpr, preStmts + [.assignment(lhsExpr,
-                                              .multiply(lhsExpr, rhsExpr),
-                                              TranslationInformation(sourceLocation: binaryExpression.sourceLocation))],
-              postStmts)
+                                               .multiply(lhsExpr, rhsExpr),
+                                               TranslationInformation(sourceLocation: binaryExpression.sourceLocation)
+      )],
+          postStmts)
     case .divideEqual:
       // Check for divide-by-zero error
       let ti = TranslationInformation(sourceLocation: rhs.sourceLocation,
@@ -508,8 +526,9 @@ extension BoogieTranslator {
                                       failingMsg: ErrorMsg.DivideByZero)
 
       return (.divide(lhsExpr, rhsExpr),
-              preStmts + [BStatement.assertStatement(BAssertStatement(expression: .not(.equals(rhsExpr, .integer(0))), ti: ti))],
-              postStmts)
+          preStmts + [BStatement.assertStatement(
+              BAssertStatement(expression: .not(.equals(rhsExpr, .integer(0))), ti: ti))],
+          postStmts)
     case .overflowingPlus:
       return (.modulo(.add(lhsExpr, rhsExpr), .integer(BigUInt(2).power(256))), preStmts, postStmts)
     case .overflowingMinus:
@@ -520,7 +539,7 @@ extension BoogieTranslator {
     case .power:
       return (.functionApplication("power", [lhsExpr, rhsExpr]), preStmts, postStmts)
 
-    // Comparisons
+        // Comparisons
     case .doubleEqual:
       return (.equals(lhsExpr, rhsExpr), preStmts, postStmts)
     case .notEqual:
@@ -543,23 +562,23 @@ extension BoogieTranslator {
     case .percent:
       return (.modulo(lhsExpr, rhsExpr), preStmts, postStmts)
 
-      /*
-      //TODO: Handle
-    case .at:
-    case .arrow:
-    case .leftArrow:
-    case .comma:
-    case .semicolon:
-    case .doubleSlash:
-    case .dotdot:
-    case .ampersand:
-    case .bang:
-    case .question:
+        /*
+        //TODO: Handle
+      case .at:
+      case .arrow:
+      case .leftArrow:
+      case .comma:
+      case .semicolon:
+      case .doubleSlash:
+      case .dotdot:
+      case .ampersand:
+      case .bang:
+      case .question:
 
-    // Ranges
-    case .halfOpenRange:
-    case .closedRange:
-      */
+      // Ranges
+      case .halfOpenRange:
+      case .closedRange:
+        */
     default:
       print("Unknown binary operator used \(binaryExpression.opToken)")
       fatalError()
@@ -591,8 +610,11 @@ extension BoogieTranslator {
     case .arrayType, .fixedSizeArrayType:
       let rhsSizeExpr: BExpression
       if case .arrayLiteral = rhs {
-        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
-        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, TranslationInformation(sourceLocation: lhs.sourceLocation))]
+        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs,
+                                                                                             iterableType: lhsType)
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier,
+                                                             TranslationInformation(sourceLocation: lhs.sourceLocation)
+        )]
         postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -602,23 +624,28 @@ extension BoogieTranslator {
       } else {
         // Assignment between two identifiers of sorts
         let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
-        rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr,
+                                                        TranslationInformation(sourceLocation: lhs.sourceLocation))]
+        rhsSizeExpr = getIterableSizeExpression(iterable: rhs)
         postAmbleStmts += postRhsStmts
       }
 
       // process shadow variables:
       //  - size
       // Get size shadow variable and set equal to iterableIdentifier size shadowvariable
-      let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
-      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
+      let lhsSizeExpr = getIterableSizeExpression(iterable: lhs)
+      assignmentStatements.append(
+          .assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
 
     case .dictionaryType:
       let rhsSizeExpr: BExpression
       let rhsKeysExpr: BExpression
       if case .dictionaryLiteral = rhs {
-        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs, iterableType: lhsType)
-        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier, TranslationInformation(sourceLocation: lhs.sourceLocation))]
+        let (iterableIdentifier, iterableStmts, postIterableStmts) = processIterableLiterals(iterable: rhs,
+                                                                                             iterableType: lhsType)
+        assignmentStatements += iterableStmts + [.assignment(lhsExpr, iterableIdentifier,
+                                                             TranslationInformation(sourceLocation: lhs.sourceLocation)
+        )]
         postAmbleStmts += postIterableStmts
         guard case .identifier(let identifier) = iterableIdentifier else {
           print("unexpected expression result from processIterableLiterals \(iterableIdentifier)")
@@ -629,30 +656,35 @@ extension BoogieTranslator {
       } else {
         // Assignment between two identifiers of sorts
         let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
-        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
+        assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr,
+                                                        TranslationInformation(sourceLocation: lhs.sourceLocation))]
         postAmbleStmts += postRhsStmts
-        rhsSizeExpr =  getIterableSizeExpression(iterable: rhs)
-        rhsKeysExpr =  getDictionaryKeysExpression(dict: rhs)
+        rhsSizeExpr = getIterableSizeExpression(iterable: rhs)
+        rhsKeysExpr = getDictionaryKeysExpression(dict: rhs)
       }
       // process shadow variables:
       //  - size
       //  - keys
       // Get size + keys shadow variable and set equal to iterableIdentifier size + keys shadowvariable
-      let lhsSizeExpr =  getIterableSizeExpression(iterable: lhs)
-      let lhsKeysExpr =  getDictionaryKeysExpression(dict: lhs)
-      assignmentStatements.append(.assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
-      assignmentStatements.append(.assignment(lhsKeysExpr, rhsKeysExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
+      let lhsSizeExpr = getIterableSizeExpression(iterable: lhs)
+      let lhsKeysExpr = getDictionaryKeysExpression(dict: lhs)
+      assignmentStatements.append(
+          .assignment(lhsSizeExpr, rhsSizeExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
+      assignmentStatements.append(
+          .assignment(lhsKeysExpr, rhsKeysExpr, TranslationInformation(sourceLocation: lhs.sourceLocation)))
 
     default:
       let (rhsExpr, rhsStmts, postRhsStmts) = process(rhs)
       postAmbleStmts += postRhsStmts
-      assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr, TranslationInformation(sourceLocation: lhs.sourceLocation))]
+      assignmentStatements += rhsStmts + [.assignment(lhsExpr, rhsExpr,
+                                                      TranslationInformation(sourceLocation: lhs.sourceLocation))]
     }
 
     return (lhsExpr, assignmentStatements, postAmbleStmts)
   }
 
-  private func processIterableLiterals(iterable: Expression, iterableType: RawType) -> (BExpression, [BStatement], [BStatement]) {
+  private func processIterableLiterals(iterable: Expression,
+                                       iterableType: RawType) -> (BExpression, [BStatement], [BStatement]) {
     let literalVariableName = generateRandomIdentifier(prefix: "lit_")
     addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: literalVariableName,
                                                                rawName: literalVariableName,
@@ -680,7 +712,8 @@ extension BoogieTranslator {
         // See if nested literal
         switch expression {
         case .arrayLiteral, .dictionaryLiteral:
-          (bExpr, preStatements, postStmts) = processIterableLiterals(iterable: expression, iterableType: iterableElementType)
+          (bExpr, preStatements, postStmts) = processIterableLiterals(iterable: expression,
+                                                                      iterableType: iterableElementType)
         default:
           (bExpr, preStatements, postStmts) = process(expression)
         }
@@ -702,7 +735,8 @@ extension BoogieTranslator {
     case .dictionaryLiteral(let dictionaryLiteral):
       var counter = 0
       let keysShadowVariableName = normaliser.getShadowDictionaryKeysPrefix(depth: 0) + literalVariableName
-      //assignmentStmts.append(.assignment(.identifier(keysShadowVariableName), defaultValue(convertType(iterableType))))
+      //assignmentStmts.append(
+      //  .assignment(.identifier(keysShadowVariableName), defaultValue(convertType(iterableType))))
       for entry in dictionaryLiteral.elements {
         let (bKeyExpr, bKeyPreStatements, bKeyPostStmts) = process(entry.key)
         let (bValueExpr, bValuePreStatements, bValuePostStmts): (BExpression, [BStatement], [BStatement])
@@ -710,7 +744,8 @@ extension BoogieTranslator {
         switch entry.value {
         case .arrayLiteral, .dictionaryLiteral:
           (bValueExpr, bValuePreStatements, bValuePostStmts) = processIterableLiterals(iterable: entry.value,
-                                                                      iterableType: iterableElementType)
+                                                                                       iterableType: iterableElementType
+          )
         default:
           (bValueExpr, bValuePreStatements, bValuePostStmts) = process(entry.value)
         }
@@ -815,7 +850,7 @@ extension BoogieTranslator {
         case .identifier(let rIdentifier):
           // TODO:
           return (.identifier(normaliser.translateGlobalIdentifierName(rIdentifier.name, tld: lIdentifier.name)),
-                  [], [])
+              [], [])
         default:
           break
         }
@@ -878,11 +913,6 @@ extension BoogieTranslator {
                                                          enclosingTLD: structName)
       return (.mapRead(rhsExpr, structExp), structPreStmts + rhsPreStmts, rhsPostStmts + structPostStmts)
     }
-
-    print("Unknown type used with `dot` operator \(lhsType)")
-    print("\(lhs)")
-    print("\(rhs)")
-    fatalError()
   }
 
   // process Identifier
@@ -897,11 +927,11 @@ extension BoogieTranslator {
     if localContext,
        let currentFunctionName = getCurrentFunctionName(),
        getFunctionVariableDeclarations(name: currentFunctionName)
-         .filter({ $0.rawName == identifier.name })
-         .count > 0 ||
-        getFunctionParameters(name: currentFunctionName)
-         .filter({ $0.rawName == identifier.name })
-         .count > 0 {
+           .filter({ $0.rawName == identifier.name })
+           .count > 0 ||
+       getFunctionParameters(name: currentFunctionName)
+           .filter({ $0.rawName == identifier.name })
+           .count > 0 {
 
       return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
     }
@@ -927,7 +957,7 @@ extension BoogieTranslator {
     } else if let currentStructInstanceVariable = structInstanceVariableName {
       // Currently in a struct, referring to a 'global' variable
       return .mapRead(.identifier(translatedIdentifier),
-                       .identifier(currentStructInstanceVariable))
+                      .identifier(currentStructInstanceVariable))
     }
     return .identifier(translatedIdentifier)
   }
@@ -938,7 +968,8 @@ extension BoogieTranslator {
                                           structInstanceVariable: BExpression? = nil,
                                           subscriptDepth: Int = 0,
                                           localContext: Bool = true,
-                                          isBeingAssignedTo: Bool = false) -> (BExpression, [BStatement], [BStatement]) {
+                                          isBeingAssignedTo: Bool = false
+  ) -> (BExpression, [BStatement], [BStatement]) {
     var postAmble = [BStatement]()
     let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
                                                     localContext: localContext,
@@ -977,11 +1008,14 @@ extension BoogieTranslator {
                                                      // increment size variable
                                                      .assignment(sizeShadowVariable,
                                                                  .add(sizeShadowVariable, .integer(BigUInt(1))),
-                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)
-                                                                 )
+                                                                 TranslationInformation(
+                                                                     sourceLocation: subscriptExpression.sourceLocation)
+                                                     )
                                                    ],
                                                    falseCase: [],
-                                                   ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))))
+                                                   ti: TranslationInformation(
+                                                       sourceLocation: subscriptExpression.sourceLocation,
+                                                       isUserDirectCause: false))))
       case .dictionaryType:
         // does keys contain key? - if so, add it!
         //counter = 0
@@ -1013,34 +1047,49 @@ extension BoogieTranslator {
                                                              structInstanceVariable: structInstanceVariable)
 
         let checkingContains =
-          BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
-                                          .not(containsKey)),
-                          body: [
-                            .ifStatement(BIfStatement(condition: .equals(.mapRead(keysShadowVariable, counter),
-                                                                         indxExpr),
-                                                      trueCase: [.assignment(containsKey,
-                                                                 .boolean(true),
-                                                                 TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))],
-                                                      falseCase: [],
-                                                      ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))),
-                            .assignment(counter,
-                                        .add(counter, .integer(BigUInt(1))),
-                                        TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
-                          ],
-                          invariants: [],
-                          ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
+            BWhileStatement(condition: .and(.lessThan(counter, sizeShadowVariable),
+                                            .not(containsKey)),
+                            body: [
+                              .ifStatement(
+                                  BIfStatement(
+                                      condition: .equals(.mapRead(keysShadowVariable, counter), indxExpr),
+                                      trueCase: [.assignment(
+                                          containsKey,
+                                          .boolean(true),
+                                          TranslationInformation(
+                                              sourceLocation: subscriptExpression.sourceLocation,
+                                              isUserDirectCause: false))],
+                                      falseCase: [],
+                                      ti: TranslationInformation(
+                                          sourceLocation: subscriptExpression.sourceLocation,
+                                          isUserDirectCause: false))),
+                              .assignment(counter,
+                                          .add(counter, .integer(BigUInt(1))),
+                                          TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
+                            ],
+                            invariants: [],
+                            ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
         let update = BIfStatement(condition: .not(containsKey),
                                   trueCase: [
+                                    // add dictionary entry
+                                    .assignment(.mapRead(keysShadowVariable, sizeShadowVariable),
+                                                indxExpr,
+                                                TranslationInformation(
+                                                    sourceLocation: subscriptExpression.sourceLocation)),
                                     // increment size variable
                                     .assignment(sizeShadowVariable,
                                                 .add(sizeShadowVariable, .integer(BigUInt(1))),
-                                                TranslationInformation(sourceLocation: subscriptExpression.sourceLocation))
+                                                TranslationInformation(
+                                                    sourceLocation: subscriptExpression.sourceLocation))
                                   ],
                                   falseCase: [],
-                                  ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation, isUserDirectCause: false))
+                                  ti: TranslationInformation(sourceLocation: subscriptExpression.sourceLocation,
+                                                             isUserDirectCause: false))
 
-        postAmble.append(.assignment(counter, .integer(BigUInt(0)), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
-        postAmble.append(.assignment(containsKey, .boolean(false), TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(counter, .integer(BigUInt(0)),
+                                     TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
+        postAmble.append(.assignment(containsKey, .boolean(false),
+                                     TranslationInformation(sourceLocation: subscriptExpression.sourceLocation)))
         postAmble.append(.whileStatement(checkingContains))
         postAmble.append(.ifStatement(update))
       default: break
@@ -1071,7 +1120,7 @@ extension BoogieTranslator {
     // Only add assert check, if array type
     switch baseExpressionType {
     case .arrayType, .fixedSizeArrayType:
-       indexStmts.append(assertValidAccess)
+      indexStmts.append(assertValidAccess)
     default: break
     }
 

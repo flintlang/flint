@@ -13,7 +13,7 @@ class BoogieUnreachableCode {
     let trueCase: Bool // condition is always true
   }
 
-  init (boogie: BTopLevelProgram, monoLocation: String, boogieLocation: String) {
+  init(boogie: BTopLevelProgram, monoLocation: String, boogieLocation: String) {
     self.monoLocation = monoLocation
     self.boogieLocation = boogieLocation
     self.boogieAst = boogie
@@ -24,7 +24,8 @@ class BoogieUnreachableCode {
     // For all the ones which verify, return inconsistent assumption diagnostics
 
     let generatedCombinations = generateIfConditionCombinations(tlp: self.boogieAst)
-    var verifierInfo = Array(repeating: ([BoogieError](), [Int: TranslationInformation](), Info(sourceLocation: SourceLocation.DUMMY, trueCase: false)),
+    var verifierInfo = Array(repeating: ([BoogieError](), [Int: TranslationInformation](),
+        Info(sourceLocation: SourceLocation.DUMMY, trueCase: false)),
                              count: generatedCombinations.count)
     let parVerify: (Int) -> Void = { index in
       let (program, target) = generatedCombinations[index]
@@ -63,7 +64,8 @@ class BoogieUnreachableCode {
     }
   }
 
-  private func processProcedureDeclaration(_ procedureDeclaration: BProcedureDeclaration) -> [(BProcedureDeclaration, Info)] {
+  private func processProcedureDeclaration(
+      _ procedureDeclaration: BProcedureDeclaration) -> [(BProcedureDeclaration, Info)] {
     let statements = procedureDeclaration.statements
 
     var procedures = [(BProcedureDeclaration, Info)]()
@@ -75,17 +77,17 @@ class BoogieUnreachableCode {
         newStatements.insert(statement, at: index)
 
         procedures.append((BProcedureDeclaration(
-          name: procedureDeclaration.name,
-          returnTypes: procedureDeclaration.returnTypes,
-          returnNames: procedureDeclaration.returnNames,
-          parameters: procedureDeclaration.parameters,
-          preConditions: procedureDeclaration.preConditions,
-          postConditions: procedureDeclaration.postConditions,
-          modifies: procedureDeclaration.modifies,
-          statements: newStatements,
-          variables: procedureDeclaration.variables,
-          inline: procedureDeclaration.inline,
-          ti: procedureDeclaration.ti), info!))
+            name: procedureDeclaration.name,
+            returnTypes: procedureDeclaration.returnTypes,
+            returnNames: procedureDeclaration.returnNames,
+            parameters: procedureDeclaration.parameters,
+            preConditions: procedureDeclaration.preConditions,
+            postConditions: procedureDeclaration.postConditions,
+            modifies: procedureDeclaration.modifies,
+            statements: newStatements,
+            variables: procedureDeclaration.variables,
+            inline: procedureDeclaration.inline,
+            ti: procedureDeclaration.ti), info!))
       }
     }
     return procedures
@@ -132,9 +134,9 @@ class BoogieUnreachableCode {
         newStatements.insert(statement, at: index)
 
         ifStatements.append((BIfStatement(condition: bIfStatement.condition,
-                                         trueCase: newStatements,
-                                         falseCase: bIfStatement.falseCase,
-                                         ti: bIfStatement.ti), info!))
+                                          trueCase: newStatements,
+                                          falseCase: bIfStatement.falseCase,
+                                          ti: bIfStatement.ti), info!))
       }
     }
 
@@ -146,9 +148,9 @@ class BoogieUnreachableCode {
         newStatements.insert(statement, at: index)
 
         ifStatements.append((BIfStatement(condition: bIfStatement.condition,
-                                         trueCase: bIfStatement.trueCase,
-                                         falseCase: newStatements,
-                                         ti: bIfStatement.ti), info!))
+                                          trueCase: bIfStatement.trueCase,
+                                          falseCase: newStatements,
+                                          ti: bIfStatement.ti), info!))
       }
     }
 
@@ -158,14 +160,15 @@ class BoogieUnreachableCode {
       let slf = Info(sourceLocation: bIfStatement.ti.sourceLocation, trueCase: false)
       testCondition += [(.assertStatement(BAssertStatement(expression: bIfStatement.condition,
                                                            ti: bIfStatement.ti)), slt),
-                        (.assertStatement(BAssertStatement(expression: .not(bIfStatement.condition),
-                                                           ti: bIfStatement.ti)), slf)
+        (.assertStatement(BAssertStatement(expression: .not(bIfStatement.condition),
+                                           ti: bIfStatement.ti)), slf)
       ]
     }
     return testCondition + ifStatements.map({ (.ifStatement($0), $1) })
   }
 
-  private func resolveBoogieErrors(verifierInfo: [([BoogieError], [Int: TranslationInformation], Info)]) -> [Diagnostic] {
+  private func resolveBoogieErrors(
+      verifierInfo: [([BoogieError], [Int: TranslationInformation], Info)]) -> [Diagnostic] {
     // The if statements which don't have unreachable code, will throw assertion failures
     var unreachableCode = [Info]()
     for (errors, mapping, targettedCondition) in verifierInfo {

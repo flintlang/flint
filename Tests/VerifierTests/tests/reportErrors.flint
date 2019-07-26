@@ -66,11 +66,11 @@ C :: (any) {
 
   // Asset destruction
   @payable
-  //VERIFY-FAIL
   func I(implicit w: Wei)
     mutates (Wei.rawValue)
   {
     var y: Wei = w
+    //VERIFY-FAIL
     y = Wei(0)
   }
 }

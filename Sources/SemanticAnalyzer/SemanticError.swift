@@ -91,7 +91,6 @@ extension Diagnostic {
         }
       }
     }
-
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation,
                       message: "Function '\(functionCall.identifier.name)' is not in scope", notes: candidateNotes)
   }

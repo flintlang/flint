@@ -3,6 +3,7 @@
 // `getRawValue` and `setRawValue` need to be implemented.
 
 struct trait Asset {
+
   // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
   init(unsafeRawValue: Int)
 
@@ -18,7 +19,7 @@ struct trait Asset {
   // Moves `amount` from `source` into `this` asset.
   func transfer(source: inout Self, amount: Int) {
     if source.getRawValue() < amount {
-      fatalError()
+       fatalError()
     }
 
     // TODO: support let _: Int = ...
@@ -40,8 +41,16 @@ struct trait Asset {
 struct Wei: Asset {
   var rawValue: Int = 0
 
-  init(unsafeRawValue: Int) {
+  init(unsafeRawValue: Int)  {
     if unsafeRawValue != 0 {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  // Should be invisible to the user and implemented internally
+  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
+    if youAreTheCompiler == false {
       fatalError()
     }
     self.rawValue = unsafeRawValue
@@ -53,8 +62,7 @@ struct Wei: Asset {
   }
 
   init(source: inout Wei) {
-    let amount: Int = source.getRawValue()
-    transfer(source: &source, amount: amount)
+    transfer(source: &source)
   }
 
   func setRawValue(value: Int) -> Int

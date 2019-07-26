@@ -16,40 +16,33 @@ contract Test {
 // CHECK-AST:   FixedSizeArrayType
 // CHECK-AST:     built-in type Int
 // CHECK-AST:     size 4
-// CHECK-AST:   ArrayLiteral
   var arr: Int[4] = []
 
 // CHECK-AST: VariableDeclaration
 // CHECK-AST:   identifier "arr2"
 // CHECK-AST:   ArrayType
 // CHECK-AST:     built-in type Int
-// CHECK-AST:   ArrayLiteral
   var arr2: [Int] = []
 
-  // CHECK-AST: VariableDeclaration
-  // CHECK-AST:   identifier "numWrites"
-  // CHECK-AST:   built-in type Int
-  // CHECK-AST:   0
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "numWrites"
+// CHECK-AST:   built-in type Int
   var numWrites: Int = 0
 
 
-  // CHECK-AST: VariableDeclaration
-  // CHECK-AST:   identifier "nestedArr"
-  // CHECK-AST:   ArrayType
-  // CHECK-AST:     ArrayType
-  // CHECK-AST:     built-in type Int
-  // CHECK-AST:   ArrayLiteral
-  // CHECK-AST:     ArrayLiteral
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "nestedArr"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     ArrayType
+// CHECK-AST:     built-in type Int
   var nestedArr: [[Int]] = [[]]
 
-  // CHECK-AST: VariableDeclaration
-  // CHECK-AST:   identifier "nestedArr2"
-  // CHECK-AST:   ArrayType
-  // CHECK-AST:     FixedSizeArrayType
-  // CHECK-AST:     built-in type Int
-  // CHECK-AST:     size 4
-  // CHECK-AST:   ArrayLiteral
-  // CHECK-AST:     ArrayLiteral
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "nestedArr2"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     FixedSizeArrayType
+// CHECK-AST:     built-in type Int
+// CHECK-AST:     size 4
   var nestedArr2: [Int[4]] = [[]]
 }
 
@@ -63,13 +56,48 @@ Test :: caller <- (any) {
 // CHECK-AST: SpecialDeclaration
 // CHECK-AST:   public
   public init() {
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr2"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "numWrites"
+// CHECK-AST:     =
+// CHECK-AST:     0
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "owner"
+// CHECK-AST:     =
+// CHECK-AST:     identifier "caller"
     self.owner = caller
   }
 
 // CHECK-AST: FunctionDeclaration
-// CHECK-AST:   mutating
 // CHECK-AST:   identifier "increaseNumWrites"
-  mutating func increaseNumWrites() {
+  func increaseNumWrites()
+  mutates (numWrites) {
 
 // CHECK-AST: BinaryExpression
 // CHECK-AST:   BinaryExpression
@@ -86,7 +114,6 @@ Test :: caller <- (any) {
 
 // CHECK-AST: FunctionDeclaration
 // CHECK-AST:   public
-// CHECK-AST:   mutating
 // CHECK-AST:   identifier "write"
 // CHECK-AST:   Parameter
 // CHECK-AST:    identifier "index"
@@ -94,7 +121,8 @@ Test :: caller <- (any) {
 // CHECK-AST:   Parameter
 // CHECK-AST:    identifier "val"
 // CHECK-AST:    built-in type Int
-  public mutating func write(index: Int, val: Int) {
+  public func write(index: Int, val: Int)
+  mutates (arr, numWrites) {
 
 // CHECK-AST: BinaryExpression
 // CHECK-AST:   SubscriptExpression
@@ -109,7 +137,8 @@ Test :: caller <- (any) {
     increaseNumWrites()
   }
 
-  public mutating func set(index: Int, value: Int){
+  public func set(index: Int, value: Int)
+  mutates (arr) {
     arr[index] = value
   }
 

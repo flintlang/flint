@@ -59,9 +59,9 @@ C :: (any) {
   {
     let libInstance: Library = Library(address: extAddress)
     var w1: Wei = w
+    //VERIFY-FAIL
     w1 = Wei(0)
     do {
-      //VERIFY-FAIL
       (call libInstance.getValue()) as! Int
     } catch is ExternalCallError {
       fatalError()

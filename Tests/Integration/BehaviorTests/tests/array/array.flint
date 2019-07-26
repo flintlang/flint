@@ -14,11 +14,13 @@ contract Array {
 Array :: (any) {
   public init() {}
 
-  mutating func increaseNumWrites() {
+  func increaseNumWrites()
+      mutates (numWrites) {
     self.numWrites += 1
   }
 
-  public mutating func write(index: Int, val: Int) {
+  public func write(index: Int, val: Int)
+      mutates (arr, numWrites) {
     arr[index] = val
     increaseNumWrites()
   }
@@ -44,7 +46,8 @@ Array :: (any) {
     return arr3.size
   }
 
-  public mutating func write2(index: Int, val: Int) {
+  public func write2(index: Int, val: Int)
+      mutates (arr2, numWrites)  {
     arr2[index] = val
     increaseNumWrites()
   }
@@ -57,7 +60,8 @@ Array :: (any) {
     return numWrites
   }
 
-  public mutating func write3(index: Int, a: Int, b: Bool, cA: Int) {
+  public func write3(index: Int, a: Int, b: Bool, cA: Int)
+      mutates (arr3) {
     arr3[index].a = a
     arr3[index].b = b
     arr3[index].c.a = cA
@@ -75,19 +79,23 @@ Array :: (any) {
     return arr3[index].c.a
   }
 
-  public mutating func nestedSet(i: Int, j: Int, v: Int) {
+  public func nestedSet(i: Int, j: Int, v: Int) 
+      mutates(nested) {
     nested[i][j] = v
   }
 
-  public mutating func nestedSet2(i: Int, j: Int, v: Int) {
+  public func nestedSet2(i: Int, j: Int, v: Int) 
+      mutates(nested2) {
     nested2[i][j] = v
   }
 
-  public mutating func nestedSet3(i: Int, j: Int, k: Int, v: Address) {
+  public func nestedSet3(i: Int, j: Int, k: Int, v: Address) 
+      mutates(nested3) {
     nested3[i][j][k] = v
   }
 
-  public mutating func nestedSetDict(caller: Address, i: Int, v: Int) {
+  public func nestedSetDict(caller: Address, i: Int, v: Int) 
+      mutates(nestedDict) {
     nestedDict[caller][i] = v
   }
 

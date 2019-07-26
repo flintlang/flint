@@ -48,29 +48,29 @@ extension BoogieTranslator {
     fatalError()
   }
 
-   func getFunctionParameters(name: String) -> [BParameterDeclaration] {
+  func getFunctionParameters(name: String) -> [BParameterDeclaration] {
     if functionParameters[name] == nil {
       functionParameters[name] = []
     }
     return functionParameters[name]!
   }
 
-   func setFunctionParameters(name: String, parameters: [BParameterDeclaration]) {
+  func setFunctionParameters(name: String, parameters: [BParameterDeclaration]) {
     functionParameters[name] = parameters
   }
 
-   func getFunctionVariableDeclarations(name: String) -> Set<BVariableDeclaration> {
+  func getFunctionVariableDeclarations(name: String) -> Set<BVariableDeclaration> {
     if functionVariableDeclarations[name] == nil {
       functionVariableDeclarations[name] = Set<BVariableDeclaration>()
     }
     return functionVariableDeclarations[name]!
   }
 
-   func setFunctionVariableDeclarations(name: String, declarations: Set<BVariableDeclaration>) {
+  func setFunctionVariableDeclarations(name: String, declarations: Set<BVariableDeclaration>) {
     functionVariableDeclarations[name] = declarations
   }
 
-   func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
+  func addCurrentFunctionVariableDeclaration(_ bvDeclaration: BVariableDeclaration) {
     if let functionName = getCurrentFunctionName() {
       var variableDeclarations = getFunctionVariableDeclarations(name: functionName)
       variableDeclarations.insert(bvDeclaration)
@@ -81,7 +81,7 @@ extension BoogieTranslator {
     }
   }
 
-   func generateFunctionReturnVariable() -> String {
+  func generateFunctionReturnVariable() -> String {
     if let functionName = getCurrentFunctionName() {
       let returnVariable = generateRandomIdentifier(prefix: "result_variable_\(functionName)_")
       functionReturnVariableName[functionName] = returnVariable
@@ -103,8 +103,8 @@ extension BoogieTranslator {
     fatalError()
   }
 
-   func getFunctionTypes(_ functionCall: FunctionCall,
-                         enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
+  func getFunctionTypes(_ functionCall: FunctionCall,
+                        enclosingType: RawTypeIdentifier?) -> (RawType, [RawType], Bool) {
     let currentType = enclosingType == nil ? getCurrentTLDName() : enclosingType!
     if let scopeContext = getCurrentScopeContext() {
       let callerProtections = getCurrentContractBehaviorDeclaration()?.callerProtections ?? []
@@ -160,9 +160,9 @@ extension BoogieTranslator {
     fatalError()
   }
 
-   func handleFunctionCall(_ functionCall: FunctionCall,
-                           structInstance: BExpression? = nil,
-                           owningType: String? = nil) -> (BExpression, [BStatement], [BStatement]) {
+  func handleFunctionCall(_ functionCall: FunctionCall,
+                          structInstance: BExpression? = nil,
+                          owningType: String? = nil) -> (BExpression, [BStatement], [BStatement]) {
     let rawFunctionName = functionCall.identifier.name
     var argumentsExpressions = [BExpression]()
     var argumentsStatements = [BStatement]()
@@ -187,24 +187,26 @@ extension BoogieTranslator {
     switch rawFunctionName {
     case "prev":
       self.twoStateContextInvariant = true
-      return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+      return (.old(argumentsExpressions[0]), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts
+      )
 
     case "STATE":
       let stateVariable = getStateVariable()
       let stateValue: Int
       switch functionCall.arguments[0].expression {
       case .identifier(let identifier):
-         stateValue = getStateVariableValue(identifier.name)
+        stateValue = getStateVariableValue(identifier.name)
       default:
         print("Unknown expression in becomeStatement \(functionCall.arguments[0].expression)")
         fatalError()
       }
-      return (.equals(.identifier(stateVariable), .integer(BigUInt(stateValue))), argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+      return (.equals(.identifier(stateVariable), .integer(BigUInt(stateValue))), argumentsStatements + triggerPreStmts,
+          argumentPostStmts + triggerPostStmts)
 
     case "arrayContains":
       // check array/dict contains values
       // check calls should have 2 arguments:
-      assert (argumentsExpressions.count == 2)
+      assert(argumentsExpressions.count == 2)
       // exists. i: typeof(arg1.keys) :: arg1[i] == arg2
 
       let (sizeArgExpression, _, _) = process(functionCall.arguments[0].expression,
@@ -214,12 +216,12 @@ extension BoogieTranslator {
                           .and(.equals(.mapRead(argumentsExpressions[0], .identifier("i")), argumentsExpressions[1]),
                                .and(.greaterThanOrEqual(.identifier("i"), .integer(0)),
                                     .greaterThan(sizeArgExpression, .identifier("i"))))),
-              argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+          argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "dictContains":
       // check array/dict contains values
       // check calls should have 2 arguments:
-      assert (argumentsExpressions.count == 2)
+      assert(argumentsExpressions.count == 2)
       // exists. i: typeof(arg1.keys) :: arg1[i] == arg2
 
       let (sizeArgExpression, _, _) = process(functionCall.arguments[0].expression,
@@ -231,12 +233,12 @@ extension BoogieTranslator {
                           .and(.equals(.mapRead(keysArgExpression, .identifier("i")), argumentsExpressions[1]),
                                .and(.greaterThanOrEqual(.identifier("i"), .integer(0)),
                                     .greaterThan(sizeArgExpression, .identifier("i"))))),
-              argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
+          argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "arrayEach":
       // check that each element of an array, satisfies a property
       // check calls should have 3 arguments:
-      assert (argumentsExpressions.count == 3)
+      assert(argumentsExpressions.count == 3)
       // eachArray(elem, array, property)
       // forall i :: i >= 0 && i < size ==> property[elem/array[i]]
 
@@ -259,8 +261,8 @@ extension BoogieTranslator {
                           .implies(.and(.greaterThanOrEqual(.identifier("$i"), .integer(0)),
                                         .greaterThan(sizeArgExpression, .identifier("$i"))),
                                    propertyExpression)),
-              argumentsStatements + triggerPreStmts,
-              argumentPostStmts + triggerPostStmts)
+          argumentsStatements + triggerPreStmts,
+          argumentPostStmts + triggerPostStmts)
 
     default: break
     }
@@ -272,23 +274,25 @@ extension BoogieTranslator {
 
     // Can only be called from within a function
     switch rawFunctionName {
-    // Special case to handle assert functions
+        // Special case to handle assert functions
     case "assert":
       // assert that assert function call always has one argument
-      assert (argumentsExpressions.count == 1)
+      assert(argumentsExpressions.count == 1)
       argumentsStatements.append(.assertStatement(BAssertStatement(expression: argumentsExpressions[0],
-                                                                   ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
+                                                                   ti: TranslationInformation(
+                                                                       sourceLocation: functionCall.sourceLocation))))
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
-    // Handle fatal error case
+        // Handle fatal error case
     case "fatalError":
-      argumentsStatements.append(.assume(.boolean(false), TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+      argumentsStatements.append(
+          .assume(.boolean(false), TranslationInformation(sourceLocation: functionCall.sourceLocation)))
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
 
     case "send":
       // send calls should have 2 arguments:
       // send(account, &w)
-      assert (argumentsExpressions.count == 2)
+      assert(argumentsExpressions.count == 2)
 
       // Is an external call -> assert contract invariants hold
       var stmts = [BStatement]()
@@ -305,7 +309,8 @@ extension BoogieTranslator {
       let ti = TranslationInformation(sourceLocation: functionCall.sourceLocation)
       var trueStatements = [BStatement]()
       // Havoc global state - to capture that the values of the global state can be changed,
-      for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (self.structGlobalVariables[getCurrentTLDName()] ?? []) {
+      for variableName in (self.contractGlobalVariables[getCurrentTLDName()] ?? []) + (
+          self.structGlobalVariables[getCurrentTLDName()] ?? []) {
         trueStatements.append(.havoc(variableName, ti))
         // Add external call
       }
@@ -320,7 +325,8 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [],
                                                                  procedureName: procedureName,
                                                                  arguments: argumentsExpressions,
-                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+                                                                 ti: TranslationInformation(
+                                                                     sourceLocation: functionCall.sourceLocation)))
 
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, procedureName)
@@ -328,7 +334,7 @@ extension BoogieTranslator {
 
     case "returning":
       //returning(returnvalue, property over return value)
-      assert (argumentsExpressions.count == 2)
+      assert(argumentsExpressions.count == 2)
       guard case .identifier(let identifier) = functionCall.arguments[0].expression else {
         print("not an identifier was used for returning operator argument expression")
         fatalError()
@@ -350,7 +356,6 @@ extension BoogieTranslator {
       }
     }
 
-
     // TODO: Assert that contract invariant holds
     // TODO: Need to link the failing assert to the invariant =>
     //  error msg: Can't call function, the contract invariant does not hold at this point
@@ -365,8 +370,9 @@ extension BoogieTranslator {
       functionName = normaliser.translateGlobalIdentifierName("init" + normaliser.flattenTypes(types: parameterTypes),
                                                               tld: rawFunctionName)
     } else {
-      functionName = normaliser.translateGlobalIdentifierName(rawFunctionName + normaliser.flattenTypes(types: parameterTypes),
-                                                              tld: owningType ?? getCurrentTLDName())
+      functionName = normaliser.translateGlobalIdentifierName(
+          rawFunctionName + normaliser.flattenTypes(types: parameterTypes),
+          tld: owningType ?? getCurrentTLDName())
     }
 
     if let instance = structInstance, !isInit {
@@ -381,7 +387,8 @@ extension BoogieTranslator {
       let functionCall = BStatement.callProcedure(BCallProcedure(returnedValues: [returnValueVariable],
                                                                  procedureName: functionName,
                                                                  arguments: argumentsExpressions,
-                                                                 ti: TranslationInformation(sourceLocation: functionCall.sourceLocation)))
+                                                                 ti: TranslationInformation(
+                                                                     sourceLocation: functionCall.sourceLocation)))
       addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: returnValueVariable,
                                                                  rawName: returnValueVariable,
                                                                  type: convertType(returnType)))
@@ -396,7 +403,8 @@ extension BoogieTranslator {
       argumentsStatements.append(.callProcedure(BCallProcedure(returnedValues: [],
                                                                procedureName: functionName,
                                                                arguments: argumentsExpressions,
-                                                               ti: TranslationInformation(sourceLocation: functionCall.sourceLocation))))
+                                                               ti: TranslationInformation(
+                                                                   sourceLocation: functionCall.sourceLocation))))
       // Add procedure call to callGraph
       addProcedureCall(currentFunctionName, functionName)
       return (.nop, argumentsStatements + triggerPreStmts, argumentPostStmts + triggerPostStmts)
@@ -405,22 +413,22 @@ extension BoogieTranslator {
 
   private func getIterableTypeDepth(type: RawType, depth: Int = 0) -> Int {
     switch type {
-    case .arrayType(let type): return getIterableTypeDepth(type: type, depth: depth+1)
-    case .dictionaryType(_, let valueType): return getIterableTypeDepth(type: valueType, depth: depth+1)
-    case .fixedSizeArrayType(let type, _): return getIterableTypeDepth(type: type, depth: depth+1)
+    case .arrayType(let type): return getIterableTypeDepth(type: type, depth: depth + 1)
+    case .dictionaryType(_, let valueType): return getIterableTypeDepth(type: valueType, depth: depth + 1)
+    case .fixedSizeArrayType(let type, _): return getIterableTypeDepth(type: type, depth: depth + 1)
     default:
       return depth
     }
   }
 
-   func process(_ functionDeclaration: FunctionDeclaration,
-                isStructInit: Bool = false,
-                isContractInit: Bool = false,
-                callerProtections: [CallerProtection] = [],
-                callerBinding: Identifier? = nil,
-                structInvariants: [BIRInvariant] = [],
-                typeStates: [TypeState] = []
-                ) -> BIRTopLevelDeclaration {
+  func process(_ functionDeclaration: FunctionDeclaration,
+               isStructInit: Bool = false,
+               isContractInit: Bool = false,
+               callerProtections: [CallerProtection] = [],
+               callerBinding: Identifier? = nil,
+               structInvariants: [BIRInvariant] = [],
+               typeStates: [TypeState] = []
+  ) -> BIRTopLevelDeclaration {
     let currentFunctionName = getCurrentFunctionName()!
     let body = functionDeclaration.body
     let parameters = functionDeclaration.signature.parameters
@@ -493,10 +501,11 @@ extension BoogieTranslator {
           ]
 
           let structInitPost: BExpression =
-            .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
+              .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
           postConditions.append(BPostCondition(expression: structInitPost,
-                                              ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)))
+                                               ti: TranslationInformation(
+                                                   sourceLocation: functionDeclaration.sourceLocation)))
 
           functionPreAmble += reserveNextStructInstance
           functionPostAmble += returnAllocatedStructInstance
@@ -504,9 +513,15 @@ extension BoogieTranslator {
           bParameters.insert(BParameterDeclaration(name: self.structInstanceVariableName!,
                                                    rawName: self.structInstanceVariableName!,
                                                    type: .int), at: 0)
-          preConditions.append(BPreCondition(expression: .and(.lessThan(.identifier(self.structInstanceVariableName!), .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))),
-                                                              .greaterThanOrEqual(.identifier(self.structInstanceVariableName!), .integer(0))),
-                                             ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
+          preConditions.append(BPreCondition(expression: .and(.lessThan(.identifier(self.structInstanceVariableName!),
+                                                                        .identifier(
+                                                                            normaliser.generateStructInstanceVariable(
+                                                                                structName: getCurrentTLDName()))),
+                                                              .greaterThanOrEqual(
+                                                                  .identifier(self.structInstanceVariableName!),
+                                                                  .integer(0))),
+                                             ti: TranslationInformation(
+                                                 sourceLocation: functionDeclaration.sourceLocation),
                                              free: false))
         }
       default: break
@@ -537,7 +552,8 @@ extension BoogieTranslator {
                                                   .identifier(self.structInstanceVariableName!)),
                                          e, TranslationInformation(sourceLocation: expression.sourceLocation)))
         } else {
-          assignments.append(.assignment(.identifier(name), e, TranslationInformation(sourceLocation: expression.sourceLocation)))
+          assignments.append(
+              .assignment(.identifier(name), e, TranslationInformation(sourceLocation: expression.sourceLocation)))
         }
         assignments += post
       }
@@ -548,9 +564,9 @@ extension BoogieTranslator {
     let contractInvariants = (tldInvariants[getCurrentTLDName()] ?? [])
 
     let bStatements = functionIterableSizeAssumptions
-                    + functionPreAmble
-                    + body.flatMap({x in process(x, structInvariants: structInvariants)})
-                    + functionPostAmble
+    + functionPreAmble
+    + body.flatMap({ x in process(x, structInvariants: structInvariants) })
+    + functionPostAmble
 
     // Get mutates from function clause, or from environment if the function was made from a trait
     for mutates in functionDeclaration.mutates + (self.traitFunctionMutates[currentFunctionName] ?? []) {
@@ -560,9 +576,13 @@ extension BoogieTranslator {
       case .arrayType, .dictionaryType:
         let depthMax = getIterableTypeDepth(type: variableType)
         for depth in 0..<depthMax {
-          modifies.append(normaliser.getShadowArraySizePrefix(depth: depth) + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
+          modifies.append(
+              normaliser.getShadowArraySizePrefix(depth: depth)
+                  + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
           if case .dictionaryType = variableType {
-            modifies.append(normaliser.getShadowDictionaryKeysPrefix(depth: depth) + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
+            modifies.append(
+                normaliser.getShadowDictionaryKeysPrefix(depth: depth)
+                    + normaliser.translateGlobalIdentifierName(mutates.name, tld: enclosingType))
           }
         }
       default:
@@ -581,13 +601,13 @@ extension BoogieTranslator {
     }
 
     let modifiesClauses = Set<BIRModifiesDeclaration>(modifies.map({
-       BIRModifiesDeclaration(variable: $0, userDefined: true)
+      BIRModifiesDeclaration(variable: $0, userDefined: true)
     }))
-    // Get the global shadow variables, the function modifies
-    // (but can't be directly expressed by the user) - ie. nextInstance_struct
-    .union((functionModifiesShadow[currentFunctionName] ?? []).map({
-       BIRModifiesDeclaration(variable: $0, userDefined: false)
-     }))
+        // Get the global shadow variables, the function modifies
+        // (but can't be directly expressed by the user) - ie. nextInstance_struct
+        .union((functionModifiesShadow[currentFunctionName] ?? []).map({
+          BIRModifiesDeclaration(variable: $0, userDefined: false)
+        }))
 
     // About to exit function, reset struct instance variable
     self.structInstanceVariableName = nil
@@ -596,23 +616,24 @@ extension BoogieTranslator {
     let returnTypes = returnType == nil ? nil : [returnType!]
     let returnNames = returnName == nil ? nil : [returnName!]
     let procDecl = BIRProcedureDeclaration(
-      name: currentFunctionName,
-      returnTypes: returnTypes,
-      returnNames: returnNames,
-      parameters: bParameters,
-      preConditions: callerPreConds + (!isContractInit ? typeStatePreConds : []) + preConditions, //Inits should establish
-      postConditions: postConditions,
-      structInvariants: structInvariants,
-      contractInvariants: contractInvariants,
-      globalInvariants: self.globalInvariants,
-      modifies: modifiesClauses,
-      statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
-      variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      inline: true, // !functionDeclaration.isPublic,
-      ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
-      isHolisticProcedure: false,
-      isStructInit: isStructInit,
-      isContractInit: isContractInit
+        name: currentFunctionName,
+        returnTypes: returnTypes,
+        returnNames: returnNames,
+        parameters: bParameters,
+        preConditions: callerPreConds + (!isContractInit ? typeStatePreConds : []) + preConditions,
+        //Inits should establish
+        postConditions: postConditions,
+        structInvariants: structInvariants,
+        contractInvariants: contractInvariants,
+        globalInvariants: self.globalInvariants,
+        modifies: modifiesClauses,
+        statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
+        variables: getFunctionVariableDeclarations(name: currentFunctionName),
+        inline: true, // !functionDeclaration.isPublic,
+        ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
+        isHolisticProcedure: false,
+        isStructInit: isStructInit,
+        isContractInit: isContractInit
     )
 
     self.functionMapping[currentFunctionName] = procDecl

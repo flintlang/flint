@@ -5,7 +5,7 @@ class BoogieIRResolver: IRResolver {
   typealias ResultType = FlintBoogieTranslation
 
   // Mapping from procedure name to variables it modifies
-  var procedureModifies = [String: Set<BModifiesDeclaration>]()
+  var procedureModifies: [String: Set<BModifiesDeclaration>] = [:]
 
   func resolve(ir: BoogieTranslationIR) -> FlintBoogieTranslation {
     // Process mutates clause - flow non-user-defined mutates

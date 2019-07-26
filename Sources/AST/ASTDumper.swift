@@ -429,7 +429,7 @@ public class ASTDumper {
       case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly: fatalError()
       case .returnsExpression(let returnsExpression): self.dump(returnsExpression)
-      case .emptyExpr(_): fatalError("EMPTY EXPR")
+      case .emptyExpr: fatalError("EMPTY EXPR")
       }
     }
   }

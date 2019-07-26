@@ -29,7 +29,7 @@ Inits :: caller <- (any) {
     return s1
   }
 
-  public mutating func setT(x: Int, y: Bool) {
+  public func setT(x: Int, y: Bool) mutates(t) {
     t = T(x, y)
   }
 

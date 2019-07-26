@@ -19,7 +19,8 @@ contract C {
 C :: (any) {
     public init() {}
 
-    public mutating func setFoo(val: Int) {
+    public func setFoo(val: Int)
+    mutates (B.storedFoo) {
         b.storedFoo = val
     }
 

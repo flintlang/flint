@@ -6,7 +6,7 @@ public class PreConditionPreprocessor: ASTPass {
   // Insert assertions at the beginning of function bodies
   // for public functions with pre-conditions
 
-  private var inContract = false
+  private var inContract: Bool = false
   private let checkAllFunctions: Bool
 
   public init(checkAllFunctions: Bool) {
@@ -29,16 +29,19 @@ public class PreConditionPreprocessor: ASTPass {
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     if self.checkAllFunctions || (self.inContract && functionDeclaration.isPublic) {
       let checks: [Statement] = functionDeclaration
-      .signature
-      .prePostConditions
-      .filter({ $0.isPre() })
-      .map({ $0.lift })
-      .map({ Statement.expression(Expression.functionCall(FunctionCall(identifier: Identifier(name: "assert",
-                                                                           sourceLocation: $0.sourceLocation),
-                                                    arguments: [FunctionArgument(identifier: nil,
-                                                                                 expression: $0)],
-                                                    closeBracketToken: Token.DUMMY,
-                                                    isAttempted: false))) })
+          .signature
+          .prePostConditions
+          .filter({ $0.isPre() })
+          .map({ $0.lift })
+          .map({
+            Statement.expression(Expression.functionCall(
+                FunctionCall(identifier: Identifier(name: "assert",
+                                                    sourceLocation: $0.sourceLocation),
+                             arguments: [FunctionArgument(identifier: nil,
+                                                          expression: $0)],
+                             closeBracketToken: Token.DUMMY,
+                             isAttempted: false)))
+          })
 
       let withChecks = FunctionDeclaration(signature: functionDeclaration.signature,
                                            body: checks + functionDeclaration.body,
@@ -56,16 +59,20 @@ public class PreConditionPreprocessor: ASTPass {
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     if self.checkAllFunctions || (self.inContract && specialDeclaration.isPublic) {
       let checks: [Statement] = specialDeclaration
-      .signature
-      .prePostConditions
-      .filter({ $0.isPre() })
-      .map({ $0.lift })
-      .map({ Statement.expression(Expression.functionCall(FunctionCall(identifier: Identifier(name: "assert",
-                                                                           sourceLocation: $0.sourceLocation),
-                                                    arguments: [FunctionArgument(identifier: nil,
-                                                                                 expression: $0)],
-                                                    closeBracketToken: Token.DUMMY,
-                                                    isAttempted: false))) })
+          .signature
+          .prePostConditions
+          .filter { $0.isPre() }
+          .map { $0.lift }
+          .map {
+            Statement.expression(
+                Expression.functionCall(
+                    FunctionCall(identifier: Identifier(name: "assert",
+                                                        sourceLocation: $0.sourceLocation),
+                                 arguments: [FunctionArgument(identifier: nil,
+                                                              expression: $0)],
+                                 closeBracketToken: Token.DUMMY,
+                                 isAttempted: false)))
+          }
 
       let withChecks = SpecialDeclaration(signature: specialDeclaration.signature,
                                           body: checks + specialDeclaration.body,

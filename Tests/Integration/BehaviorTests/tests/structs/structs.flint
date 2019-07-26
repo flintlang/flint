@@ -6,7 +6,7 @@ struct A {
     return x
   }
 
-  mutating func setX(x: Int) {
+  func setX(x: Int) mutates (x) {
     self.x = x
   }
 
@@ -27,7 +27,7 @@ struct B {
     return x.getY()
   }
 
-  mutating func setXx(y: Int) {
+  func setXx(y: Int) mutates (A.x) {
     x.setX(x: y)
   }
 }
@@ -48,7 +48,7 @@ C :: (any) {
     return a.x
   }
 
-  public mutating func setAx(x: Int) {
+  public func setAx(x: Int) mutates (A.x) {
     a.x = x
   }
 
@@ -56,7 +56,7 @@ C :: (any) {
     return a.y
   }
 
-  public mutating func setAy(y: Bool) {
+  public func setAy(y: Bool) mutates (A.y) {
     a.y = y
   }
 
@@ -64,7 +64,7 @@ C :: (any) {
     return b.x.x
   }
 
-  public mutating func setBxx(x: Int) {
+  public func setBxx(x: Int) mutates (A.x) {
     b.x.x = x
   }
 
@@ -76,19 +76,19 @@ C :: (any) {
     return b.getXx2()
   }
 
-  public mutating func setBxx2(x: Int) {
+  public func setBxx2(x: Int) mutates (A.x) {
     b.setXx(y: x)
   }
 
-  public mutating func setBxx3(x: Int) {
+  public func setBxx3(x: Int) mutates (A.x) {
     setB(b: &b, x: x)
   }
 
-  public mutating func setCxx(x: Int) {
+  public func setCxx(x: Int) mutates (A.x) {
     c.setXx(y: x)
   }
 
-  public mutating func setCxx2(x: Int) {
+  public func setCxx2(x: Int) mutates (A.x) {
     setB(b: &c, x: x)
   }
 
@@ -96,7 +96,7 @@ C :: (any) {
     return c.getXx()
   }
 
-  mutating func setB(b: inout B, x: Int) {
+  func setB(b: inout B, x: Int) mutates (A.x) {
     b.setXx(y: x)
   }
 
@@ -104,7 +104,7 @@ C :: (any) {
     return b.x.y
   }
 
-  public mutating func setBxy(y: Bool) {
+  public func setBxy(y: Bool) mutates (A.y) {
     b.x.y = y
   }
 
@@ -112,11 +112,11 @@ C :: (any) {
     return b.y
   }
 
-  public mutating func setBy(y: Int) {
+  public func setBy(y: Int) mutates (B.y) {
     b.y = y
   }
 
-  public mutating func append(x: Int) {
+  public func append(x: Int) mutates (arr, Array.elements, Array.size) {
     arr.add(value: x)
   }
 
@@ -141,7 +141,7 @@ struct Array {
   var elements: [Int] = []
   var size: Int = 0
 
-  mutating func add(value: Int) {
+  func add(value: Int) mutates (elements, size) {
     elements[size] = value
     size += 1
   }

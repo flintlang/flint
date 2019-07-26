@@ -14,44 +14,49 @@ struct Trigger {
   private let functionDeclarationTriggers: [Rule<FunctionDeclaration>]
   private let binaryExpressionTriggers: [Rule<BinaryExpression>]
 
-  public func lookup(_ parameter: Parameter, _ context: Context, extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
+  public func lookup(_ parameter: Parameter, _ context: Context,
+                     extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
     return unzip(parameterTriggers.filter({ $0.condition(parameter, context, extra) })
-      .map({ $0.rule(parameter, context, extra) }))
+                     .map({ $0.rule(parameter, context, extra) }))
   }
 
-  public func lookup(_ functionDeclaration: FunctionDeclaration, _ context: Context, extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
-  return unzip(functionDeclarationTriggers.filter({ $0.condition(functionDeclaration, context, extra) })
-      .map({ $0.rule(functionDeclaration, context, extra) }))
+  public func lookup(_ functionDeclaration: FunctionDeclaration, _ context: Context,
+                     extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
+    return unzip(functionDeclarationTriggers.filter({ $0.condition(functionDeclaration, context, extra) })
+                     .map({ $0.rule(functionDeclaration, context, extra) }))
   }
 
-  public func lookup(_ functionCall: FunctionCall, _ context: Context, extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
+  public func lookup(_ functionCall: FunctionCall, _ context: Context,
+                     extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
     return unzip(functionCallTriggers.filter({ $0.condition(functionCall, context, extra) })
-      .map({ $0.rule(functionCall, context, extra) }))
+                     .map({ $0.rule(functionCall, context, extra) }))
   }
 
-  public func lookup(_ binaryExpression: BinaryExpression, _ context: Context, extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
+  public func lookup(_ binaryExpression: BinaryExpression, _ context: Context,
+                     extra: ExtraType = [:]) -> ([BStatement], [BStatement]) {
     return unzip(binaryExpressionTriggers.filter({ $0.condition(binaryExpression, context, extra) })
-      .map({ $0.rule(binaryExpression, context, extra) }))
+                     .map({ $0.rule(binaryExpression, context, extra) }))
   }
 
   public func mutates(_ parameter: Parameter, _ context: Context, extra: ExtraType = [:]) -> [String] {
     return parameterTriggers.filter({ $0.condition(parameter, context, extra) })
-      .flatMap({ $0.mutates })
+        .flatMap({ $0.mutates })
   }
 
-  public func mutates(_ functionDeclaration: FunctionDeclaration, _ context: Context, extra: ExtraType = [:]) -> [String] {
+  public func mutates(_ functionDeclaration: FunctionDeclaration, _ context: Context,
+                      extra: ExtraType = [:]) -> [String] {
     return functionDeclarationTriggers.filter({ $0.condition(functionDeclaration, context, extra) })
-      .flatMap({ $0.mutates })
+        .flatMap({ $0.mutates })
   }
 
   public func mutates(_ functionCall: FunctionCall, _ context: Context, extra: ExtraType = [:]) -> [String] {
     return functionCallTriggers.filter({ $0.condition(functionCall, context, extra) })
-      .flatMap({ $0.mutates })
+        .flatMap({ $0.mutates })
   }
 
   public func mutates(_ binaryExpression: BinaryExpression, _ context: Context, extra: ExtraType = [:]) -> [String] {
     return binaryExpressionTriggers.filter({ $0.condition(binaryExpression, context, extra) })
-      .flatMap({ $0.mutates })
+        .flatMap({ $0.mutates })
   }
 
   private static func registerParameterTriggers() -> [Rule<Parameter>] {
