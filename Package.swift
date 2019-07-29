@@ -72,6 +72,7 @@ let package = Package(
         "TypeChecker",
         "Optimizer",
         "IRGen",
+        "MoveGen",
         "Verifier",
         "Commander",
         "Rainbow",
@@ -264,6 +265,17 @@ let package = Package(
         "Cuckoo",
       ],
       sources: [".", "../../.derived-tests/IRGen"]
+    ),
+    .target(
+        name: "MoveGen",
+        dependencies: [
+          "Source",
+          "Diagnostic",
+          "AST",
+          "CryptoSwift",
+          "YUL",
+          "Utils",
+        ]
     ),
     // MARK: YUL -
     .target(

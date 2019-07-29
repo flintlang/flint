@@ -17,6 +17,7 @@ import Optimizer
 import IRGen
 import Verifier
 import Utils
+import MoveGen
 
 public protocol Target {
   init(config: CompilerConfiguration, environment: Environment, sourceContext: SourceContext)
@@ -68,9 +69,16 @@ public class EVMTarget: Target {
 }
 
 public class MoveTarget: Target {
-  required public init(config: CompilerConfiguration, environment: Environment, sourceContext: SourceContext) { }
+  let config: CompilerConfiguration
+  let environment: Environment
+
+  required public init(config: CompilerConfiguration, environment: Environment, sourceContext _: SourceContext) {
+    self.config = config
+    self.environment = environment
+  }
 
   public func generate(ast: TopLevelModule) -> String {
-    return ""
+    let generator = MoveGenerator(ast: ast, environment: environment)
+    return generator.generateCode()
   }
 }
