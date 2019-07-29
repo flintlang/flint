@@ -127,8 +127,8 @@ extension Compiler {
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
-                                              boogieLocation: Path.getFullUrl(path: "boogie/Binaries/Boogie.exe"
-                                              ).absoluteString,
+                                              boogieLocation: Path.getFullUrl(
+                                                  path: "boogie/Binaries/Boogie.exe").absoluteString,
                                               symbooglixLocation: Path.getFullUrl(
                                                   path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe"
                                               ).absoluteString,
@@ -140,9 +140,9 @@ extension Compiler {
                                               sourceContext: sourceContext,
                                               normaliser: IdentifierNormaliser()).verify()
 
-      _ = try config.diagnostics.checkpoint(errors)
+      try _ = config.diagnostics.checkpoint(errors)
       if verified {
-        _ = try config.diagnostics.display()
+        try _ = config.diagnostics.display()
         print("Contract specification verified!")
       } else {
         print("Contract specification not verified")
@@ -154,30 +154,9 @@ extension Compiler {
       exit(0)
     }
 
-    // Run final IRPreprocessor pass
-    let irPreprocessOutcome = ASTPassRunner(ast: passRunnerOutcome.element).run(
-        passes: (!config.skipVerifier ? [AssertPreprocessor()] : []) + [PreConditionPreprocessor(
-            checkAllFunctions: config.skipVerifier),
-                                                                        IRPreprocessor()],
-        in: environment,
-        sourceContext: sourceContext)
-    if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {
-      if failed {
-        exitWithFailure()
-      }
-      exit(0)
-    }
-    // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: irPreprocessOutcome.element,
-                                 environment: irPreprocessOutcome.environment)
-        .generateCode()
-
-    // Compile the YUL IR code using solc.
-    try SolcCompiler(inputSource: irCode,
-                     outputDirectory: config.outputDirectory,
-                     emitBytecode: config.emitBytecode).compile()
-
-    try config.diagnostics.display()
+    let irCode = try config.target
+        .type.init(config: config, environment: environment, sourceContext: sourceContext)
+        .generate(ast: passRunnerOutcome.element)
 
     print("Produced binary in \(config.outputDirectory.path.bold).")
     return CompilationOutcome(irCode: irCode, astDump: ASTDumper(topLevelModule: ast).dump())
@@ -679,6 +658,25 @@ public struct CompilerTestFrameworkConfiguration {
   }
 }
 
+public enum CompilerTarget {
+  case evm
+  case move
+
+  public static func fromString(name: String) -> CompilerTarget {
+    switch name {
+    case "move":  return move
+    default:      return evm
+    }
+  }
+
+  public var type: Target.Type {
+    switch self {
+    case .evm: return EVMTarget.self
+    case .move: return MoveTarget.self
+    }
+  }
+}
+
 public struct CompilerConfiguration {
   public let inputFiles: [URL]
   public let stdlibFiles: [URL]
@@ -696,6 +694,7 @@ public struct CompilerConfiguration {
   public let diagnostics: DiagnosticPool
   public let loadStdlib: Bool
   public let astPasses: [ASTPass]
+  public let target: CompilerTarget
 
   public init(inputFiles: [URL],
               stdlibFiles: [URL],
@@ -712,7 +711,8 @@ public struct CompilerConfiguration {
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
               loadStdlib: Bool = true,
-              astPasses: [ASTPass]? = nil) {
+              astPasses: [ASTPass]? = nil,
+              target: CompilerTarget) {
     self.inputFiles = inputFiles
     self.stdlibFiles = stdlibFiles
     self.outputDirectory = outputDirectory
@@ -727,10 +727,9 @@ public struct CompilerConfiguration {
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics //Compiler.defaultASTPasses
-    self.astPasses = astPasses ?? (
-    Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses)
-    )
+    self.astPasses = astPasses ?? (Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses))
     self.loadStdlib = loadStdlib
+    self.target = target
   }
 }
 

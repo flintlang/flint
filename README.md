@@ -1,7 +1,7 @@
 # The Flint Programming Language
 [![Build Status](https://travis-ci.org/matteobilardi/flint.svg?branch=master)](https://travis-ci.org/matteobilardi/flint)
 
-![](.gitbook/assets/flint_small.png)
+![/\ Flint](.gitbook/assets/flint_small.png)
 
 Flint is a new type-safe, contract-oriented programming language specifically designed for writing robust smart contracts on Ethereum.
 
