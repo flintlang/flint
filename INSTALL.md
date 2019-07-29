@@ -56,11 +56,10 @@ To run the environment without doing any package installations:
 ```bash
 git clone --recurse-submodules https://github.com/flintlang/flint.git
 cd flint
-sudo docker build .
-sudo docker run -i -t .
+sudo docker build -t "flint_docker" .
 ### ---------------------------------------------- ###
 # Docker will build, this process may take some time #
 ### ---------------------------------------------- ###
-# root@...:/flint #
-make; make  # Right now the first make will not link z3 correctly
+sudo docker run --privileged -i -t flint_docker
+source ~/.bash_profile
 ```
