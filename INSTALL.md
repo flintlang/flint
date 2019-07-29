@@ -61,5 +61,6 @@ sudo docker build -t "flint_docker" .
 # Docker will build, this process may take some time #
 ### ---------------------------------------------- ###
 sudo docker run --privileged -i -t flint_docker
+# Then, inside the docker container, run
 source ~/.bash_profile
 ```
