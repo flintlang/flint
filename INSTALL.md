@@ -64,3 +64,21 @@ sudo docker run -i -t .
 # root@...:/flint #
 make; make  # Right now the first make will not link z3 correctly
 ```
+This guides you through installing Flint in its current state on Macos
+
+**Contents**
+1. Prerequisites
+2. Installation
+
+## Prerequisites
+The following must be installed to build Flint:
+* xcode - preferences/Locations/Command Line tools must not be empty (the default)
+* homebrew - https://brew.sh, update brew if it isn't new with brew update
+* brew install node - get node and npm if you don't have them
+* brew install wget - get wget if you don't have it
+* install swiftenv - here is a script to do this"
+ git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+
