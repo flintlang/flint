@@ -71,14 +71,30 @@ public class EVMTarget: Target {
 public class MoveTarget: Target {
   let config: CompilerConfiguration
   let environment: Environment
+  let sourceContext: SourceContext
 
-  required public init(config: CompilerConfiguration, environment: Environment, sourceContext _: SourceContext) {
+  required public init(config: CompilerConfiguration, environment: Environment, sourceContext: SourceContext) {
     self.config = config
     self.environment = environment
+    self.sourceContext = sourceContext
   }
 
-  public func generate(ast: TopLevelModule) -> String {
-    let generator = MoveGenerator(ast: ast, environment: environment)
+  public func generate(ast: TopLevelModule) throws -> String {
+    // Run final IRPreprocessor pass
+    let irPreprocessOutcome = ASTPassRunner(ast: ast).run(
+        passes: (!config.skipVerifier ? [AssertPreprocessor()] : [])
+            + [PreConditionPreprocessor(checkAllFunctions: config.skipVerifier),
+               IRPreprocessor()],
+        in: environment,
+        sourceContext: sourceContext)
+    if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {
+      if failed {
+        print("ERROR\nFailed to compile for Move Target.")
+        exit(1)
+      }
+      exit(0)
+    }
+    let generator = MoveGenerator(ast: irPreprocessOutcome.element, environment: environment)
     return generator.generateCode()
   }
 }
