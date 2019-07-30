@@ -30,7 +30,7 @@ struct MoveInterface {
     let events = environment.events(in: contract.contractDeclaration.identifier.name)
     let eventDeclarations = events.map { event -> String in
       let parameters = event.declaration.variableDeclarations.map { variable in
-        return "\(CanonicalType(from: variable.type.rawType)!.rawValue) \(variable.identifier.name)"
+        return "\(CanonicalType(from: variable.type.rawType)!) \(variable.identifier.name)"
       }.joined(separator: ",")
 
       return "event \(event.declaration.identifier.name)(\(parameters));"
@@ -72,7 +72,7 @@ struct MoveInterface {
   }
 
   func render(_ functionParameter: Parameter) -> String {
-    let canonicalType = CanonicalType(from: functionParameter.type.rawType)!.rawValue
+    let canonicalType = CanonicalType(from: functionParameter.type.rawType)!
     let mangledName = functionParameter.identifier.name.mangled
     return "\(canonicalType) \(mangledName)"
   }

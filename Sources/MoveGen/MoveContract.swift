@@ -66,8 +66,9 @@ struct MoveContract {
     return #"""
     module \#(contractDeclaration.identifier.name) {
       resource T {
-        \#(initializerBody.indented(by: 2))
       }
+           
+      \#(initializerBody.indented(by: 2))
 
       //////////////////////////////////////
       //// -- // --  Selector  -- // -- ////
@@ -120,10 +121,10 @@ struct MoveContract {
                                             environment: environment,
                                             isContractFunction: true).rendered()
 
-    let parameters = initializerDeclaration.signature.parameters.map { parameter in
+    /* let parameters = initializerDeclaration.signature.parameters.map { parameter in
       let parameterName = parameter.identifier.name.mangled
       return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
-      }.joined(separator: ", ")
+      }.joined(separator: ", ") */
 
     return """
     //////////////////////////////////////

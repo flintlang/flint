@@ -86,15 +86,20 @@ struct MoveFunction {
 
   func signature(withReturn: Bool = true) -> String {
     let doesReturn = functionDeclaration.signature.resultType != nil && withReturn
-    let parametersString = parameterNames.joined(separator: ", ")
-    return "\(name)(\(parametersString)) \(doesReturn ? "-> \(MoveFunction.returnVariableName)" : "")"
+    let parametersString = zip(parameterNames, parameterCanonicalTypes).map { param in
+      let (name, type): (String, CanonicalType) = param
+      return "\(name): \(type)"
+    }.joined(separator: ", ")
+    return "\(name)(\(parametersString)) \(doesReturn ? "-> \(resultCanonicalType!)" : "")"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.
   func mangledSignature() -> String {
     let name = functionDeclaration.identifier.name
-    let parametersString = parameterCanonicalTypes.map({ $0.rawValue }).joined(separator: ",")
-
+    let parametersString = zip(parameterNames, parameterCanonicalTypes).map { param in
+      let (name, type): (String, CanonicalType) = param
+      return "\(name): \(type)"
+    }.joined(separator: ", ")
     return "\(name)(\(parametersString))"
   }
 }
@@ -138,7 +143,7 @@ struct MoveFunctionBody {
     // Assign a caller capaiblity binding to a local variable.
     let callerBindingDeclaration: String
     if let callerBinding = callerBinding {
-      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender()\n"
+      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender();\n"
     } else {
       callerBindingDeclaration = ""
     }
@@ -153,17 +158,9 @@ struct MoveFunctionBody {
     where S.Element == AST.Statement, S.Index == Int {
     guard !statements.isEmpty else { return "" }
     var statements = statements
-    var emitLastBrace = false
     while !statements.isEmpty {
       let statement = statements.removeFirst()
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
-      if case .ifStatement(let ifStatement) = statement, ifStatement.endsWithReturnStatement {
-        functionContext.emit(.inline("default {"))
-        emitLastBrace = true
-      }
-    }
-    if emitLastBrace {
-      functionContext.emit(.inline("}"))
     }
     return functionContext.finalise()
   }

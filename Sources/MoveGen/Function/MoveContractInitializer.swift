@@ -32,6 +32,10 @@ struct MoveContractInitializer {
     }
   }
 
+  var parameterCanonicalTypes: [CanonicalType] {
+    return initializerDeclaration.explicitParameters.map { CanonicalType(from: $0.type.rawType)! }
+  }
+
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     var localVariables = [VariableDeclaration]()
@@ -54,7 +58,10 @@ struct MoveContractInitializer {
       return (nextSize, sizes + [nextSize])
     }.1.reversed(), parameterSizes)*/
 
-    let parameters = initializerDeclaration.explicitParameters.map { String(describing: $0) }.joined(separator: ", ")
+    let parameters = zip(parameterNames, parameterCanonicalTypes).map { param in
+      let (name, type): (String, CanonicalType) = param
+      return "\(name): \(type)"
+    }.joined(separator: ", ")
 
     let body = MoveFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration,
                               typeIdentifier: typeIdentifier,
@@ -64,7 +71,7 @@ struct MoveContractInitializer {
                               isContractFunction: isContractFunction).rendered()
 
     return """
-    fn new(\(parameters)) {
+    new(\(parameters)) {
       \(body.indented(by: 2))
     }
     """

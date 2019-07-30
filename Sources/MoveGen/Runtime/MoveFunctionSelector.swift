@@ -85,7 +85,8 @@ struct MoveFunctionSelector {
       let (index, type) = arg
       switch type {
       case .address: return MoveRuntimeFunction.decodeAsAddress(offset: index)
-      case .uint256, .bytes32: return MoveRuntimeFunction.decodeAsUInt(offset: index)
+      case .u64: return MoveRuntimeFunction.decodeAsUInt(offset: index)
+      default: fatalError("Unimplemented behaviour, in MoveFunctionSelector.swift:89")
       }
     }
     let wrapperPrefix = function.containsAnyCaller ? "" : "\(MoveWrapperFunction.prefixHard)"
@@ -93,9 +94,10 @@ struct MoveFunctionSelector {
 
     if let resultType = function.resultCanonicalType {
       switch resultType {
-      case .address, .uint256, .bytes32:
+      case .address, .u64, .bool:
         return typeStateChecks.description + "\n" + callerProtectionChecks + "\n" +
           MoveRuntimeFunction.return32Bytes(value: call)
+      default: fatalError("Unimplemented behaviour, in MoveFunctionSelector.swift:100")
       }
     }
 
