@@ -133,7 +133,8 @@ enum MoveRuntimeFunction {
                                       arrayOffset, index, .literal(.num(arraySize))))
   }
 
-  static func storageDictionaryOffsetForKey(dictionaryOffset: MoveIR.Expression, key: MoveIR.Expression) -> MoveIR.Expression {
+  static func storageDictionaryOffsetForKey(dictionaryOffset: MoveIR.Expression,
+                                            key: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageDictionaryOffsetForKey.mangled, dictionaryOffset, key))
   }
 

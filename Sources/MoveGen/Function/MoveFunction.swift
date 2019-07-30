@@ -78,7 +78,7 @@ struct MoveFunction {
                               isContractFunction: isContractFunction).rendered()
 
     return """
-    function \(signature()) {
+    \(signature()) {
       \(body.indented(by: 2))
     }
     """

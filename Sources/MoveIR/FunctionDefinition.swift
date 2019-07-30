@@ -27,7 +27,7 @@ public struct FunctionDefinition: CustomStringConvertible {
     var ret = ""
     if !self.returns.isEmpty {
       let retargs = render(typedIdentifiers: self.returns)
-      ret = "-> \(retargs)"
+      ret = ": \(retargs)"
     }
 
     return "\(self.identifier)(\(args)) \(ret) \(self.body)"

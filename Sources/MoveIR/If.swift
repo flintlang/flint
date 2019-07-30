@@ -21,6 +21,6 @@ public struct If: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    return "if \(expression.description) \(self.block)"
+    return "if (\(expression.description)) \(self.block)"
   }
 }

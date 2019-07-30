@@ -19,7 +19,7 @@ public enum Literal: CustomStringConvertible {
     case .string(let s):
       return "\"\(s)\""
     case .bool(let b):
-      return b ? "1" : "0"
+      return String(b)
     case .decimal(let (n1, n2)):
       return "\(n1).\(n2)"
     case .hex(let h):
