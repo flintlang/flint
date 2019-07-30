@@ -49,8 +49,4 @@ public struct Switch: CustomStringConvertible, Throwing {
     }
 
   }
-
-  
-
-
 }

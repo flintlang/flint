@@ -81,7 +81,6 @@ struct MoveContract {
       resource T {
          \#(members)
       }
-           
       \#(initializerBody.indented(by: 2))
 
       //////////////////////////////////////

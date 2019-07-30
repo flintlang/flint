@@ -478,10 +478,9 @@ struct MoveRuntimeFunctionDeclaration {
   // Ensure that a <= b
   static let revertIfGreater =
   """
-  function flint$revertIfGreater(a, b) -> ret {
-    if gt(a, b) { revert(0, 0) }
-
-    ret := a
+  flint$revertIfGreater(a, b) -> u64 {
+    if (a > b) { revert(0, 0); }
+    return a;
   }
   """
 }
