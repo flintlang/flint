@@ -5,14 +5,14 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for a property offset.
 struct MovePropertyOffset {
   var expression: AST.Expression
   var enclosingType: RawType
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if case .binaryExpression(let binaryExpression) = expression {
       return MovePropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
         .rendered(functionContext: functionContext)

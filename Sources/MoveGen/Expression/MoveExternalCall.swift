@@ -6,16 +6,16 @@
 //
 import AST
 import Lexer
-import YUL
+import MoveIR
 
 /// Generates code for an external call.
 struct MoveExternalCall {
   let externalCall: ExternalCall
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     // Hyper-parameter defaults.
-    var gasExpression = YUL.Expression.literal(.num(2300))
-    var valueExpression = YUL.Expression.literal(.num(0))
+    var gasExpression = MoveIR.Expression.literal(.num(2300))
+    var valueExpression = MoveIR.Expression.literal(.num(0))
 
     // Hyper-parameters specified in the external call.
     for parameter in externalCall.hyperParameters {
@@ -56,8 +56,8 @@ struct MoveExternalCall {
     // - function selector (4 bytes of Keccak-256 hash of the signature)
     // - static data
     // - dynamic data
-    var staticSlots: [YUL.Expression] = []
-    var dynamicSlots: [YUL.Expression] = []
+    var staticSlots: [MoveIR.Expression] = []
+    var dynamicSlots: [MoveIR.Expression] = []
 
     // This could be staticSize * 32, but this loop is necessary once
     // we have e.g. fixed-length arrays in external trait types.
@@ -78,9 +78,9 @@ struct MoveExternalCall {
         // String is basic in Flint (in stack memory) but not static in Solidity
         // Flint only supports <32 byte strings, however, because they are in
         // stack, not in memory.
-        staticSlots.append(YUL.Expression.literal(.num(staticSize + dynamicSize)))
+        staticSlots.append(MoveIR.Expression.literal(.num(staticSize + dynamicSize)))
         // TODO: figure out the actual length of the string at runtime (flintrocks issue #133)
-        dynamicSlots.append(YUL.Expression.literal(.num(32)))
+        dynamicSlots.append(MoveIR.Expression.literal(.num(32)))
         dynamicSlots.append(MoveExpression(expression: parameter.expression, asLValue: false)
           .rendered(functionContext: functionContext))
         dynamicSize += 32

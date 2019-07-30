@@ -5,13 +5,13 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import Lexer
-import YUL
+import MoveIR
 
 /// Generates code for a literal token.
 struct MoveLiteralToken {
   var literalToken: Token
 
-  func rendered() -> YUL.Literal {
+  func rendered() -> MoveIR.Literal {
     guard case .literal(let literal) = literalToken.kind else {
       fatalError("Unexpected token \(literalToken.kind).")
     }

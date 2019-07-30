@@ -5,7 +5,7 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for a binary expression.
 struct MoveBinaryExpression {
@@ -17,7 +17,7 @@ struct MoveBinaryExpression {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if case .dot = binaryExpression.opToken {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
         return MoveFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)

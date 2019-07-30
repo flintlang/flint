@@ -5,7 +5,7 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for a property access.
 struct MovePropertyAccess {
@@ -13,7 +13,7 @@ struct MovePropertyAccess {
   var rhs: AST.Expression
   var asLValue: Bool
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
@@ -30,7 +30,7 @@ struct MovePropertyAccess {
       return MoveExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
     }
 
-    let rhsOffset: YUL.Expression
+    let rhsOffset: MoveIR.Expression
     // Special cases.
     switch lhsType {
     case .fixedSizeArrayType(_, let size):
@@ -55,7 +55,7 @@ struct MovePropertyAccess {
       rhsOffset = MovePropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
     }
 
-    let offset: YUL.Expression
+    let offset: MoveIR.Expression
 
     if isInStructFunction {
       let enclosingName: String
@@ -72,7 +72,7 @@ struct MovePropertyAccess {
                                            offset: rhsOffset,
                                            inMemory: Mangler.isMem(for: enclosingName).mangled)
     } else {
-      let lhsOffset: YUL.Expression
+      let lhsOffset: MoveIR.Expression
       if case .identifier(let lhsIdentifier) = lhs {
         if let enclosingType = lhsIdentifier.enclosingType,
             let offset = environment.propertyOffset(for: lhsIdentifier.name, enclosingType: enclosingType) {

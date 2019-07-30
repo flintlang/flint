@@ -8,7 +8,7 @@
 import AST
 import Lexer
 import ABI
-import YUL
+import MoveIR
 
 /// Runtime code in IR which determines which function to call based on the Ethereum's transaction payload.
 struct MoveFunctionSelector {
@@ -105,7 +105,7 @@ struct MoveFunctionSelector {
 
 /// Checks that we are not inside a non-reentrant external call.
 struct MoveReentrancyProtection {
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> MoveIR.Statement {
     let stateVariable: AST.Expression = .identifier(Identifier(name: MoveContract.stateVariablePrefix + enclosingType,
                                                            sourceLocation: .DUMMY))
     let selfState: AST.Expression = .binaryExpression(BinaryExpression(
@@ -128,7 +128,7 @@ struct MoveReentrancyProtection {
 struct MoveTypeStateChecks {
   var typeStates: [TypeState]
 
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> MoveIR.Statement {
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 

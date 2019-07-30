@@ -7,7 +7,7 @@
 
 import AST
 import Lexer
-import YUL
+import MoveIR
 
 /// Generates code for an expression.
 struct MoveExpression {
@@ -19,7 +19,7 @@ struct MoveExpression {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     switch expression {
     case .inoutExpression(let inoutExpression):
       return MoveExpression(expression: inoutExpression.expression, asLValue: true)

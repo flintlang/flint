@@ -6,7 +6,7 @@
 //
 
 import AST
-import YUL
+import MoveIR
 
 /// The runtime functions used by Flint.
 enum MoveRuntimeFunction {
@@ -62,32 +62,32 @@ enum MoveRuntimeFunction {
     return "\(Identifiers.decodeAsUInt.mangled)(\(offset))"
   }
 
-  static func store(address: YUL.Expression, value: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+  static func store(address: MoveIR.Expression, value: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
     return .functionCall(FunctionCall(inMemory ? "mstore" : "sstore", address, value))
   }
 
-  static func store(address: YUL.Expression, value: YUL.Expression, inMemory: String) -> YUL.Expression {
+  static func store(address: MoveIR.Expression, value: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.store.mangled, address, value, .identifier(inMemory)))
   }
 
-  static func addOffset(base: YUL.Expression, offset: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+  static func addOffset(base: MoveIR.Expression, offset: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
     return .functionCall(FunctionCall("add", base,
       inMemory ? .functionCall(FunctionCall("mul", .literal(.num(EVM.wordSize)), offset)) : offset))
   }
 
-  static func addOffset(base: YUL.Expression, offset: YUL.Expression, inMemory: String) -> YUL.Expression {
+  static func addOffset(base: MoveIR.Expression, offset: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.computeOffset.mangled, base, offset, .identifier(inMemory)))
   }
 
-  static func load(address: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+  static func load(address: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
     return .functionCall(FunctionCall(inMemory ? "mload" : "sload", address))
   }
 
-  static func load(address: YUL.Expression, inMemory: String) -> YUL.Expression {
+  static func load(address: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.load.mangled, address, .identifier(inMemory)))
   }
 
-  static func allocateMemory(size: Int) -> YUL.Expression {
+  static func allocateMemory(size: Int) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.allocateMemory.mangled, .literal(.num(size))))
   }
 
@@ -119,7 +119,7 @@ enum MoveRuntimeFunction {
     return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
-  static func storageArrayOffset(arrayOffset: YUL.Expression, index: YUL.Expression) -> YUL.Expression {
+  static func storageArrayOffset(arrayOffset: MoveIR.Expression, index: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageArrayOffset.mangled, arrayOffset, index))
   }
 
@@ -127,21 +127,21 @@ enum MoveRuntimeFunction {
     return "\(Identifiers.storageArraySize.mangled)(\(arrayOffset))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: YUL.Expression,
-                                          index: YUL.Expression, arraySize: Int) -> YUL.Expression {
+  static func storageFixedSizeArrayOffset(arrayOffset: MoveIR.Expression,
+                                          index: MoveIR.Expression, arraySize: Int) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageFixedSizeArrayOffset.mangled,
                                       arrayOffset, index, .literal(.num(arraySize))))
   }
 
-  static func storageDictionaryOffsetForKey(dictionaryOffset: YUL.Expression, key: YUL.Expression) -> YUL.Expression {
+  static func storageDictionaryOffsetForKey(dictionaryOffset: MoveIR.Expression, key: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageDictionaryOffsetForKey.mangled, dictionaryOffset, key))
   }
 
-  static func storageDictionaryKeysArrayOffset(dictionaryOffset: YUL.Expression) -> YUL.Expression {
+  static func storageDictionaryKeysArrayOffset(dictionaryOffset: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageDictionaryKeysArrayOffset.mangled, dictionaryOffset))
   }
 
-  static func storageOffsetForKey(baseOffset: YUL.Expression, key: YUL.Expression) -> YUL.Expression {
+  static func storageOffsetForKey(baseOffset: MoveIR.Expression, key: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.storageOffsetForKey.mangled, baseOffset, key))
   }
 
@@ -149,27 +149,27 @@ enum MoveRuntimeFunction {
     return "\(Identifiers.callvalue)()"
   }
 
-  static func add(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+  static func add(a: MoveIR.Expression, b: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.add.mangled, a, b))
   }
 
-  static func sub(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+  static func sub(a: MoveIR.Expression, b: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.sub.mangled, a, b))
   }
 
-  static func mul(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+  static func mul(a: MoveIR.Expression, b: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.mul.mangled, a, b))
   }
 
-  static func div(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+  static func div(a: MoveIR.Expression, b: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.div.mangled, a, b))
   }
 
-  static func power(b: YUL.Expression, e: YUL.Expression) -> YUL.Expression {
+  static func power(b: MoveIR.Expression, e: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.power.mangled, b, e))
   }
 
-  static func revertIfGreater(value: YUL.Expression, max: YUL.Expression) -> YUL.Expression {
+  static func revertIfGreater(value: MoveIR.Expression, max: MoveIR.Expression) -> MoveIR.Expression {
     return .functionCall(FunctionCall(Identifiers.revertIfGreater.mangled, value, max))
   }
 

@@ -5,7 +5,7 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for a subscript expression.
 struct MoveSubscriptExpression {
@@ -23,13 +23,13 @@ struct MoveSubscriptExpression {
   }
 
   func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int,
-                           functionContext: FunctionContext) -> YUL.Expression {
+                           functionContext: FunctionContext) -> MoveIR.Expression {
     let indexExpressionCode = MoveExpression(expression: subExpr.indexExpression)
       .rendered(functionContext: functionContext)
     let type = functionContext.environment.type(of: subExpr.baseExpression,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
-    let runtimeFunc: (YUL.Expression, YUL.Expression) -> YUL.Expression
+    let runtimeFunc: (MoveIR.Expression, MoveIR.Expression) -> MoveIR.Expression
 
     switch type {
     case .arrayType:
@@ -56,7 +56,7 @@ struct MoveSubscriptExpression {
     }
   }
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     guard let identifier = baseIdentifier(.subscriptExpression(subscriptExpression)),
       let enclosingType = identifier.enclosingType,
       let baseOffset = functionContext.environment.propertyOffset(for: identifier.name,

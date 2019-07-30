@@ -8,13 +8,13 @@
 import AST
 import CryptoSwift
 import Lexer
-import YUL
+import MoveIR
 
 /// Generates code for a statement.
 struct MoveStatement {
   var statement: AST.Statement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     switch statement {
     case .expression(let expression):
       return .expression(MoveExpression(expression: expression, asLValue: false)
@@ -39,7 +39,7 @@ struct MoveStatement {
 struct MoveIfStatement {
   var ifStatement: IfStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     let condition = MoveExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
 
     let functionContext = functionContext
@@ -58,10 +58,10 @@ struct MoveIfStatement {
           functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
         }
       }
-      return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)], default: elseBody))
+      return .switch(Switch(condition, cases: [(MoveIR.Literal.num(1), body)], default: elseBody))
     }
 
-    return .switch(Switch(condition, cases: [(YUL.Literal.num(1), body)]))
+    return .switch(Switch(condition, cases: [(MoveIR.Literal.num(1), body)]))
   }
 }
 
@@ -69,7 +69,7 @@ struct MoveIfStatement {
 struct MoveForStatement {
   var forStatement: ForStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     let functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
 
@@ -87,7 +87,7 @@ struct MoveForStatement {
   func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> ForLoop {
     // Iterating over an array
     let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
-    let offset: YUL.Expression
+    let offset: MoveIR.Expression
     if !isLocal,
       let intOffset = functionContext.environment.propertyOffset(for: iterable.name,
                                                                  enclosingType: functionContext.enclosingTypeName) {
@@ -99,8 +99,8 @@ struct MoveForStatement {
       fatalError("Couldn't find offset for iterable")
     }
 
-    let loadArrLen: YUL.Expression
-    let toAssign: YUL.Expression
+    let loadArrLen: MoveIR.Expression
+    let toAssign: MoveIR.Expression
 
     let type = functionContext.environment.type(of: iterable.name,
                                                 enclosingType: functionContext.enclosingTypeName,
@@ -143,7 +143,7 @@ struct MoveForStatement {
     let \(prefix)arrLen := \(loadArrLen)
     """))
 
-    let condition = YUL.Expression.functionCall(
+    let condition = MoveIR.Expression.functionCall(
       FunctionCall("lt", .identifier("\(prefix)i"), .identifier("\(prefix)arrLen")))
     let step = Block(
       .expression(.assignment(Assignment(["\(prefix)i"],
@@ -243,7 +243,7 @@ struct MoveForStatement {
 struct MoveReturnStatement {
   var returnStatement: ReturnStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     guard let expression = returnStatement.expression else {
       return .inline("")
     }
@@ -257,7 +257,7 @@ struct MoveReturnStatement {
 struct MoveBecomeStatement {
   var becomeStatement: BecomeStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     let sl = becomeStatement.sourceLocation
     let stateVariable: AST.Expression = .identifier(
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
@@ -280,7 +280,7 @@ struct MoveBecomeStatement {
 struct MoveEmitStatement {
   var emitStatement: EmitStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     return .inline(MoveFunctionCall(functionCall: emitStatement.functionCall)
       .rendered(functionContext: functionContext).description)
   }
@@ -289,9 +289,9 @@ struct MoveEmitStatement {
 struct MoveDoCatchStatement {
   var doCatchStatement: DoCatchStatement
 
-  func rendered(functionContext: FunctionContext) -> YUL.Statement {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     functionContext.pushDoCatch(doCatchStatement)
-    let ret: YUL.Statement = .block(functionContext.withNewBlock {
+    let ret: MoveIR.Statement = .block(functionContext.withNewBlock {
       doCatchStatement.doBody.forEach { statement in
         functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
       }

@@ -6,7 +6,7 @@
 //
 import AST
 import Lexer
-import YUL
+import MoveIR
 
 /// Generates code for an identifier.
 struct MoveIdentifier {
@@ -18,7 +18,7 @@ struct MoveIdentifier {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if identifier.enclosingType != nil {
       return MovePropertyAccess(lhs: .self(Token(kind: .self, sourceLocation: identifier.sourceLocation)),
                               rhs: .identifier(identifier),

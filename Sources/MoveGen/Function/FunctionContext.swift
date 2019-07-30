@@ -5,7 +5,7 @@
 //  Created by Franklin Schrans on 27/04/2018.
 //
 
-import YUL
+import MoveIR
 import AST
 
 /// Context used when generating code the body of a function.
@@ -26,7 +26,7 @@ class FunctionContext {
   var doCatchStatementStack: [DoCatchStatement]
 
   /// Stack of code blocks ({ ... })
-  var blockStack: [YUL.Block]
+  var blockStack: [MoveIR.Block]
 
   /// Fresh variable counter.
   private var counter: Int
@@ -45,7 +45,7 @@ class FunctionContext {
     self.counter = 0
   }
 
-  func emit(_ statement: YUL.Statement) {
+  func emit(_ statement: MoveIR.Statement) {
     let catchableSuccesses = statement.catchableSuccesses
     if !catchableSuccesses.isEmpty {
       let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
@@ -68,7 +68,7 @@ class FunctionContext {
     blockStack[blockStack.count - 1].statements.append(statement)
   }
 
-  func withNewBlock(_ inner: () -> Void) -> YUL.Block {
+  func withNewBlock(_ inner: () -> Void) -> MoveIR.Block {
     // The inner() call may cause more blocks to be pushed (see emit above),
     // so here we make sure to pop and emit all the additional blocks before
     // returning this one.
@@ -85,7 +85,7 @@ class FunctionContext {
     return blockStack.count
   }
 
-  func popBlock() -> YUL.Block {
+  func popBlock() -> MoveIR.Block {
     return self.blockStack.popLast()!
   }
 

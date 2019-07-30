@@ -5,13 +5,13 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 // Generates code for an attempt expression
 struct MoveAttemptExpression {
   var attemptExpression: AttemptExpression
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     let functionCall = attemptExpression.functionCall
     let functionName = functionCall.mangledIdentifier ?? functionCall.identifier.name
 
@@ -26,6 +26,6 @@ struct MoveAttemptExpression {
       return MoveExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     })
 
-    return .functionCall(YUL.FunctionCall(callName, args))
+    return .functionCall(MoveIR.FunctionCall(callName, args))
   }
 }

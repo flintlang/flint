@@ -5,13 +5,13 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for a function call.
 struct MoveFunctionCall {
   var functionCall: AST.FunctionCall
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     let environment = functionContext.environment
     let enclosingType: RawTypeIdentifier = functionContext.enclosingTypeName
     let scopeContext: ScopeContext = functionContext.scopeContext
@@ -32,12 +32,12 @@ struct MoveFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
-    let args: [YUL.Expression] = functionCall.arguments.map({ argument in
+    let args: [MoveIR.Expression] = functionCall.arguments.map({ argument in
       return MoveExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
     })
 
     let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
-    return .functionCall(YUL.FunctionCall(identifier, args))
+    return .functionCall(MoveIR.FunctionCall(identifier, args))
   }
 
 }

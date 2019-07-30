@@ -5,14 +5,14 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for an event call.
 struct MoveEventCall {
   var eventCall: AST.FunctionCall
   var eventDeclaration: EventDeclaration
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     let types = eventDeclaration.variableDeclarations.map { $0.type }
 
     var memoryOffset = 0
@@ -29,7 +29,7 @@ struct MoveEventCall {
       }.joined(separator: ",")
 
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)
-    return YUL.Expression.functionCall(FunctionCall("log1", .literal(.num(0)),
+    return MoveIR.Expression.functionCall(FunctionCall("log1", .literal(.num(0)),
                                                             .literal(.num(totalSize)),
                                                             .literal(.hex("0x\(eventHash)"))))
   }

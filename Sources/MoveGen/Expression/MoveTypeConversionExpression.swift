@@ -6,12 +6,12 @@
 //
 
 import AST
-import YUL
+import MoveIR
 
 struct MoveTypeConversionExpression {
   let typeConversionExpression: TypeConversionExpression
 
-  func rendered(functionContext: FunctionContext) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     // Is this an upcast or a downcast?
     let originalType = functionContext.environment.type(
       of: typeConversionExpression.expression,

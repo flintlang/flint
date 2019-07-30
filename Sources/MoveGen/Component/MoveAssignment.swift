@@ -5,14 +5,14 @@
 //  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
-import YUL
+import MoveIR
 
 /// Generates code for an assignment.
 struct MoveAssignment {
   var lhs: AST.Expression
   var rhs: AST.Expression
 
-  func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> YUL.Expression {
+  func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> MoveIR.Expression {
     let rhsIr = MoveExpression(expression: rhs).rendered(functionContext: functionContext)
     let rhsCode = rhsIr.description
 
@@ -23,7 +23,7 @@ struct MoveAssignment {
       if mangledName == rhsCode {
         return .noop
       }
-      return .variableDeclaration(YUL.VariableDeclaration([(mangledName, .any)], rhsIr))
+      return .variableDeclaration(MoveIR.VariableDeclaration([(mangledName, .any)], rhsIr))
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return .assignment(Assignment([identifier.name.mangled], rhsIr))
     default:
