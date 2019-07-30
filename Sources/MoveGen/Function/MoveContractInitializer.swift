@@ -47,20 +47,14 @@ struct MoveContractInitializer {
   }
 
   func rendered() -> String {
-    let parameterSizes = initializerDeclaration.explicitParameters.map { environment.size(of: $0.type.rawType) }
+    /* let parameterSizes = initializerDeclaration.explicitParameters.map { environment.size(of: $0.type.rawType) }
     let offsetsAndSizes = zip(parameterSizes.reversed().reduce((0, [Int]())) { (acc, element) in
       let (size, sizes) = acc
       let nextSize = size + element * EVM.wordSize
       return (nextSize, sizes + [nextSize])
-    }.1.reversed(), parameterSizes)
+    }.1.reversed(), parameterSizes)*/
 
-    let parameterBindings = zip(parameterNames, offsetsAndSizes).map { arg -> String in
-      let (parameter, (offset, size)) = arg
-      return """
-      codecopy(0x0, sub(codesize, \(offset)), \(size * EVM.wordSize))
-      let \(parameter) := mload(0)
-      """
-    }.joined(separator: "\n")
+    let parameters = initializerDeclaration.explicitParameters.map { String(describing: $0) }.joined(separator: ", ")
 
     let body = MoveFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration,
                               typeIdentifier: typeIdentifier,
@@ -70,9 +64,7 @@ struct MoveContractInitializer {
                               isContractFunction: isContractFunction).rendered()
 
     return """
-    init()
-    function init() {
-      \(parameterBindings.indented(by: 2))
+    fn new(\(parameters)) {
       \(body.indented(by: 2))
     }
     """

@@ -84,7 +84,7 @@ public class MoveTarget: Target {
     let irPreprocessOutcome = ASTPassRunner(ast: ast).run(
         passes: (!config.skipVerifier ? [AssertPreprocessor()] : [])
             + [PreConditionPreprocessor(checkAllFunctions: config.skipVerifier),
-               IRPreprocessor()],
+               MovePreprocessor()],
         in: environment,
         sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(irPreprocessOutcome.diagnostics) {

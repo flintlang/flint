@@ -138,7 +138,7 @@ struct MoveFunctionBody {
     // Assign a caller capaiblity binding to a local variable.
     let callerBindingDeclaration: String
     if let callerBinding = callerBinding {
-      callerBindingDeclaration = "let \(callerBinding.name.mangled) := caller()\n"
+      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender()\n"
     } else {
       callerBindingDeclaration = ""
     }

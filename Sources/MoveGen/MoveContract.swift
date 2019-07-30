@@ -63,37 +63,33 @@ struct MoveContract {
     let initializerBody = renderPublicInitializer()
 
     // Main contract body.
-    return """
-    pragma solidity ^0.4.21;
-
-    contract \(contractDeclaration.identifier.name) {
-
-      \(initializerBody.indented(by: 2))
-
-      function () public payable {
-        assembly {
-          // Memory address 0x40 holds the next available memory location.
-          mstore(0x40, 0x60)
-
-          \(selectorCode)
-
-          //////////////////////////////////////
-          //// -- User-defined functions -- ////
-          //////////////////////////////////////
-
-          \(functionsCode)
-
-          //////////////////////////////////////
-          //// --   Wrapper functions    -- ////
-          //////////////////////////////////////
-
-          \(wrapperCode)
-
-          \(renderCommon(indentedBy: 6))
-        }
+    return #"""
+    module \#(contractDeclaration.identifier.name) {
+      resource T {
+        \#(initializerBody.indented(by: 2))
       }
+
+      //////////////////////////////////////
+      //// -- // --  Selector  -- // -- ////
+      //////////////////////////////////////
+
+      \#(selectorCode)
+
+      //////////////////////////////////////
+      //// -- User-defined functions -- ////
+      //////////////////////////////////////
+
+      \#(functionsCode)
+
+      //////////////////////////////////////
+      //// --   Wrapper functions    -- ////
+      //////////////////////////////////////
+
+      \#(wrapperCode)
+
+      \#(renderCommon(indentedBy: 2))
     }
-    """
+    """#
   }
 
   func renderStructFunctions() -> String {
@@ -130,20 +126,17 @@ struct MoveContract {
       }.joined(separator: ", ")
 
     return """
-    constructor(\(parameters)) public {
-      assembly {
-        // Memory address 0x40 holds the next available memory location.
-        mstore(0x40, 0x60)
+    //////////////////////////////////////
+    //// --      Initializer       -- ////
+    //////////////////////////////////////
 
-        //////////////////////////////////////
-        //// --      Initializer       -- ////
-        //////////////////////////////////////
+    \(initializer.indented(by: 0))
 
-        \(initializer.indented(by: 4))
+    //////////////////////////////////////
+    //// -- // ~ // Common // ~ // -- ////
+    //////////////////////////////////////
 
-        \(renderCommon(indentedBy: 4))
-      }
-    }
+    \(renderCommon(indentedBy: 0))
     """
   }
 
