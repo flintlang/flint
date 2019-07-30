@@ -61,11 +61,25 @@ struct MoveContract {
     let selectorCode = functionSelector.rendered().indented(by: 6)
 
     let initializerBody = renderPublicInitializer()
+    let context = FunctionContext(environment: environment,
+                                  scopeContext: ScopeContext(),
+                                  enclosingTypeName: contractDeclaration.identifier.name,
+                                  isInStructFunction: false)
+
+    let members = contractDeclaration.members.compactMap { (member: ContractMember) in
+      switch member {
+      case .variableDeclaration(let declaration):
+        // TODO convert to actual resource declaration special case
+        return MoveVariableDeclaration(variableDeclaration: declaration).rendered(functionContext: context).description
+      default: return nil
+      }
+    }.reduce("", +)
 
     // Main contract body.
     return #"""
     module \#(contractDeclaration.identifier.name) {
       resource T {
+         \#(members)
       }
            
       \#(initializerBody.indented(by: 2))

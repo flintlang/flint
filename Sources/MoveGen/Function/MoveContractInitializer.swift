@@ -63,17 +63,76 @@ struct MoveContractInitializer {
       return "\(name): \(type)"
     }.joined(separator: ", ")
 
-    let body = MoveFunctionBody(functionDeclaration: initializerDeclaration.asFunctionDeclaration,
+    let body = MoveInitializerBody(declaration: initializerDeclaration,
                               typeIdentifier: typeIdentifier,
                               callerBinding: callerBinding,
                               callerProtections: callerProtections,
-                              environment: environment,
-                              isContractFunction: isContractFunction).rendered()
+                              environment: environment).rendered() // We need a separate function body for constructors
 
     return """
-    new(\(parameters)) {
+    new(\(parameters)) -> R#Self.T {
       \(body.indented(by: 2))
     }
     """
   }
 }
+
+struct MoveInitializerBody {
+  var declaration: SpecialDeclaration
+  var typeIdentifier: Identifier
+
+  var callerBinding: Identifier?
+  var callerProtections: [CallerProtection]
+
+  var environment: Environment
+
+  /// The function's parameters and caller caller binding, as variable declarations in a `ScopeContext`.
+  var scopeContext: ScopeContext {
+    return declaration.scopeContext
+  }
+
+  init(declaration: SpecialDeclaration,
+       typeIdentifier: Identifier,
+       callerBinding: Identifier?,
+       callerProtections: [CallerProtection],
+       environment: Environment) {
+    self.declaration = declaration
+    self.typeIdentifier = typeIdentifier
+    self.callerProtections = callerProtections
+    self.callerBinding = callerBinding
+    self.environment = environment
+  }
+
+  func rendered() -> String {
+    let functionContext: FunctionContext = FunctionContext(environment: environment,
+                                                           scopeContext: scopeContext,
+                                                           enclosingTypeName: typeIdentifier.name,
+                                                           isInStructFunction: false)
+
+    // Assign a caller capaiblity binding to a local variable.
+    let callerBindingDeclaration: String
+    if let callerBinding = callerBinding {
+      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender();\n"
+    } else {
+      callerBindingDeclaration = ""
+    }
+
+    let body = renderBody(declaration.body, functionContext: functionContext)
+
+    return "\(callerBindingDeclaration)\(body)"
+  }
+
+  func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
+                                                                          functionContext: FunctionContext) -> String
+      where S.Element == AST.Statement, S.Index == Int {
+    guard !statements.isEmpty else { return "" }
+    var statements = statements
+    while !statements.isEmpty {
+      let statement = statements.removeFirst()
+      functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
+    }
+    return functionContext.finalise()
+  }
+
+}
+
