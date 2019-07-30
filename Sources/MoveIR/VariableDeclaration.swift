@@ -23,6 +23,8 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
     if self.expression == nil {
       return "let \(decls);"
     }
-    return "let \(decls) = \(self.expression!.description); // This is wrong in move, all declarations must be seperate from assignment and be at the top"
+    return "let \(decls) = \(self.expression!.description);"
+     + "// This is wrong in move, all declarations must be seperate "
+     + "from assignment and be at the top"
   }
 }

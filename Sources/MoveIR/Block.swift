@@ -15,8 +15,7 @@ public struct Block: CustomStringConvertible {
   }
 
   public var description: String {
-    let statement_description = statements.map { $0.description }.joined(separator: "\n")
-
+    let statement_description = Statement.renderStatements(statements: self.statements)
     return """
     {
       \(statement_description.indented(by: 2))

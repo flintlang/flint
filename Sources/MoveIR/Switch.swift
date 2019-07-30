@@ -25,6 +25,7 @@ public struct Switch: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
+    /*
     let cases = self.cases.map { (lit, block) in
       return "case \(lit) \(block)"
     }.joined(separator: "\n")
@@ -39,6 +40,17 @@ public struct Switch: CustomStringConvertible, Throwing {
     return """
     switch \(self.expression)
     \(cases)\(`default`)
-    """
+    """*/
+    // This only supports basic switching
+    // TODO add break/fallthrough  
+    return cases.reversed().reduce(self.default?.description ?? "{}") { (innerBlock, _case) in
+      let (lit, block) = _case
+      return "if (\(lit) == \(self.expression)) \(block) else \(innerBlock)"
+    }
+
   }
+
+  
+
+
 }

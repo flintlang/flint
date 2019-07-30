@@ -19,6 +19,12 @@ public struct ForLoop: CustomStringConvertible {
   }
 
   public var description: String {
-    return "for \(initialize) \(condition) \(step) \(body)"
+    var body_step: Block = body
+    body_step.statements.append(contentsOf: step.statements)
+    let initialize_statements = Statement.renderStatements(statements: initialize.statements)
+    return """
+    \(initialize_statements)
+    while \(condition) \(body_step)
+    """
   }
 }
