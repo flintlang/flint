@@ -152,7 +152,7 @@ struct MoveForStatement {
 
     let body = functionContext.withNewBlock {
       functionContext.emit(.expression(
-        .variableDeclaration(VariableDeclaration([(forStatement.variable.identifier.name.mangled, .any)], toAssign))))
+        .variableDeclaration(VariableDeclaration((forStatement.variable.identifier.name.mangled, .any), toAssign))))
       forStatement.body.forEach { statement in
         functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
       }

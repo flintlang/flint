@@ -23,7 +23,8 @@ struct MoveAssignment {
       if mangledName == rhsCode {
         return .noop
       }
-      return .variableDeclaration(MoveIR.VariableDeclaration([(mangledName, .any)], rhsIr))
+      // FIXME any cannot be handled by MoveIR, please change
+      return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, .any), rhsIr))
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return .assignment(Assignment([identifier.name.mangled], rhsIr))
     default:

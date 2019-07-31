@@ -6,11 +6,11 @@
 //
 
 public struct VariableDeclaration: CustomStringConvertible, Throwing {
-  public let declarations: [TypedIdentifier]
+  public let declaration: TypedIdentifier
   public let expression: Expression?
 
-  public init(_ declarations: [TypedIdentifier], _ expression: Expression? = nil) {
-    self.declarations = declarations
+  public init(_ declaration: TypedIdentifier, _ expression: Expression?) {
+    self.declaration = declaration
     self.expression = expression
   }
 
@@ -18,13 +18,18 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
     return expression?.catchableSuccesses ?? []
   }
 
+  public var assignment: Assignment? {
+    return self.expression.map { (expression: Expression) in
+      return Assignment([declaration.0], expression)
+    }
+  }
+
   public var description: String {
-    let decls = render(typedIdentifiers: self.declarations)
     if self.expression == nil {
-      return "let \(decls);"
     }
     // FIXME This is wrong in move, all declarations must be seperate 
     // from assignment and be at the top
-    return "let \(decls) = \(self.expression!.description);"
+    // return "let \(decls) = \(self.expression!.description)"
+    return "let \(render(typedIdentifier: self.declaration))"
   }
 }

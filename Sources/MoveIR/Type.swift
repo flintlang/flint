@@ -5,21 +5,24 @@
 //  Created by Aurel Bílý on 12/26/18.
 //
 
-public enum Type: String, CustomStringConvertible {
+public enum Type: CustomStringConvertible {
   case bool
-  case u8
-  case s8
-  case u32
-  case s32
+  case bytearray
   case u64
-  case s64
-  case u128
-  case s128
-  case u256
-  case s256
+  case address
+  case `struct`(name: String)
+  case resource(name: String)
   case any
 
   public var description: String {
-    return self.rawValue
+    switch self {
+    case .bool: return "bool"
+    case .bytearray: return "bytearray"
+    case .u64: return "u64"
+    case .address: return "address"
+    case .`struct`(let name): return "V#\(name)"
+    case .resource(let name): return "R#\(name)"
+    case .any: return "__UnknownAnyType<PleaseSee:MoveIR/Type.swift>"
+    }
   }
 }

@@ -105,7 +105,7 @@ struct MoveExternalCall {
     let callOutput = functionContext.freshVariable()
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration([(callInput, .any)], MoveRuntimeFunction.allocateMemory(size: inputSize))
+      VariableDeclaration((callInput, .any), MoveRuntimeFunction.allocateMemory(size: inputSize))
     )))
     functionContext.emit(.expression(.functionCall(
       FunctionCall("mstore8", .identifier(callInput), .literal(.hex("0x\(functionSelector[0])")))
@@ -133,14 +133,14 @@ struct MoveExternalCall {
     }
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration([(callOutput, .any)], MoveRuntimeFunction.allocateMemory(size: outputSize))
+      VariableDeclaration((callOutput, .any), MoveRuntimeFunction.allocateMemory(size: outputSize))
     )))
 
     let previousStateVariable = saveTypeState(functionContext)
     enterProtectorTypeState(functionContext)
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration([(callSuccess, .any)], .functionCall(FunctionCall("call",
+      VariableDeclaration((callSuccess, .any), .functionCall(FunctionCall("call",
         gasExpression,
         addressExpression,
         valueExpression,
@@ -181,7 +181,7 @@ struct MoveExternalCall {
       .rendered(functionContext: functionContext)
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration([(savedVariableName, .any)],
+      VariableDeclaration((savedVariableName, .any),
                           .inline(stateVariableRendered.description))
     )))
 

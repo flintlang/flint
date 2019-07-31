@@ -9,7 +9,12 @@ public typealias Identifier = String
 
 public typealias TypedIdentifier = (Identifier, Type)
 
-func render(typedIdentifiers: [TypedIdentifier]) -> String {
+func render(typedIdentifier: TypedIdentifier) -> String {
+  let (ident, type) = typedIdentifier
+  return "\(ident): \(type)"
+}
+
+func render(typedIdentifiers: [TypedIdentifier]) -> String { // TODO remove
   return typedIdentifiers.map({ (ident, type) in
     switch type {
     case .any:
