@@ -71,11 +71,11 @@ def test_contract(contract_path, fail_lines, warning_lines):
         contract_verify_result[contract_path] = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
         if verbose:
             if contract_verify_result[contract_path]:
-                print(f"{contract_path}: ✔ passed")
+                print(f"{contract_path}: passed")
             else:
                 print(f"{contract_path}:\n fail_lines = {fail_lines !r:>23} failed = {failed_verification_lines !r:>20}\n"
                       f" warning_lines = {warning_lines !r:>20} warned = {warning_verification_lines !r:>20}")
-                print("❌ failed\n")
+                print(" failed\n")
     except Exception as e:
         if verbose:
             print(f"Exception on run, assuming contract fail: {e}")
@@ -165,4 +165,4 @@ print("Total: %i" % len(test_contracts))
 if len(failed):
     sys.exit(min(255, len(failed)))  # Error on failures to stop make test passing
 else:
-    print("\nAll verification tests succeeded 🥳")
+    print("\nAll verification tests succeeded")

@@ -969,7 +969,7 @@ extension BoogieTranslator {
                                           subscriptDepth: Int = 0,
                                           localContext: Bool = true,
                                           isBeingAssignedTo: Bool = false
-  ) -> (BExpression, [BStatement], [BStatement]) {
+                                          ) -> (BExpression, [BStatement], [BStatement]) {
     var postAmble = [BStatement]()
     let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
                                                     localContext: localContext,

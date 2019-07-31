@@ -21,14 +21,16 @@ func main() {
       Option<Int>("holistic-max-timeout", default: 86400,
                   description: "Set the max timeout (s) for the holistic verifier"),
       Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
-      Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
-      Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
-      Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
+      Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code"),
+      Flag("verify", flag: "v", description: "Verify expected diagnostics were produced"),
+      Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors"),
       Flag("no-stdlib", description: "Do not load the standard library"),
-      VariadicArgument<String>("input files", description: "The input files to compile.")) {
+      Option<String>("target", default: "evm",
+                     description: "Set the compilation target (evm | move)"),
+      VariadicArgument<String>("input files", description: "The input files to compile")) {
     emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier,
     printHolisticRunStats, maxTransactionDepth, maxHolisticTimeout, skipCodeGen, dumpAST, shouldVerify, quiet,
-    noStdlib, inputFilePaths in
+    noStdlib, target, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -65,7 +67,8 @@ func main() {
           diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
                                       quiet: quiet,
                                       sourceContext: SourceContext(sourceFiles: inputFiles)),
-          loadStdlib: !noStdlib
+          loadStdlib: !noStdlib,
+          target: CompilerTarget.fromString(name: target)
       )
       compilationOutcome = try Compiler.compile(config: compilerConfig)
     } catch let err {

@@ -506,10 +506,6 @@ indirect enum BType: CustomStringConvertible, Hashable {
     }
   }
 
-  /* var hashValue: Int {
-    return self.description.hashValue
-  } */
-
   func hash(into hasher: inout Hasher) {
     hasher.combine(self.description)
   }
