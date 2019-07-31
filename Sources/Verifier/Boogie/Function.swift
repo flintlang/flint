@@ -267,7 +267,6 @@ extension BoogieTranslator {
       assert(argumentsExpressions.count == 3)
       let variableArgument: FunctionArgument = functionCall.arguments[0]
       let typeArgument: FunctionArgument = functionCall.arguments[0]
-      print(variableArgument.expression, typeArgument.expression)
 
       guard case .identifier(let variable) = variableArgument.expression,
             case .identifier(let type) = typeArgument.expression else {
@@ -291,7 +290,6 @@ extension BoogieTranslator {
       assert(argumentsExpressions.count == 3)
       let variableArgument: FunctionArgument = functionCall.arguments[0]
       let typeArgument: FunctionArgument = functionCall.arguments[0]
-      print(variableArgument.expression, typeArgument.expression)
 
       guard case .identifier(let variable) = variableArgument.expression,
             case .identifier(let type) = typeArgument.expression else {
