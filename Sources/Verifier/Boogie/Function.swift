@@ -287,6 +287,30 @@ extension BoogieTranslator {
       return (.quantified(.forall,
                           [BParameterDeclaration(name: variable.name, rawName: variable.name, type: btype)],
                           propertyExpression), [], [])
+    case "exists":
+      assert(argumentsExpressions.count == 3)
+      let variableArgument: FunctionArgument = functionCall.arguments[0]
+      let typeArgument: FunctionArgument = functionCall.arguments[0]
+      print(variableArgument.expression, typeArgument.expression)
+
+      guard case .identifier(let variable) = variableArgument.expression,
+            case .identifier(let type) = typeArgument.expression else {
+        print("exists must be introduced with a typed variable declaration, for some t of type T: `t, T`")
+        fatalError()
+      }
+      self.currentFunctionReturningValue = variable.name
+      self.currentFunctionReturningValueValue = currentFunctionReturningValue.map { name in
+        return .identifier(name)
+      }
+      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression,
+                                               shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+
+      let btype = convertType(
+          AST.Type(identifier: AST.Identifier(name: type.name, sourceLocation: typeArgument.sourceLocation)))
+
+      return (.quantified(.exists,
+                          [BParameterDeclaration(name: variable.name, rawName: variable.name, type: btype)],
+                          propertyExpression), [], [])
     default: break
     }
 
