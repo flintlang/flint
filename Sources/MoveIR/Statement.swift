@@ -51,7 +51,7 @@ public enum Statement: CustomStringConvertible, Throwing {
     case .noop:
       return ""
     case .inline(let s):
-      return s + ";"
+      return s
     }
   }
 

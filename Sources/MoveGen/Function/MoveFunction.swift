@@ -10,6 +10,7 @@ import CryptoSwift
 
 /// Generates code for a function.
 struct MoveFunction {
+  // TODO Check if the returnVariableName field can be removed from the codebase
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
@@ -90,7 +91,7 @@ struct MoveFunction {
       let (name, type): (String, CanonicalType) = param
       return "\(name): \(type)"
     }.joined(separator: ", ")
-    return "\(name)(\(parametersString)) \(doesReturn ? "-> \(resultCanonicalType!)" : "")"
+    return "\(name)(\(parametersString)) \(doesReturn ? ": \(resultCanonicalType!)" : "")"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.

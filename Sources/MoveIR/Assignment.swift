@@ -20,6 +20,6 @@ public struct Assignment: CustomStringConvertible, Throwing {
 
   public var description: String {
     let lhs = self.identifiers.joined(separator: ", ")
-    return "\(lhs) = \(self.expression)"
+    return "\(lhs) = \(self.expression);"
   }
 }

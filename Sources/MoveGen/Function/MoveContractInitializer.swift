@@ -70,7 +70,7 @@ struct MoveContractInitializer {
                               environment: environment).rendered() // We need a separate function body for constructors
 
     return """
-    new(\(parameters)) -> R#Self.T {
+    new(\(parameters)): R#Self.T {
       \(body.indented(by: 2))
     }
     """

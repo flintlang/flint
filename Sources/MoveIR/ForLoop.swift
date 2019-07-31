@@ -24,7 +24,7 @@ public struct ForLoop: CustomStringConvertible {
     let initialize_statements = Statement.renderStatements(statements: initialize.statements)
     return """
     \(initialize_statements)
-    while \(condition) \(body_and_step)
+    while (\(condition)) \(body_and_step)
     """
   }
 }

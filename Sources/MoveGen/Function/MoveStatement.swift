@@ -249,7 +249,7 @@ struct MoveReturnStatement {
     }
 
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
-    return .inline("\(MoveFunction.returnVariableName) := \(renderedExpression.description)")
+    return .inline("return \(renderedExpression.description);")
   }
 }
 

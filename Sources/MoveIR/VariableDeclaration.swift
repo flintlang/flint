@@ -21,10 +21,10 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
   public var description: String {
     let decls = render(typedIdentifiers: self.declarations)
     if self.expression == nil {
-      return "let \(decls)"
+      return "let \(decls);"
     }
     // FIXME This is wrong in move, all declarations must be seperate 
     // from assignment and be at the top
-    return "let \(decls) = \(self.expression!.description)"
+    return "let \(decls) = \(self.expression!.description);"
   }
 }
