@@ -21,7 +21,7 @@ public struct MovePreprocessor: ASTPass {
 
     if case .specialDeclaration(var specialDeclaration) = structMember,
        specialDeclaration.isInit {
-      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
+      // FIXME REMOVED specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
       structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
     }
@@ -145,9 +145,10 @@ public struct MovePreprocessor: ASTPass {
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
-    if specialDeclaration.isInit {
-      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-    }
+    // No longer neccessary since during Verifier coding someone moves this in the main AST
+//    if specialDeclaration.isInit {
+//      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
+//    }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 

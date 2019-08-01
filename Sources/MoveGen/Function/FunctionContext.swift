@@ -28,13 +28,17 @@ class FunctionContext {
   /// Stack of code blocks ({ ... })
   var blockStack: [MoveIR.Block]
 
+  /// Move Constructors are WEIrd
+  var isConstructor: Bool
+
   /// Fresh variable counter.
   private var counter: Int
 
   init(environment: Environment,
        scopeContext: ScopeContext,
        enclosingTypeName: String,
-       isInStructFunction: Bool) {
+       isInStructFunction: Bool = false,
+       isConstructor: Bool = false) {
     self.environment = environment
     self.scopeContext = scopeContext
     self.enclosingTypeName = enclosingTypeName
@@ -43,6 +47,7 @@ class FunctionContext {
     self.doCatchStatementStack = []
     self.blockStack = [Block()]
     self.counter = 0
+    self.isConstructor = isConstructor
   }
 
   func emit(_ statement: MoveIR.Statement) {

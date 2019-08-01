@@ -27,6 +27,7 @@ struct MoveContractInitializer {
                              scopeContext: scopeContext,
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
+//                             isConstructor: true)
     return initializerDeclaration.explicitParameters.map {
         MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
@@ -107,7 +108,7 @@ struct MoveInitializerBody {
     let functionContext: FunctionContext = FunctionContext(environment: environment,
                                                            scopeContext: scopeContext,
                                                            enclosingTypeName: typeIdentifier.name,
-                                                           isInStructFunction: false)
+                                                           isConstructor: true)
 
     // Assign a caller capaiblity binding to a local variable.
     let callerBindingDeclaration: String
@@ -129,6 +130,7 @@ struct MoveInitializerBody {
     var statements = statements
     while !statements.isEmpty {
       let statement = statements.removeFirst()
+      // TODO SOON this is where the attributes are being assigned, but for some reason are not getting the isConstructor property
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
     return functionContext.finalise()

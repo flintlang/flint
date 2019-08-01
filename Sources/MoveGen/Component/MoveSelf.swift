@@ -16,6 +16,6 @@ struct MoveSelf {
       fatalError("Unexpected token \(selfToken.kind)")
     }
     return .identifier("this")
-    //return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
+    // return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
 }
