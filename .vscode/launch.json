@@ -11,7 +11,7 @@
             "args": [
                 "--print-verifier-output",
                 "--verify",
-                "${workspaceFolder}/dictLoop2.flint"],
+            ],
             "env": {
                 "FLINTPATH": "${workspaceFolder}"
             },
