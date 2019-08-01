@@ -1,3 +1,4 @@
+//VERIFY-CHECK
 contract Test {
   var arr: [Int]
   var numWrites: Int = 0
