@@ -56,4 +56,18 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
       return operation.description
     }
   }
+
+  public var kindName: String {
+    switch self {
+    case .functionCall: return "functionCall"
+    case .identifier: return "identifier"
+    case .literal: return "literal"
+    case .operation: return "operation"
+    case .noop: return "noop"
+    case .variableDeclaration: return "variableDeclaration"
+    case .assignment: return "assignment"
+    case .inline: return "inline"
+    case .catchable: return "catchable"
+    }
+  }
 }

@@ -12,10 +12,10 @@ struct MoveSelf {
   var asLValue: Bool
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
-    guard case .self = selfToken.kind else {
+    guard case .`self` = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
-
-    return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
+    return .identifier("this")
+    //return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
 }
