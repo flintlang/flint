@@ -25,7 +25,7 @@ func main() {
       Flag("verify", flag: "v", description: "Verify expected diagnostics were produced"),
       Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors"),
       Flag("no-stdlib", description: "Do not load the standard library"),
-      Option<String>("target", default: "evm",
+      Option<String>("target", default: "move",
                      description: "Set the compilation target (evm | move)"),
       VariadicArgument<String>("input files", description: "The input files to compile")) {
     emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier,

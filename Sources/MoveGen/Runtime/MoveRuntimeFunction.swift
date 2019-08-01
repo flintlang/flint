@@ -63,38 +63,38 @@ enum MoveRuntimeFunction {
   }
 
   static func store(address: MoveIR.Expression, value: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
-    print("WARNING: Manual memory/stack store call generated for `\(value)` [MoveRuntimeFunction.swift:67]")
+    //print("WARNING: Manual memory/stack store call generated for `\(value)` [MoveRuntimeFunction.swift:67]")
     return .functionCall(FunctionCall(inMemory ? "mstore" : "sstore", address, value))
   }
 
   static func store(address: MoveIR.Expression, value: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
-    print("WARNING: Manual named memory/stack store call generated for `\(value)` [MoveRuntimeFunction.swift:72]")
+    //print("WARNING: Manual named memory/stack store call generated for `\(value)` [MoveRuntimeFunction.swift:72]")
     return .functionCall(FunctionCall(Identifiers.store.mangled, address, value, .identifier(inMemory)))
   }
 
   static func addOffset(base: MoveIR.Expression, offset: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
-    print("WARNING: Address offset call generated for `\(base)`, `\(offset)` [MoveRuntimeFunction.swift:77]")
+    //print("WARNING: Address offset call generated for `\(base)`, `\(offset)` [MoveRuntimeFunction.swift:77]")
     return .functionCall(FunctionCall("add", base,
       inMemory ? .functionCall(FunctionCall("mul", .literal(.num(EVM.wordSize)), offset)) : offset))
   }
 
   static func addOffset(base: MoveIR.Expression, offset: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
-    print("WARNING: Address offset call generated for `\(base)`, `\(offset)` [MoveRuntimeFunction.swift:83]")
+    //print("WARNING: Address offset call generated for `\(base)`, `\(offset)` [MoveRuntimeFunction.swift:83]")
     return .functionCall(FunctionCall(Identifiers.computeOffset.mangled, base, offset, .identifier(inMemory)))
   }
 
   static func load(address: MoveIR.Expression, inMemory: Bool) -> MoveIR.Expression {
-    print("WARNING: Manual memory/stack load call generated for `\(address)` [MoveRuntimeFunction.swift:88]")
+    //print("WARNING: Manual memory/stack load call generated for `\(address)` [MoveRuntimeFunction.swift:88]")
     return .functionCall(FunctionCall(inMemory ? "mload" : "sload", address))
   }
 
   static func load(address: MoveIR.Expression, inMemory: String) -> MoveIR.Expression {
-    print("WARNING: Manual named memory/stack load call generated for `\(address)` [MoveRuntimeFunction.swift:93]")
+    //print("WARNING: Manual named memory/stack load call generated for `\(address)` [MoveRuntimeFunction.swift:93]")
     return .functionCall(FunctionCall(Identifiers.load.mangled, address, .identifier(inMemory)))
   }
 
   static func allocateMemory(size: Int) -> MoveIR.Expression {
-    print("WARNING: Manual memory allocation call generated of size `\(size)` [MoveRuntimeFunction.swift:98]")
+    //print("WARNING: Manual memory allocation call generated of size `\(size)` [MoveRuntimeFunction.swift:98]")
     return .functionCall(FunctionCall(Identifiers.allocateMemory.mangled, .literal(.num(size))))
   }
 
