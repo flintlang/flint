@@ -24,6 +24,8 @@ extension BoogieTranslator {
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr,
                                       TranslationInformation(sourceLocation: returnStatement.sourceLocation)))
+        statements.append(.expression(.identifier("return;"),
+                                      TranslationInformation(sourceLocation: returnStatement.sourceLocation)))
         statements += postStatements
       }
       return statements
