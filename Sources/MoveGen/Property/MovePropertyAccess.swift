@@ -29,10 +29,15 @@ struct MovePropertyAccess {
       let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
       return MoveExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
     }
-
-    let rhsOffset: MoveIR.Expression
+    if let rhsId = rhs.enclosingIdentifier {
+      let lhsExpr = MoveExpression(expression: lhs).rendered(functionContext: functionContext)
+      return .operation(.access(lhsExpr, rhsId.name))
+    }
+    print(lhs, rhs, lhsType, rhs.enclosingIdentifier)
+    fatalError()
+    //let rhsOffset: MoveIR.Expression
     // Special cases.
-    switch lhsType {
+    /*switch lhsType {
     case .fixedSizeArrayType(_, let size):
       if case .identifier(let identifier) = rhs, identifier.name == "size" {
         return .literal(.num(size))
@@ -53,8 +58,8 @@ struct MovePropertyAccess {
       }
     default:
       rhsOffset = MovePropertyOffset(expression: rhs, enclosingType: lhsType).rendered(functionContext: functionContext)
-    }
-
+    }*/
+    /*
     let offset: MoveIR.Expression
 
     if isInStructFunction {
@@ -68,9 +73,9 @@ struct MovePropertyAccess {
       }
 
       // For struct parameters, access the property by an offset to _flintSelf (the receiver's address).
-      offset = MoveRuntimeFunction.addOffset(base: .identifier(enclosingName.mangled),
+      /*offset = MoveRuntimeFunction.addOffset(base: .identifier(enclosingName.mangled),
                                            offset: rhsOffset,
-                                           inMemory: Mangler.isMem(for: enclosingName).mangled)
+                                           inMemory: Mangler.isMem(for: enclosingName).mangled)*/
     } else {
       let lhsOffset: MoveIR.Expression
       if case .identifier(let lhsIdentifier) = lhs {
@@ -101,6 +106,6 @@ struct MovePropertyAccess {
                                     inMemory: Mangler.isMem(for: lhsEnclosingIdentifier))
     }
 
-    return MoveRuntimeFunction.load(address: offset, inMemory: isMemoryAccess)
+    return MoveRuntimeFunction.load(address: offset, inMemory: isMemoryAccess)*/
   }
 }

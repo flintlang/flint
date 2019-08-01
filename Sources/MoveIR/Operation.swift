@@ -25,6 +25,7 @@ public enum Operation: CustomStringConvertible {
   case and(MoveIR.Expression, MoveIR.Expression)
   case not(MoveIR.Expression)
   case power(MoveIR.Expression, MoveIR.Expression)
+  case access(MoveIR.Expression, Identifier)
 
   public var description: String {
     switch self {
@@ -44,6 +45,7 @@ public enum Operation: CustomStringConvertible {
     case .and(let left, let right): return "\(left) || \(right)"
     case .not(let expression): return "!\(expression)"
     case .power(let left, let right): return "\(left) ** \(right)"
+    case .access(let object, let field): return "\(object).\(field)"
     }
   }
 }
