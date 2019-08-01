@@ -39,19 +39,19 @@ public enum Statement: CustomStringConvertible, Throwing {
     case .if(let ifs):
       return ifs.description
     case .expression(let e):
-      return e.description
+      return e.description + ";"
     case .switch(let sw):
       return sw.description
     case .`for`(let loop):
       return loop.description
     case .break:
-      return "break"
+      return "break;"
     case .continue:
-      return "continue"
+      return "continue;"
     case .noop:
       return ""
     case .inline(let s):
-      return s
+      return s + ";"
     }
   }
 
