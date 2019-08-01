@@ -7,6 +7,7 @@
 
 import Foundation
 import AST
+import MoveIR
 
 /// A MoveIR type.
 enum CanonicalType: CustomStringConvertible {
@@ -47,7 +48,18 @@ enum CanonicalType: CustomStringConvertible {
     }
   }
 
-  var description: String {
+  public var irType: MoveIR.`Type` {
+    switch self {
+    case .address: return .address
+    case .u64: return .u64
+    case .bool: return .bool
+    case .bytearray: return .bytearray
+    case .`struct`(let name): return .`struct`(name: name)
+    case .resource(let name): return .resource(name: name)
+    }
+  }
+
+  public var description: String {
     switch self {
     case .address: return "address"
     case .u64: return "u64"

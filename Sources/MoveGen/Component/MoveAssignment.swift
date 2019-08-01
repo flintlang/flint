@@ -15,6 +15,7 @@ struct MoveAssignment {
   func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> MoveIR.Expression {
     let rhsIr = MoveExpression(expression: rhs).rendered(functionContext: functionContext)
     let rhsCode = rhsIr.description
+    print(functionContext, rhsIr, rhs, lhs) // DEBUG RIDMEPLS
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):
@@ -23,8 +24,9 @@ struct MoveAssignment {
       if mangledName == rhsCode {
         return .noop
       }
+      let typeIR: MoveIR.`Type` = CanonicalType(from: variableDeclaration.type.rawType)!.irType
       // FIXME any cannot be handled by MoveIR, please change
-      return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, .any), rhsIr))
+      return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, typeIR), rhsIr))
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return .assignment(Assignment(identifier.name.mangled, rhsIr))
     default:
@@ -40,9 +42,7 @@ struct MoveAssignment {
         } else {
           enclosingName = "flintSelf"
         }
-//        return MoveRuntimeFunction.store(address: lhsIr,
-//                                       value: rhsIr,
-//                                       inMemory: Mangler.isMem(for: enclosingName).mangled)
+//        return MoveRuntimeFunction.store(address: lhsIr, d)
         return .assignment(Assignment(lhsIr.description, rhsIr))
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {

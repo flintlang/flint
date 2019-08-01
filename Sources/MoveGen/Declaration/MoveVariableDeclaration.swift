@@ -14,18 +14,11 @@ struct MoveVariableDeclaration {
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
 //    let allocate = MoveRuntimeFunction.allocateMemory(
 //      size: functionContext.environment.size(of: variableDeclaration.type.rawType) * EVM.wordSize)
-    let typeIR: MoveIR.`Type`
-    switch CanonicalType(from: variableDeclaration.type.rawType)! {
-    case .address: typeIR = .address
-    case .u64: typeIR = .u64
-    case .bool: typeIR = .bool
-    case .bytearray: typeIR = .bytearray
-    case .`struct`(let name): typeIR = .`struct`(name: name)
-    case .resource(let name): typeIR = .resource(name: name)
-    }
+    let typeIR: MoveIR.`Type`? = CanonicalType(from: variableDeclaration.type.rawType)?.irType
+
     return .variableDeclaration(MoveIR.VariableDeclaration(
         // FIXME convert Expression (AST) to Expression (MoveIR)
-        (variableDeclaration.identifier.name, typeIR),
+        (variableDeclaration.identifier.name, typeIR!),
         variableDeclaration.assignedExpression.map { expr in
           MoveExpression(expression: expr).rendered(functionContext: functionContext)
         }

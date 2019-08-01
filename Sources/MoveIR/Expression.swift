@@ -14,6 +14,7 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
   // TODO: these three should really be statements
   case variableDeclaration(VariableDeclaration)
   case assignment(Assignment)
+  case operation(Operation)
   case noop
 
   case inline(String)
@@ -51,6 +52,8 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
       return ""
     case .inline(let s):
       return s
+    case .operation(let operation):
+      return operation.description
     }
   }
 }
