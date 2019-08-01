@@ -33,7 +33,6 @@ struct MovePropertyAccess {
       let lhsExpr = MoveExpression(expression: lhs).rendered(functionContext: functionContext)
       return .operation(.access(lhsExpr, rhsId.name))
     }
-    print(lhs, rhs, lhsType, rhs.enclosingIdentifier)
     fatalError()
   }
 }

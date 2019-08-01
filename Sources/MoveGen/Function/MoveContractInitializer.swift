@@ -130,7 +130,8 @@ struct MoveInitializerBody {
     var statements = statements
     while !statements.isEmpty {
       let statement = statements.removeFirst()
-      // TODO SOON this is where the attributes are being assigned, but for some reason are not getting the isConstructor property
+      // TODO SOON this is where the attributes are being assigned,
+      // but for some reason are not getting the isConstructor property
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
     return functionContext.finalise()
