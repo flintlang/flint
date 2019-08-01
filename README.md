@@ -161,7 +161,6 @@ docker run -i -t franklinsch/flint
 
 Example smart contracts are available in `flint/examples/valid/`.
 
-Instructions for installing using a binary package or from source are available [here](https://docs.flintlang.org/installation).
 
 ## Contributing
 
