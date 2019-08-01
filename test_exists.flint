@@ -1,0 +1,22 @@
+contract Test {
+  var arr: [Int]
+  var numWrites: Int = 0
+
+  invariant (arr.size == numWrites)
+}
+
+Test :: caller <- (any) {
+  public init()
+  {
+    self.arr = []
+  }
+
+  func add(a: Int)
+  mutates (arr, numWrites)
+  post (numWrites == prev(numWrites) + 1)
+  post (exists (i, Int, arr[i] == a))
+  {
+    arr[arr.size] = a
+    numWrites += 1
+  }
+}
