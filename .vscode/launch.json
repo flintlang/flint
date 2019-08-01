@@ -8,10 +8,9 @@
             "request": "launch",
             "name": "Run your Executable",
             "program": "${workspaceFolder}/.build/debug/flintc",
-            "args": [
-                "--print-verifier-output",
-                "--verify",
-                "${workspaceFolder}/dictLoop2.flint"],
+            "args": [,
+                "--skip-verifier",
+                "${workspaceFolder}/Tests/Integration/BehaviorTests/tests/loop/loop.flint"],
             "env": {
                 "FLINTPATH": "${workspaceFolder}"
             },

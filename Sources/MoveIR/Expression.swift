@@ -14,9 +14,9 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
   // TODO: these three should really be statements
   case variableDeclaration(VariableDeclaration)
   case assignment(Assignment)
-  case operation(Operation)
   case noop
 
+  case operation(Operation)
   case inline(String)
 
   public var catchableSuccesses: [Expression] {

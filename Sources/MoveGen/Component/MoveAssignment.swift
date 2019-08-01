@@ -15,7 +15,6 @@ struct MoveAssignment {
   func rendered(functionContext: FunctionContext, asTypeProperty: Bool = false) -> MoveIR.Expression {
     let rhsIr = MoveExpression(expression: rhs).rendered(functionContext: functionContext)
     let rhsCode = rhsIr.description
-    print(functionContext, rhsIr, rhs, lhs) // DEBUG RIDMEPLS
 
     switch lhs {
     case .variableDeclaration(let variableDeclaration):

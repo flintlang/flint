@@ -25,8 +25,6 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    if self.expression == nil {
-    }
     // FIXME This is wrong in move, all declarations must be seperate 
     // from assignment and be at the top
     // return "let \(decls) = \(self.expression!.description)"
