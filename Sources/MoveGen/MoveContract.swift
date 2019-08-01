@@ -73,7 +73,7 @@ struct MoveContract {
         return MoveVariableDeclaration(variableDeclaration: declaration).rendered(functionContext: context).description
       default: return nil
       }
-    }.reduce("", +)
+    }.joined(separator: ",\n")
 
     // Main contract body.
     return #"""

@@ -146,7 +146,7 @@ struct MoveForStatement {
     let condition = MoveIR.Expression.functionCall(
       FunctionCall("lt", .identifier("\(prefix)i"), .identifier("\(prefix)arrLen")))
     let step = Block(
-      .expression(.assignment(Assignment(["\(prefix)i"],
+      .expression(.assignment(Assignment("\(prefix)i",
         .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))))
     )
 

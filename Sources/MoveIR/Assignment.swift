@@ -6,11 +6,11 @@
 //
 
 public struct Assignment: CustomStringConvertible, Throwing {
-  public let identifiers: [Identifier]
+  public let identifier: Identifier
   public let expression: Expression
 
-  public init(_ identifiers: [Identifier], _ expression: Expression) {
-    self.identifiers = identifiers
+  public init(_ identifier: Identifier, _ expression: Expression) {
+    self.identifier = identifier
     self.expression = expression
   }
 
@@ -19,7 +19,6 @@ public struct Assignment: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    let lhs = self.identifiers.joined(separator: ", ")
-    return "\(lhs) = \(self.expression);"
+    return "\(self.identifier) = \(self.expression)"
   }
 }

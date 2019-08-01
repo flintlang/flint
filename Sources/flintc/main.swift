@@ -48,6 +48,7 @@ func main() {
       exitWithDirectoryNotCreatedDiagnostic(outputDirectory: outputDirectory)
     }
 
+    let compilerTarget = CompilerTarget.fromString(name: target)
     let compilationOutcome: CompilationOutcome
     do {
       let compilerConfig = CompilerConfiguration(
@@ -68,7 +69,7 @@ func main() {
                                       quiet: quiet,
                                       sourceContext: SourceContext(sourceFiles: inputFiles)),
           loadStdlib: !noStdlib,
-          target: CompilerTarget.fromString(name: target)
+          target: compilerTarget
       )
       compilationOutcome = try Compiler.compile(config: compilerConfig)
     } catch let err {
@@ -82,7 +83,7 @@ func main() {
     }
 
     if emitIR {
-      let fileName = "main.sol"
+      let fileName = "main." + compilerTarget.fileType
       let irFileURL: URL
       if irOutputPath.isEmpty {
         irFileURL = outputDirectory.appendingPathComponent(fileName)

@@ -26,7 +26,7 @@ struct MoveAssignment {
       // FIXME any cannot be handled by MoveIR, please change
       return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, .any), rhsIr))
     case .identifier(let identifier) where identifier.enclosingType == nil:
-      return .assignment(Assignment([identifier.name.mangled], rhsIr))
+      return .assignment(Assignment(identifier.name.mangled, rhsIr))
     default:
       // LHS refers to a property in storage or memory.
       let lhsIr = MoveExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
@@ -40,14 +40,16 @@ struct MoveAssignment {
         } else {
           enclosingName = "flintSelf"
         }
-        return MoveRuntimeFunction.store(address: lhsIr,
-                                       value: rhsIr,
-                                       inMemory: Mangler.isMem(for: enclosingName).mangled)
+//        return MoveRuntimeFunction.store(address: lhsIr,
+//                                       value: rhsIr,
+//                                       inMemory: Mangler.isMem(for: enclosingName).mangled)
+        return .assignment(Assignment(lhsIr.description, rhsIr))
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        return MoveRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: true)
+        //return MoveRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: true)
+        return .assignment(Assignment(enclosingIdentifier.name, rhsIr))
       } else {
-        return MoveRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: false)
+        return .assignment(Assignment(lhsIr.description, rhsIr))
       }
     }
   }

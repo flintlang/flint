@@ -24,7 +24,11 @@ struct MoveVariableDeclaration {
     case .resource(let name): typeIR = .resource(name: name)
     }
     return .variableDeclaration(MoveIR.VariableDeclaration(
+        // FIXME convert Expression (AST) to Expression (MoveIR)
         (variableDeclaration.identifier.name, typeIR),
-        nil)) // FIXME convert Expression (AST) to Expression (MoveIR)
+        variableDeclaration.assignedExpression.map { expr in
+          MoveExpression(expression: expr).rendered(functionContext: functionContext)
+        }
+    ))
   }
 }

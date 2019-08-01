@@ -20,7 +20,7 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
 
   public var assignment: Assignment? {
     return self.expression.map { (expression: Expression) in
-      return Assignment([declaration.0], expression)
+      return Assignment(declaration.0, expression)
     }
   }
 

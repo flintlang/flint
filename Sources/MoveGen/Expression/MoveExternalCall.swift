@@ -154,7 +154,7 @@ struct MoveExternalCall {
     restoreTypeState(functionContext, savedVariableName: previousStateVariable)
 
     functionContext.emit(.expression(.assignment(
-      Assignment([callOutput], .functionCall(FunctionCall("mload", .identifier(callOutput))))
+      Assignment(callOutput, .functionCall(FunctionCall("mload", .identifier(callOutput))))
     )))
 
     switch externalCall.mode {

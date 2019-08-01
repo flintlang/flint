@@ -665,7 +665,10 @@ public enum CompilerTarget {
   public static func fromString(name: String) -> CompilerTarget {
     switch name {
     case "move":  return move
-    default:      return evm
+    case "evm":   return evm
+    default:
+      print("Unrecognised target, defaulting to `evm`")
+      return evm
     }
   }
 
@@ -673,6 +676,13 @@ public enum CompilerTarget {
     switch self {
     case .evm: return EVMTarget.self
     case .move: return MoveTarget.self
+    }
+  }
+
+  public var fileType: String {
+    switch self {
+    case .evm: return "sol"
+    case .move: return "mvir"
     }
   }
 }
