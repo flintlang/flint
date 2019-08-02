@@ -1,9 +1,12 @@
 contract Counter {
   var value: Int = 10
+  var backup: Int = 0
 }
 
 Counter :: (any) {
-  public init() {}
+  public init() {
+    backup = 10
+  }
 
   public func getValue() -> Int {
     return value

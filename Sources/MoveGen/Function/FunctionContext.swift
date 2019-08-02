@@ -9,7 +9,7 @@ import MoveIR
 import AST
 
 /// Context used when generating code the body of a function.
-class FunctionContext {
+class FunctionContext: CustomStringConvertible {
   /// Environment information, such as typing of variables, for the source program.
   var environment: Environment
 
@@ -57,8 +57,8 @@ class FunctionContext {
         .functionCall(FunctionCall("and", acc, success))
       })
       let allSucceededVariable = freshVariable()
-      emit(.inline("let \(allSucceededVariable) := \(allSucceeded.description)"))
-      emit(.inline("switch \(allSucceededVariable)"))
+      emit(.inline("let \(allSucceededVariable) = \(allSucceeded.description);"))
+      emit(.inline("functionContextSwitch \(allSucceededVariable)"))
       emit(.inline("case 0"))
       emit(.block(withNewBlock {
         topDoCatch!.catchBody.forEach { statement in
@@ -116,5 +116,21 @@ class FunctionContext {
 
   var topDoCatch: DoCatchStatement? {
     return doCatchStatementStack.last
+  }
+
+  public var description: String {
+    return
+        """
+        FunctionContext {
+          environment: \(environment)
+          scopeContext: \(scopeContext)
+          enclosingTypeName: \(enclosingTypeName)
+          isInStructFunction: \(isInStructFunction)
+          doCatchStatementStack: \(doCatchStatementStack)
+          blockStack: \(blockStack)
+          isConstructor: \(isConstructor)
+          counter: \(counter)
+        }
+        """
   }
 }

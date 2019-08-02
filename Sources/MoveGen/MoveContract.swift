@@ -132,7 +132,8 @@ struct MoveContract {
                                             callerBinding: callerBinding,
                                             callerProtections: callerProtections,
                                             environment: environment,
-                                            isContractFunction: true).rendered()
+                                            isContractFunction: true,
+                                            contract: self).rendered()
 
     /* let parameters = initializerDeclaration.signature.parameters.map { parameter in
       let parameterName = parameter.identifier.name.mangled

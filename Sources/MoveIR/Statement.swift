@@ -56,6 +56,6 @@ public enum Statement: CustomStringConvertible, Throwing {
   }
 
   static public func renderStatements(statements: [Statement]) -> String {
-    return statements.map { $0.description }.joined(separator: "\n")
+    return statements.map { $0.description }.joined(separator: ";\n")
   }
 }

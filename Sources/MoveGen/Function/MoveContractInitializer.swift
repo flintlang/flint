@@ -6,21 +6,24 @@
 //
 
 import AST
+import MoveIR
 
 /// Generates code for a contract initializer.
 struct MoveContractInitializer {
   var initializerDeclaration: SpecialDeclaration
-  var typeIdentifier: Identifier
+  var typeIdentifier: AST.Identifier
 
   /// The properties defined in the enclosing type. The default values of each property will be set in the initializer.
-  var propertiesInEnclosingType: [VariableDeclaration]
+  var propertiesInEnclosingType: [AST.VariableDeclaration]
 
-  var callerBinding: Identifier?
+  var callerBinding: AST.Identifier?
   var callerProtections: [CallerProtection]
 
   var environment: Environment
 
   var isContractFunction = false
+
+  var contract: MoveContract
 
   var parameterNames: [String] {
     let fc = FunctionContext(environment: environment,
@@ -39,7 +42,7 @@ struct MoveContractInitializer {
 
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
-    var localVariables = [VariableDeclaration]()
+    var localVariables = [AST.VariableDeclaration]()
     if let callerBinding = callerBinding {
       let variableDeclaration = VariableDeclaration(modifiers: [],
                                                     declarationToken: nil,
@@ -64,11 +67,14 @@ struct MoveContractInitializer {
       return "\(name): \(type)"
     }.joined(separator: ", ")
 
-    let body = MoveInitializerBody(declaration: initializerDeclaration,
-                              typeIdentifier: typeIdentifier,
-                              callerBinding: callerBinding,
-                              callerProtections: callerProtections,
-                              environment: environment).rendered() // We need a separate function body for constructors
+    let body = MoveInitializerBody(
+        declaration: initializerDeclaration,
+        typeIdentifier: typeIdentifier,
+        callerBinding: callerBinding,
+        callerProtections: callerProtections,
+        environment: environment,
+        properties: contract.contractDeclaration.variableDeclarations
+    ).rendered()
 
     return """
     new(\(parameters)): R#Self.T {
@@ -80,12 +86,13 @@ struct MoveContractInitializer {
 
 struct MoveInitializerBody {
   var declaration: SpecialDeclaration
-  var typeIdentifier: Identifier
+  var typeIdentifier: AST.Identifier
 
-  var callerBinding: Identifier?
+  var callerBinding: AST.Identifier?
   var callerProtections: [CallerProtection]
 
   var environment: Environment
+  let properties: [AST.VariableDeclaration]
 
   /// The function's parameters and caller caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
@@ -93,15 +100,17 @@ struct MoveInitializerBody {
   }
 
   init(declaration: SpecialDeclaration,
-       typeIdentifier: Identifier,
-       callerBinding: Identifier?,
+       typeIdentifier: AST.Identifier,
+       callerBinding: AST.Identifier?,
        callerProtections: [CallerProtection],
-       environment: Environment) {
+       environment: Environment,
+       properties: [AST.VariableDeclaration]) {
     self.declaration = declaration
     self.typeIdentifier = typeIdentifier
     self.callerProtections = callerProtections
     self.callerBinding = callerBinding
     self.environment = environment
+    self.properties = properties
   }
 
   func rendered() -> String {
@@ -113,7 +122,7 @@ struct MoveInitializerBody {
     // Assign a caller capaiblity binding to a local variable.
     let callerBindingDeclaration: String
     if let callerBinding = callerBinding {
-      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender();\n"
+      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender()\(Move.statementLineSeparator)"
     } else {
       callerBindingDeclaration = ""
     }
@@ -127,11 +136,26 @@ struct MoveInitializerBody {
                                                                           functionContext: FunctionContext) -> String
       where S.Element == AST.Statement, S.Index == Int {
     guard !statements.isEmpty else { return "" }
+    var properties = self.properties
     var statements = statements
+
+    while !properties.isEmpty {
+      let property: AST.VariableDeclaration = properties.removeFirst()
+//      print("\(#file):\(#line)", functionContext) RIDMEPLS
+//      let declaration = MoveIdentifier(identifier: rhsId).rendered(functionContext: functionContext)
+      functionContext.emit(.expression(.variableDeclaration(
+          MoveIR.VariableDeclaration((
+              property.identifier.name.mangled,
+              CanonicalType(from: property.type.rawType)!.irType
+          ), nil)
+      )))
+
+//          statement: .expression(.variableDeclaration(property))
+//      ).rendered(functionContext: functionContext))
+    }
+
     while !statements.isEmpty {
       let statement = statements.removeFirst()
-      // TODO SOON this is where the attributes are being assigned,
-      // but for some reason are not getting the isConstructor property
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
     return functionContext.finalise()
