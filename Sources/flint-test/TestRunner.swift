@@ -47,7 +47,6 @@ struct TestRunner {
     let pathToFlintContract = jsTestSuite.getFilePathToFlintContract()
 
     let inputFiles = [URL(fileURLWithPath: pathToFlintContract)]
-    //let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner")
     let outputDirectory = Path.getFullUrl(path: "utils/testRunner")
     let contract_sourceCode = try String(contentsOf: inputFiles[0])
 
