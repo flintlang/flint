@@ -30,6 +30,9 @@ struct MovePropertyAccess {
       return MoveExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
     }
     if let rhsId = rhs.enclosingIdentifier {
+      if functionContext.isConstructor {
+        return MoveIdentifier(identifier: rhsId).rendered(functionContext: functionContext)
+      }
       let lhsExpr = MoveExpression(expression: lhs).rendered(functionContext: functionContext)
       return .operation(.access(lhsExpr, rhsId.name))
     }

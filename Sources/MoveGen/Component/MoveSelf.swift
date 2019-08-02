@@ -15,6 +15,9 @@ struct MoveSelf {
     guard case .`self` = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
+    guard !functionContext.isConstructor else {
+      return .identifier("__ERROR_CONSTRUCTOR_SELF_REFERENCE")
+    }
     return .identifier("this")
     // return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
