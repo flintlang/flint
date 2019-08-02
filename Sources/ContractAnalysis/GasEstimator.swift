@@ -173,7 +173,7 @@ public class GasEstimator {
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/gasEstimator")
     p.arguments = ["node", "test.js"]
     p.standardOutput = pipe
