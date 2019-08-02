@@ -38,6 +38,46 @@ struct trait Asset {
   func getRawValue() -> Int
 }
 
+
+
+//// Concept stage
+//external trait LibraCoin {
+//  zero() -> R#LibraCoin.T
+//  value(coin_ref: &R#LibraCoin.T) -> u64
+//}
+//
+//external trait LibraAccount {
+//  deposit(payee: address, to_deposit: R#LibraCoin.T)
+//}
+//
+//// Transfer not implemnted
+//struct Libra: Asset {
+//  let coin: R#LibraCoin.T
+//
+//  init(unsafeRawValue: Int) {
+//    if unsafeRawValue != 0 {
+//      fatalError()
+//    }
+//    self.coin = call! LibraCoin.zero()
+//  }
+//
+//  init(source: inout Libra, amount: Int) {
+//    transfer(source: &source, amount: amount)
+//  }
+//
+//  init(source: inout Libra) {
+//    transfer(source: &source)
+//  }
+//
+//  func getRawValue() -> Int {
+//    return (call! LibraCoin.value(&coin)) as! Int
+//  }
+//
+//  func setRawValue() -> Int {
+//    return getRawValue()
+//  }
+//}
+
 struct Wei: Asset {
   var rawValue: Int = 0
 

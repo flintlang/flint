@@ -1,0 +1,964 @@
+module Loop {
+  resource T {
+     let owner: address,
+let arr: u64,
+let arr2: u64,
+let arr3: u64,
+let nested: u64,
+let dict: u64,
+let numWrites: u64
+  }
+  //////////////////////////////////////
+  //// --      Initializer       -- ////
+  //////////////////////////////////////
+  
+  new(): R#Self.T {
+    let _caller = get_txn_sender();
+    _arr = 0;
+    _arr2 = 0;
+    _arr3 = 0;
+    _nested = 0;
+    _dict = 0;
+    _numWrites = 0;
+    _owner = _caller;
+  }
+  
+  //////////////////////////////////////
+  //// -- // ~ // Common // ~ // -- ////
+  //////////////////////////////////////
+  
+  //////////////////////////////////////
+  //// --    Struct functions    -- ////
+  //////////////////////////////////////
+  
+  //// Flint$Global::Global.flint@2:1:19  ////
+  
+  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei, _value$isMem: bool) {
+    let w: R#Wei
+    Wei$init$$inoutWei(_w, true, _value, _value$isMem);
+    flint$send(Wei$getRawValue(_w, true), _address);
+  }
+  
+  Flint$Global$fatalError() {
+    flint$fatalError();
+  }
+  
+  Flint$Global$assert$Bool(_condition: bool) {
+    if (1 == _condition == false) {
+      Flint$Global$fatalError();
+    } else {}
+  }
+  
+  //// Wei::Asset.flint@81:1:10  ////
+  
+  Wei$init$Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _unsafeRawValue: u64) {
+    this.rawValue = 0;
+    if (1 == _unsafeRawValue != 0) {
+      Flint$Global$fatalError();
+    } else {}
+    this.rawValue = _unsafeRawValue;
+  }
+  
+  Wei$init$Bool_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
+    this.rawValue = 0;
+    if (1 == _youAreTheCompiler == false) {
+      Flint$Global$fatalError();
+    } else {}
+    this.rawValue = _unsafeRawValue;
+  }
+  
+  Wei$init$$inoutWei_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+    this.rawValue = 0;
+    Wei$transfer$$inoutWei_Int(this, _flintSelf$isMem, _source, _source$isMem, _amount);
+  }
+  
+  Wei$init$$inoutWei(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+    this.rawValue = 0;
+    Wei$transfer$$inoutWei(this, _flintSelf$isMem, _source, _source$isMem);
+  }
+  
+  Wei$setRawValue$Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _value: u64): u64 {
+    this.rawValue = _value;
+    return this.rawValue;
+  }
+  
+  Wei$getRawValue(_flintSelf: R#Wei, _flintSelf$isMem: bool): u64 {
+    return this.rawValue;
+  }
+  
+  Wei$transfer$$inoutWei_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+    if (1 == Wei$getRawValue(_source, _source$isMem) < _amount) {
+      Flint$Global$fatalError();
+    } else {}
+    let _unused1: u64;
+    let _unused2: u64;
+  }
+  
+  Wei$transfer$$inoutWei(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+    Wei$transfer$$inoutWei_Int(this, _flintSelf$isMem, _source, _source$isMem, Wei$getRawValue(_source, _source$isMem));
+  }
+  
+  
+  //////////////////////////////////////
+  //// --     Flint Runtime      -- ////
+  //////////////////////////////////////
+  
+  function flint$selector() -> ret {
+    ret := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+  }
+  
+  function flint$decodeAsAddress(offset) -> ret {
+    ret := flint$decodeAsUInt(offset)
+  }
+  
+  function flint$decodeAsUInt(offset) -> ret {
+    ret := calldataload(add(4, mul(offset, 0x20)))
+  }
+  
+  function flint$store(ptr, val, mem) {
+    switch iszero(mem)
+    case 0 {
+      mstore(ptr, val)
+    }
+    default {
+      sstore(ptr, val)
+    }
+  }
+  
+  function flint$load(ptr, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := mload(ptr)
+    }
+    default {
+      ret := sload(ptr)
+    }
+  }
+  
+  function flint$computeOffset(base, offset, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := add(base, mul(offset, 32))
+    }
+    default {
+      ret := add(base, offset)
+    }
+  }
+  
+  function flint$allocateMemory(size) -> ret {
+    ret := mload(0x40)
+    mstore(0x40, add(ret, size))
+  }
+  
+  function flint$checkNoValue(_value) {
+    if iszero(iszero(_value)) {
+      flint$fatalError()
+    }
+  }
+  
+  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
+    ret := eq(_stateVariable, _state)
+  }
+  
+  function flint$isValidCallerProtection(_address) -> ret {
+    ret := eq(_address, caller())
+  }
+  
+  function flint$isCallerProtectionInArray(arrayOffset) -> ret {
+    let size := sload(arrayOffset)
+    let found := 0
+    let _caller := caller()
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
+      if eq(sload(flint$storageOffsetForKey(arrayOffset, i)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  
+  function flint$isCallerProtectionInDictionary(dictionaryOffset) -> ret {
+    let size := sload(dictionaryOffset)
+    let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+    let found := 0
+    let _caller := caller()
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, i) } {
+      let key := sload(flint$storageOffsetForKey(arrayOffset, i))
+      if eq(sload(flint$storageOffsetForKey(dictionaryOffset, key)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  
+  function flint$return32Bytes(v) {
+    mstore(0, v)
+    return(0, 0x20)
+  }
+  
+  function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
+    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, flint$sub(arraySize, 1))))
+  }
+  
+  function flint$storageArrayOffset(arrayOffset, index) -> ret {
+    let arraySize := sload(arrayOffset)
+  
+    switch eq(arraySize, index)
+    case 0 {
+      if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    }
+    default {
+      sstore(arrayOffset, flint$add(arraySize, 1))
+    }
+  
+    ret := flint$storageOffsetForKey(arrayOffset, index)
+  }
+  
+  function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
+    if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    ret := flint$add(arrayOffset, index)
+  }
+  
+  function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
+    let offsetForKey := flint$storageOffsetForKey(dictionaryOffset, key)
+    mstore(0, offsetForKey)
+    let indexOffset := sha3(0, 32)
+    switch eq(sload(indexOffset), 0)
+    case 1 {
+      let keysArrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+      let index := add(sload(dictionaryOffset), 1)
+      sstore(indexOffset, index)
+      sstore(flint$storageOffsetForKey(keysArrayOffset, index), key)
+      sstore(dictionaryOffset, index)
+    }
+    ret := offsetForKey
+  }
+  
+  function flint$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
+    mstore(0, dictionaryOffset)
+    ret := sha3(0, 32)
+  }
+  
+  function flint$storageOffsetForKey(offset, key) -> ret {
+    mstore(0, key)
+    mstore(32, offset)
+    ret := sha3(0, 64)
+  }
+  
+  flint$send(_value: R#LibraCoin.T, _address: address) {
+    LibraCoin.deposit(move(_address), move(_value));
+  }
+  
+  flint$fatalError() {
+    assert(false, 1);
+  }
+  
+  flint$add(a: u64, b: u64): u64 {
+    return a + b;
+  }
+  
+  flint$sub(a: u64, b: 64): u64 {
+    return a - b;
+  }
+  
+  flint$mul(a: u64, b: u64): u64 {
+    return a * b;
+  }
+  
+  flint$div(a: u64, b: u64): u64 {
+    return a / b;
+  }
+  
+  flint$power(b: u64, e: u64): u64 {
+    let res: u64;
+    let i: u64;
+  
+    res = 1;
+    i = 0;
+    while (i < e) {
+      res = res * b;
+      i = i + 1;
+    }
+    return result;
+  }
+  
+  flint$revertIfGreater(a: u64, b: u64): u64 {
+    assert(a <= b, 1);
+    return a;
+  }
+
+  //////////////////////////////////////
+  //// -- // --  Selector  -- // -- ////
+  //////////////////////////////////////
+
+  if eq(this.flintState$Loop, 10000) { revert(0, 0) };
+      switch flint$selector()
+      
+      case 0xa8c89a3e /* write(_index: u64, _val: u64) */ {
+        
+        
+        flint$checkNoValue(callvalue())
+        Loop$write$Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1))
+      }
+      
+      case 0xd13ca8a1 /* write2(_index: u64, _val: u64) */ {
+        
+        
+        flint$checkNoValue(callvalue())
+        Loop$write2$Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1))
+      }
+      
+      case 0x07234ac3 /* write3(_index: u64, _val: u64) */ {
+        
+        
+        flint$checkNoValue(callvalue())
+        Loop$write3$Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1))
+      }
+      
+      case 0x9b1a5bda /* writeNested(_i: u64, _j: u64, _val: u64) */ {
+        
+        
+        flint$checkNoValue(callvalue())
+        Loop$writeNested$Int_Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1), flint$decodeAsUInt(2))
+      }
+      
+      case 0x7e599f12 /* writeDict(_key: u64, _value: u64) */ {
+        
+        
+        flint$checkNoValue(callvalue())
+        Loop$writeDict$Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1))
+      }
+      
+      case 0x2b58d44c /* value(_index: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$value$Int(flint$decodeAsUInt(0)))
+      }
+      
+      case 0x8ccf492d /* value2(_index: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$value2$Int(flint$decodeAsUInt(0)))
+      }
+      
+      case 0x343c24c9 /* value3(_index: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$value3$Int(flint$decodeAsUInt(0)))
+      }
+      
+      case 0x02bca64a /* valueNested(_i: u64, _j: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$valueNested$Int_Int(flint$decodeAsUInt(0), flint$decodeAsUInt(1)))
+      }
+      
+      case 0x51a1fc1e /* valueDict(_key: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$valueDict$Int(flint$decodeAsUInt(0)))
+      }
+      
+      case 0x853255cc /* sum() */ {
+        
+        
+        flint$return32Bytes(Loop$sum())
+      }
+      
+      case 0x848906c3 /* sum2() */ {
+        
+        
+        flint$return32Bytes(Loop$sum2())
+      }
+      
+      case 0x4240cfee /* sum3() */ {
+        
+        
+        flint$return32Bytes(Loop$sum3())
+      }
+      
+      case 0x58f0487e /* sum4() */ {
+        
+        
+        flint$return32Bytes(Loop$sum4())
+      }
+      
+      case 0xbd6b0a31 /* sum5() */ {
+        
+        
+        flint$return32Bytes(Loop$sum5())
+      }
+      
+      case 0x28e3ed5e /* sum6() */ {
+        
+        
+        flint$return32Bytes(Loop$sum6())
+      }
+      
+      case 0xed7196ba /* sum7() */ {
+        
+        
+        flint$return32Bytes(Loop$sum7())
+      }
+      
+      case 0xe04ff61e /* sum8() */ {
+        
+        
+        flint$return32Bytes(Loop$sum8())
+      }
+      
+      case 0x59dde5ac /* sum9() */ {
+        
+        
+        flint$return32Bytes(Loop$sum9())
+      }
+      
+      case 0x74b04746 /* sum10() */ {
+        
+        
+        flint$return32Bytes(Loop$sum10())
+      }
+      
+      case 0xbcbd24b7 /* sum11() */ {
+        
+        
+        flint$return32Bytes(Loop$sum11())
+      }
+      
+      case 0xa6e286f8 /* valueBoth(_index: u64) */ {
+        
+        
+        flint$return32Bytes(Loop$valueBoth$Int(flint$decodeAsUInt(0)))
+      }
+      
+      case 0x30e4c7c2 /* sumBoth() */ {
+        
+        
+        flint$return32Bytes(Loop$sumBoth())
+      }
+      
+      case 0xda7dbca8 /* numWrites() */ {
+        
+        
+        flint$return32Bytes(Loop$numWrites())
+      }
+      
+      default {
+        revert(0, 0)
+      }
+
+  //////////////////////////////////////
+  //// -- User-defined functions -- ////
+  //////////////////////////////////////
+
+  Loop$increaseNumWrites() {
+        let _caller = get_txn_sender();
+        this.numWrites = this.numWrites + 1;
+      }
+      
+      Loop$write$Int_Int(_index: u64, _val: u64) {
+        let _caller = get_txn_sender();
+        flint$storageFixedSizeArrayOffset(1, _index, 4) = _val;
+        Loop$increaseNumWrites();
+      }
+      
+      Loop$write2$Int_Int(_index: u64, _val: u64) {
+        let _caller = get_txn_sender();
+        flint$storageFixedSizeArrayOffset(5, _index, 10) = _val;
+        Loop$increaseNumWrites();
+      }
+      
+      Loop$write3$Int_Int(_index: u64, _val: u64) {
+        let _caller = get_txn_sender();
+        flint$storageArrayOffset(15, _index) = _val;
+        Loop$increaseNumWrites();
+      }
+      
+      Loop$writeNested$Int_Int_Int(_i: u64, _j: u64, _val: u64) {
+        let _caller = get_txn_sender();
+        flint$storageArrayOffset(flint$storageArrayOffset(16, _i), _j) = _val;
+      }
+      
+      Loop$writeDict$Int_Int(_key: u64, _value: u64) {
+        let _caller = get_txn_sender();
+        flint$storageDictionaryOffsetForKey(17, _key) = _value;
+      }
+      
+      Loop$value$Int(_index: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageFixedSizeArrayOffset(1, _index, 4));
+      }
+      
+      Loop$value2$Int(_index: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageFixedSizeArrayOffset(5, _index, 10));
+      }
+      
+      Loop$value3$Int(_index: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageArrayOffset(15, _index));
+      }
+      
+      Loop$valueNested$Int_Int(_i: u64, _j: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageArrayOffset(flint$storageArrayOffset(16, _i), _j));
+      }
+      
+      Loop$valueDict$Int(_key: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageDictionaryOffsetForKey(17, _key));
+      }
+      
+      Loop$sum(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := 4;
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _sum = _sum + _num;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum2(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := 10;
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _sum = _sum + _num;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum3(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+          let _num = 1
+          let _bound := 10;
+        while (_num < _bound || _num == _bound) {
+          _sum = _sum + _num;
+            _num = _num + 1;
+        }
+        return _sum;
+      }
+      
+      Loop$sum4(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+          let _num = 10
+          let _bound := 15;
+        while (_num < _bound) {
+          _sum = _sum + _num;
+            _num = _num + 1;
+        }
+        return _sum;
+      }
+      
+      Loop$sum5(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+          let _num = 10
+          let _bound := 1;
+        while (_num > _bound || _num == _bound) {
+          _sum = _sum + _num;
+            _num = _num - 1;
+        }
+        return _sum;
+      }
+      
+      Loop$sum6(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+          let _num = 10
+          let _bound := 10;
+        while (_num > _bound || _num == _bound) {
+          _sum = _sum + _num;
+            _num = _num - 1;
+        }
+        return _sum;
+      }
+      
+      Loop$sum7(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := sload(15);
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _sum = _sum + _num;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum8(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := 4;
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _num = 1;
+          _sum = _sum + _num;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum9(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$sub$i := 0
+        let flint$sub$arrLen := sload(16);
+        while (lt(flint$sub$i, flint$sub$arrLen)) {
+          let _sub: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          let flint$num$i := 0
+          let flint$num$arrLen := sload(_sub);
+          while (lt(flint$num$i, flint$num$arrLen)) {
+            let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+            _sum = _sum + _num;
+            flint$num$i = add(flint$num$i, 1);
+          }
+          flint$sub$i = add(flint$sub$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum10(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := sload(17);
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _sum = _sum + _num;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$sum11(): u64 {
+        let _caller = get_txn_sender();
+        let _sum: u64;
+        let flint$num$i := 0
+        let flint$num$arrLen := sload(17);
+        while (lt(flint$num$i, flint$num$arrLen)) {
+          let _num: __UnknownAnyType<PleaseSee:MoveIR/Type.swift>;
+          _sum = _sum + 1;
+          flint$num$i = add(flint$num$i, 1);
+        }
+        return _sum;
+      }
+      
+      Loop$valueBoth$Int(_index: u64): u64 {
+        let _caller = get_txn_sender();
+        return sload(flint$storageFixedSizeArrayOffset(1, _index, 4)) + sload(flint$storageFixedSizeArrayOffset(5, _index, 10));
+      }
+      
+      Loop$sumBoth(): u64 {
+        let _caller = get_txn_sender();
+        return Loop$sum() + Loop$sum2();
+      }
+      
+      Loop$numWrites(): u64 {
+        let _caller = get_txn_sender();
+        return this.numWrites;
+      }
+
+  //////////////////////////////////////
+  //// --   Wrapper functions    -- ////
+  //////////////////////////////////////
+
+  
+
+  //////////////////////////////////////
+  //// --    Struct functions    -- ////
+  //////////////////////////////////////
+
+  //// Flint$Global::Global.flint@2:1:19  ////
+  
+  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei, _value$isMem: bool) {
+    let w: R#Wei
+    Wei$init$$inoutWei(_w, true, _value, _value$isMem);
+    flint$send(Wei$getRawValue(_w, true), _address);
+  }
+  
+  Flint$Global$fatalError() {
+    flint$fatalError();
+  }
+  
+  Flint$Global$assert$Bool(_condition: bool) {
+    if (1 == _condition == false) {
+      Flint$Global$fatalError();
+    } else {}
+  }
+  
+  //// Wei::Asset.flint@81:1:10  ////
+  
+  Wei$init$Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _unsafeRawValue: u64) {
+    this.rawValue = 0;
+    if (1 == _unsafeRawValue != 0) {
+      Flint$Global$fatalError();
+    } else {}
+    this.rawValue = _unsafeRawValue;
+  }
+  
+  Wei$init$Bool_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
+    this.rawValue = 0;
+    if (1 == _youAreTheCompiler == false) {
+      Flint$Global$fatalError();
+    } else {}
+    this.rawValue = _unsafeRawValue;
+  }
+  
+  Wei$init$$inoutWei_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+    this.rawValue = 0;
+    Wei$transfer$$inoutWei_Int(this, _flintSelf$isMem, _source, _source$isMem, _amount);
+  }
+  
+  Wei$init$$inoutWei(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+    this.rawValue = 0;
+    Wei$transfer$$inoutWei(this, _flintSelf$isMem, _source, _source$isMem);
+  }
+  
+  Wei$setRawValue$Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _value: u64): u64 {
+    this.rawValue = _value;
+    return this.rawValue;
+  }
+  
+  Wei$getRawValue(_flintSelf: R#Wei, _flintSelf$isMem: bool): u64 {
+    return this.rawValue;
+  }
+  
+  Wei$transfer$$inoutWei_Int(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+    if (1 == Wei$getRawValue(_source, _source$isMem) < _amount) {
+      Flint$Global$fatalError();
+    } else {}
+    let _unused1: u64;
+    let _unused2: u64;
+  }
+  
+  Wei$transfer$$inoutWei(_flintSelf: R#Wei, _flintSelf$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+    Wei$transfer$$inoutWei_Int(this, _flintSelf$isMem, _source, _source$isMem, Wei$getRawValue(_source, _source$isMem));
+  }
+
+
+  //////////////////////////////////////
+  //// --     Flint Runtime      -- ////
+  //////////////////////////////////////
+
+  function flint$selector() -> ret {
+    ret := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+  }
+  
+  function flint$decodeAsAddress(offset) -> ret {
+    ret := flint$decodeAsUInt(offset)
+  }
+  
+  function flint$decodeAsUInt(offset) -> ret {
+    ret := calldataload(add(4, mul(offset, 0x20)))
+  }
+  
+  function flint$store(ptr, val, mem) {
+    switch iszero(mem)
+    case 0 {
+      mstore(ptr, val)
+    }
+    default {
+      sstore(ptr, val)
+    }
+  }
+  
+  function flint$load(ptr, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := mload(ptr)
+    }
+    default {
+      ret := sload(ptr)
+    }
+  }
+  
+  function flint$computeOffset(base, offset, mem) -> ret {
+    switch iszero(mem)
+    case 0 {
+      ret := add(base, mul(offset, 32))
+    }
+    default {
+      ret := add(base, offset)
+    }
+  }
+  
+  function flint$allocateMemory(size) -> ret {
+    ret := mload(0x40)
+    mstore(0x40, add(ret, size))
+  }
+  
+  function flint$checkNoValue(_value) {
+    if iszero(iszero(_value)) {
+      flint$fatalError()
+    }
+  }
+  
+  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
+    ret := eq(_stateVariable, _state)
+  }
+  
+  function flint$isValidCallerProtection(_address) -> ret {
+    ret := eq(_address, caller())
+  }
+  
+  function flint$isCallerProtectionInArray(arrayOffset) -> ret {
+    let size := sload(arrayOffset)
+    let found := 0
+    let _caller := caller()
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, 1) } {
+      if eq(sload(flint$storageOffsetForKey(arrayOffset, i)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  
+  function flint$isCallerProtectionInDictionary(dictionaryOffset) -> ret {
+    let size := sload(dictionaryOffset)
+    let arrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+    let found := 0
+    let _caller := caller()
+    for { let i := 0 } and(lt(i, size), iszero(found)) { i := add(i, i) } {
+      let key := sload(flint$storageOffsetForKey(arrayOffset, i))
+      if eq(sload(flint$storageOffsetForKey(dictionaryOffset, key)), _caller) {
+        found := 1
+      }
+    }
+    ret := found
+  }
+  
+  function flint$return32Bytes(v) {
+    mstore(0, v)
+    return(0, 0x20)
+  }
+  
+  function flint$isInvalidSubscriptExpression(index, arraySize) -> ret {
+    ret := or(iszero(arraySize), or(lt(index, 0), gt(index, flint$sub(arraySize, 1))))
+  }
+  
+  function flint$storageArrayOffset(arrayOffset, index) -> ret {
+    let arraySize := sload(arrayOffset)
+  
+    switch eq(arraySize, index)
+    case 0 {
+      if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    }
+    default {
+      sstore(arrayOffset, flint$add(arraySize, 1))
+    }
+  
+    ret := flint$storageOffsetForKey(arrayOffset, index)
+  }
+  
+  function flint$storageFixedSizeArrayOffset(arrayOffset, index, arraySize) -> ret {
+    if flint$isInvalidSubscriptExpression(index, arraySize) { revert(0, 0) }
+    ret := flint$add(arrayOffset, index)
+  }
+  
+  function flint$storageDictionaryOffsetForKey(dictionaryOffset, key) -> ret {
+    let offsetForKey := flint$storageOffsetForKey(dictionaryOffset, key)
+    mstore(0, offsetForKey)
+    let indexOffset := sha3(0, 32)
+    switch eq(sload(indexOffset), 0)
+    case 1 {
+      let keysArrayOffset := flint$storageDictionaryKeysArrayOffset(dictionaryOffset)
+      let index := add(sload(dictionaryOffset), 1)
+      sstore(indexOffset, index)
+      sstore(flint$storageOffsetForKey(keysArrayOffset, index), key)
+      sstore(dictionaryOffset, index)
+    }
+    ret := offsetForKey
+  }
+  
+  function flint$storageDictionaryKeysArrayOffset(dictionaryOffset) -> ret {
+    mstore(0, dictionaryOffset)
+    ret := sha3(0, 32)
+  }
+  
+  function flint$storageOffsetForKey(offset, key) -> ret {
+    mstore(0, key)
+    mstore(32, offset)
+    ret := sha3(0, 64)
+  }
+  
+  flint$send(_value: R#LibraCoin.T, _address: address) {
+    LibraCoin.deposit(move(_address), move(_value));
+  }
+  
+  flint$fatalError() {
+    assert(false, 1);
+  }
+  
+  flint$add(a: u64, b: u64): u64 {
+    return a + b;
+  }
+  
+  flint$sub(a: u64, b: 64): u64 {
+    return a - b;
+  }
+  
+  flint$mul(a: u64, b: u64): u64 {
+    return a * b;
+  }
+  
+  flint$div(a: u64, b: u64): u64 {
+    return a / b;
+  }
+  
+  flint$power(b: u64, e: u64): u64 {
+    let res: u64;
+    let i: u64;
+  
+    res = 1;
+    i = 0;
+    while (i < e) {
+      res = res * b;
+      i = i + 1;
+    }
+    return result;
+  }
+  
+  flint$revertIfGreater(a: u64, b: u64): u64 {
+    assert(a <= b, 1);
+    return a;
+  }
+}
+interface _InterfaceLoop {
+  
+  function write(u64 _index, u64 _val) external;
+  function write2(u64 _index, u64 _val) external;
+  function write3(u64 _index, u64 _val) external;
+  function writeNested(u64 _i, u64 _j, u64 _val) external;
+  function writeDict(u64 _key, u64 _value) external;
+  function value(u64 _index) view external returns (u64 ret);
+  function value2(u64 _index) view external returns (u64 ret);
+  function value3(u64 _index) view external returns (u64 ret);
+  function valueNested(u64 _i, u64 _j) view external returns (u64 ret);
+  function valueDict(u64 _key) view external returns (u64 ret);
+  function sum() view external returns (u64 ret);
+  function sum2() view external returns (u64 ret);
+  function sum3() view external returns (u64 ret);
+  function sum4() view external returns (u64 ret);
+  function sum5() view external returns (u64 ret);
+  function sum6() view external returns (u64 ret);
+  function sum7() view external returns (u64 ret);
+  function sum8() view external returns (u64 ret);
+  function sum9() view external returns (u64 ret);
+  function sum10() view external returns (u64 ret);
+  function sum11() view external returns (u64 ret);
+  function valueBoth(u64 _index) view external returns (u64 ret);
+  function sumBoth() view external returns (u64 ret);
+  function numWrites() view external returns (u64 ret);
+  
+}

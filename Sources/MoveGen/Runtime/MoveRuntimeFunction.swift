@@ -284,23 +284,23 @@ struct MoveRuntimeFunctionDeclaration {
   static let checkNoValue =
   """
   function flint$checkNoValue(_value) {
-    if iszero(iszero(_value)) {
-      flint$fatalError()
+    if (_value != 0) {
+      flint$fatalError();
     }
   }
   """
 
   static let isMatchingTypeState =
   """
-  function flint$isMatchingTypeState(_state, _stateVariable) -> ret {
-    ret := eq(_stateVariable, _state)
+  function flint$isMatchingTypeState(_state: u64, _stateVariable: u64): bool {
+    return _stateVariable == _state;
   }
   """
 
   static let isValidCallerProtection =
   """
-  function flint$isValidCallerProtection(_address) -> ret {
-    ret := eq(_address, caller())
+  flint$isValidCallerProtection(_address): bool {
+    return address == get_txn_sender();
   }
   """
 
@@ -413,80 +413,67 @@ struct MoveRuntimeFunctionDeclaration {
 
   static let send =
   """
-  function flint$send(_value, _address) {
-    let ret := call(gas(), _address, _value, 0, 0, 0, 0)
-
-    if iszero(ret) {
-      revert(0, 0)
-    }
+  flint$send(_value: R#LibraCoin.T, _address: address) {
+    LibraAccount.deposit(move(_address), move(_value));
   }
   """
 
   static let fatalError =
   """
-  function flint$fatalError() {
-    revert(0, 0)
+  flint$fatalError() {
+    assert(false, 1);
   }
   """
 
   static let add =
   """
-  function flint$add(a, b) -> ret {
-    let c := add(a, b)
-
-    if lt(c, a) { revert(0, 0) }
-    ret := c
+  flint$add(a: u64, b: u64): u64 {
+    return a + b;
   }
   """
 
   static let sub =
   """
-  function flint$sub(a, b) -> ret {
-    if gt(b, a) { revert(0, 0) }
-
-    ret := sub(a, b)
+  flint$sub(a: u64, b: 64): u64 {
+    return a - b;
   }
   """
 
   static let mul =
   """
-  function flint$mul(a, b) -> ret {
-    switch iszero(a)
-    case 1 {
-      ret := 0
-    }
-    default {
-      let c := mul(a, b)
-      if iszero(eq(div(c, a), b)) { revert(0, 0) }
-      ret := c
-    }
+  flint$mul(a: u64, b: u64): u64 {
+    return a * b;
   }
   """
 
   static let div =
   """
-  function flint$div(a, b) -> ret {
-    if eq(b, 0) { revert(0, 0) }
-    ret := div(a, b)
+  flint$div(a: u64, b: u64): u64 {
+    return a / b;
   }
   """
 
   static let power =
   """
-  function flint$power(b, e) -> ret {
-    ret := 1
-    for { let i := 0 } lt(i, e) { i := add(i, 1) }
-    {
-        ret := flint$mul(ret, b)
+  flint$power(b: u64, e: u64): u64 {
+    let res: u64;
+    let i: u64;
+
+    res = 1;
+    i = 0;
+    while (i < e) {
+      res = res * b;
+      i = i + 1;
     }
+    return result;
   }
   """
 
   // Ensure that a <= b
   static let revertIfGreater =
   """
-  flint$revertIfGreater(a, b) -> u64 {
-    if (a > b) { revert(0, 0); }
+  flint$revertIfGreater(a: u64, b: u64): u64 {
+    assert(a <= b, 1);
     return a;
   }
   """
