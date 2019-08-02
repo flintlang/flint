@@ -173,7 +173,7 @@ struct Boogie {
     let task = Process()
 
     // Set the task parameters
-    task.executableURL = URL(string: executable)
+    task.executableURL = URL(fileURLWithPath: executable)
     task.arguments = arguments
 
     // Create a Pipe and make the task

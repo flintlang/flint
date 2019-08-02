@@ -123,6 +123,11 @@ extension Compiler {
 
     // Run verifier
     if !config.skipVerifier {
+      #if os(macOS)
+        let monoLocation = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono"
+      #else
+        let monoLocation = "/usr/bin/mono"
+      #endif
       let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
@@ -134,7 +139,7 @@ extension Compiler {
                                               ).absoluteString,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: "/usr/bin/mono",
+                                              monoLocation: monoLocation,
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
