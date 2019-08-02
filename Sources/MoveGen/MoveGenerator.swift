@@ -46,8 +46,8 @@ public struct MoveGenerator {
     // The interface is used for exisiting Solidity tools such as Truffle and Remix to interpret Flint code as
     // Solidity code.
 
-    let renderedContracts = contracts.map({ $0.rendered() }).joined(separator: "\n")
-    let renderedInterfaces = interfaces.map({ $0.rendered() }).joined(separator: "\n")
+    let renderedContracts = contracts.map{ $0.rendered() }.joined(separator: "\n")
+    let renderedInterfaces = interfaces.map{ $0.rendered() }.joined(separator: "\n")
 
     return renderedContracts + "\n" + renderedInterfaces
   }

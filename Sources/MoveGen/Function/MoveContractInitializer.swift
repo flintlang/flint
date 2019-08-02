@@ -136,11 +136,11 @@ struct MoveInitializerBody {
                                                                           functionContext: FunctionContext) -> String
       where S.Element == AST.Statement, S.Index == Int {
     guard !statements.isEmpty else { return "" }
-    var properties = self.properties
+    var declarations = self.properties
     var statements = statements
 
-    while !properties.isEmpty {
-      let property: AST.VariableDeclaration = properties.removeFirst()
+    while !declarations.isEmpty {
+      let property: AST.VariableDeclaration = declarations.removeFirst()
 //      print("\(#file):\(#line)", functionContext) RIDMEPLS
 //      let declaration = MoveIdentifier(identifier: rhsId).rendered(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
@@ -158,6 +158,12 @@ struct MoveInitializerBody {
       let statement = statements.removeFirst()
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
+    functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
+        "T",
+        Dictionary(uniqueKeysWithValues: properties.map {
+              ($0.identifier.name, .identifier($0.identifier.name.mangled))
+            })
+    ))))
     return functionContext.finalise()
   }
 

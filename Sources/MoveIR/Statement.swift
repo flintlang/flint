@@ -16,6 +16,7 @@ public enum Statement: CustomStringConvertible, Throwing {
   case `continue`
   case noop
   case inline(String)
+  case `return`(Expression)
 
   public var catchableSuccesses: [Expression] {
     switch self {
@@ -48,6 +49,8 @@ public enum Statement: CustomStringConvertible, Throwing {
       return "break;"
     case .continue:
       return "continue;"
+    case .return(let e):
+      return "return \(e);"
     case .noop:
       return ""
     case .inline(let s):

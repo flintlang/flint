@@ -43,7 +43,7 @@ struct MoveContract {
       }
     }
 
-    let functionsCode = functions.map({ $0.rendered() }).joined(separator: "\n\n").indented(by: 6)
+    let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 6)
 
     // Generate wrapper functions
     let wrapperCode = functions.filter { !$0.containsAnyCaller }
@@ -79,7 +79,7 @@ struct MoveContract {
     return #"""
     module \#(contractDeclaration.identifier.name) {
       resource T {
-         \#(members)
+        \#(members.indented(by: 4))
       }
       \#(initializerBody.indented(by: 2))
 
