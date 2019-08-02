@@ -14,14 +14,11 @@ public struct StructConstructor: CustomStringConvertible, Throwing {
   }
 
   public var catchableSuccesses: [Expression] {
-    return fields.flatMap{ argument in argument.1.catchableSuccesses }
+    return fields.flatMap { argument in argument.1.catchableSuccesses }
   }
 
   public var description: String {
-    let args = fields.map({ field in
-      let (left, right) = field
-      return "\(left): \(right)" 
-    }).joined(separator: ",\n")
+    let args = fields.map({ "\($0.0): \($0.1)"}).joined(separator: ",\n")
     return """
            \(name) {
              \(args.indented(by: 2))
