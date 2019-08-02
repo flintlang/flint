@@ -66,7 +66,7 @@ struct MoveExpression {
       return .inline(expressions.map({ expression in
         return MoveExpression(expression: expression, asLValue: asLValue)
           .rendered(functionContext: functionContext).description
-      }).joined(separator: "\n"))
+      }).joined(separator: Move.statementLineSeparator))
     case .rawAssembly(let assembly, _):
       return .inline(assembly)
     case .returnsExpression: fatalError("Returns expression shouldn't be rendered directly")

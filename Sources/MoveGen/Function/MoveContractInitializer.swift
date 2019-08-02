@@ -141,17 +141,12 @@ struct MoveInitializerBody {
 
     while !declarations.isEmpty {
       let property: AST.VariableDeclaration = declarations.removeFirst()
-//      print("\(#file):\(#line)", functionContext) RIDMEPLS
-//      let declaration = MoveIdentifier(identifier: rhsId).rendered(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
           MoveIR.VariableDeclaration((
               property.identifier.name.mangled,
               CanonicalType(from: property.type.rawType)!.irType
           ), nil)
       )))
-
-//          statement: .expression(.variableDeclaration(property))
-//      ).rendered(functionContext: functionContext))
     }
 
     while !statements.isEmpty {

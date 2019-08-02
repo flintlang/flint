@@ -43,7 +43,7 @@ struct MoveContract {
       }
     }
 
-    let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 6)
+    let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 2)
 
     // Generate wrapper functions
     let wrapperCode = functions.filter { !$0.containsAnyCaller }
@@ -58,7 +58,7 @@ struct MoveContract {
                                               functions: publicFunctions,
                                               enclosingType: contractDeclaration.identifier,
                                               environment: environment)
-    let selectorCode = functionSelector.rendered().indented(by: 6)
+    let selectorCode = functionSelector.rendered().indented(by: 2)
 
     let initializerBody = renderPublicInitializer()
     let context = FunctionContext(environment: environment,

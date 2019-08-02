@@ -81,26 +81,13 @@ struct MoveFunctionSelector {
       valueChecks = ""
     }
 
-    let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
-      let (index, type) = arg
-      switch type {
-      case .address: return MoveRuntimeFunction.decodeAsAddress(offset: index)
-      case .u64: return MoveRuntimeFunction.decodeAsUInt(offset: index)
-      default: fatalError("Unimplemented behaviour, in MoveFunctionSelector.swift:89")
-      }
-    }
+    let arguments = function.parameterCanonicalTypes.map { $0.irType.description }
     let wrapperPrefix = function.containsAnyCaller ? "" : "\(MoveWrapperFunction.prefixHard)"
     let call =  "\(wrapperPrefix)\(function.name)(\(arguments.joined(separator: ", ")))"
 
     if let resultType = function.resultCanonicalType {
-      switch resultType {
-      case .address, .u64, .bool:
-        return typeStateChecks.description + "\n" + callerProtectionChecks + "\n" +
-          MoveRuntimeFunction.return32Bytes(value: call)
-      default: fatalError("Unimplemented behaviour, in MoveFunctionSelector.swift:100")
-      }
+      "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call): \(resultType.irType)"
     }
-
     return "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
   }
 }
