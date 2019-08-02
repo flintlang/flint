@@ -13,10 +13,10 @@ public struct EventDeclaration: ASTNode {
   public var identifier: Identifier
   public var variableDeclarations: [VariableDeclaration]
 
-  public init(eventToken: Token, identifier: Identifier, variables: [VariableDeclaration]) {
+  public init(eventToken: Token, identifier: Identifier, parameters: [Parameter]) {
     self.eventToken = eventToken
     self.identifier = identifier
-    self.variableDeclarations = variables
+    self.variableDeclarations = parameters.map { $0.asVariableDeclaration }
   }
 
   // MARK: - ASTNode

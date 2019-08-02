@@ -1,0 +1,80 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+struct trait TheAsset {
+  // Moves `amount` from `source` into `this` asset.
+  func transfer(source: inout Self, amount: Int) {
+    if source.getRawValue() < amount {
+      fatalError()
+    }
+
+    source.setRawValue(value: source.getRawValue() - amount)
+    setRawValue(value: getRawValue() + amount)
+  }
+
+  // Returns the funds contained in this asset, as an integer.
+  func setRawValue(value: Int) -> Int
+
+  // Returns the funds contained in this asset, as an integer.
+  func getRawValue() -> Int
+}
+
+struct TheAssetOne: TheAsset {
+  var value: Int = 0
+
+  func setRawValue(value: Int) -> Int mutates (value) {
+    self.value = value
+    return value
+  }
+
+  func getRawValue() -> Int {
+    return value
+  }
+}
+
+struct TheAssetTwo: TheAsset {
+  var value: Int = 0
+
+  func setRawValue(value: Int) -> Int mutates (value) {
+    self.value = value
+    return value
+  }
+
+  func getRawValue() -> Int {
+    return value
+  }
+}
+
+struct Comparisoin {
+  init() {}
+
+  func transfer() {
+    var assetOneDestination: TheAssetOne = TheAssetOne()
+    var assetOneSource: TheAssetOne = TheAssetOne()
+
+    assetOneDestination.transfer(source: &assetOneSource, amount: 100)
+
+    var assetTwoDestination: TheAssetTwo = TheAssetTwo()
+    var assetTwoSource: TheAssetTwo = TheAssetTwo()
+
+    assetTwoDestination.transfer(source: &assetTwoSource, amount: 100)
+  }
+}
+
+contract A {}
+
+A :: (any) {
+  public init() {}
+
+  public func transfer() -> Bool {
+    var assetOneDestination: TheAssetOne = TheAssetOne()
+    var assetOneSource: TheAssetOne = TheAssetOne()
+
+    assetOneDestination.transfer(source: &assetOneSource, amount: 100)
+
+    var assetTwoDestination: TheAssetTwo = TheAssetTwo()
+    var assetTwoSource: TheAssetTwo = TheAssetTwo()
+
+    assetTwoDestination.transfer(source: &assetTwoSource, amount: 100)
+    return true
+  }
+}

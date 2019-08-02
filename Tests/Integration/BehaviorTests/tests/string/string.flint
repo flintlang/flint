@@ -1,0 +1,34 @@
+contract StringContract {
+  var s: String
+}
+
+StringContract :: (any) {
+  public init(s: String) {
+    self.s = s
+  }
+
+  public func set(s: String) mutates (s) {
+    self.s = s
+  }
+
+  public func get() -> String {
+    return s
+  }
+
+  public func isEqual(other: String) -> Bool {
+    if s == other {
+      return true
+    }
+
+    return false
+  }
+
+  public func isNotEqual(other: String) -> Bool {
+    if s != other {
+      return true
+    }
+
+    return false
+  }
+}
+

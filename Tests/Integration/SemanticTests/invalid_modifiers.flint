@@ -1,0 +1,23 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+contract VariableModifiers {
+
+  // expected-error@+1 {{Cannot declare variable 'a' both public and visible}}
+  public visible var a: Int = 0
+
+  // expected-error@+2 {{Cannot reassign to value: 'c' is a 'let' constant}}
+  // expected-error@+1 {{The variable 'c' is declared public (and a setter will be synthesised) but let variables cannot be set}}
+  public let c: Int = 0
+  public var d: Int = 0
+
+  visible var e: Int = 0
+  visible let f: Int = 0
+
+  // expected-error@+2 {{Cannot reassign to value: 'g' is a 'let' constant}}
+  // expected-error@+1 {{The variable 'g' is declared public (and a setter will be synthesised) but let variables cannot be set}}
+  public let g: Int = 0
+}
+
+VariableModifiers :: (any) {
+  public init() {}
+}

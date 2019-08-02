@@ -26,14 +26,21 @@ extension Parser {
   }
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {
-    try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
-    guard let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      throw raise(.expectedCloseParen(at: latestSource))
-    }
-    let identifiers = try parseIdentifierList(upTo: closingIndex)
-    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
+    let openBracketToken = try consume(.punctuation(.openBracket), or: .badDeclaration(at: latestSource))
 
-    return (identifiers, closeBracketToken)
+    if let closingIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) {
+      let identifiers = try parseIdentifierList(upTo: closingIndex)
+      let closeBracketToken = try consume(.punctuation(.closeBracket), or: .expectedCloseParen(at: latestSource))
+      return (identifiers, closeBracketToken)
+    } else {
+      let syncSet: [Token.Kind] = [.punctuation(.openBrace),
+                                   .newline
+      ]
+      let prevToken = try sync(syncSet, .expectedTypeStateCloseParen(at: latestSource), openBracketToken)
+      return (
+          [Identifier(identifierToken: Token(kind: Token.Kind.identifier("ERROR"), sourceLocation: latestSource))],
+          prevToken)
+    }
   }
 
   func parseIdentifierList(upTo closingIndex: Int) throws -> [Identifier] {
@@ -51,10 +58,8 @@ extension Parser {
   // MARK: Attribute
   func parseAttribute() throws -> Attribute {
     let at = try consume(.punctuation(.at), or: .expectedAttribute(at: latestSource))
-    guard let token = currentToken, let attribute = Attribute(atToken: at, identifierToken: token) else {
-     throw raise(.missingAttributeName(at: latestSource))
-    }
-    currentIndex += 1
+    let identifier = try parseIdentifier()
+    let attribute = Attribute(atToken: at, identifierToken: identifier.identifierToken)
     consumeNewLines()
     return attribute
   }
@@ -71,7 +76,7 @@ extension Parser {
   // MARK: Modifiers
   func parseModifiers() throws -> [Token] {
     var modifiers = [Token]()
-    let modifierTokens: [Token.Kind] = [.public, .mutating, .visible]
+    let modifierTokens: [Token.Kind] = [.public, .visible]
     // Parse function modifiers.
     while let first = currentToken?.kind {
       if modifierTokens.contains(first) {
@@ -81,6 +86,39 @@ extension Parser {
       }
     }
     return modifiers
+  }
+
+  // MARK: Mutates
+  func parseMutates() throws -> [Identifier] {
+    var mutates = [Identifier]()
+    let modifierToken: Token.Kind = .mutates
+    if let first = currentToken?.kind, first != modifierToken {
+      return mutates
+    }
+    try consume(modifierToken, or: .expectedModifier(at: latestSource))
+    try consume(.punctuation(.openBracket), or: .expectedIdentifier(at: latestSource))
+    // Parse mutated variables
+    while let first = currentToken?.kind {
+      if first == .punctuation(.comma) {
+        try consume(.punctuation(.comma), or: .expectedIdentifier(at: latestSource))
+      } else if first != .punctuation(.closeBracket) {
+        var enclosingType: Identifier? = try parseIdentifier()
+        var identifier: Identifier
+        if currentToken?.kind == .punctuation(.dot) {
+          try consume(.punctuation(.dot), or: .expectedIdentifier(at: latestSource))
+          identifier = try parseIdentifier()
+        } else {
+          identifier = enclosingType!
+          enclosingType = nil
+        }
+        identifier.enclosingType = enclosingType?.name
+        mutates.append(identifier)
+      } else {
+        try consume(.punctuation(.closeBracket), or: .expectedIdentifier(at: latestSource))
+        break
+      }
+    }
+    return mutates
   }
 
   // MARK: Literals
@@ -139,7 +177,20 @@ extension Parser {
       let identifier = try parseIdentifier()
       let typeAnnotation = try parseTypeAnnotation()
 
-      let parameter = Parameter(identifier: identifier, type: typeAnnotation.type, implicitToken: implicitToken)
+      var assignedExpression: Expression?
+
+      if currentToken?.kind == .punctuation(.equal) {
+        _ = try consume(.punctuation(.equal), or: .expectedValidOperator(at: latestSource))
+
+        if let upTo = indexOfFirstAtCurrentDepth([.punctuation(.comma), .punctuation(.closeBracket)]) {
+          assignedExpression = try parseExpression(upTo: upTo)
+        }
+      }
+
+      let parameter = Parameter(identifier: identifier,
+                                type: typeAnnotation.type,
+                                implicitToken: implicitToken,
+                                assignedExpression: assignedExpression)
       parameters.append(parameter)
       if currentIndex < closingIndex {
         try consume(.punctuation(.comma), or: .expectedSeparator(at: latestSource))
@@ -197,16 +248,20 @@ extension Parser {
       if attempt(try consume(.punctuation(.colon), or: .expectedColonDictionaryLiteral(at: latestSource))) != nil {
         // The type is a dictionary type.
         let valueType = try parseType()
-        let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                  or: .expectedCloseSquareDictionaryLiteral(at: latestSource))
+        let syncSet: [Token.Kind] = [.punctuation(.equal), .newline]
+        let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                                     or: .expectedCloseSquareDictionaryLiteral(at: latestSource),
+                                                     syncSet)
         return Type(openSquareBracketToken: openSquareBracketToken,
                     dictionaryWithKeyType: keyType,
                     valueType: valueType,
                     closeSquareBracketToken: closeSquareBracketToken)
       }
+      let syncSet: [Token.Kind] = [.punctuation(.equal), .newline]
 
-      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                or: .expectedCloseSquareArrayType(at: latestSource))
+      let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                                   or: .expectedCloseSquareArrayType(at: latestSource), syncSet)
+
       return Type(openSquareBracketToken: openSquareBracketToken,
                   arrayWithElementType: keyType,
                   closeSquareBracketToken: closeSquareBracketToken)
@@ -216,6 +271,10 @@ extension Parser {
       // The type is declared inout (valid only for function parameters).
       let type = try parseType()
       return Type(ampersandToken: inoutToken, inoutType: type)
+    }
+
+    if let selfTypeToken = attempt(try consume(Token.Kind.selfType, or: .dummy())) {
+      return Type(inferredType: .selfType, identifier: Identifier(identifierToken: selfTypeToken))
     }
 
     let identifier = try parseIdentifier()
@@ -232,8 +291,11 @@ extension Parser {
         throw raise(.expectedIntegerInFixedArrayType(at: latestSource))
       }
 
-      let closeSquareBracketToken = try consume(.punctuation(.closeSquareBracket),
-                                                or: .expectedCloseSquareArrayType(at: latestSource))
+      let syncSet: [Token.Kind] = [.punctuation(.equal), .newline]
+
+      let closeSquareBracketToken = try tryConsume(.punctuation(.closeSquareBracket),
+                                                   or: .expectedCloseSquareArrayType(at: latestSource), syncSet)
+
       return Type(fixedSizeArrayWithElementType: type, size: size, closeSquareBracketToken: closeSquareBracketToken)
     }
 
@@ -257,8 +319,19 @@ extension Parser {
   }
 
   func parseTypeAnnotation() throws -> TypeAnnotation {
-    let colonToken = try consume(.punctuation(.colon), or: .expectedTypeAnnotation(at: latestSource))
+    // if sync is required i.e. colon token is malformed then the returned
+    // token is the last valid token before the colonToken
+    let syncSet: [Token.Kind] = [Token.Kind.identifier("Int"),
+                                 .punctuation(.openSquareBracket),
+                                 Token.Kind.identifier("String"),
+                                 Token.Kind.identifier("Address"),
+                                 Token.Kind.identifier("Bool"),
+                                 .newline]
+    let colonToken = try tryConsume(.punctuation(.colon), or: .expectedTypeAnnotation(at: latestSource), syncSet)
+
     let type = try parseType()
+
     return TypeAnnotation(colonToken: colonToken, type: type)
+
   }
 }

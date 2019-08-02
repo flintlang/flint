@@ -14,10 +14,12 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   /// The attributes associated with the function, such as `@payable`.
   public var attributes: [Attribute]
 
-  /// The modifiers associted with the function, such as `public` or `mutating.`
+  /// The modifiers associted with the function, such as `public` or `visible.`
   public var modifiers: [Token]
+  public var mutates: [Identifier]
   public var identifier: Identifier
   public var parameters: [Parameter]
+  public var prePostConditions: [PrePostCondition]
   public var closeBracketToken: Token
   public var resultType: Type?
 
@@ -31,15 +33,19 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   public init(funcToken: Token,
               attributes: [Attribute],
               modifiers: [Token],
+              mutates: [Identifier],
               identifier: Identifier,
               parameters: [Parameter],
+              prePostConditions: [PrePostCondition],
               closeBracketToken: Token,
               resultType: Type?) {
     self.funcToken = funcToken
     self.attributes = attributes
     self.modifiers = modifiers
+    self.mutates = mutates
     self.identifier = identifier
     self.parameters = parameters
+    self.prePostConditions = prePostConditions
     self.closeBracketToken = closeBracketToken
     self.resultType = resultType
   }
@@ -54,8 +60,8 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
       lhs.modifiers.map({ $0.kind }) == rhs.modifiers.map({ $0.kind }) &&
       lhs.attributes.map({ $0.kind }) == rhs.attributes.map({ $0.kind }) &&
       lhs.resultType?.rawType == rhs.resultType?.rawType &&
-      lhs.parameters.map({ $0.identifier.name }) == rhs.parameters.map({ $0.identifier.name }) &&
-      lhs.parameters.map({ $0.type.rawType }) == rhs.parameters.map({ $0.type.rawType }) &&
+      lhs.parameters.identifierNames == rhs.parameters.identifierNames &&
+      lhs.parameters.rawTypes == rhs.parameters.rawTypes &&
       lhs.parameters.map({ $0.isInout }) == rhs.parameters.map({ $0.isInout })
   }
 

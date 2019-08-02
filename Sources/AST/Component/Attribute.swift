@@ -10,14 +10,15 @@ import Lexer
 /// A function attribute, such as `@payable`.
 public struct Attribute: ASTNode {
 
-  var kind: Kind
+  public var kind: Kind
   var atToken: Token
   var identifierToken: Token
 
-  public init?(atToken: Token, identifierToken: Token) {
+  public init(atToken: Token, identifierToken: Token) {
     guard case .identifier(let attribute) = identifierToken.kind,
       let kind = Kind(rawValue: attribute) else {
-        return nil
+        print("found attribute with token which isn't an identiffier")
+        fatalError()
     }
 
     self.kind = kind
@@ -25,7 +26,7 @@ public struct Attribute: ASTNode {
     self.identifierToken = identifierToken
   }
 
-  enum Kind: String {
+  public enum Kind: String {
     case payable
   }
 

@@ -15,6 +15,7 @@ public indirect enum Statement: ASTNode {
   case ifStatement(IfStatement)
   case forStatement(ForStatement)
   case emitStatement(EmitStatement)
+  case doCatchStatement(DoCatchStatement)
 
   public var isEnding: Bool {
     switch self {
@@ -32,6 +33,7 @@ public indirect enum Statement: ASTNode {
     case .ifStatement(let ifStatement): return ifStatement.sourceLocation
     case .forStatement(let forStatement): return forStatement.sourceLocation
     case .emitStatement(let emitStatement): return emitStatement.sourceLocation
+    case .doCatchStatement(let doCatchStatement): return doCatchStatement.sourceLocation
     }
   }
   public var description: String {
@@ -42,6 +44,7 @@ public indirect enum Statement: ASTNode {
     case .ifStatement(let ifStatement): return ifStatement.description
     case .forStatement(let forStatement): return forStatement.description
     case .emitStatement(let emitStatement): return emitStatement.description
+    case .doCatchStatement(let doCatchStatement): return doCatchStatement.description
     }
   }
 }

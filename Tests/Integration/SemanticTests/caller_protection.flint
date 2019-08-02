@@ -1,0 +1,37 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+contract Test {
+  var owners: [Int: Address]
+}
+
+Test :: caller <- (any) {
+  public init() {
+    self.owners[1] = caller
+  }
+
+  public func isOwner(addr: Address) -> Bool {
+    var found: Bool = false
+    for let owner: Address in owners {
+      if owner == addr {
+        found = true
+      }
+    }
+    return found
+  }
+
+  public func getPrimaryOwner() -> Address {
+    return owners[1]
+  }
+}
+
+Test :: (owners) {
+  func bar() {}
+}
+
+Test :: (isOwner) {
+  func foo() {}
+}
+
+Test :: (getPrimaryOwner) {
+  func zoo() {}
+}

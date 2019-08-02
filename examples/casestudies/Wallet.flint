@@ -1,26 +1,33 @@
 contract Wallet {
   var owner: Address
-  var contents: Wei = Wei(0)
+  var contents: Wei
 }
 
 Wallet :: caller <- (any) {
-  public init() {
+  public init()
+    mutates (Wei.rawValue)
+  {
     owner = caller
+    contents = Wei(0)
   }
 
   @payable
-  public mutating func deposit(implicit value: Wei) {
+  public func deposit(implicit value: Wei)
+    mutates (contents, Wei.rawValue)
+  {
     // Record the Wei received into the contents state property.
-    contents.transfer(&value)
+    contents.transfer(source: &value)
   }
 }
 
 Wallet :: (owner) {
-  public mutating func withdraw(value: Int) {
+  public func withdraw(value: Int)
+    mutates (contents, owner, Wei.rawValue)
+  {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.
     var w: Wei = Wei(&contents, value)
-   
+
     // Send Wei to the owner's Ethereum address.
     send(owner, &w)
   }

@@ -13,15 +13,19 @@ public struct FunctionInformation {
   public var isMutating: Bool
   public var isSignature: Bool
 
-  var parameterTypes: [RawType] {
-    return declaration.signature.parameters.map { $0.type.rawType }
+  public var parameterTypes: [RawType] {
+    return declaration.signature.parameters.rawTypes
   }
 
   var parameterIdentifiers: [Identifier] {
     return declaration.signature.parameters.map { $0.identifier }
   }
 
-  var resultType: RawType {
+  public var resultType: RawType {
     return declaration.signature.rawType
+  }
+
+  var requiredParameterIdentifiers: [Identifier] {
+    return declaration.signature.parameters.filter { $0.assignedExpression == nil }.map { $0.identifier }
   }
 }

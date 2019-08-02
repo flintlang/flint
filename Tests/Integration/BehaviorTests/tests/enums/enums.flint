@@ -1,0 +1,103 @@
+enum A: Int {
+  case a = 1
+  case b
+  case c
+}
+
+enum B: Int {
+  case a = 0
+  case b = 32
+  case c = 42
+}
+
+enum C: String {
+  case a = "alpha"
+  case b = "beta"
+  case c = "charlie"
+}
+
+contract Test {
+  var enumA: A
+  var enumB: B
+  var enumC: C
+}
+
+Test :: (any) {
+  public init() {
+    self.enumA = A.a
+    self.enumB = B.a
+    self.enumC = C.a
+  }
+
+  public func assignA(i: Int) mutates(enumA) {
+    if i == 0 {
+      enumA = A.a
+    }
+    if i == 1 {
+      enumA = A.b
+    }
+    if i == 2 {
+      enumA = A.c
+    }
+  }
+
+  public func assignB(i: Int) mutates(enumB) {
+    if i == 0 {
+    enumB = B.a
+    }
+    if i == 1 {
+    enumB = B.b
+    }
+    if i == 2 {
+    enumB = B.c
+    }
+  }
+
+  public func assignC(i: Int) mutates(enumC) {
+    if i == 0 {
+      enumC = C.a
+    }
+    if i == 1 {
+      enumC = C.b
+    }
+    if i == 2 {
+      enumC = C.c
+    }
+  }
+
+  public func AaCheck() -> Bool {
+    return enumA == A.a
+  }
+
+  public func AbCheck() -> Bool {
+    return enumA == A.b
+  }
+
+  public func AcCheck() -> Bool {
+    return enumA == A.c
+  }
+
+  public func BaCheck() -> Bool {
+    return enumB == B.a
+  }
+
+  public func BbCheck() -> Bool {
+    return enumB == B.b
+  }
+
+  public func BcCheck() -> Bool {
+    return enumB == B.c
+  }
+
+  public func CaCheck() -> Bool {
+    return enumC == C.a
+  }
+
+  public func CbCheck() -> Bool {
+    return enumC == C.b
+  }
+
+  public func CcCheck() -> Bool {
+    return enumC == C.c
+  }
+}

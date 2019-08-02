@@ -29,13 +29,13 @@ extension TypeChecker {
       binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)
     case .equal:
       // Both sides must have the same type.
-      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType) {
+      if ![lhsType, rhsType].contains(.errorType), !lhsType.isCompatible(with: rhsType, in: passContext) {
         diagnostics.append(.incompatibleAssignment(lhsType: lhsType,
                                                    rhsType: rhsType,
                                                    expression: .binaryExpression(binaryExpression)))
       }
     case .plus, .overflowingPlus, .minus, .overflowingMinus, .times, .overflowingTimes,
-         .power, .divide, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
+         .power, .divide, .percent, .plusEqual, .minusEqual, .timesEqual, .divideEqual,
          .openAngledBracket, .closeAngledBracket, .lessThanOrEqual, .greaterThanOrEqual:
       // Both sides must have type Int.
       if ![lhsType, rhsType].contains(.errorType),
@@ -48,7 +48,7 @@ extension TypeChecker {
                                     expectedTypes: [.basicType(.int)],
                                     expression: .binaryExpression(binaryExpression)))
       }
-    case .and, .or:
+    case .and, .or, .implies:
       // Both sides must have type Bool.
       if ![lhsType, rhsType].contains(.errorType),
         !lhsType.isCompatible(with: .basicType(.bool)) ||
@@ -102,6 +102,8 @@ extension TypeChecker {
     var diagnostics = [Diagnostic]()
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+    let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
 
     if case .matchedEvent(let eventInformation) =
       environment.matchEventCall(functionCall,
@@ -111,6 +113,11 @@ extension TypeChecker {
       // Ensure an event call's arguments match the expected types.
 
       for argument in functionCall.arguments {
+        guard argument.identifier != nil else {
+          // This will have been caught as a semantic error
+          continue
+        }
+
         let argumentType = environment.type(of: argument.expression,
                                             enclosingType: enclosingType,
                                             scopeContext: passContext.scopeContext!)
@@ -123,6 +130,42 @@ extension TypeChecker {
             .incompatibleArgumentType(actualType: argumentType,
                                       expectedType: expectedType!,
                                       expression: argument.expression))
+        }
+      }
+    } else if case .matchedFunction(let matchingFunction) =
+      environment.matchFunctionCall(functionCall,
+                                    enclosingType: functionCall.identifier.enclosingType ?? enclosingType,
+                                    typeStates: typeStates,
+                                    callerProtections: callerProtections,
+                                    scopeContext: passContext.scopeContext!) {
+
+      if let externalCall = passContext.externalCallContext {
+        // check value parameter (type)
+        if matchingFunction.declaration.isPayable {
+          if let valueParameter: FunctionArgument = externalCall.getHyperParameter(parameterName: "value") {
+            let parameterType = environment.type(of: valueParameter.expression,
+                                                 enclosingType: enclosingType,
+                                                 typeStates: typeStates,
+                                                 callerProtections: callerProtections,
+                                                 scopeContext: passContext.scopeContext!)
+
+            if parameterType != .userDefinedType(RawType.StdlibType.wei.rawValue) {
+              diagnostics.append(.valueParameterWithWrongType(valueParameter))
+            }
+          }
+        }
+
+        // check gas parameter (type)
+        if let gasParameter: FunctionArgument = externalCall.getHyperParameter(parameterName: "gas") {
+          let parameterType = environment.type(of: gasParameter.expression,
+              enclosingType: enclosingType,
+              typeStates: typeStates,
+              callerProtections: callerProtections,
+              scopeContext: passContext.scopeContext!)
+
+          if parameterType != .basicType(.int) {
+            diagnostics.append(.gasParameterWithWrongType(gasParameter))
+          }
         }
       }
     }

@@ -5,28 +5,37 @@
 //  Created by Franklin Schrans on 12/28/17.
 //
 
-import CryptoSwift
 import AST
 import Lexer
+import ABI
+import YUL
 
 /// Runtime code in IR which determines which function to call based on the Ethereum's transaction payload.
 struct IRFunctionSelector {
   var fallback: SpecialDeclaration?
   var functions: [IRFunction]
-  var enclosingType: Identifier
+  var enclosingType: AST.Identifier
   var environment: Environment
 
   func rendered() -> String {
+    let reentrancyProtection = renderReentrancyProtection()
     let cases = renderCases()
     let fallback = renderFallback()
 
     return """
+    \(reentrancyProtection)
     switch \(IRRuntimeFunction.selector())
     \(cases)
     default {
       \(fallback)
     }
     """
+  }
+
+  func renderReentrancyProtection() -> String {
+    let reentrancyProtection = IRReentrancyProtection()
+        .rendered(enclosingType: enclosingType.name, environment: environment)
+    return reentrancyProtection.description
   }
 
   func renderFallback() -> String {
@@ -41,7 +50,7 @@ struct IRFunctionSelector {
 
   func renderCases() -> String {
     return functions.map { function in
-      let functionHash = "0x\(function.mangledSignature().sha3(.keccak256).prefix(8))"
+      let functionHash = ABI.soliditySelectorHex(of: function.mangledSignature())
 
       return """
 
@@ -85,11 +94,33 @@ struct IRFunctionSelector {
     if let resultType = function.resultCanonicalType {
       switch resultType {
       case .address, .uint256, .bytes32:
-        return typeStateChecks + "\n" + callerProtectionChecks + "\n" + IRRuntimeFunction.return32Bytes(value: call)
+        return typeStateChecks.description + "\n" + callerProtectionChecks + "\n" +
+          IRRuntimeFunction.return32Bytes(value: call)
       }
     }
 
-    return "\(typeStateChecks)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
+    return "\(typeStateChecks.description)\n\(callerProtectionChecks)\n\(valueChecks)\(call)"
+  }
+}
+
+/// Checks that we are not inside a non-reentrant external call.
+struct IRReentrancyProtection {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
+    let stateVariable: AST.Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
+                                                           sourceLocation: .DUMMY))
+    let selfState: AST.Expression = .binaryExpression(BinaryExpression(
+      lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+      op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
+      rhs: stateVariable))
+    let stateVariableRendered = IRExpression(expression: selfState, asLValue: false)
+      .rendered(functionContext: FunctionContext(environment: environment,
+                                                 scopeContext: ScopeContext(),
+                                                 enclosingTypeName: enclosingType,
+                                                 isInStructFunction: false))
+
+    return .inline("""
+    if eq(\(stateVariableRendered.description), \(IRContract.reentrancyProtectorValue)) { revert(0, 0) }
+    """)
   }
 }
 
@@ -97,7 +128,7 @@ struct IRFunctionSelector {
 struct IRTypeStateChecks {
   var typeStates: [TypeState]
 
-  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> String {
+  func rendered(enclosingType: RawTypeIdentifier, environment: Environment) -> YUL.Statement {
     let checks = typeStates.compactMap { typeState -> String? in
       guard !typeState.isAny else { return nil }
 
@@ -108,9 +139,9 @@ struct IRTypeStateChecks {
                                                    enclosingTypeName: enclosingType,
                                                    isInStructFunction: false))
 
-      let stateVariable: Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
+      let stateVariable: AST.Expression = .identifier(Identifier(name: IRContract.stateVariablePrefix + enclosingType,
                                                              sourceLocation: .DUMMY))
-      let selfState: Expression = .binaryExpression(BinaryExpression(
+      let selfState: AST.Expression = .binaryExpression(BinaryExpression(
         lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
         op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
         rhs: stateVariable))
@@ -120,18 +151,18 @@ struct IRTypeStateChecks {
                                                    enclosingTypeName: enclosingType,
                                                    isInStructFunction: false))
 
-      let check = IRRuntimeFunction.isMatchingTypeState(stateValue, stateVariableRendered)
+      let check = IRRuntimeFunction.isMatchingTypeState(stateValue.description, stateVariableRendered.description)
       return "_flintStateCheck := add(_flintStateCheck, \(check))"
     }
 
     if !checks.isEmpty {
-      return """
+      return .inline("""
       let _flintStateCheck := 0
       \(checks.joined(separator: "\n"))
       if eq(_flintStateCheck, 0) { revert(0, 0) }
-      """ + "\n"
+      """)
     }
 
-    return ""
+    return .noop
   }
 }

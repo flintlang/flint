@@ -4,10 +4,12 @@
 //
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
+
 import Foundation
 import AST
 import Lexer
 import Diagnostic
+import Source
 
 extension SemanticAnalyzer {
   /// The set of characters for identifiers which can only be used in the stdlib.
@@ -27,13 +29,13 @@ extension SemanticAnalyzer {
 
     // Disallow identifiers from containing special characters.
     if let char =
-      identifier.name.first(where: { return identifierReservedCharacters.contains($0.unicodeScalars.first!) }) {
+    identifier.name.first(where: { return identifierReservedCharacters.contains($0.unicodeScalars.first!) }) {
       diagnostics.append(.invalidCharacter(identifier, character: char))
     }
 
     // Only allow stdlib files to include special characters, such as '$'.
     if !identifier.sourceLocation.isFromStdlib,
-      let char = identifier.name.first(where: { return stdlibReservedCharacters.contains($0.unicodeScalars.first!) }) {
+       let char = identifier.name.first(where: { return stdlibReservedCharacters.contains($0.unicodeScalars.first!) }) {
       diagnostics.append(.invalidCharacter(identifier, character: char))
     }
 
@@ -49,9 +51,10 @@ extension SemanticAnalyzer {
       }
     }
 
-    if passContext.isFunctionCall {
-      // If the identifier is the name of a function call, do nothing. The function call will be matched in
-      // `process(functionCall:passContext:)`.
+    if passContext.isFunctionCall || passContext.isFunctionCallArgumentLabel {
+      // If the identifier is the name of a function call or a function call argument label,
+      // do nothing. The function call will be matched in `process(functionCall:passContext:)`,
+      // or the other checks should not take place for argument labels.
     } else if inFunctionOrInitializer, !passContext.isInBecome, !passContext.isInEmit {
       // The identifier is used within the body of a function or an initializer
 
@@ -64,9 +67,9 @@ extension SemanticAnalyzer {
         let scopeContext = passContext.scopeContext!
         if let variableDeclaration = scopeContext.declaration(for: identifier.name) {
           if variableDeclaration.isConstant,
-            !variableDeclaration.type.rawType.isInout,
-            asLValue,
-            !passContext.isInSubscript {
+             !variableDeclaration.type.rawType.isInout,
+             asLValue,
+             !passContext.isInSubscript {
             // The variable is a constant but is attempted to be reassigned.
             diagnostics.append(.reassignmentToConstant(identifier, variableDeclaration.sourceLocation))
           }
@@ -91,10 +94,12 @@ extension SemanticAnalyzer {
           if passContext.environment!.isPropertyConstant(identifier.name, enclosingType: enclosingType) {
             // Retrieve the source location of that property's declaration.
             let declarationSourceLocation =
-              passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType)!
+                passContext.environment!.propertyDeclarationSourceLocation(identifier.name, enclosingType: enclosingType
+                )!
 
             if !inInitializerDeclaration ||
-              passContext.environment!.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType) {
+                   passContext.environment!.isPropertyAssignedDefaultValue(identifier.name, enclosingType: enclosingType
+                   ) {
               // The state property is a constant but is attempted to be reassigned.
               diagnostics.append(.reassignmentToConstant(identifier, declarationSourceLocation))
             }
@@ -116,8 +121,8 @@ extension SemanticAnalyzer {
             if !functionDeclarationContext.isMutating {
               // The function is declared non-mutating.
               diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(
-                .identifier(identifier),
-                functionDeclaration: functionDeclarationContext.declaration))
+                  .identifier(identifier),
+                  functionDeclaration: functionDeclarationContext.declaration))
             }
             // Record the mutating expression in the context.
             addMutatingExpression(.identifier(identifier), passContext: &passContext)
@@ -129,9 +134,10 @@ extension SemanticAnalyzer {
         // The variable is being mutated in a function.
         if !functionDeclarationContext.isMutating {
           // The function is declared non-mutating.
-          diagnostics.append(
-            .useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier),
-                                                          functionDeclaration: functionDeclarationContext.declaration))
+          // TODO: Must become make function be explicitly marked mutating?
+          //  diagnostics.append(
+          //    .useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier),
+          //                                               unctionDeclaration: functionDeclarationContext.declaration))
         }
         // Record the mutating expression in the context.
         addMutatingExpression(.identifier(identifier), passContext: &passContext)
@@ -144,13 +150,37 @@ extension SemanticAnalyzer {
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
     var diagnostics = [Diagnostic]()
 
-    if parameter.type.rawType.isUserDefinedType, !parameter.isInout {
+    checkWhetherSolidityTypesAreAllowedInContext(type: parameter.type,
+                                                 passContext: passContext,
+                                                 diagnostics: &diagnostics)
+
+    if parameter.type.rawType.isUserDefinedType,
+       !parameter.isInout,
+       !(parameter.type.isCurrencyType && parameter.isImplicit) {
       // Ensure all structs are passed by reference, for now.
       diagnostics.append(Diagnostic(severity: .error, sourceLocation: parameter.sourceLocation,
                                     message: "Structs cannot be passed by value yet, and have to be passed inout"))
+    } else if passContext.traitDeclarationContext == nil && parameter.type.rawType.isSelfType {
+      diagnostics.append(.useOfSelfOutsideTrait(at: parameter.sourceLocation))
     }
 
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
+  }
+
+  func checkWhetherSolidityTypesAreAllowedInContext(type: Type,
+                                                    passContext: ASTPassContext,
+                                                    diagnostics: inout [Diagnostic]) {
+    if let kind = passContext.traitDeclarationContext?.traitKind.kind, kind == .external {
+      if case .solidityType = type.rawType {
+      } else {
+        // typeAnnotation is describing a Flint type but we are in an external trait declaration
+        diagnostics.append(.flintTypeUsedInExternalTrait(type, at: type.sourceLocation))
+      }
+    } else if case .solidityType = type.rawType {
+      // type annotation is describing a Solidity type but we are not in an external trait declaration
+      diagnostics.append(.solidityTypeUsedOutsideExternalTrait(type, at: type.sourceLocation))
+    }
+
   }
 
   public func process(callerProtection: CallerProtection,
@@ -159,13 +189,14 @@ extension SemanticAnalyzer {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
 
-    if !callerProtection.isAny &&
-      !environment.containsCallerProtection(callerProtection,
-                                            enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name) {
+    if !callerProtection.isAny && !environment.containsCallerProtection(
+               callerProtection,
+               enclosingType: contractBehaviorDeclarationContext.contractIdentifier.name
+           ) {
       // The caller protection is neither `any` or a valid property in the enclosing contract.
       diagnostics.append(
-        .undeclaredCallerProtection(callerProtection,
-                                    contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
+          .undeclaredCallerProtection(callerProtection,
+                                      contractIdentifier: contractBehaviorDeclarationContext.contractIdentifier))
     }
 
     return ASTPassResult(element: callerProtection, diagnostics: diagnostics, passContext: passContext)
@@ -191,8 +222,8 @@ extension SemanticAnalyzer {
   public func process(token: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
     var diagnostics = [Diagnostic]()
     if case .literal(let tokenKind) = token.kind,
-      case .address(let address) = tokenKind,
-      address.count != 42 {
+       case .address(let address) = tokenKind,
+       address.count != 42 {
       diagnostics.append(.invalidAddressLiteral(token))
     }
     return ASTPassResult(element: token, diagnostics: diagnostics, passContext: passContext)

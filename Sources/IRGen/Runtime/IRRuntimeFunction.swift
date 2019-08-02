@@ -6,6 +6,7 @@
 //
 
 import AST
+import YUL
 
 /// The runtime functions used by Flint.
 enum IRRuntimeFunction {
@@ -38,6 +39,7 @@ enum IRRuntimeFunction {
     case mul
     case div
     case power
+    case revertIfGreater
 
     var mangled: String {
       return "\(Environment.runtimeFunctionPrefix)\(self)"
@@ -60,32 +62,33 @@ enum IRRuntimeFunction {
     return "\(Identifiers.decodeAsUInt.mangled)(\(offset))"
   }
 
-  static func store(address: String, value: String, inMemory: Bool) -> String {
-    return "\(inMemory ? "mstore" : "sstore")(\(address), \(value))"
+  static func store(address: YUL.Expression, value: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+    return .functionCall(FunctionCall(inMemory ? "mstore" : "sstore", address, value))
   }
 
-  static func store(address: String, value: String, inMemory: String) -> String {
-    return "\(Identifiers.store.mangled)(\(address), \(value), \(inMemory))"
+  static func store(address: YUL.Expression, value: YUL.Expression, inMemory: String) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.store.mangled, address, value, .identifier(inMemory)))
   }
 
-  static func addOffset(base: String, offset: String, inMemory: Bool) -> String {
-    return inMemory ? "add(\(base), mul(\(EVM.wordSize), \(offset)))" : "add(\(base), \(offset))"
+  static func addOffset(base: YUL.Expression, offset: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+    return .functionCall(FunctionCall("add", base,
+      inMemory ? .functionCall(FunctionCall("mul", .literal(.num(EVM.wordSize)), offset)) : offset))
   }
 
-  static func addOffset(base: String, offset: String, inMemory: String) -> String {
-    return "\(Identifiers.computeOffset.mangled)(\(base), \(offset), \(inMemory))"
+  static func addOffset(base: YUL.Expression, offset: YUL.Expression, inMemory: String) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.computeOffset.mangled, base, offset, .identifier(inMemory)))
   }
 
-  static func load(address: String, inMemory: Bool) -> String {
-    return "\(inMemory ? "mload" : "sload")(\(address))"
+  static func load(address: YUL.Expression, inMemory: Bool) -> YUL.Expression {
+    return .functionCall(FunctionCall(inMemory ? "mload" : "sload", address))
   }
 
-  static func load(address: String, inMemory: String) -> String {
-    return "\(Identifiers.load.mangled)(\(address), \(inMemory))"
+  static func load(address: YUL.Expression, inMemory: String) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.load.mangled, address, .identifier(inMemory)))
   }
 
-  static func allocateMemory(size: Int) -> String {
-    return "\(Identifiers.allocateMemory.mangled)(\(size))"
+  static func allocateMemory(size: Int) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.allocateMemory.mangled, .literal(.num(size))))
   }
 
   static func checkNoValue(_ value: String) -> String {
@@ -116,52 +119,58 @@ enum IRRuntimeFunction {
     return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
-  static func storageArrayOffset(arrayOffset: String, index: String) -> String {
-    return "\(Identifiers.storageArrayOffset.mangled)(\(arrayOffset), \(index))"
+  static func storageArrayOffset(arrayOffset: YUL.Expression, index: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageArrayOffset.mangled, arrayOffset, index))
   }
 
   static func storageArraySize(arrayOffset: String) -> String {
     return "\(Identifiers.storageArraySize.mangled)(\(arrayOffset))"
   }
 
-  static func storageFixedSizeArrayOffset(arrayOffset: String, index: String, arraySize: Int) -> String {
-    return "\(Identifiers.storageFixedSizeArrayOffset.mangled)(\(arrayOffset), \(index), \(arraySize))"
+  static func storageFixedSizeArrayOffset(arrayOffset: YUL.Expression,
+                                          index: YUL.Expression, arraySize: Int) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageFixedSizeArrayOffset.mangled,
+                                      arrayOffset, index, .literal(.num(arraySize))))
   }
 
-  static func storageDictionaryOffsetForKey(dictionaryOffset: String, key: String) -> String {
-    return "\(Identifiers.storageDictionaryOffsetForKey.mangled)(\(dictionaryOffset), \(key))"
+  static func storageDictionaryOffsetForKey(dictionaryOffset: YUL.Expression, key: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageDictionaryOffsetForKey.mangled, dictionaryOffset, key))
   }
 
-  static func storageDictionaryKeysArrayOffset(dictionaryOffset: String) -> String {
-    return "\(Identifiers.storageDictionaryKeysArrayOffset.mangled)(\(dictionaryOffset))"
+  static func storageDictionaryKeysArrayOffset(dictionaryOffset: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageDictionaryKeysArrayOffset.mangled, dictionaryOffset))
   }
 
-  static func storageOffsetForKey(baseOffset: String, key: String) -> String {
-    return "\(Identifiers.storageOffsetForKey.mangled)(\(baseOffset), \(key))"
+  static func storageOffsetForKey(baseOffset: YUL.Expression, key: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.storageOffsetForKey.mangled, baseOffset, key))
   }
 
   static func callvalue() -> String {
     return "\(Identifiers.callvalue)()"
   }
 
-  static func add(a: String, b: String) -> String {
-    return "\(Identifiers.add.mangled)(\(a), \(b))"
+  static func add(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.add.mangled, a, b))
   }
 
-  static func sub(a: String, b: String) -> String {
-    return "\(Identifiers.sub.mangled)(\(a), \(b))"
+  static func sub(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.sub.mangled, a, b))
   }
 
-  static func mul(a: String, b: String) -> String {
-    return "\(Identifiers.mul.mangled)(\(a), \(b))"
+  static func mul(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.mul.mangled, a, b))
   }
 
-  static func div(a: String, b: String) -> String {
-    return "\(Identifiers.div.mangled)(\(a), \(b))"
+  static func div(a: YUL.Expression, b: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.div.mangled, a, b))
   }
 
-  static func power(b: String, e: String) -> String {
-    return "\(Identifiers.power.mangled)(\(b), \(e))"
+  static func power(b: YUL.Expression, e: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.power.mangled, b, e))
+  }
+
+  static func revertIfGreater(value: YUL.Expression, max: YUL.Expression) -> YUL.Expression {
+    return .functionCall(FunctionCall(Identifiers.revertIfGreater.mangled, value, max))
   }
 
   static let allDeclarations: [String] = [
@@ -190,7 +199,8 @@ enum IRRuntimeFunction {
     IRRuntimeFunctionDeclaration.sub,
     IRRuntimeFunctionDeclaration.mul,
     IRRuntimeFunctionDeclaration.div,
-    IRRuntimeFunctionDeclaration.power
+    IRRuntimeFunctionDeclaration.power,
+    IRRuntimeFunctionDeclaration.revertIfGreater
   ]
 }
 
@@ -461,6 +471,16 @@ struct IRRuntimeFunctionDeclaration {
     {
         ret := flint$mul(ret, b)
     }
+  }
+  """
+
+  // Ensure that a <= b
+  static let revertIfGreater =
+  """
+  function flint$revertIfGreater(a, b) -> ret {
+    if gt(a, b) { revert(0, 0) }
+
+    ret := a
   }
   """
 }

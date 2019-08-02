@@ -1,0 +1,119 @@
+pragma solidity ^0.4.24; 
+contract SimpleDAO { 
+
+	struct Proposal { 
+		address proposer; 
+		uint256 value; 
+		address recipient; 
+		uint256 yesVotes; 		
+		uint256 noVotes; 		
+		uint256 quorum; 		
+		bool finished; 		
+		mapping (address => bool) voted; 
+	} 
+
+	enum Stages { 
+		Join , 
+		Propose , 
+		Vote 
+	} 
+
+	Stages public stage = Stages.Join; 	
+	uint256 public creationTime; 	
+	Proposal public proposal; 	
+	mapping (address => uint256) public balances; 
+	uint256 public totalSupply; 
+
+	modifier atStage(Stages _stage) {
+	 	if (stage != _stage) { 
+			revert(); 
+		} 
+		_; 
+	} 
+
+	modifier onlyMember() { 		
+		if (balances[msg.sender] <= 0) { 
+			revert(); 
+		} 
+		_; 
+	} 
+
+	constructor() public { 
+		creationTime = now; 
+	}
+
+	function newProposal(address _recipient , uint256 _value) public 
+	onlyMember
+		atStage(Stages.Propose) { 
+			if (_value < 0) { 
+				revert();
+			}
+			proposal = Proposal({
+				proposer: msg.sender ,
+				value: _value , 
+				recipient: _recipient , 
+				yesVotes: 0,
+				noVotes: 0,
+				quorum: totalSupply / 2, 
+				finished: false
+			});
+			stage = Stages.Vote; 
+	}
+
+
+	function vote(bool _vote) public 
+	onlyMember
+	atStage(Stages.Vote) {
+		if (proposal.voted[msg.sender]) {
+			revert(); 
+		}
+		if (_vote) {
+			proposal.yesVotes += balances[msg.sender];
+		} else {
+			proposal.noVotes += balances[msg.sender];
+		}
+		proposal.voted[msg.sender] = true; 
+	}
+
+	function executeProposal() public 
+	onlyMember
+	atStage(Stages.Vote) {
+		if (msg.sender != proposal.proposer || proposal.finished) { 
+			revert();
+		}
+		proposal.finished = true;
+		stage = Stages.Propose;
+		if (proposal.yesVotes + proposal.noVotes > proposal.quorum
+			&& proposal.yesVotes > proposal.noVotes) {
+			proposal.recipient.call.value(proposal.value)(); 
+		}
+	}
+
+	function leave() public 
+	onlyMember 
+	atStage(Stages.Propose) {
+	// the function body is as originally; but in the corrected version the call to msg.sender 
+        // should be at the end of the function body
+		uint256 balance = balances[msg.sender];
+		msg.sender.call.value((balance / totalSupply) * address(this). balance)();
+		totalSupply -= balance;
+		balances[msg.sender] = 0; 
+	}
+
+	function () public payable { 
+		payIn();
+	}
+
+	function join() public payable 
+	atStage(Stages.Join) {
+		if (now > creationTime + 14 days) { 
+			stage = Stages.Propose;
+		}
+		balances[msg.sender] += msg.value;
+		totalSupply += msg.value; 
+	}
+
+	function payIn() pure internal returns (bool) { 
+		return true;
+	}
+}

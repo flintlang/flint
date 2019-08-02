@@ -1,0 +1,179 @@
+// Wallet library
+// Flint translation of Mult-Sig Wallet
+// @0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4
+
+struct PendingState {
+  let yetNeeded: Int
+  let ownersDone: Int
+  let index: Int
+
+  public init(yetNeeded: Int, ownersDone: Int, index: Int){
+    self.yetNeeded = yetNeeded
+    self.ownersDone = ownersDone
+    self.index = index
+  }
+}
+
+struct Transaction {
+  let to: Address
+  let value: Wei
+  let data: Int
+
+  public init(to: Address, value: inout Wei, data: Int){
+    self.to = to
+    self.value = value
+    self.data = data
+  }
+}
+
+contract WalletLibrary {
+  // FIELDS //
+  let _walletLibrary: Address = 0xcafecafecafecafecafecafecafecafecafecafe
+
+  // the number of owners that must confirm the same operation before it is run.
+  var required: Int
+  // pointer used to find a free slot in owners
+  var numOwners: Int = 0
+
+  var dailyLimit: Int = 0
+  var spentToday: Int = 0
+  var lastDay: Int = 0
+
+  // list of owners
+  var owners: [Address] = []
+  let maxOwners: Int = 250
+
+  // index on the list of owners to allow reverse lookup
+  var ownerIndex: [Address: Int] = [:]
+  // the ongoing operations.
+  var pending: [Int: PendingState] = [:]
+  var pendingIndex: [Int] =  []
+
+  // pending transactions we have at present.
+  var txs: [Int: Transaction] = [:]
+
+  // EVENTS //
+  // Confirmation - owner and operation hash
+  event Confirmation (
+    owner: Address,
+    operation: Int
+  )
+  event Revoke (
+    owner: Address,
+    operation: Int
+  )
+
+  // Changing owner
+  event OwnerChanged (
+    oldOwner: Address,
+    newOwner: Address
+  )
+  event OwnerAdded (
+    newOwner: Address
+  )
+  event OwnerRemoved (
+    oldOwner: Address
+  )
+
+  // Requirement signature change
+  event RequirementChanged (
+    newRequirement: Int
+  )
+
+  // Funds has arrived into the wallet (record how much(.
+  event Deposit (
+    _from: Address,
+    value: Int
+  )
+  // Single transaction going out of the wallet (record who signed for it, how much, and to whom it's going(.
+  event SingleTransact (
+    owner: Address,
+    value: Int,
+    to: Address,
+    data: Int,
+    created: Address
+  )
+  // Multi-sig transaction going out of the wallet (record who signed for it last, the operation hash, how much, and to whom it's going(.
+  event MultiTransact (
+    owner: Address,
+    operation: Int,
+    value: Int,
+    to: Address,
+    data: Int,
+    created: Address
+  )
+  // Confirmation still needed for a transaction.
+  event ConfirmationNeeded (
+    operation: Int,
+    initiator: Address,
+    value: Int,
+    to: Address,
+    data: Int
+  )
+}
+
+WalletLibrary :: caller <- (any) {
+  // Cannot deposit ETH via fallback
+  // @payable
+  // public fallback(implicit value: Wei){
+  //  Deposit(caller )
+  // }
+
+  // BUG: when [Address] is used as argument to init
+  public init(_owners: Address, _required: Int) {
+
+    // Doesn't make sense if _owners: Address
+    // numOwners = _owners.size + 1
+    numOwners = 1
+    owners[1] = caller
+    ownerIndex[caller] = 1
+
+    var i: Int = 0
+    // TODO: Should be _owners
+    for var owner: Address in owners {
+      self.owners[2 + i] = owner
+      // BUG: Thinks owner is being reassigned in this statement
+      // using var owner temporarily
+      self.ownerIndex[owner] = 2 + i
+      i += 1
+    }
+    self.required = required
+  }
+}
+
+WalletLibrary :: caller <- (owners) {
+  public func revoke(operation: Int) {
+    let ownerIndex: Int = self.ownerIndex[caller]
+    let ownerIndexBit: Int = 2**ownerIndex
+    var pending: PendingState = self.pending[operation]
+
+    // TODO: Can't do bitwise operations
+    //if (pending.ownersDone & ownerIndexBit) > 0 {
+    //  pending.yetNeeded+=1
+    //  pending.ownersDone -= ownerIndexBit
+    //  emit Revoke(owner: caller, operation: operation)
+    //}
+  }
+
+  public func changeOwner(_from: Address, _to: Address)
+    mutates (owners, ownerIndex)
+  {
+    if (isOwner(_owner: _to) == false) && isOwner(_owner: _from) {
+      //clearPending()
+      // BUG: should be let
+      var currentOwner: Int = self.ownerIndex[_from]
+      self.owners[currentOwner] = _to
+      self.ownerIndex[_from] = 0
+      self.ownerIndex[_to] = currentOwner
+      emit OwnerChanged(oldOwner: _from, newOwner: _to)
+    }
+  }
+
+  func isOwner(_owner: Address) -> Bool {
+    return self.ownerIndex[_owner] > 0
+  }
+
+  func getOwner(ownerIndex: Int) -> Address {
+    return self.owners[ownerIndex + 1]
+  }
+}

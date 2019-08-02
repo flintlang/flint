@@ -1,0 +1,73 @@
+contract Dictionary {
+  var storage: [Address: Int] = [:]
+  var foo: Int = 0
+  var storage2: [Address: Int] = [:]
+  var bar: Int = 0
+
+  var storage3: [Int: S] = [:]
+}
+
+struct S {
+  var a: Int = 0
+  var b: Bool = false
+  var c: T = T()
+} 
+
+struct T {
+  var a: Int = 0
+}
+
+Dictionary :: (any) {
+  public init() {}
+
+  public func write(addr: Address, value: Int) mutates (storage) {
+    storage[addr] = value
+  }
+
+  public func get(addr: Address) -> Int {
+    return storage[addr]
+  }
+
+  public func write2(addr: Address, value: Int) mutates (storage2) {
+    storage2[addr] = value
+  }
+
+  public func get2(addr: Address) -> Int {
+    return storage2[addr]
+  }
+
+  public func getFoo() -> Int {
+    return foo
+  }
+
+  public func setFoo(val: Int) mutates (foo) {
+    foo = val
+  }
+
+  public func getBar() -> Int {
+    return bar
+  }
+
+  public func setBar(val: Int) mutates (bar) {
+    bar = val
+  }
+
+  public func write3(index: Int, a: Int, b: Bool, cA: Int) 
+    mutates (storage3, S.a, S.b, S.c, T.a) {
+    storage3[index].a = a
+    storage3[index].b = b
+    storage3[index].c.a = cA
+  }
+
+  public func value3a(index: Int) -> Int {
+    return storage3[index].a
+  }
+
+  public func value3b(index: Int) -> Bool {
+    return storage3[index].b
+  }
+
+  public func value3cA(index: Int) -> Int {
+    return storage3[index].c.a
+  }
+}

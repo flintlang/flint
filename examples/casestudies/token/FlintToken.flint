@@ -3,33 +3,25 @@
 // ----------------------------------------------------------------------------
 
 contract FlintToken (Minting, MintingFinished) {
-    var balances: [Address: Int] = [:]
-    var allowed: [Address: [Address: Int]] = [:]
+    var balances: [Address: Int]
+    var allowed: [Address: [Address: Int]]
     var totalSupply: Int = 0
     var owner: Address
 
-    event Transfer {
-      let from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000
-      let to: Address
-      let value: Int
-    }
-    event Approval {
-      let from: Address
-      let to: Address
-      let value: Int
-    }
+    event Transfer (
+      to: Address, value: Int, from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    event Approval (from: Address, to: Address, value: Int)
 
-    event Mint {
-      let to: Address
-      let value: Int
-    }
+    event Mint (to: Address, value: Int)
 
-    event MintFinished {}
+    event MintFinished ()
 }
 
 FlintToken @(any) :: caller <- (any) {
   public init() {
     self.owner = caller
+    self.balances = [:]
+    self.allowed = [:]
     become Minting
   }
 
@@ -37,14 +29,16 @@ FlintToken @(any) :: caller <- (any) {
   // - param to: The address to transfer to.
   // - param value: The amount to be transferred.
   // - return: true or is reverted
-  public mutating func transfer(to: Address, value: Int) -> Bool {
+  public func transfer(to: Address, value: Int) -> Bool
+    mutates (balances)
+  {
     assert(balances[caller] >= value)
     assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
 
     balances[caller] -= value
     balances[to] += value
 
-    emit Transfer(from: caller, to: to, value: value)
+    emit Transfer(to: to, value: value, from: caller)
 
     return true;
   }
@@ -53,7 +47,9 @@ FlintToken @(any) :: caller <- (any) {
   // - param to: The address to transfer to.
   // - param value: The amount to be transferred.
   // - return: true or is reverted
-  public mutating func approve(spender: Address, value: Int) -> Bool {
+  public func approve(spender: Address, value: Int) -> Bool
+    mutates (allowed)
+  {
     allowed[caller][spender] = value
 
     emit Approval(from: caller, to: spender, value: value)
@@ -66,7 +62,9 @@ FlintToken @(any) :: caller <- (any) {
   // - param value: The amount of tokens to be transferred.
   // - return: true or is reverted
 
-  public mutating func transferFrom(from: Address, to: Address, value: Int) -> Bool {
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
+    mutates (allowed, balances)
+  {
     let allowance: Int = allowed[from][caller]
     assert(balances[from] >= value && allowance >= value)
     assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
@@ -75,7 +73,7 @@ FlintToken @(any) :: caller <- (any) {
     balances[to] += value
     allowed[from][caller] -= value
 
-    emit Transfer(from: from, to: to, value: value)
+    emit Transfer(to: to, value: value, from: from)
     return true
   }
 
@@ -86,7 +84,9 @@ FlintToken @(any) :: caller <- (any) {
   // From MonolithDAO Token.sol
   // - param _spender The address which will spend the funds.
   // - param _addedValue The amount of tokens to increase the allowance by.
-  mutating func increaseApproval(spender: Address, addedValue: Int) -> Bool {
+  func increaseApproval(spender: Address, addedValue: Int) -> Bool
+    mutates (allowed)
+  {
     allowed[caller][spender] += addedValue
 
     emit Approval(from: caller, to: spender, value: allowed[caller][spender])
@@ -100,7 +100,9 @@ FlintToken @(any) :: caller <- (any) {
   // From MonolithDAO Token.sol
   // - param _spender The address which will spend the funds.
   // - param _subtractedValue The amount of tokens to decrease the allowance by.
-  mutating func decreaseApproval(spender: Address, subtractedValue: Int) -> Bool {
+  func decreaseApproval(spender: Address, subtractedValue: Int) -> Bool
+    mutates (allowed)
+  {
     let oldValue: Int = allowed[caller][spender]
     if subtractedValue >= oldValue {
       allowed[caller][spender] = 0
@@ -120,7 +122,9 @@ FlintToken @(Minting) :: (owner) {
   // proper events are emitted.
   // - param account The account that will receive the created tokens.
   // - param amount The amount that will be created.
-  public mutating func mint(account: Address, amount: Int) -> Bool{
+  public func mint(account: Address, amount: Int) -> Bool
+    mutates (totalSupply, balances)
+  {
     assert(account != 0x00000_00000_00000_00000_00000_00000_00000_00000);
 
     totalSupply += amount
@@ -133,8 +137,8 @@ FlintToken @(Minting) :: (owner) {
 
   // Stop minting new tokens
   // Return true if successful
-  public mutating func finishMinting() -> Bool {
-    emit MintFinished
+  public func finishMinting() -> Bool {
+    emit MintFinished()
     return true
     become MintingFinished
   }

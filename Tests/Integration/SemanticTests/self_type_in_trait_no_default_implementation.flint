@@ -1,0 +1,19 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+struct trait Trait {
+  // A function signature that conforming structures need to implement,
+  // substituting `Self` for their own type.
+  func noDefaultImplementation(param: inout Self)
+}
+
+// A correct implementation of struct trait Trait
+struct Implementation: Trait {
+  func noDefaultImplementation(param: inout Implementation) {
+  }
+}
+
+contract A { }
+
+A :: a <- (any) {
+  public init() {}
+}

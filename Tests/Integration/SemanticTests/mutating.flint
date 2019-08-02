@@ -1,0 +1,83 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+contract Test {
+  var a: Int[10] = []
+  var b: Int = 0
+  var f: Foo = Foo()
+}
+
+Test :: (any) {
+  public init() {}
+
+  func foo() -> Int {
+    a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+    return a[0]
+  }
+
+  func bar() {
+    var a: Int = foo()
+    a += foo()
+  }
+
+  func a() {
+    b(a: c()) // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+
+  func b(a: Int) mutates (any) {
+  }
+
+  func c() -> Int {
+    return 0
+  }
+
+  func d() mutates (a) {
+    a[0] += 2
+  }
+
+  func e() mutates (b) {
+    b = 2
+  }
+
+  func f() mutates (a) {
+    self.a[2] = 2
+  }
+
+  func g() {
+    var x: Int = 2
+    x = 2
+  }
+
+  func h() {
+    var b: Int = 2
+    self.b = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+
+  func i(f: Foo) {} // expected-error {{Structs cannot be passed by value yet, and have to be passed inout}}
+
+  func j(f: inout Foo) {}
+
+  func k(f: inout Foo) {
+    j(f: &self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
+    j(f: &f)
+
+    let foo: Foo = Foo()
+    Foo(&foo)
+
+    Foo(&self.f) // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+
+  func l() mutates (any) {
+    j(f: &self.f)
+  }
+}
+
+struct Foo {
+  var a: Int = 0
+
+  init() {}
+  init(a: inout Foo) {}
+
+  func h() { 
+    a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+  }
+}

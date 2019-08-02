@@ -1,0 +1,22 @@
+//VERIFY-CHECK
+contract Prime {
+}
+
+Prime :: (any) {
+  public init() {}
+
+  func prime(a: Int, b: Int)
+    pre (1 < a && a < 500)
+    pre (1 < b && b < 25000)
+  {
+    assert ((a * b) != 23447)
+  }
+
+  func factor(a: Int, b: Int)
+    pre (1 < a && a < 500)
+    pre (1 < b && b < 25000)
+  {
+    //VERIFY-FAIL
+    assert ((a * b) != 23449)
+  }
+}

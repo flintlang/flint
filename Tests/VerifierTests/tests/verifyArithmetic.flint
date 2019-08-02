@@ -1,0 +1,70 @@
+//VERIFY-CHECK
+contract C {
+}
+
+C :: (any) {
+  public init() {}
+
+  public func prime(a: Int, b: Int)
+    pre (1 < a && a < 500)
+    pre (1 < b && b < 25000)
+  {
+    assert (a * b != 23447)
+  }
+
+
+  public func factor(a: Int, b: Int)
+    pre (1 < a && a < 500)
+    pre (1 < b && b < 25000)
+  {
+    //VERIFY-FAIL
+    assert (a * b != 23449)
+  }
+
+  func power()
+  {
+    assert (8 == 2 ** 3)
+    //VERIFY-FAIL
+    assert (8 == 2 ** 2)
+  }
+
+  func overflow1()
+  {
+    assert ((2 ** 255) &* 2 == 0)
+    //VERIFY-FAIL
+    assert ((2 ** 255) &* 3 == 0)
+  }
+
+  func overflow2()
+  {
+    assert (((2 ** 255) &+ (2**255)) == 0)
+    assert ((0 &- (2 ** 255)) == 2 ** 255)
+    assert ((2 ** 255) &* 3 > 0)
+    assert ((2 ** 255) * 2 == (2 ** 256))
+    assert ((2 ** 255) &* 2 == 0)
+    //VERIFY-FAIL
+    assert ((2 ** 255) &* 2 == 1)
+  }
+
+  func implies(b: Bool)
+  {
+    assert (false ==> true)
+    assert (true ==> true)
+    assert (b ==> true)
+    //VERIFY-FAIL
+    assert (true ==> b)
+  }
+
+  func divideByZeroAndAssign()
+  {
+    var i: Int = 10
+    //VERIFY-FAIL
+    i /= 0
+  }
+
+  func divideByZero()
+  {
+    //VERIFY-FAIL
+    let i: Int = 100 / 0
+  }
+}

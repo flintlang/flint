@@ -1,0 +1,26 @@
+contract C {
+  var accounts: [Int: Coin] = [:]
+}
+
+C :: (any) {
+  public init() {}
+
+  public func mint(index: Int, amount: Int) 
+    mutates (accounts, Coin.value) {
+    accounts[index].value = amount
+  }
+
+  public func transfer1(from: Int, to: Int, amount: Int) 
+    mutates (accounts) {
+    let w: Coin = Coin(&accounts[from], amount)
+    accounts[to].transfer(other: &w, amount: amount)
+  }
+
+  public func transfer2(from: Int, to: Int, amount: Int) mutates (accounts) {
+    accounts[to].transfer(other: &accounts[from], amount: amount)
+  }
+
+  public func get(index: Int) -> Int {
+    return accounts[index].getValue()
+  }
+}

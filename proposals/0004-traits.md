@@ -6,17 +6,21 @@
 * Status: **Awaiting review**
 
 ## Introduction
+
 We introduce the concept of ‘traits’ to Flint based in part on [Rust Traits](https://doc.rust-lang.org/rust-by-example/trait.html). Traits describe the partial behaviour of Contract or Structures which conform to them. For Contracts, traits constitute a collection of functions or function stubs in restriction blocks, and events. For Structures, traits only constitute a collection of functions or function stubs.
 
 Contract or Structures can conform to multiple traits. The Flint compiler enforces the implementation of function stubs in the trait and allows usage of the functions declared in them.
 
 ## Motivation
-Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts (Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.) and Structures (Transferable, RawValued, Describable etc).
+
+Traits allow a level of abstraction and code reuse for Contracts and Structures. We also plan to have Standard Library Traits that can be inherited which provide common functionality to Contracts \(Ownable, Burnable, MultiSig, Pausable, ERC20, ERC721, etc.\) and Structures \(Transferable, RawValued, Describable etc\).
 
 It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [Assets](0001-asset-trait.md) and Numerics.
 
 ## Proposed Solution
+
 In the example below, we define `ERC20`, which declares a contract to follow the Ethereum token specifications. The `ERC20` `trait` is then specified by the `ToyToken` `contract` allowing use of functions and events in `ERC20`.
+
 ```swift
 contract trait ERC20 {
   event Transfer {
@@ -123,7 +127,6 @@ ToyWallet :: (getOwner) {
     self.owner = newOwner
   }
 }
-
 ```
 
 In the example below, we define `Pausable`, which declares a contract as something that can be paused. The `Pausable` `trait` is then specified by the `ToyDAO` `contract` allowing the use of methods in `Pausable`. This demonstrates how we can have traits with type states:
@@ -167,6 +170,7 @@ ToyDAO @(Active) :: (any) {
 ```
 
 We can also define structure traits using a less detailed syntax. Here we define an `Animal` structure trait. The `Person` structure then conforms to the `Animal` `trait` allowing the use of functions within that.
+
 ```swift
 struct trait Animal {
   // Must have an empty and named initialiser
@@ -211,44 +215,51 @@ struct trait Animal {
     return "Hi"
   }
 }
- ```
+```
 
 ## Semantics
 
 ## Alternatives considered
 
 ### Generic traits
+
 Traits are separated into two types - Structure Traits and Contract Traits - with different members being valid depending on the type. We also considered just having one type of trait but that resulted in non-sensical syntax such as structures with restriction blocks or contracts without them.
 
 ### Inheritance of Contracts / Structures
+
 The same functionality that traits provide could have been provided by allowing inheritance of Contracts and Structures, in addition inheritance would also allow multiple levels of inheritance, while traits only allow one.
 
 ### Public by default
+
 Functions declared in traits could have been public by default, removing the need for the public modifier for each function. This would however be inconsistent with Flint's private by default function policy.
 
 ### No implementation in traits
+
 We could have limited traits to only enforce functions to be declared and not define any pre-existing functionality. This would have made them very similar to Solidity Interfaces. However for a little additional complexity we don't need to have two separate concepts for interfacing and functions.
 
 ### Syntax Alternatives
 
 #### Keyword
-```
+
+```text
 contract Name @(State1, State2) {
   conforms Trait1, Trait2
 }
 ```
 
-#### Addition sign for multiple traits
-```
+#### Addition sign for multiple traits
+
+```text
 contract Name: Trait1 + Trait2 + Trait3 {}
 ```
 
 ### Property Declaration
+
 Accessors have a number of disadvantages. Of course there is the obvious one: they are tedious to define and to use. Writing `node.location().x` and `node.set_location(p)` is simply less nice than `node.location.x` and `node.location = p`. We could adopt a syntactic sugar by which the latter can be automatically translated to the former.
 
 We would extend traits with an optional "field block" which would be a list of variable declarations. These could then be used within the trait according to their
 
-```
+```text
 trait Trait {
   let field1: Type1
   var field2: Type2
@@ -256,25 +267,32 @@ trait Trait {
 ```
 
 Conforming structures and contracts would have to then map field names to expressions.
-```
+
+```text
 contract Type: Trait {
   field1 -> self.x
   field2 -> self.y.z
 }
 ```
-These expressions must be of the form self(.F)* where F is some qualified field in the Contract / Structure. The properties will be checked to be compatible (same type, constant/variable match). You can't access the expression via the field name, only the trait will use this mapping.
+
+These expressions must be of the form self\(.F\)\* where F is some qualified field in the Contract / Structure. The properties will be checked to be compatible \(same type, constant/variable match\). You can't access the expression via the field name, only the trait will use this mapping.
 
 ### State Declaration
+
 State declaration for contracts could be moved inside of the contract declaration as opposed to at the head.
-```
+
+```text
 contract Type {
   @ (State1, State2, State3)
 }
 ```
+
 This would reduce the worry about the initial declaration becoming too messy. Equally we can expand the Grammar and parser to support adding line breaks to the declaration.
-```
+
+```text
 contract Type: Trait1, Trait2, Trait3
          @(State1, State2) {
  // As normal from here on                
 }
 ```
+

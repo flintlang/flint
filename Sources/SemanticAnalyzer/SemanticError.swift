@@ -91,7 +91,6 @@ extension Diagnostic {
         }
       }
     }
-
     return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation,
                       message: "Function '\(functionCall.identifier.name)' is not in scope", notes: candidateNotes)
   }
@@ -117,6 +116,11 @@ extension Diagnostic {
   static func noMatchingEvents(_ functionCall: FunctionCall) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: functionCall.identifier.sourceLocation,
                       message: "Event '\(functionCall.identifier.name)' is not in scope")
+  }
+
+  static func useOfSelfOutsideTrait(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: sourceLocation,
+                      message: "Use of Self is only allowed in traits")
   }
 
   static func noReceiverForStructInitializer(_ functionCall: FunctionCall) -> Diagnostic {
@@ -154,14 +158,19 @@ extension Diagnostic {
                       message: "Cannot use signatures in contracts, only in traits")
   }
 
-  static func contractTraitMemberInStructTrait(_ member: TraitMember) -> Diagnostic {
+  static func invalidStructTraitMember(_ member: TraitMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
-                      message: "Use of contract trait member in struct trait")
+                      message: "Member invalid in struct trait context")
   }
 
-  static func structTraitMemberInContractTrait(_ member: TraitMember) -> Diagnostic {
+  static func invalidContractTraitMember(_ member: TraitMember) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
-                      message: "Use of struct trait member in contract trait")
+                      message: "Member invalid in contract trait context")
+  }
+
+  static func invalidExternalTraitMember(_ member: TraitMember) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: member.sourceLocation,
+                      message: "Member invalid in external trait context")
   }
 
   static func undeclaredCallerProtection(_ callerProtection: CallerProtection,
@@ -468,8 +477,8 @@ extension Diagnostic {
 
   static func publicAndVisible(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
     let identName = variableDeclaration.identifier.name
-   return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation,
-                     message: "Cannot declare variable '\(identName)' both public and visible")
+    return Diagnostic(severity: .error, sourceLocation: variableDeclaration.sourceLocation,
+                      message: "Cannot declare variable '\(identName)' both public and visible")
   }
 
   static func renderGroup(_ protections: [CallerProtection]) -> String {
@@ -479,6 +488,53 @@ extension Diagnostic {
   static func renderGroup(_ states: [TypeState]) -> String {
     return "\(states.map({ $0.name }).joined(separator: ", "))"
   }
+
+  // EXTERNAL CALL ERRORS //
+  static func normalExternalCallOutsideDoCatch(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Cannot use 'call' outside do-catch block")
+  }
+
+  static func forcedExternalCallInsideDoCatch(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Cannot use 'call!' inside do-catch block")
+  }
+
+  static func doCatchStatementContainsNoExternalCall(_ doCatchStatement: DoCatchStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: doCatchStatement.sourceLocation,
+                      message: "No 'call' found in do-catch block")
+  }
+
+  static func optionalExternalCallOutsideIfLet(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Only inside 'if let ... = call?' may 'call?' be used")
+  }
+
+  static func ifLetConstructWithoutOptionalExternalCall(_ binaryExpression: BinaryExpression) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: binaryExpression.sourceLocation,
+                      message: "'if let' construct may only be used with 'call?'")
+  }
+
+  static func externalCallReturnValueIgnored(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "Return value of external call cannot be ignored.")
+  }
+
+  static func invalidExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation,
+                      message: "'\(identifier.name)' is not a valid external call hyper-parameter")
+  }
+
+  static func duplicateExternalCallHyperParameter(_ identifier: Identifier) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: identifier.sourceLocation,
+                      message: "'\(identifier.name)' hyper-parameter was already specified")
+  }
+
+  static func unlabeledExternalCallHyperParameter(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+                      message: "External call hyper-parameter was not labeled")
+  }
+
 }
 
 // MARK: Warnings
@@ -544,5 +600,108 @@ extension Diagnostic {
   static func mutatingVariable(_ variableDeclaration: VariableDeclaration) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: variableDeclaration.sourceLocation,
                       message: "Variables are already implicitly mutating")
+  }
+
+  static func defaultArgumentsNotAtEnd(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation,
+        message: "Default parameters should be the last ones to be declared")
+  }
+
+  static func duplicateParameterDeclarations(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionDeclaration.sourceLocation,
+      message: "Duplicate parameter declarations in function declaration")
+  }
+
+  static func defaultArgumentsNotAtEnd(_ eventDeclaration: EventDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: eventDeclaration.sourceLocation,
+      message: "Default parameters should be the last ones to be declared")
+  }
+
+  static func duplicateParameterDeclarations(_ eventDeclaration: EventDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: eventDeclaration.sourceLocation,
+      message: "Duplicate parameter declarations in event declaration")
+  }
+
+  static func unlabeledFunctionCallArguments(_ functionCall: FunctionCall, isEventCall: Bool) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: functionCall.sourceLocation,
+      message: "All arguments of " + (isEventCall ? "an event" : "a function") + " call should be labeled")
+  }
+
+  static func invalidConditionTypeInIfStatement(_ ifStatement: IfStatement) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: ifStatement.condition.sourceLocation,
+      message: "Condition has invalid type: must be Bool or a valid let statement")
+  }
+
+  static func valueParameterForUnpayableFunction(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+      message: "Attempting to call a non-payable function with a 'value' hyper-parameter")
+  }
+
+  static func missingValueParameterForPayableFunction(_ externalCall: ExternalCall) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: externalCall.sourceLocation,
+      message: "Attempting to call a payable function without specifying a 'value' hyper-parameter")
+  }
+
+  static func flintTypeUsedInExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
+    var notes: [Diagnostic] = []
+    if case .basicType(let basicType) = type.rawType,
+      let solidityParallel = basicType.solidityParallel {
+      notes.append(Diagnostic(severity: .note, sourceLocation: location,
+                              message: "Perhaps you meant to use '\(solidityParallel)'"))
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: location,
+                      // swiftlint:disable line_length
+                      message: "Only Solidity types may be used in external traits. '\(type.name)' is a Flint type", notes: notes)
+                      // swiftlint:enable line_length
+  }
+
+  static func solidityTypeUsedOutsideExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
+    var notes: [Diagnostic] = []
+    if case .solidityType(let solidityType) = type.rawType,
+      let basicParallel = solidityType.basicParallel {
+      notes.append(Diagnostic(severity: .note, sourceLocation: location,
+                              message: "Perhaps you meant to use '\(basicParallel)'"))
+    }
+
+    return Diagnostic(severity: .error, sourceLocation: location,
+                      // swiftlint:disable line_length
+                      message: "Solidity types may not be used outside of external traits. '\(type.name)' is a Solidity type", notes: notes)
+                      // swiftlint:enable line_length
+  }
+
+  static func notImplementedAs(_ typeConversionExpression: TypeConversionExpression) -> Diagnostic {
+    let notes = [
+      Diagnostic(severity: .note, sourceLocation: typeConversionExpression.sourceLocation,
+                 message: "You may wish to use '\(TypeConversionExpression.Kind.cast.description)' instead")
+    ]
+    return Diagnostic(severity: .error, sourceLocation: typeConversionExpression.sourceLocation,
+                      // swiftlint:disable line_length
+                      message: "Type conversions with '\(typeConversionExpression.kind.description)' are not yet implemented", notes: notes)
+                      // swiftlint:enable line_length
+  }
+
+  static func typesNotReinterpretable(_ typeConversionExpression: TypeConversionExpression,
+                                      expressionType: RawType) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: typeConversionExpression.sourceLocation,
+                      // swiftlint:disable line_length
+                      message: "'\(expressionType.name)' cannot be reinterpreted as '\(typeConversionExpression.type.name)'")
+                      // swiftlint:enable line_length
+  }
+
+  static func badSolidityTypeConversion(_ typeConversionExpression: TypeConversionExpression,
+                                        expressionType: RawType) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: typeConversionExpression.sourceLocation,
+                      // swiftlint:disable line_length
+                      message: "Conversion from '\(expressionType.name)' to '\(typeConversionExpression.type.name)' only allowed in external call context or from a Solidity to a Flint type")
+                      // swiftlint:enable line_length
+  }
+
+  static func hashCollision(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error,
+                      sourceLocation: functionDeclaration.sourceLocation,
+                      message: "There is a hash collision between the function " +
+                               functionDeclaration.signature.identifier.name +
+                               " and another function in the same contract")
   }
 }

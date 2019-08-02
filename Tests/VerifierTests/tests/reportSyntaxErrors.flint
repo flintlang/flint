@@ -1,0 +1,17 @@
+//VERIFY-CHECK
+contract C {
+  var i: Int = 0
+  var j: Int = 0
+}
+
+C :: (any) {
+  public init() {}
+
+  // No modifies clause
+  func H()
+    mutates (j)
+  {
+    //VERIFY-FAIL
+    i = 3
+  }
+}

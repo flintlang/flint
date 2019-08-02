@@ -1,0 +1,74 @@
+// RUN: %flintc %s --verify
+
+contract Normal {}
+
+Normal@(any) :: (any) { // expected-error {{Contract 'Normal' is not stateful but behavior declaration is}}
+  public init() {}
+}
+
+contract TypeStatesInvalid ($state$, ss, TypeStatesInvalid) {} // expected-error {{Use of invalid character '$' in '$state$'}}
+
+TypeStatesInvalid :: (any) { // expected-error {{Contract 'TypeStatesInvalid' is stateful but behavior declaration is not}}
+  public init() {
+    become ss
+  }
+}
+
+contract TypeStates (State1, State2, State3) {}
+
+TypeStates :: (any) { // expected-error {{Contract 'TypeStates' is stateful but behavior declaration is not}}
+public init() {} // expected-error {{Return from initializer without initializing state in stateful contract}}
+}
+
+TypeStates @(any) :: (any) {
+  public func foo() mutates (self) {
+    become Alpha // expected-error {{State not defined for contract 'TypeStates'}}
+                 // expected-warning@-1 {{Only final become will change state}}
+    become State1
+  }
+
+  public func bar() mutates (any) {
+    var x: Int = 0
+    become State1
+    x = 2 // expected-warning {{Code after return/become will never be executed}}
+  }
+
+  public func returnVar() -> Int mutates (any) {
+    var x: Int = 42
+    return x
+    become State2
+  }
+
+  public func returnVar2() -> Int mutates (any) {
+    var x: Int = 32
+    become State1 // expected-error {{Cannot become before a return}}
+    return x
+  }
+}
+
+TypeStates @(State1) :: (any) {
+  public func becomeState2() mutates (any) {
+    become State2
+  }
+
+  public func becomeState3WithoutState2() {
+    becomeState3() // expected-error {{Function 'becomeState3' cannot be called using the protection 'any' at state 'State1'}}
+  }
+
+  public func moveToState2AndDoStuff() {
+    becomeState2() // expected-error {{Use of mutating statement in a nonmutating function}}
+    let x: Int = 0
+  }
+}
+
+TypeStates @(State2, State3) :: (any) {
+  public func becomeState3() mutates (any) {
+    become State3
+  }
+}
+
+TypeStates @(State4) :: (any) { // expected-error {{State not defined for contract 'TypeStates'}}
+}
+
+TypeStates @(State1, State4) :: (any) { // expected-error {{State not defined for contract 'TypeStates'}}
+}

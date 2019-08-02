@@ -1,0 +1,27 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+struct Implementation {
+  // Self should only be allowed in traits
+  func selfNotAllowedHere(no: Self) {} // expected-error {{Structs cannot be passed by value yet, and have to be passed inout}}
+
+  // Self should only be allowed in traits
+  func selfNotAllowedHere(no: inout Self) {} // expected-error {{Use of Self is only allowed in traits}}
+
+  func functionAcceptingSelf(this: inout Implementation) {}
+
+  // Self parameter should not be allowed here
+  let selfParameter: Self = self // expected-error {{Use of Self is only allowed in traits}}
+                                 // expected-error@-1 {{Incompatible assignment between values of type 'Self' and 'Implementation'}}
+  func functionIncludingAssignmentToSelf() mutates (any) {
+    let this: Self = self // expected-error {{Use of Self is only allowed in traits}}
+                          // expected-error@-1 {{Incompatible assignment between values of type 'Self' and 'Implementation'}}
+    this.functionAcceptingSelf(this: &self) // expected-error {{Use of Self is only allowed in traits}}
+    this.functionAcceptingSelf(this: &this) // expected-error {{Use of Self is only allowed in traits}}
+  }
+}
+
+contract A { }
+
+A :: a <- (any) {
+  public init() {}
+}

@@ -28,8 +28,9 @@ public struct Identifier: Hashable, ASTNode {
     self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
   }
 
-  public var hashValue: Int {
-    return "\(name)_\(sourceLocation)".hashValue
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(name)
+    hasher.combine(sourceLocation)
   }
 
   // MARK: - ASTNode
@@ -40,4 +41,8 @@ public struct Identifier: Hashable, ASTNode {
   public var description: String {
     return "\(identifierToken)"
   }
+}
+
+public extension Identifier {
+  static let DUMMY = Identifier(identifierToken: Token(kind: .identifier(":DUMMY:"), sourceLocation: .DUMMY))
 }

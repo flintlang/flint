@@ -3,30 +3,38 @@ matrix:
   - os: linux
     language: generic
     sudo: required
-    dist: trusty
+    dist: bionic
     if: NOT tag IS present OR tag =~ ^*-linux$
     before_install:
-    - sudo add-apt-repository -y ppa:ethereum/ethereum
     - sudo apt-get update
-    - sudo apt-get -y install solc
+    - sudo apt-get install -y software-properties-common curl git zip sudo wget gnupg ca-certificates apt-transport-https sed python python3
+    - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+    - echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+    - sudo add-apt-repository -y ppa:ethereum/ethereum
+    - curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash -
+    - sudo apt-get update
+    - sudo apt-get install -y solc nodejs mono-complete clang
+    - test -f /usr/bin/msbuild && echo "msbuild exists"
     - npm install
-    - npm install -g truffle
+    - npm install -g truffle@4
     - eval "$(curl -sL https://swiftenv.fuller.li/install.sh)"
     - git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
     - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
     install:
-    - "swiftenv install || true"
+    - "swiftenv install 5.0.2 || true"
+    - "swiftenv install 4.2 || true"
     script:
+    - export FLINTPATH=$(pwd)
+    - make 
     - make test
 before_deploy:
+- swift package update
 - make release
 - make zip
 deploy:
   provider: releases
   skip_cleanup: true
-  api_key:
-    secure: O3apHiIXZRt/zR1hBiG9erSXBvg2MNYL5Rr/igsyjEChvWMt+YKrWFahrD1flLaF6xzEsoFCNqrR4h8ptkxvZfdG6L/CFNiloZqDCGkgW5O4eGjmPwUnzDr0uYm7J7VHRTgXUfpiMv8vJ2xGbBX0kOHsNF6tzt0GL/8S5mkFgSS4dQdojgXbEG7W5YNXXTHQBc1bBv/7oMiRtKQBqaIZ/eXxn1WKHnuisVUnkIQmtb/b+is8UAo6ooUqn7sef8+pmxjBwaYR55hevXrAdFHrviBdtSsdiifXb6Mx/GoVtLF6IIVD6d+4LgkNL58KNlHFg88fJfIEfiu5dkyDfsPRjAlNuvhtF10m430Y/vV8sb1WgchF8wwdRAdUdADMp284qrI8T0/1o6G5X24mWen6Engsl59MALsn6wa4u5UmtQrnTgX4AUzYtJ2aBvz1NyqNrXtOz/DHVcotL3k/JKqDf1mLXU4YRVYlGLHuKNriaUa6KZx9WY2N18M0QyWPScrCODKA4koBNClAmz0kVc3dsxqe153adWRCshz/WhG26gMmu8Iot8AVeqxO6ua/V+RzJgW9pmOHsZoFCfdXgxlYZ0ax8NdmmoOmMuAr/8Gi1WpkhkIyzTI95v+7t5YCc+UPBpR7p982aZFfKNQK2j4XbYgzvGaMH3oytjYCu39U5gA=
   file: flintc.zip
   on:
     repo: flintlang/flint

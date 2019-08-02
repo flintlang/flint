@@ -1,0 +1,41 @@
+// RUN: %flintc %s --verify --skip-verifier
+
+contract InvalidTypes {
+  var int: Int = 0
+  var a: Int = 0
+  var arr: [Address] = []
+  var dict: [Address: Bool] = [:]
+}
+
+InvalidTypes :: (any) {
+  public init() {}
+
+  func foo() -> Bool {
+    return int // expected-error {{Cannot convert expression of type 'Int' to expected return type 'Bool'}}
+  }
+
+  func bar() {
+    return 2 // expected-error {{Cannot convert expression of type 'Int' to expected return type 'Void'}}
+  }
+
+  func baz() mutates (arr, int) {
+    var a: Bool = true
+    a = b // expected-error {{Use of undeclared identifier 'b'}}
+
+    arr[a] = a // expected-error {{Incompatible assignment between values of type 'Address' and 'Bool'}}
+               // expected-error@-1 {{Cannot convert expression of type 'Bool' to expected subscript type 'Int'}}
+
+    dict[3] // expected-error {{Cannot convert expression of type 'Int' to expected subscript type 'Address'}}
+    dict[a] // expected-error {{Cannot convert expression of type 'Bool' to expected subscript type 'Address'}}
+
+    a[1] // expected-error {{Cannot subscript expression of type 'Bool'}}
+
+    int = true // expected-error {{Incompatible assignment between values of type 'Int' and 'Bool'}}
+
+    f(a) // expected-error {{Function 'f' is not in scope}}
+
+    f(a: self.int)
+  }
+
+  func f(a: Int) {}
+}

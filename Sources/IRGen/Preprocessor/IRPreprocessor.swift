@@ -11,7 +11,7 @@ import Foundation
 import Source
 import Lexer
 
-/// A prepocessing step to update the program's AST before code generation.
+/// A preprocessing step to update the program's AST before code generation.
 public struct IRPreprocessor: ASTPass {
 
   public init() {}
@@ -20,7 +20,7 @@ public struct IRPreprocessor: ASTPass {
     var structMember = structMember
 
     if case .specialDeclaration(var specialDeclaration) = structMember,
-      specialDeclaration.isInit {
+       specialDeclaration.isInit {
       specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
       structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
@@ -41,32 +41,14 @@ public struct IRPreprocessor: ASTPass {
       identifier.enclosingType = enclosingType
 
       return .expression(
-        .binaryExpression(
-          BinaryExpression(lhs: .identifier(identifier),
-                           op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation),
-                           rhs: assignedExpression)))
+          .binaryExpression(
+              BinaryExpression(lhs: .identifier(identifier),
+                               op: Token(kind: .punctuation(.equal), sourceLocation: identifier.sourceLocation),
+                               rhs: assignedExpression)))
     }
   }
 
   // MARK: Declaration
-  public func process(structDeclaration: StructDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
-    let environment = passContext.environment!
-    var structDeclaration = structDeclaration
-
-    let conformingFunctions = environment.conformingFunctions(in: structDeclaration.identifier.name)
-      .compactMap { functionInformation -> StructMember in
-        var functionDeclaration = functionInformation.declaration
-        functionDeclaration.scopeContext = ScopeContext()
-
-        return .functionDeclaration(functionDeclaration)
-      }
-
-    structDeclaration.members += conformingFunctions
-
-    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
-  }
-
   public func process(variableDeclaration: VariableDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
@@ -84,7 +66,7 @@ public struct IRPreprocessor: ASTPass {
     var functionDeclaration = functionDeclaration
 
     // Mangle the function name in the declaration.
-    let parameters = functionDeclaration.signature.parameters.map { $0.type.rawType }
+    let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
                                           enclosingType: passContext.enclosingTypeIdentifier!.name)
@@ -92,7 +74,7 @@ public struct IRPreprocessor: ASTPass {
 
     // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable,
-      let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
+       let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"),
                                                       sourceLocation: payableParameterIdentifier.sourceLocation))
       let variableDeclaration = VariableDeclaration(modifiers: [],
@@ -104,6 +86,11 @@ public struct IRPreprocessor: ASTPass {
       let wei = FunctionCall(identifier: weiType,
                              arguments: [
                                FunctionArgument(identifier: nil,
+                                                expression: .literal(
+                                                    Token(kind: .literal(.boolean(.true)),
+                                                          sourceLocation: payableParameterIdentifier.sourceLocation
+                                                    ))),
+                               FunctionArgument(identifier: nil,
                                                 expression: .rawAssembly(IRRuntimeFunction.callvalue(),
                                                                          resultType: .basicType(.int)))
                              ],
@@ -111,9 +98,9 @@ public struct IRPreprocessor: ASTPass {
                              isAttempted: false)
       let equal = Token(kind: .punctuation(.equal), sourceLocation: payableParameterIdentifier.sourceLocation)
       let assignment: Expression = .binaryExpression(
-        BinaryExpression(lhs: .variableDeclaration(variableDeclaration),
-                         op: equal,
-                         rhs: .functionCall(wei)))
+          BinaryExpression(lhs: .variableDeclaration(variableDeclaration),
+                           op: equal,
+                           rhs: .functionCall(wei)))
       functionDeclaration.body.insert(.expression(assignment), at: 0)
     }
 
@@ -121,16 +108,16 @@ public struct IRPreprocessor: ASTPass {
       if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
         let parameter = constructParameter(
-          name: "flintSelf",
-          type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
-          sourceLocation: functionDeclaration.sourceLocation)
+            name: "flintSelf",
+            type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
+            sourceLocation: functionDeclaration.sourceLocation)
         functionDeclaration.signature.parameters.insert(parameter, at: 0)
       }
     }
 
     // Add an isMem parameter for each struct parameter.
     let dynamicParameters = functionDeclaration.signature.parameters.enumerated()
-      .filter { $0.1.type.rawType.isDynamicType }
+        .filter { $0.1.type.rawType.isDynamicType }
 
     var offset = 0
     for (index, parameter) in dynamicParameters where !parameter.isImplicit {
@@ -142,12 +129,17 @@ public struct IRPreprocessor: ASTPass {
     }
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
   func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
-    return Parameter(identifier: identifier, type: Type(inferredType: type, identifier: identifier), implicitToken: nil)
+    return Parameter(identifier: identifier,
+                     type: Type(inferredType: type,
+                                identifier: identifier),
+                     implicitToken: nil,
+                     assignedExpression: nil)
   }
 
   public func process(specialDeclaration: SpecialDeclaration,
@@ -165,7 +157,7 @@ public struct IRPreprocessor: ASTPass {
 
     let enumName = ContractDeclaration.contractEnumPrefix + passContext.enclosingTypeIdentifier!.name
     let enumReference: Expression = .identifier(
-      Identifier(identifierToken: Token(kind: .identifier(enumName), sourceLocation: becomeStatement.sourceLocation)))
+        Identifier(identifierToken: Token(kind: .identifier(enumName), sourceLocation: becomeStatement.sourceLocation)))
     let state = becomeStatement.expression.assigningEnclosingType(type: enumName)
 
     let dot = Token(kind: .punctuation(.dot), sourceLocation: becomeStatement.sourceLocation)

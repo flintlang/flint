@@ -1,0 +1,57 @@
+struct trait A {
+    func getStoredValue() -> Int
+    func setStoredValue(value: Int) mutates (B.storedValue)
+
+    func add(other: inout Self) mutates (B.storedValue) {
+        setStoredValue(value: getStoredValue() + other.getStoredValue())
+    }
+
+    func addNoDefault(other: inout Self) mutates (B.storedValue)
+}
+
+struct B: A {
+    var storedValue: Int = 0
+
+    func getStoredValue() -> Int {
+        return storedValue
+    }
+
+    func setStoredValue(value: Int) mutates (storedValue) {
+        storedValue = value
+    }
+
+    func addNoDefault(other: inout B) mutates (B.storedValue) {
+      setStoredValue(value: getStoredValue() + other.getStoredValue())
+    }
+}
+
+contract C {
+    var b: B = B()
+    var otherB: B = B()
+}
+
+C :: (any) {
+    public init() {}
+
+    public func setFirstBValue(val: Int) 
+    mutates (B.storedValue) {
+      b.storedValue = val
+    }
+
+    public func setSecondBValue(val: Int) 
+    mutates (B.storedValue) {
+      otherB.storedValue = val
+    }
+
+    public func add() -> Int 
+    mutates (B.storedValue) {
+      b.add(other: &otherB)
+      return b.getStoredValue()
+    }
+
+    public func addNoDefault() -> Int
+    mutates (B.storedValue) {
+      b.addNoDefault(other: &otherB)
+      return b.getStoredValue()
+    }
+}

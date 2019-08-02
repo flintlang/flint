@@ -18,10 +18,22 @@ public struct Lexer {
 
   var isFromStdlib: Bool
 
-  public init(sourceFile: URL, isFromStdlib: Bool = false) throws {
+  public init(sourceFile: URL, isFromStdlib: Bool = false, isForServer: Bool = false, sourceCode: String = "") throws {
     self.sourceFile = sourceFile
-    self.sourceCode = try String(contentsOf: sourceFile)
+
+    if isForServer {
+      self.sourceCode = sourceCode
+    } else {
+      self.sourceCode = try String(contentsOf: sourceFile)
+    }
+
     self.isFromStdlib = isFromStdlib
+  }
+
+  public init(sourceCode: String) {
+    self.sourceFile = URL(fileURLWithPath: "REPL")
+    self.sourceCode = sourceCode
+    self.isFromStdlib = false
   }
 
   /// Converts the source code into a list of tokens.
@@ -44,11 +56,11 @@ public struct Lexer {
         tokens.append(Token(kind: token, sourceLocation: sourceLocation))
       } else if let num = toInt(component) {
         // The token is a number literal.
-        let lastTwoTokens = tokens[tokens.count-2..<tokens.count]
+        let lastTwoTokens = tokens[tokens.count - 2..<tokens.count]
 
         if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind,
-            lastTwoTokens.last!.kind == .punctuation(.dot) {
-          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
+           lastTwoTokens.last!.kind == .punctuation(.dot) {
+          tokens[tokens.count - 2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
           tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
@@ -61,7 +73,7 @@ public struct Lexer {
         // The token is a string literal.
         let componentSubstring = component[
             (component.index(after: component.startIndex)..<component.index(before: component.endIndex))
-        ]
+            ]
         tokens.append(Token(kind: .literal(.string(String(componentSubstring))), sourceLocation: sourceLocation))
       } else {
         // The token is an identifier.
@@ -86,20 +98,33 @@ public struct Lexer {
     "trait": .trait,
     "init": .init,
     "fallback": .fallback,
+    "pre": .pre,
+    "post": .post,
+    "invariant": .invariant,
+    "will": .will,
     "try": .try,
+    "mutates": .mutates,
     "mutating": .mutating,
+    "external": .external,
     "return": .return,
+    "returns": .returns,
     "become": .become,
     "emit": .emit,
+    "call": .call,
     "public": .public,
     "visible": .visible,
     "if": .if,
     "else": .else,
     "for": .for,
     "in": .in,
-    "self": .self,
+    "self": .`self`,
+    "Self": .selfType,
     "implicit": .implicit,
     "inout": .inout,
+    "catch": .catch,
+    "do": .do,
+    "is": .is,
+    "as": .as,
     "+": .punctuation(.plus),
     "&+": .punctuation(.overflowingPlus),
     "-": .punctuation(.minus),
@@ -108,6 +133,7 @@ public struct Lexer {
     "&*": .punctuation(.overflowingTimes),
     "**": .punctuation(.power),
     "/": .punctuation(.divide),
+    "%": .punctuation(.percent),
     "=": .punctuation(.equal),
     "+=": .punctuation(.plusEqual),
     "-=": .punctuation(.minusEqual),
@@ -124,6 +150,7 @@ public struct Lexer {
     "<=": .punctuation(.lessThanOrEqual),
     ">": .punctuation(.closeAngledBracket),
     ">=": .punctuation(.greaterThanOrEqual),
+    "==>": .punctuation(.implies),
     "||": .punctuation(.or),
     "&&": .punctuation(.and),
     "==": .punctuation(.doubleEqual),

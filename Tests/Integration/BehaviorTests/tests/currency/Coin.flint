@@ -1,0 +1,25 @@
+struct Coin {
+  var value: Int
+
+  init(amount: Int) {
+    self.value = amount
+  }
+
+  init(other: inout Coin, amount: Int) {
+    if other.getValue() >= amount {
+      value += amount
+      other.value -= amount
+    }
+  }
+
+  func getValue() -> Int {
+    return value
+  }
+
+  func transfer(other: inout Coin, amount: Int) mutates (value, other.value) {
+    if other.getValue() >= amount {
+      value += amount
+      other.value -= amount
+    }
+  }
+}

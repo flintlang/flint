@@ -16,6 +16,11 @@ public struct SpecialDeclaration: ASTNode {
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext
 
+  // Flag indicating whether this declaration is generated.
+  // This is currently used for external traits where we 
+  // generate an initializer.
+  public var generated: Bool
+
   /// The non-implicit parameters of the initializer.
   public var explicitParameters: [Parameter] {
     return asFunctionDeclaration.explicitParameters
@@ -31,8 +36,10 @@ public struct SpecialDeclaration: ASTNode {
       funcToken: signature.specialToken,
       attributes: signature.attributes,
       modifiers: signature.modifiers,
+      mutates: signature.mutates,
       identifier: dummyIdentifier,
       parameters: signature.parameters,
+      prePostConditions: signature.prePostConditions,
       closeBracketToken: signature.closeBracketToken,
       resultType: nil)
 
@@ -56,22 +63,27 @@ public struct SpecialDeclaration: ASTNode {
   public init(signature: SpecialSignatureDeclaration,
               body: [Statement],
               closeBraceToken: Token,
-              scopeContext: ScopeContext = ScopeContext()) {
+              scopeContext: ScopeContext = ScopeContext(),
+              generated: Bool = false) {
     self.signature = signature
     self.body = body
     self.closeBraceToken = closeBraceToken
     self.scopeContext = scopeContext
+    self.generated = generated
   }
 
   public init(_ functionDeclaration: FunctionDeclaration) {
     self.signature = SpecialSignatureDeclaration(specialToken: functionDeclaration.signature.funcToken,
                                                  attributes: functionDeclaration.signature.attributes,
                                                  modifiers: functionDeclaration.signature.modifiers,
+                                                 mutates: functionDeclaration.signature.mutates,
                                                  parameters: functionDeclaration.signature.parameters,
+                                                 prePostConditions: functionDeclaration.signature.prePostConditions,
                                                  closeBracketToken: functionDeclaration.signature.closeBracketToken)
     self.body = functionDeclaration.body
     self.closeBraceToken = functionDeclaration.closeBraceToken
     self.scopeContext = functionDeclaration.scopeContext ?? ScopeContext()
+    self.generated = false
   }
 
   // MARK: - ASTNode

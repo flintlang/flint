@@ -1,0 +1,17 @@
+contract Fallback {
+  var count: Int = 0
+}
+
+Fallback :: (any) {
+  public init() {}
+
+  // Tranlsation into Boogie of fallback functions not yet implemented
+  public fallback() {
+    count += 1
+    assert(true)
+  }
+
+  public func getCount() -> Int {
+    return count
+  }
+}

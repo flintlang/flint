@@ -20,6 +20,7 @@ typeAnnotation = ":" WSP type;
 
 type = identifier ["<" type *("," WSP type) ">"]
      / basicType
+     / solidityType
      / arrayType
      / fixedArrayType
      / dictType;
@@ -28,6 +29,74 @@ basicType = %s"Bool"
           / %s"Int"
           / %s"String"
           / %s"Address";
+
+solidityType = %s"address"
+             / %s"string"
+             / %s"bool"
+             / %s"int8"
+             / %s"int16"
+             / %s"int24"
+             / %s"int32"
+             / %s"int40"
+             / %s"int48"
+             / %s"int56"
+             / %s"int64"
+             / %s"int72"
+             / %s"int80"
+             / %s"int88"
+             / %s"int96"
+             / %s"int104"
+             / %s"int112"
+             / %s"int120"
+             / %s"int128"
+             / %s"int136"
+             / %s"int144"
+             / %s"int152"
+             / %s"int160"
+             / %s"int168"
+             / %s"int176"
+             / %s"int184"
+             / %s"int192"
+             / %s"int200"
+             / %s"int208"
+             / %s"int216"
+             / %s"int224"
+             / %s"int232"
+             / %s"int240"
+             / %s"int248"
+             / %s"int256"
+             / %s"uint8"
+             / %s"uint16"
+             / %s"uint24"
+             / %s"uint32"
+             / %s"uint40"
+             / %s"uint48"
+             / %s"uint56"
+             / %s"uint64"
+             / %s"uint72"
+             / %s"uint80"
+             / %s"uint88"
+             / %s"uint96"
+             / %s"uint104"
+             / %s"uint112"
+             / %s"uint120"
+             / %s"uint128"
+             / %s"uint136"
+             / %s"uint144"
+             / %s"uint152"
+             / %s"uint160"
+             / %s"uint168"
+             / %s"uint176"
+             / %s"uint184"
+             / %s"uint192"
+             / %s"uint200"
+             / %s"uint208"
+             / %s"uint216"
+             / %s"uint224"
+             / %s"uint232"
+             / %s"uint240"
+             / %s"uint248"
+             / %s"uint256"
 
 arrayType      = "[" type "]";
 fixedArrayType = type "[" numericLiteral "]";
@@ -40,7 +109,8 @@ enumCase        = %s"case" SP identifier
 
 ; TRAITS
 traitDeclaration = %s"struct" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
-                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
+                 / %s"contract" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}"
+                 / %s"external" SP %s"trait" SP identifier SP "{" *(WSP traitMember CRLF) "}";
 
 traitMember = functionDeclaration
             / functionSignatureDeclaration
@@ -50,7 +120,7 @@ traitMember = functionDeclaration
             / eventDeclaration;
 
 ; EVENTS
-eventDeclaration = %s"event" identifer "{" *(variableDeclaration) "}"
+eventDeclaration = %s"event" identifer parameterList
 
 ; STRUCTS
 structDeclaration = %s"struct" SP identifier [":" WSP identifierList ] SP "{" *(WSP structMember CRLF) "}";
@@ -96,7 +166,7 @@ returnType = "->" type;
 parameterList = "()"
               / "(" parameter *("," parameter) ")";
 
-parameter          = *(parameterModifiers SP) identifier typeAnnotation;
+parameter          = *(parameterModifiers SP) identifier typeAnnotation [WSP "=" WSP expression];
 parameterModifiers = %s"inout" / %s"implicit"
 
 ; STATEMENTS
@@ -106,12 +176,14 @@ statement = expression
           / becomeStatement
           / emitStatement
           / forStatement
-          / ifStatement;
+          / ifStatement
+          / doCatchStatement;
 
-returnStatement = %s"return" SP expression
-becomeStatement = %s"become" SP expression
-emitStatement   = %s"emit" SP expression
-forStatement    = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+returnStatement  = %s"return" SP expression
+becomeStatement  = %s"become" SP expression
+emitStatement    = %s"emit" SP functionCall
+forStatement     = %s"for" SP variableDeclaration SP %s"in" SP expression SP codeBlock
+doCatchStatement = %s"do" SP codeBlock SP %s"catch" SP "%s"is SP type SP codeBlock
 
 ; EXPRESSIONS
 expression = identifier
@@ -126,7 +198,8 @@ expression = identifier
            / bracketedExpression
            / subscriptExpression
            / rangeExpression
-           / attemptExpression;
+           / attemptExpression
+           / externalCall;
 
 inOutExpression = "&" expression;
 
@@ -155,6 +228,9 @@ try = %s"try" ( "!" / "?" )
 
 ; FUNCTION CALLS
 functionCall = identifier "(" [expression] *( "," WSP expression ) ")";
+
+; EXTERNAL CALLS
+externalCall = %s"call" WSP [ "(" [expression] *( "," WSP expression ) ")" ] WSP [ "!" / "?" ] SP functionCall;
 
 ; CONDITIONALS
 ifStatement = %s"if" SP expression SP codeBlock [elseClause];

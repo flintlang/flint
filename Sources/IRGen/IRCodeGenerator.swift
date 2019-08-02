@@ -23,17 +23,12 @@ public struct IRCodeGenerator {
 
     // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
-      let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations.compactMap { declaration in
-        guard case .contractBehaviorDeclaration(let contractBehaviorDeclaration) = declaration else {
-          return nil
-        }
-
-        guard contractBehaviorDeclaration.contractIdentifier.name == contractDeclaration.identifier.name else {
-          return nil
-        }
-
-        return contractBehaviorDeclaration
-      }
+      let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations
+          .compactMap { declaration in
+            switch declaration {
+            case .contractBehaviorDeclaration(let contractBehaviorDeclaration): return contractBehaviorDeclaration
+            default: return nil } }
+          .filter { $0.contractIdentifier.name == contractDeclaration.identifier.name }
 
       // Find the struct declarations.
       let structDeclarations = topLevelModule.declarations.compactMap { declaration -> StructDeclaration? in

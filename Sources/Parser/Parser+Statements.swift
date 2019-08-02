@@ -15,10 +15,11 @@ extension Parser {
     endStatement: while let first = currentToken {
       switch first.kind {
       case .punctuation(.semicolon), .newline:
-        currentIndex+=1
-     // Valid starting tokens for statements
-      case .return, .become, .emit, .for, .if, .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
-           .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
+        currentIndex += 1
+          // Valid starting tokens for statements
+      case .return, .become, .emit, .call, .for, .if, .identifier,
+           .punctuation(.ampersand), .punctuation(.openSquareBracket),
+           .punctuation(.openBracket), .`self`, .var, .let, .public, .visible, .mutating, .try, .do:
         statements.append(try parseStatement())
       default:
         break endStatement
@@ -33,12 +34,12 @@ extension Parser {
     }
 
     guard let statementEndIndex = indexOfFirstAtCurrentDepth(
-      [
-        .punctuation(.semicolon),
-        .newline,
-        .punctuation(.closeBrace)
-      ],
-      maxIndex: tokens.count) else {
+        [
+          .punctuation(.semicolon),
+          .newline,
+          .punctuation(.closeBrace)
+        ],
+        maxIndex: tokens.count) else {
       throw raise(.statementSameLine(at: latestSource))
     }
     let statement: Statement
@@ -59,9 +60,12 @@ extension Parser {
     case .if:
       let ifStatement = try parseIfStatement()
       statement = .ifStatement(ifStatement)
-    // Valid starting tokens for expressions
+    case .do:
+      let doCatchStatement = try parseDoCatchStatement()
+      statement = .doCatchStatement(doCatchStatement)
+        // Valid starting tokens for expressions
     case .identifier, .punctuation(.ampersand), .punctuation(.openSquareBracket),
-         .punctuation(.openBracket), .self, .var, .let, .public, .visible, .mutating, .try:
+         .punctuation(.openBracket), .`self`, .var, .let, .public, .visible, .mutating, .try, .call:
       let expression = try parseExpression(upTo: statementEndIndex)
       statement = .expression(expression)
     default:
@@ -96,8 +100,8 @@ extension Parser {
 
   func parseEmitStatement(statementEndIndex: Int) throws -> EmitStatement {
     let token = try consume(.emit, or: .expectedStatement(at: latestSource))
-    let expression = try parseExpression(upTo: statementEndIndex)
-    return EmitStatement(emitToken: token, expression: expression)
+    let functionCall = try parseFunctionCall()
+    return EmitStatement(emitToken: token, functionCall: functionCall)
   }
 
   func parseIfStatement() throws -> IfStatement {
@@ -116,6 +120,29 @@ extension Parser {
                        condition: condition,
                        statements: statements,
                        elseClauseStatements: elseClauseStatements)
+  }
+
+  func parseDoCatchStatement() throws -> DoCatchStatement {
+    // Parse do block
+    let doToken = try consume(.do, or: .expectedStatement(at: latestSource))
+    let (doStatements, _) = try parseCodeBlock()
+    // Parse catch is Error
+    try consume(.catch, or: .expectedStatement(at: latestSource))
+    try consume(.is, or: .expectedStatement(at: latestSource))
+    let err = try parseErrorType()
+
+    let (catchStatements, endToken) = try parseCodeBlock()
+    return DoCatchStatement(doBody: doStatements, catchBody: catchStatements, error: err, startToken: doToken,
+                            endToken: endToken)
+  }
+
+  func parseErrorType() throws -> Expression {
+    guard let nextOpenBraceIndex = indexOfFirstAtCurrentDepth([.punctuation(.openBrace)]) else {
+      throw raise(.leftBraceExpected(in: "Do-catch Statement", at: latestSource))
+    }
+
+    let err = try parseExpression(upTo: nextOpenBraceIndex)
+    return err
   }
 
   func parseElseClause() throws -> [Statement] {

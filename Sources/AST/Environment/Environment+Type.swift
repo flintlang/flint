@@ -4,6 +4,7 @@
 //
 //  Created by Hails, Daniel J R on 22/08/2018.
 //
+
 import Lexer
 
 extension Environment {
@@ -35,16 +36,12 @@ extension Environment {
     case .matchedFunction(let matchingFunction): return matchingFunction.resultType
     case .matchedFunctionWithoutCaller(let matchingFunctions):
       guard matchingFunctions.count == 1,
-        case .functionInformation(let functionInformation) = matchingFunctions.first! else {
+            case .functionInformation(let functionInformation) = matchingFunctions.first! else {
         return .errorType
       }
       return functionInformation.resultType
     case .matchedInitializer:
-      let name = functionCall.identifier.name
-      if let stdlibType = RawType.StdlibType(rawValue: name) {
-        return .stdlibType(stdlibType)
-      }
-      return .userDefinedType(name)
+      return .userDefinedType(functionCall.identifier.name)
     default:
       let eventMatch = matchEventCall(functionCall, enclosingType: enclosingType, scopeContext: scopeContext)
       switch eventMatch {
@@ -95,7 +92,7 @@ extension Environment {
                    enclosingType: RawTypeIdentifier,
                    scopeContext: ScopeContext) -> RawType {
     let elementType = type(of: rangeExpression.initial, enclosingType: enclosingType, scopeContext: scopeContext)
-    let boundType   = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
+    let boundType = type(of: rangeExpression.bound, enclosingType: enclosingType, scopeContext: scopeContext)
 
     if elementType != boundType {
       // The bounds have different types.
@@ -144,7 +141,7 @@ extension Environment {
                    callerProtections: [CallerProtection] = [],
                    scopeContext: ScopeContext) -> RawType {
     if attemptExpression.isSoft {
-     return .basicType(.bool)
+      return .basicType(.bool)
     }
     let functionCall = attemptExpression.functionCall
     return type(of: functionCall,
@@ -169,7 +166,6 @@ extension Environment {
                    typeStates: [TypeState] = [],
                    callerProtections: [CallerProtection] = [],
                    scopeContext: ScopeContext) -> RawType {
-
     switch expression {
     case .inoutExpression(let inoutExpression):
       return .inoutType(type(of: inoutExpression.expression,
@@ -177,18 +173,20 @@ extension Environment {
                              typeStates: typeStates,
                              callerProtections: callerProtections,
                              scopeContext: scopeContext))
-
+    case .typeConversionExpression(let typeConversionExpression):
+      return typeConversionExpression.type.rawType
     case .binaryExpression(let binaryExpression):
       if binaryExpression.opToken.isBooleanOperator {
         return .basicType(.bool)
       }
 
       if binaryExpression.opToken == .dot {
-        switch type(of: binaryExpression.lhs,
-                    enclosingType: enclosingType,
-                    typeStates: typeStates,
-                    callerProtections: callerProtections,
-                    scopeContext: scopeContext) {
+        let lhsType = type(of: binaryExpression.lhs,
+                           enclosingType: enclosingType,
+                           typeStates: typeStates,
+                           callerProtections: callerProtections,
+                           scopeContext: scopeContext)
+        switch lhsType {
         case .arrayType:
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
@@ -201,14 +199,20 @@ extension Environment {
           } else {
             fatalError()
           }
-        case .dictionaryType:
+        case .dictionaryType(let keyType, _):
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
+          } else if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "keys" {
+            return .arrayType(keyType)
           } else {
             fatalError()
           }
         default:
-          break
+          return type(of: binaryExpression.rhs,
+                      enclosingType: lhsType.name,
+                      typeStates: typeStates,
+                      callerProtections: callerProtections,
+                      scopeContext: scopeContext)
         }
       }
 
@@ -232,19 +236,23 @@ extension Environment {
                   callerProtections: callerProtections,
                   scopeContext: scopeContext) ?? .errorType
 
+    case .externalCall(let externalCall):
+      return type(of: .binaryExpression(externalCall.functionCall),
+                  enclosingType: enclosingType,
+                  typeStates: typeStates,
+                  callerProtections: callerProtections,
+                  scopeContext: scopeContext)
+
     case .identifier(let identifier):
       if identifier.enclosingType == nil,
-        let type = scopeContext.type(for: identifier.name) {
-        if case .inoutType(let type) = type {
-          return type
-        }
-        return type
+         let type = scopeContext.type(for: identifier.name) {
+        return type.stripInout
       }
       return type(of: identifier.name,
                   enclosingType: identifier.enclosingType ?? enclosingType,
                   scopeContext: scopeContext)
 
-    case .self: return .userDefinedType(enclosingType)
+    case .`self`: return .userDefinedType(enclosingType)
     case .variableDeclaration(let variableDeclaration):
       return variableDeclaration.type.rawType
     case .subscriptExpression(let subscriptExpression):
@@ -264,15 +272,22 @@ extension Environment {
     case .range(let rangeExpression):
       return type(ofRangeExpression: rangeExpression, enclosingType: enclosingType, scopeContext: scopeContext)
     case .attemptExpression(let attemptExpression):
-       return type(of: attemptExpression,
-                   enclosingType: enclosingType,
-                   typeStates: typeStates,
-                   callerProtections: callerProtections,
-                   scopeContext: scopeContext)
+      return type(of: attemptExpression,
+                  enclosingType: enclosingType,
+                  typeStates: typeStates,
+                  callerProtections: callerProtections,
+                  scopeContext: scopeContext)
     case .dictionaryLiteral(let dictionaryLiteral):
       return type(ofDictionaryLiteral: dictionaryLiteral, enclosingType: enclosingType, scopeContext: scopeContext)
     case .sequence: fatalError()
     case .rawAssembly(_, let resultType): return resultType!
+    case .returnsExpression(let returnsExpression):
+      return type(of: returnsExpression,
+                  enclosingType: enclosingType,
+                  typeStates: typeStates,
+                  callerProtections: callerProtections,
+                  scopeContext: scopeContext)
+    case .emptyExpr: fatalError("Trying to compute the type of an empty expression")
     }
   }
 }

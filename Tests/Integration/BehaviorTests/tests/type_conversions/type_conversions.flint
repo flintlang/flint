@@ -1,0 +1,25 @@
+//RUN: %flintc %s --verify
+
+external trait External {
+  func testReduce(param: uint256) -> uint128
+  func testIncrease(param: uint128) -> uint256
+}
+
+contract TypeConversions {}
+
+TypeConversions :: (any) {
+  public init() {  }
+
+  public func testReduce(param: Int, address: Address) -> Int {
+    let x: External = External(address: address)
+    let result: Int = (call! x.testReduce(param: param as! uint256)) as! Int
+    return result
+  }
+
+  public func testIncrease(param: Int, address: Address) -> Int {
+    let x: External = External(address: address)
+    let result: Int = (call! x.testIncrease(param: param as! uint128)) as! Int
+    return result
+  }
+
+}

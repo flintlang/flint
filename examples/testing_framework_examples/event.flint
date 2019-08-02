@@ -1,0 +1,14 @@
+contract Counter { 
+  var value: Int  = 0
+  event counterVal(val: Int) 
+}
+
+Counter :: (any) {
+  public init() {} 
+
+  mutating public func increment() {
+      self.value += 1
+      emit counterVal(val: self.value)
+  }
+}
+

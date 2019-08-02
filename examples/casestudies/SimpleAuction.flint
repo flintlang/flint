@@ -11,39 +11,43 @@ contract SimpleAuction {
   var highestBidder: Address
   var highestBid: Wei = Wei(0)
 
-  event highestBidDidIncrease {
-    let bidder: Address
-    let amount: Int
-  }
-  event auctionDidEnd {
-    let winner: Address
-    let bid: Int
-  }
+  event highestBidDidIncrease (bidder: Address, amount: Int)
+  event auctionDidEnd (winner: Address, bid: Int)
 }
 
 SimpleAuction :: caller <- (any) {
-  public init() {
+  public init()
+    mutates(Wei.rawValue)
+  {
     beneficiary = caller
     highestBidder = caller
   }
 
   @payable
-  public mutating func bid(implicit value: Wei) {
-    if hasAuctionEnded { fatalError() }
-    if value.getRawValue() <= highestBid.getRawValue() { fatalError() }
+  public func bid(implicit value: Wei)
+    mutates (highestBidder, Wei.rawValue, beneficiary, hasAuctionEnded, highestBid)
 
-    if highestBid.getRawValue() > 0 {
+    post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBidder == caller)
+    post ((prev(value.rawValue) > prev(highestBid.rawValue)) ==> highestBid.rawValue == prev(value.rawValue))
+  {
+    if hasAuctionEnded { fatalError() }
+    if value.rawValue <= highestBid.rawValue { fatalError() }
+
+    if highestBid.rawValue > 0 {
       // Reimburse the previous highest bidder.
       send(highestBidder, &highestBid)
     }
+    assert (highestBid.rawValue >= 0)
+    assert (highestBid.rawValue == 0)
 
     // Set the new highest bidder.
     highestBidder = caller
 
     // Record the new highest bid.
-    highestBid.transfer(&value)
+    highestBid.transfer(source: &value)
 
-    emit highestBidDidIncrease(bidder: caller, amount: value.getRawValue())
+    let amount: Int = value.rawValue
+    emit highestBidDidIncrease(bidder: caller, amount: amount)
   }
 
   public func getHighestBid() -> Int {
@@ -56,12 +60,17 @@ SimpleAuction :: caller <- (any) {
 }
 
 SimpleAuction :: (beneficiary) {
-  public mutating func endAuction() {
+  public func endAuction()
+    mutates (hasAuctionEnded, Wei.rawValue,  beneficiary, highestBid, highestBidder)
+  {
     if hasAuctionEnded { fatalError() }
 
     hasAuctionEnded = true
 
     send(beneficiary, &highestBid)
-    emit auctionDidEnd(winner: highestBidder, bid: highestBid.getRawValue())
+    assert (highestBid.rawValue == 0)
+
+    let bid: Int = highestBid.getRawValue()
+    emit auctionDidEnd(winner: highestBidder, bid: bid)
   }
 }

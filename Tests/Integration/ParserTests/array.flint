@@ -1,0 +1,177 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: ContractDeclaration
+// CHECK-AST:   identifier "Test"
+contract Test {
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "owner"
+// CHECK-AST:   built-in type Address
+  var owner: Address
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "arr"
+// CHECK-AST:   FixedSizeArrayType
+// CHECK-AST:     built-in type Int
+// CHECK-AST:     size 4
+  var arr: Int[4] = []
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "arr2"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     built-in type Int
+  var arr2: [Int] = []
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "numWrites"
+// CHECK-AST:   built-in type Int
+  var numWrites: Int = 0
+
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "nestedArr"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     ArrayType
+// CHECK-AST:     built-in type Int
+  var nestedArr: [[Int]] = [[]]
+
+// CHECK-AST: VariableDeclaration
+// CHECK-AST:   identifier "nestedArr2"
+// CHECK-AST:   ArrayType
+// CHECK-AST:     FixedSizeArrayType
+// CHECK-AST:     built-in type Int
+// CHECK-AST:     size 4
+  var nestedArr2: [Int[4]] = [[]]
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST: ContractBehaviorDeclaration
+// CHECK-AST:   identifier "Test"
+// CHECK-AST:   caller binding "caller"
+// CHECK-AST:   CallerProtection
+// CHECK-AST:     identifier "any"
+Test :: caller <- (any) {
+// CHECK-AST: SpecialDeclaration
+// CHECK-AST:   public
+  public init() {
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "arr2"
+// CHECK-AST:     =
+// CHECK-AST:     ArrayLiteral
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "numWrites"
+// CHECK-AST:     =
+// CHECK-AST:     0
+
+// CHECK-AST: Statement
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     BinaryExpression
+// CHECK-AST:       self
+// CHECK-AST:       .
+// CHECK-AST:       identifier "owner"
+// CHECK-AST:     =
+// CHECK-AST:     identifier "caller"
+    self.owner = caller
+  }
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   identifier "increaseNumWrites"
+  func increaseNumWrites()
+  mutates (numWrites) {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     self
+// CHECK-AST:     .
+// CHECK-AST:     identifier "numWrites"
+// CHECK-AST:   =
+// CHECK-AST:   BinaryExpression
+// CHECK-AST:     identifier "numWrites"
+// CHECK-AST:     +
+// CHECK-AST:     literal 1
+    self.numWrites = numWrites + 1
+  }
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   public
+// CHECK-AST:   identifier "write"
+// CHECK-AST:   Parameter
+// CHECK-AST:    identifier "index"
+// CHECK-AST:    built-in type Int
+// CHECK-AST:   Parameter
+// CHECK-AST:    identifier "val"
+// CHECK-AST:    built-in type Int
+  public func write(index: Int, val: Int)
+  mutates (arr, numWrites) {
+
+// CHECK-AST: BinaryExpression
+// CHECK-AST:   SubscriptExpression
+// CHECK-AST:     identifier "arr"
+// CHECK-AST:     identifier "index"
+// CHECK-AST:   =
+// CHECK-AST:   identifier "val"
+    arr[index] = val
+
+// CHECK-AST: FunctionCall
+// CHECK-AST:   identifier "increaseNumWrites"
+    increaseNumWrites()
+  }
+
+  public func set(index: Int, value: Int)
+  mutates (arr) {
+    arr[index] = value
+  }
+
+// CHECK-AST: FunctionDeclaration
+// CHECK-AST:   public
+// CHECK-AST:   identifier "value"
+// CHECK-AST:   Parameter
+// CHECK-AST:     identifier "index"
+// CHECK-AST:     built-in type Int
+// CHECK-AST:   ResultType
+// CHECK-AST:     built-in type Int
+  public func value(index: Int) -> Int {
+
+// CHECK-AST: ReturnStatement
+// CHECK-AST:   identifier "arr"
+// CHECK-AST:   identifier "index"
+    return arr[index]
+  }
+
+  public func value2(index1: Int, index2: Int) -> Int {
+    // CHECK-AST: SubscriptExpression
+    // CHECK-AST:   SubscriptExpression
+    // CHECK-AST:     identifier "nestedArr"
+    // CHECK-AST:     identifier "index1"
+    // CHECK-AST:   identifier "index2"
+    return nestedArr[index1][index2]
+  }
+  public func value3(index1: Int, index2: Int) -> Int {
+    // CHECK-AST: SubscriptExpression
+    // CHECK-AST:   SubscriptExpression
+    // CHECK-AST:     identifier "nestedArr2"
+    // CHECK-AST:     identifier "index1"
+    // CHECK-AST:   identifier "index2"
+    return nestedArr2[index1][index2]
+  }
+}

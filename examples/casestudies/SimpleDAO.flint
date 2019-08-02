@@ -7,25 +7,52 @@ struct Proposal {
   var quorum: Int = 0
   var finished: Bool = false
   var success: Bool = false
-  var voted: [Address: Bool] = [:]
+  var voted: [Address: Bool]
+
+  invariant (value >= 0)
+  invariant (yesVotes >= 0)
+  invariant (noVotes >= 0)
+  invariant (quorum >= 0)
+  //invariant (yesVotes + noVotes == SimpleDAO.totalSupply)
+  //invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
+
+  public init() {
+    self.voted = [:]
+  }
 }
 
 contract SimpleDAO (Join, Propose, Vote) {
   var avaliableMemberSlots: Int = 3
-  var proposal: Proposal = Proposal()
-  var members: [Address] = []
-  var balances: [Address: Int] = [:]
+  var proposal: Proposal
+  var members: [Address]
+  var balances: [Address: Int]
   var totalSupply: Int = 0
+
+  invariant (avaliableMemberSlots == 3 - members.size)
+  invariant (totalSupply >= 0)
+  // want to say that each balance is less than the total supply
 }
 
 SimpleDAO @(any) :: (any) {
-  public init(){
+  public init()
+    mutates (Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
+  {
+    proposal = Proposal()
+    self.members = []
+    self.balances = [:]
     become Join
   }
 }
 
 SimpleDAO @(Propose) :: caller <- (members) {
-  public mutating func newProposal(recipient: Address, value: Int) {
+  public func newProposal(recipient: Address, value: Int)
+    mutates (proposal, Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
+  {
+    // Satisfy invariant
+    if (value < 0) {
+      fatalError()
+    }
+
     proposal = Proposal()
     proposal.proposer = caller
     proposal.value = value
@@ -35,7 +62,9 @@ SimpleDAO @(Propose) :: caller <- (members) {
   }
 
   // This isn't a good function because they don't stop being a member when they leave, but it's sufficient for testing
-  public mutating func leave() {
+  public func leave()
+    mutates (balances, totalSupply)
+  {
     let balance: Int = balances[caller]
 
     balances[caller] = 0
@@ -45,7 +74,9 @@ SimpleDAO @(Propose) :: caller <- (members) {
 }
 
 SimpleDAO @(Vote) :: caller <- (members) {
-  public mutating func vote(approve: Bool) {
+  public func vote(approve: Bool)
+    mutates (proposal, Proposal.voted, Proposal.yesVotes, Proposal.noVotes)
+  {
     if proposal.voted[caller] {
       fatalError()
     }
@@ -59,7 +90,9 @@ SimpleDAO @(Vote) :: caller <- (members) {
     proposal.voted[caller] = true
   }
 
-  public mutating func executeProposal() {
+  public func executeProposal()
+    mutates (proposal, Proposal.success, Proposal.finished)
+  {
     if(caller != proposal.proposer || proposal.finished) {
       fatalError()
     }
@@ -75,7 +108,9 @@ SimpleDAO @(Vote) :: caller <- (members) {
 
 SimpleDAO @(Join) :: caller <- (any) {
 
-  public mutating func join(value: Int) {
+  public func join(value: Int)
+    mutates (balances, members, totalSupply, avaliableMemberSlots)
+  {
     balances[caller] = value
     totalSupply += value
     members[3 - avaliableMemberSlots] = caller

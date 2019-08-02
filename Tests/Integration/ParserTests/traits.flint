@@ -1,0 +1,26 @@
+// RUN: %flintc %s --dump-ast | %FileCheck %s --prefix CHECK-AST
+
+// CHECK-AST: TopLevelModule
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST:   TraitDeclaration
+// CHECK-AST:     token: struct
+// CHECK-AST:     identifier "Test"
+struct trait Test {
+  public func f() -> Bool {
+    return true
+  }
+
+  @payable
+  func g(b: Bool) -> Int
+
+  public init(c: Bool)
+}
+
+// CHECK-AST: TopLevelDeclaration
+// CHECK-AST:   TraitDeclaration
+// CHECK-AST:     token: contract
+// CHECK-AST:     identifier "TestSpecial"
+contract trait TestSpecial {
+  event e ()
+}

@@ -5,9 +5,9 @@
 //  Created by Franklin Schrans on 1/4/18.
 //
 
-import Foundation
 import Rainbow
 import Source
+import Utils
 
 /// Formats error and warning messages.
 public struct DiagnosticsFormatter {
@@ -42,8 +42,8 @@ public struct DiagnosticsFormatter {
     let infoLine = "\(infoTopic)\(sourceFileText):"
     let body: String
 
-    if let sourceContext = sourceContext, let file = diagnosticFile {
-      let sourceCode = try sourceContext.sourceCode(in: file)
+    if let sourceContext = sourceContext, let file = diagnosticFile,
+       let sourceCode = try? sourceContext.sourceCode(in: file) {
       let sourcePreview = renderSourcePreview(at: diagnostic.sourceLocation,
                                               sourceCode: sourceCode, highlightColor: highlightColor, style: style)
       body = """
@@ -96,8 +96,10 @@ public struct DiagnosticsFormatter {
 
   func renderSourceLine(_ sourceLine: String, rangeOfInterest: Range<Int>,
                         highlightColor: Color, style: Style) -> String {
-    let lowerBound = rangeOfInterest.lowerBound != 0 ? rangeOfInterest.lowerBound - 1 : 0
-    let upperBound = rangeOfInterest.upperBound != 0 ? rangeOfInterest.upperBound - 1 : max(0, sourceLine.count - 1)
+    let lowerBound = rangeOfInterest.lowerBound != 0 ? min(rangeOfInterest.lowerBound, sourceLine.count) - 1 : 0
+    let upperBound = (rangeOfInterest.upperBound != 0
+        ? min(rangeOfInterest.upperBound, sourceLine.count) - 1
+        : max(0, sourceLine.count - 1))
 
     let lowerBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: lowerBound)
     let upperBoundIndex = sourceLine.index(sourceLine.startIndex, offsetBy: upperBound)
@@ -105,12 +107,5 @@ public struct DiagnosticsFormatter {
     return String(sourceLine[sourceLine.startIndex..<lowerBoundIndex]) +
         String(sourceLine[lowerBoundIndex..<upperBoundIndex]).applyingCodes(highlightColor, style) +
         String(sourceLine[upperBoundIndex..<sourceLine.endIndex])
-  }
-}
-
-fileprivate extension String {
-  func indented(by level: Int) -> String {
-    let lines = components(separatedBy: "\n")
-    return lines.joined(separator: "\n" + String(repeating: " ", count: level))
   }
 }

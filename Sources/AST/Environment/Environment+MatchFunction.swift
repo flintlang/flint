@@ -47,7 +47,6 @@ extension Environment {
                                 callerProtections: [CallerProtection],
                                 scopeContext: ScopeContext) -> FunctionCallMatchResult {
     let match: FunctionCallMatchResult = .failure(candidates: [])
-
     let argumentTypes = functionCall.arguments.map {
       type(of: $0.expression, enclosingType: enclosingType, scopeContext: scopeContext)
     }
@@ -55,9 +54,9 @@ extension Environment {
     // Check if it can be a regular function.
     let regularMatch = matchRegularFunction(functionCall: functionCall,
                                             enclosingType: enclosingType,
-                                            argumentTypes: argumentTypes,
                                             typeStates: typeStates,
-                                            callerProtections: callerProtections)
+                                            callerProtections: callerProtections,
+                                            scopeContext: scopeContext)
 
     // Check if it can be an initializer.
     let initaliserMatch = matchInitaliserFunction(functionCall: functionCall,
@@ -80,14 +79,20 @@ extension Environment {
 
   private func matchRegularFunction(functionCall: FunctionCall,
                                     enclosingType: RawTypeIdentifier,
-                                    argumentTypes: [RawType],
                                     typeStates: [TypeState],
-                                    callerProtections: [CallerProtection]) -> FunctionCallMatchResult {
+                                    callerProtections: [CallerProtection],
+                                    scopeContext: ScopeContext) -> FunctionCallMatchResult {
     var candidates = [CallableInformation]()
+    let argumentTypes = functionCall.arguments.map {
+      type(of: $0.expression, enclosingType: enclosingType, scopeContext: scopeContext)
+    }
 
     if let functions = types[enclosingType]?.allFunctions[functionCall.identifier.name] {
       for candidate in functions {
-        guard candidate.parameterTypes == argumentTypes,
+        guard areFunctionCallArgumentsCompatible(source: candidate,
+                                                 target: functionCall,
+                                                 enclosingType: enclosingType,
+                                                 scopeContext: scopeContext),
           areCallerProtectionsCompatible(source: callerProtections, target: candidate.callerProtections),
           areTypeStatesCompatible(source: typeStates, target: candidate.typeStates) else {
             candidates.append(.functionInformation(candidate))
@@ -96,6 +101,7 @@ extension Environment {
 
         return .matchedFunction(candidate)
       }
+
       let matchedCandidates = candidates.filter { $0.parameterTypes == argumentTypes }
       if matchedCandidates.count > 0 {
        return .matchedFunctionWithoutCaller(matchedCandidates)

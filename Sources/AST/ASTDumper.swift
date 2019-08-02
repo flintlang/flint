@@ -5,14 +5,20 @@
 //  Created by Franklin Schrans on 1/8/18.
 //
 
+/*
+ // Shadow Swift RangeExpression and DictionaryLiteral for stub Generation
+ import structAST.RangeExpression
+ import structAST.DictionaryLiteral
+*/
+
 import Foundation
 import Lexer
 
 /// Prints an AST.
 public class ASTDumper {
   var topLevelModule: TopLevelModule
-  var indentation = 0
-  var output = ""
+  var indentation: Int = 0
+  var output: String = ""
 
   public init(topLevelModule: TopLevelModule) {
     self.topLevelModule = topLevelModule
@@ -192,6 +198,8 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .specialDeclaration(let specialDeclaration):
       self.dump(specialDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
     }
   }
 
@@ -201,6 +209,10 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
+    case .holisticDeclaration(let expression):
+      self.dump(expression)
     }
   }
 
@@ -359,20 +371,24 @@ public class ASTDumper {
       writeNode("BasicType") {
         self.dump(rawType)
       }
-    case .stdlibType(let type):
-      writeLine("Stdlib type \(type.rawValue)")
     case .userDefinedType(let userDefinedType):
       writeLine("user-defined type \(userDefinedType)")
     case .inoutType(let rawType):
       writeNode("inout type") {
         self.dump(rawType)
       }
+    case .selfType:
+      writeNode("Self type")
     case .any:
       writeLine("Any")
     case .errorType:
       writeLine("Flint error type \(rawType.name)")
     case .functionType:
       writeLine("function type \(rawType.name)")
+    case .solidityType(let solidityType):
+      writeNode("SolidityType") {
+        self.dump(solidityType)
+      }
     }
   }
 
@@ -397,8 +413,10 @@ public class ASTDumper {
       switch expression {
       case .inoutExpression(let inoutExpression): self.dump(inoutExpression)
       case .binaryExpression(let binaryExpression): self.dump(binaryExpression)
+      case .typeConversionExpression(let typeConversionExpression): self.dump(typeConversionExpression)
       case .bracketedExpression(let bracketedExpression): self.dump(bracketedExpression)
       case .functionCall(let functionCall): self.dump(functionCall)
+      case .externalCall(let externalCall): self.dump(externalCall)
       case .identifier(let identifier): self.dump(identifier)
       case .literal(let token): self.dump(token)
       case .arrayLiteral(let arrayLiteral): self.dump(arrayLiteral)
@@ -410,6 +428,8 @@ public class ASTDumper {
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
       case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly: fatalError()
+      case .returnsExpression(let returnsExpression): self.dump(returnsExpression)
+      case .emptyExpr: fatalError("EMPTY EXPR")
       }
     }
   }
@@ -423,6 +443,7 @@ public class ASTDumper {
       case .ifStatement(let ifStatement): self.dump(ifStatement)
       case .forStatement(let forStatement): self.dump(forStatement)
       case .emitStatement(let emitStatement): self.dump(emitStatement)
+      case .doCatchStatement(let doCatchStatement): self.dump(doCatchStatement)
       }
     }
   }
@@ -438,6 +459,14 @@ public class ASTDumper {
       self.dump(binaryExpression.lhs)
       self.dump(binaryExpression.op)
       self.dump(binaryExpression.rhs)
+    }
+  }
+
+  func dump(_ typeConversionExpression: TypeConversionExpression) {
+    writeNode("TypeConversionExpression") {
+      self.dump(typeConversionExpression.expression)
+      self.writeLine("kind: \(typeConversionExpression.kind.description)")
+      self.dump(typeConversionExpression.type)
     }
   }
 
@@ -464,6 +493,22 @@ public class ASTDumper {
       }
 
       self.dump(functionCall.closeBracketToken)
+    }
+  }
+
+  func dump(_ externalCall: ExternalCall) {
+    writeNode("ExternalCall") {
+      for argument in externalCall.hyperParameters {
+        self.dump(argument)
+      }
+
+      if externalCall.mode == .isForced {
+        self.writeNode("Forced execution")
+      } else if externalCall.mode == .returnsGracefullyOptional {
+        self.writeNode("Returns optional")
+      }
+
+      self.dump(externalCall.functionCall)
     }
   }
 
@@ -503,7 +548,7 @@ public class ASTDumper {
   func dump(_ emitStatement: EmitStatement) {
     writeNode("EmitStatement") {
       self.dump(emitStatement.emitToken)
-      self.dump(emitStatement.expression)
+      self.dump(emitStatement.functionCall)
     }
   }
 
@@ -535,6 +580,18 @@ public class ASTDumper {
     }
   }
 
+  func dump(_ doCatchStatement: DoCatchStatement) {
+    writeNode("DoCatchStatement") {
+      for s in doCatchStatement.doBody {
+        self.dump(s)
+      }
+      self.dump(doCatchStatement.error)
+      for s in doCatchStatement.catchBody {
+        self.dump(s)
+      }
+    }
+  }
+
   func dump(_ token: Token) {
     writeLine("token: \(token.kind.description)")
   }
@@ -562,5 +619,9 @@ public class ASTDumper {
         self.dump(element.value)
       }
     }
+  }
+
+  func dump(_ solidityType: RawType.SolidityType) {
+    writeLine("solidity type \(solidityType.rawValue)")
   }
 }
