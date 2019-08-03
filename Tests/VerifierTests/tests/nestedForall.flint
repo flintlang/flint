@@ -1,0 +1,44 @@
+//VERIFY-CHECK
+
+// ----------------------------------------------------------------------------
+// Standard ERC20 Token
+//
+// Implementation of the basic standard token:
+//   https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
+// Based on openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol
+// ----------------------------------------------------------------------------
+
+contract StandardToken {
+    var balances: [Address: Int]
+    var allowed: [Address: [Address: Int]]
+    var totalSupply: Int = 0
+
+    event Transfer (from: Address, to: Address, value: Int)
+    event Approval (from: Address, to: Address, value: Int)
+}
+
+StandardToken :: (any) {
+  public init() {
+    balances = [:]
+    allowed = [:]
+  }
+}
+
+StandardToken :: caller <- (any) {
+  // Approve the passed address to spend the specified amount of tokens on behalf of caller.
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public func approve(spender: Address, value: Int) -> Bool
+    mutates (allowed)
+    pre (value > 0)
+    post (allowed[caller][spender] == value)
+    post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev (allowed[a1][a2]) ||(a1 == caller && a2 == spender))))
+    post (returns (true))
+  {
+    allowed[caller][spender] = value
+
+    emit Approval(from: caller, to: spender, value: value)
+    return true
+  }
+}
