@@ -153,7 +153,7 @@ public class REPLCodeProcessor {
     }
 
     let p = Process()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = ["node", "--no-warnings", "gen_address.js"]
     try! p.run()

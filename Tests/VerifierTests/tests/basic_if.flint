@@ -1,0 +1,16 @@
+//VERIFY-CHECK
+contract IfContract { }
+
+IfContract :: (any) {
+  public init() {}
+
+  public func test(n: Int) -> Int
+    post (returns(0))
+    {
+      if (n < 2) {
+         //VERIFY-FAIL
+         return 1
+      }
+      return 0
+    }
+}

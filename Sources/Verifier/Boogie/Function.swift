@@ -263,12 +263,35 @@ extension BoogieTranslator {
                                    propertyExpression)),
           argumentsStatements + triggerPreStmts,
           argumentPostStmts + triggerPostStmts)
+    case "forall", "exists":
+      print(functionCall.arguments)
+      assert(argumentsExpressions.count == 3)
+      let variableArgument: FunctionArgument = functionCall.arguments[0]
+      let typeArgument: FunctionArgument = functionCall.arguments[1]
 
+      guard case .identifier(let variable) = variableArgument.expression,
+            case .identifier(let type) = typeArgument.expression else {
+        print("\(rawFunctionName) must be introduced with a typed variable declaration, for some t of type T: `t, T`")
+        fatalError()
+      }
+      self.currentFunctionReturningValue = variable.name
+      self.currentFunctionReturningValueValue = currentFunctionReturningValue.map { name in
+        return .identifier(name)
+      }
+      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression,
+                                               shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
+
+      let btype = convertType(
+           AST.Type(identifier: AST.Identifier(name: type.name, sourceLocation: typeArgument.sourceLocation)))
+
+      return (.quantified((rawFunctionName == "forall" ? .forall : .exists),
+                          [BParameterDeclaration(name: variable.name, rawName: variable.name, type: btype)],
+                          propertyExpression), [], [])
     default: break
     }
 
     guard let currentFunctionName = getCurrentFunctionName() else {
-      print("Unableto get current function name - while processing function call")
+      print("Unable to get current function name - while processing function call")
       fatalError()
     }
 

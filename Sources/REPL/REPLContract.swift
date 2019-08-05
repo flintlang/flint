@@ -69,7 +69,7 @@ public class REPLContract {
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
     let p = Process()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = ["node", "event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
     try! p.run()
@@ -218,7 +218,7 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.standardOutput = pipe
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = node_args
@@ -367,7 +367,7 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.standardOutput = pipe
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = ["node", "deploy_contract.js", self.abi, self.bytecode, rawString]

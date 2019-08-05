@@ -25,7 +25,7 @@ public class DiagnosticPool {
   }
 
   public func getDiagnostics() -> [Diagnostic] {
-       return diagnostics
+    return diagnostics
   }
 
   public func append(_ diagnostic: Diagnostic) {
@@ -33,7 +33,7 @@ public class DiagnosticPool {
   }
 
   public func appendAll(_ additions: [Diagnostic]) {
-        diagnostics.append(contentsOf: additions)
+    diagnostics.append(contentsOf: additions)
   }
 
   public func empty() {

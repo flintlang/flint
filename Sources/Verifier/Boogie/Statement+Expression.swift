@@ -24,6 +24,8 @@ extension BoogieTranslator {
         statements.append(.assignment(.identifier(getFunctionReturnVariable()),
                                       translatedExpr,
                                       TranslationInformation(sourceLocation: returnStatement.sourceLocation)))
+        statements.append(.expression(.identifier("return;"),
+                                      TranslationInformation(sourceLocation: returnStatement.sourceLocation)))
         statements += postStatements
       }
       return statements
@@ -969,7 +971,7 @@ extension BoogieTranslator {
                                           subscriptDepth: Int = 0,
                                           localContext: Bool = true,
                                           isBeingAssignedTo: Bool = false
-  ) -> (BExpression, [BStatement], [BStatement]) {
+                                          ) -> (BExpression, [BStatement], [BStatement]) {
     var postAmble = [BStatement]()
     let (subExpr, subStmts, subPostStmts) = process(subscriptExpression.baseExpression,
                                                     localContext: localContext,
