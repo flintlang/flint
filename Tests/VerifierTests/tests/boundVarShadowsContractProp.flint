@@ -1,0 +1,15 @@
+//VERIFY-CHECK
+contract myContract {
+  var x: Int = 0
+}
+
+myContract :: (any) {
+  public init() {}
+  
+  public func setX(value: Int)
+  mutates(x)  
+  post(forall(x, Int, x == value ==> x == self.x))
+ {
+    self.x = value
+  }
+}

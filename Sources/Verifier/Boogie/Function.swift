@@ -265,17 +265,24 @@ extension BoogieTranslator {
           argumentPostStmts + triggerPostStmts)
     case "forall", "exists":
       assert(argumentsExpressions.count == 3)
-      guard case .identifier(let boundVariableName) = argumentsExpressions[0],
-        case .identifier(let typeName) = argumentsExpressions[1] else {
+      let boundVariableArg: FunctionArgument = functionCall.arguments[0]
+      let typeArg: FunctionArgument = functionCall.arguments[1]
+
+      guard case .identifier(let boundVariable) = boundVariableArg.expression,
+        case .identifier(let type) = typeArg.expression else {
           print("\(rawFunctionName) must be introduced with a typed variable declaration, for some t of type T: `t, T`")
           fatalError()
       }
-      let propertyExpression = argumentsExpressions[2]
+
       let bType = convertType(
-        AST.Type(identifier: AST.Identifier(name: typeName, sourceLocation: functionCall.arguments[1].sourceLocation)))
+        AST.Type(identifier: AST.Identifier(name: type.name, sourceLocation: typeArg.sourceLocation)))
+
+      currentScopeContext?.boundVariablesStack.append(boundVariable)
+      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression)
+      _ = currentScopeContext?.boundVariablesStack.popLast()
 
       return (.quantified((rawFunctionName == "forall" ? .forall : .exists),
-                          [BParameterDeclaration(name: boundVariableName, rawName: boundVariableName, type: bType)],
+                          [BParameterDeclaration(name: boundVariable.name, rawName: boundVariable.name, type: bType)],
                           propertyExpression), [], [])
     default: break
     }

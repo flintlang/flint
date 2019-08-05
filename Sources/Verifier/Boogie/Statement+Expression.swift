@@ -925,17 +925,23 @@ extension BoogieTranslator {
                                  shadowVariablePrefix: String = "",
                                  enclosingTLD: String? = nil,
                                  structInstanceVariable: BExpression? = nil) -> BExpression {
-    // See if identifier is a local variable
-    if localContext,
-       let currentFunctionName = getCurrentFunctionName(),
-       getFunctionVariableDeclarations(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 ||
-       getFunctionParameters(name: currentFunctionName)
-           .filter({ $0.rawName == identifier.name })
-           .count > 0 {
+    // See if identifier is a local (possibly bound) variable
+    if localContext {
+      if let boundVariableName = getCurrentScopeContext()?
+        .boundVariablesStack
+        .last(where: {$0.name == identifier.name})?.name {
+        return .identifier(boundVariableName)
+      }
 
-      return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
+      if let currentFunctionName = getCurrentFunctionName(),
+        getFunctionVariableDeclarations(name: currentFunctionName)
+          .filter({ $0.rawName == identifier.name })
+          .count > 0 ||
+          getFunctionParameters(name: currentFunctionName)
+            .filter({ $0.rawName == identifier.name })
+            .count > 0 {
+        return .identifier(shadowVariablePrefix + translateIdentifierName(identifier.name))
+      }
     }
 
     if let caller = self.currentCallerIdentifier, caller.name == identifier.name, identifier.enclosingType == nil {
