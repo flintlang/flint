@@ -310,6 +310,7 @@ extension SemanticAnalyzer {
 
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
+      passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
     } else if let enclosingType = passContext.enclosingTypeIdentifier?.name {
       // It's a property declaration.
       if let conflict = environment.conflictingPropertyDeclaration(for: variableDeclaration.identifier,

@@ -7,7 +7,7 @@
 
 /// Information collected when performing a pass over an AST.
 ///
-/// Entries in a context are accessible as properties, or through a subscript, which takes a `PassContexEntry` value.
+/// Entries in a context are accessible as properties, or through a subscript, which takes a `PassContextEntry` value.
 public struct ASTPassContext {
   /// Backing storage for the context.
   var storage = [AnyHashable: Any]()

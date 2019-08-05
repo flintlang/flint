@@ -13,6 +13,7 @@ extension MovePreprocessor {
   public func process(expression: Expression, passContext: ASTPassContext) -> ASTPassResult<Expression> {
     var expression = expression
     let environment = passContext.environment!
+    var updatedContext = passContext
 
     if case .binaryExpression(let binaryExpression) = expression {
 
@@ -46,9 +47,15 @@ extension MovePreprocessor {
           }
         }
       }
+      if case .equal = binaryExpression.opToken,
+         case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs {
+        expression = variableDeclaration.assignment(to: binaryExpression.rhs)
+        updatedContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+        updatedContext.scopeContext?.localVariables += [variableDeclaration]
+      }
     }
 
-    return ASTPassResult(element: expression, diagnostics: [], passContext: passContext)
+    return ASTPassResult(element: expression, diagnostics: [], passContext: updatedContext)
   }
 
   public func process(binaryExpression: BinaryExpression,

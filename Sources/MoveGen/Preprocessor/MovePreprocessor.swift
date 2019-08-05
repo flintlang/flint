@@ -19,7 +19,7 @@ public struct MovePreprocessor: ASTPass {
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     var structMember = structMember
 
-    if case .specialDeclaration(var specialDeclaration) = structMember,
+    if case .specialDeclaration(let specialDeclaration) = structMember,
        specialDeclaration.isInit {
       // FIXME REMOVED specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
@@ -52,10 +52,10 @@ public struct MovePreprocessor: ASTPass {
   public func process(variableDeclaration: VariableDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
-
     if passContext.functionDeclarationContext != nil {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
+      passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
 
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -130,6 +130,44 @@ public struct MovePreprocessor: ASTPass {
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
 
+    return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  private func deleteDeclarations(in statements: [Statement]) -> [Statement] {
+    return statements.compactMap { statement -> Statement? in
+      switch statement {
+      case .expression(let expression):
+        if case .variableDeclaration(let declaration) = expression {
+          return nil
+        }
+      case .forStatement(var stmt):
+        stmt.body = deleteDeclarations(in: stmt.body)
+        return .forStatement(stmt)
+      case .ifStatement(var stmt):
+        stmt.body = deleteDeclarations(in: stmt.body)
+        return .ifStatement(stmt)
+      case .doCatchStatement(var stmt):
+        stmt.catchBody = deleteDeclarations(in: stmt.catchBody)
+        stmt.doBody = deleteDeclarations(in: stmt.doBody)
+        return .doCatchStatement(stmt)
+      default:
+        return statement
+      }
+      return statement
+    }
+  }
+
+  public func postProcess(functionDeclaration: FunctionDeclaration,
+                          passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
+    var functionDeclaration = functionDeclaration
+
+    let declarations = passContext.scopeContext!.localVariables.map { declaration -> Statement in
+      var declaration: VariableDeclaration = declaration
+      declaration.identifier = Identifier(name: declaration.identifier.name.mangled,
+                                          sourceLocation: declaration.identifier.sourceLocation)
+      return Statement.expression(.variableDeclaration(declaration))
+    }
+    functionDeclaration.body = declarations + deleteDeclarations(in: functionDeclaration.body)
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 

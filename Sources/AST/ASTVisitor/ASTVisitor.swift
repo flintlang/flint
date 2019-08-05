@@ -608,7 +608,8 @@ public struct ASTVisitor {
 
   func visit(_ variableDeclaration: VariableDeclaration,
              passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
-    var processResult = pass.process(variableDeclaration: variableDeclaration, passContext: passContext)
+    var processResult: ASTPassResult<VariableDeclaration>
+        = pass.process(variableDeclaration: variableDeclaration, passContext: passContext)
 
     processResult.element.identifier = processResult.combining(visit(processResult.element.identifier,
                                                                      passContext: processResult.passContext))
@@ -626,8 +627,8 @@ public struct ASTVisitor {
       processResult.passContext.scopeContext = previousScopeContext
     }
 
-    let postProcessResult = pass.postProcess(variableDeclaration: processResult.element,
-                                             passContext: processResult.passContext)
+    let postProcessResult: ASTPassResult<VariableDeclaration>
+        = pass.postProcess(variableDeclaration: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)
@@ -635,7 +636,8 @@ public struct ASTVisitor {
 
   func visit(_ functionDeclaration: FunctionDeclaration,
              passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
-    var processResult = pass.process(functionDeclaration: functionDeclaration, passContext: passContext)
+    var processResult: ASTPassResult<FunctionDeclaration>
+        = pass.process(functionDeclaration: functionDeclaration, passContext: passContext)
 
     processResult.element.signature = processResult.combining(visit(processResult.element.signature,
                                                                     passContext: processResult.passContext))
@@ -650,6 +652,8 @@ public struct ASTVisitor {
       return processResult.combining(visit(statement, passContext: processResult.passContext))
     }
 
+    let declarations = processResult.passContext.functionDeclarationContext!.innerDeclarations
+    processResult.passContext.scopeContext?.localVariables = declarations
     processResult.passContext.functionDeclarationContext = nil
 
     let postProcessResult = pass.postProcess(functionDeclaration: processResult.element,

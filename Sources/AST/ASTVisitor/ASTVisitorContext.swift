@@ -70,6 +70,7 @@ public struct TraitDeclarationContext {
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
+  public var innerDeclarations: [VariableDeclaration] = []
 
   public init(declaration: FunctionDeclaration) {
     self.declaration = declaration

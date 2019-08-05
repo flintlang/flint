@@ -18,12 +18,6 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
     return expression?.catchableSuccesses ?? []
   }
 
-  public var assignment: Assignment? {
-    return self.expression.map { (expression: Expression) in
-      return Assignment(declaration.0, expression)
-    }
-  }
-
   public var description: String {
     // FIXME This is wrong in move, all declarations must be seperate 
     // from assignment and be at the top
