@@ -58,10 +58,10 @@ struct MoveIfStatement {
           functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
         }
       }
-      return .switch(Switch(condition, cases: [(MoveIR.Literal.num(1), body)], default: elseBody))
+      return .if(If(condition, body, elseBody))
     }
 
-    return .switch(Switch(condition, cases: [(MoveIR.Literal.num(1), body)]))
+    return .if(If(condition, body, nil))
   }
 }
 

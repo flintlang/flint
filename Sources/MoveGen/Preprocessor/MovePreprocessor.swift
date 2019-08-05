@@ -75,15 +75,15 @@ public struct MovePreprocessor: ASTPass {
     // Bind the implicit Wei value of the transaction to a variable.
     if functionDeclaration.isPayable,
        let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
-      let weiType = Identifier(identifierToken: Token(kind: .identifier("Wei"),
+      let libraType = Identifier(identifierToken: Token(kind: .identifier("Libra"),
                                                       sourceLocation: payableParameterIdentifier.sourceLocation))
       let variableDeclaration = VariableDeclaration(modifiers: [],
                                                     declarationToken: nil,
                                                     identifier: payableParameterIdentifier,
-                                                    type: Type(identifier: weiType))
+                                                    type: Type(identifier: libraType))
       let closeBracketToken = Token(kind: .punctuation(.closeBracket),
                                     sourceLocation: payableParameterIdentifier.sourceLocation)
-      let wei = FunctionCall(identifier: weiType,
+      let libra = FunctionCall(identifier: libraType,
                              arguments: [
                                FunctionArgument(identifier: nil,
                                                 expression: .literal(
@@ -100,7 +100,7 @@ public struct MovePreprocessor: ASTPass {
       let assignment: Expression = .binaryExpression(
           BinaryExpression(lhs: .variableDeclaration(variableDeclaration),
                            op: equal,
-                           rhs: .functionCall(wei)))
+                           rhs: .functionCall(libra)))
       functionDeclaration.body.insert(.expression(assignment), at: 0)
     }
 
@@ -108,7 +108,7 @@ public struct MovePreprocessor: ASTPass {
       if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
         let parameter = constructParameter(
-            name: "flintSelf",
+            name: "this",
             type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
             sourceLocation: functionDeclaration.sourceLocation)
         functionDeclaration.signature.parameters.insert(parameter, at: 0)

@@ -19,6 +19,8 @@ public enum Operation: CustomStringConvertible {
   case modulo(MoveIR.Expression, MoveIR.Expression)
   case greaterThan(MoveIR.Expression, MoveIR.Expression)
   case lessThan(MoveIR.Expression, MoveIR.Expression)
+  case greaterThanOrEqual(MoveIR.Expression, MoveIR.Expression)
+  case lessThanOrEqual(MoveIR.Expression, MoveIR.Expression)
   case equal(MoveIR.Expression, MoveIR.Expression)
   case notEqual(MoveIR.Expression, MoveIR.Expression)
   case or(MoveIR.Expression, MoveIR.Expression)
@@ -39,6 +41,8 @@ public enum Operation: CustomStringConvertible {
     case .modulo(let left, let right): return "\(left) % \(right)"
     case .greaterThan(let left, let right): return "\(left) > \(right)"
     case .lessThan(let left, let right): return "\(left) < \(right)"
+    case .greaterThanOrEqual(let left, let right): return "\(left) >= \(right)"
+    case .lessThanOrEqual(let left, let right): return "\(left) <= \(right)"
     case .equal(let left, let right): return "\(left) == \(right)"
     case .notEqual(let left, let right): return "\(left) != \(right)"
     case .or(let left, let right): return "\(left) || \(right)"

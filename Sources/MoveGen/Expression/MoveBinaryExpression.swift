@@ -47,6 +47,8 @@ struct MoveBinaryExpression {
     case .percent: return .operation(.modulo(lhs, rhs))
     case .closeAngledBracket: return .operation(.greaterThan(lhs, rhs))
     case .openAngledBracket: return .operation(.lessThan(lhs, rhs))
+    case .greaterThanOrEqual: return .operation(.greaterThanOrEqual(lhs, rhs))
+    case .lessThanOrEqual: return .operation(.lessThanOrEqual(lhs, rhs))
     case .doubleEqual: return .operation(.equal(lhs, rhs))
     case .notEqual: return .operation(.notEqual(lhs, rhs))
     case .or: return .operation(.or(lhs, rhs))

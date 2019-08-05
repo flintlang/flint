@@ -75,24 +75,6 @@ extension MovePreprocessor {
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
     }
 
-    // Convert <= and >= expressions.
-    if [.lessThanOrEqual, .greaterThanOrEqual].contains(binaryExpression.opToken) {
-      let strictOperator: Token.Kind.Punctuation =
-        binaryExpression.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
-
-      var lhsExpression = binaryExpression
-      lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
-
-      var rhsExpression = binaryExpression
-      rhsExpression.op = Token(kind: .punctuation(.doubleEqual), sourceLocation: rhsExpression.op.sourceLocation)
-
-      binaryExpression.lhs = .binaryExpression(lhsExpression)
-      binaryExpression.rhs = .binaryExpression(rhsExpression)
-
-      let sourceLocation = binaryExpression.op.sourceLocation
-      binaryExpression.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
-    }
-
     return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
   }
 
@@ -123,7 +105,7 @@ extension MovePreprocessor {
     }
 
     if receiverTrail.isEmpty {
-      receiverTrail = [.self(Token(kind: .self, sourceLocation: functionCall.sourceLocation))]
+      receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
     }
 
     // Mangle initializer call.
@@ -214,10 +196,10 @@ extension MovePreprocessor {
               Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)),
                                                 sourceLocation: argument.sourceLocation)))
           } else if case .inoutExpression(let inoutExpression) = argument.expression,
-            case .self(_) = inoutExpression.expression {
+            case .`self` = inoutExpression.expression {
             // If the argument is self, use flintSelf
             isMem = .identifier(
-              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "flintSelf")),
+              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "this")),
                                                 sourceLocation: argument.sourceLocation)))
           } else {
             // Otherwise, the argument refers to a property, which is not in memory.
@@ -309,7 +291,7 @@ extension MovePreprocessor {
                                               scopeContext: scopeContext)
 
     // Mangle global function
-    if case .matchedGlobalFunction(_) = match {
+    if case .matchedGlobalFunction = match {
       return true
     }
 

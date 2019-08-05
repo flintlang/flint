@@ -25,22 +25,6 @@ public struct Switch: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    /*
-    let cases = self.cases.map { (lit, block) in
-      return "case \(lit) \(block)"
-    }.joined(separator: "\n")
-
-    let `default`: String
-    if let defaultContent = self.default {
-      `default` = "\ndefault \(defaultContent)"
-    } else {
-      `default` = ""
-    }
-
-    return """
-    switch \(self.expression)
-    \(cases)\(`default`)
-    """*/
     // This only supports basic switching
     // TODO add break/fallthrough  
     return cases.reversed().reduce(self.default?.description ?? "{}") { (innerBlock, _case) in
