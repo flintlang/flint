@@ -1,0 +1,39 @@
+contract Counter {
+  var value: Int = 10
+  var backup: Int = 0
+}
+
+Counter :: (any) {
+  public init() {
+    backup = 10
+  }
+
+  public func getValue() -> Int {
+    return value
+  }
+
+  public func increment()
+    mutates (value)
+  {
+    value += 1
+  }
+
+  public func set(value: Int)
+    mutates (value)
+  {
+    self.value = value
+  }
+
+  public func ooOohWereHalfWayThere(ooOoh: Int) -> Int
+   mutates (value) {
+    set(value: 9001)
+    let livingOnAPrayer: Int = 10
+    let noop: Bool
+    if ooOoh >= (1 / 2) {
+      if ooOoh >= (3/4) {
+        set(value: livingOnAPrayer + ooOoh)
+      }
+    }
+    return getValue() + ooOoh
+  }
+}

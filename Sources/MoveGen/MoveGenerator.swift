@@ -17,7 +17,6 @@ public struct MoveGenerator {
   public func generateCode() -> String {
 
     var contracts = [MoveContract]()
-    var interfaces = [MoveInterface]()
 
     // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
@@ -39,16 +38,12 @@ public struct MoveGenerator {
                                 structDeclarations: structDeclarations,
                                 environment: environment)
       contracts.append(contract)
-      interfaces.append(MoveInterface(contract: contract, environment: environment))
     }
 
     // Generate a IR contract and a IR interface.
     // The interface is used for exisiting Solidity tools such as Truffle and Remix to interpret Flint code as
     // Solidity code.
 
-    let renderedContracts = contracts.map { $0.rendered() }.joined(separator: "\n")
-    let renderedInterfaces = interfaces.map { $0.rendered() }.joined(separator: "\n")
-
-    return renderedContracts + "\n" + renderedInterfaces
+    return contracts.map { $0.rendered() }.joined(separator: "\n")
   }
 }

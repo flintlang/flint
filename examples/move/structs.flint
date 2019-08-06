@@ -1,0 +1,159 @@
+struct A {
+  var x: Int = 0
+  var y: Bool = false
+
+  func getX() -> Int {
+    return x
+  }
+
+  func setX(x: Int) mutates (x) {
+    self.x = x
+  }
+
+  func getY() -> Int {
+    return getX()
+  }
+}
+
+struct B {
+  var x: A = A()
+  var y: Int = 0
+
+  func getXx() -> Int {
+    return x.getX()
+  }
+
+  func getXx2() -> Int {
+    return x.getY()
+  }
+
+  func setXx(y: Int) mutates (A.x) {
+    x.setX(x: y)
+  }
+}
+
+contract C {
+  var a: A = A()
+  var arr: Maybe = Maybe()
+  var b: B = B()
+  var c: B = B()
+  let d: Int = 5
+  var e: Bool = true
+}
+
+C :: (any) {
+  public init() {}
+
+  public func getAx() -> Int {
+    return a.x
+  }
+
+  public func setAx(x: Int) mutates (A.x) {
+    a.x = x
+  }
+
+  public func getAy() -> Bool {
+    return a.y
+  }
+
+  public func setAy(y: Bool) mutates (A.y) {
+    a.y = y
+  }
+
+  public func getBxx() -> Int {
+    return b.x.x
+  }
+
+  public func setBxx(x: Int) mutates (A.x) {
+    b.x.x = x
+  }
+
+  public func getBxx2() -> Int {
+    return b.getXx()
+  }
+
+  public func getBxx3() -> Int {
+    return b.getXx2()
+  }
+
+  public func setBxx2(x: Int) mutates (A.x) {
+    b.setXx(y: x)
+  }
+
+  public func setBxx3(x: Int) mutates (A.x) {
+    setB(b: &b, x: x)
+  }
+
+  public func setCxx(x: Int) mutates (A.x) {
+    c.setXx(y: x)
+  }
+
+  public func setCxx2(x: Int) mutates (A.x) {
+    setB(b: &c, x: x)
+  }
+
+  public func getCxx() -> Int {
+    return c.getXx()
+  }
+
+  func setB(b: inout B, x: Int) mutates (A.x) {
+    b.setXx(y: x)
+  }
+
+  public func getBxy() -> Bool {
+    return b.x.y
+  }
+
+  public func setBxy(y: Bool) mutates (A.y) {
+    b.x.y = y
+  }
+
+  public func getBy() -> Int {
+    return b.y
+  }
+
+  public func setBy(y: Int) mutates (B.y) {
+    b.y = y
+  }
+
+  public func append(x: Int) mutates (arr, Maybe.element, Maybe.size) {
+    arr.add(value: x)
+  }
+
+  public func get(x: Int) -> Int {
+    return arr.get(n: x)
+  }
+
+  public func getSize() -> Int {
+    return arr.size
+  }
+
+  public func getD() -> Int {
+    return d
+  }
+
+  public func getE() -> Bool {
+    return true
+  }
+}
+
+struct Maybe {
+  var element: Int = 0
+  var size: Int = 0
+
+  func add(value: Int) mutates (elements, size) {
+    element = value
+    size = 1
+  }
+
+  func get(n: Int) -> Int {
+    if (size == 0) {
+      fatalError()
+    }
+    return element
+  }
+
+  func getSize() -> Int {
+    return size
+  }
+}
