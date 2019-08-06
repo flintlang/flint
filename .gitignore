@@ -9,7 +9,8 @@ Sources.old
 venv
 /.vscode
 /temp
-
+/*.mvir
+/*.flint
 *.sol
 !sol_emitter.sol
 !sol_external.sol
