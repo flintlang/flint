@@ -44,9 +44,6 @@ struct MoveExternalCall {
                                                     scopeContext: functionContext.scopeContext) else {
       fatalError("cannot match function signature in external call")
     }
-    guard let functionSelector = (matchingFunction.declaration.externalSignatureHash?.map { [$0].toHexString() }) else {
-      fatalError("cannot find function selector for function")
-    }
 
     // Render the address of the external contract.
     let addressExpression = MoveExpression(expression: externalCall.functionCall.lhs, asLValue: false)
@@ -104,7 +101,7 @@ struct MoveExternalCall {
     let callSuccess = functionContext.freshVariable()
     let callOutput = functionContext.freshVariable()
 
-    functionContext.emit(.expression(.variableDeclaration(
+    /* functionContext.emit(.expression(.variableDeclaration(
       VariableDeclaration((callInput, .any), MoveRuntimeFunction.allocateMemory(size: inputSize))
     )))
     functionContext.emit(.expression(.functionCall(
@@ -121,7 +118,7 @@ struct MoveExternalCall {
     functionContext.emit(.expression(.functionCall(
       FunctionCall("mstore8", .functionCall(FunctionCall("add", .identifier(callInput), .literal(.num(3)))),
                               .literal(.hex("0x\(functionSelector[3])")))
-    )))
+    ))) */
 
     var currentPosition = 4
     slots.forEach {
@@ -132,9 +129,9 @@ struct MoveExternalCall {
       currentPosition += 32
     }
 
-    functionContext.emit(.expression(.variableDeclaration(
+    /* functionContext.emit(.expression(.variableDeclaration(
       VariableDeclaration((callOutput, .any), MoveRuntimeFunction.allocateMemory(size: outputSize))
-    )))
+    ))) */
 
     let previousStateVariable = saveTypeState(functionContext)
     enterProtectorTypeState(functionContext)
@@ -174,7 +171,7 @@ struct MoveExternalCall {
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
                  sourceLocation: .DUMMY))
     let selfState: AST.Expression = .binaryExpression(
-      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+      BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
     let stateVariableRendered = MoveExpression(expression: selfState, asLValue: false)
@@ -193,17 +190,11 @@ struct MoveExternalCall {
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
                  sourceLocation: .DUMMY))
     let selfState: AST.Expression = .binaryExpression(
-      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+      BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
     let stateVariableRendered = MoveExpression(expression: selfState, asLValue: true)
       .rendered(functionContext: functionContext)
-
-    functionContext.emit(.expression(
-      MoveRuntimeFunction.store(address: stateVariableRendered,
-                              value: .inline("\(MoveContract.reentrancyProtectorValue)"),
-                              inMemory: false)
-    ))
   }
 
   func restoreTypeState(_ functionContext: FunctionContext, savedVariableName: String) {
@@ -211,16 +202,10 @@ struct MoveExternalCall {
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
                  sourceLocation: .DUMMY))
     let selfState: AST.Expression = .binaryExpression(
-      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: .DUMMY)),
+      BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
     let stateVariableRendered = MoveExpression(expression: selfState, asLValue: true)
       .rendered(functionContext: functionContext)
-
-    functionContext.emit(.expression(
-      MoveRuntimeFunction.store(address: stateVariableRendered,
-                              value: .inline(savedVariableName),
-                              inMemory: false)
-    ))
   }
 }

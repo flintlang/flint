@@ -106,7 +106,7 @@ struct MoveForStatement {
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
     switch type {
-    case .arrayType:
+    /* case .arrayType:
       let arrayElementOffset = MoveRuntimeFunction.storageArrayOffset(
         arrayOffset: offset, index: .identifier("\(prefix)i"))
       loadArrLen = MoveRuntimeFunction.load(address: offset, inMemory: false)
@@ -132,7 +132,7 @@ struct MoveForStatement {
       let key = MoveRuntimeFunction.load(address: keyOffset, inMemory: false)
       let dictionaryElementOffset
         = MoveRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
-      toAssign = MoveRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false)
+      toAssign = MoveRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false) */
 
     default:
       fatalError()
@@ -198,23 +198,6 @@ struct MoveForStatement {
     let update = MoveAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change)
       .rendered(functionContext: functionContext, asTypeProperty: false).description
 
-    // Change <= into (< || ==)
-    if [.lessThanOrEqual, .greaterThanOrEqual].contains(condition.opToken) {
-      let strictOperator: Token.Kind.Punctuation =
-        condition.opToken == .lessThanOrEqual ? .openAngledBracket : .closeAngledBracket
-
-      var lhsExpression = condition
-      lhsExpression.op = Token(kind: .punctuation(strictOperator), sourceLocation: lhsExpression.op.sourceLocation)
-
-      var rhsExpression = condition
-      rhsExpression.op = Token(kind: .punctuation(.doubleEqual), sourceLocation: rhsExpression.op.sourceLocation)
-
-      condition.lhs = .binaryExpression(lhsExpression)
-      condition.rhs = .binaryExpression(rhsExpression)
-
-      let sourceLocation = condition.op.sourceLocation
-      condition.op = Token(kind: .punctuation(.or), sourceLocation: sourceLocation)
-    }
 
     let rangeExpression = MoveExpression(expression: iterable.bound).rendered(functionContext: functionContext)
     let binaryExpression = MoveExpression(expression: .binaryExpression(condition))

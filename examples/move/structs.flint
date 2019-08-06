@@ -72,7 +72,9 @@ C :: (any) {
     return b.getXx()
   }
 
-  public func getBxx3() -> Int {
+  public func getBxx3() -> Int
+   mutates (A.x) {
+    setBxx(x: 2 ** 8)
     return b.getXx2()
   }
 
