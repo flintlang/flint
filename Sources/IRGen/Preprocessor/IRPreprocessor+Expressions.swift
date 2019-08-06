@@ -7,6 +7,7 @@
 
 import AST
 import Lexer
+import Foundation
 
 /// A prepocessing step to update the program's AST before code generation.
 extension IRPreprocessor {
@@ -193,7 +194,15 @@ extension IRPreprocessor {
                                                    typeStates: typeStates,
                                                    callerProtections: callerProtections,
                                                    scopeContext: scopeContext)
-          guard type != .errorType else { fatalError() }
+          guard type != .errorType else {
+            print(#"""
+                  \#u{001B}[1;38;5;196mError in EVM IR Preprocessor:\#u{001B}[0m received unexpected type `errorType`
+                  \#tfor `\#(argument.expression)'
+                  \#tat position \#(argument.expression.sourceLocation)
+                  \#tgiven enclosing type `\#(enclosingType)'\#n
+                  """#)
+            exit(1)
+          }
           guard type.isDynamicType else { continue }
 
           if let enclosingIdentifier = argument.expression.enclosingIdentifier,

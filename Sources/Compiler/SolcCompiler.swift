@@ -20,9 +20,9 @@ struct SolcCompiler {
 
     let process = Process()
 
-    process.executableURL = URL(string: "/usr/bin/env")
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
 
-    verifySolc(launchPath: process.executableURL!.absoluteString)
+    //verifySolc(launchPath: process.executableURL!.absoluteString)
     process.standardError = Pipe()
     process.arguments = Array([
       [
