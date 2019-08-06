@@ -72,7 +72,7 @@ public struct MovePreprocessor: ASTPass {
                                           enclosingType: passContext.enclosingTypeIdentifier!.name)
     functionDeclaration.mangledIdentifier = name
 
-    // Bind the implicit Wei value of the transaction to a variable.
+    // Bind the implicit Libra value of the transaction to a variable.
     if functionDeclaration.isPayable,
        let payableParameterIdentifier = functionDeclaration.firstPayableValueParameter?.identifier {
       let libraType = Identifier(identifierToken: Token(kind: .identifier("Libra"),
@@ -115,19 +115,6 @@ public struct MovePreprocessor: ASTPass {
       }
     }
 
-    // Add an isMem parameter for each struct parameter.
-    let dynamicParameters = functionDeclaration.signature.parameters.enumerated()
-        .filter { $0.1.type.rawType.isDynamicType }
-
-    var offset = 0
-    for (index, parameter) in dynamicParameters where !parameter.isImplicit {
-      let isMemParameter = constructParameter(name: Mangler.isMem(for: parameter.identifier.name),
-                                              type: .basicType(.bool),
-                                              sourceLocation: parameter.sourceLocation)
-      functionDeclaration.signature.parameters.insert(isMemParameter, at: index + 1 + offset)
-      offset += 1
-    }
-
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
 
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
@@ -137,7 +124,7 @@ public struct MovePreprocessor: ASTPass {
     return statements.compactMap { statement -> Statement? in
       switch statement {
       case .expression(let expression):
-        if case .variableDeclaration(let declaration) = expression {
+        if case .variableDeclaration(_) = expression {
           return nil
         }
       case .forStatement(var stmt):

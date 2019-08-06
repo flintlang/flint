@@ -1,0 +1,14 @@
+contract ContractA { }
+
+ContractA :: (any) {
+  public init() {}
+}
+
+contract ContractB {
+  var a: ContractA = ContractA()
+}
+
+ContractB :: (any) {
+public init() {}
+}
+

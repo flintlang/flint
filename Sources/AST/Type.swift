@@ -298,11 +298,8 @@ public indirect enum RawType: Equatable {
 
   public func replacingSelf(with enclosingType: RawTypeIdentifier) -> RawType {
     if isSelfType {
-      if isInout {
-        return RawType.inoutType(.userDefinedType(enclosingType))
-      }
-
-      return RawType.userDefinedType(enclosingType)
+      let selfType: RawType = .userDefinedType(enclosingType)
+      return isInout ? .inoutType(selfType) : selfType
     }
 
     return self

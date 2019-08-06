@@ -30,7 +30,7 @@ public struct MoveStruct {
       }
     }.joined(separator: ",\n")
 
-    let declaration = members.length > 0
+    let declaration = members.count > 0
         ? #"""
           struct \#(structDeclaration.identifier.name) {
             \#(members.indented(by: 2))

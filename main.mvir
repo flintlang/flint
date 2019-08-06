@@ -1,21 +1,17 @@
-module Counter {
+module myContract {
   resource T {
-    value: u64,
-    backup: u64
+    rectangle: V#Rectangle
   }
   //////////////////////////////////////
   //// --      Initializer       -- ////
   //////////////////////////////////////
   
-  new(): R#Self.T {
-    let _value: u64;
-    let _backup: u64;
-    _value = 10;
-    _backup = 0;
-    _backup = 10;
+  new(_rectangle: V#Rectangle): R#Self.T {
+    let _rectangle: V#Rectangle;
+    Rectangle$init$Int_Int(_rectangle, false, 0, 0);
+    _rectangle = _rectangle;
     return T {
-      value: _value,
-      backup: _backup
+      rectangle: _rectangle
     };
   }
   
@@ -24,12 +20,16 @@ module Counter {
   //////////////////////////////////////
   
   //////////////////////////////////////
-  //// --    Struct functions    -- ////
+  //// --       Structs and      -- ////
+  //// --     their Functions    -- ////
   //////////////////////////////////////
   
   //// Flint$Global::Global.flint@2:1:19  ////
   
-  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei, _value$isMem: bool) {
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei) {
     let _w: R#Wei;
     _w = Wei(_value, _value$isMem);
     flint$send(Wei$getRawValue(_w, true), _address);
@@ -47,7 +47,13 @@ module Counter {
   
   //// Wei::Asset.flint@81:1:10  ////
   
-  Wei$init$Int(_this: R#Wei, _this$isMem: bool, _unsafeRawValue: u64) {
+  struct Wei {
+    rawValue: u64
+  }
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Wei$init$Int(_this: R#Wei, _unsafeRawValue: u64) {
     this.rawValue = 0;
     if (_unsafeRawValue != 0) {
       Flint$Global$fatalError();
@@ -55,7 +61,7 @@ module Counter {
     this.rawValue = _unsafeRawValue;
   }
   
-  Wei$init$Bool_Int(_this: R#Wei, _this$isMem: bool, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
+  Wei$init$Bool_Int(_this: R#Wei, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
     this.rawValue = 0;
     if (_youAreTheCompiler == false) {
       Flint$Global$fatalError();
@@ -63,26 +69,26 @@ module Counter {
     this.rawValue = _unsafeRawValue;
   }
   
-  Wei$init$$inoutWei_Int(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+  Wei$init$$inoutWei_Int(_this: R#Wei, _source: R#Wei, _amount: u64) {
     this.rawValue = 0;
     Wei$transfer$$inoutWei_Int(this, _this$isMem, _source, _source$isMem, _amount);
   }
   
-  Wei$init$$inoutWei(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+  Wei$init$$inoutWei(_this: R#Wei, _source: R#Wei) {
     this.rawValue = 0;
     Wei$transfer$$inoutWei(this, _this$isMem, _source, _source$isMem);
   }
   
-  Wei$setRawValue$Int(_this: R#Wei, _this$isMem: bool, _value: u64): u64 {
+  Wei$setRawValue$Int(_this: R#Wei, _value: u64): u64 {
     this.rawValue = _value;
     return this.rawValue;
   }
   
-  Wei$getRawValue(_this: R#Wei, _this$isMem: bool): u64 {
+  Wei$getRawValue(_this: R#Wei): u64 {
     return this.rawValue;
   }
   
-  Wei$transfer$$inoutWei_Int(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+  Wei$transfer$$inoutWei_Int(_this: R#Wei, _source: R#Wei, _amount: u64) {
     let _unused1: u64;
     let _unused2: u64;
     if (Wei$getRawValue(_source, _source$isMem) < _amount) {
@@ -92,8 +98,24 @@ module Counter {
     _unused2 = Wei$setRawValue$Int(this, _this$isMem, Wei$getRawValue(this, _this$isMem) + _amount);
   }
   
-  Wei$transfer$$inoutWei(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+  Wei$transfer$$inoutWei(_this: R#Wei, _source: R#Wei) {
     Wei$transfer$$inoutWei_Int(this, _this$isMem, _source, _source$isMem, Wei$getRawValue(_source, _source$isMem));
+  }
+  
+  //// Rectangle::myContract.flint@1:1:16  ////
+  
+  struct Rectangle {
+    width: u64,
+    height: u64
+  }
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Rectangle$init$Int_Int(_this: V#Rectangle, _width: u64, _height: u64) {
+    this.width = 0;
+    this.height = 0;
+    this.width = _width;
+    this.height = _height;
   }
   
   
@@ -288,29 +310,8 @@ module Counter {
   //// -- User-defined functions -- ////
   //////////////////////////////////////
 
-  Counter$getValue(): u64 {
-    return this.value;
-  }
-  
-  Counter$increment() {
-    this.value = this.value + 1;
-  }
-  
-  Counter$set$Int(_value: u64) {
-    this.value = _value;
-  }
-  
-  Counter$ooOohWereHalfWayThere$Int(_ooOoh: u64): u64 {
-    let _livingOnAPrayer: u64;
-    let _noop: bool;
-    Counter$set$Int(9001);
-    _livingOnAPrayer = 10;
-    if (_ooOoh >= 1 / 2) {
-      if (_ooOoh >= 3 / 4) {
-        Counter$set$Int(_livingOnAPrayer + _ooOoh);
-      } else { }
-    } else { }
-    return Counter$getValue() + _ooOoh;
+  myContract$area(): u64 {
+    return this.rectangle.width * this.rectangle.height;
   }
 
   //////////////////////////////////////
@@ -320,12 +321,16 @@ module Counter {
   
 
   //////////////////////////////////////
-  //// --    Struct functions    -- ////
+  //// --       Structs and      -- ////
+  //// --     their Functions    -- ////
   //////////////////////////////////////
 
   //// Flint$Global::Global.flint@2:1:19  ////
   
-  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei, _value$isMem: bool) {
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Flint$Global$send$Address_$inoutWei(_address: address, _value: R#Wei) {
     let _w: R#Wei;
     _w = Wei(_value, _value$isMem);
     flint$send(Wei$getRawValue(_w, true), _address);
@@ -343,7 +348,13 @@ module Counter {
   
   //// Wei::Asset.flint@81:1:10  ////
   
-  Wei$init$Int(_this: R#Wei, _this$isMem: bool, _unsafeRawValue: u64) {
+  struct Wei {
+    rawValue: u64
+  }
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Wei$init$Int(_this: R#Wei, _unsafeRawValue: u64) {
     this.rawValue = 0;
     if (_unsafeRawValue != 0) {
       Flint$Global$fatalError();
@@ -351,7 +362,7 @@ module Counter {
     this.rawValue = _unsafeRawValue;
   }
   
-  Wei$init$Bool_Int(_this: R#Wei, _this$isMem: bool, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
+  Wei$init$Bool_Int(_this: R#Wei, _youAreTheCompiler: bool, _unsafeRawValue: u64) {
     this.rawValue = 0;
     if (_youAreTheCompiler == false) {
       Flint$Global$fatalError();
@@ -359,26 +370,26 @@ module Counter {
     this.rawValue = _unsafeRawValue;
   }
   
-  Wei$init$$inoutWei_Int(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+  Wei$init$$inoutWei_Int(_this: R#Wei, _source: R#Wei, _amount: u64) {
     this.rawValue = 0;
     Wei$transfer$$inoutWei_Int(this, _this$isMem, _source, _source$isMem, _amount);
   }
   
-  Wei$init$$inoutWei(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+  Wei$init$$inoutWei(_this: R#Wei, _source: R#Wei) {
     this.rawValue = 0;
     Wei$transfer$$inoutWei(this, _this$isMem, _source, _source$isMem);
   }
   
-  Wei$setRawValue$Int(_this: R#Wei, _this$isMem: bool, _value: u64): u64 {
+  Wei$setRawValue$Int(_this: R#Wei, _value: u64): u64 {
     this.rawValue = _value;
     return this.rawValue;
   }
   
-  Wei$getRawValue(_this: R#Wei, _this$isMem: bool): u64 {
+  Wei$getRawValue(_this: R#Wei): u64 {
     return this.rawValue;
   }
   
-  Wei$transfer$$inoutWei_Int(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool, _amount: u64) {
+  Wei$transfer$$inoutWei_Int(_this: R#Wei, _source: R#Wei, _amount: u64) {
     let _unused1: u64;
     let _unused2: u64;
     if (Wei$getRawValue(_source, _source$isMem) < _amount) {
@@ -388,8 +399,24 @@ module Counter {
     _unused2 = Wei$setRawValue$Int(this, _this$isMem, Wei$getRawValue(this, _this$isMem) + _amount);
   }
   
-  Wei$transfer$$inoutWei(_this: R#Wei, _this$isMem: bool, _source: R#Wei, _source$isMem: bool) {
+  Wei$transfer$$inoutWei(_this: R#Wei, _source: R#Wei) {
     Wei$transfer$$inoutWei_Int(this, _this$isMem, _source, _source$isMem, Wei$getRawValue(_source, _source$isMem));
+  }
+  
+  //// Rectangle::myContract.flint@1:1:16  ////
+  
+  struct Rectangle {
+    width: u64,
+    height: u64
+  }
+  
+  //// ~: FUNCTIONS :~ ////
+  
+  Rectangle$init$Int_Int(_this: V#Rectangle, _width: u64, _height: u64) {
+    this.width = 0;
+    this.height = 0;
+    this.width = _width;
+    this.height = _height;
   }
 
 
@@ -579,12 +606,4 @@ module Counter {
     assert(a <= b, 1);
     return a;
   }
-}
-interface _InterfaceCounter {
-  
-  function getValue() view external returns (u64 ret);
-  function increment() external;
-  function set(u64 _value) external;
-  function ooOohWereHalfWayThere(u64 _ooOoh) external returns (u64 ret);
-  
 }

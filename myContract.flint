@@ -9,19 +9,17 @@ struct Rectangle {
 }
 
 contract myContract {
-  var rectangle: Rectangle
+var rectangle: Rectangle = Rectangle(0, 0)
 }
 
 myContract :: (any) {
-  public init() {
-    rectangle = Rectangle()
-  }
+  //public init() {}
 
-  public init(rectangle: Rectangle) {
+  public init(rectangle: inout Rectangle) {
     self.rectangle = rectangle
   }
 
-  public area(): Int {
+  public func area() -> Int {
     return rectangle.width * rectangle.height
   }
 }

@@ -30,7 +30,7 @@ enum CanonicalType: CustomStringConvertible {
         print("rawType: \(rawType)")
         return nil
       }
-    case .userDefinedType(let id): self = .resource(id)
+    case .userDefinedType(let id): self = rawType.isCurrencyType ? .resource(id) : .struct(id)
     case .inoutType(let rawType):
       guard let type = CanonicalType(from: rawType) else { return nil }
       self = type
