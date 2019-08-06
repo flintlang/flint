@@ -91,7 +91,8 @@ public struct MovePreprocessor: ASTPass {
                                                           sourceLocation: payableParameterIdentifier.sourceLocation
                                                     ))),
                                FunctionArgument(identifier: nil,
-                                                expression: .rawAssembly(MoveRuntimeFunction.fatalError(), // FIXME Replace me
+                                                // FIXME Replace me
+                                                expression: .rawAssembly(MoveRuntimeFunction.fatalError(),
                                                                          resultType: .basicType(.int)))
                              ],
                              closeBracketToken: closeBracketToken,

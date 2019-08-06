@@ -198,7 +198,6 @@ struct MoveForStatement {
     let update = MoveAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change)
       .rendered(functionContext: functionContext, asTypeProperty: false).description
 
-
     let rangeExpression = MoveExpression(expression: iterable.bound).rendered(functionContext: functionContext)
     let binaryExpression = MoveExpression(expression: .binaryExpression(condition))
       .rendered(functionContext: functionContext)
