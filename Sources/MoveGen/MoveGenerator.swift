@@ -40,10 +40,7 @@ public struct MoveGenerator {
       contracts.append(contract)
     }
 
-    // Generate a IR contract and a IR interface.
-    // The interface is used for exisiting Solidity tools such as Truffle and Remix to interpret Flint code as
-    // Solidity code.
-
+    // Generate an IR contract
     return contracts.map { $0.rendered() }.joined(separator: "\n")
   }
 }

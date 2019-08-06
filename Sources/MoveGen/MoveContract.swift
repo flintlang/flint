@@ -59,8 +59,8 @@ struct MoveContract {
     let members = contractDeclaration.members.compactMap { (member: ContractMember) in
       switch member {
       case .variableDeclaration(let declaration):
-        // TODO convert to actual resource declaration special case
-        return MoveFieldDeclaration(variableDeclaration: declaration).rendered(functionContext: context).description
+        return MoveFieldDeclaration(variableDeclaration: declaration)
+            .rendered(functionContext: context).description
       default: return nil
       }
     }.joined(separator: ",\n")
