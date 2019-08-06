@@ -143,15 +143,6 @@ public struct IRPreprocessor: ASTPass {
                      assignedExpression: nil)
   }
 
-  public func process(specialDeclaration: SpecialDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
-    var specialDeclaration = specialDeclaration
-    if specialDeclaration.isInit {
-      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-    }
-    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
-  }
-
   // MARK: Statement
   public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     var becomeStatement = becomeStatement
