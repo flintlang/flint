@@ -30,7 +30,8 @@ Counter :: (any) {
     let livingOnAPrayer: Int = 10
     let noop: Bool
     if ooOoh >= (1 / 2) {
-      if ooOoh >= (3/4) {
+      let boop: Bool = true
+      if ooOoh >= (3/4) && boop {
         set(value: livingOnAPrayer + ooOoh)
       }
     }
