@@ -143,7 +143,8 @@ struct MoveContract {
 
      let structHeader = """
      //////////////////////////////////////
-     //// --    Struct functions    -- ////
+     //// --       Structs and      -- ////
+     //// --     their Functions    -- ////
      //////////////////////////////////////
      """
      let runtimeHeader = """

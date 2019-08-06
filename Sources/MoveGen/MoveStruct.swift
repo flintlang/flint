@@ -41,7 +41,7 @@ public struct MoveStruct {
 
     return #"""
            \#(declaration)
-           //// ~: FUNCTIONS :~ ///
+           //// ~: FUNCTIONS :~ ////
 
            \#(renderFunctions())
            """#
