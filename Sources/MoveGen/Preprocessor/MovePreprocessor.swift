@@ -108,8 +108,7 @@ public struct MovePreprocessor: ASTPass {
     if let structDeclarationContext = passContext.structDeclarationContext {
       if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
         // For struct functions, add `flintSelf` to the beginning of the parameters list.
-        let parameter = constructParameter(
-            name: "this",
+        let parameter = constructThisParameter(
             type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
             sourceLocation: functionDeclaration.sourceLocation)
         functionDeclaration.signature.parameters.insert(parameter, at: 0)
@@ -161,6 +160,15 @@ public struct MovePreprocessor: ASTPass {
 
   func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
+    return Parameter(identifier: identifier,
+                     type: Type(inferredType: type,
+                                identifier: identifier),
+                     implicitToken: nil,
+                     assignedExpression: nil)
+  }
+
+  func constructThisParameter(type: RawType, sourceLocation: SourceLocation) -> Parameter {
+    let identifier = Identifier(identifierToken: Token(kind: .`self`, sourceLocation: sourceLocation))
     return Parameter(identifier: identifier,
                      type: Type(inferredType: type,
                                 identifier: identifier),

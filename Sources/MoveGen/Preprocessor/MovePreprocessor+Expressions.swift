@@ -197,7 +197,7 @@ extension MovePreprocessor {
                                                 sourceLocation: argument.sourceLocation)))
           } else if case .inoutExpression(let inoutExpression) = argument.expression,
             case .`self` = inoutExpression.expression {
-            // If the argument is self, use flintSelf
+            // If the argument is self, use Move this
             isMem = .identifier(
               Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "this")),
                                                 sourceLocation: argument.sourceLocation)))

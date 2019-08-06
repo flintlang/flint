@@ -56,8 +56,8 @@ struct MoveExpression {
     case .dictionaryLiteral(let dictionaryLiteral):
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
       return .literal(Literal.num(0))
-    case .`self`(let `self`):
-      return MoveSelf(selfToken: `self`, asLValue: asLValue)
+    case .`self`(let expression):
+      return MoveSelf(selfToken: expression, asLValue: asLValue)
         .rendered(functionContext: functionContext)
     case .subscriptExpression(let subscriptExpression):
       return MoveSubscriptExpression(subscriptExpression: subscriptExpression,

@@ -25,6 +25,10 @@ struct MoveIdentifier {
                               asLValue: asLValue)
         .rendered(functionContext: functionContext) // TODO: Preamble not handled
     }
+    if identifier.isSelf {
+      return MoveSelf(selfToken: identifier.identifierToken, asLValue: false)
+          .rendered(functionContext: functionContext)
+    }
     return .identifier(identifier.name.mangled)
   }
 
