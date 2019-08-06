@@ -23,6 +23,6 @@ public struct If: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    return "if (\(expression.description)) \(self.block) else \(self.elseBlock?.description ?? "{}")"
+    return "if (\(expression.description)) \(self.block) else \(self.elseBlock?.description ?? "{ }")"
   }
 }

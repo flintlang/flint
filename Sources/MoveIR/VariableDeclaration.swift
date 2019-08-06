@@ -19,8 +19,6 @@ public struct VariableDeclaration: CustomStringConvertible, Throwing {
   }
 
   public var description: String {
-    // FIXME This is wrong in move, all declarations must be seperate 
-    // from assignment and be at the top
     return "let \(render(typedIdentifier: self.declaration))"
   }
 }

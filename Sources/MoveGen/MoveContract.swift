@@ -50,16 +50,6 @@ struct MoveContract {
      .map { MoveWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) }
      .joined(separator: "\n\n")
      .indented(by: 6)
-
-    let publicFunctions = functions.filter { $0.functionDeclaration.isPublic }
-
-    // Create a function selector, to determine which function is called in the Ethereum transaction.
-    let functionSelector = MoveFunctionSelector(fallback: findContractPublicFallback(),
-                                              functions: publicFunctions,
-                                              enclosingType: contractDeclaration.identifier,
-                                              environment: environment)
-    let selectorCode = functionSelector.rendered().indented(by: 2)
-
     let initializerBody = renderPublicInitializer()
     let context = FunctionContext(environment: environment,
                                   scopeContext: ScopeContext(),
@@ -70,7 +60,7 @@ struct MoveContract {
       switch member {
       case .variableDeclaration(let declaration):
         // TODO convert to actual resource declaration special case
-        return MoveVariableDeclaration(variableDeclaration: declaration).rendered(functionContext: context).description
+        return MoveFieldDeclaration(variableDeclaration: declaration).rendered(functionContext: context).description
       default: return nil
       }
     }.joined(separator: ",\n")
@@ -82,12 +72,6 @@ struct MoveContract {
         \#(members.indented(by: 4))
       }
       \#(initializerBody.indented(by: 2))
-
-      //////////////////////////////////////
-      //// -- // --  Selector  -- // -- ////
-      //////////////////////////////////////
-
-      \#(selectorCode)
 
       //////////////////////////////////////
       //// -- User-defined functions -- ////
