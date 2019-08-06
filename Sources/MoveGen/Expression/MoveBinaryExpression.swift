@@ -53,7 +53,7 @@ struct MoveBinaryExpression {
     case .notEqual: return .operation(.notEqual(lhs, rhs))
     case .or: return .operation(.or(lhs, rhs))
     case .and: return .operation(.and(lhs, rhs))
-    case .power: return .operation(.power(lhs, rhs))
+    case .power: return MoveRuntimeFunction.power(b: lhs, e: rhs)
     default: fatalError("opToken not supported")
     }
   }

@@ -45,6 +45,7 @@ struct MoveContract {
 
     let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 2)
 
+    functions.filter { !$0.containsAnyCaller }.forEach { print($0) }
     // Generate wrapper functions
     let wrapperCode = functions.filter { !$0.containsAnyCaller }
      .map { MoveWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) }
@@ -118,11 +119,6 @@ struct MoveContract {
                                             environment: environment,
                                             isContractFunction: true,
                                             contract: self).rendered()
-
-    /* let parameters = initializerDeclaration.signature.parameters.map { parameter in
-      let parameterName = parameter.identifier.name.mangled
-      return "\(CanonicalType(from: parameter.type.rawType)!.rawValue) \(parameterName)"
-      }.joined(separator: ", ") */
 
     return """
     //////////////////////////////////////

@@ -52,7 +52,7 @@ struct MoveCallerProtectionChecks {
         let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
         return "\(variableName) := add(\(variableName), \(renderedFunctionCall.description))"
         // swiftlint:enable line_length
-      case .fixedSizeArrayType(_, let size):
+      /* case .fixedSizeArrayType(_, let size):
         return (0..<size).map { index in
           let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(add(\(offset!), \(index)))")
           return "\(variableName) := add(\(variableName), \(check)"
@@ -62,14 +62,14 @@ struct MoveCallerProtectionChecks {
         return "\(variableName) := add(\(variableName), \(check))"
       case .basicType(.address):
         let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
-        return "\(variableName) := add(\(variableName), \(check)"
+        return "\(variableName) := add(\(variableName), \(check)" */
       case .basicType, .rangeType, .dictionaryType, .userDefinedType,
            .inoutType, .functionType, .any, .errorType, .solidityType:
         return ""
       case .selfType:
         fatalError("Self type should have been replaced with concrete type")
       }
-
+      return "" // FIXME temp RIDMEPLS
       }
     let revertString = revert ? "if eq(\(variableName), 0) { revert(0, 0) }" : ""
       if !checks.isEmpty {

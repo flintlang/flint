@@ -29,11 +29,12 @@ struct MoveSubscriptExpression {
     let type = functionContext.environment.type(of: subExpr.baseExpression,
                                                 enclosingType: functionContext.enclosingTypeName,
                                                 scopeContext: functionContext.scopeContext)
+    fatalError("Subscript expression has an invalid type")
+    /*
     let runtimeFunc: (MoveIR.Expression, MoveIR.Expression) -> MoveIR.Expression
-
     switch type {
     case .arrayType:
-      runtimeFunc = MoveRuntimeFunction.storageArrayOffset
+      runtimeFunc =
     case .fixedSizeArrayType:
       let typeSize = functionContext.environment.size(of: type)
       runtimeFunc = {MoveRuntimeFunction.storageFixedSizeArrayOffset(arrayOffset: $0, index: $1, arraySize: typeSize)}
@@ -52,8 +53,8 @@ struct MoveSubscriptExpression {
 
       return runtimeFunc(e, indexExpressionCode)
     default:
-      fatalError("Subscript expression has an invalid type")
-    }
+      fatalError()
+    }*/
   }
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
