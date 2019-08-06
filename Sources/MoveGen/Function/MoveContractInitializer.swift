@@ -37,7 +37,8 @@ struct MoveContractInitializer {
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return initializerDeclaration.explicitParameters.map { CanonicalType(from: $0.type.rawType)! }
+    return initializerDeclaration.explicitParameters.map { CanonicalType(from: $0.type.rawType,
+                                                                         environment: environment)! }
   }
 
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
@@ -144,7 +145,7 @@ struct MoveInitializerBody {
       functionContext.emit(.expression(.variableDeclaration(
           MoveIR.VariableDeclaration((
               property.identifier.name.mangled,
-              CanonicalType(from: property.type.rawType)!.irType
+              CanonicalType(from: property.type.rawType, environment: environment)!.irType
           ), nil)
       )))
     }

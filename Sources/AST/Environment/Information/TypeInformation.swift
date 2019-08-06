@@ -15,8 +15,8 @@ public struct TypeInformation {
   var fallbacks = [SpecialInformation]()
   public var publicInitializer: SpecialDeclaration?
   var publicFallback: SpecialDeclaration?
-
   var conformances: [TypeInformation] = []
+  public var isContractType: Bool = false
 
   public var allFunctions: [String: [FunctionInformation]] {
     return conformances.map({ $0.functions }).reduce(functions, +)

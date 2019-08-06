@@ -63,11 +63,13 @@ struct MoveFunction {
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return functionDeclaration.explicitParameters.map({ CanonicalType(from: $0.type.rawType)! })
+    return functionDeclaration.explicitParameters.map({ CanonicalType(from: $0.type.rawType,
+                                                                      environment: environment)! })
   }
 
   var resultCanonicalType: CanonicalType? {
-    return functionDeclaration.signature.resultType.flatMap({ CanonicalType(from: $0.rawType)! })
+    return functionDeclaration.signature.resultType.flatMap({ CanonicalType(from: $0.rawType,
+                                                                            environment: environment)! })
   }
 
   func rendered() -> String {

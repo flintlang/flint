@@ -11,7 +11,7 @@ func main() {
       Flag("emit-ir", flag: "i", description: "Emit the internal representation of the code."),
       Option<String>("ir-output", default: "", description: "The path at which the IR file should be created."),
       Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code."),
-      Flag("dump-verifier-ir", flag: "d", description: "Emit the representation of the code used by the verifier."),
+      Flag("dump-verifier-ir", flag: "d", description: "Emit the repressentation of the code used by the verifier."),
       Flag("print-verifier-output", flag: "o", description: "Emit the verifier's raw verification output"),
       Flag("skip-holistic", flag: "l", description: "Skip checking holistic specifications"),
       Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),

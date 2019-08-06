@@ -18,7 +18,7 @@ enum CanonicalType: CustomStringConvertible {
   case resource(String)
   case `struct`(String)
 
-  init?(from rawType: RawType) {
+  init?(from rawType: RawType, environment: Environment? = nil) {
     switch rawType {
     case .basicType(let builtInType):
       switch builtInType {
@@ -30,7 +30,12 @@ enum CanonicalType: CustomStringConvertible {
         print("rawType: \(rawType)")
         return nil
       }
-    case .userDefinedType(let id): self = rawType.isCurrencyType ? .resource(id) : .struct(id)
+    case .userDefinedType(let id):
+      if rawType.isCurrencyType || rawType.isContractType(environment: environment) {
+        self = .resource(id)
+      } else {
+        self = .struct(id)
+      }
     case .inoutType(let rawType):
       guard let type = CanonicalType(from: rawType) else { return nil }
       self = type

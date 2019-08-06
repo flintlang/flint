@@ -16,7 +16,7 @@ public struct MoveGenerator {
 
   public func generateCode() -> String {
 
-    var contracts = [MoveContract]()
+    var contracts: [MoveContract] = []
 
     // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {

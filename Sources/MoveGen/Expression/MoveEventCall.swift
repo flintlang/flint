@@ -25,7 +25,7 @@ struct MoveEventCall {
 
     let totalSize = types.reduce(0) { return $0 + functionContext.environment.size(of: $1.rawType) } * EVM.wordSize
     let typeList = types.map { type in
-      return "\(CanonicalType(from: type.rawType)!)"
+      return "\(CanonicalType(from: type.rawType, environment: functionContext.environment)!)"
       }.joined(separator: ",")
 
     let eventHash = "\(eventCall.identifier.name)(\(typeList))".sha3(.keccak256)

@@ -267,6 +267,10 @@ public indirect enum RawType: Equatable {
     return self
   }
 
+  public func isContractType(environment: Environment?) -> Bool {
+    return environment?.types[name]?.isContractType ?? false
+  }
+
   /// Whether the type is compatible with the given type, i.e., if two expressions of those types can be used
   /// interchangeably.
   public func isCompatible(with otherType: RawType) -> Bool {

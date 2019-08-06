@@ -13,7 +13,8 @@ struct MoveFieldDeclaration {
   var variableDeclaration: AST.VariableDeclaration
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
-    let typeIR: MoveIR.`Type`? = CanonicalType(from: variableDeclaration.type.rawType)?.irType
+    let typeIR: MoveIR.`Type`? = CanonicalType(from: variableDeclaration.type.rawType,
+                                               environment: functionContext.environment)?.irType
 
     return .fieldDeclaration(MoveIR.FieldDeclaration(
       (variableDeclaration.identifier.name, typeIR!),
