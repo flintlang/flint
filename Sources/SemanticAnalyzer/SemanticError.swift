@@ -27,7 +27,7 @@ extension Diagnostic {
 
   static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation,
-                      message: "Address literal should be 42 characters long")
+                      message: "Address literal should be 40 digits long after the prefix")
   }
 
   static func noTryForFunctionCall(_ functionCall: FunctionCall,

@@ -31,7 +31,9 @@ struct MoveExternalCall {
       }
     }
 
-    // Match on the function call so we know the argument types.
+    return MoveExpression(expression: externalCall.functionCall.rhs).rendered(functionContext: functionContext)
+
+    /* // Match on the function call so we know the argument types.
     guard case .functionCall(let functionCall) = externalCall.functionCall.rhs else {
       fatalError("cannot match external call with function")
     }
@@ -120,14 +122,14 @@ struct MoveExternalCall {
                               .literal(.hex("0x\(functionSelector[3])")))
     ))) */
 
-    var currentPosition = 4
+    /* var currentPosition = 4
     slots.forEach {
       functionContext.emit(.expression(.functionCall(
         FunctionCall("mstore", .functionCall(FunctionCall("add",
                                              .identifier(callInput), .literal(.num(currentPosition)))), $0)
       )))
       currentPosition += 32
-    }
+    } */
 
     /* functionContext.emit(.expression(.variableDeclaration(
       VariableDeclaration((callOutput, .any), MoveRuntimeFunction.allocateMemory(size: outputSize))
@@ -160,8 +162,7 @@ struct MoveExternalCall {
     case .returnsGracefullyOptional:
       fatalError("call? not implemented")
     case .isForced:
-      return .identifier(callOutput)
-    }
+    } */
   }
 
   func saveTypeState(_ functionContext: FunctionContext) -> String {

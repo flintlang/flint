@@ -3,6 +3,11 @@ contract Counter {
   var backup: Int = 0
 }
 
+external trait WoopWoop {
+  func thatsTheSoundOf(da: int256)
+  func woopWoop(woop: int256)
+}
+
 Counter :: (any) {
   public init() {
     backup = 10
@@ -33,6 +38,10 @@ Counter :: (any) {
       let boop: Bool = true
       if ooOoh >= (3/4) && boop {
         set(value: livingOnAPrayer + ooOoh)
+        let address: Address = 0x0000000000000000000000000000000000000000
+        let local: WoopWoop = WoopWoop(address: address)
+        ooOohWereHalfWayThere(ooOoh: 0) // BREAK
+        call! local.woopWoop(woop: 3 as! int256)
       }
     }
     return getValue() + ooOoh

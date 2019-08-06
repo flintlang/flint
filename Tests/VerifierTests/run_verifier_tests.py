@@ -148,15 +148,24 @@ for contract, result in contract_verify_result.items():
         failed.append(contract)
 
 print("Verification tests")
-print("Passed: %i" % len(passed))
+if passed:
+    print("\033[1;38;5;114mPassed\033[0m: %i" % len(passed))
+else:
+    print("Passed: 0")
 if list_passed:
-    for passed in passed:
-        print("\tPass: %s" % passed)
-print("Skipped: %i" % len(skipped))
+    for pass_ in passed:
+        print("\tPass: %s" % pass_)
+if skipped:
+    print("\033[1;38;5;179mSkipped\033[0m: %i" % len(skipped))
+else:
+    print("Skipped: 0")
 if list_skipped:
     for skip in skipped:
         print("\tSkip: %s" % skip)
-print("Failed: %i" % len(failed))
+if failed:
+    print("\033[1;38;5;196mFailed\033[0m: %i" % len(failed))
+else:
+    print("Failed: 0")
 if list_failed:
     for fail in failed:
         print("\tFail: %s" % fail)
