@@ -145,28 +145,35 @@ struct MoveFunctionBody {
                                                            isInStructFunction: !isContractFunction)
     var functionBody = functionDeclaration.body
 
+    /*
     // DRAFT - START
     if isContractFunction {
-      let addressType: RawType = .basicType(.address)
-      let senderIdentifier: Identifier = .init(name: "_sender", sourceLocation: functionDeclaration.sourceLocation)
-      let senderDecl: VariableDeclaration = VariableDeclaration(modifiers: [],
-                                                                 declarationToken: nil,
-                                                                 identifier: senderIdentifier,
-                                                                 type: Type(inferredType: addressType,
-                                                                            identifier: senderIdentifier),
-                                                                 assignedExpression: .rawAssembly("get_txn_sender()", resultType: addressType))
-      let getSenderStmt: Statement = .expression(.variableDeclaration(senderDecl))
-      functionBody.insert(getSenderStmt, at: 0)
+      // Get self
+      //let contractType: RawType =
+      
     
       if let callerBinding = callerBinding {
+        let addressType: RawType = .basicType(.address)
+        let callerIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
+        let senderDecl: VariableDeclaration = VariableDeclaration(modifiers: [],
+                                                                  declarationToken: nil,
+                                                                  identifier: callerIdentifier,
+                                                                  type: Type(inferredType: addressType,
+                                                                             identifier: callerIdentifier),
+                                                                  assignedExpression: .rawAssembly("get_txn_sender()", resultType: addressType))
+        let getSenderStmt: Statement = .expression(.variableDeclaration(senderDecl))
+        functionBody.insert(getSenderStmt, at: 0)
+        
+        /*
         let callerNameIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
         let bindCallerStmt: Statement = .expression(.binaryExpression(BinaryExpression(lhs: .identifier(callerNameIdentifier),
                                                                                        op: Token(kind: .punctuation(.equal),
                                                                                                  sourceLocation: senderIdentifier.sourceLocation),
                                                                                        rhs: .identifier(senderIdentifier))))
         functionBody.insert(bindCallerStmt, at: 1)
+        */
       }
-    }
+    }*/
     
     // DRAFT - END
     
@@ -189,6 +196,7 @@ struct MoveFunctionBody {
     var statements = statements
     while !statements.isEmpty {
       let statement = statements.removeFirst()
+      print(MoveStatement(statement: statement).rendered(functionContext: functionContext))
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
     return functionContext.finalise()
