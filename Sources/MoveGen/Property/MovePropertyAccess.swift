@@ -19,8 +19,6 @@ struct MovePropertyAccess {
     let enclosingTypeName = functionContext.enclosingTypeName
     let isInStructFunction = functionContext.isInStructFunction
 
-    var isMemoryAccess: Bool = false
-
     let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
 
     if case .identifier(let enumIdentifier) = lhs,

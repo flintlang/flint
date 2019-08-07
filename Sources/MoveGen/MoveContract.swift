@@ -126,7 +126,7 @@ struct MoveContract {
     //// --      Initializer       -- ////
     //////////////////////////////////////
 
-    \(initializer.indented(by: 0))
+    \(initializer)
 
     //////////////////////////////////////
     //// -- // ~ // Common // ~ // -- ////

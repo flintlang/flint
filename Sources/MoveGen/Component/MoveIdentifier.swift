@@ -31,8 +31,4 @@ struct MoveIdentifier {
     }
     return .identifier(identifier.name.mangled)
   }
-
-  static func mangleName(_ name: String) -> String {
-    return "_\(name)"
-  }
 }

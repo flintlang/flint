@@ -25,28 +25,8 @@ extension MovePreprocessor {
           .filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
         matchingProperty.type!.rawType != .errorType {
         expression = matchingProperty.value!
-      } else if case .equal = binaryExpression.opToken,
-        case .functionCall(var functionCall) = binaryExpression.rhs {
-
-        let ampersandToken: Token = Token(kind: .punctuation(.ampersand),
-                                          sourceLocation: binaryExpression.lhs.sourceLocation)
-
-        if environment.isInitializerCall(functionCall) {
-          // If we're initializing a struct, pass the lhs expression as the first parameter of the initializer call.
-          let inoutExpression = InoutExpression(ampersandToken: ampersandToken, expression: binaryExpression.lhs)
-          functionCall.arguments.insert(FunctionArgument(.inoutExpression(inoutExpression)), at: 0)
-
-          expression = .functionCall(functionCall)
-
-          if case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs,
-            variableDeclaration.type.rawType.isDynamicType {
-            functionCall.arguments[0] = FunctionArgument(
-              .inoutExpression(InoutExpression(ampersandToken: ampersandToken,
-                                               expression: .identifier(variableDeclaration.identifier))))
-            expression = .sequence([.variableDeclaration(variableDeclaration), .functionCall(functionCall)])
-          }
-        }
       }
+
       if case .equal = binaryExpression.opToken,
          case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs {
         expression = variableDeclaration.assignment(to: binaryExpression.rhs)
@@ -152,64 +132,6 @@ extension MovePreprocessor {
                                  scopeContext: passContext.scopeContext ?? ScopeContext()),
       candidates.isEmpty else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
-    }
-
-    let isExternal: Bool
-    if case .matchedFunction(let functionInformation) =
-      environment.matchFunctionCall(functionCall,
-                                    enclosingType: functionCall.identifier.enclosingType ?? enclosingType,
-                                    typeStates: typeStates,
-                                    callerProtections: callerProtections,
-                                    scopeContext: passContext.scopeContext!) {
-      isExternal = functionInformation.declaration.isExternal
-    } else {
-      isExternal = false
-    }
-
-    // For each non-implicit dynamic type, add an isMem parameter.
-    if !isExternal {
-      var offset = 0
-      for (index, argument) in functionCall.arguments.enumerated() {
-        let isMem: Expression
-
-        if let parameterName = scopeContext.enclosingParameter(expression: argument.expression,
-                                                               enclosingTypeName: enclosingType),
-          scopeContext.isParameterImplicit(parameterName) {
-          isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-        } else {
-          let type = passContext.environment!.type(of: argument.expression,
-                                                   enclosingType: enclosingType,
-                                                   typeStates: typeStates,
-                                                   callerProtections: callerProtections,
-                                                   scopeContext: scopeContext)
-          guard type != .errorType else { fatalError() }
-          guard type.isDynamicType else { continue }
-
-          if let enclosingIdentifier = argument.expression.enclosingIdentifier,
-            scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-            // If the argument is declared locally, it's stored in memory.
-            isMem = .literal(Token(kind: .literal(.boolean(.true)), sourceLocation: argument.sourceLocation))
-          } else if let enclosingIdentifier = argument.expression.enclosingIdentifier,
-            scopeContext.containsParameterDeclaration(for: enclosingIdentifier.name) {
-            // If the argument is a parameter to the enclosing function, use its isMem parameter.
-            isMem = .identifier(
-              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: enclosingIdentifier.name)),
-                                                sourceLocation: argument.sourceLocation)))
-          } else if case .inoutExpression(let inoutExpression) = argument.expression,
-            case .`self` = inoutExpression.expression {
-            // If the argument is self, use Move this
-            isMem = .identifier(
-              Identifier(identifierToken: Token(kind: .identifier(Mangler.isMem(for: "this")),
-                                                sourceLocation: argument.sourceLocation)))
-          } else {
-            // Otherwise, the argument refers to a property, which is not in memory.
-            isMem = .literal(Token(kind: .literal(.boolean(.false)), sourceLocation: argument.sourceLocation))
-          }
-        }
-
-        functionCall.arguments.insert(FunctionArgument(isMem), at: index + offset + 1)
-        offset += 1
-      }
     }
 
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
