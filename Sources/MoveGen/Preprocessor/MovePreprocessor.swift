@@ -120,21 +120,21 @@ public struct MovePreprocessor: ASTPass {
                                 implicitToken: nil,
                                 assignedExpression: nil)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
-      
+
       let addressType: RawType = .basicType(.address)
       let senderIdentifier: Identifier = .init(name: "flintSender", sourceLocation: functionDeclaration.sourceLocation)
       let senderDeclaration = VariableDeclaration(modifiers: [],
-                                                                declarationToken: nil,
-                                                                identifier: senderIdentifier,
-                                                                type: Type(inferredType: addressType,
-                                                                           identifier: senderIdentifier))
+                                                  declarationToken: nil,
+                                                  identifier: senderIdentifier,
+                                                  type: Type(inferredType: addressType,
+                                                             identifier: senderIdentifier))
       let senderAssignment = BinaryExpression(lhs: .identifier(senderIdentifier),
-                                                                op: Token(kind: .punctuation(.equal),
-                                                                          sourceLocation: functionDeclaration.sourceLocation),
-                                                                rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
-      
-      let selfIdentifier = Identifier(identifierToken: Token(kind: .identifier(MoveSelf.selfName),
-                                                                         sourceLocation: functionDeclaration.sourceLocation))
+                                              op: Token(kind: .punctuation(.equal),
+                                                        sourceLocation: functionDeclaration.sourceLocation),
+                                              rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
+
+      let selfIdentifier
+        = Identifier(identifierToken: MoveSelf.generate(sourceLocation: functionDeclaration.sourceLocation).selfToken)
       let selfType: RawType = .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name)
       let selfDeclaration = VariableDeclaration(modifiers: [],
                                                 declarationToken: nil,
@@ -144,35 +144,32 @@ public struct MovePreprocessor: ASTPass {
                                             op: Token(kind: .punctuation(.equal),
                                                       sourceLocation: functionDeclaration.sourceLocation),
                                             rhs: .rawAssembly("borrow_global<T>(_flintSender)", resultType: selfType))
-      
+
       let senderDeclarationStmt: Statement = .expression(.variableDeclaration(senderDeclaration))
       let senderAssignmentStmt: Statement = .expression(.binaryExpression(senderAssignment))
       let selfDeclarationStmt: Statement = .expression(.variableDeclaration(selfDeclaration))
       let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
-      functionDeclaration.body.insert(selfAssignmentStmt, at: 0)
-      functionDeclaration.body.insert(senderAssignmentStmt, at: 0)
-      functionDeclaration.body.insert(selfDeclarationStmt, at: 0)
       functionDeclaration.body.insert(senderDeclarationStmt, at: 0)
-      
-      
-      // DRAFT - START
-      
-      /*
-      
-      if let callerBinding = passContext.contractBehaviorDeclarationContext.callerBinding {
-        let addressType: RawType = .basicType(.address)
-        let callerIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
-        let senderDecl: VariableDeclaration = VariableDeclaration(modifiers: [],
-                                                                  declarationToken: nil,
-                                                                  identifier: callerIdentifier,
-                                                                  type: Type(inferredType: addressType,
-                                                                             identifier: callerIdentifier),
-                                                                  assignedExpression: .rawAssembly("get_txn_sender()", resultType: addressType))
-        let getSenderStmt: Statement = .expression(.variableDeclaration(senderDecl))
-        functionDeclaration.body.insert(getSenderStmt, at: 0)
-      }*/
-    
-      
+      functionDeclaration.body.insert(selfDeclarationStmt, at: 1)
+      functionDeclaration.body.insert(senderAssignmentStmt, at: 2)
+      functionDeclaration.body.insert(selfAssignmentStmt, at: 3)
+
+      if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
+        let callerBindingDeclaration = VariableDeclaration(modifiers: [],
+                                                           declarationToken: nil,
+                                                           identifier: callerBindingIdentifier,
+                                                           type: Type(inferredType: addressType,
+                                                                      identifier: callerBindingIdentifier))
+        let callerBindingAssignment = BinaryExpression(
+          lhs: .identifier(callerBindingIdentifier),
+          op: Token(kind: .punctuation(.equal),
+                   sourceLocation: senderIdentifier.sourceLocation),
+          rhs: .identifier(senderIdentifier))
+        let callerBindingDeclarationStmt: Statement = .expression(.variableDeclaration(callerBindingDeclaration))
+        let callerBindingAssignmentStmt: Statement = .expression(.binaryExpression(callerBindingAssignment))
+        functionDeclaration.body.insert(callerBindingDeclarationStmt, at: 2)
+        functionDeclaration.body.insert(callerBindingAssignmentStmt, at: 5)
+      }
     }
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters

@@ -143,50 +143,7 @@ struct MoveFunctionBody {
                                                            scopeContext: scopeContext,
                                                            enclosingTypeName: typeIdentifier.name,
                                                            isInStructFunction: !isContractFunction)
-    var functionBody = functionDeclaration.body
-
-    /*
-    // DRAFT - START
-    if isContractFunction {
-      // Get self
-      //let contractType: RawType =
-      
-    
-      if let callerBinding = callerBinding {
-        let addressType: RawType = .basicType(.address)
-        let callerIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
-        let senderDecl: VariableDeclaration = VariableDeclaration(modifiers: [],
-                                                                  declarationToken: nil,
-                                                                  identifier: callerIdentifier,
-                                                                  type: Type(inferredType: addressType,
-                                                                             identifier: callerIdentifier),
-                                                                  assignedExpression: .rawAssembly("get_txn_sender()", resultType: addressType))
-        let getSenderStmt: Statement = .expression(.variableDeclaration(senderDecl))
-        functionBody.insert(getSenderStmt, at: 0)
-        
-        /*
-        let callerNameIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
-        let bindCallerStmt: Statement = .expression(.binaryExpression(BinaryExpression(lhs: .identifier(callerNameIdentifier),
-                                                                                       op: Token(kind: .punctuation(.equal),
-                                                                                                 sourceLocation: senderIdentifier.sourceLocation),
-                                                                                       rhs: .identifier(senderIdentifier))))
-        functionBody.insert(bindCallerStmt, at: 1)
-        */
-      }
-    }*/
-    
-    // DRAFT - END
-    
-    /*
-    // Assign a caller capaiblity binding to a local variable.
-    let callerBindingDeclaration: String
-    if let callerBinding = callerBinding {
-      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender();\n"
-    } else {
-      callerBindingDeclaration = ""
-    }*/
-    
-    return renderBody(functionBody, functionContext: functionContext)
+    return renderBody(functionDeclaration.body, functionContext: functionContext)
   }
 
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
@@ -196,7 +153,6 @@ struct MoveFunctionBody {
     var statements = statements
     while !statements.isEmpty {
       let statement = statements.removeFirst()
-      print(MoveStatement(statement: statement).rendered(functionContext: functionContext))
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
     return functionContext.finalise()

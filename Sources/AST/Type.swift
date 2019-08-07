@@ -51,8 +51,6 @@ public indirect enum RawType: Equatable {
   public enum StdlibType: RawTypeIdentifier {
     case wei = "Wei"
   }
-  
-  
 
   public enum SolidityType: RawTypeIdentifier {
     // Address

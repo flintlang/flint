@@ -17,11 +17,16 @@ public struct ContractStateDeclarationContext {
 public struct ContractBehaviorDeclarationContext {
   public var contractIdentifier: Identifier
   public var typeStates: [TypeState]
+  public var callerBinding: Identifier?
   public var callerProtections: [CallerProtection]
 
-  public init(contractIdentifier: Identifier, typeStates: [TypeState], callerProtections: [CallerProtection]) {
+  public init(contractIdentifier: Identifier,
+              typeStates: [TypeState],
+              callerBinding: Identifier?,
+              callerProtections: [CallerProtection]) {
     self.contractIdentifier = contractIdentifier
-    self.typeStates         = typeStates
+    self.typeStates = typeStates
+    self.callerBinding = callerBinding
     self.callerProtections = callerProtections
   }
 }
