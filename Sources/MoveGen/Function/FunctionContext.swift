@@ -50,7 +50,7 @@ class FunctionContext: CustomStringConvertible {
     self.isConstructor = isConstructor
   }
 
-  func emit(_ statement: MoveIR.Statement) {
+  func emit(_ statement: MoveIR.Statement, at: Int? = nil) {
     let catchableSuccesses = statement.catchableSuccesses
     if !catchableSuccesses.isEmpty {
       let allSucceeded = catchableSuccesses.reduce(.literal(.num(1)), { acc, success in
@@ -70,7 +70,11 @@ class FunctionContext: CustomStringConvertible {
       emit(.inline("case 1"))
       _ = pushBlock()
     }
-    blockStack[blockStack.count - 1].statements.append(statement)
+    if let position = at {
+      blockStack[blockStack.count - 1].statements.insert(statement, at: position)
+    } else {
+      blockStack[blockStack.count - 1].statements.append(statement)
+    }
   }
 
   func withNewBlock(_ inner: () -> Void) -> MoveIR.Block {

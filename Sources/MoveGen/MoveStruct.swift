@@ -61,7 +61,6 @@ public struct MoveStruct {
                             struct: self).rendered()
     }.reduce("") { $0 + $1 + "\n\n" }
 
-
     return #"""
 
            //// ~:  Initializers  :~ ////
@@ -85,8 +84,8 @@ public struct MoveStruct {
     // At this point, the initializers and conforming functions have been converted to functions.
     let functionsCode = structDeclaration.functionDeclarations.compactMap { functionDeclaration in
       return MoveFunction(functionDeclaration: functionDeclaration,
-                        typeIdentifier: structDeclaration.identifier,
-                        environment: environment).rendered()
+                          typeIdentifier: structDeclaration.identifier,
+                          environment: environment).rendered()
     }.joined(separator: "\n\n")
 
     return functionsCode

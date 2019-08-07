@@ -20,10 +20,11 @@ struct MoveIdentifier {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if identifier.enclosingType != nil && !functionContext.isConstructor {
-      return MovePropertyAccess(lhs: .`self`(Token(kind: .`self`, sourceLocation: identifier.sourceLocation)),
-                              rhs: .identifier(identifier),
-                              asLValue: asLValue)
-        .rendered(functionContext: functionContext) // TODO: Preamble not handled
+      return MovePropertyAccess(
+          lhs: .`self`(Token(kind: .`self`, sourceLocation: identifier.sourceLocation)),
+          rhs: .identifier(identifier),
+          asLValue: asLValue
+      ).rendered(functionContext: functionContext) // TODO: Preamble not handled
     }
     if identifier.isSelf {
       return MoveSelf(selfToken: identifier.identifierToken, asLValue: false)
