@@ -105,15 +105,34 @@ public struct MovePreprocessor: ASTPass {
       functionDeclaration.body.insert(.expression(assignment), at: 0)
     }
 
-    if let structDeclarationContext = passContext.structDeclarationContext {
-      if Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-        // For struct functions, add `flintSelf` to the beginning of the parameters list.
-        let parameter = constructThisParameter(
-            type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
-            sourceLocation: functionDeclaration.sourceLocation)
-        functionDeclaration.signature.parameters.insert(parameter, at: 0)
-      }
+    if let structDeclarationContext = passContext.structDeclarationContext,
+      Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+      // For struct functions, add `flintSelf` to the beginning of the parameters list.
+      let parameter = constructThisParameter(
+          type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
+          sourceLocation: functionDeclaration.sourceLocation)
+      functionDeclaration.signature.parameters.insert(parameter, at: 0)
+    } else if passContext.contractBehaviorDeclarationContext != nil,
+      Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+      let identifier = Identifier(identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
+                                                         sourceLocation: functionDeclaration.sourceLocation))
+      let parameter = Parameter(identifier: identifier,
+                                type: Type(inferredType: .basicType(.address), identifier: identifier),
+                                implicitToken: nil,
+                                assignedExpression: nil)
+      functionDeclaration.signature.parameters.insert(parameter, at: 0)
     }
+    
+    /*
+     func constructThisParameter(type: RawType, sourceLocation: SourceLocation) -> Parameter {
+     let identifier = Identifier(identifierToken: Token(kind: .`self`, sourceLocation: sourceLocation))
+     return Parameter(identifier: identifier,
+     type: Type(inferredType: type,
+     identifier: identifier),
+     implicitToken: nil,
+     assignedExpression: nil)
+     }
+     */
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
 

@@ -10,6 +10,7 @@ import MoveIR
 struct MoveSelf {
   var selfToken: Token
   var asLValue: Bool
+  public static let selfName = "_flintSelf"
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     guard case .`self` = selfToken.kind else {
@@ -18,7 +19,7 @@ struct MoveSelf {
     guard !functionContext.isConstructor else {
       return .identifier("__ERROR_CONSTRUCTOR_SELF_REFERENCE")
     }
-    return .identifier("this")
+    return .identifier(MoveSelf.selfName)
     // return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
   }
 }

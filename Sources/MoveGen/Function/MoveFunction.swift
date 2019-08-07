@@ -7,6 +7,7 @@
 
 import AST
 import CryptoSwift
+import Lexer
 
 /// Generates code for a function.
 struct MoveFunction {
@@ -142,18 +143,43 @@ struct MoveFunctionBody {
                                                            scopeContext: scopeContext,
                                                            enclosingTypeName: typeIdentifier.name,
                                                            isInStructFunction: !isContractFunction)
+    var functionBody = functionDeclaration.body
 
+    // DRAFT - START
+    if isContractFunction {
+      let addressType: RawType = .basicType(.address)
+      let senderIdentifier: Identifier = .init(name: "_sender", sourceLocation: functionDeclaration.sourceLocation)
+      let senderDecl: VariableDeclaration = VariableDeclaration(modifiers: [],
+                                                                 declarationToken: nil,
+                                                                 identifier: senderIdentifier,
+                                                                 type: Type(inferredType: addressType,
+                                                                            identifier: senderIdentifier),
+                                                                 assignedExpression: .rawAssembly("get_txn_sender()", resultType: addressType))
+      let getSenderStmt: Statement = .expression(.variableDeclaration(senderDecl))
+      functionBody.insert(getSenderStmt, at: 0)
+    
+      if let callerBinding = callerBinding {
+        let callerNameIdentifier: Identifier = .init(name: callerBinding.name.mangled, sourceLocation: functionDeclaration.sourceLocation)
+        let bindCallerStmt: Statement = .expression(.binaryExpression(BinaryExpression(lhs: .identifier(callerNameIdentifier),
+                                                                                       op: Token(kind: .punctuation(.equal),
+                                                                                                 sourceLocation: senderIdentifier.sourceLocation),
+                                                                                       rhs: .identifier(senderIdentifier))))
+        functionBody.insert(bindCallerStmt, at: 1)
+      }
+    }
+    
+    // DRAFT - END
+    
+    /*
     // Assign a caller capaiblity binding to a local variable.
     let callerBindingDeclaration: String
     if let callerBinding = callerBinding {
       callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender();\n"
     } else {
       callerBindingDeclaration = ""
-    }
-
-    let body = renderBody(functionDeclaration.body, functionContext: functionContext)
-
-    return "\(callerBindingDeclaration)\(body)"
+    }*/
+    
+    return renderBody(functionBody, functionContext: functionContext)
   }
 
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
