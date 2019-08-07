@@ -3,23 +3,27 @@ SYMBOOGLIX_EXE=symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe
 Z3=z3/build/z3
 Boogie_Z3_slink=boogie/Binaries/z3.exe
 Symbooglix_Z3_slink=symbooglix/src/SymbooglixDriver/bin/Release/z3.exe
+TARGET_FLAGS :=
+ifeq ($(shell uname -s),Darwin)
+	TARGET_FLAGS +=  -Xswiftc "-target" -Xswiftc "x86_64-apple-macosx10.14"
+endif
 .PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
 
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
 
 debug: generate-sources
-	swift build
+	swift build $(TARGET_FLAGS)
 	cp -r stdlib .build/debug/
 
 release: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE)
-	swift build -c release --static-swift-stdlib
+	swift build $(TARGET_FLAGS) -c release --static-swift-stdlib
 	cp -r stdlib .build/release/
 
 xcode:
 	swift package generate-xcodeproj
 
 run:
-	swift build
+	swift build $(TARGET_FLAGS)
 	swift run dev_version
 
 zip: release
@@ -29,13 +33,13 @@ zip: release
 
 test: lint generate-mocks release
 	sed -i -e "s/ as / as! /g" .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift
-	swift test
+	swift test $(TARGET_FLAGS)
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 
 test-nogen: lint release
-	swift test
+	swift test $(TARGET_FLAGS)
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
