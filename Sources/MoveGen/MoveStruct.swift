@@ -40,11 +40,45 @@ public struct MoveStruct {
         : ""
 
     return #"""
-           \#(declaration)
-           //// ~: FUNCTIONS :~ ////
+           \#(declaration)\#
+           \#(renderInitializers())\#
+           //// ~:   Functions    :~ ////
 
            \#(renderFunctions())
            """#
+  }
+
+  func renderInitializers() -> String {
+    let declarations = findStructInitializers()
+    guard declarations.count > 0 else {
+      return ""
+    }
+    let initializers = declarations.map { (declaration: SpecialDeclaration) in
+      MoveStructInitializer(initializerDeclaration: declaration,
+                            typeIdentifier: structDeclaration.identifier,
+                            propertiesInEnclosingType: structDeclaration.variableDeclarations,
+                            environment: environment,
+                            struct: self).rendered()
+    }.reduce("") { $0 + $1 + "\n\n" }
+
+
+    return #"""
+
+           //// ~:  Initializers  :~ ////
+
+           \#(initializers.indented(by: 0))
+           """#
+  }
+
+  /// Finds the struct's public initializer, if any is declared,
+  /// and returns the enclosing contract behavior declaration.
+  func findStructInitializers() -> [SpecialDeclaration] {
+    return structDeclaration.members.compactMap { member -> SpecialDeclaration? in
+      if case .specialDeclaration(let special) = member, special.isInit {
+        return special
+      }
+      return nil
+    }
   }
 
   func renderFunctions() -> String {

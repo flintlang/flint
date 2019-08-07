@@ -19,12 +19,11 @@ public struct MovePreprocessor: ASTPass {
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     var structMember = structMember
 
-    if case .specialDeclaration(let specialDeclaration) = structMember,
+    /* if case .specialDeclaration(let specialDeclaration) = structMember,
        specialDeclaration.isInit {
-      // FIXME REMOVED specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
       // Convert the initializer to a function.
       structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
-    }
+    } */
 
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
