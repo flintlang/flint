@@ -26,7 +26,7 @@ struct MoveAssignment {
       let typeIR: MoveIR.`Type` = CanonicalType(from: variableDeclaration.type.rawType,
                                                 environment: functionContext.environment)!.irType
       // FIXME any cannot be handled by MoveIR, please change
-      return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, typeIR), rhsIr))
+      return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, typeIR)))
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return .assignment(Assignment(identifier.name.mangled, rhsIr))
     default:
@@ -40,13 +40,11 @@ struct MoveAssignment {
             enclosingTypeName: functionContext.enclosingTypeName) {
           enclosingName = enclosingParameter
         } else {
-          enclosingName = "flintSelf"
+          enclosingName = "this"
         }
-//        return MoveRuntimeFunction.store(address: lhsIr, d)
         return .assignment(Assignment(lhsIr.description, rhsIr))
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {
-        //return MoveRuntimeFunction.store(address: lhsIr, value: rhsIr, inMemory: true)
         return .assignment(Assignment(enclosingIdentifier.name, rhsIr))
       } else {
         return .assignment(Assignment(lhsIr.description, rhsIr))

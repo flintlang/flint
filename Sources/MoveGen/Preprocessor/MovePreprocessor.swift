@@ -112,7 +112,7 @@ public struct MovePreprocessor: ASTPass {
           sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
-      Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+              Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       let addressIdentifier = Identifier(identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
                                                          sourceLocation: functionDeclaration.sourceLocation))
       let parameter = Parameter(identifier: addressIdentifier,
@@ -132,15 +132,14 @@ public struct MovePreprocessor: ASTPass {
                                               op: Token(kind: .punctuation(.equal),
                                                         sourceLocation: functionDeclaration.sourceLocation),
                                               rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
-
-      let selfIdentifier
-        = Identifier(identifierToken: MoveSelf.generate(sourceLocation: functionDeclaration.sourceLocation).selfToken)
+      let selfToken: Token = Token(kind: .`self`, sourceLocation: functionDeclaration.sourceLocation)
+      let selfIdentifier = Identifier(identifierToken: selfToken)
       let selfType: RawType = .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name)
       let selfDeclaration = VariableDeclaration(modifiers: [],
                                                 declarationToken: nil,
                                                 identifier: selfIdentifier,
                                                 type: Type(inferredType: selfType, identifier: selfIdentifier))
-      let selfAssignment = BinaryExpression(lhs: .identifier(selfIdentifier),
+      let selfAssignment = BinaryExpression(lhs: .`self`(selfToken),
                                             op: Token(kind: .punctuation(.equal),
                                                       sourceLocation: functionDeclaration.sourceLocation),
                                             rhs: .rawAssembly("borrow_global<T>(_flintSender)", resultType: selfType))
@@ -149,10 +148,10 @@ public struct MovePreprocessor: ASTPass {
       let senderAssignmentStmt: Statement = .expression(.binaryExpression(senderAssignment))
       let selfDeclarationStmt: Statement = .expression(.variableDeclaration(selfDeclaration))
       let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
-      functionDeclaration.body.insert(senderDeclarationStmt, at: 0)
-      functionDeclaration.body.insert(selfDeclarationStmt, at: 1)
-      functionDeclaration.body.insert(senderAssignmentStmt, at: 2)
-      functionDeclaration.body.insert(selfAssignmentStmt, at: 3)
+      functionDeclaration.body.insert(
+          contentsOf: [senderDeclarationStmt, selfDeclarationStmt, senderAssignmentStmt, selfAssignmentStmt],
+          at: 0
+      )
 
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
         let callerBindingDeclaration = VariableDeclaration(modifiers: [],
@@ -207,8 +206,10 @@ public struct MovePreprocessor: ASTPass {
 
     let declarations = passContext.scopeContext!.localVariables.map { declaration -> Statement in
       var declaration: VariableDeclaration = declaration
-      declaration.identifier = Identifier(name: declaration.identifier.name.mangled,
-                                          sourceLocation: declaration.identifier.sourceLocation)
+      if !declaration.identifier.isSelf {
+        declaration.identifier = Identifier(name: declaration.identifier.name.mangled,
+                                            sourceLocation: declaration.identifier.sourceLocation)
+      }
       return Statement.expression(.variableDeclaration(declaration))
     }
     functionDeclaration.body = declarations + deleteDeclarations(in: functionDeclaration.body)

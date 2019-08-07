@@ -125,7 +125,7 @@ struct MoveStructInitializerBody {
           MoveIR.VariableDeclaration((
                                          property.identifier.name.mangled,
                                          CanonicalType(from: property.type.rawType, environment: environment)!.irType
-                                     ), nil)
+                                     ))
       )))
     }
 
@@ -174,7 +174,7 @@ struct MoveStructInitializerBody {
     let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation)
         .rendered(functionContext: functionContext).description
     functionContext.emit(
-        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, moveType!), nil))),
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, moveType!)))),
         at: 0
     )
     functionContext.emit(.expression(.assignment(Assignment(selfName, constructor))))

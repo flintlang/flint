@@ -58,6 +58,7 @@ C :: (any) {
 
   public func setAy(y: Bool) mutates (A.y) {
     a.y = y
+    let x: Int = 10
   }
 
   public func getBxx() -> Int {
@@ -144,7 +145,6 @@ struct Maybe {
   var size: Int
 
   public init() {
-    get(n: 0)
     element = 0
     size = 0
   }
