@@ -19,12 +19,7 @@ public struct Mangler {
   }
 
   static func mangleInitializerName(_ enclosingType: String, parameterTypes: [RawType]) -> String {
-    return mangleFunctionName("init", parameterTypes: parameterTypes, enclosingType: enclosingType)
-  }
-
-  /// Constructs the parameter name to indicate whether the given parameter is a memory reference.
-  static func isMem(for parameter: String) -> String {
-    return "\(parameter)$isMem"
+    return mangleFunctionName("new", parameterTypes: parameterTypes, enclosingType: enclosingType)
   }
 }
 

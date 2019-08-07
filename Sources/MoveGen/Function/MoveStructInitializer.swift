@@ -57,8 +57,13 @@ struct MoveStructInitializer {
         environment: environment
     )?.irType.description ?? "V#Self.\(`struct`.structDeclaration.identifier.name)"
 
+    let name = Mangler.mangleInitializerName(
+        typeIdentifier.name,
+        parameterTypes: initializerDeclaration.explicitParameters.map { $0.type.rawType }
+    )
+
     return """
-           new_\(typeIdentifier.name)(\(parameters)): \(moveType) {
+           \(name)(\(parameters)): \(moveType) {
              \(body.indented(by: 2))
            }
            """
