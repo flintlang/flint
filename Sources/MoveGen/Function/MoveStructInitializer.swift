@@ -5,6 +5,7 @@
 import Foundation
 import AST
 import MoveIR
+import Lexer
 
 /// Generates code for a contract initializer.
 struct MoveStructInitializer {
@@ -18,6 +19,13 @@ struct MoveStructInitializer {
 
   var `struct`: MoveStruct
 
+  var moveType: MoveIR.`Type`? {
+    return CanonicalType(
+        from: AST.Type(identifier: typeIdentifier).rawType,
+        environment: environment
+    )?.irType
+  }
+
   var parameterNames: [String] {
     let fc = FunctionContext(environment: environment,
                              scopeContext: scopeContext,
@@ -30,8 +38,10 @@ struct MoveStructInitializer {
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return initializerDeclaration.explicitParameters.map { CanonicalType(from: $0.type.rawType,
-                                                                         environment: environment)! }
+    return initializerDeclaration.explicitParameters.map {
+      CanonicalType(from: $0.type.rawType,
+                    environment: environment)!
+    }
   }
 
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
@@ -52,18 +62,13 @@ struct MoveStructInitializer {
         properties: `struct`.structDeclaration.variableDeclarations
     ).rendered()
 
-    let moveType = CanonicalType(
-        from: AST.Type(identifier: `struct`.structDeclaration.identifier).rawType,
-        environment: environment
-    )?.irType.description ?? "V#Self.\(`struct`.structDeclaration.identifier.name)"
-
     let name = Mangler.mangleInitializerName(
         typeIdentifier.name,
         parameterTypes: initializerDeclaration.explicitParameters.map { $0.type.rawType }
     )
 
     return """
-           \(name)(\(parameters)): \(moveType) {
+           \(name)(\(parameters)): \(moveType?.description ?? "V#Self.\(`struct`.structDeclaration.identifier.name)") {
              \(body.indented(by: 2))
            }
            """
@@ -80,6 +85,13 @@ struct MoveStructInitializerBody {
   /// The function's parameters and caller caller binding, as variable declarations in a `ScopeContext`.
   var scopeContext: ScopeContext {
     return declaration.scopeContext
+  }
+
+  var moveType: MoveIR.`Type`? {
+    return CanonicalType(
+        from: AST.Type(identifier: typeIdentifier).rawType,
+        environment: environment
+    )?.irType
   }
 
   init(declaration: SpecialDeclaration,
@@ -117,17 +129,64 @@ struct MoveStructInitializerBody {
       )))
     }
 
-    while !statements.isEmpty {
-      let statement = statements.removeFirst()
+    var unassigned: [AST.Identifier] = properties.map { $0.identifier }
+
+    while !(statements.isEmpty || unassigned.isEmpty) {
+      let statement: AST.Statement = statements.removeFirst()
+
+      if case .expression(let expression) = statement,
+         case .binaryExpression(let binary) = expression,
+         case .punctuation(let op) = binary.op.kind,
+         case .equal = op {
+        switch binary.lhs {
+        case .identifier(let identifier):
+          if let type = identifier.enclosingType,
+             type == typeIdentifier.name {
+            unassigned = unassigned.filter { $0.name != identifier.name }
+          }
+        case .binaryExpression(let lhs):
+          if case .punctuation(let op) = lhs.op.kind,
+             case .dot = op,
+             case .identifier(let left) = lhs.lhs,
+             left.isSelf,
+             case .identifier(let field) = lhs.rhs {
+            unassigned = unassigned.filter { $0.name != field.name }
+          }
+        default: break
+        }
+      }
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
-    functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
+
+    let constructor = Expression.structConstructor(StructConstructor(
         typeIdentifier.name,
         Dictionary(uniqueKeysWithValues: properties.map {
           ($0.identifier.name, .identifier($0.identifier.name.mangled))
         })
-    ))))
+    ))
+
+    guard !statements.isEmpty else {
+      functionContext.emit(.return(constructor))
+      return functionContext.finalise()
+    }
+
+    functionContext.isConstructor = false
+
+    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation)
+        .rendered(functionContext: functionContext).description
+    functionContext.emit(
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, moveType!), nil))),
+        at: 0
+    )
+    functionContext.emit(.expression(.assignment(Assignment(selfName, constructor))))
+    while !statements.isEmpty {
+      let statement: AST.Statement = statements.removeFirst()
+      functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
+    }
+    functionContext.emit(.return(
+        MoveSelf.generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
+            .rendered(functionContext: functionContext)
+    ))
     return functionContext.finalise()
   }
-
 }

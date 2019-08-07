@@ -140,8 +140,14 @@ C :: (any) {
 }
 
 struct Maybe {
-  var element: Int = 0
-  var size: Int = 0
+  var element: Int
+  var size: Int
+
+  public init() {
+    element = 0
+    size = 0
+    get(n: 0)
+  }
 
   func add(value: Int) mutates (elements, size) {
     element = value
