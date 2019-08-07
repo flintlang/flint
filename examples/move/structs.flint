@@ -144,9 +144,9 @@ struct Maybe {
   var size: Int
 
   public init() {
+    get(n: 0)
     element = 0
     size = 0
-    get(n: 0)
   }
 
   func add(value: Int) mutates (elements, size) {

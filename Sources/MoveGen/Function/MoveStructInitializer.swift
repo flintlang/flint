@@ -147,8 +147,7 @@ struct MoveStructInitializerBody {
         case .binaryExpression(let lhs):
           if case .punctuation(let op) = lhs.op.kind,
              case .dot = op,
-             case .identifier(let left) = lhs.lhs,
-             left.isSelf,
+             case .`self` = lhs.lhs,
              case .identifier(let field) = lhs.rhs {
             unassigned = unassigned.filter { $0.name != field.name }
           }
