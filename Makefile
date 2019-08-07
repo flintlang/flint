@@ -75,8 +75,10 @@ $(Symbooglix_Z3_slink): $(Z3)
 	  && cd ..
 
 $(Z3):
-	cd z3 && python scripts/mk_make.py --prefix=$(pwd)/bin \
-	  && cd build && make && cd ../..
+	mkdir -p z3/build/
+	ln -sf /usr/bin/z3 $(Z3)
+#	cd z3 && python scripts/mk_make.py --prefix=$(pwd)/bin \
+#	  && cd build && make && cd ../..
 
 clean:
 	-swift package clean
