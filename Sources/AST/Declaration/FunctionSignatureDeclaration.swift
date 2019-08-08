@@ -14,7 +14,7 @@ public struct FunctionSignatureDeclaration: ASTNode, Equatable {
   /// The attributes associated with the function, such as `@payable`.
   public var attributes: [Attribute]
 
-  /// The modifiers associted with the function, such as `public` or `visible.`
+  /// The modifiers associated with the function, such as `public` or `visible.`
   public var modifiers: [Token]
   public var mutates: [Identifier]
   public var identifier: Identifier

@@ -85,11 +85,11 @@ struct MoveContract {
       //// --   Wrapper functions    -- ////
       //////////////////////////////////////
 
-      \#(wrapperCode)
+      \#(wrapperCode)\#
 
-     //////////////////////////////////////
-     //// -- // ~ // Common // ~ // -- ////
-     //////////////////////////////////////
+      //////////////////////////////////////
+      //// -- // ~ // Common // ~ // -- ////
+      //////////////////////////////////////
 
       \#(renderCommon(indentedBy: 2))
     }
@@ -158,8 +158,7 @@ struct MoveContract {
      \(structHeader.indented(by: indentedBy))
 
      \(structFunctions.indented(by: indentedBy, andFirst: true))
-
-
+            
      \(runtimeHeader.indented(by: indentedBy, andFirst: true))
 
      \(runtimeFunctionsDeclarations.indented(by: indentedBy, andFirst: true))

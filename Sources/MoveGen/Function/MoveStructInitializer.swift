@@ -67,8 +67,17 @@ struct MoveStructInitializer {
         parameterTypes: initializerDeclaration.explicitParameters.map { $0.type.rawType }
     )
 
+    let modifiers = initializerDeclaration.signature.modifiers
+        .compactMap { (modifier: Token) -> String? in
+          switch modifier.kind {
+          case .public: return "public "
+          default: return nil
+          }
+        }.reduce("", +)
+
     return """
-           \(name)(\(parameters)): \(moveType?.description ?? "V#Self.\(`struct`.structDeclaration.identifier.name)") {
+           \(modifiers)\(name)(\(parameters)): \
+           \(moveType?.description ?? "V#Self.\(`struct`.structDeclaration.identifier.name)") {
              \(body.indented(by: 2))
            }
            """
