@@ -42,7 +42,9 @@ contract C {
 }
 
 C :: (any) {
-  public init() {}
+  public init() {
+    e = getE()
+  }
 
   public func getAx() -> Int {
     return a.x

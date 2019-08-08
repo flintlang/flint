@@ -168,9 +168,19 @@ extension MovePreprocessor {
     case .matchedFunction(let functionInformation):
       let declaration = functionInformation.declaration
       let parameterTypes = declaration.signature.parameters.rawTypes
+
+      let isContract: Bool
+      if let enclosingType = functionCall.identifier.enclosingType {
+        isContract = environment.isContractDeclared(enclosingType)
+      } else {
+        isContract = functionCall.identifier.enclosingType == nil
+            && passContext.contractBehaviorDeclarationContext != nil
+      }
+
       return Mangler.mangleFunctionName(declaration.identifier.name,
                                         parameterTypes: parameterTypes,
-                                        enclosingType: enclosingType)
+                                        enclosingType: enclosingType,
+                                        isContract: isContract)
     case .matchedFunctionWithoutCaller(let candidates):
       guard candidates.count == 1 else {
         fatalError("Unable to find unique declaration of \(functionCall)")

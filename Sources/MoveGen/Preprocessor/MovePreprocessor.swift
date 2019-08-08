@@ -56,7 +56,8 @@ public struct MovePreprocessor: ASTPass {
     let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
-                                          enclosingType: passContext.enclosingTypeIdentifier!.name)
+                                          enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                          isContract: passContext.contractBehaviorDeclarationContext != nil)
     functionDeclaration.mangledIdentifier = name
 
     // Bind the implicit Libra value of the transaction to a variable.
@@ -198,7 +199,6 @@ public struct MovePreprocessor: ASTPass {
     if functionDeclaration.isVoid {
       if let last: Statement = functionDeclaration.body.last,
          case .returnStatement = last {} else {
-        print("\(#file):\(#line)", functionDeclaration.body.last)
         functionDeclaration.body.append(.returnStatement(ReturnStatement(
             returnToken: Token(kind: .return,
                                sourceLocation: functionDeclaration.closeBraceToken.sourceLocation),

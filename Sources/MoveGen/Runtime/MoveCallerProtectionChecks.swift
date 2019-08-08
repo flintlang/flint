@@ -36,9 +36,11 @@ struct MoveCallerProtectionChecks {
         var identifier = callerProtection.identifier
         let name = Mangler.mangleFunctionName(identifier.name, parameterTypes: [], enclosingType: enclosingType)
         identifier.identifierToken.kind = .identifier(name)
-        // swiftlint:disable line_length
-        let functionCall = MoveFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
-        // swiftlint:enable line_length
+        let functionCall = MoveFunctionCall(
+            functionCall: FunctionCall(identifier: identifier, arguments: [],
+                                       closeBracketToken: .init(
+                                           kind: .punctuation(.closeBracket),
+                                           sourceLocation: .DUMMY), isAttempted: false))
         let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
         let check = "eq(caller(), \(renderedFunctionCall.description))"
         return "\(variableName) := add(\(variableName), \(check))"
@@ -47,22 +49,28 @@ struct MoveCallerProtectionChecks {
         let name = Mangler.mangleFunctionName(identifier.name, parameterTypes: [.basicType(.address)],
                                               enclosingType: enclosingType)
         identifier.identifierToken.kind = .identifier(name)
-        // swiftlint:disable line_length
-        let functionCall = MoveFunctionCall(functionCall: FunctionCall(identifier: identifier, arguments: [FunctionArgument(.rawAssembly("caller()", resultType: .basicType(.address)))], closeBracketToken: .init(kind: .punctuation(.closeBracket), sourceLocation: .DUMMY), isAttempted: false))
+        let functionCall = MoveFunctionCall(
+            functionCall: FunctionCall(identifier: identifier,
+                                       arguments: [FunctionArgument(
+                                           .rawAssembly("caller()",
+                                                        resultType: .basicType(.address)
+                                           ))],
+                                       closeBracketToken: .init(
+                                           kind: .punctuation(.closeBracket), sourceLocation: .DUMMY),
+                                       isAttempted: false))
         let renderedFunctionCall = functionCall.rendered(functionContext: functionContext)
         return "\(variableName) := add(\(variableName), \(renderedFunctionCall.description))"
-        // swiftlint:enable line_length
-      /* case .fixedSizeArrayType(_, let size):
-        return (0..<size).map { index in
-          let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(add(\(offset!), \(index)))")
-          return "\(variableName) := add(\(variableName), \(check)"
-          }.joined(separator: "\n")
-      case .arrayType:
-        let check = MoveRuntimeFunction.isCallerProtectionInArray(arrayOffset: offset!)
-        return "\(variableName) := add(\(variableName), \(check))"
-      case .basicType(.address):
-        let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
-        return "\(variableName) := add(\(variableName), \(check)" */
+          /* case .fixedSizeArrayType(_, let size):
+            return (0..<size).map { index in
+              let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(add(\(offset!), \(index)))")
+              return "\(variableName) := add(\(variableName), \(check)"
+              }.joined(separator: "\n")
+          case .arrayType:
+            let check = MoveRuntimeFunction.isCallerProtectionInArray(arrayOffset: offset!)
+            return "\(variableName) := add(\(variableName), \(check))"
+          case .basicType(.address):
+            let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
+            return "\(variableName) := add(\(variableName), \(check)" */
       case .basicType, .rangeType, .dictionaryType, .userDefinedType,
            .inoutType, .functionType, .any, .errorType, .solidityType:
         return ""
@@ -70,16 +78,16 @@ struct MoveCallerProtectionChecks {
         fatalError("Self type should have been replaced with concrete type")
       }
       return "" // FIXME temp RIDMEPLS
-      }
+    }
     let revertString = revert ? "if eq(\(variableName), 0) { revert(0, 0) }" : ""
-      if !checks.isEmpty {
+    if !checks.isEmpty {
       return """
-       let \(variableName) := 0
-       \(checks.joined(separator: "\n"))
-       \(revertString)
-       """
-      }
+             let \(variableName) := 0
+             \(checks.joined(separator: "\n"))
+             \(revertString)
+             """
+    }
 
-      return ""
+    return ""
   }
 }

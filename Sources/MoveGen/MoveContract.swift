@@ -158,7 +158,7 @@ struct MoveContract {
      \(structHeader.indented(by: indentedBy))
 
      \(structFunctions.indented(by: indentedBy, andFirst: true))
-            
+
      \(runtimeHeader.indented(by: indentedBy, andFirst: true))
 
      \(runtimeFunctionsDeclarations.indented(by: indentedBy, andFirst: true))

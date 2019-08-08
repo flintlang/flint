@@ -12,10 +12,14 @@ public struct Mangler {
     return "_\(name)"
   }
 
-  public static func mangleFunctionName(_ name: String, parameterTypes: [RawType], enclosingType: String) -> String {
+  public static func mangleFunctionName(_ name: String,
+                                        parameterTypes: [RawType],
+                                        enclosingType: String,
+                                        isContract: Bool = false) -> String {
     let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
     let dollar = parameters.isEmpty ? "" : "$"
-    return "\(enclosingType)$\(name)\(dollar)\(parameters)"
+    let type = isContract ? "" : enclosingType + "$"
+    return "\(type)\(name)\(dollar)\(parameters)"
   }
 
   static func mangleInitializerName(_ enclosingType: String, parameterTypes: [RawType]) -> String {
