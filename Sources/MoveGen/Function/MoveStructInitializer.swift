@@ -42,10 +42,15 @@ struct MoveStructInitializer {
     }
   }
 
-  var parameterCanonicalTypes: [CanonicalType] {
+  var parameterIRTypes: [MoveIR.`Type`] {
+    let fc = FunctionContext(environment: environment,
+                             scopeContext: scopeContext,
+                             enclosingTypeName: typeIdentifier.name,
+                             isInStructFunction: true)
+
     return initializerDeclaration.explicitParameters.map {
       CanonicalType(from: $0.type.rawType,
-                    environment: environment)!
+                    environment: environment)!.render(functionContext: fc)
     }
   }
 
@@ -55,8 +60,8 @@ struct MoveStructInitializer {
   }
 
   func rendered() -> String {
-    let parameters = zip(parameterNames, parameterCanonicalTypes).map { param in
-      let (name, type): (String, CanonicalType) = param
+    let parameters = zip(parameterNames, parameterIRTypes).map { param in
+      let (name, type): (String, MoveIR.`Type`) = param
       return "\(name): \(type)"
     }.joined(separator: ", ")
 
