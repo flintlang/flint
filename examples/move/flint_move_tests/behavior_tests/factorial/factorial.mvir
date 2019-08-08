@@ -1,0 +1,55 @@
+modules:
+module Factorial {
+    resource T {
+        value: u64,
+    }
+
+    public new_t(): R#Self.T {
+        return T {
+            value: 0,
+        };
+    }
+
+    public destroy_t(this: R#Self.T) {
+        let value: u64;
+
+        T { value } = move(this);
+        return;
+    }
+
+    factorial(n: u64): u64 {
+        if (copy(n) < 2) {
+            return move(n);
+        }
+        return copy(n) * Self.factorial(move(n) - 1);
+    }
+
+    public calculate(this: &mut R#Self.T, n: u64) {
+        *(&mut move(this).value) = Self.factorial(move(n));
+        return;
+    }
+
+    public getValue(this: &R#Self.T): u64 {
+        return *&move(this).value;
+    }
+}
+
+script:
+import Transaction.Factorial;
+
+main() {
+    let factorial0: R#Factorial.T;
+    let factorial1: R#Factorial.T;
+
+
+    factorial0 = Factorial.new_t();
+    Factorial.calculate(&mut factorial0, 5);
+    assert(Factorial.getValue(&factorial0) == 120, 1);
+    Factorial.destroy_t(move(factorial0));
+
+    factorial1 = Factorial.new_t();
+    Factorial.calculate(&mut factorial1, 1);
+    assert(Factorial.getValue(&factorial1) == 1, 1);
+    Factorial.destroy_t(move(factorial1));
+    return;
+}

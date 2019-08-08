@@ -1,0 +1,33 @@
+modules:
+module Assert {
+    resource T { }
+
+    public publish() {
+        move_to_sender<T>(
+            T { }
+        );
+        return;
+    }
+
+    // Assert :: (any)
+    public shouldNotCrash(addr: address) {
+        assert(true, 1);
+        return;
+    }
+    
+    public shouldCrash(addr: address) {
+        assert(false, 1);
+        return;
+    }
+}
+
+script:
+import Transaction.Assert;
+
+//check: VMExecutionFailure
+main() {
+    Assert.publish();
+    Assert.shouldCrash(get_txn_sender());
+    return;
+}
+
