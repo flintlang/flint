@@ -13,7 +13,7 @@ import Source
 /// Generates code for a "self" expression.
 struct MoveSelf {
   var selfToken: Token
-  var asLValue: Bool
+  var asLValue: Bool = false
   public static let selfName = "this"
 
   static func generate(sourceLocation: SourceLocation) -> MoveSelf {

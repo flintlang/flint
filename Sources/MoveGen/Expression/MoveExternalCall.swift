@@ -179,9 +179,9 @@ struct MoveExternalCall {
       .rendered(functionContext: functionContext)
 
     functionContext.emit(.expression(.variableDeclaration(
-      VariableDeclaration((savedVariableName, .any),
+      VariableDeclaration((savedVariableName, .any))))) /*,
                           .inline(stateVariableRendered.description))
-    )))
+    )))*/
 
     return savedVariableName
   }

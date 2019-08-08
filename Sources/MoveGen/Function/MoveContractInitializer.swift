@@ -146,7 +146,7 @@ struct MoveInitializerBody {
           MoveIR.VariableDeclaration((
               property.identifier.name.mangled,
               CanonicalType(from: property.type.rawType, environment: environment)!.irType
-          ), nil)
+          ))
       )))
     }
 

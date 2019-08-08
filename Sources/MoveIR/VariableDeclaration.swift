@@ -7,15 +7,14 @@
 
 public struct VariableDeclaration: CustomStringConvertible, Throwing {
   public let declaration: TypedIdentifier
-  public let expression: Expression?
+  public private(set) var catchableSuccesses: [Expression] = []
 
-  public init(_ declaration: TypedIdentifier, _ expression: Expression?) {
+  public init(_ declaration: TypedIdentifier) {
     self.declaration = declaration
-    self.expression = expression
   }
 
-  public var catchableSuccesses: [Expression] {
-    return expression?.catchableSuccesses ?? []
+  public init(_ declaration: TypedIdentifier, _ deadParam: Any) {
+    self.declaration = declaration
   }
 
   public var description: String {
