@@ -264,28 +264,25 @@ extension BoogieTranslator {
           argumentsStatements + triggerPreStmts,
           argumentPostStmts + triggerPostStmts)
     case "forall", "exists":
-      print(functionCall.arguments)
       assert(argumentsExpressions.count == 3)
-      let variableArgument: FunctionArgument = functionCall.arguments[0]
-      let typeArgument: FunctionArgument = functionCall.arguments[1]
+      let boundVariableArg: FunctionArgument = functionCall.arguments[0]
+      let typeArg: FunctionArgument = functionCall.arguments[1]
 
-      guard case .identifier(let variable) = variableArgument.expression,
-            case .identifier(let type) = typeArgument.expression else {
-        print("\(rawFunctionName) must be introduced with a typed variable declaration, for some t of type T: `t, T`")
-        fatalError()
+      guard case .identifier(let boundVariable) = boundVariableArg.expression,
+        case .identifier(let type) = typeArg.expression else {
+          print("\(rawFunctionName) must be introduced with a typed variable declaration, for some t of type T: `t, T`")
+          fatalError()
       }
-      self.currentFunctionReturningValue = variable.name
-      self.currentFunctionReturningValueValue = currentFunctionReturningValue.map { name in
-        return .identifier(name)
-      }
-      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression,
-                                               shadowVariablePrefix: normaliser.getShadowArraySizePrefix)
 
-      let btype = convertType(
-           AST.Type(identifier: AST.Identifier(name: type.name, sourceLocation: typeArgument.sourceLocation)))
+      let bType = convertType(
+        AST.Type(identifier: AST.Identifier(name: type.name, sourceLocation: typeArg.sourceLocation)))
+
+      currentScopeContext?.boundVariablesStack.append(boundVariable)
+      let (propertyExpression, _, _) = process(functionCall.arguments[2].expression)
+      _ = currentScopeContext?.boundVariablesStack.popLast()
 
       return (.quantified((rawFunctionName == "forall" ? .forall : .exists),
-                          [BParameterDeclaration(name: variable.name, rawName: variable.name, type: btype)],
+                          [BParameterDeclaration(name: boundVariable.name, rawName: boundVariable.name, type: bType)],
                           propertyExpression), [], [])
     default: break
     }

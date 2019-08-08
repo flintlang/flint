@@ -100,6 +100,7 @@ public struct SpecialDeclarationContext {
 public struct ScopeContext: Equatable {
   public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
+  public var boundVariablesStack: [Identifier] = []
 
   public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
     self.parameters = parameters
