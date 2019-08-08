@@ -55,7 +55,7 @@ make
 ## Docker
 To run the environment without doing any package installations:
 ```bash
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 sudo docker build -t "flint_docker" .
 ### ---------------------------------------------- ###
