@@ -31,7 +31,7 @@ enum CanonicalType: CustomStringConvertible {
         return nil
       }
     case .userDefinedType(let id):
-      if rawType.isCurrencyType || rawType.isContractType(environment: environment) {
+      if rawType.isCurrencyType || (environment?.isContractDeclared(id) ?? false) {
         self = .resource(id)
       } else {
         self = .struct(id)

@@ -24,7 +24,6 @@ struct MoveContract {
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
     self.structDeclarations = structDeclarations
     self.environment = environment
-    environment.types[contractDeclaration.identifier.name]!.isContractType = true
   }
 
   func rendered() -> String {
