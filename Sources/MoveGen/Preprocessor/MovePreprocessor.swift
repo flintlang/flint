@@ -113,25 +113,16 @@ public struct MovePreprocessor: ASTPass {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
               Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-      let addressIdentifier = Identifier(identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
+      let contractAddressName: String = "_address_\(MoveSelf.selfName)"
+      let contractAddressIdentifier = Identifier(identifierToken: Token(kind: .identifier(contractAddressName),
                                                          sourceLocation: functionDeclaration.sourceLocation))
-      let parameter = Parameter(identifier: addressIdentifier,
-                                type: Type(inferredType: .basicType(.address), identifier: addressIdentifier),
+      let parameter = Parameter(identifier: contractAddressIdentifier,
+                                type: Type(inferredType: .basicType(.address), identifier: contractAddressIdentifier),
                                 implicitToken: nil,
                                 assignedExpression: nil)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
 
       let addressType: RawType = .basicType(.address)
-      let senderIdentifier: Identifier = .init(name: "flintSender", sourceLocation: functionDeclaration.sourceLocation)
-      let senderDeclaration = VariableDeclaration(modifiers: [],
-                                                  declarationToken: nil,
-                                                  identifier: senderIdentifier,
-                                                  type: Type(inferredType: addressType,
-                                                             identifier: senderIdentifier))
-      let senderAssignment = BinaryExpression(lhs: .identifier(senderIdentifier),
-                                              op: Token(kind: .punctuation(.equal),
-                                                        sourceLocation: functionDeclaration.sourceLocation),
-                                              rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
       let selfToken: Token = Token(kind: .`self`, sourceLocation: functionDeclaration.sourceLocation)
       let selfIdentifier = Identifier(identifierToken: selfToken)
       let selfType: RawType = .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name)
@@ -142,14 +133,13 @@ public struct MovePreprocessor: ASTPass {
       let selfAssignment = BinaryExpression(lhs: .`self`(selfToken),
                                             op: Token(kind: .punctuation(.equal),
                                                       sourceLocation: functionDeclaration.sourceLocation),
-                                            rhs: .rawAssembly("borrow_global<T>(_flintSender)", resultType: selfType))
-
-      let senderDeclarationStmt: Statement = .expression(.variableDeclaration(senderDeclaration))
-      let senderAssignmentStmt: Statement = .expression(.binaryExpression(senderAssignment))
+                                            rhs: .rawAssembly(
+                                              "borrow_global<T>(\(contractAddressIdentifier.name.mangled))",
+                                              resultType: selfType))
       let selfDeclarationStmt: Statement = .expression(.variableDeclaration(selfDeclaration))
       let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
       functionDeclaration.body.insert(
-          contentsOf: [senderDeclarationStmt, selfDeclarationStmt, senderAssignmentStmt, selfAssignmentStmt],
+          contentsOf: [selfDeclarationStmt, selfAssignmentStmt],
           at: 0
       )
 
@@ -162,12 +152,12 @@ public struct MovePreprocessor: ASTPass {
         let callerBindingAssignment = BinaryExpression(
           lhs: .identifier(callerBindingIdentifier),
           op: Token(kind: .punctuation(.equal),
-                   sourceLocation: senderIdentifier.sourceLocation),
-          rhs: .identifier(senderIdentifier))
+                   sourceLocation: callerBindingIdentifier.sourceLocation),
+          rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
         let callerBindingDeclarationStmt: Statement = .expression(.variableDeclaration(callerBindingDeclaration))
         let callerBindingAssignmentStmt: Statement = .expression(.binaryExpression(callerBindingAssignment))
-        functionDeclaration.body.insert(callerBindingDeclarationStmt, at: 2)
-        functionDeclaration.body.insert(callerBindingAssignmentStmt, at: 5)
+        functionDeclaration.body.insert(callerBindingDeclarationStmt, at: 1)
+        functionDeclaration.body.insert(callerBindingAssignmentStmt, at: 3)
       }
     }
 
