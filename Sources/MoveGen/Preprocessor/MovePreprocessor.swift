@@ -129,12 +129,12 @@ public struct MovePreprocessor: ASTPass {
                                               resultType: selfType))
       let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
       functionDeclaration.body.insert(selfAssignmentStmt, at: 0)
+    }
 
-      if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
-        functionDeclaration.body.insert(
-          gernerateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
-          at: 1)
-      }
+    if let callerBindingIdentifier = passContext.contractBehaviorDeclarationContext?.callerBinding {
+      functionDeclaration.body.insert(
+          generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+          at: 0)
     }
 
     functionDeclaration.scopeContext?.parameters = functionDeclaration.signature.parameters
@@ -142,13 +142,12 @@ public struct MovePreprocessor: ASTPass {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  private func gernerateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
-    let addressType: RawType = .basicType(.address)
+  private func generateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
     let callerBindingAssignment = BinaryExpression(
       lhs: .identifier(callerBindingIdentifier),
       op: Token(kind: .punctuation(.equal),
                 sourceLocation: callerBindingIdentifier.sourceLocation),
-      rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
+      rhs: .rawAssembly("get_txn_sender()", resultType: .basicType(.address)))
     return .expression(.binaryExpression(callerBindingAssignment))
   }
 
@@ -192,8 +191,8 @@ public struct MovePreprocessor: ASTPass {
                           passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
-    functionDeclaration.body
-      = getDeclarations(passContext: passContext) + deleteDeclarations(in: functionDeclaration.body)
+    functionDeclaration.body = getDeclarations(passContext: passContext)
+                              + deleteDeclarations(in: functionDeclaration.body)
 
     // Add trailing return statement to all functions if none is present
     if functionDeclaration.isVoid {
@@ -213,8 +212,8 @@ public struct MovePreprocessor: ASTPass {
   public func postProcess(specialDeclaration: SpecialDeclaration,
                           passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
-    specialDeclaration.body
-      = getDeclarations(passContext: passContext) + deleteDeclarations(in: specialDeclaration.body)
+    specialDeclaration.body = getDeclarations(passContext: passContext)
+                              + deleteDeclarations(in: specialDeclaration.body)
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -241,7 +240,7 @@ public struct MovePreprocessor: ASTPass {
     var specialDeclaration = specialDeclaration
     if let callerBindingIdentifier = passContext.contractBehaviorDeclarationContext?.callerBinding {
       specialDeclaration.body.insert(
-        gernerateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+        generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
         at: 0)
     }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)

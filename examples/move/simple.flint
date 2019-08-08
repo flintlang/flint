@@ -3,7 +3,9 @@ contract Simple {
 }
 
 Simple :: (any) {
-  public init() {}
+  public init() {
+    let x: Bool = false
+  }
 
   public func increment() mutates (count) {
     count += 1

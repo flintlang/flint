@@ -5,6 +5,7 @@ struct Rectangle {
   public init(width: Int, height: Int) {
     self.width = width
     self.height = height
+    let x: Bool = true
   }
 }
 
@@ -18,6 +19,7 @@ Shapes :: caller <- (any) {
         width: 2 * rectangle,
         height: rectangle
     )
+    let x: Bool = true
   }
 
   public func area() -> Int {
