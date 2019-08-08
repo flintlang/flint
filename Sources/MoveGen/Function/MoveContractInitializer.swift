@@ -144,7 +144,7 @@ struct MoveInitializerBody {
       let property: AST.VariableDeclaration = declarations.removeFirst()
       functionContext.emit(.expression(.variableDeclaration(
           MoveIR.VariableDeclaration((
-              property.identifier.name.mangled,
+              MoveSelf.selfPrefix + property.identifier.name,
               CanonicalType(from: property.type.rawType, environment: environment)!.irType
           ))
       )))
@@ -157,7 +157,7 @@ struct MoveInitializerBody {
     functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
         "T",
         Dictionary(uniqueKeysWithValues: properties.map {
-              ($0.identifier.name, .identifier($0.identifier.name.mangled))
+              ($0.identifier.name, .identifier(MoveSelf.selfPrefix + $0.identifier.name))
             })
     ))))
     return functionContext.finalise()

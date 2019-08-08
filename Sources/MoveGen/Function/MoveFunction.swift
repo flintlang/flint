@@ -94,7 +94,14 @@ struct MoveFunction {
       let (name, type): (String, CanonicalType) = param
       return "\(name): \(type)"
     }.joined(separator: ", ")
-    return "\(name)(\(parametersString))\(doesReturn ? ": \(resultCanonicalType!)" : "")"
+    let modifiers = functionDeclaration.signature.modifiers
+        .compactMap { (modifier: Token) -> String? in
+      switch modifier.kind {
+      case .public: return "public "
+      default: return nil
+      }
+    }.reduce("", +)
+    return "\(modifiers)\(name)(\(parametersString))\(doesReturn ? ": \(resultCanonicalType!)" : "")"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.

@@ -15,6 +15,7 @@ struct MoveSelf {
   var selfToken: Token
   var asLValue: Bool = false
   public static let selfName = "this"
+  public static let selfPrefix = "__\(selfName)_"
 
   static func generate(sourceLocation: SourceLocation) -> MoveSelf {
     return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), asLValue: false)

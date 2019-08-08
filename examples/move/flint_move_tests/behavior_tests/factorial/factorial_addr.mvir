@@ -23,15 +23,15 @@ module Factorial {
     public calculate(contract_addr: address, n: u64) {
         let contract_ref: &mut R#Self.T;
 
-        contract_ref = borrow_global<T>(move(contract_addr)); 
+        contract_ref = borrow_global<T>(move(contract_addr));
         *(&mut move(contract_ref).value) = Self.factorial(move(n));
         return;
     }
 
     public getValue(contract_addr: address): u64 {
         let contract_ref: &mut R#Self.T;
-        
-        contract_ref = borrow_global<T>(move(contract_addr)); 
+
+        contract_ref = borrow_global<T>(move(contract_addr));
         return *&move(contract_ref).value;
     }
 }
@@ -41,7 +41,7 @@ import Transaction.Factorial;
 
 main() {
     let my_addr: address;
-    
+
     my_addr = get_txn_sender();
     Factorial.publish();
     Factorial.calculate(copy(my_addr), 5);

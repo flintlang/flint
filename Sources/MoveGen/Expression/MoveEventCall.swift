@@ -20,10 +20,10 @@ struct MoveEventCall {
     for (i, argument) in eventCall.arguments.enumerated() {
       let argument = MoveExpression(expression: argument.expression).rendered(functionContext: functionContext)
       functionContext.emit(.expression(.functionCall(FunctionCall("mstore", .literal(.num(memoryOffset)), argument))))
-      memoryOffset += functionContext.environment.size(of: types[i].rawType) * EVM.wordSize
+      memoryOffset += functionContext.environment.size(of: types[i].rawType) * 1 /* EVM.wordSize */
     }
 
-    let totalSize = types.reduce(0) { return $0 + functionContext.environment.size(of: $1.rawType) } * EVM.wordSize
+    let totalSize = types.reduce(0) { $0 + functionContext.environment.size(of: $1.rawType) } * 1 /* EVM.wordSize */
     let typeList = types.map { type in
       return "\(CanonicalType(from: type.rawType, environment: functionContext.environment)!)"
       }.joined(separator: ",")

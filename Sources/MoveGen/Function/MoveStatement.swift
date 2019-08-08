@@ -227,7 +227,7 @@ struct MoveReturnStatement {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     guard let expression = returnStatement.expression else {
-      return .inline("")
+      return .inline("return")
     }
 
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
@@ -245,7 +245,7 @@ struct MoveBecomeStatement {
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
                  sourceLocation: .DUMMY))
     let selfState: AST.Expression = .binaryExpression(
-      BinaryExpression(lhs: .self(Token(kind: .self, sourceLocation: sl)),
+      BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: sl)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: sl),
                        rhs: stateVariable))
 

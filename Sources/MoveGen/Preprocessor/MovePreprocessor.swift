@@ -16,18 +16,6 @@ public struct MovePreprocessor: ASTPass {
 
   public init() {}
 
-  public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
-    var structMember = structMember
-
-    /* if case .specialDeclaration(let specialDeclaration) = structMember,
-       specialDeclaration.isInit {
-      // Convert the initializer to a function.
-      structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
-    } */
-
-    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
-  }
-
   /// Returns assignment statements for all the properties which have been assigned default values.
   func defaultValueAssignments(in passContext: ASTPassContext) -> [Statement] {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -68,7 +56,8 @@ public struct MovePreprocessor: ASTPass {
     let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
-                                          enclosingType: passContext.enclosingTypeIdentifier!.name)
+                                          enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                          isContract: passContext.contractBehaviorDeclarationContext != nil)
     functionDeclaration.mangledIdentifier = name
 
     // Bind the implicit Libra value of the transaction to a variable.
@@ -113,13 +102,15 @@ public struct MovePreprocessor: ASTPass {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
               Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-      let contractAddressName: String = "_address_\(MoveSelf.selfName)"
-      let contractAddressIdentifier = Identifier(identifierToken: Token(kind: .identifier(contractAddressName),
-                                                         sourceLocation: functionDeclaration.sourceLocation))
+      let contractAddressIdentifier = Identifier(
+          identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
+                                 sourceLocation: functionDeclaration.sourceLocation)
+      )
       let parameter = Parameter(identifier: contractAddressIdentifier,
                                 type: Type(inferredType: .basicType(.address), identifier: contractAddressIdentifier),
                                 implicitToken: nil,
                                 assignedExpression: nil)
+
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
 
       let addressType: RawType = .basicType(.address)
@@ -203,6 +194,19 @@ public struct MovePreprocessor: ASTPass {
       return Statement.expression(.variableDeclaration(declaration))
     }
     functionDeclaration.body = declarations + deleteDeclarations(in: functionDeclaration.body)
+
+    // Add trailing return statement to all functions if none is present
+    if functionDeclaration.isVoid {
+      if let last: Statement = functionDeclaration.body.last,
+         case .returnStatement = last {} else {
+        functionDeclaration.body.append(.returnStatement(ReturnStatement(
+            returnToken: Token(kind: .return,
+                               sourceLocation: functionDeclaration.closeBraceToken.sourceLocation),
+            expression: nil
+        )))
+      }
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -227,10 +231,6 @@ public struct MovePreprocessor: ASTPass {
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
-    // No longer neccessary since during Verifier coding someone moves this in the main AST
-//    if specialDeclaration.isInit {
-//      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-//    }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
