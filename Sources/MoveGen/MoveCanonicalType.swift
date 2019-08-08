@@ -74,4 +74,19 @@ enum CanonicalType: CustomStringConvertible {
     case .struct(let name): return "V#\(name)"
     }
   }
+
+  public func render(functionContext: FunctionContext) -> MoveIR.`Type` {
+    switch self {
+    case .address: return .address
+    case .u64: return .u64
+    case .bool: return .bool
+    case .bytearray: return .bytearray
+    case .`struct`(let name): return .`struct`(name: "Self.\(name)")
+    case .resource(let name):
+      if functionContext.enclosingTypeName == name {
+        return .resource(name: "Self.T")
+      }
+      return .resource(name: "\(name).T")
+    }
+  }
 }
