@@ -32,13 +32,15 @@ struct MoveContractInitializer {
                              isInStructFunction: !isContractFunction)
 //                             isConstructor: true)
     return initializerDeclaration.explicitParameters.map {
-        MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
+      MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
   }
 
   var parameterCanonicalTypes: [CanonicalType] {
-    return initializerDeclaration.explicitParameters.map { CanonicalType(from: $0.type.rawType,
-                                                                         environment: environment)! }
+    return initializerDeclaration.explicitParameters.map {
+      CanonicalType(from: $0.type.rawType,
+                    environment: environment)!
+    }
   }
 
   /// The function's parameters and caller binding, as variable declarations in a `ScopeContext`.
@@ -78,10 +80,15 @@ struct MoveContractInitializer {
     ).rendered()
 
     return """
-    new(\(parameters)): R#Self.T {
-      \(body.indented(by: 2))
-    }
-    """
+           new(\(parameters)): R#Self.T {
+             \(body.indented(by: 2))
+           }
+
+           public publish() {
+             move_to_sender<T>(Self.new());
+             return;
+           }
+           """
   }
 }
 
@@ -142,11 +149,12 @@ struct MoveInitializerBody {
 
     while !declarations.isEmpty {
       let property: AST.VariableDeclaration = declarations.removeFirst()
+      let propertyType = CanonicalType(
+          from: property.type.rawType,
+          environment: environment
+      )!.render(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
-          MoveIR.VariableDeclaration((
-              MoveSelf.selfPrefix + property.identifier.name,
-              CanonicalType(from: property.type.rawType, environment: environment)!.irType
-          ))
+          MoveIR.VariableDeclaration((MoveSelf.selfPrefix + property.identifier.name, propertyType))
       )))
     }
 
@@ -157,8 +165,8 @@ struct MoveInitializerBody {
     functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
         "T",
         Dictionary(uniqueKeysWithValues: properties.map {
-              ($0.identifier.name, .identifier(MoveSelf.selfPrefix + $0.identifier.name))
-            })
+          ($0.identifier.name, .identifier(MoveSelf.selfPrefix + $0.identifier.name))
+        })
     ))))
     return functionContext.finalise()
   }

@@ -20,10 +20,15 @@ struct MoveStructInitializer {
   var `struct`: MoveStruct
 
   var moveType: MoveIR.`Type`? {
+    let fc = FunctionContext(environment: environment,
+                             scopeContext: scopeContext,
+                             enclosingTypeName: typeIdentifier.name,
+                             isInStructFunction: true)
+
     return CanonicalType(
         from: AST.Type(identifier: typeIdentifier).rawType,
         environment: environment
-    )?.irType
+    )?.render(functionContext: fc)
   }
 
   var parameterNames: [String] {
@@ -96,13 +101,6 @@ struct MoveStructInitializerBody {
     return declaration.scopeContext
   }
 
-  var moveType: MoveIR.`Type`? {
-    return CanonicalType(
-        from: AST.Type(identifier: typeIdentifier).rawType,
-        environment: environment
-    )?.irType
-  }
-
   init(declaration: SpecialDeclaration,
        typeIdentifier: AST.Identifier,
        environment: Environment,
@@ -121,6 +119,13 @@ struct MoveStructInitializerBody {
     return renderBody(declaration.body, functionContext: functionContext)
   }
 
+  func renderMoveType(functionContext: FunctionContext) -> MoveIR.`Type` {
+    return CanonicalType(
+        from: AST.Type(identifier: typeIdentifier).rawType,
+        environment: environment
+    )!.render(functionContext: functionContext)
+  }
+
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
                                                                           functionContext: FunctionContext) -> String
       where S.Element == AST.Statement, S.Index == Int {
@@ -130,10 +135,14 @@ struct MoveStructInitializerBody {
 
     while !declarations.isEmpty {
       let property: AST.VariableDeclaration = declarations.removeFirst()
+      let propertyType = CanonicalType(
+          from: property.type.rawType,
+          environment: environment
+      )!.render(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
           MoveIR.VariableDeclaration((
                                          MoveSelf.selfPrefix + property.identifier.name,
-                                         CanonicalType(from: property.type.rawType, environment: environment)!.irType
+                                         propertyType
                                      ))
       )))
     }
@@ -182,8 +191,9 @@ struct MoveStructInitializerBody {
 
     let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation)
         .rendered(functionContext: functionContext).description
+    let selfType = renderMoveType(functionContext: functionContext)
     functionContext.emit(
-        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, moveType!)))),
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, selfType)))),
         at: 0
     )
     functionContext.emit(.expression(.assignment(Assignment(selfName, constructor))))

@@ -23,8 +23,10 @@ struct MoveAssignment {
       if mangledName == rhsCode {
         return .noop
       }
-      let typeIR: MoveIR.`Type` = CanonicalType(from: variableDeclaration.type.rawType,
-                                                environment: functionContext.environment)!.irType
+      let typeIR: MoveIR.`Type` = CanonicalType(
+          from: variableDeclaration.type.rawType,
+          environment: functionContext.environment
+      )!.render(functionContext: functionContext)
       // FIXME any cannot be handled by MoveIR, please change
       return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, typeIR)))
     case .identifier(let identifier) where identifier.enclosingType == nil:

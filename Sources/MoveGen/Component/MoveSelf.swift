@@ -9,13 +9,16 @@ import Foundation
 import Lexer
 import MoveIR
 import Source
+import AST
 
 /// Generates code for a "self" expression.
 struct MoveSelf {
   var selfToken: Token
   var asLValue: Bool = false
+
   public static let selfName = "this"
   public static let selfPrefix = "__\(selfName)_"
+  public static let rawType = AST.RawType.userDefinedType("T")
 
   static func generate(sourceLocation: SourceLocation) -> MoveSelf {
     return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), asLValue: false)
