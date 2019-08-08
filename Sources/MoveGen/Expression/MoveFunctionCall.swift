@@ -33,10 +33,13 @@ struct MoveFunctionCall {
     }
 
     let args: [MoveIR.Expression] = functionCall.arguments.map({ argument in
-      return MoveExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
+      return MoveExpression(expression: argument.expression, asLValue: false)
+          .rendered(functionContext: functionContext)
     })
 
-    let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
+    // TODO please replace once module infrastructure has been implemented
+    // It's okay because all function calls are on the local modules
+    let identifier = "Self.\(functionCall.mangledIdentifier ?? functionCall.identifier.name)"
     return .functionCall(MoveIR.FunctionCall(identifier, args))
   }
 
