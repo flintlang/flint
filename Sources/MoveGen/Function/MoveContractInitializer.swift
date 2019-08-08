@@ -126,18 +126,7 @@ struct MoveInitializerBody {
                                                            scopeContext: scopeContext,
                                                            enclosingTypeName: typeIdentifier.name,
                                                            isConstructor: true)
-
-    // Assign a caller capaiblity binding to a local variable.
-    let callerBindingDeclaration: String
-    if let callerBinding = callerBinding {
-      callerBindingDeclaration = "let \(callerBinding.name.mangled) = get_txn_sender()\(Move.statementLineSeparator)"
-    } else {
-      callerBindingDeclaration = ""
-    }
-
-    let body = renderBody(declaration.body, functionContext: functionContext)
-
-    return "\(callerBindingDeclaration)\(body)"
+    return renderBody(declaration.body, functionContext: functionContext)
   }
 
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,

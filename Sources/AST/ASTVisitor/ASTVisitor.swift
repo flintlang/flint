@@ -107,7 +107,7 @@ public struct ASTVisitor {
                                          callerBinding: contractBehaviorDeclaration.callerBinding,
                                          callerProtections: contractBehaviorDeclaration.callerProtections)
 
-    var localVariables = [VariableDeclaration]()
+    var localVariables: [VariableDeclaration] = []
     if let callerBinding = contractBehaviorDeclaration.callerBinding {
       localVariables.append(VariableDeclaration(modifiers: [],
                                                 declarationToken: nil,
