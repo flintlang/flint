@@ -16,12 +16,6 @@ public struct MovePreprocessor: ASTPass {
 
   public init() {}
 
-  public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
-    var structMember = structMember
-
-    return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
-  }
-
   /// Returns assignment statements for all the properties which have been assigned default values.
   func defaultValueAssignments(in passContext: ASTPassContext) -> [Statement] {
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -199,6 +193,20 @@ public struct MovePreprocessor: ASTPass {
       return Statement.expression(.variableDeclaration(declaration))
     }
     functionDeclaration.body = declarations + deleteDeclarations(in: functionDeclaration.body)
+
+    // Add trailing return statement to all functions if none is present
+    if functionDeclaration.isVoid {
+      if let last: Statement = functionDeclaration.body.last,
+         case .returnStatement = last {} else {
+        print("\(#file):\(#line)", functionDeclaration.body.last)
+        functionDeclaration.body.append(.returnStatement(ReturnStatement(
+            returnToken: Token(kind: .return,
+                               sourceLocation: functionDeclaration.closeBraceToken.sourceLocation),
+            expression: nil
+        )))
+      }
+    }
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 

@@ -227,7 +227,7 @@ struct MoveReturnStatement {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     guard let expression = returnStatement.expression else {
-      return .inline("")
+      return .inline("return")
     }
 
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
