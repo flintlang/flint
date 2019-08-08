@@ -19,12 +19,6 @@ public struct MovePreprocessor: ASTPass {
   public func process(structMember: StructMember, passContext: ASTPassContext) -> ASTPassResult<StructMember> {
     var structMember = structMember
 
-    /* if case .specialDeclaration(let specialDeclaration) = structMember,
-       specialDeclaration.isInit {
-      // Convert the initializer to a function.
-      structMember = .functionDeclaration(specialDeclaration.asFunctionDeclaration)
-    } */
-
     return ASTPassResult(element: structMember, diagnostics: [], passContext: passContext)
   }
 
@@ -113,13 +107,15 @@ public struct MovePreprocessor: ASTPass {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
               Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-      let contractAddressName: String = "_address_\(MoveSelf.selfName)"
-      let contractAddressIdentifier = Identifier(identifierToken: Token(kind: .identifier(contractAddressName),
-                                                         sourceLocation: functionDeclaration.sourceLocation))
+      let contractAddressIdentifier = Identifier(
+          identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
+                                 sourceLocation: functionDeclaration.sourceLocation)
+      )
       let parameter = Parameter(identifier: contractAddressIdentifier,
                                 type: Type(inferredType: .basicType(.address), identifier: contractAddressIdentifier),
                                 implicitToken: nil,
                                 assignedExpression: nil)
+
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
 
       let addressType: RawType = .basicType(.address)
@@ -227,10 +223,6 @@ public struct MovePreprocessor: ASTPass {
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
-    // No longer neccessary since during Verifier coding someone moves this in the main AST
-//    if specialDeclaration.isInit {
-//      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-//    }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
