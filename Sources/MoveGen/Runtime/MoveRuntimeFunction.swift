@@ -47,6 +47,7 @@ struct MoveRuntimeFunctionDeclaration {
   """
   flint$send(_value: R#LibraCoin.T, _address: address) {
     LibraAccount.deposit(move(_address), move(_value));
+    return;
   }
   """
 
@@ -54,6 +55,7 @@ struct MoveRuntimeFunctionDeclaration {
   """
   flint$fatalError() {
     assert(false, 1);
+    return;
   }
   """
 
@@ -65,11 +67,11 @@ struct MoveRuntimeFunctionDeclaration {
 
     res = 1;
     i = 0;
-    while (i < e) {
-      res = res * b;
-      i = i + 1;
+    while (copy(i) < copy(e)) {
+      res = copy(res) * copy(b);
+      i = copy(i) + 1;
     }
-    return result;
+    return copy(res);
   }
   """
 
@@ -77,8 +79,8 @@ struct MoveRuntimeFunctionDeclaration {
   static let revertIfGreater =
   """
   flint$revertIfGreater(a: u64, b: u64): u64 {
-    assert(a <= b, 1);
-    return a;
+    assert(copy(a) <= move(b), 1);
+    return move(a);
   }
   """
 }
