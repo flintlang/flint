@@ -30,16 +30,19 @@ struct MoveContractInitializer {
                              scopeContext: scopeContext,
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
-//                             isConstructor: true)
     return initializerDeclaration.explicitParameters.map {
       MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
     }
   }
 
-  var parameterCanonicalTypes: [CanonicalType] {
+  var parameterIRTypes: [MoveIR.`Type`] {
+    let fc = FunctionContext(environment: environment,
+                             scopeContext: scopeContext,
+                             enclosingTypeName: typeIdentifier.name,
+                             isInStructFunction: !isContractFunction)
     return initializerDeclaration.explicitParameters.map {
       CanonicalType(from: $0.type.rawType,
-                    environment: environment)!
+                    environment: environment)!.render(functionContext: fc)
     }
   }
 
@@ -58,15 +61,9 @@ struct MoveContractInitializer {
   }
 
   func rendered() -> String {
-    /* let parameterSizes = initializerDeclaration.explicitParameters.map { environment.size(of: $0.type.rawType) }
-    let offsetsAndSizes = zip(parameterSizes.reversed().reduce((0, [Int]())) { (acc, element) in
-      let (size, sizes) = acc
-      let nextSize = size + element * EVM.wordSize
-      return (nextSize, sizes + [nextSize])
-    }.1.reversed(), parameterSizes)*/
 
-    let parameters = zip(parameterNames, parameterCanonicalTypes).map { param in
-      let (name, type): (String, CanonicalType) = param
+    let parameters = zip(parameterNames, parameterIRTypes).map { param in
+      let (name, type): (String, MoveIR.`Type`) = param
       return "\(name): \(type)"
     }.joined(separator: ", ")
 

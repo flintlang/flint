@@ -55,12 +55,12 @@ enum CanonicalType: CustomStringConvertible {
 
   public var description: String {
     switch self {
-    case .address: return "address"
-    case .u64: return "u64"
-    case .bool: return "bool"
-    case .bytearray: return "bytearray"
-    case .resource(let name): return "R#\(name)"
-    case .struct(let name): return "V#\(name)"
+    case .address: return "CanonicalType.address"
+    case .u64: return "CanonicalType.u64"
+    case .bool: return "CanonicalType.bool"
+    case .bytearray: return "CanonicalType.bytearray"
+    case .resource(let name): return "CanonicalType.R#\(name)"
+    case .struct(let name): return "CanonicalType.V#\(name)"
     }
   }
 

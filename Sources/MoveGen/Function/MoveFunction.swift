@@ -89,10 +89,13 @@ struct MoveFunction {
   }
 
   func signature(withReturn: Bool = true) -> String {
-    let doesReturn = functionDeclaration.signature.resultType != nil && withReturn
+    let functionContext: FunctionContext = FunctionContext(environment: environment,
+                                                           scopeContext: scopeContext,
+                                                           enclosingTypeName: typeIdentifier.name,
+                                                           isInStructFunction: !isContractFunction)
     let parametersString = zip(parameterNames, parameterCanonicalTypes).map { param in
       let (name, type): (String, CanonicalType) = param
-      return "\(name): \(type)"
+      return "\(name): \(type.render(functionContext: functionContext))"
     }.joined(separator: ", ")
     let modifiers = functionDeclaration.signature.modifiers
         .compactMap { (modifier: Token) -> String? in
@@ -101,15 +104,22 @@ struct MoveFunction {
       default: return nil
       }
     }.reduce("", +)
-    return "\(modifiers)\(name)(\(parametersString))\(doesReturn ? ": \(resultCanonicalType!)" : "")"
+    let returnType = functionDeclaration.signature.resultType != nil && withReturn
+        ? ": \(resultCanonicalType!.render(functionContext: functionContext))"
+        : ""
+    return "\(modifiers)\(name)(\(parametersString))\(returnType)"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.
   func mangledSignature() -> String {
+    let functionContext: FunctionContext = FunctionContext(environment: environment,
+                                                           scopeContext: scopeContext,
+                                                           enclosingTypeName: typeIdentifier.name,
+                                                           isInStructFunction: !isContractFunction)
     let name = functionDeclaration.identifier.name
     let parametersString = zip(parameterNames, parameterCanonicalTypes).map { param in
       let (name, type): (String, CanonicalType) = param
-      return "\(name): \(type)"
+      return "\(name): \(type.render(functionContext: functionContext))"
     }.joined(separator: ", ")
     return "\(name)(\(parametersString))"
   }
