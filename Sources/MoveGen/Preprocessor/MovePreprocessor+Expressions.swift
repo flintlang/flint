@@ -16,7 +16,6 @@ extension MovePreprocessor {
     var updatedContext = passContext
 
     if case .binaryExpression(let binaryExpression) = expression {
-
       if case .dot = binaryExpression.opToken,
         case .identifier(let lhsId) = binaryExpression.lhs,
         case .identifier(let rhsId) = binaryExpression.rhs,
@@ -90,14 +89,7 @@ extension MovePreprocessor {
 
     // Mangle initializer call.
     if environment.isInitializerCall(functionCall) {
-      // Remove the receiver as the first argument to find the original initializer declaration.
-      var initializerWithoutReceiver = functionCall
-      if passContext.functionDeclarationContext != nil || passContext.specialDeclarationContext != nil,
-        !initializerWithoutReceiver.arguments.isEmpty {
-        initializerWithoutReceiver.arguments.remove(at: 0)
-      }
-
-      functionCall.mangledIdentifier = mangledFunctionName(for: initializerWithoutReceiver, in: passContext)
+      functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
     } else {
       // Get the result type of the call.
       let declarationEnclosingType: RawTypeIdentifier

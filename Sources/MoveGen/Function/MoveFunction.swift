@@ -105,17 +105,21 @@ struct MoveFunction {
       }
     }.reduce("", +)
     let returnType = functionDeclaration.signature.resultType != nil && withReturn
-        ? ": \(resultCanonicalType!.render(functionContext: functionContext))" 
+        ? ": \(resultCanonicalType!.render(functionContext: functionContext))"
         : ""
     return "\(modifiers)\(name)(\(parametersString))\(returnType)"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.
   func mangledSignature() -> String {
+    let functionContext: FunctionContext = FunctionContext(environment: environment,
+                                                           scopeContext: scopeContext,
+                                                           enclosingTypeName: typeIdentifier.name,
+                                                           isInStructFunction: !isContractFunction)
     let name = functionDeclaration.identifier.name
     let parametersString = zip(parameterNames, parameterCanonicalTypes).map { param in
       let (name, type): (String, CanonicalType) = param
-      return "\(name): \(type)"
+      return "\(name): \(type.render(functionContext: functionContext))"
     }.joined(separator: ", ")
     return "\(name)(\(parametersString))"
   }
