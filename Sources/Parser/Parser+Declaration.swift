@@ -184,7 +184,7 @@ extension Parser {
       if first == .func {
         let decl = try parseFunctionDeclaration(attributes: attrs, modifiers: modifiers)
         members.append(.functionDeclaration(decl))
-      } else if first == .init || first == .fallback {
+      } else if first == .`init` || first == .fallback {
         let decl = try parseSpecialDeclaration(attributes: attrs, modifiers: modifiers)
         members.append(.specialDeclaration(decl))
       } else if first == .invariant {
@@ -278,7 +278,7 @@ extension Parser {
             FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
       return .functionSignatureDeclaration(signature)
-    } else if .init == declType {
+    } else if .`init` == declType {
       let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
       consumeNewLines()
 
@@ -298,7 +298,7 @@ extension Parser {
 
     while let first = currentToken?.kind {
       switch first {
-      case .func, .init, .fallback, .public, .visible, .punctuation(.at):
+      case .func, .`init`, .fallback, .public, .visible, .punctuation(.at):
         members.append(try parseContractBehaviorMember(enclosingType: contractIdentifier))
       case .punctuation(.closeBrace):
         return members
@@ -329,7 +329,7 @@ extension Parser {
             FunctionDeclaration(signature: signature, body: body, closeBraceToken: closeBraceToken))
       }
       return .functionSignatureDeclaration(signature)
-    } else if .init == declType || .fallback == declType {
+    } else if .`init` == declType || .fallback == declType {
       let signature = try parseSpecialSignatureDeclaration(attributes: attrs, modifiers: modifiers)
       consumeNewLines()
 
@@ -548,7 +548,7 @@ extension Parser {
 
   func parseSpecialSignatureDeclaration(attributes: [Attribute],
                                         modifiers: [Token]) throws -> SpecialSignatureDeclaration {
-    let specialToken: Token = try consume(anyOf: [.init, .fallback], or: .badDeclaration(at: latestSource))
+    let specialToken: Token = try consume(anyOf: [.`init`, .fallback], or: .badDeclaration(at: latestSource))
     let (parameters, closeBracketToken) = try parseParameters()
     let mutates = try parseMutates()
     let prePostConditions = try parsePrePostConditions()

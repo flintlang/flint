@@ -84,7 +84,7 @@ public struct StructDeclaration: ASTNode {
     let closeBraceToken = Token(kind: .punctuation(.closeBrace), sourceLocation: dummySourceLocation)
     let closeBracketToken = Token(kind: .punctuation(.closeBracket), sourceLocation: dummySourceLocation)
     let specialSignature =
-      SpecialSignatureDeclaration(specialToken: Token(kind: .init, sourceLocation: dummySourceLocation),
+      SpecialSignatureDeclaration(specialToken: Token(kind: .`init`, sourceLocation: dummySourceLocation),
                                   attributes: [],
                                   modifiers: [],
                                   mutates: [],

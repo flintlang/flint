@@ -50,7 +50,7 @@ public struct SpecialDeclaration: ASTNode {
   }
 
   public var isInit: Bool {
-    return signature.specialToken.kind == .init
+    return signature.specialToken.kind == .`init`
   }
   public var isFallback: Bool {
     return signature.specialToken.kind == .fallback

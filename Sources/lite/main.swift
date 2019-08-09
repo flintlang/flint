@@ -9,6 +9,7 @@ import Foundation
 import LiteSupport
 import Rainbow
 import Symbolic
+import Utils
 
 #if os(Linux)
   import Glibc
@@ -20,9 +21,8 @@ import Symbolic
 /// executable.
 // Thank you Harlan and Robert! (https://github.com/silt-lang/silt/blob/master/Sources/lite/SiltInvocation.swift)
 func findAdjacentBinary(_ name: String) -> URL? {
-  guard let path = SymbolInfo(address: #dsohandle)?.filename else { return nil }
-  let siltURL = path.deletingLastPathComponent()
-    .appendingPathComponent(name)
+  //guard let path = SymbolInfo(address: #dsohandle)?.filename else { return nil }
+  let siltURL = Path.getFullUrl(path: ".build/release/\(name)")
   guard FileManager.default.fileExists(atPath: siltURL.path) else { return nil }
   return siltURL
 }

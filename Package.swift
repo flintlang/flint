@@ -1,9 +1,12 @@
-// swift-tools-version:4.2
+// swift-tools-version:5.0
 
 import PackageDescription
 
 let package = Package(
   name: "flintc",
+  platforms: [
+    .macOS(.v10_14),
+  ],
   products: [
     .executable(
       name: "flintc",
@@ -23,18 +26,18 @@ let package = Package(
         "file-check",
       ]
     ),
-  ],
+  ], 
   dependencies: [
-    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
-    .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
-    .package(url: "https://github.com/kylef/Commander", from: "0.9.0"),
-    .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
-    .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
-    .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
+    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
+    .package(url: "https://github.com/onevcat/Rainbow.git", .branch("master")),
+    .package(url: "https://github.com/kylef/Commander", .branch("master")),
+    .package(url: "https://github.com/llvm-swift/Lite.git", .branch("master")),
+    .package(url: "https://github.com/llvm-swift/FileCheck.git", .branch("master")),
+    .package(url: "https://github.com/llvm-swift/Symbolic.git", .branch("master")),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
     .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
-    .package(url: "https://github.com/attaswift/BigInt.git", from: "4.0.0"),
-    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")
+    .package(url: "https://github.com/attaswift/BigInt.git", .branch("master")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .branch("master"))
   ],
   targets: [
     .target(
@@ -327,6 +330,7 @@ let package = Package(
           "LiteSupport",
           "Rainbow",
           "Symbolic",
+          "Utils"
       ]
     ),
     // MARK: file-check
