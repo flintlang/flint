@@ -9,7 +9,7 @@ Z3_SYSTEM_PATH = $(shell which z3)
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
 
 debug: generate-sources
-	swift build 
+	swift build
 	cp -r stdlib .build/debug/
 
 release: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE)
@@ -29,13 +29,14 @@ zip: release
 	rm flintc
 
 test: lint generate-mocks release
-	swift test 
+	sed -i -e "s/ as / as! /g" .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift
+	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 
 test-nogen: lint release
-	swift test 
+	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
