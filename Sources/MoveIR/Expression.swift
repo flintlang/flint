@@ -9,6 +9,7 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
   case functionCall(FunctionCall)
   case structConstructor(StructConstructor)
   case identifier(Identifier)
+  case transfer(Transfer)
   case literal(Literal)
   case catchable(value: Expression, success: Expression)
 
@@ -64,6 +65,8 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
       return operation.description
     case .assignment(let assign):
       return assign.description
+    case .transfer(let transfer):
+      return transfer.description
     }
   }
 
@@ -80,6 +83,7 @@ public indirect enum Expression: CustomStringConvertible, Throwing {
     case .inline: return "inline"
     case .catchable: return "catchable"
     case .structConstructor: return "structConstructor"
+    case .transfer: return "transfer"
     }
   }
 }

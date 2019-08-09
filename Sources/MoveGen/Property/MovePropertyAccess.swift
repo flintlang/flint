@@ -25,13 +25,13 @@ struct MovePropertyAccess {
       case .identifier(let propertyIdentifier) = rhs,
       environment.isEnumDeclared(enumIdentifier.name),
       let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
-      return MoveExpression(expression: propertyInformation.property.value!).rendered(functionContext: functionContext)
+      return MoveExpression(expression: propertyInformation.property.value!, asLValue: asLValue).rendered(functionContext: functionContext)
     }
     if let rhsId = rhs.enclosingIdentifier {
       if functionContext.isConstructor {
-        return MoveIdentifier(identifier: rhsId).rendered(functionContext: functionContext)
+        return MoveIdentifier(identifier: rhsId, asLValue: asLValue).rendered(functionContext: functionContext)
       }
-      let lhsExpr = MoveExpression(expression: lhs).rendered(functionContext: functionContext)
+      let lhsExpr = MoveExpression(expression: lhs, asLValue: false).rendered(functionContext: functionContext)
       return .operation(.access(lhsExpr, rhsId.name))
     }
     fatalError()

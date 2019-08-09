@@ -11,7 +11,7 @@ import Lexer
 
 /// Generates code for a function.
 struct MoveFunction {
-  // TODO Check if the returnVariableName field can be removed from the codebase
+  // TODO Remove if not eventually needed
   static let returnVariableName = "ret"
 
   var functionDeclaration: FunctionDeclaration
@@ -54,7 +54,7 @@ struct MoveFunction {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return functionDeclaration.explicitParameters.map {
-        MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
+        MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
     }
   }
 

@@ -31,7 +31,17 @@ struct MoveContractInitializer {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return initializerDeclaration.explicitParameters.map {
-      MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
+      MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
+    }
+  }
+
+  var parameterValues: [String] {
+    let fc = FunctionContext(environment: environment,
+                             scopeContext: scopeContext,
+                             enclosingTypeName: typeIdentifier.name,
+                             isInStructFunction: !isContractFunction)
+    return initializerDeclaration.explicitParameters.map {
+      MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc, forceMove: true).description
     }
   }
 
@@ -61,7 +71,6 @@ struct MoveContractInitializer {
   }
 
   func rendered() -> String {
-
     let parameters = zip(parameterNames, parameterIRTypes).map { param in
       let (name, type): (String, MoveIR.`Type`) = param
       return "\(name): \(type)"
@@ -81,8 +90,8 @@ struct MoveContractInitializer {
              \(body.indented(by: 2))
            }
 
-           public publish() {
-             move_to_sender<T>(Self.new());
+           public publish(\(parameters)) {
+             move_to_sender<T>(Self.new(\(parameterValues.joined(separator: ", "))));
              return;
            }
 
@@ -155,7 +164,7 @@ struct MoveInitializerBody {
     functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
         "T",
         Dictionary(uniqueKeysWithValues: properties.map {
-          ($0.identifier.name, .identifier(MoveSelf.selfPrefix + $0.identifier.name))
+          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.selfPrefix + $0.identifier.name))))
         })
     ))))
     return functionContext.finalise()

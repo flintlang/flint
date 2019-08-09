@@ -19,11 +19,11 @@ struct MoveSelf {
   public static let selfName = "this"
   public static let selfPrefix = "__\(selfName)_"
 
-  static func generate(sourceLocation: SourceLocation) -> MoveSelf {
-    return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), asLValue: false)
+  static func generate(sourceLocation: SourceLocation, asLValue: Bool = false) -> MoveSelf {
+    return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), asLValue: asLValue)
   }
 
-  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
+  func rendered(functionContext: FunctionContext, forceMove: Bool = false) -> MoveIR.Expression {
     guard case .`self` = selfToken.kind else {
       fatalError("Unexpected token \(selfToken.kind)")
     }
@@ -37,7 +37,13 @@ struct MoveSelf {
             """#)
       exit(1)
     }
-    return .identifier(MoveSelf.selfName)
-    // return .identifier(functionContext.isInStructFunction ? "_flintSelf" : (asLValue ? "0" : ""))
+
+    if asLValue {
+      return .identifier(MoveSelf.selfName)
+    } else if !functionContext.isInStructFunction || forceMove {
+        return .transfer(.move(.identifier(MoveSelf.selfName)))
+    } else {
+      return .transfer(.copy(.identifier(MoveSelf.selfName)))
+    }
   }
 }

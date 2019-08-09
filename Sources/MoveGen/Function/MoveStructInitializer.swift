@@ -38,7 +38,7 @@ struct MoveStructInitializer {
                              isInStructFunction: true)
 
     return initializerDeclaration.explicitParameters.map {
-      MoveIdentifier(identifier: $0.identifier).rendered(functionContext: fc).description
+      MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
     }
   }
 
@@ -120,6 +120,7 @@ struct MoveStructInitializerBody {
     let functionContext: FunctionContext = FunctionContext(environment: environment,
                                                            scopeContext: scopeContext,
                                                            enclosingTypeName: typeIdentifier.name,
+                                                           isInStructFunction: true,
                                                            isConstructor: true)
     return renderBody(declaration.body, functionContext: functionContext)
   }
@@ -183,7 +184,7 @@ struct MoveStructInitializerBody {
     let constructor = Expression.structConstructor(StructConstructor(
         typeIdentifier.name,
         Dictionary(uniqueKeysWithValues: properties.map {
-          ($0.identifier.name, .identifier(MoveSelf.selfPrefix + $0.identifier.name))
+          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.selfPrefix + $0.identifier.name))))
         })
     ))
 
@@ -194,7 +195,7 @@ struct MoveStructInitializerBody {
 
     functionContext.isConstructor = false
 
-    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation)
+    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation, asLValue: true)
         .rendered(functionContext: functionContext).description
     let selfType = renderMoveType(functionContext: functionContext)
     functionContext.emit(
@@ -208,7 +209,7 @@ struct MoveStructInitializerBody {
     }
     functionContext.emit(.return(
         MoveSelf.generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
-            .rendered(functionContext: functionContext)
+            .rendered(functionContext: functionContext, forceMove: true)
     ))
     return functionContext.finalise()
   }

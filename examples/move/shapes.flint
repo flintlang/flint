@@ -6,6 +6,10 @@ struct Rectangle {
     self.width = width
     self.height = height
   }
+
+  public func diagonal() -> Int {
+    return (width ** 2 + height ** 2) ** 0
+  }
 }
 
 contract Shapes {

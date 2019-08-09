@@ -22,21 +22,22 @@ struct MoveWrapperFunction {
     let callerCheck = MoveCallerProtectionChecks.init(callerProtections: function.callerProtections, revert: false)
     let callerCode = callerCheck.rendered(enclosingType: enclosingType, environment: function.environment)
     let functionCall = function.signature(withReturn: false)
+    let MoveFunction_returnVariableName = "ret"
 
-    let invalidCall = hard ? "revert(0, 0)" : "\(MoveFunction.returnVariableName) := 0"
+    let invalidCall = hard ? "revert(0, 0)" : "\(MoveFunction_returnVariableName) := 0"
 
-    var returnSignature = "-> \(MoveFunction.returnVariableName) "
+    var returnSignature = "-> \(MoveFunction_returnVariableName) "
 
     let validCall: String
     if hard, function.functionDeclaration.isVoid {
       validCall = functionCall
       returnSignature = ""
     } else if !hard, !function.functionDeclaration.isVoid {
-      validCall = "\(MoveFunction.returnVariableName) := \(functionCall)\n    \(MoveFunction.returnVariableName) := 1"
+      validCall = "\(MoveFunction_returnVariableName) := \(functionCall)\n    \(MoveFunction_returnVariableName) := 1"
     } else if hard {
-      validCall = "\(MoveFunction.returnVariableName) := \(functionCall)"
+      validCall = "\(MoveFunction_returnVariableName) := \(functionCall)"
     } else {
-      validCall = "\(functionCall)\n    \(MoveFunction.returnVariableName) := 1"
+      validCall = "\(functionCall)\n    \(MoveFunction_returnVariableName) := 1"
     }
 
     return """

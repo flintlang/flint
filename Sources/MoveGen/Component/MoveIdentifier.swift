@@ -18,7 +18,7 @@ struct MoveIdentifier {
     self.asLValue = asLValue
   }
 
-  func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
+  func rendered(functionContext: FunctionContext, forceMove: Bool = false) -> MoveIR.Expression {
     if identifier.enclosingType != nil {
       if functionContext.isConstructor {
         return .identifier(MoveSelf.selfPrefix + identifier.name)
@@ -31,9 +31,23 @@ struct MoveIdentifier {
       }
     }
     if identifier.isSelf {
-      return MoveSelf(selfToken: identifier.identifierToken, asLValue: false)
+      return MoveSelf(selfToken: identifier.identifierToken, asLValue: asLValue)
           .rendered(functionContext: functionContext)
     }
-    return .identifier(identifier.name.mangled)
+
+    let irIdentifier = MoveIR.Expression.identifier(identifier.name.mangled)
+
+    if asLValue {
+      return irIdentifier
+    } else {
+      let rawType: RawType? = functionContext.scopeContext.type(for: identifier.name)
+      if (rawType?.isCurrencyType ?? false)
+         || functionContext.environment.isContractDeclared(rawType?.name ?? "")
+         || forceMove {
+        return MoveIR.Expression.transfer(.move(irIdentifier))
+      } else {
+        return MoveIR.Expression.transfer(.copy(irIdentifier))
+      }
+    }
   }
 }
