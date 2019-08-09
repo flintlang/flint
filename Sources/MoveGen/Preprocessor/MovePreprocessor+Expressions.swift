@@ -41,7 +41,6 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
-
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
       let sourceLocation = binaryExpression.op.sourceLocation
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
@@ -107,7 +106,9 @@ extension MovePreprocessor {
       functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
 
       // If it returns a dynamic type, pass the receiver as the first parameter.
-      if passContext.environment!.isStructDeclared(declarationEnclosingType) {
+      let environment = passContext.environment!
+      if environment.isStructDeclared(declarationEnclosingType)
+        || environment.isContractDeclared(declarationEnclosingType) {
         if !isGlobalFunctionCall {
           let receiver = constructExpression(from: receiverTrail)
           let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand),

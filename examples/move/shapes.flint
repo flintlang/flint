@@ -23,4 +23,12 @@ Shapes :: caller <- (any) {
   public func area() -> Int {
     return rectangle.width * rectangle.height
   }
+
+  public func semiPerimeter() -> Int {
+    return rectangle.width + rectangle.height
+  } 
+
+  public func perimeter() -> Int {
+    return 2 * semiPerimeter()
+  }
 }

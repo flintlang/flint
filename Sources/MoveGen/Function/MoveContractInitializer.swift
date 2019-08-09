@@ -85,6 +85,10 @@ struct MoveContractInitializer {
              move_to_sender<T>(Self.new());
              return;
            }
+
+           public get(addr: address): &mut R#Self.T {
+             return borrow_global<T>(move(addr));
+           }
            """
   }
 }
