@@ -75,10 +75,11 @@ public struct TraitDeclarationContext {
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
-  public var innerDeclarations: [VariableDeclaration] = []
+  public var innerDeclarations: [VariableDeclaration]
 
-  public init(declaration: FunctionDeclaration) {
+  public init(declaration: FunctionDeclaration, innerDeclarations: [VariableDeclaration] = []) {
     self.declaration = declaration
+    self.innerDeclarations = innerDeclarations
   }
 
   public var isMutating: Bool {
@@ -89,9 +90,11 @@ public struct FunctionDeclarationContext {
 /// Contextual information used when visiting statements in an initializer.
 public struct SpecialDeclarationContext {
   public var declaration: SpecialDeclaration
+  public var innerDeclarations: [VariableDeclaration]
 
-  public init(declaration: SpecialDeclaration) {
+  public init(declaration: SpecialDeclaration, innerDeclarations: [VariableDeclaration] = []) {
     self.declaration = declaration
+    self.innerDeclarations = innerDeclarations
   }
 }
 

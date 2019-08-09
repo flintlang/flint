@@ -11,10 +11,11 @@ extension MovePreprocessor {
   public func process(variableDeclaration: VariableDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
-    if passContext.functionDeclarationContext != nil {
+    if passContext.inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
       passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
 
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -102,15 +103,13 @@ extension MovePreprocessor {
        let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
        functionDeclaration.body.insert(selfAssignmentStmt, at: 0)*/
       let parameter = constructThisParameter(
-        // FIXME this type causes a fatal error
-        //type: .inoutType(.selfType),
         type: .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
 
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
         functionDeclaration.body.insert(
-          gernerateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+          generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
           at: 0)
       }
     }
@@ -141,6 +140,17 @@ extension MovePreprocessor {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func process(specialDeclaration: SpecialDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
+    var specialDeclaration = specialDeclaration
+    if let callerBindingIdentifier = passContext.contractBehaviorDeclarationContext?.callerBinding {
+      specialDeclaration.body.insert(
+        generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+        at: 0)
+    }
+    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(specialDeclaration: SpecialDeclaration,
                           passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
@@ -149,7 +159,7 @@ extension MovePreprocessor {
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  private func gernerateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
+  private func generateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
     let addressType: RawType = .basicType(.address)
     let callerBindingAssignment = BinaryExpression(
       lhs: .identifier(callerBindingIdentifier),

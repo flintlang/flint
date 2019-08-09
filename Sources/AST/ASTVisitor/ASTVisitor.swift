@@ -643,7 +643,10 @@ public struct ASTVisitor {
     processResult.element.signature = processResult.combining(visit(processResult.element.signature,
                                                                     passContext: processResult.passContext))
 
-    let functionDeclarationContext = FunctionDeclarationContext(declaration: functionDeclaration)
+    let functionDeclarationContext = FunctionDeclarationContext(
+        declaration: functionDeclaration,
+        innerDeclarations: passContext.scopeContext?.localVariables ?? []
+    )
 
     processResult.passContext.functionDeclarationContext = functionDeclarationContext
 
@@ -719,7 +722,10 @@ public struct ASTVisitor {
     processResult.element.signature = processResult.combining(visit(processResult.element.signature,
                                                                     passContext: processResult.passContext))
 
-    let specialDeclarationContext = SpecialDeclarationContext(declaration: specialDeclaration)
+    let specialDeclarationContext = SpecialDeclarationContext(
+        declaration: specialDeclaration,
+        innerDeclarations: passContext.scopeContext?.localVariables ?? []
+    )
     processResult.passContext.specialDeclarationContext = specialDeclarationContext
 
     let functionDeclaration = specialDeclaration.asFunctionDeclaration
@@ -730,6 +736,8 @@ public struct ASTVisitor {
       newBody.append(processResult.combining(visit(statement, passContext: processResult.passContext)))
     }
     processResult.element.body = newBody
+    let declarations = processResult.passContext.specialDeclarationContext!.innerDeclarations
+    processResult.passContext.scopeContext?.localVariables = declarations
     processResult.passContext.specialDeclarationContext = nil
 
     let postProcessResult = pass.postProcess(specialDeclaration: processResult.element,

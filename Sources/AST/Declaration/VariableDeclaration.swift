@@ -58,7 +58,7 @@ public struct VariableDeclaration: ASTNode {
 
   public func assignment(to: AST.Expression) -> Expression {
     return Expression.binaryExpression(
-        BinaryExpression(lhs: .identifier(identifier),
+        BinaryExpression(lhs: identifier.isSelf ? .`self`(identifier.identifierToken) : .identifier(identifier),
                          op: Token(kind: .punctuation(.equal), sourceLocation: self.sourceLocation),
                          rhs: to)
     )

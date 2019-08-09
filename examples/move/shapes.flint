@@ -14,10 +14,13 @@ contract Shapes {
 
 Shapes :: caller <- (any) {
   public init(rectangle: Int) {
+    var y: Bool
     self.rectangle = Rectangle(
         width: 2 * rectangle,
         height: rectangle
     )
+    let x: Bool = true
+    y = true
   }
 
   public func area() -> Int {
