@@ -53,10 +53,11 @@ public struct IRPreprocessor: ASTPass {
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
 
-    if passContext.functionDeclarationContext != nil {
+    if passContext.inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
       passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
 
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)

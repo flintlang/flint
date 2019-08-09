@@ -89,6 +89,7 @@ public struct FunctionDeclarationContext {
 /// Contextual information used when visiting statements in an initializer.
 public struct SpecialDeclarationContext {
   public var declaration: SpecialDeclaration
+  public var innerDeclarations: [VariableDeclaration] = []
 
   public init(declaration: SpecialDeclaration) {
     self.declaration = declaration

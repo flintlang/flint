@@ -54,6 +54,7 @@ public class CallGraphGenerator: ASTPass {
       // We're in a function. Record the local variable declaration.
       updatedContext.scopeContext?.localVariables.append(variableDeclaration)
       updatedContext.functionDeclarationContext?.innerDeclarations.append(variableDeclaration)
+      updatedContext.specialDeclarationContext?.innerDeclarations.append(variableDeclaration)
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: updatedContext)
   }

@@ -30,6 +30,7 @@ extension MovePreprocessor {
          case .variableDeclaration(let variableDeclaration) = binaryExpression.lhs {
         expression = variableDeclaration.assignment(to: binaryExpression.rhs)
         updatedContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+        updatedContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
         updatedContext.scopeContext?.localVariables += [variableDeclaration]
       }
     }

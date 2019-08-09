@@ -22,6 +22,7 @@ public struct EnclosingTypeAssigner: ASTPass {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
       passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }

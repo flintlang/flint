@@ -730,6 +730,8 @@ public struct ASTVisitor {
       newBody.append(processResult.combining(visit(statement, passContext: processResult.passContext)))
     }
     processResult.element.body = newBody
+    let declarations = processResult.passContext.specialDeclarationContext!.innerDeclarations
+    processResult.passContext.scopeContext?.localVariables = declarations
     processResult.passContext.specialDeclarationContext = nil
 
     let postProcessResult = pass.postProcess(specialDeclaration: processResult.element,
