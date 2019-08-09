@@ -25,7 +25,8 @@ struct MovePropertyAccess {
       case .identifier(let propertyIdentifier) = rhs,
       environment.isEnumDeclared(enumIdentifier.name),
       let propertyInformation = environment.property(propertyIdentifier.name, enumIdentifier.name) {
-      return MoveExpression(expression: propertyInformation.property.value!, asLValue: asLValue).rendered(functionContext: functionContext)
+      return MoveExpression(expression: propertyInformation.property.value!, asLValue: asLValue)
+          .rendered(functionContext: functionContext)
     }
     if let rhsId = rhs.enclosingIdentifier {
       if functionContext.isConstructor {
