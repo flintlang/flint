@@ -234,15 +234,7 @@ struct MoveReturnStatement {
       = .init(name: MoveFunction.returnVariableName, sourceLocation: returnStatement.sourceLocation)
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
     functionContext.emit(.expression(.assignment(Assignment(returnVariableIdentifier.name, renderedExpression))))
-    let scopeContext = functionContext.scopeContext
-    let referencesToRelease: [AST.Identifier] = scopeContext.parameters
-      .filter {$0.isInout}
-      .map {$0.identifier}
-    referencesToRelease.forEach { reference in
-      let referenceExpression: MoveIR.Expression
-        = MoveIdentifier(identifier: reference).rendered(functionContext: functionContext, forceMove: true)
-      functionContext.emit(.inline("release(\(referenceExpression))"))
-    }
+    functionContext.emitReferencesRelease()
     return .inline("return move(\(returnVariableIdentifier.name))")
   }
 }

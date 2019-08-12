@@ -47,7 +47,7 @@ public struct MovePreprocessor: ASTPass {
   func constructThisParameter(type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .`self`, sourceLocation: sourceLocation))
     return Parameter(identifier: identifier,
-                     type: Type(inferredType: type,
+                     type: Type(inferredType: .inoutType(type),
                                 identifier: identifier),
                      implicitToken: nil,
                      assignedExpression: nil)

@@ -146,4 +146,15 @@ class FunctionContext: CustomStringConvertible {
         }
         """
   }
+  
+  public func emitReferencesRelease() {
+    let referencesToRelease: [AST.Identifier] = scopeContext.parameters
+      .filter {$0.isInout}
+      .map {$0.identifier}
+    referencesToRelease.forEach { reference in
+      let referenceExpression: MoveIR.Expression
+        = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
+      self.emit(.inline("release(\(referenceExpression))"))
+      }
+  }
 }

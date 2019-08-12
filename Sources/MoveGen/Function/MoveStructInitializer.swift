@@ -207,10 +207,12 @@ struct MoveStructInitializerBody {
       let statement: AST.Statement = statements.removeFirst()
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
-    functionContext.emit(.return(
-        MoveSelf.generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
-            .rendered(functionContext: functionContext, forceMove: true)
-    ))
+    
+    functionContext.emitReferencesRelease()
+    let selfExpression: MoveIR.Expression = MoveSelf
+      .generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
+      .rendered(functionContext: functionContext, forceMove: true)
+    functionContext.emit(.return(selfExpression))
     return functionContext.finalise()
   }
 }
