@@ -70,7 +70,7 @@ extension MovePreprocessor {
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       // For struct functions, add `flintSelf` to the beginning of the parameters list.
       let parameter = constructThisParameter(
-        type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
+        type: .userDefinedType(structDeclarationContext.structIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,

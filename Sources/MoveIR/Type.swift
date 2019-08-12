@@ -5,7 +5,7 @@
 //  Created by Aurel Bílý on 12/26/18.
 //
 
-public enum Type: CustomStringConvertible {
+public indirect enum Type: CustomStringConvertible {
   case bool
   case bytearray
   case u64
@@ -13,6 +13,7 @@ public enum Type: CustomStringConvertible {
   case `struct`(name: String)
   case resource(name: String)
   case any
+  case mutableReference(to: Type)
 
   public var description: String {
     switch self {
@@ -21,7 +22,8 @@ public enum Type: CustomStringConvertible {
     case .u64: return "u64"
     case .address: return "address"
     case .`struct`(let name): return "V#\(name)"
-    case .resource(let name): return "&mut R#\(name)"
+    case .resource(let name): return "R#\(name)"
+    case .mutableReference(let to): return "&mut \(to)"
     case .any: return "__UnknownAnyType<PleaseSee:MoveIR/Type.swift>"
     }
   }
