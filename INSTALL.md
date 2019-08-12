@@ -40,7 +40,7 @@ echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 In your terminal, run the following commands
 ```bash
 # Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 # No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
@@ -55,7 +55,7 @@ make
 ## Docker
 To run the environment without doing any package installations:
 ```bash
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 sudo docker build -t "flint_docker" .
 ### ---------------------------------------------- ###
