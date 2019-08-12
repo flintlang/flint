@@ -227,7 +227,7 @@ struct MoveReturnStatement {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     guard let expression = returnStatement.expression else {
-      functionContext.emitReferencesRelease()
+      functionContext.emitReleaseReferences()
       return .inline("return")
     }
 
@@ -235,7 +235,7 @@ struct MoveReturnStatement {
       = .init(name: MoveFunction.returnVariableName, sourceLocation: returnStatement.sourceLocation)
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
     functionContext.emit(.expression(.assignment(Assignment(returnVariableIdentifier.name, renderedExpression))))
-    functionContext.emitReferencesRelease()
+    functionContext.emitReleaseReferences()
     return .inline("return move(\(returnVariableIdentifier.name))")
   }
 }

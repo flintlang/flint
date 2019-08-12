@@ -34,6 +34,10 @@ class FunctionContext: CustomStringConvertible {
   /// Fresh variable counter.
   private var counter: Int
 
+  var selfType: RawType? {
+    return scopeContext.type(for: "self") // FIXME TODO
+  }
+
   init(environment: Environment,
        scopeContext: ScopeContext,
        enclosingTypeName: String,
@@ -153,7 +157,7 @@ class FunctionContext: CustomStringConvertible {
         """
   }
 
-  public func emitReferencesRelease() {
+  public func emitReleaseReferences() {
     let referencesToRelease: [AST.Identifier] = scopeContext.parameters
         .filter { $0.isInout }
         .map { $0.identifier }

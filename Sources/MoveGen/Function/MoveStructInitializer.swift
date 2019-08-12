@@ -189,7 +189,7 @@ struct MoveStructInitializerBody {
     ))
 
     guard !statements.isEmpty else {
-      functionContext.emitReferencesRelease()
+      functionContext.emitReleaseReferences()
       functionContext.emit(.return(constructor))
       return functionContext.finalise()
     }
@@ -209,7 +209,7 @@ struct MoveStructInitializerBody {
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
 
-    functionContext.emitReferencesRelease()
+    functionContext.emitReleaseReferences()
     let selfExpression: MoveIR.Expression = MoveSelf
         .generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
         .rendered(functionContext: functionContext, forceMove: true)

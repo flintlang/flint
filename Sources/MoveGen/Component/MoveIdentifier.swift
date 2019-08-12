@@ -37,14 +37,16 @@ struct MoveIdentifier {
 
     let irIdentifier = MoveIR.Expression.identifier(identifier.name.mangled)
 
-    if case .left = position {
+    if forceMove {
+      return .transfer(.move(irIdentifier))
+    } else if position == .left {
       return irIdentifier
+    } else if position == .accessed {
+      return .operation(.dereference(.operation(.mutableReference(
+          .transfer(.copy(.identifier(MoveSelf.selfName)))
+      ))))
     } else {
-      if forceMove {
-        return .transfer(.move(irIdentifier))
-      } else {
-        return .transfer(.copy(irIdentifier))
-      }
+      return .transfer(.copy(irIdentifier))
     }
   }
 }

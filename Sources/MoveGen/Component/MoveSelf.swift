@@ -42,8 +42,7 @@ struct MoveSelf {
       return .identifier(MoveSelf.selfName)
     } else if forceMove {
       return .transfer(.move(.identifier(MoveSelf.selfName)))
-    } else if /* !functionContext.isInStructFunction, */
-              case .accessed = position {
+    } else if position == .accessed {
       return .operation(.dereference(.operation(.mutableReference(
           .transfer(.copy(.identifier(MoveSelf.selfName)))
       ))))
