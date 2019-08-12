@@ -1,18 +1,9 @@
 contract Events {
-  event eventA {
-    let addr: Address
-    let x: Int
-  }
+  event eventA (addr: Address, x: Int)
 
-  event eventB {
-    let addr: Address
-    let y: Int
-  }
+  event eventB (addr: Address, y: Int)
 
-  event eventWithDefault {
-    let addr: Address
-    let value: Int = 40
-  }
+  event eventWithDefault (addr: Address, value: Int = 40)
 }
 
 Events :: caller <- (any) {

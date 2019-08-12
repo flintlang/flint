@@ -43,8 +43,8 @@ public struct DictionaryLiteral: ASTNode {
   }
 
   public struct Entry: Equatable, CustomStringConvertible {
-    var key: Expression
-    var value: Expression
+    public var key: Expression
+    public var value: Expression
 
     public init(key: Expression, value: Expression) {
       self.key = key

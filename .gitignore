@@ -4,14 +4,57 @@
 /Packages
 /*.xcodeproj
 /node_modules
+Sources.old
+/*.backup
+.idea
+venv
+/.vscode
+/temp
 
 *.sol
 !sol_emitter.sol
 !sol_external.sol
 *.swp
 
+utils/testRunner/main.sol
+utils/testRunner/test.js
+utils/testRunner/*.bin
+utils/testRunner/node_modules/*
+
+utils/gasEstimator/main.sol
+utils/gasEstimator/test.js
+utils/gasEstimator/*.bin
+utils/gasEstimator/node_modules/
+
+utils/repl/main.sol
+utils/repl/contract.json
+utils/repl/test.js
+utils/repl/*.bin
+utils/repl/node_modules/*
+utils/repl/log.txt
+utils/repl/result.txt
+utils/repl/error.txt
+utils/repl/event_result.txt
+utils/repl/gen_addr.txt
+
+utils/coverage/contract.json
+utils/coverage/// swift-tools-version:5.0address.txt
+utils/coverage/counts.json
+utils/coverage/function.json
+utils/coverage/branch.json
+utils/coverage/function_to_line.json
+utils/coverage/statements.json
+utils/coverage/coverage.info
+utils/coverage/html/*
+utils/coverage/node_modules/*
+
+utils/block/keystore/*
+utils/block/geth/*
+utils/block/go-ethereum/*
+
 bin/
 contracts/
 build/
 
 *.generated.swift
+Package.resolved

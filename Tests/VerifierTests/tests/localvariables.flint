@@ -1,0 +1,70 @@
+//VERIFY-CHECK
+contract LocalVariables {
+    var ten: Int = 10
+    var js: [Int]
+    var ks: Int[4]
+}
+
+LocalVariables :: (any) {
+
+  public init() {
+    js = []
+    ks = [1,2,3,4]
+  }
+
+  public func localVariables() {
+    // Test that it is known that global arrays cannot be size < 0
+    assert(js.size >= 0)
+    var i: Int = 10
+    let j: Int = 20
+  }
+
+  public func loop()
+    mutates (js)
+  {
+    var k: Int = 5
+    js[0] = 0
+
+    for let j: Int in js {
+      k += j
+    }
+  }
+
+  public func scoping()
+    mutates (ten)
+  {
+    var js: Int = 0
+    js = 6
+    let j: Int = self.ten
+    self.ten += 5
+  }
+
+  public func returnTest1() -> Int {
+    return 0
+  }
+
+  public func returnTest2() -> Int {
+    let i: Int = 10
+    return i
+  }
+
+  public func returnTest3(para: Int) -> Int {
+    return para
+  }
+
+  func outOfBoundsAccess() {
+    //Checking oob local variable
+    var i: Int[4] = [1,2,3,4]
+    assert (i.size >= 0)
+    assert (i.size == 4)
+
+    //VERIFY-FAIL
+    let j: Int = i[5]
+  }
+
+  func outOfBoundsAccess2() -> Int {
+    //Checking oob global variable
+    //VERIFY-FAIL
+    return ks[4]
+  }
+}

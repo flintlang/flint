@@ -1,14 +1,19 @@
 contract Dictionary {
-  var storage: [Address: Int] = [:]
+  var storage: [Address: Int]
   var foo: Int = 0
-  var storage2: [Address: Int] = [:]
+  var storage2: [Address: Int]
   var bar: Int = 0
 }
 
 Dictionary :: (any) {
-  public init() {}
+  public init() {
+    self.storage = [:]
+    self.storage2 = [:]
+  }
 
-  public mutating func write(addr: Address, value: Int) {
+  public func write(addr: Address, value: Int)
+    mutates (storage)
+  {
     storage[addr] = value
   }
 
@@ -16,7 +21,9 @@ Dictionary :: (any) {
     return storage[addr]
   }
 
-  public mutating func write2(addr: Address, value: Int) {
+  public func write2(addr: Address, value: Int)
+    mutates (storage2)
+  {
     storage2[addr] = value
   }
 
@@ -28,7 +35,9 @@ Dictionary :: (any) {
     return foo
   }
 
-  public mutating func setFoo(val: Int) {
+  public func setFoo(val: Int)
+    mutates (foo)
+  {
     foo = val
   }
 
@@ -36,7 +45,9 @@ Dictionary :: (any) {
     return bar
   }
 
-  public mutating func setBar(val: Int) {
+  public func setBar(val: Int)
+    mutates (bar)
+  {
     bar = val
   }
 }

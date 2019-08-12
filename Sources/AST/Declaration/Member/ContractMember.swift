@@ -10,9 +10,12 @@ import Source
 ///
 /// - variableDeclaration: The declaration of a variable.
 /// - eventDeclaration: The declaration of an event.
+/// - invariantDeclaration: The declaration of an invariant.
 public enum ContractMember: ASTNode {
   case variableDeclaration(VariableDeclaration)
   case eventDeclaration(EventDeclaration)
+  case invariantDeclaration(Expression)
+  case holisticDeclaration(Expression)
 
   // MARK: - ASTNode
   public var sourceLocation: SourceLocation {
@@ -21,6 +24,10 @@ public enum ContractMember: ASTNode {
       return variableDeclaration.sourceLocation
     case .eventDeclaration(let eventDeclaration):
       return eventDeclaration.sourceLocation
+    case .invariantDeclaration(let invariantDeclaration):
+      return invariantDeclaration.sourceLocation
+    case .holisticDeclaration(let holisticDeclaration):
+      return holisticDeclaration.sourceLocation
     }
   }
 
@@ -30,6 +37,10 @@ public enum ContractMember: ASTNode {
       return variableDeclaration.description
     case .eventDeclaration(let eventDeclaration):
       return eventDeclaration.description
+    case .invariantDeclaration(let invariantDeclaration):
+      return invariantDeclaration.description
+    case .holisticDeclaration(let holisticDeclaration):
+      return holisticDeclaration.description
     }
   }
 }

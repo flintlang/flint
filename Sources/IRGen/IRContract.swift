@@ -11,6 +11,7 @@ import AST
 struct IRContract {
 
   static var stateVariablePrefix = "flintState$"
+  static var reentrancyProtectorValue = 10000
 
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]

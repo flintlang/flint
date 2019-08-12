@@ -5,6 +5,7 @@ contract Fallback {
 Fallback :: (any) {
   public init() {}
 
+  // Tranlsation into Boogie of fallback functions not yet implemented
   public fallback() {
     count += 1
     assert(true)

@@ -21,25 +21,25 @@ public init() {} // expected-error {{Return from initializer without initializin
 }
 
 TypeStates @(any) :: (any) {
-  public mutating func foo() {
+  public func foo() mutates (self) {
     become Alpha // expected-error {{State not defined for contract 'TypeStates'}}
                  // expected-warning@-1 {{Only final become will change state}}
     become State1
   }
 
-  public mutating func bar() {
+  public func bar() mutates (any) {
     var x: Int = 0
     become State1
     x = 2 // expected-warning {{Code after return/become will never be executed}}
   }
 
-  public mutating func returnVar() -> Int {
+  public func returnVar() -> Int mutates (any) {
     var x: Int = 42
     return x
     become State2
   }
 
-  public mutating func returnVar2() -> Int {
+  public func returnVar2() -> Int mutates (any) {
     var x: Int = 32
     become State1 // expected-error {{Cannot become before a return}}
     return x
@@ -47,7 +47,7 @@ TypeStates @(any) :: (any) {
 }
 
 TypeStates @(State1) :: (any) {
-  public mutating func becomeState2() {
+  public func becomeState2() mutates (any) {
     become State2
   }
 
@@ -62,7 +62,7 @@ TypeStates @(State1) :: (any) {
 }
 
 TypeStates @(State2, State3) :: (any) {
-  public mutating func becomeState3() {
+  public func becomeState3() mutates (any) {
     become State3
   }
 }

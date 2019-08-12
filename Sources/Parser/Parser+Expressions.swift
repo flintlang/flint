@@ -29,6 +29,12 @@ extension Parser {
       return .inoutExpression(try parseInoutExpression())
     }
 
+    // Try to parse a returns expression (e.g. returns 1+1)
+    if case .returns = first {
+      currentIndex += 1
+      return .returnsExpression(try parseExpression(upTo: limitTokenIndex))
+    }
+
     if case .call = first {
       return .externalCall(try parseExternalCall(upTo: limitTokenIndex))
     }
@@ -50,9 +56,9 @@ extension Parser {
       return .attemptExpression(try parseAttemptExpression())
     }
 
-    if case .self = first {
+    if case .`self` = first {
       // Try to parse a self expression.
-      return .self(Token(kind: .self, sourceLocation: (try parseSelf()).sourceLocation))
+      return .`self`(Token(kind: .`self`, sourceLocation: (try parseSelf()).sourceLocation))
     }
 
     if case .identifier(_) = first {
@@ -71,10 +77,10 @@ extension Parser {
     }
     if case .punctuation(.openBracket) = first {
       // Check for a range by descending into the open bracket and looking for a range operator
-      currentIndex+=1
+      currentIndex += 1
       let isRange = indexOfFirstAtCurrentDepth([.punctuation(.halfOpenRange),
                                                 .punctuation(.closedRange)], maxIndex: limitTokenIndex) != nil
-      currentIndex-=1
+      currentIndex -= 1
 
       if isRange {
         return .range(try parseRangeExpression())
@@ -82,12 +88,14 @@ extension Parser {
 
       // Try to parse a bracketed expression.
       return .bracketedExpression(try parseBracketedExpression())
+
     }
     if case .punctuation(.openSquareBracket) = first {
+
       // Check for a dictionary by descending into the open bracket and looking for a colon
-      currentIndex+=1
+      currentIndex += 1
       let isDict = indexOfFirstAtCurrentDepth([.punctuation(.colon)], maxIndex: limitTokenIndex) != nil
-      currentIndex-=1
+      currentIndex -= 1
       if isDict {
         return .dictionaryLiteral(try parseDictionaryLiteral())
       }
@@ -107,7 +115,8 @@ extension Parser {
       return .variableDeclaration(try parseVariableDeclaration(modifiers: modifiers, upTo: limitTokenIndex))
     default:
       // Invalid expression
-      throw raise(.expectedExpr(at: latestSource))
+      try syncNewLine(diagnostic: .expectedExpr(at: latestSource))
+      return .emptyExpr(latestSource)
     }
   }
 
@@ -148,16 +157,25 @@ extension Parser {
 
   // MARK: Bracketed
   func parseBracketedExpression() throws -> BracketedExpression {
-    let openBracketToken = try consume(.punctuation(.openBracket), or: .expectedExpr(at: latestSource))
-    guard let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) else {
-      throw raise(.expectedCloseParen(at: latestSource))
-    }
-    let expression = try parseExpression(upTo: closeBracketIndex)
-    let closeBracketToken = try consume(.punctuation(.closeBracket), or: .dummy())
+    let openBracketToken = try consume(.punctuation(.openBracket), consumingTrailingNewlines: false,
+                                       or: .expectedExpr(at: latestSource))
 
-    return BracketedExpression(expression: expression,
-                               openBracketToken: openBracketToken,
-                               closeBracketToken: closeBracketToken)
+    if let closeBracketIndex = indexOfFirstAtCurrentDepth([.punctuation(.closeBracket)]) {
+      let expression = try parseExpression(upTo: closeBracketIndex)
+      let closeBracketToken = try consume(.punctuation(.closeBracket), or: .dummy())
+      consumeNewLines()
+
+      return BracketedExpression(expression: expression,
+                                 openBracketToken: openBracketToken,
+                                 closeBracketToken: closeBracketToken)
+    } else {
+      try syncNewLine(diagnostic: .expectedCloseParen(at: latestSource))
+
+      return BracketedExpression(
+          expression: .emptyExpr(latestSource),
+          openBracketToken: Token(kind: .punctuation(.openBracket), sourceLocation: latestSource),
+          closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: latestSource))
+    }
   }
 
   // MARK: Attempt
@@ -173,11 +191,11 @@ extension Parser {
   func parseInoutExpression() throws -> InoutExpression {
     let ampersandToken = try consume(.punctuation(.ampersand), or: .expectedExpr(at: latestSource))
     guard let statementEndIndex = indexOfFirstAtCurrentDepth(
-      [
-        .punctuation(.comma),
-       .punctuation(.closeBracket)
-      ],
-      maxIndex: tokens.count) else {
+        [
+          .punctuation(.comma),
+          .punctuation(.closeBracket)
+        ],
+        maxIndex: tokens.count) else {
       throw raise(.expectedEndAfterInout(at: latestSource))
     }
     let expression = try parseExpression(upTo: statementEndIndex)
@@ -195,7 +213,7 @@ extension Parser {
 
     var mode: ExternalCall.Mode = .normal
     if tokens[currentIndex].kind == .punctuation(.question) ||
-      tokens[currentIndex].kind == .punctuation(.bang) {
+       tokens[currentIndex].kind == .punctuation(.bang) {
       let token = try consume(anyOf: [.punctuation(.question), .punctuation(.bang)], or: .dummy())
 
       if token.kind == .punctuation(.bang) {
@@ -254,7 +272,7 @@ extension Parser {
   func parseFunctionCallArgument(upTo: Int) throws -> FunctionArgument {
     // Find next colon
     if let firstPartEnd = indexOfFirstAtCurrentDepth([.punctuation(.colon)]),
-      firstPartEnd < upTo {
+       firstPartEnd < upTo {
       let identifier = try parseIdentifier()
       try consume(.punctuation(.colon), or: .expectedColonAfterArgumentLabel(at: latestSource))
       let expression = try parseExpression(upTo: upTo)
@@ -352,7 +370,7 @@ extension Parser {
                                                       indexExpression: indexExpression,
                                                       closeSquareBracketToken: closeSquareBracketToken))
       if currentToken?.kind != .punctuation(.openSquareBracket),
-        case .subscriptExpression(let expr) = base {
+         case .subscriptExpression(let expr) = base {
         return expr
       }
     }
@@ -361,7 +379,7 @@ extension Parser {
   // MARK: Self
   func parseSelf() throws -> Token {
     guard let token = currentToken, case .self = token.kind else {
-      throw raise(.expectedExpr(at: latestSource))
+    throw raise(.expectedExpr(at: latestSource))
     }
     currentIndex += 1
     consumeNewLines()

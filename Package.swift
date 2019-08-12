@@ -18,12 +18,6 @@ let package = Package(
       ]
     ),
     .executable(
-      name: "langsrv",
-      targets: [
-        "langsrv",
-      ]
-    ),
-    .executable(
       name: "file-check",
       targets: [
         "file-check",
@@ -33,16 +27,28 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "0.7.2"),
     .package(url: "https://github.com/onevcat/Rainbow.git", from: "3.0.0"),
-    .package(url: "https://github.com/kylef/Commander", from: "0.8.0"),
+    .package(url: "https://github.com/kylef/Commander", from: "0.9.0"),
     .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
-    .package(url: "https://github.com/theguild/json-swift.git", from: "4.0.0"),
-    .package(url: "https://github.com/flintrocks/swift-lsp.git", .branch("master")),
     .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
+    .package(url: "https://github.com/attaswift/BigInt.git", from: "4.0.0"),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")
   ],
   targets: [
-    // MARK: Source -
+    .target(
+      name: "flint-lsp",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "LSP", "Compiler", "Utils"]),
+    .target(
+      name: "flint-ca",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "ContractAnalysis", "Compiler", "Utils"]),
+    .target(
+      name: "flint-test",
+      dependencies: ["Parser", "Lexer", "SemanticAnalyzer", "TypeChecker", "Optimizer", "IRGen", "Commander", "Rainbow", "Symbolic", "Diagnostic", "JSTranslator", "Compiler", "Coverage", "Utils"]),
+    .target(
+      name: "flint-repl",
+      dependencies: ["Commander", "Rainbow", "Symbolic", "Diagnostic", "REPL", "Utils"]),
     .target(
       name: "Source",
       dependencies: []
@@ -66,10 +72,13 @@ let package = Package(
         "TypeChecker",
         "Optimizer",
         "IRGen",
+        "MoveGen",
+        "Verifier",
         "Commander",
         "Rainbow",
         "Symbolic",
         "Diagnostic",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -121,6 +130,7 @@ let package = Package(
         "Diagnostic",
         "Lexer",
         "ABI",
+        "Utils",
       ],
       exclude: ["ASTPass/ASTPass.template.swift"]
     ),
@@ -129,6 +139,7 @@ let package = Package(
       dependencies: [
         "AST",
         "Cuckoo",
+        "Utils",
       ],
       sources: [".", "../../.derived-tests/AST"]
     ),
@@ -140,6 +151,7 @@ let package = Package(
         "Diagnostic",
         "AST",
         "Lexer",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -147,6 +159,7 @@ let package = Package(
       dependencies: [
         "Parser",
         "Cuckoo",
+        "Utils",
       ],
       sources: [".", "../../.derived-tests/Parser"]
     ),
@@ -157,6 +170,7 @@ let package = Package(
         "Source",
         "Diagnostic",
         "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -173,7 +187,8 @@ let package = Package(
       dependencies: [
         "Source",
         "Diagnostic",
-        "AST"
+        "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -181,6 +196,7 @@ let package = Package(
       dependencies: [
         "ASTPreprocessor",
         "Cuckoo",
+        "Utils",
         ],
       sources: [".", "../../.derived-tests/ASTPreprocessor"]
     ),
@@ -191,6 +207,7 @@ let package = Package(
         "Source",
         "Diagnostic",
         "AST",
+        "Utils",
       ]
     ),
     .testTarget(
@@ -202,6 +219,17 @@ let package = Package(
       sources: [".", "../../.derived-tests/TypeChecker"]
     ),
     // MARK: Optimizer -
+    .target(
+      name: "Verifier",
+      dependencies: [
+        "Source",
+        "Diagnostic",
+        "AST",
+        "Lexer",
+        "Yaml",
+        "BigInt",
+      ]
+    ),
     .target(
       name: "Optimizer",
       dependencies: [
@@ -238,6 +266,17 @@ let package = Package(
       ],
       sources: [".", "../../.derived-tests/IRGen"]
     ),
+    .target(
+        name: "MoveGen",
+        dependencies: [
+          "Source",
+          "Diagnostic",
+          "AST",
+          "CryptoSwift",
+          "YUL",
+          "Utils",
+        ]
+    ),
     // MARK: YUL -
     .target(
       name: "YUL",
@@ -264,7 +303,7 @@ let package = Package(
     // MARK: Utils -
     .target(
       name: "Utils",
-      dependencies: []
+      dependencies: ["Symbolic"]
     ),
     .testTarget(
       name: "UtilsTests",
@@ -293,20 +332,21 @@ let package = Package(
     // MARK: file-check
     .target(
         name: "file-check",
-        dependencies: [
-          "FileCheck",
-          "Commander",
-      ]
-    ),
-    // MARK: langsrv
+        dependencies: ["FileCheck", "Commander"]),
     .target(
-      name: "langsrv",
-      dependencies: [
-        "Compiler",
-        "JSONLib",
-        "LanguageServerProtocol",
-        "JsonRpcProtocol",
-      ],
-      path: "Sources/LSP/langsrv")
+        name: "LSP",
+        dependencies: ["Diagnostic", "AST"]),
+    .target(
+        name: "ContractAnalysis",
+        dependencies: ["AST"]),
+    .target(
+        name: "JSTranslator",
+        dependencies: ["AST", "Parser", "Lexer"]),
+    .target(
+        name: "REPL",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "JSTranslator", "SwiftyJSON", "Rainbow"]),
+    .target(
+        name: "Coverage",
+        dependencies: ["AST", "Parser", "Lexer", "Compiler", "Diagnostic", "SwiftyJSON", "Rainbow"])
     ]
 )

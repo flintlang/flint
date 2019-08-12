@@ -13,30 +13,30 @@ Loop :: caller <- (any) {
     self.owner = caller
   }
 
-  mutating func increaseNumWrites() {
+  func increaseNumWrites() mutates (numWrites) {
     self.numWrites += 1
   }
 
-  public mutating func write(index: Int, val: Int) {
+  public func write(index: Int, val: Int) mutates (arr, numWrites) {
     arr[index] = val
     increaseNumWrites()
   }
 
-  public mutating func write2(index: Int, val: Int) {
+  public func write2(index: Int, val: Int) mutates (arr2, numWrites) {
     arr2[index] = val
     increaseNumWrites()
   }
 
-  public mutating func write3(index: Int, val: Int) {
+  public func write3(index: Int, val: Int) mutates (arr3, numWrites) {
     arr3[index] = val
     increaseNumWrites()
   }
 
-  public mutating func writeNested(i: Int, j: Int, val: Int) {
+  public func writeNested(i: Int, j: Int, val: Int) mutates (nested) {
     nested[i][j] = val
   }
 
-  public mutating func writeDict(key: Int, value: Int) {
+  public func writeDict(key: Int, value: Int) mutates (dict) {
     dict[key] = value
   }
 

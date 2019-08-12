@@ -4,6 +4,7 @@
 //
 //  Created by Franklin Schrans on 12/26/17.
 //
+
 import Source
 import Lexer
 
@@ -11,10 +12,10 @@ import Lexer
 public class Environment {
   /// Information about each type (contracts, structs and traits) which the program define, such as its properties and
   /// functions.
-  var types: [RawTypeIdentifier: TypeInformation] = [:]
+  public var types: [RawTypeIdentifier: TypeInformation] = [:]
 
   /// A list of the names of the contracts which have been declared in the program.
-  var declaredContracts: [Identifier] = []
+  public var declaredContracts: [Identifier] = []
 
   /// A list of the names of the structs which have been declared in the program.
   var declaredStructs: [Identifier] = []
@@ -24,6 +25,14 @@ public class Environment {
 
   // A list of the names of the traits which have been declared in the program.
   var declaredTraits: [Identifier] = []
+
+  public var syntaxErrors: Bool = false
+
+  // Call graph - using normalised names
+  public var callGraph: [String: [(String, FunctionDeclaration)]] = [:]
+
+  // Which functions have external calls
+  public var functionCallsExternal: [String: Bool] = [:]
 
   /// The name of the stdlib struct which contains all global functions.
   public static let globalFunctionStructName = "Flint$Global"
@@ -56,6 +65,11 @@ public class Environment {
   /// The list of conforming functions in a type.
   public func conformingFunctions(in enclosingType: RawTypeIdentifier) -> [FunctionInformation] {
     return types[enclosingType]!.conformingFunctions
+  }
+
+  /// The list of functions in a type
+  public func functions(in enclosingType: RawTypeIdentifier) -> [String: [FunctionInformation]] {
+    return types[enclosingType]!.allFunctions
   }
 
   /// The list of initializers in a type.
@@ -227,7 +241,7 @@ public class Environment {
       }
 
       while declaredIndex < declaredParameters.count &&
-          argumentIdentifier.name != declaredParameters[declaredIndex].identifier.name {
+            argumentIdentifier.name != declaredParameters[declaredIndex].identifier.name {
         declaredIndex += 1
       }
 
@@ -271,14 +285,14 @@ public class Environment {
                                        enclosingType: RawTypeIdentifier) -> Bool {
     // Lifted directly from FunctionSignatureDeclaration.
     return source.identifier.name == target.identifier.name &&
-      source.modifiers.map({ $0.kind }) == target.modifiers.map({ $0.kind }) &&
-      source.attributes.map({ $0.kind }) == target.attributes.map({ $0.kind }) &&
-      source.resultType?.rawType == target.resultType?.rawType &&
-      source.parameters.identifierNames == target.parameters.identifierNames &&
-      areFunctionArgumentsCompatible(source: source.parameters.rawTypes,
-                                     target: target.parameters.rawTypes,
-                                     enclosingType: enclosingType) &&
-      source.parameters.map({ $0.isInout }) == target.parameters.map({ $0.isInout })
+    source.modifiers.map({ $0.kind }) == target.modifiers.map({ $0.kind }) &&
+    source.attributes.map({ $0.kind }) == target.attributes.map({ $0.kind }) &&
+    source.resultType?.rawType == target.resultType?.rawType &&
+    source.parameters.identifierNames == target.parameters.identifierNames &&
+    areFunctionArgumentsCompatible(source: source.parameters.rawTypes,
+                                   target: target.parameters.rawTypes,
+                                   enclosingType: enclosingType) &&
+    source.parameters.map({ $0.isInout }) == target.parameters.map({ $0.isInout })
   }
 
   /// Whether two caller protection groups are compatible, i.e. whether a function with caller protection `source` is
@@ -397,15 +411,15 @@ public class Environment {
   // Whether an identifier is redeclared
   private func isRedeclaration(_ identifier1: Identifier, _ identifier2: Identifier) -> Bool {
     return identifier1 != identifier2 &&
-      identifier1.name == identifier2.name &&
-      identifier1.sourceLocation.line < identifier2.sourceLocation.line
+    identifier1.name == identifier2.name &&
+    identifier1.sourceLocation.line < identifier2.sourceLocation.line
   }
 
   // Whether declarations conflict
   private func conflictingDeclaration(of identifier: Identifier, in identifiers: [Identifier]) -> Identifier? {
     return identifiers
-      .filter({ isRedeclaration($0, identifier) })
-      .lazy.sorted(by: { $0.sourceLocation.line < $1.sourceLocation.line }).first
+        .filter({ isRedeclaration($0, identifier) })
+        .lazy.sorted(by: { $0.sourceLocation.line < $1.sourceLocation.line }).first
   }
 
   /// Attempts to find a conflicting declaration of the given type.
@@ -427,8 +441,12 @@ public class Environment {
     if isContractDeclared(type) {
       // Contract functions do not support overloading.
       contractFunctions = types[type]!.allFunctions[function.name]?
-        .filter({ !$0.isSignature })
-        .map { $0.declaration.identifier } ?? []
+      .filter({
+      !$0.isSignature
+      })
+      .map {
+      $0.declaration.identifier
+      } ?? []
     }
 
     if let conflict = conflictingDeclaration(of: function.identifier,
@@ -443,9 +461,9 @@ public class Environment {
       let parameterList2 = functionInformation.declaration.signature.parameters.map { $0.type.rawType.name }
 
       return !functionInformation.isSignature &&
-        identifier1.name == identifier2.name &&
-        parameterList1 == parameterList2 &&
-        identifier1.sourceLocation < identifier2.sourceLocation
+      identifier1.name == identifier2.name &&
+      parameterList1 == parameterList2 &&
+      identifier1.sourceLocation < identifier2.sourceLocation
     }
 
     return functions?.first?.declaration.identifier
@@ -489,7 +507,7 @@ public class Environment {
         for conform in conforming where !areFunctionSignaturesCompatible(source: signature.declaration.signature,
                                                                          target: conform.declaration.signature,
                                                                          enclosingType: enclosingType.name) {
-                                                                          notImplemented.append(conform)
+          notImplemented.append(conform)
         }
       }
     }
@@ -500,9 +518,9 @@ public class Environment {
     let typeInfo = types[enclosingType.name]!
     if let conforming = typeInfo.initializers.filter({ !$0.isSignature }).first { // Compatibility check
       if let signature = typeInfo.allInitialisers.filter({ $0.isSignature }).first,
-        !areFunctionSignaturesCompatible(source: signature.declaration.signature.asFunctionSignatureDeclaration,
-                                         target: conforming.declaration.signature.asFunctionSignatureDeclaration,
-                                         enclosingType: enclosingType.name) {
+         !areFunctionSignaturesCompatible(source: signature.declaration.signature.asFunctionSignatureDeclaration,
+                                          target: conforming.declaration.signature.asFunctionSignatureDeclaration,
+                                          enclosingType: enclosingType.name) {
         return [signature]
       }
       return []

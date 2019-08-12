@@ -260,6 +260,26 @@ public struct ASTVisitor {
       processResult.element =
         .eventDeclaration(processResult.combining(visit(eventDeclaration,
                                                         passContext: processResult.passContext)))
+    case .invariantDeclaration:
+      // Create empty scope
+      // TODO: decide compilation strategy for logical functions, such as prev()
+      //var newPassContext = processResult.passContext
+      //newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
+
+      //processResult.element =
+      //  .invariantDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: newPassContext)))
+      break
+    case .holisticDeclaration:
+      // Create empty scope
+      // TODO: decide compilation strategy for logical functions, such as prev()
+      //var newPassContext = processResult.passContext
+      //newPassContext.scopeContext = passContext.scopeContext ?? ScopeContext()
+
+      //processResult.element =
+      //  .holisticDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: newPassContext)))
+      break
     }
 
     let postProcessResult = pass.postProcess(contractMember: processResult.element,
@@ -286,6 +306,12 @@ public struct ASTVisitor {
       processResult.element =
         .specialDeclaration(processResult.combining(visit(specialDeclaration,
                                                           passContext: processResult.passContext)))
+    case .invariantDeclaration:
+      // TODO: Decide on logical predicate compilation approach
+      //processResult.element =
+      //  .invariantDeclaration(processResult.combining(visit(expression,
+      //                                                      passContext: processResult.passContext)))
+      break
     }
 
     let postProcessResult = pass.postProcess(structMember: processResult.element,
@@ -510,7 +536,6 @@ public struct ASTVisitor {
     }
 
     processResult.passContext.scopeContext = scopeContext
-
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -650,6 +675,10 @@ public struct ASTVisitor {
       return processResult.combining(visit(parameter, passContext: processResult.passContext))
     }
 
+    processResult.element.prePostConditions = processResult.element.prePostConditions.map { prePostCondition in
+      return processResult.combining(visit(prePostCondition, passContext: processResult.passContext))
+    }
+
     if let resultType = processResult.element.resultType {
       processResult.element.resultType = processResult.combining(visit(resultType,
                                                                        passContext: processResult.passContext))
@@ -661,6 +690,21 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext)
+  }
+
+  func visit(_ prePostCondition: PrePostCondition,
+             passContext: ASTPassContext) -> ASTPassResult<PrePostCondition> {
+
+    switch prePostCondition {
+    case .pre(let e), .post(let e):
+      let processResult = pass.process(expression: e,
+                                       passContext: passContext)
+      let postProcessResult = pass.postProcess(expression: e,
+                                               passContext: processResult.passContext)
+      return ASTPassResult(element: prePostCondition.replace(e: postProcessResult.element),
+                           diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
+                           passContext: postProcessResult.passContext)
+    }
   }
 
   func visit(_ specialDeclaration: SpecialDeclaration,
@@ -770,7 +814,12 @@ public struct ASTVisitor {
       processResult.element = .sequence(elements.map { element in
         return processResult.combining(visit(element, passContext: processResult.passContext))
       })
+
+    case .returnsExpression(let returnsExpression):
+      processResult.element = .returnsExpression(processResult.combining(visit(returnsExpression,
+                                                                               passContext: processResult.passContext)))
     case .rawAssembly: break
+    case .emptyExpr: fatalError("EMPTY EXPR")
     }
 
     let postProcessResult = pass.postProcess(expression: processResult.element, passContext: processResult.passContext)

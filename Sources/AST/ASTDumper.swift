@@ -198,6 +198,8 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .specialDeclaration(let specialDeclaration):
       self.dump(specialDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
     }
   }
 
@@ -207,6 +209,10 @@ public class ASTDumper {
       self.dump(variableDeclaration)
     case .eventDeclaration(let eventDeclaration):
       self.dump(eventDeclaration)
+    case .invariantDeclaration(let expression):
+      self.dump(expression)
+    case .holisticDeclaration(let expression):
+      self.dump(expression)
     }
   }
 
@@ -422,6 +428,8 @@ public class ASTDumper {
       case .sequence(let expressions): expressions.forEach { self.dump($0) }
       case .range(let rangeExpression): self.dump(rangeExpression)
       case .rawAssembly: fatalError()
+      case .returnsExpression(let returnsExpression): self.dump(returnsExpression)
+      case .emptyExpr: fatalError("EMPTY EXPR")
       }
     }
   }

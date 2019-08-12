@@ -7,7 +7,7 @@ StringContract :: (any) {
     self.s = s
   }
 
-  mutating public func set(s: String) {
+  public func set(s: String) mutates (s) {
     self.s = s
   }
 

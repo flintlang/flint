@@ -24,8 +24,16 @@ public class DiagnosticPool {
     self.shouldVerify = shouldVerify
   }
 
+  public func getDiagnostics() -> [Diagnostic] {
+    return diagnostics
+  }
+
   public func append(_ diagnostic: Diagnostic) {
     diagnostics.append(diagnostic)
+  }
+
+  public func appendAll(_ additions: [Diagnostic]) {
+    diagnostics.append(contentsOf: additions)
   }
 
   public func empty() {

@@ -3,6 +3,7 @@
 // `getRawValue` and `setRawValue` need to be implemented.
 
 struct trait Asset {
+
   // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
   init(unsafeRawValue: Int)
 
@@ -16,9 +17,9 @@ struct trait Asset {
   init(source: inout Self)
 
   // Moves `amount` from `source` into `this` asset.
-  mutating func transfer(source: inout Self, amount: Int) {
+  func transfer(source: inout Self, amount: Int) {
     if source.getRawValue() < amount {
-      fatalError()
+       fatalError()
     }
 
     // TODO: support let _: Int = ...
@@ -26,12 +27,12 @@ struct trait Asset {
     let unused2: Int = setRawValue(value: getRawValue() + amount)
   }
 
-  mutating func transfer(source: inout Self) {
+  func transfer(source: inout Self) {
     transfer(source: &source, amount: source.getRawValue())
   }
 
   // Returns the funds contained in this asset, as an integer.
-  mutating func setRawValue(value: Int) -> Int
+  func setRawValue(value: Int) -> Int
 
   // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
@@ -40,25 +41,43 @@ struct trait Asset {
 struct Wei: Asset {
   var rawValue: Int = 0
 
-  init(unsafeRawValue: Int) {
+  init(unsafeRawValue: Int)  {
+    if unsafeRawValue != 0 {
+      fatalError()
+    }
     self.rawValue = unsafeRawValue
   }
 
-  init(source: inout Wei, amount: Int) {
+  // Should be invisible to the user and implemented internally
+  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
+    if youAreTheCompiler == false {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout Wei, amount: Int)
+  {
     transfer(source: &source, amount: amount)
   }
 
   init(source: inout Wei) {
-    let amount: Int = source.getRawValue()
-    transfer(source: &source, amount: amount)
+    transfer(source: &source)
   }
 
-  mutating func setRawValue(value: Int) -> Int {
+  func setRawValue(value: Int) -> Int
+    mutates (rawValue)
+
+    post(self.rawValue == value)
+    post(returns value)
+  {
     rawValue = value
     return rawValue
   }
 
-  func getRawValue() -> Int {
+  func getRawValue() -> Int
+    post(returns rawValue)
+  {
     return rawValue
   }
 }

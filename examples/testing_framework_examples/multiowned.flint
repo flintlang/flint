@@ -1,0 +1,29 @@
+contract MultiOwnable {
+    var root : Address   
+    var owners: [Address : Address] = [:]
+    let zero : Address = 0x0000000000000000000000000000000000000000
+}
+
+MultiOwnable :: (any) {
+  public init(initial_owner: Address) {
+    self.root = initial_owner
+    self.owners[root] = root
+  }
+}
+
+MultiOwnable :: caller <- (checkIfOwner) {
+
+  func checkIfOwner(address : Address) -> Bool {
+    let parent : Address = owners[address]
+    return parent != zero
+  }
+
+  mutating public func addOwner(new_owner: Address) {
+       self.owners[new_owner] = caller 
+
+  }
+
+  mutating public func deleteOwner(owner: Address) {
+       self.owners[owner] = zero 
+  }
+}

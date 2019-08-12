@@ -44,6 +44,7 @@ struct IRBinaryExpression {
     case .times: return IRRuntimeFunction.mul(a: lhs, b: rhs)
     case .overflowingTimes: return .functionCall(FunctionCall("mul", lhs, rhs))
     case .divide: return IRRuntimeFunction.div(a: lhs, b: rhs)
+    case .percent: return .functionCall(FunctionCall("mod", lhs, rhs))
     case .closeAngledBracket: return .functionCall(FunctionCall("gt", lhs, rhs))
     case .openAngledBracket: return .functionCall(FunctionCall("lt", lhs, rhs))
     case .doubleEqual: return .functionCall(FunctionCall("eq", lhs, rhs))

@@ -195,7 +195,7 @@ Counter :: (any) {
   // is available as the implicit `value` argument, although we do not use this
   // value here.
   @payable
-  public mutating func hit(implicit value: Wei) {
+  public func hit(implicit value: Wei) mutates (hits) {
     hits += 1
   }
 }
@@ -525,7 +525,7 @@ public func takeMoney(from: Address) {
 
 Smart contracts can remain in activity for a large number of years, during which a large number of state mutations can occur. To aid with reasoning, Flint functions cannot mutate smart contracts’ state by default. This helps avoid accidental state mutations when writing the code, and allows readers to easily draw their attention to the mutating functions of the smart contract.
 
-Naturally, it is sometimes desirable to write a function that changes the state properties of its contract. This is enabled with the `mutating` modifier:
+Naturally, it is sometimes desirable to write a function that changes the state properties of its contract. This is enabled with the `mutates (...)` modifier:
 
 Examples:
 
@@ -536,13 +536,13 @@ contract Counter {
 
 Counter :: (any) {
   // This would be a compile-time error - the function needs to be declared
-  // with `mutating`!
+  // with `mutates (...)`!
   //public func incrementA() {
   //  hits += 1
   //}
 
   // This can compile:
-  mutating public func incrementB() {
+  public func incrementB() mutates (hits) {
     hits += 1
   }
 }
@@ -568,7 +568,7 @@ contract AddressBook {
 }
 
 AddressBook :: caller <- (any) {
-  mutating func remember(name: String = "John Doe") {
+  func remember(name: String = "John Doe") mutates (people) {
     people[caller] = name
   }
 }
@@ -635,7 +635,7 @@ Fallback functions should only contain "simple" statements, just like initialise
 
 ## Structs
 
-Structs in Flint are general-purpose constructs that group state and methods that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties. Structure methods are not protected as they can only be called by contract functions, and are required to be annotated `mutating` if they mutate the struct's state.
+Structs in Flint are general-purpose constructs that group state and methods that can be used as self-contained blocks. They use the same syntax as defining constants and variables for properties. Structure methods are not protected as they can only be called by contract functions, and are required to be annotated `mutates (...)` if they mutate the struct's state.
 
 ### Declaration
 
@@ -1044,7 +1044,7 @@ Variables declared in the contract can have modifiers in front of their declarat
  - `visible` access synthesises an accessor to the storage variable which allows it to be viewed by anyone.
  - `private` access means that nothing is synthesised (but both accessors and mutators can still be manually specified).
 
-An accessor, if synthesised for variable `<name>` or type `<type>`, has the signature `public func get<Name>() -> <type>`. A mutator, if synthesised for the same variable, has the signature `public mutatic func set<Name>(to: <type>)`.
+An accessor, if synthesised for variable `<name>` or type `<type>`, has the signature `public func get<Name>() -> <type>`. A mutator, if synthesised for the same variable, has the signature `public func set<Name>(to: <type>) mutates (<Name>)`.
 
 Example:
 
@@ -1082,7 +1082,7 @@ contract Bank {
 }
 
 Bank :: caller <- (any) {
-  mutating func transfer(to: Address, value: Int) {
+  func transfer(to: Address, value: Int) mutates(balances) {
     // Note the following 2 lines are unsafe!
     balances[caller] -= value
     balances[to] += value
@@ -1247,7 +1247,7 @@ ToyWallet :: (getOwner) {
 Traits can be declared for external contracts using the syntax:
 
 ```swift
-contract trait <trait-name> {
+external trait <trait-name> {
   // trait members
 }
 ```
@@ -1277,19 +1277,19 @@ In the above example, we only want to be able to add metres to metres. Accessing
 
 ```swift
 struct trait Unit {
-  mutating func add(source: inout Self)
+  func add(source: inout Self)
 }
 
 struct Metre: Unit {
   var length: Int = 0
-  mutating func add(source: inout Metre) {
+  func add(source: inout Metre) mutates (length) {
     length += source.length
   }
 }
 
 struct Litre: Unit {
   var volume: Int = 0
-  mutating func add(source: inout Litre) {
+  func add(source: inout Litre) mutates (volume) {
     volume += source.volume
   }
 }
@@ -1827,7 +1827,7 @@ Wallet :: caller <- (any) {
   }
 
   @payable
-  public mutating func deposit(implicit value: Wei) {
+  public func deposit(implicit value: Wei) mutates (contents) {
     // Record the Wei received into the contents state property.
     // Value is passed by reference.
     contents.transfer(source: &value)
@@ -1835,7 +1835,7 @@ Wallet :: caller <- (any) {
 }
 
 Wallet :: (owner) {
-  public mutating func withdraw(value: Int) {
+  public func withdraw(value: Int) mutates (contents) {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.
     var w: Wei = Wei(source: &contents, amount: value)
@@ -1862,13 +1862,13 @@ contract Wallet {
 
 Wallet :: (any) {
   @payable
-  mutating func receiveBonus(implicit newBonus: inout Wei) {
+  func receiveBonus(implicit newBonus: inout Wei) mutates (contents) {
     bonus.transfer(source: &newBonus)
   }
 }
 
 Wallet :: (owner) {
-  mutating func distribute(amount: Int) {
+  func distribute(amount: Int) mutates (contents) {
     let beneficiaryBonus = bonus.getRawValue() / beneficiaries.count
     for let person: Address in beneficiaries {
       var allocation = Wei(source: &balance, amount: amount * weights[person])
@@ -1898,7 +1898,8 @@ struct MyWei : Asset {
     transfer(source: &source, amount: amount)
   }
 
-  mutating func setRawValue(value: Int) -> Int {
+  func setRawValue(value: Int) -> Int
+      mutates (rawValue) {
     rawValue = value
     return rawValue
   }

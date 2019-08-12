@@ -6,27 +6,31 @@ contract C {
 C :: (any) {
   public init() {}
 
-  public mutating func setS(a: Int, b: String) {
+  public func setS(a: Int, b: String)
+  mutates (s) {
     let s: S = S(a, b)
     s.incrementA()
     self.s = S(s.a, s.s)
   }
 
-  public mutating func setT1(a: Int) {
+  public func setT1(a: Int)
+  mutates (t) {
     let t1: T = T(a)
     let t2: T = T(a + 1)
 
     self.t = T(t1.x)
   }
 
-  public mutating func setT2(a: Int) {
+  public func setT2(a: Int)
+  mutates (t) {
     let t1: T = T(a)
     let t2: T = T(a + 1)
 
     self.t = T(t2.x)
   }
 
-  public mutating func setT3(c: Bool, a: Int, b: Int) {
+  public func setT3(c: Bool, a: Int, b: Int)
+  mutates (t) {
     if c {
       let t: T = T(a)
       t.increment()
@@ -62,7 +66,8 @@ struct S {
     self.s = s
   }
 
-  mutating func incrementA() {
+  func incrementA()
+  mutates (a) {
     self.a += 1
   }
 }
@@ -74,7 +79,8 @@ struct T {
     self.x = x
   }
 
-  mutating func increment() {
+  func increment()
+  mutates (x) {
     self.x += 1
   }
 }

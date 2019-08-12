@@ -218,11 +218,13 @@ extension Environment {
                           sourceLocation: externalTrait.traitToken.sourceLocation),
       attributes: [],
       modifiers: [],
+      mutates: [],
       parameters: [Parameter(identifier: Identifier(identifierToken: Token(kind: .identifier("address"),
                                                     sourceLocation: externalTrait.traitToken.sourceLocation)),
                              type: Type(inferredType: .basicType(.address), identifier: externalTrait.identifier),
                              implicitToken: nil,
                              assignedExpression: nil)],
+      prePostConditions: [],
       closeBracketToken: .init(kind:.punctuation(.closeBrace), sourceLocation: externalTrait.traitToken.sourceLocation))
   }
 
@@ -279,5 +281,19 @@ extension Environment {
   /// Set the public fallback for the given contract. A contract should have at most one public fallback.
   public func setPublicFallback(_ publicFallback: SpecialDeclaration, for type: RawTypeIdentifier) {
     types[type]!.publicFallback = publicFallback
+  }
+
+  // Add function call to call graph
+  public func addFunctionCall(caller: String, callee: (String, FunctionDeclaration)) {
+    var existingCalls = callGraph[caller] ?? [(String, FunctionDeclaration)]()
+    // Avoid having duplicates
+    if existingCalls.first(where: { $0.0 == callee.0 }) == nil {
+      existingCalls.append(callee)
+      callGraph[caller] = existingCalls
+    }
+  }
+
+  public func addExternalCall(caller: String) {
+    functionCallsExternal[caller] = true
   }
 }

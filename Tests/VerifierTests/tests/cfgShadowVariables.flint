@@ -1,0 +1,23 @@
+//VERIFY-CHECK
+contract A {
+}
+
+struct S {
+  public init() {}
+}
+
+A :: (any) {
+  public init() { }
+
+  func a() {
+    b()
+  }
+
+  func b() {
+    c()
+  }
+
+  func c() {
+    var s: S = S()
+  }
+}

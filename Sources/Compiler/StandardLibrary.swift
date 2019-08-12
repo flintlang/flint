@@ -7,6 +7,7 @@
 
 import Foundation
 import Symbolic
+import Utils
 
 /// The Flint standard library.
 public struct StandardLibrary {
@@ -21,15 +22,7 @@ public struct StandardLibrary {
   }
 
   public static var `default`: StandardLibrary {
-    guard let path = SymbolInfo(address: #dsohandle)?.filename else {
-      fatalError("Unable to get SymbolInfo for \(#dsohandle)")
-    }
-
-    let url = path.deletingLastPathComponent().appendingPathComponent("stdlib")
-    guard FileManager.default.fileExists(atPath: url.path) else {
-      fatalError("Unable to find stdlib.")
-    }
-
+    let url = Path.getFullUrl(path: "stdlib")
     return StandardLibrary(url: url)
   }
 }

@@ -1,0 +1,13 @@
+contract Counter {
+}
+
+Counter :: (any) {
+
+  public init() {}
+
+  public func willThrow()  {
+       fatalError()
+  }
+  
+}
+

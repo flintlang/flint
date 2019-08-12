@@ -1,0 +1,64 @@
+//VERIFY-CHECK
+contract Escrow(OPEN, SUCCESS, REFUND) {
+  var deposits: [Address: Wei] = [:]
+  var owner: Address
+  var beneficiary: Address
+
+
+  // want to check that can't go from (SUCCESS/REFUND) -> (OPEN)
+  // check that all money is sent out of the contract?
+}
+
+Escrow @(any) :: owner <- (any) {
+  public init(b: Address) {
+    self.beneficiary = b
+    self.owner = owner
+    become OPEN
+  }
+}
+
+Escrow @(any) :: (owner) {
+  @payable
+  public func deposit(p: Address, implicit value: Wei)
+    mutates (deposits, Wei.rawValue)
+
+    pre (dictContains(deposits, p))
+    post (deposits[p].rawValue == prev(deposits[p].rawValue) + prev(value.rawValue))
+  {
+    if self.deposits[p].rawValue < 0 {
+      fatalError()
+    }
+
+    self.deposits[p].transfer(source: &value)
+    assert (value.rawValue == 0)
+  }
+
+  public func close() {
+    become SUCCESS
+  }
+
+  public func refund() {
+    become REFUND
+  }
+}
+
+Escrow @(SUCCESS) :: (owner) {
+  public func withdraw()
+    mutates (deposits, Wei.rawValue, owner, beneficiary)
+  {
+    var allDeposits: Wei = Wei(0)
+    for let value: Wei in self.deposits {
+      allDeposits.transfer(source: &value)
+    }
+
+    send(address: beneficiary, value: &allDeposits)
+  }
+}
+
+Escrow @(REFUND) :: (owner) {
+  public func claimRefund(p: Address)
+    mutates (deposits, Wei.rawValue, owner, beneficiary)
+  {
+    send(address: p, value: &self.deposits[p])
+  }
+}

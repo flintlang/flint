@@ -1,42 +1,80 @@
 contract Test {
   var owner: Address
-  var arr: Int[4] = []
-  var arr2: Int[10] = []
+  var arr: Int[4]
+  var arr2: Int[10]
+  var arr3: [Int]
   var numWrites: Int = 0
 }
 
 Test :: caller <- (any) {
-  public init() {
+  public init()
+  {
     self.owner = caller
-  }
-  
-  mutating func increaseNumWrites() {
-    self.numWrites += 1 
+
+    self.arr = []
+    self.arr2 = []
+    self.arr3 = []
   }
 
-  public mutating func write(index: Int, val: Int) {
-    arr[index] = val
-    increaseNumWrites()
+  func increaseNumWrites()
+    mutates (numWrites)
+  {
+    self.numWrites += 1
+  }
+
+  public func write(index: Int, val: Int)
+    mutates (numWrites, arr)
+  {
+    if index < arr.size {
+      arr[index] = val
+      increaseNumWrites()
+    }
   }
 
   public func value(index: Int) -> Int {
-    return arr[index]
+    if index < arr.size {
+      return arr[index]
+    }
+    return 0
   }
 
   public func value2(index: Int) -> Int {
-    return arr2[index]
+    if index < arr2.size {
+      return arr2[index]
+    }
+    return 1
   }
 
-  public mutating func write2(index: Int, val: Int) {
-    arr2[index] = val
+  public func write2(index: Int, val: Int)
+    mutates (arr2, numWrites)
+  {
+    if index < arr2.size {
+      arr2[index] = val
+    }
     increaseNumWrites()
   }
 
   public func valueBoth(index: Int) -> Int {
-    return arr[index] + arr2[index]
+    if index < arr.size && index < arr2.size {
+      return arr[index] + arr2[index]
+    }
+    return 3
   }
 
   public func numWrites() -> Int {
     return numWrites
+  }
+
+  public func write3()
+    mutates (arr3)
+  {
+    arr3[0] = 4
+  }
+
+  public func accessOutOfBounds()
+    //mutates (arr)
+  {
+    // Should fail
+    //arr[4] = 5
   }
 }

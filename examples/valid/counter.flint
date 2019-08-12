@@ -9,11 +9,15 @@ Counter :: (any) {
     return value
   }
 
-  mutating public func increment() {
+  public func increment()
+    mutates (value)
+  {
     value += 1
   }
 
-  mutating public func set(value: Int) {
+  public func set(value: Int)
+    mutates (value)
+  {
     self.value = value
   }
 }
