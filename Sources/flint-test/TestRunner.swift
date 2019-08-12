@@ -47,7 +47,6 @@ struct TestRunner {
     let pathToFlintContract = jsTestSuite.getFilePathToFlintContract()
 
     let inputFiles = [URL(fileURLWithPath: pathToFlintContract)]
-    //let outputDirectory = URL(fileURLWithPath: "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/testRunner")
     let outputDirectory = Path.getFullUrl(path: "utils/testRunner")
     let contract_sourceCode = try String(contentsOf: inputFiles[0])
 
@@ -92,7 +91,7 @@ struct TestRunner {
 
   func genCovReport(contract_name: String, contract_file_path: String) throws {
     let p = Process()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/coverage")
     p.arguments = ["node", "--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
     try! p.run()
@@ -108,7 +107,7 @@ struct TestRunner {
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
 
     let p = Process()
-    p.executableURL = URL(string: "/usr/bin/env")
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/testRunner")
     p.arguments = ["node", "--no-warnings", "test.js"]
     try! p.run()

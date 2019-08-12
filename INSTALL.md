@@ -4,6 +4,7 @@ This guides you through installing Flint in its current state on Linux
 1. Prerequisites
 2. Installation
 3. Docker
+4. Usage
 
 ## Prerequisites
 The following must be installed to build Flint:
@@ -39,7 +40,7 @@ echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 In your terminal, run the following commands
 ```bash
 # Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 # No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
@@ -54,7 +55,7 @@ make
 ## Docker
 To run the environment without doing any package installations:
 ```bash
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 sudo docker build -t "flint_docker" .
 ### ---------------------------------------------- ###
@@ -64,11 +65,19 @@ sudo docker run --privileged -i -t flint_docker
 # Then, inside the docker container, run
 source ~/.bash_profile
 ```
-This guides you through installing Flint in its current state on Macos
 
-**Contents**
-1. Prerequisites
-2. Installation
+## Usage
+To use flint to compile a flint contract (in this example `counter.flint`) into solidity code run the following code from inside the flint project folder:
+```bash
+export FLINTPATH=$(pwd)
+export PATH=$FLINTPATH/.build/debug:$PATH
+flintc --emit-ir --ir-output ./ examples/valid/counter.flint
+```
+This will generate a main.sol file inside the current directory which can then be compiled to be depolyed on the Etherum blockchain. To test it, we recommend using Remix IDE, following these instructions https://docs.flintlang.org/docs/language_guide#remix-integration
+
+## macOS
+
+This guides you through installing Flint in its current state on macOS
 
 ## Prerequisites
 The following must be installed to build Flint on Macs:
