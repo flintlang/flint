@@ -1,20 +1,20 @@
-# Introduce the Asset trait
+# Introducing Assets
 
-* Proposal: [FIP-0001](0001-asset-trait.md)
-* Author: [Franklin Schrans](https://github.com/franklin_sch)
+* Proposal: [FIP-0005](0005-assets.md)
+* Author: [Daniel Hails](https://github.com/djrhails) & [Franklin Schrans](https://github.com/franklin_sch)
 * Review Manager: TBD
-* Status: **Split** [FIP-0004](0004-traits.md) & [FIP-0005](0005-assets.md) 
-* Issue label: [0001-asset-trait](https://github.com/franklinsch/flint/issues?q=is%3Aopen+is%3Aissue+label%3A0001-asset-trait)
+* Status: **Awaiting Review**
+* Issue label: TBD
 
 ## Introduction
 
-Smart contracts can carry out sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value \(for example, currency such as Wei\). Asset types support a restricted set of operations and have their own semantics.
+Smart contracts can carry out sensitive operations, such as transferring currency to another account. We introduce the `Asset` trait which represents items of value (for example, currency such as Wei). Asset types support a restricted set of operations and have their own semantics.
 
-Assets can be **transferred** from/to other Assets of the same type \(for example, transferring Wei from one variable to another\). By default, it is not possible to create an Asset from a raw type \(such as an Integer\), and they cannot be implicitly destroyed.
+Assets can be **transferred** from/to other Assets of the same type (for example, transferring Wei from one variable to another). By default, it is not possible to create an Asset from a raw type (such as an Integer), and they cannot be implicitly destroyed.
 
 In the context of currency, smart contracts often use **state properties** to record information about the balance they possess. So far, making such properties accurately reflect the balance the contract actually possesses had to be done manually by the programmer. Oversights, such as forgetting to update a state property, might lead to inconsistencies between a smart contract's actual balance and its state properties' view. Asset types provide a **safe** way of handling currency in Flint.
 
-Making `Wei` and other currency types implement `Asset` allow the contract's state to always **accurately** represent the actual contract's balance \(by default\). The type system enforces Wei transfers to be recorded in the contract's state. Adding Wei to a contract can be done safely through an `@payable` function.
+Making `Wei` and other currency types implement `Asset` allow the contract's state to always **accurately** represent the actual contract's balance (by default). The type system enforces Wei transfers to be recorded in the contract's state. Adding Wei to a contract can be done safely through an `@payable` function.
 
 ```swift
 // Wei implements Asset
@@ -28,12 +28,12 @@ Bank :: account <- (balances.keys) {
   mutating func deposit(implicit value: inout Wei) {
     // Omitting this line causes a compiler warning: the value received should be recorded.
     balances[address].transfer(&value)
-  }
+  }
 
   mutating func withdraw() {
     // balances[account] is automatically set to 0 before transferring.
     send(account, &balances[account])
-  }
+  }
 }
 ```
 
@@ -53,29 +53,29 @@ contract Bank {
 Bank :: account <- (balances.keys) {
   @payable
   mutating func deposit(implicit value: inout Wei) {
-    balances[account] += value // ⍺
-  }
+    balances[account] += value // ⍺
+  }
 
   mutating func withdraw() {
     send(account, balances[account])
-    balances[account] = 0 // β
-  }
+    balances[account] = 0 // β
+  }
 }
 ```
 
 The following Solidity contracts show how call reentrancy can result in contracts sending more Wei than they intended to. The `withdraw` function retrieves the balance of the given account, transfers it back, then sets it to 0. On line 13, an external call is performed using the low-level `call` function, attaching a Wei value. No function signature is specified, so the target’s fallback function is called. The vulnerability is exploited if the target’s fallback function calls back into `withdraw(address)`. Lines 11–13 will be executed again, without having set the recipient’s balance to 0. Vulnerable thus sends balance again, and the process repeats itself until the transaction’s gas is exhausted.
 
-```text
+```javascript
 contract Vulnerable {
   mapping(address => uint256) public balances;
 
   ...
 
-  function withdraw(address recipient) public { 
-    uint256 balance = balances[recipient]; 
-    recipient.call.value(balance)(); 
+  function withdraw(address recipient) public {
+    uint256 balance = balances[recipient];
+    recipient.call.value(balance)();
     balances[recipient] = 0; // Fix: place this line before the call.
-  } 
+  }
 }
 
 contract Attacker {
@@ -86,7 +86,8 @@ contract Attacker {
 }
 ```
 
-The vulnerability can be avoided by swapping the last two lines of the `withdraw` function. A type system could help ensure a contract can't send more Wei than it intended to.
+The vulnerability can be avoided by swapping the last two lines of the `withdraw` function.
+A type system could help ensure a contract can't send more Wei than it intended to.
 
 ## Proposed solution
 
@@ -102,21 +103,37 @@ Bank :: account <- (balances.keys) {
   mutating func deposit(implicit value: inout Wei) {
     // Omitting this line causes a compiler warning: the value received should be recorded.
     balances[address].transfer(&value)
-  }
+  }
 
   mutating func withdraw() {
     // balances[account] is automatically set to 0 before transferring.
     send(account, &balances[account])
-  }
+  }
 }
 ```
 
-We introduce the `Asset` trait and make `Wei` an instance of it. A Flint `Asset` represents an item of value \(for example, currency\). Asset types support a restricted set of operations and have their own semantics.
+We introduce the special standard library `Asset` structure trait and make `Wei` an instance of it. A Flint `Asset` represents an item of value (for example, currency).
 
+Asset types go beyond normal traits by only supporting a restricted set of operations and have their own semantics.
+
+### Compiler guaranteed properties
+- No Unprivileged Creation. It is not possible to create an asset of non-zero quantity
+without transferring it from another asset.
+- No Unprivileged Destruction. It is not possible to decrease the quantity of an asset
+without transferring it to another asset.
+- Safe Internal Transfers. Transferring a quantity of an asset from one variable to another
+within the same smart contract does not change the smart contract’s total quantity of the
+asset.
+- Safe External Transfers. Transferring a quantity `q` of an asset `A` from a smart contract `S`
+to an external Ethereum address decreases `S`’s representation of the total quantity of `A` by
+`q`. Sending a quantity `q'` of an asset `A` to `S` increases `S`’s representation of the total quantity
+of `A` by `q'`/
+
+### Definition
 The asset trait is defined as follows:
 
 ```swift
-trait Asset {
+struct trait Asset {
   associatedtype RawType
 
   // Create the asset by transferring a given amount of asset's contents.
@@ -131,18 +148,8 @@ trait Asset {
   // Transfer a given amount from source into the receiver.
   mutating func transfer(from source: inout Self, amount: RawType)
 
-  // Clears the receiver.
-  mutating func destroy()
+  // CONVENIENCE FUNCTIONS //
 
-  // Unsafely set the raw value of the receiver.
-  mutating func unsafelySetRawValue(_ value: RawType)
-}
-```
-
-We implement convenience functions:
-
-```swift
-extension Asset {
   // Create the asset by transferring another asset's contents.
   init(from other: inout Self) {
     self.init(from: &other, amount: other.getRawValue())
@@ -155,7 +162,7 @@ extension Asset {
 }
 ```
 
-And the global send function:
+As such the global send function would then become:
 
 ```swift
 func send<T: Asset & EthereumCurrency>(destination: Address, asset: T)
@@ -163,15 +170,15 @@ func send<T: Asset & EthereumCurrency>(destination: Address, asset: T)
 
 ## Assets backed by numeric raw values
 
-For types which are backed by a numeric value, such as `Wei` or `Ether`, we define the `Numeric` and `Comparable` traits and implement a trait extension.
+For types which are backed by a numeric value, such as `Wei` or `Ether`, we define the `Numeric` and `Comparable` structure traits and implement a trait extension.
 
 ```swift
-trait Numeric {
+struct trait Numeric {
   infix func +(_ other: Self)
   infix func -(_ other: Self)
 }
 
-trait Comparable {
+struct trait Comparable {
   infix func <(_ other: Self)
   infix func <=(_ other: Self)
   infix func >(_ other: Self)
@@ -180,8 +187,8 @@ trait Comparable {
 ```
 
 ```swift
-extension Asset where RawType: Numeric & Comparable {
-  // Self.RawType: Numeric
+struct trait NumericAsset: Asset {
+  associatedtype RawType: Numeric & Comparable
 
   mutating func transfer(from source: inout Self, amount: RawType) {
     if amount > source.getRawValue() { fatalError() }
@@ -189,17 +196,13 @@ extension Asset where RawType: Numeric & Comparable {
     source.unsafelySetRawValue(source.getRawValue() - amount)
     unsafelySetRawValue(getRawValue() + amount)
   }
-
-  mutating func destroy() {
-    unsafelySetRawValue(0)
-  }
 }
 ```
 
 Wei is then defined as:
 
 ```swift
-struct Wei: Asset, Currency {
+struct Wei: NumericAsset, EthereumCurrency {
   var rawValue: Int
 
   init(unsafeValue: Int) {
@@ -222,10 +225,10 @@ struct Wei: Asset, Currency {
 ```
 
 ## Semantics
+At the heart of Assets are the built-in semantics that lead to compiler warning triggers.
 
-Compiler warnings are triggered when asset local variables or parameters are not consumed exactly once in the scope of the function.
-
-SUSAN: WHY IS THIS ONLY A WARNING RATHER THAN AN ERROR?
+### Single consumption
+Compiler errors are triggered when asset local variables or parameters are not consumed exactly once in the scope of the function.
 
 ### Transferring an asset
 
@@ -276,12 +279,6 @@ let c = Wei(from: &b) // Warning: The contents of b have already been transferre
 let a = Wei(unsafeCreate: 50)
 ```
 
-#### Setting an asset's raw value
-
-```swift
-a.unsafelySetRawValue(50)
-```
-
 #### Destroying an asset
 
 ```swift
@@ -291,6 +288,7 @@ a.unsafelySetRawValue(50)
   // No warning.
 }
 ```
+
 
 ### Unsupported operations
 
@@ -323,7 +321,7 @@ mutating func foo(out: inout Wei) {
     var y = Wei(from: &self.b)
     x.destroy()
     z.destroy()
-    // Warning: The contents of y will be lost as y has not been transferred in this scope.
+    // Error: The contents of y will be lost as y has not been transferred in this scope.
   }
 
   out.transfer(from: &x)
@@ -343,7 +341,8 @@ func foo() {
 
 ### Impact on external function call
 
-It is not possible to declare a function taking `inout` parameters \(required for Asset types\) with `public` visibility.
+It is not possible to declare a function taking `inout` parameters (required for Asset types)
+with `public` visibility.
 
 ### Example: Withdrawing a specific amount
 
@@ -415,9 +414,7 @@ Wallet :: (owner) {
 
 ### Special syntax
 
-In the future, we should consider using syntactic sugar for the `Asset` operations.
-
-SUSAN: WHAT SHOULD THIS LOOK LIKE?
+In the future, we should consider using the following syntactic sugar for the `Asset` operations.
 
 ### @autodestroying attribute
 
@@ -445,7 +442,7 @@ We need to find compelling use-cases for this feature.
 We should consider implicitly converting compatible Asset types when applicable.
 
 ```swift
-// a has type Ether 
+// a has type Ether
 let b = Wei(from: &a) // Convert a to its Wei correspondant and assign to b.
 ```
 
@@ -500,4 +497,3 @@ class Wei: Asset<Int> {
 ### Linear types
 
 We considered implement the Asset trait as linear type. Local variables would have needed to be consumed exactly once in the scope they are defined. State properties however would only be able to be consumed at most once, making them affine types. These rules are however not enforcable for assets contained in arrays or dictionaries, due to aliasing issues. Instead, the compiler produces warnings whenever it can detect such cases.
-
