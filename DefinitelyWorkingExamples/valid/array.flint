@@ -1,0 +1,101 @@
+contract Test {
+  var owner: Address
+  var arr: Int[4]
+  var arr2: Int[10]
+  var arr3: [Int]
+  var numWrites: Int = 0
+
+//holistic specification
+	 // invariant (forall (t:Test, e:External, m:Int) :: (numWrites = m && next(numWrites = m + 1) ==> e.Calls(t.increaseNumWrites())))
+
+}
+
+Test :: caller <- (any) {
+  public init()
+  {
+    self.owner = caller
+
+    self.arr = []
+    self.arr2 = []
+    self.arr3 = []
+  }
+
+
+  func increaseNumWrites()
+    mutates (numWrites)
+		post (numWrites == prev(numWrites) + 1)
+  {
+    self.numWrites += 1
+  }
+
+  public func write(index: Int, val: Int)
+    mutates (numWrites, arr)
+		post (index >= prev(arr.size) ==> (arrayEach(i, arr, (i == prev(i)) && numWrites == prev(numWrites))))
+		post (index < prev(arr.size) ==> (forall (i, Int, arr[i] == prev(arr[i]) || i == index) && numWrites == prev(numWrites) + 1))
+    {
+    if index < arr.size {
+      arr[index] = val
+      increaseNumWrites()
+    }
+  }
+
+  public func value(index: Int) -> Int
+	post (returning (r, (index < arr.size ==> r == arr[index]) || r == 0))
+	{
+    if index < arr.size {
+      return arr[index]
+    }
+    return 0
+  }
+
+  public func value2(index: Int) -> Int
+  post (returning (r, (index < arr2.size ==> r == arr2[index]) || r == 1))
+  {
+    if index < arr2.size {
+      return arr2[index]
+    }
+    return 1
+  }
+
+  public func write2(index: Int, val: Int)
+    mutates (arr2, numWrites)
+    post (numWrites == prev(numWrites) + 1)
+    post (index < prev(arr2.size) ==> forall (i, Int, arr2[i] == prev(arr2[i]) || i == index))
+  {
+    if index < arr2.size {
+      arr2[index] = val
+    }
+    increaseNumWrites()
+  }
+
+  public func valueBoth(index: Int) -> Int
+  post (returning (r, r == 3 || (index < arr.size && index < arr2.size ==> r == arr[index] + arr2[index])))
+
+  {
+    if index < arr.size && index < arr2.size {
+      return arr[index] + arr2[index]
+    }
+    return 3
+  }
+
+  public func numWrites() -> Int
+  post (returning (r, r == numWrites))
+  {
+    return numWrites
+  }
+
+  public func write3()
+    mutates (arr3)
+    post (arr3[0] == 4)
+    post (forall(i, Int, 0 <= i && i < prev(arr3.size) ==> arr3[i] == prev(arr3[i]) || (i == 0)))
+  {
+    arr3[0] = 4
+  }
+
+  public func accessOutOfBounds()
+    //mutates (arr)
+  {
+    // Should fail
+    //arr[4] = 5
+  }
+}

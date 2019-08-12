@@ -1,0 +1,183 @@
+struct Proposal {
+  var proposer: Address = 0x0000000000000000000000000000000000000000
+  var value: Int = 0
+  var recipient: Address = 0x0000000000000000000000000000000000000000
+  var yesVotes: Int = 0
+  var noVotes: Int = 0
+  var quorum: Int = 0
+  var finished: Bool = false
+  var success: Bool = false
+  var voted: [Address: Bool]
+
+  invariant (value >= 0)
+  invariant (yesVotes >= 0)
+  invariant (noVotes >= 0)
+  invariant (quorum >= 0)
+
+  invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
+  invariant (finished == false ==> success == false)
+
+  public init() {
+    self.voted = [:]
+  }
+}
+
+contract SimpleDAO (Join, Propose, Vote) {
+  var avaliableMemberSlots: Int = 3
+  var proposal: Proposal
+  var members: [Address]
+  var balances: [Address: Int]
+  var totalSupply: Int = 0
+
+  invariant (members.size <= 3)
+  invariant (avaliableMemberSlots + members.size == 3)
+  invariant (totalSupply >= 0)
+  // invariant (forall (a, Address, balances[a] > 0))
+
+  // invariant (proposal.yesVotes + proposal.noVotes == totalSupply) //does not hold when calling leave
+
+  // want to say that each balance is less than the total supply
+  // invariant (forall (a, Address, balances[a] < totalSupply))
+
+  // sum of all the balances in the accounts corresbonding to memebers
+  
+}
+
+SimpleDAO @(any) :: (any) {
+  public init()
+    mutates (Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
+  {
+    proposal = Proposal()
+    self.members = []
+    self.balances = [:]
+    become Join
+  }
+}
+
+SimpleDAO @(Propose) :: caller <- (members) {
+  public func newProposal(recipient: Address, value: Int)
+    mutates (proposal, Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
+    post (value >= 0 ==> proposal.proposer == caller && proposal.value == value && proposal.recipient == recipient && proposal.quorum == self.totalSupply / 2)
+  {
+    // Satisfy invariant
+    if (value < 0) {
+      fatalError()
+    }
+
+    proposal = Proposal()
+    proposal.proposer = caller
+    proposal.value = value
+    proposal.recipient = recipient
+    proposal.quorum = totalSupply / 2
+    become Vote
+  }
+
+  // This isn't a good function because they don't stop being a member when they leave, but it's sufficient for testing
+  public func leave()
+    mutates (balances, totalSupply)
+    pre (totalSupply >= balances[caller])
+    post (totalSupply == prev(totalSupply) - prev(balances[caller]))
+    post (balances[caller] == 0)
+    post (forall (i, Int, 0 <= i && i < members.size ==> balances[members[i]] == prev(balances[members[i]]) || members[i] == caller))
+  {
+    let balance: Int = balances[caller]
+
+    balances[caller] = 0
+    totalSupply -= balance
+    // Transfer money
+  }
+}
+
+SimpleDAO @(Vote) :: caller <- (members) {
+  public func vote(approve: Bool)
+    mutates (proposal, Proposal.voted, Proposal.yesVotes, Proposal.noVotes)
+    pre (proposal.finished == false)
+    pre (balances[caller] > 0) // can remove after the invariant is fixed
+
+    post (proposal.voted[caller])
+    post (approve ==> proposal.yesVotes == prev(proposal.yesVotes) + balances[caller] && proposal.noVotes == prev(proposal.noVotes))
+    post (approve == false ==> proposal.noVotes == prev(proposal.noVotes) + balances[caller] && proposal.yesVotes == prev(proposal.yesVotes))
+  {
+    if proposal.voted[caller] {
+      fatalError()
+    }
+
+    if approve {
+      proposal.yesVotes += balances[caller]
+    } else {
+      proposal.noVotes += balances[caller]
+    }
+
+    proposal.voted[caller] = true
+  }
+
+  public func executeProposal()
+    mutates (proposal, Proposal.success, Proposal.finished)
+    pre (proposal.finished == false)
+    post (proposal.finished)
+    post (proposal.success == ((proposal.yesVotes + proposal.noVotes) >= proposal.quorum && proposal.yesVotes > proposal.noVotes))
+  {
+    if(caller != proposal.proposer || proposal.finished) {
+      fatalError()
+    }
+
+    proposal.finished = true
+    if (proposal.yesVotes + proposal.noVotes) >= proposal.quorum && proposal.yesVotes > proposal.noVotes {
+       proposal.success = true // Should also transfer money
+    }
+
+    become Propose
+  }
+}
+
+SimpleDAO @(Join) :: caller <- (any) {
+
+  public func join(value: Int)
+    mutates (balances, members, totalSupply, avaliableMemberSlots)
+    pre (value > 0)
+    pre(avaliableMemberSlots > 0)
+
+    post (balances[caller] == value)
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller)) //change balance
+    post (totalSupply == prev(totalSupply) + value)
+    post (members[3 - prev(avaliableMemberSlots)] == caller)
+    post (forall (i, Int, 0 <= i && i < members.size ==> members[i] == prev(members[i]) || (i == 3 - prev(avaliableMemberSlots)))) //change memebers
+    post (avaliableMemberSlots == prev(avaliableMemberSlots) - 1)
+  {
+    balances[caller] = value
+    totalSupply += value
+    members[3 - avaliableMemberSlots] = caller
+
+    avaliableMemberSlots -= 1
+    if avaliableMemberSlots < 1 {
+      become Propose
+    }
+  }
+
+  public func isJoin() -> Bool
+  post (returns (true))
+  {
+    return true
+  }
+}
+
+SimpleDAO @(any) :: (any) {
+  public func isMember(candidate: Address) -> Bool
+  post (returns (arrayContains(members, candidate)))
+  // post (returns (exists (i, Int, 0 <= i && i < members.size ==> members[i] == candidate)))
+  {
+    var found: Bool = false
+    for let member: Address in members {
+      if member == candidate {
+        found = true
+      }
+    }
+    return found
+  }
+
+  public func slotsLeft() -> Int
+  post (returns (avaliableMemberSlots))
+  {
+    return avaliableMemberSlots
+  }
+}

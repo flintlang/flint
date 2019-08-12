@@ -1,0 +1,225 @@
+// ----------------------------------------------------------------------------
+// Token using Flint features to add Minting
+// ----------------------------------------------------------------------------
+
+contract FlintToken (Minting, MintingFinished) {
+    var balances: [Address: Int]
+    var allowed: [Address: [Address: Int]]
+    var totalSupply: Int = 0
+    var owner: Address
+
+    event Transfer (
+      to: Address, value: Int, from: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    event Approval (from: Address, to: Address, value: Int)
+
+    event Mint (to: Address, value: Int)
+
+    event MintFinished ()
+    invariant (totalSupply >= 0)
+    // invariant (forall (a, Address, dictContains(balances, a) ==> balances[a] >= 0))
+    // invariant (forall (a1, Address, forall (a2, Address, allowed[a1][a2] >= 0)))
+}
+
+FlintToken @(any) :: caller <- (any) {
+  public init() {
+    self.owner = caller
+    self.balances = [:]
+    self.allowed = [:]
+    become Minting
+  }
+
+  func example(value: Int)
+  // post (returning (r, r == value > totalSupply))
+  // post (returning (r, value > totalSupply ==> r == 0 && value <= totalSupply ==> r == 1))
+  post (value > totalSupply ==> totalSupply == 1)
+  post (value <= totalSupply ==> totalSupply == 0
+  {
+    if value <= totalSupply {
+      totalSupply == 0
+    } else {
+    totalSupply == 1
+  }
+  }
+
+  // Transfer token for a specified address
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public func transfer(to: Address, value: Int) -> Bool
+    mutates (balances)
+    pre (value > 0)
+    pre (balances[caller] >= value)
+    pre (to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    pre (to != caller)
+    pre (dictContains(balances, caller))
+    pre (dictContains(balances, to))
+
+
+    post (balances[caller] == prev(balances[caller]) - value)
+    post (balances[to] == prev(balances[to]) + value)
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller || a == to))
+    post (returns (true))
+  {
+    assert(balances[caller] >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[caller] -= value
+    balances[to] += value
+
+    emit Transfer(to: to, value: value, from: caller)
+
+    return true;
+  }
+
+  // Approve the passed address to spend the specified amount of tokens on behalf of caller.
+  // - param to: The address to transfer to.
+  // - param value: The amount to be transferred.
+  // - return: true or is reverted
+  public func approve(spender: Address, value: Int) -> Bool
+    mutates (allowed)
+    pre (value > 0)
+    pre (dictContains(allowed, caller))
+    pre (dictContains(allowed[caller], spender))
+
+    post (allowed[caller][spender] == value)
+    // post (forall (a1, Address, dictContains(allowed, a1) ==> forall (a2, Address, dictContains(allowed[a1]) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (returns (true))
+  {
+    allowed[caller][spender] = value
+
+    emit Approval(from: caller, to: spender, value: value)
+    return true
+  }
+
+  // Transfer tokens from one address to another
+  // - param from: The address which you want to send tokens from.
+  // - param to: The address which you want to transfer to
+  // - param value: The amount of tokens to be transferred.
+  // - return: true or is reverted
+
+  public func transferFrom(from: Address, to: Address, value: Int) -> Bool
+    mutates (allowed, balances)
+
+    pre  (value > 0)
+    pre (balances[from] >= value && allowed[from][caller] >= value)
+    pre (to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    pre (from != to)
+    pre (dictContains(balances, from))
+    pre (dictContains(balances, to))
+    pre (dictContains(allowed, from))
+    pre (dictContains(allowed[from], caller))
+
+    post (balances[from] == prev(balances[from]) - value)
+    post (balances[to] == prev(balances[to]) + value)
+    post (allowed[from][caller] == prev(allowed[from][caller]) - value)
+    post (returns (true))
+    post (forall (a, Address, dictContains(balances, a) ==> balances[a] == prev(balances[a]) || a == from || a == to))
+    // post (forall (a1, Address, forall(a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == from && a2 == caller))))
+
+
+  {
+    let allowance: Int = allowed[from][caller]
+    assert(balances[from] >= value && allowance >= value)
+    assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    balances[from] -= value
+    balances[to] += value
+    allowed[from][caller] -= value
+
+    emit Transfer(to: to, value: value, from: from)
+    return true
+  }
+
+  // Increase the amount of tokens that an owner allowed to a spender.
+  // approve should be called when allowed[_spender] == 0. To increment
+  // allowed value is better to use this function to avoid 2 calls (and wait until
+  // the first     post (forall (a1: Address, a2: Address) :: (allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender)))
+// transaction is mined)
+  // From MonolithDAO Token.sol
+  // - param _spender The address which will spend the funds.
+  // - param _addedValue The amount of tokens to increase the allowance by.
+  func increaseApproval(spender: Address, addedValue: Int) -> Bool
+    mutates (allowed)
+    pre (addedValue >= 0)
+    pre (dictContains(allowed, caller))
+    pre (dictContains(allowed[caller], spender))
+
+    post (allowed[caller][spender] == prev(allowed[caller][spender]) + addedValue)
+    // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (returns (true))
+
+  {
+    allowed[caller][spender] += addedValue
+
+    let _value : Int = allowed[caller][spender]
+    emit Approval(from: caller, to: spender, value: _value)
+    return true;
+  }
+
+  // Decrease the amount of tokens that an owner allowed to a spender.
+  // approve should be called when allowed[_spender] == 0. To decrement
+  // allowed value is better to use this func to avoid 2 calls (and wait until
+  // the first transaction is mined)
+  // From MonolithDAO Token.sol
+  // - param _spender The address which will spend the funds.
+  // - param _subtractedValue The amount of tokens to decrease the allowance by.
+  func decreaseApproval(spender: Address, subtractedValue: Int) -> Bool
+    mutates (allowed)
+    pre (dictContains(allowed, caller))
+    pre (dictContains(allowed[caller], spender))
+
+    post (subtractedValue >= prev(allowed[caller][spender]) ==> allowed[caller][spender] == 0)
+    post (subtractedValue < prev(allowed[caller][spender]) ==> allowed[caller][spender] == prev(allowed[caller][spender]) - subtractedValue)
+    // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (returns (true))
+  {
+    let oldValue: Int = allowed[caller][spender]
+    if subtractedValue >= oldValue {
+      allowed[caller][spender] = 0
+    }
+    else {
+      allowed[caller][spender] = oldValue - subtractedValue
+    }
+
+    let _value : Int = allowed[caller][spender]
+    emit Approval(from: caller, to: spender, value: _value)
+    return true;
+  }
+}
+
+FlintToken @(Minting) :: (owner) {
+  // Internal func that mints an amount of the token and assigns it to
+  // an account. This encapsulates the modification of balances such that the
+  // proper events are emitted.
+  // - param account The account that will receive the created tokens.
+  // - param amount The amount that will be created.
+  public func mint(account: Address, amount: Int) -> Bool
+    mutates (totalSupply, balances)
+    pre (dictContains (balances, account))
+    pre (account != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    pre (amount >= 0)
+    post (returns (true))
+    post (balances[account] == prev(balances[account]) + amount)
+    post (totalSupply == prev(totalSupply) + amount)
+
+  {
+    assert(account != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+
+    totalSupply += amount
+    balances[account] += amount
+
+    emit Transfer(to: account, value: amount)
+    emit Mint(to: account, value: amount)
+    return true
+  }
+
+  // Stop minting new tokens
+  // Return true if successful
+  public func finishMinting() -> Bool
+  post(returns(true))
+  {
+    emit MintFinished()
+    return true
+    become MintingFinished
+  }
+}

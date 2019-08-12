@@ -1,0 +1,46 @@
+contract MultiOwnable {
+    var root : Address
+    var owners: [Address : Address] = [:]
+    let zero : Address = 0x0000000000000000000000000000000000000000
+
+
+    // invariant (forall (m : MultiOwnable) :: (exists (e: External, a: Address) :: (a == initial_owner ==> e.Calls(m.init(m.initial_owner)))))
+}
+
+MultiOwnable :: (any) {
+  public init(initial_owner: Address)
+  {
+    self.root = initial_owner
+    self.owners[root] = root
+  }
+
+  func checkIfOwner(address : Address) -> Bool
+  post (returns (owners[address] != zero))
+  {
+    let parent : Address = owners[address]
+    return parent != zero
+  }
+
+}
+
+MultiOwnable :: caller <- (checkIfOwner) {
+
+
+
+  public func addOwner(new_owner: Address)
+  mutates (owners)
+  post (owners[new_owner] == caller)
+  post (forall (a, Address, owners[a] == prev(owners[a]) || a == new_owner))
+  {
+       self.owners[new_owner] = caller
+
+  }
+
+  public func deleteOwner(owner: Address)
+  mutates (owners)
+  post (owners[owner] == zero)
+  post (forall (a, Address, dictContains(owners, a) ==> owners[a] == prev(owners[a]) || a == owner))
+  {
+       self.owners[owner] = zero
+  }
+}
