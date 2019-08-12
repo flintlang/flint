@@ -122,6 +122,15 @@ class FunctionContext: CustomStringConvertible {
     return doCatchStatementStack.last
   }
 
+  func isInOut(identifier: AST.Identifier) -> Bool {
+    return scopeContext.parameters.compactMap { (parameter: Parameter) in
+      if parameter.isInout {
+        return parameter.identifier
+      }
+      return nil
+    }.contains(identifier)
+  }
+
   public var description: String {
     return
         """

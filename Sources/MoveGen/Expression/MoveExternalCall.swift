@@ -21,10 +21,10 @@ struct MoveExternalCall {
     for parameter in externalCall.hyperParameters {
       switch parameter.identifier!.name {
       case "gas":
-        gasExpression = MoveExpression(expression: parameter.expression, asLValue: false)
+        gasExpression = MoveExpression(expression: parameter.expression, position: .normal)
           .rendered(functionContext: functionContext)
       case "value":
-        valueExpression = MoveExpression(expression: parameter.expression, asLValue: false)
+        valueExpression = MoveExpression(expression: parameter.expression, position: .normal)
           .rendered(functionContext: functionContext)
       default:
         break
@@ -175,7 +175,7 @@ struct MoveExternalCall {
       BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
-    let stateVariableRendered = MoveExpression(expression: selfState, asLValue: false)
+    let stateVariableRendered = MoveExpression(expression: selfState, position: .normal)
       .rendered(functionContext: functionContext)
 
     functionContext.emit(.expression(.variableDeclaration(
@@ -194,7 +194,7 @@ struct MoveExternalCall {
       BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
-    let stateVariableRendered = MoveExpression(expression: selfState, asLValue: true)
+    let stateVariableRendered = MoveExpression(expression: selfState, position: .left)
       .rendered(functionContext: functionContext)
   }
 
@@ -206,7 +206,7 @@ struct MoveExternalCall {
       BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: .DUMMY)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: .DUMMY),
                        rhs: stateVariable))
-    let stateVariableRendered = MoveExpression(expression: selfState, asLValue: true)
+    let stateVariableRendered = MoveExpression(expression: selfState, position: .left)
       .rendered(functionContext: functionContext)
   }
 }

@@ -8,3 +8,7 @@ enum Move {
   public static let statementSeparator = ";"
   public static let statementLineSeparator = ";\n"
 }
+
+enum Position {
+  case left, accessed, normal
+}

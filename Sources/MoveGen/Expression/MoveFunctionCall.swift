@@ -28,12 +28,12 @@ struct MoveFunctionCall {
       environment.matchFunctionCall(functionCall, enclosingType: enclosingType,
                                     typeStates: [], callerProtections: [], scopeContext: scopeContext),
       initializer.declaration.generated {
-      return MoveExpression(expression: functionCall.arguments[0].expression, asLValue: false)
+      return MoveExpression(expression: functionCall.arguments[0].expression, position: .normal)
         .rendered(functionContext: functionContext)
     }
 
-    let args: [MoveIR.Expression] = functionCall.arguments.map({ argument in
-      return MoveExpression(expression: argument.expression, asLValue: false)
+    let args: [MoveIR.Expression] = functionCall.arguments.map({ (argument: FunctionArgument) in
+      return MoveExpression(expression: argument.expression, position: .normal)
           .rendered(functionContext: functionContext)
     })
 

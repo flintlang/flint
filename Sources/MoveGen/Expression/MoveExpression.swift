@@ -12,26 +12,26 @@ import MoveIR
 /// Generates code for an expression.
 struct MoveExpression {
   var expression: AST.Expression
-  var asLValue: Bool
+  var position: Position
 
-  init(expression: AST.Expression, asLValue: Bool = false) {
+  init(expression: AST.Expression, position: Position = .normal) {
     self.expression = expression
-    self.asLValue = asLValue
+    self.position = position
   }
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     switch expression {
     case .inoutExpression(let inoutExpression):
-      return MoveExpression(expression: inoutExpression.expression, asLValue: true)
+      return MoveInOutExpression(expression: inoutExpression, position: position)
         .rendered(functionContext: functionContext)
     case .binaryExpression(let binaryExpression):
-      return MoveBinaryExpression(binaryExpression: binaryExpression, asLValue: asLValue)
+      return MoveBinaryExpression(binaryExpression: binaryExpression, position: position)
         .rendered(functionContext: functionContext)
     case .typeConversionExpression(let typeConversionExpression):
       return MoveTypeConversionExpression(typeConversionExpression: typeConversionExpression)
         .rendered(functionContext: functionContext)
     case .bracketedExpression(let bracketedExpression):
-      return MoveExpression(expression: bracketedExpression.expression, asLValue: asLValue)
+      return MoveExpression(expression: bracketedExpression.expression, position: position)
         .rendered(functionContext: functionContext)
     case .attemptExpression(let attemptExpression):
       return MoveAttemptExpression(attemptExpression: attemptExpression).rendered(functionContext: functionContext)
@@ -40,7 +40,7 @@ struct MoveExpression {
     case .externalCall(let externalCall):
       return MoveExternalCall(externalCall: externalCall).rendered(functionContext: functionContext)
     case .identifier(let identifier):
-      return MoveIdentifier(identifier: identifier, asLValue: asLValue).rendered(functionContext: functionContext)
+      return MoveIdentifier(identifier: identifier, position: position).rendered(functionContext: functionContext)
     case .variableDeclaration(let variableDeclaration):
       return MoveVariableDeclaration(variableDeclaration: variableDeclaration)
         .rendered(functionContext: functionContext)
@@ -57,14 +57,14 @@ struct MoveExpression {
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
       return .literal(Literal.num(0))
     case .`self`(let expression):
-      return MoveSelf(selfToken: expression, asLValue: asLValue)
+      return MoveSelf(selfToken: expression, position: position)
         .rendered(functionContext: functionContext)
     case .subscriptExpression(let subscriptExpression):
       return MoveSubscriptExpression(subscriptExpression: subscriptExpression,
-                                   asLValue: asLValue).rendered(functionContext: functionContext)
+                                     position: position).rendered(functionContext: functionContext)
     case .sequence(let expressions):
       return .inline(expressions.map({ expression in
-        return MoveExpression(expression: expression, asLValue: asLValue)
+        return MoveExpression(expression: expression, position: position)
           .rendered(functionContext: functionContext).description
       }).joined(separator: Move.statementLineSeparator))
     case .rawAssembly(let assembly, _):

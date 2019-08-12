@@ -33,7 +33,7 @@ struct MoveAssignment {
       return .assignment(Assignment(identifier.name.mangled, rhsIr))
     default:
       // LHS refers to a property in storage or memory.
-      let lhsIr = MoveExpression(expression: lhs, asLValue: true).rendered(functionContext: functionContext)
+      let lhsIr = MoveExpression(expression: lhs, position: .left).rendered(functionContext: functionContext)
 
       if functionContext.isInStructFunction {
         let enclosingName: String

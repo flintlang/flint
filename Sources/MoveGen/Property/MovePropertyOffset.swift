@@ -14,10 +14,10 @@ struct MovePropertyOffset {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if case .binaryExpression(let binaryExpression) = expression {
-      return MovePropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: true)
+      return MovePropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, position: .left)
         .rendered(functionContext: functionContext)
     } else if case .subscriptExpression(let subscriptExpression) = expression {
-      return MoveSubscriptExpression(subscriptExpression: subscriptExpression, asLValue: true)
+      return MoveSubscriptExpression(subscriptExpression: subscriptExpression, position: .left)
         .rendered(functionContext: functionContext)
     }
     guard case .identifier(let identifier) = expression else { fatalError() }

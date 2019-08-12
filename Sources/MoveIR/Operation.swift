@@ -29,6 +29,10 @@ public enum Operation: CustomStringConvertible {
   case power(MoveIR.Expression, MoveIR.Expression)
   case access(MoveIR.Expression, Identifier)
 
+  case reference(MoveIR.Expression)
+  case mutableReference(MoveIR.Expression)
+  case dereference(MoveIR.Expression)
+
   public var description: String {
     switch self {
     case .add(let left, let right): return "\(left) + \(right)"
@@ -50,6 +54,9 @@ public enum Operation: CustomStringConvertible {
     case .not(let expression): return "!\(expression)"
     case .power(let left, let right): return "\(left) ** \(right)"
     case .access(let object, let field): return "\(object).\(field)"
+    case .reference(let expression): return "&\(expression)"
+    case .mutableReference(let expression): return "&mut \(expression)"
+    case .dereference(let reference): return "*\(reference)"
     }
   }
 }

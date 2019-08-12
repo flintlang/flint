@@ -38,7 +38,7 @@ struct MoveStructInitializer {
                              isInStructFunction: true)
 
     return initializerDeclaration.explicitParameters.map {
-      MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
+      MoveIdentifier(identifier: $0.identifier, position: .left).rendered(functionContext: fc).description
     }
   }
 
@@ -195,7 +195,7 @@ struct MoveStructInitializerBody {
 
     functionContext.isConstructor = false
 
-    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation, asLValue: true)
+    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation, position: .left)
         .rendered(functionContext: functionContext).description
     let selfType = renderMoveType(functionContext: functionContext)
     functionContext.emit(

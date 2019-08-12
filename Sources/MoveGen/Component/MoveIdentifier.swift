@@ -11,11 +11,11 @@ import MoveIR
 /// Generates code for an identifier.
 struct MoveIdentifier {
   var identifier: AST.Identifier
-  var asLValue: Bool
+  var position: Position
 
-  init(identifier: AST.Identifier, asLValue: Bool = false) {
+  init(identifier: AST.Identifier, position: Position = .normal) {
     self.identifier = identifier
-    self.asLValue = asLValue
+    self.position = position
   }
 
   func rendered(functionContext: FunctionContext, forceMove: Bool = false) -> MoveIR.Expression {
@@ -26,24 +26,22 @@ struct MoveIdentifier {
         return MovePropertyAccess(
             lhs: .`self`(Token(kind: .`self`, sourceLocation: identifier.sourceLocation)),
             rhs: .identifier(identifier),
-            asLValue: asLValue
+            position: position
         ).rendered(functionContext: functionContext) // TODO: Preamble not handled
       }
     }
     if identifier.isSelf {
-      return MoveSelf(selfToken: identifier.identifierToken, asLValue: asLValue)
+      return MoveSelf(selfToken: identifier.identifierToken, position: position)
           .rendered(functionContext: functionContext, forceMove: forceMove)
     }
 
     let irIdentifier = MoveIR.Expression.identifier(identifier.name.mangled)
 
-    if asLValue {
+    if case .left = position {
       return irIdentifier
     } else {
       let rawType: RawType? = functionContext.scopeContext.type(for: identifier.name)
-      if (rawType?.isCurrencyType ?? false)
-         || functionContext.environment.isContractDeclared(rawType?.name ?? "")
-         || forceMove {
+      if forceMove {
         return MoveIR.Expression.transfer(.move(irIdentifier))
       } else {
         return MoveIR.Expression.transfer(.copy(irIdentifier))

@@ -10,11 +10,11 @@ import MoveIR
 /// Generates code for a binary expression.
 struct MoveBinaryExpression {
   var binaryExpression: BinaryExpression
-  var asLValue: Bool
+  var position: Position
 
-  init(binaryExpression: BinaryExpression, asLValue: Bool = false) {
+  init(binaryExpression: BinaryExpression, position: Position = .left) {
     self.binaryExpression = binaryExpression
-    self.asLValue = asLValue
+    self.position = position
   }
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
@@ -22,7 +22,7 @@ struct MoveBinaryExpression {
       if case .functionCall(let functionCall) = binaryExpression.rhs {
         return MoveFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
       }
-      return MovePropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, asLValue: asLValue)
+      return MovePropertyAccess(lhs: binaryExpression.lhs, rhs: binaryExpression.rhs, position: position)
         .rendered(functionContext: functionContext)
     }
 
@@ -31,9 +31,9 @@ struct MoveBinaryExpression {
         .rendered(functionContext: functionContext)
     }
 
-    let lhs = MoveExpression(expression: binaryExpression.lhs, asLValue: asLValue)
+    let lhs = MoveExpression(expression: binaryExpression.lhs, position: position)
       .rendered(functionContext: functionContext)
-    let rhs = MoveExpression(expression: binaryExpression.rhs, asLValue: asLValue)
+    let rhs = MoveExpression(expression: binaryExpression.rhs, position: position)
       .rendered(functionContext: functionContext)
 
     switch binaryExpression.opToken {

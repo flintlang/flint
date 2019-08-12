@@ -21,7 +21,7 @@ public enum Type: CustomStringConvertible {
     case .u64: return "u64"
     case .address: return "address"
     case .`struct`(let name): return "V#\(name)"
-    case .resource(let name): return "R#\(name)"
+    case .resource(let name): return "&mut R#\(name)"
     case .any: return "__UnknownAnyType<PleaseSee:MoveIR/Type.swift>"
     }
   }

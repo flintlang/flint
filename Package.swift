@@ -31,7 +31,7 @@ let package = Package(
     .package(url: "https://github.com/llvm-swift/Lite.git", from: "0.0.3"),
     .package(url: "https://github.com/llvm-swift/FileCheck.git", from: "0.0.4"),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", from: "0.0.1"),
-    .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/flintlang/Cuckoo.git", .branch("master")),
     .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
     .package(url: "https://github.com/attaswift/BigInt.git", from: "4.0.0"),
     .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", from: "4.0.0")

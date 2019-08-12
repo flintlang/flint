@@ -10,7 +10,7 @@ import MoveIR
 /// Generates code for a subscript expression.
 struct MoveSubscriptExpression {
   var subscriptExpression: SubscriptExpression
-  var asLValue: Bool
+  var position: Position
 
   func baseIdentifier(_ baseExpression: AST.Expression) -> AST.Identifier? {
     if case .identifier(let identifier) = baseExpression {
@@ -69,7 +69,7 @@ struct MoveSubscriptExpression {
                                           baseOffset: baseOffset,
                                           functionContext: functionContext)
 
-    if asLValue {
+    if position == Position.left {
       return memLocation
     } else {
       return .functionCall(FunctionCall("sload", memLocation))

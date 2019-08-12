@@ -17,7 +17,7 @@ struct MoveVariableDeclaration {
         environment: functionContext.environment
     )!.render(functionContext: functionContext)
     guard !variableDeclaration.identifier.isSelf else {
-      let selfName = MoveSelf(selfToken: variableDeclaration.identifier.identifierToken, asLValue: false)
+      let selfName = MoveSelf(selfToken: variableDeclaration.identifier.identifierToken, position: .normal)
           .rendered(functionContext: functionContext).description
       return .variableDeclaration(MoveIR.VariableDeclaration((selfName, typeIR)))
     }

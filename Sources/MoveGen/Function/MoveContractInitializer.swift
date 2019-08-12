@@ -31,7 +31,7 @@ struct MoveContractInitializer {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return initializerDeclaration.explicitParameters.map {
-      MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
+      MoveIdentifier(identifier: $0.identifier, position: .left).rendered(functionContext: fc).description
     }
   }
 

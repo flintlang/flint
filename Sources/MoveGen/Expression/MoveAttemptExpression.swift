@@ -23,7 +23,8 @@ struct MoveAttemptExpression {
     }
 
     let args = functionCall.arguments.map({ argument in
-      return MoveExpression(expression: argument.expression, asLValue: false).rendered(functionContext: functionContext)
+      return MoveExpression(expression: argument.expression, position: .normal)
+          .rendered(functionContext: functionContext)
     })
 
     return .functionCall(MoveIR.FunctionCall(callName, args))

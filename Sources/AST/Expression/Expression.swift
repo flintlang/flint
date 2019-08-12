@@ -122,7 +122,7 @@ public indirect enum Expression: ASTNode {
     case .literal(let literal): return literal.description
     case .arrayLiteral(let arrayLiteral): return arrayLiteral.description
     case .dictionaryLiteral(let dictionaryLiteral): return dictionaryLiteral.description
-    case .self(let `self`): return self.description
+    case .`self`(let `self`): return self.description
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.description
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.description
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.description

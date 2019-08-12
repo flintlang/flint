@@ -17,7 +17,7 @@ struct MoveStatement {
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     switch statement {
     case .expression(let expression):
-      return .expression(MoveExpression(expression: expression, asLValue: false)
+      return .expression(MoveExpression(expression: expression, position: .normal)
         .rendered(functionContext: functionContext))
     case .ifStatement(let ifStatement):
       return MoveIfStatement(ifStatement: ifStatement).rendered(functionContext: functionContext)

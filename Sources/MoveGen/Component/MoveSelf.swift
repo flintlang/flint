@@ -14,13 +14,13 @@ import AST
 /// Generates code for a "self" expression.
 struct MoveSelf {
   var selfToken: Token
-  var asLValue: Bool = false
+  var position: Position = .normal
 
   public static let selfName = "this"
   public static let selfPrefix = "__\(selfName)_"
 
-  static func generate(sourceLocation: SourceLocation, asLValue: Bool = false) -> MoveSelf {
-    return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), asLValue: asLValue)
+  static func generate(sourceLocation: SourceLocation, position: Position = .normal) -> MoveSelf {
+    return MoveSelf(selfToken: Token(kind: Token.Kind.`self`, sourceLocation: sourceLocation), position: position)
   }
 
   func rendered(functionContext: FunctionContext, forceMove: Bool = false) -> MoveIR.Expression {
@@ -38,10 +38,15 @@ struct MoveSelf {
       exit(1)
     }
 
-    if asLValue {
+    if case .left = position {
       return .identifier(MoveSelf.selfName)
-    } else if !functionContext.isInStructFunction || forceMove {
-        return .transfer(.move(.identifier(MoveSelf.selfName)))
+    } else if forceMove {
+      return .transfer(.move(.identifier(MoveSelf.selfName)))
+    } else if /* !functionContext.isInStructFunction, */
+              case .accessed = position {
+      return .operation(.dereference(.operation(.mutableReference(
+          .transfer(.copy(.identifier(MoveSelf.selfName)))
+      ))))
     } else {
       return .transfer(.copy(.identifier(MoveSelf.selfName)))
     }

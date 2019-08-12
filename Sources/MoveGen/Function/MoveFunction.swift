@@ -54,7 +54,7 @@ struct MoveFunction {
                              enclosingTypeName: typeIdentifier.name,
                              isInStructFunction: !isContractFunction)
     return functionDeclaration.explicitParameters.map {
-        MoveIdentifier(identifier: $0.identifier, asLValue: true).rendered(functionContext: fc).description
+        MoveIdentifier(identifier: $0.identifier, position: .left).rendered(functionContext: fc).description
     }
   }
 
