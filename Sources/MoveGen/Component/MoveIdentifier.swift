@@ -40,11 +40,10 @@ struct MoveIdentifier {
     if case .left = position {
       return irIdentifier
     } else {
-      let rawType: RawType? = functionContext.scopeContext.type(for: identifier.name)
       if forceMove {
-        return MoveIR.Expression.transfer(.move(irIdentifier))
+        return .transfer(.move(irIdentifier))
       } else {
-        return MoveIR.Expression.transfer(.copy(irIdentifier))
+        return .transfer(.copy(irIdentifier))
       }
     }
   }

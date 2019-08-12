@@ -122,13 +122,19 @@ class FunctionContext: CustomStringConvertible {
     return doCatchStatementStack.last
   }
 
+  // Maybe rename to reflect checks if id is a MoveIR reference?
   func isInOut(identifier: AST.Identifier) -> Bool {
-    return scopeContext.parameters.compactMap { (parameter: Parameter) in
-      if parameter.isInout {
-        return parameter.identifier
+    return scopeContext.parameters.contains(where: { (parameter: Parameter) in
+      if parameter.identifier.name == identifier.name {
+        if parameter.isInout {
+          return true
+        } else if let type = CanonicalType(from: parameter.type.rawType, environment: environment),
+                  case .resource = type {
+          return true
+        }
       }
-      return nil
-    }.contains(identifier)
+      return false
+    })
   }
 
   public var description: String {
