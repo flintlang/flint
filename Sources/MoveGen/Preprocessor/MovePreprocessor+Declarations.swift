@@ -75,36 +75,10 @@ extension MovePreprocessor {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-      // Add address referring to this contract and extract the instance of the contract from it
-      /*let contractAddressIdentifier = Identifier(
-       identifierToken: Token(kind: .identifier("_address_\(MoveSelf.selfName)"),
-       sourceLocation: functionDeclaration.sourceLocation)
-       )
-       let parameter = Parameter(identifier: contractAddressIdentifier,
-       type: Type(inferredType: .basicType(.address), identifier: contractAddressIdentifier),
-       implicitToken: nil,
-       assignedExpression: nil)
-       
-       functionDeclaration.signature.parameters.insert(parameter, at: 0)
-       
-       let selfToken: Token = Token(kind: .`self`, sourceLocation: functionDeclaration.sourceLocation)
-       let selfIdentifier = Identifier(identifierToken: selfToken)
-       let selfType: RawType = .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name)
-       let selfDeclaration = VariableDeclaration(modifiers: [],
-       declarationToken: nil,
-       identifier: selfIdentifier,
-       type: Type(inferredType: selfType, identifier: selfIdentifier))
-       let selfAssignment = BinaryExpression(lhs: .variableDeclaration(selfDeclaration),
-       op: Token(kind: .punctuation(.equal),
-       sourceLocation: functionDeclaration.sourceLocation),
-       rhs: .rawAssembly(
-       "borrow_global<T>(\(contractAddressIdentifier.name.mangled))",
-       resultType: selfType))
-       let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
-       functionDeclaration.body.insert(selfAssignmentStmt, at: 0)*/
       let parameter = constructThisParameter(
         type: .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
+
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
 
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
@@ -135,7 +109,17 @@ extension MovePreprocessor {
           expression: nil
         )))
       }
+    } else {
+      // Add return variable
+      let returnVariableDeclaration = VariableDeclaration(
+        modifiers: [],
+        declarationToken: nil,
+        identifier: Identifier(name: MoveFunction.returnVariableName,
+                               sourceLocation: functionDeclaration.body.last!.sourceLocation),
+        type: functionDeclaration.signature.resultType!)
+      functionDeclaration.body.insert(.expression(.variableDeclaration(returnVariableDeclaration)), at: 0)
     }
+    //print(passContext.scopeContext!.localVariables)
 
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }

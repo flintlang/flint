@@ -32,7 +32,7 @@ struct MoveIdentifier {
     }
     if identifier.isSelf {
       return MoveSelf(selfToken: identifier.identifierToken, asLValue: asLValue)
-          .rendered(functionContext: functionContext)
+          .rendered(functionContext: functionContext, forceMove: forceMove)
     }
 
     let irIdentifier = MoveIR.Expression.identifier(identifier.name.mangled)
