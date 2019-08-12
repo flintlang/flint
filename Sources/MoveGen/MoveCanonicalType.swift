@@ -33,7 +33,6 @@ indirect enum CanonicalType: CustomStringConvertible {
         return nil
       }
     case .userDefinedType(let id):
-      print("\(#file):\(#line)", id, environment?.isContractDeclared(id))
       if rawType.isCurrencyType || (environment?.isContractDeclared(id) ?? false) {
         self = .resource(id)
       } else {
@@ -41,12 +40,7 @@ indirect enum CanonicalType: CustomStringConvertible {
       }
     case .inoutType(let rawType):
       guard let type = CanonicalType(from: rawType, environment: environment) else { return nil }
-      if case .mutableReference = type {
-        print("\(#file):\(#line)", "Error, double mutable reference \(rawType)") // Should never happen, but leave in
-        self = type
-      } else {
-        self = .mutableReference(type)
-      }
+      self = .mutableReference(type)
     // FIXME The collection types are just stub to make the code work
     // and should probably be modified
     case .fixedSizeArrayType(let type, let size):

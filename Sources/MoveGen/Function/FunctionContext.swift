@@ -107,7 +107,7 @@ class FunctionContext: CustomStringConvertible {
   /// Returns the string representation of the outer block.
   /// The FunctionContext should not be used after this is called.
   func finalise() -> String {
-    return (popBlock().statements.map {$0.description}).joined(separator: "\n")
+    return (popBlock().statements.map { $0.description }).joined(separator: "\n")
   }
 
   func pushDoCatch(_ doCatchStatement: DoCatchStatement) {
@@ -152,15 +152,15 @@ class FunctionContext: CustomStringConvertible {
         }
         """
   }
-  
+
   public func emitReferencesRelease() {
     let referencesToRelease: [AST.Identifier] = scopeContext.parameters
-      .filter {$0.isInout}
-      .map {$0.identifier}
+        .filter { $0.isInout }
+        .map { $0.identifier }
     referencesToRelease.forEach { reference in
       let referenceExpression: MoveIR.Expression
-        = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
+          = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
       self.emit(.inline("release(\(referenceExpression))"))
-      }
+    }
   }
 }
