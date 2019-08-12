@@ -189,6 +189,7 @@ struct MoveStructInitializerBody {
     ))
 
     guard !statements.isEmpty else {
+      functionContext.emitReferencesRelease()
       functionContext.emit(.return(constructor))
       return functionContext.finalise()
     }
