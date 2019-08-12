@@ -34,7 +34,7 @@ let package = Package(
     .package(url: "https://github.com/llvm-swift/Lite.git", .branch("master")),
     .package(url: "https://github.com/llvm-swift/FileCheck.git", .branch("master")),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", .branch("master")),
-    .package(url: "https://github.com/flintrocks/Cuckoo.git", .branch("master")),
+    .package(url: "https://github.com/flintlang/Cuckoo.git", .branch("master")),
     .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
     .package(url: "https://github.com/attaswift/BigInt.git", .branch("master")),
     .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .branch("master"))
