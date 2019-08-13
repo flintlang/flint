@@ -51,16 +51,28 @@ extension MovePreprocessor {
           }
           return FunctionArgument(.identifier(p.identifier))
         }
-        parameterAssignedFunction.body = [.returnStatement(
-            ReturnStatement(returnToken: Token(kind: .return, sourceLocation: parameter.sourceLocation),
-                            expression: .functionCall(FunctionCall(
-                                identifier: function.identifier,
-                                arguments: arguments,
-                                closeBracketToken: Token(kind: .punctuation(.closeBracket),
-                                                         sourceLocation: parameter.sourceLocation),
-                                isAttempted: false
-                            )))
-        )]
+        if parameterAssignedFunction.signature.resultType != nil {
+          parameterAssignedFunction.body = [.returnStatement(
+              ReturnStatement(returnToken: Token(kind: .return, sourceLocation: parameter.sourceLocation),
+                              expression: .functionCall(FunctionCall(
+                                  identifier: function.identifier,
+                                  arguments: arguments,
+                                  closeBracketToken: Token(kind: .punctuation(.closeBracket),
+                                                           sourceLocation: parameter.sourceLocation),
+                                  isAttempted: false
+                              )))
+          )]
+        } else {
+          parameterAssignedFunction.body = [
+            .expression(.functionCall(FunctionCall(
+                identifier: function.identifier,
+                arguments: arguments,
+                closeBracketToken: Token(kind: .punctuation(.closeBracket),
+                                         sourceLocation: parameter.sourceLocation),
+                isAttempted: false
+            )))
+          ]
+        }
         parameterAssignedFunctions.append(parameterAssignedFunction)
       }
       functions += parameterAssignedFunctions
