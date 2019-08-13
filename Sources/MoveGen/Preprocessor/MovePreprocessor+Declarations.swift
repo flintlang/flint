@@ -21,8 +21,9 @@ extension MovePreprocessor {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  func generateParameterAssignedFunctions(_ base: FunctionDeclaration) -> [FunctionDeclaration] {
-    let defaultParameters = base.signature.parameters.filter { $0.assignedExpression != nil }
+  func generateParameterAssignedFunctions(_ base: FunctionDeclaration,
+                                          enclosingType: String) -> [FunctionDeclaration] {
+    let defaultParameters = base.signature.parameters.filter { $0.assignedExpression != nil }.reversed()
     var functions = [base]
 
     for parameter: Parameter in defaultParameters {
@@ -32,22 +33,46 @@ extension MovePreprocessor {
         var parameterAssignedFunction = function
         parameterAssignedFunction.signature.parameters = parameterAssignedFunction.signature.parameters
             .filter { $0.identifier.name != parameter.identifier.name }
+
+        // TODO fix by maybe mangling argument names into function names?
+        //  Right now we cannot have two functions with the same name and type,
+        //  so we're just generating the one with the last/most likely parameter filled in
+        let parameterTypes = { (f: FunctionDeclaration) in f.signature.parameters.map { $0.type.rawType.name } }
+        guard !functions.contains(
+            where: { parameterTypes($0) == parameterTypes(parameterAssignedFunction) }
+        ) else {
+          continue
+        }
+
         let arguments = function.explicitParameters.map { (p: Parameter) -> FunctionArgument in
           if p.identifier.name == parameter.identifier.name {
-            return FunctionArgument(parameter.assignedExpression!)
+            var expression = parameter.assignedExpression!
+            return FunctionArgument(expression.assigningEnclosingType(type: enclosingType))
           }
-          return FunctionArgument(.identifier(parameter.identifier))
+          return FunctionArgument(.identifier(p.identifier))
         }
-        parameterAssignedFunction.body = [.returnStatement(
-            ReturnStatement(returnToken: Token(kind: .return, sourceLocation: parameter.sourceLocation),
-                            expression: .functionCall(FunctionCall(
-                                identifier: function.identifier,
-                                arguments: arguments,
-                                closeBracketToken: Token(kind: .punctuation(.closeBracket),
-                                                         sourceLocation: parameter.sourceLocation),
-                                isAttempted: false
-                            )))
-        )]
+        if parameterAssignedFunction.signature.resultType != nil {
+          parameterAssignedFunction.body = [.returnStatement(
+              ReturnStatement(returnToken: Token(kind: .return, sourceLocation: parameter.sourceLocation),
+                              expression: .functionCall(FunctionCall(
+                                  identifier: function.identifier,
+                                  arguments: arguments,
+                                  closeBracketToken: Token(kind: .punctuation(.closeBracket),
+                                                           sourceLocation: parameter.sourceLocation),
+                                  isAttempted: false
+                              )))
+          )]
+        } else {
+          parameterAssignedFunction.body = [
+            .expression(.functionCall(FunctionCall(
+                identifier: function.identifier,
+                arguments: arguments,
+                closeBracketToken: Token(kind: .punctuation(.closeBracket),
+                                         sourceLocation: parameter.sourceLocation),
+                isAttempted: false
+            )))
+          ]
+        }
         parameterAssignedFunctions.append(parameterAssignedFunction)
       }
       functions += parameterAssignedFunctions
@@ -61,12 +86,30 @@ extension MovePreprocessor {
     contractBehaviorDeclaration.members = contractBehaviorDeclaration.members
         .flatMap { (member: ContractBehaviorMember) -> [ContractBehaviorMember] in
       if case .functionDeclaration(let function) = member {
-        return generateParameterAssignedFunctions(function).map { .functionDeclaration($0) }
+        return generateParameterAssignedFunctions(
+            function,
+            enclosingType: contractBehaviorDeclaration.contractIdentifier.name
+        ).map { .functionDeclaration($0) }
       }
       return [member]
     }
 
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(structDeclaration: StructDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
+    var structDeclaration = structDeclaration
+    structDeclaration.members = structDeclaration.members
+        .flatMap { (member: StructMember) -> [StructMember] in
+      if case .functionDeclaration(let function) = member {
+        return generateParameterAssignedFunctions(function, enclosingType: structDeclaration.identifier.name)
+            .map { .functionDeclaration($0) }
+      }
+      return [member]
+    }
+
+    return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
 
   public func process(functionDeclaration: FunctionDeclaration,
