@@ -6,6 +6,7 @@
 //
 
 import Lexer
+import Source
 
 /// Contextual information used when visiting the state properties declared in a contract declaration.
 public struct ContractStateDeclarationContext {
@@ -107,6 +108,7 @@ public struct ScopeContext: Equatable {
   public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
   public var boundVariablesStack: [Identifier] = []
+  var counter: Int = 0
 
   public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
     self.parameters = parameters
@@ -135,6 +137,12 @@ public struct ScopeContext: Equatable {
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }
 
+  public mutating func freshIdentifier(sourceLocation: SourceLocation) -> Identifier {
+    counter += 1
+    return Identifier(name: "$temp$\(localVariables.count + parameters.count + counter)",
+                      sourceLocation: sourceLocation)
+  }
+
   /// Whether the given parameter is implicit.
   public func isParameterImplicit(_ parameterName: String) -> Bool {
     guard let parameter = parameters.first(where: { $0.identifier.name == parameterName }) else {
@@ -149,8 +157,8 @@ public struct ScopeContext: Equatable {
   /// function.
   public func enclosingParameter(expression: Expression, enclosingTypeName: String) -> String? {
     guard expression.enclosingType != enclosingTypeName,
-      let enclosingIdentifier = expression.enclosingIdentifier,
-      containsParameterDeclaration(for: enclosingIdentifier.name) else {
+          let enclosingIdentifier = expression.enclosingIdentifier,
+          containsParameterDeclaration(for: enclosingIdentifier.name) else {
       return nil
     }
 

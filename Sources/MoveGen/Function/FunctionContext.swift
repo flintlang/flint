@@ -103,7 +103,7 @@ class FunctionContext: CustomStringConvertible {
   }
 
   func freshVariable() -> String {
-    let varName = "$temp\(self.counter)"
+    let varName = "$temp$functionContext$\(self.counter)"
     self.counter += 1
     return varName
   }

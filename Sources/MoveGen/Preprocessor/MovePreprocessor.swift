@@ -51,6 +51,38 @@ public struct MovePreprocessor: ASTPass {
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
+    var statement = statement
+    var passContext = passContext
+    if case .expression(let expression) = statement,
+       case .binaryExpression(let binaryExpression) = expression,
+       case .punctuation(.dot) = binaryExpression.op.kind,
+       case .functionCall(let call) = binaryExpression.rhs,
+       let environment = passContext.environment,
+       case .matchedFunction(let function) = environment.matchFunctionCall(
+           call,
+           enclosingType: passContext.enclosingTypeIdentifier?.name ?? "",
+           typeStates: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+           callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
+           scopeContext: passContext.scopeContext!) {
+      // TODO check to make sure real result type
+      let identifier = passContext.scopeContext!.freshIdentifier(sourceLocation: statement.sourceLocation)
+      passContext.scopeContext?.parameters
+      let variableDeclaration: Expression = .variableDeclaration(VariableDeclaration(
+          modifiers: [],
+          declarationToken: nil,
+          identifier: identifier,
+          type: AST.Type(inferredType: function.resultType, identifier: identifier)
+      ))
+      statement = .expression(.binaryExpression(
+          BinaryExpression(lhs: variableDeclaration,
+                           op: Token(kind: .punctuation(.equal), sourceLocation: statement.sourceLocation),
+                           rhs: expression)
+      ))
+    }
+    return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
