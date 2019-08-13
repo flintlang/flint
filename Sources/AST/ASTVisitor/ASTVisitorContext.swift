@@ -6,6 +6,7 @@
 //
 
 import Lexer
+import Source
 
 /// Contextual information used when visiting the state properties declared in a contract declaration.
 public struct ContractStateDeclarationContext {
@@ -104,6 +105,7 @@ public struct ScopeContext: Equatable {
   public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
   public var boundVariablesStack: [Identifier] = []
+  var counter: Int = 0
 
   public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
     self.parameters = parameters
@@ -130,6 +132,12 @@ public struct ScopeContext: Equatable {
   public func type(for variable: String) -> RawType? {
     let all = localVariables + parameters.map { $0.asVariableDeclaration }
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
+  }
+
+  public mutating func freshIdentifier(sourceLocation: SourceLocation) -> Identifier {
+    counter += 1
+    return Identifier(name: "$temp$\(localVariables.count + parameters.count + counter)", 
+                      sourceLocation: sourceLocation)
   }
 
   /// Whether the given parameter is implicit.
