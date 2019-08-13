@@ -39,7 +39,8 @@ struct MoveIdentifier {
 
     if forceMove {
       return .transfer(.move(irIdentifier))
-    } else if !(functionContext.scopeContext.type(for: identifier.name)?.isInout ?? false) {
+    } else if let type = functionContext.scopeContext.type(for: identifier.name),
+              !type.isInout && type.isUserDefinedType {
       return .operation(.mutableReference(irIdentifier))
     } else if position == .left {
       return irIdentifier
