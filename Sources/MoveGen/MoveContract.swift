@@ -49,7 +49,7 @@ struct MoveContract {
     functions.filter { !$0.containsAnyCaller }.forEach { print($0) }
     // Generate wrapper functions
     let wrapperCode = functions
-     //.filter { !$0.containsAnyCaller }
+     .filter { !$0.containsAnyCaller }
      .map { MoveWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) }
      .joined(separator: "\n\n")
      .indented(by: 2)

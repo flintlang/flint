@@ -67,6 +67,12 @@ extension MovePreprocessor {
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
 
+  /* DEBUGGING
+  public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    print(functionCall.identifier.name, functionCall.mangledIdentifier ?? "nil")
+    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }*/
+  
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let environment = passContext.environment!
@@ -102,7 +108,7 @@ extension MovePreprocessor {
                                                                  callerProtections: callerProtections,
                                                                  scopeContext: scopeContext).name
       }
-
+      
       // Set the mangled identifier for the function.
       functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
 

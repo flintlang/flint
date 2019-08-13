@@ -116,7 +116,6 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
-    var passContext = passContext
     // Mangle the function name in the declaration.
     let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
@@ -245,7 +244,6 @@ extension MovePreprocessor {
       return [.functionDeclaration(functionDeclaration),
               .functionDeclaration(wrapperFunctionDeclaration)]
     }
-      
       
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }

@@ -95,9 +95,6 @@ struct MoveContractInitializer {
              return;
            }
 
-           public get(addr: address): &mut Self.T {
-             return borrow_global<T>(move(addr));
-           }
            """
   }
 }
