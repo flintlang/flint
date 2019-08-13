@@ -136,7 +136,7 @@ public struct ScopeContext: Equatable {
 
   public mutating func freshIdentifier(sourceLocation: SourceLocation) -> Identifier {
     counter += 1
-    return Identifier(name: "$temp$\(localVariables.count + parameters.count + counter)", 
+    return Identifier(name: "$temp$\(localVariables.count + parameters.count + counter)",
                       sourceLocation: sourceLocation)
   }
 
@@ -154,8 +154,8 @@ public struct ScopeContext: Equatable {
   /// function.
   public func enclosingParameter(expression: Expression, enclosingTypeName: String) -> String? {
     guard expression.enclosingType != enclosingTypeName,
-      let enclosingIdentifier = expression.enclosingIdentifier,
-      containsParameterDeclaration(for: enclosingIdentifier.name) else {
+          let enclosingIdentifier = expression.enclosingIdentifier,
+          containsParameterDeclaration(for: enclosingIdentifier.name) else {
       return nil
     }
 
