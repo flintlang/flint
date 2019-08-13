@@ -35,4 +35,8 @@ Shapes :: caller <- (any) {
   public func perimeter() -> Int {
     return 2 * semiPerimeter()
   }
+
+  public func smallerWidth(otherRectWidth: Int) -> Bool {
+    return self.rectangle.width < otherRectWidth
+  }
 }

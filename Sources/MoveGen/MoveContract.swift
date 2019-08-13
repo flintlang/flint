@@ -6,6 +6,7 @@
 //
 
 import AST
+import Lexer
 
 /// Generates code for a contract.
 struct MoveContract {
@@ -33,13 +34,13 @@ struct MoveContract {
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }
-
+        
         return MoveFunction(functionDeclaration: functionDeclaration,
-                          typeIdentifier: contractDeclaration.identifier,
-                          typeStates: contractBehaviorDeclaration.states,
-                          callerBinding: contractBehaviorDeclaration.callerBinding,
-                          callerProtections: contractBehaviorDeclaration.callerProtections,
-                          environment: environment)
+                            typeIdentifier: contractDeclaration.identifier,
+                            typeStates: contractBehaviorDeclaration.states,
+                            callerBinding: contractBehaviorDeclaration.callerBinding,
+                            callerProtections: contractBehaviorDeclaration.callerProtections,
+                            environment: environment)
       }
     }
 
@@ -48,10 +49,10 @@ struct MoveContract {
     functions.filter { !$0.containsAnyCaller }.forEach { print($0) }
     // Generate wrapper functions
     let wrapperCode = functions
-     .filter { !$0.containsAnyCaller }
+     //.filter { !$0.containsAnyCaller }
      .map { MoveWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) }
      .joined(separator: "\n\n")
-     .indented(by: 6)
+     .indented(by: 2)
     let initializerBody = renderPublicInitializer()
     let context = FunctionContext(environment: environment,
                                   scopeContext: ScopeContext(),

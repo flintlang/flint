@@ -35,24 +35,6 @@ public struct MovePreprocessor: ASTPass {
     }
   }
 
-  func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
-    let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
-    return Parameter(identifier: identifier,
-                     type: Type(inferredType: type,
-                                identifier: identifier),
-                     implicitToken: nil,
-                     assignedExpression: nil)
-  }
-
-  func constructThisParameter(type: RawType, sourceLocation: SourceLocation) -> Parameter {
-    let identifier = Identifier(identifierToken: Token(kind: .`self`, sourceLocation: sourceLocation))
-    return Parameter(identifier: identifier,
-                     type: Type(inferredType: .inoutType(type),
-                                identifier: identifier),
-                     implicitToken: nil,
-                     assignedExpression: nil)
-  }
-
   // MARK: Statement
   public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     var becomeStatement = becomeStatement

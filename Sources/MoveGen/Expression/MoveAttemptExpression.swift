@@ -17,9 +17,9 @@ struct MoveAttemptExpression {
 
     let callName: String
     if case .hard = attemptExpression.kind {
-      callName = MoveWrapperFunction.prefixHard + functionName
+      callName = MoveWrapperFunction.prefix + functionName
     } else {
-      callName = MoveWrapperFunction.prefixSoft + functionName
+      callName = MoveWrapperFunction.prefix + functionName
     }
 
     let args = functionCall.arguments.map({ argument in

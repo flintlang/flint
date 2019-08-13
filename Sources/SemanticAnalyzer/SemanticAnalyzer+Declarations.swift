@@ -124,7 +124,8 @@ extension SemanticAnalyzer {
         ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier,
                                            typeStates: contractBehaviorDeclaration.states,
                                            callerBinding: contractBehaviorDeclaration.callerBinding,
-                                           callerProtections: contractBehaviorDeclaration.callerProtections)
+                                           callerProtections: contractBehaviorDeclaration.callerProtections,
+                                           declaration: contractBehaviorDeclaration)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 

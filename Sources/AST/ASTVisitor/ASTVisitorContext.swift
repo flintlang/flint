@@ -19,15 +19,18 @@ public struct ContractBehaviorDeclarationContext {
   public var typeStates: [TypeState]
   public var callerBinding: Identifier?
   public var callerProtections: [CallerProtection]
+  public var declaration: ContractBehaviorDeclaration
 
   public init(contractIdentifier: Identifier,
               typeStates: [TypeState],
               callerBinding: Identifier?,
-              callerProtections: [CallerProtection]) {
+              callerProtections: [CallerProtection],
+              declaration: ContractBehaviorDeclaration) {
     self.contractIdentifier = contractIdentifier
     self.typeStates = typeStates
     self.callerBinding = callerBinding
     self.callerProtections = callerProtections
+    self.declaration = declaration
   }
 }
 

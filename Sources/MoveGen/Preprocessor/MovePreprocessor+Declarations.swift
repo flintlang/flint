@@ -25,6 +25,7 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
 
+    var passContext = passContext
     // Mangle the function name in the declaration.
     let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
@@ -69,13 +70,13 @@ extension MovePreprocessor {
     if let structDeclarationContext = passContext.structDeclarationContext,
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       // For struct functions, add `flintSelf` to the beginning of the parameters list.
-      let parameter = constructThisParameter(
+      let parameter = Parameter.constructThisParameter(
         type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
         sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
-      let parameter = constructThisParameter(
+      let parameter = Parameter.constructThisParameter(
         type: .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
 
@@ -119,8 +120,7 @@ extension MovePreprocessor {
         type: functionDeclaration.signature.resultType!)
       functionDeclaration.body.insert(.expression(.variableDeclaration(returnVariableDeclaration)), at: 0)
     }
-    //print(passContext.scopeContext!.localVariables)
-
+    
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -141,6 +141,22 @@ extension MovePreprocessor {
     specialDeclaration.body
       = getDeclarations(passContext: passContext) + deleteDeclarations(in: specialDeclaration.body)
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
+  }
+  
+  public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+    var contractBehaviorDeclaration = contractBehaviorDeclaration
+    contractBehaviorDeclaration.members = contractBehaviorDeclaration.members.flatMap { member -> [ContractBehaviorMember] in
+      guard case .functionDeclaration(var functionDeclaration) = member else {
+        return [member]
+      }
+      let wrapperFunctionDeclaration: FunctionDeclaration = functionDeclaration.generateWrapper()
+      functionDeclaration.signature.modifiers.removeAll(where: { $0.kind == .`public` })
+      return [.functionDeclaration(functionDeclaration),
+              .functionDeclaration(wrapperFunctionDeclaration)]
+    }
+      
+      
+    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
   private func generateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
