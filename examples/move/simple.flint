@@ -5,7 +5,7 @@ contract Simple {
 Simple :: (any) {
   public init() { }
 
-  public func increment() mutates (count) {
-    count += 1
+  public func increment(by: Int = 1) mutates (count) {
+    count += by
   }
 }
