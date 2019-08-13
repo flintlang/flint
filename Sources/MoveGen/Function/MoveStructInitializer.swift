@@ -147,7 +147,7 @@ struct MoveStructInitializerBody {
       )!.render(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
           MoveIR.VariableDeclaration((
-                                         MoveSelf.selfPrefix + property.identifier.name,
+                                         MoveSelf.prefix + property.identifier.name,
                                          propertyType
                                      ))
       )))
@@ -184,7 +184,7 @@ struct MoveStructInitializerBody {
     let constructor = Expression.structConstructor(StructConstructor(
         typeIdentifier.name,
         Dictionary(uniqueKeysWithValues: properties.map {
-          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.selfPrefix + $0.identifier.name))))
+          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.prefix + $0.identifier.name))))
         })
     ))
 
@@ -196,14 +196,21 @@ struct MoveStructInitializerBody {
 
     functionContext.isConstructor = false
 
-    let selfName = MoveSelf.generate(sourceLocation: declaration.sourceLocation, position: .left)
-        .rendered(functionContext: functionContext).description
     let selfType = renderMoveType(functionContext: functionContext)
     functionContext.emit(
-        .expression(.variableDeclaration(MoveIR.VariableDeclaration((selfName, selfType)))),
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, selfType)))),
         at: 0
     )
-    functionContext.emit(.expression(.assignment(Assignment(selfName, constructor))))
+    let selfIdentifier = MoveSelf.generate(sourceLocation: declaration.sourceLocation).identifier
+    functionContext.scopeContext.localVariables.append(AST.VariableDeclaration(
+        modifiers: [],
+        declarationToken: nil,
+        identifier: selfIdentifier,
+        type: AST.Type(inferredType: .userDefinedType(functionContext.enclosingTypeName),
+                       identifier: selfIdentifier)
+    ))
+    functionContext.emit(.expression(.assignment(Assignment(MoveSelf.name, constructor))))
+
     while !statements.isEmpty {
       let statement: AST.Statement = statements.removeFirst()
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))

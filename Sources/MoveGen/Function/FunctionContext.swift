@@ -127,7 +127,7 @@ class FunctionContext: CustomStringConvertible {
   }
 
   // Maybe rename to reflect checks if id is a MoveIR reference?
-  func isInOut(identifier: AST.Identifier) -> Bool {
+  func isReferenceParameter(identifier: AST.Identifier) -> Bool {
     return scopeContext.parameters.contains(where: { (parameter: Parameter) in
       if parameter.identifier.name == identifier.name {
         if parameter.isInout {

@@ -19,7 +19,7 @@ struct MoveInOutExpression {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     if case .identifier(let identifier) = expression.expression {
-      if !functionContext.isInOut(identifier: identifier) {
+      if !functionContext.isReferenceParameter(identifier: identifier) {
         return .operation(.mutableReference(MoveExpression(expression: expression.expression, position: .inOut)
                                                 .rendered(functionContext: functionContext)))
       }

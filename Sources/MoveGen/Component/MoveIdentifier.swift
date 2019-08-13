@@ -21,7 +21,7 @@ struct MoveIdentifier {
   func rendered(functionContext: FunctionContext, forceMove: Bool = false) -> MoveIR.Expression {
     if identifier.enclosingType != nil {
       if functionContext.isConstructor {
-        return .identifier(MoveSelf.selfPrefix + identifier.name)
+        return .identifier(MoveSelf.prefix + identifier.name)
       } else {
         return MovePropertyAccess(
             lhs: .`self`(Token(kind: .`self`, sourceLocation: identifier.sourceLocation)),
@@ -31,7 +31,7 @@ struct MoveIdentifier {
       }
     }
     if identifier.isSelf {
-      return MoveSelf(selfToken: identifier.identifierToken, position: position)
+      return MoveSelf(token: identifier.identifierToken, position: position)
           .rendered(functionContext: functionContext, forceMove: forceMove)
     }
 
@@ -39,11 +39,13 @@ struct MoveIdentifier {
 
     if forceMove {
       return .transfer(.move(irIdentifier))
+    } else if !(functionContext.scopeContext.type(for: identifier.name)?.isInout ?? false) {
+      return .operation(.mutableReference(irIdentifier))
     } else if position == .left {
       return irIdentifier
     } else if position == .accessed {
       return .operation(.dereference(.operation(.mutableReference(
-          .transfer(.copy(.identifier(MoveSelf.selfName)))
+          .transfer(.copy(.identifier(MoveSelf.name)))
       ))))
     } else {
       return .transfer(.copy(irIdentifier))
