@@ -21,8 +21,8 @@ public indirect enum Type: CustomStringConvertible {
     case .bytearray: return "bytearray"
     case .u64: return "u64"
     case .address: return "address"
-    case .`struct`(let name): return "V#\(name)"
-    case .resource(let name): return "R#\(name)"
+    case .`struct`(let name): return name
+    case .resource(let name): return name
     case .mutableReference(let to): return "&mut \(to)"
     case .any: return "__UnknownAnyType<PleaseSee:MoveIR/Type.swift>"
     }

@@ -86,7 +86,7 @@ struct MoveContractInitializer {
     ).rendered()
 
     return """
-           new(\(parameters)): R#Self.T {
+           new(\(parameters)): Self.T {
              \(body.indented(by: 2))
            }
 
@@ -95,7 +95,7 @@ struct MoveContractInitializer {
              return;
            }
 
-           public get(addr: address): &mut R#Self.T {
+           public get(addr: address): &mut Self.T {
              return borrow_global<T>(move(addr));
            }
            """

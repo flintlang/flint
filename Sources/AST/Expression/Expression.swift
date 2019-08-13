@@ -99,7 +99,7 @@ public indirect enum Expression: ASTNode {
     case .literal(let literal): return literal.sourceLocation
     case .arrayLiteral(let arrayLiteral): return arrayLiteral.sourceLocation
     case .dictionaryLiteral(let dictionaryLiteral): return dictionaryLiteral.sourceLocation
-    case .self(let `self`): return self.sourceLocation
+    case .`self`(let `self`): return self.sourceLocation
     case .variableDeclaration(let variableDeclaration): return variableDeclaration.sourceLocation
     case .bracketedExpression(let bracketedExpression): return bracketedExpression.sourceLocation
     case .subscriptExpression(let subscriptExpression): return subscriptExpression.sourceLocation
@@ -130,7 +130,7 @@ public indirect enum Expression: ASTNode {
     case .range(let rangeExpression): return rangeExpression.description
     case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
     case .returnsExpression(let returnsExpression): return "returns " + returnsExpression.description
-    case .rawAssembly: fatalError()
+    case .rawAssembly(let value, let resultType): return "rawAssembly({\(value)}: \(resultType))"
     case .emptyExpr: fatalError("EMPTY EXPR")
     }
   }
