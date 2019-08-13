@@ -17,16 +17,16 @@ matrix:
     - test -f /usr/bin/msbuild && echo "msbuild exists"
     - npm install
     - npm install -g truffle@4
-    - eval "$(curl -sLk https://swiftenv.fuller.li/install.sh)"
+    - eval "$(curl -sLk https://swiftenv.fuller.li/install.sh)" 
+    - "swiftenv install 5.0.2 || true"
+    - "swiftenv install 4.2 || true"
     - git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
     - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
-    install:
-    - "swiftenv install 5.0.2 || true"
-    - "swiftenv install 4.2 || true"
     script:
     - export FLINTPATH=$(pwd)
     - make
+    - make release
     - make test
 before_deploy:
 - swift package update

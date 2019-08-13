@@ -96,7 +96,7 @@ public struct Lexer {
     "func": .func,
     "event": .event,
     "trait": .trait,
-    "init": .init,
+    "init": .`init`,
     "fallback": .fallback,
     "pre": .pre,
     "post": .post,

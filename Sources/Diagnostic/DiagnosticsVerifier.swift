@@ -46,7 +46,7 @@ public struct DiagnosticsVerifier {
     var verifyDiagnostics = [Diagnostic]()
 
     for expectation in expectations {
-      let index = producedDiagnostics.index(where: { diagnostic in
+      let index = producedDiagnostics.firstIndex(where: { diagnostic in
         let equalLineLocation: Bool
         if let sourceLocation = diagnostic.sourceLocation {
           equalLineLocation = sourceLocation.line == expectation.line
