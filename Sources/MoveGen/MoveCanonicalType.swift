@@ -10,13 +10,15 @@ import AST
 import MoveIR
 
 /// A MoveIR type.
-enum CanonicalType: CustomStringConvertible {
+indirect enum CanonicalType: CustomStringConvertible {
   case u64
   case address
   case bool
   case bytearray
   case resource(String)
   case `struct`(String)
+  // case reference(CanonicalType) Not Yet Used
+  case mutableReference(CanonicalType)
 
   init?(from rawType: RawType, environment: Environment? = nil) {
     switch rawType {
@@ -37,8 +39,8 @@ enum CanonicalType: CustomStringConvertible {
         self = .struct(id)
       }
     case .inoutType(let rawType):
-      guard let type = CanonicalType(from: rawType) else { return nil }
-      self = type
+      guard let type = CanonicalType(from: rawType, environment: environment) else { return nil }
+      self = .mutableReference(type)
     // FIXME The collection types are just stub to make the code work
     // and should probably be modified
     case .fixedSizeArrayType(let type, let size):
@@ -61,6 +63,7 @@ enum CanonicalType: CustomStringConvertible {
     case .bytearray: return "CanonicalType.bytearray"
     case .resource(let name): return "CanonicalType.R#\(name)"
     case .struct(let name): return "CanonicalType.V#\(name)"
+    case .mutableReference(let type): return "CanonicalType.&mut \(type)"
     }
   }
 
@@ -76,6 +79,10 @@ enum CanonicalType: CustomStringConvertible {
         return .resource(name: "Self.T")
       }
       return .resource(name: "\(name).T")
+    case .mutableReference(let type):
+      //return type.render(functionContext: functionContext)
+      return .mutableReference(to: type.render(functionContext: functionContext))
     }
+
   }
 }

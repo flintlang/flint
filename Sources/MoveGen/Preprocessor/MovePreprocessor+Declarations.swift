@@ -21,6 +21,54 @@ extension MovePreprocessor {
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  func generateParameterAssignedFunctions(_ base: FunctionDeclaration) -> [FunctionDeclaration] {
+    let defaultParameters = base.signature.parameters.filter { $0.assignedExpression != nil }
+    var functions = [base]
+
+    for parameter: Parameter in defaultParameters {
+      var parameterAssignedFunctions = [FunctionDeclaration]()
+
+      for function in functions {
+        var parameterAssignedFunction = function
+        parameterAssignedFunction.signature.parameters = parameterAssignedFunction.signature.parameters
+            .filter { $0.identifier.name != parameter.identifier.name }
+        let arguments = function.explicitParameters.map { (p: Parameter) -> FunctionArgument in
+          if p.identifier.name == parameter.identifier.name {
+            return FunctionArgument(parameter.assignedExpression!)
+          }
+          return FunctionArgument(.identifier(parameter.identifier))
+        }
+        parameterAssignedFunction.body = [.returnStatement(
+            ReturnStatement(returnToken: Token(kind: .return, sourceLocation: parameter.sourceLocation),
+                            expression: .functionCall(FunctionCall(
+                                identifier: function.identifier,
+                                arguments: arguments,
+                                closeBracketToken: Token(kind: .punctuation(.closeBracket),
+                                                         sourceLocation: parameter.sourceLocation),
+                                isAttempted: false
+                            )))
+        )]
+        parameterAssignedFunctions.append(parameterAssignedFunction)
+      }
+      functions += parameterAssignedFunctions
+    }
+    return functions
+  }
+
+  public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+    var contractBehaviorDeclaration = contractBehaviorDeclaration
+    contractBehaviorDeclaration.members = contractBehaviorDeclaration.members
+        .flatMap { (member: ContractBehaviorMember) -> [ContractBehaviorMember] in
+      if case .functionDeclaration(let function) = member {
+        return generateParameterAssignedFunctions(function).map { .functionDeclaration($0) }
+      }
+      return [member]
+    }
+
+    return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
@@ -71,7 +119,7 @@ extension MovePreprocessor {
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       // For struct functions, add `flintSelf` to the beginning of the parameters list.
       let parameter = Parameter.constructThisParameter(
-        type: .inoutType(.userDefinedType(structDeclarationContext.structIdentifier.name)),
+        type: .userDefinedType(structDeclarationContext.structIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,

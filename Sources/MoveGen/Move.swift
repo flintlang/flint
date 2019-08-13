@@ -10,5 +10,5 @@ enum Move {
 }
 
 enum Position {
-  case left, accessed, normal
+  case left, accessed, normal, inOut
 }

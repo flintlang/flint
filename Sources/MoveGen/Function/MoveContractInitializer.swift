@@ -139,6 +139,13 @@ struct MoveInitializerBody {
     return renderBody(declaration.body, functionContext: functionContext)
   }
 
+  func renderMoveType(functionContext: FunctionContext) -> MoveIR.`Type` {
+    return CanonicalType(
+        from: AST.Type(identifier: typeIdentifier).rawType,
+        environment: environment
+    )!.render(functionContext: functionContext)
+  }
+
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
                                                                           functionContext: FunctionContext) -> String
       where S.Element == AST.Statement, S.Index == Int {
@@ -153,20 +160,77 @@ struct MoveInitializerBody {
           environment: environment
       )!.render(functionContext: functionContext)
       functionContext.emit(.expression(.variableDeclaration(
-          MoveIR.VariableDeclaration((MoveSelf.selfPrefix + property.identifier.name, propertyType))
+          MoveIR.VariableDeclaration((MoveSelf.prefix + property.identifier.name, propertyType))
       )))
     }
 
-    while !statements.isEmpty {
+    var unassigned: [AST.Identifier] = properties.map { $0.identifier }
+
+    while !(statements.isEmpty || unassigned.isEmpty) {
       let statement = statements.removeFirst()
+      if case .expression(let expression) = statement,
+         case .binaryExpression(let binary) = expression,
+         case .punctuation(let op) = binary.op.kind,
+         case .equal = op {
+        switch binary.lhs {
+        case .identifier(let identifier):
+          if let type = identifier.enclosingType,
+             type == typeIdentifier.name {
+            unassigned = unassigned.filter { $0.name != identifier.name }
+          }
+        case .binaryExpression(let lhs):
+          if case .punctuation(let op) = lhs.op.kind,
+             case .dot = op,
+             case .`self` = lhs.lhs,
+             case .identifier(let field) = lhs.rhs {
+            unassigned = unassigned.filter { $0.name != field.name }
+          }
+        default: break
+        }
+      }
       functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
     }
-    functionContext.emit(.return(.structConstructor(MoveIR.StructConstructor(
+
+    let constructor = Expression.structConstructor(MoveIR.StructConstructor(
         "T",
         Dictionary(uniqueKeysWithValues: properties.map {
-          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.selfPrefix + $0.identifier.name))))
+          ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.prefix + $0.identifier.name))))
         })
-    ))))
+    ))
+
+    guard !statements.isEmpty else {
+      functionContext.emitReleaseReferences()
+      functionContext.emit(.return(constructor))
+      return functionContext.finalise()
+    }
+
+    functionContext.isConstructor = false
+
+    let selfType = renderMoveType(functionContext: functionContext)
+    functionContext.emit(
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, selfType)))),
+        at: 0
+    )
+    let selfIdentifier = MoveSelf.generate(sourceLocation: declaration.sourceLocation).identifier
+    functionContext.scopeContext.localVariables.append(AST.VariableDeclaration(
+        modifiers: [],
+        declarationToken: nil,
+        identifier: selfIdentifier,
+        type: AST.Type(inferredType: .userDefinedType(functionContext.enclosingTypeName),
+                       identifier: selfIdentifier)
+    ))
+    functionContext.emit(.expression(.assignment(Assignment(MoveSelf.name, constructor))))
+
+    while !statements.isEmpty {
+      let statement: AST.Statement = statements.removeFirst()
+      functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
+    }
+
+    functionContext.emitReleaseReferences()
+    let selfExpression: MoveIR.Expression = MoveSelf
+        .generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
+        .rendered(functionContext: functionContext, forceMove: true)
+    functionContext.emit(.return(selfExpression))
     return functionContext.finalise()
   }
 

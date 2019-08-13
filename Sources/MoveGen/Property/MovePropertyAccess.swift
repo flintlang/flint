@@ -32,7 +32,8 @@ struct MovePropertyAccess {
       if functionContext.isConstructor {
         return MoveIdentifier(identifier: rhsId, position: position).rendered(functionContext: functionContext)
       }
-      let lhsExpr = MoveExpression(expression: lhs, position: .accessed).rendered(functionContext: functionContext)
+      let lhsExpr = MoveExpression(expression: lhs, position: (position == .inOut ? .inOut : .accessed))
+          .rendered(functionContext: functionContext)
       return .operation(.access(lhsExpr, rhsId.name))
     }
     fatalError()

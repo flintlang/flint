@@ -34,6 +34,10 @@ class FunctionContext: CustomStringConvertible {
   /// Fresh variable counter.
   private var counter: Int
 
+  var selfType: RawType? {
+    return scopeContext.type(for: "self") // FIXME TODO
+  }
+
   init(environment: Environment,
        scopeContext: ScopeContext,
        enclosingTypeName: String,
@@ -107,7 +111,7 @@ class FunctionContext: CustomStringConvertible {
   /// Returns the string representation of the outer block.
   /// The FunctionContext should not be used after this is called.
   func finalise() -> String {
-    return (popBlock().statements.map {$0.description}).joined(separator: "\n")
+    return (popBlock().statements.map { $0.description }).joined(separator: "\n")
   }
 
   func pushDoCatch(_ doCatchStatement: DoCatchStatement) {
@@ -123,7 +127,7 @@ class FunctionContext: CustomStringConvertible {
   }
 
   // Maybe rename to reflect checks if id is a MoveIR reference?
-  func isInOut(identifier: AST.Identifier) -> Bool {
+  func isReferenceParameter(identifier: AST.Identifier) -> Bool {
     return scopeContext.parameters.contains(where: { (parameter: Parameter) in
       if parameter.identifier.name == identifier.name {
         if parameter.isInout {
@@ -152,15 +156,15 @@ class FunctionContext: CustomStringConvertible {
         }
         """
   }
-  
-  public func emitReferencesRelease() {
+
+  public func emitReleaseReferences() {
     let referencesToRelease: [AST.Identifier] = scopeContext.parameters
-      .filter {$0.isInout}
-      .map {$0.identifier}
+        .filter { $0.isInout }
+        .map { $0.identifier }
     referencesToRelease.forEach { reference in
       let referenceExpression: MoveIR.Expression
-        = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
+          = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
       self.emit(.inline("release(\(referenceExpression))"))
-      }
+    }
   }
 }

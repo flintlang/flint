@@ -11,29 +11,32 @@ import Lexer
 extension AST.FunctionDeclaration {
   public func generateWrapper() -> FunctionDeclaration {
     var wrapperFunctionDeclaration = self
+    let returnVariableDeclarationStmt = wrapperFunctionDeclaration.body[0]
     wrapperFunctionDeclaration.body.removeAll()
-    // Add address referring to this contract and extract the instance of the contract from it
-    let firstParameter = Parameter.constructParameter(name: "_address_\(MoveSelf.selfName)",
+    let firstParameter = Parameter.constructParameter(name: "_address_\(MoveSelf.name)",
       type: .basicType(.address),
       sourceLocation: wrapperFunctionDeclaration
         .signature
         .parameters[0]
         .sourceLocation)
     
-    // Swap this parameter with contract address in wrapper function
+    // Swap `this` parameter with contract address in wrapper function
     let selfParameter = self.signature.parameters[0]
     wrapperFunctionDeclaration.signature.parameters[0] = firstParameter
     
-    let selfDeclaration = selfParameter.asVariableDeclaration
-    let selfAssignment = BinaryExpression(lhs: .variableDeclaration(selfDeclaration),
+    let selfToken: Token =  .init(kind: .`self`, sourceLocation: selfParameter.sourceLocation)
+    let selfDeclaration: VariableDeclaration = .init(modifiers: [],
+                                                     declarationToken: nil,
+                                                     identifier: .init(identifierToken: selfToken),
+                                                     type: selfParameter.type)
+    let selfDeclarationStmt: Statement = .expression(.variableDeclaration(selfDeclaration))
+    let selfAssignment = BinaryExpression(lhs: .`self`(selfToken),
                                           op: Token(kind: .punctuation(.equal),
                                                     sourceLocation: self.sourceLocation),
                                           rhs: .rawAssembly(
-                                            "borrow_global<T>(\(firstParameter.identifier.name.mangled))",
-                                            resultType: selfDeclaration.type.rawType))
+                                            "borrow_global<T>(move(\(firstParameter.identifier.name.mangled))",
+                                            resultType: selfParameter.type.rawType))
     let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
-    wrapperFunctionDeclaration.body.append(selfAssignmentStmt)
-    
     
     let args: [FunctionArgument] = self.signature.parameters.map { parameter in
       return FunctionArgument(.identifier(parameter.identifier))
@@ -46,7 +49,10 @@ extension AST.FunctionDeclaration {
                                    sourceLocation: self.body.last!.sourceLocation)
     let returnStmt: Statement = .returnStatement(.init(returnToken: returnToken,
                                                        expression: returnExpression))
-    wrapperFunctionDeclaration.body.append(returnStmt)
+    wrapperFunctionDeclaration.body.append(contentsOf: [returnVariableDeclarationStmt,
+                                                        selfDeclarationStmt,
+                                                        selfAssignmentStmt,
+                                                        returnStmt])
     return wrapperFunctionDeclaration
   }
 }

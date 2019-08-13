@@ -15,7 +15,8 @@ public struct Mangler {
   public static func mangleFunctionName(_ name: String,
                                         parameterTypes: [RawType],
                                         enclosingType: String,
-                                        isContract: Bool = false) -> String {
+                                        isContract: Bool = false,
+                                        isWrapper: Bool = false) -> String {
     let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
     let dollar = parameters.isEmpty ? "" : "$"
     let type = isContract ? "" : enclosingType + "$"
