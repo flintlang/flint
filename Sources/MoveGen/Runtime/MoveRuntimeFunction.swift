@@ -17,7 +17,7 @@ enum MoveRuntimeFunction {
     case revertIfGreater
 
     var mangled: String {
-      return "\(Environment.runtimeFunctionPrefix)\(self)"
+      return "Self.\(Environment.runtimeFunctionPrefix)\(self)"
     }
   }
 
