@@ -57,7 +57,7 @@ public struct Parameter: ASTNode {
   public var sourceLocation: SourceLocation {
     return .spanning(identifier, to: type)
   }
-  
+
   static public func constructParameter(name: String, type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .identifier(name), sourceLocation: sourceLocation))
     return Parameter(identifier: identifier,
@@ -66,7 +66,7 @@ public struct Parameter: ASTNode {
                      implicitToken: nil,
                      assignedExpression: nil)
   }
-  
+
   static public func constructThisParameter(type: RawType, sourceLocation: SourceLocation) -> Parameter {
     let identifier = Identifier(identifierToken: Token(kind: .`self`, sourceLocation: sourceLocation))
     return Parameter(identifier: identifier,

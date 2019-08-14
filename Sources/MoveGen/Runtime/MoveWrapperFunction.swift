@@ -12,7 +12,7 @@ struct MoveWrapperFunction {
   let function: MoveFunction
 
   func rendered(enclosingType: RawTypeIdentifier) -> String {
-  
+
     return "WRAPPER"
   }
 

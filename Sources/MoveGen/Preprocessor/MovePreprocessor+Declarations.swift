@@ -210,7 +210,7 @@ extension MovePreprocessor {
         type: functionDeclaration.signature.resultType!)
       functionDeclaration.body.insert(.expression(.variableDeclaration(returnVariableDeclaration)), at: 0)
     }
-    
+
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -232,10 +232,12 @@ extension MovePreprocessor {
       = getDeclarations(passContext: passContext) + deleteDeclarations(in: specialDeclaration.body)
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
-  
-  public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration, passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
+
+  public func postProcess(contractBehaviorDeclaration: ContractBehaviorDeclaration,
+                          passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     var contractBehaviorDeclaration = contractBehaviorDeclaration
-    contractBehaviorDeclaration.members = contractBehaviorDeclaration.members.flatMap { member -> [ContractBehaviorMember] in
+    contractBehaviorDeclaration.members = contractBehaviorDeclaration.members
+      .flatMap { member -> [ContractBehaviorMember] in
       guard case .functionDeclaration(var functionDeclaration) = member else {
         return [member]
       }
@@ -244,7 +246,7 @@ extension MovePreprocessor {
       return [.functionDeclaration(functionDeclaration),
               .functionDeclaration(wrapperFunctionDeclaration)]
     }
-      
+
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 

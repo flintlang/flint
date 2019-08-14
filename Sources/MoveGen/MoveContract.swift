@@ -34,7 +34,7 @@ struct MoveContract {
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }
-        
+
         return MoveFunction(functionDeclaration: functionDeclaration,
                             typeIdentifier: contractDeclaration.identifier,
                             typeStates: contractBehaviorDeclaration.states,
