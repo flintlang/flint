@@ -363,6 +363,28 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: functionSignatureDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
+  private func alwaysReturns(statements: [Statement]) -> Bool {
+    guard let last: Statement = statements.last else {
+      return false
+    }
+
+    switch last {
+    case .ifStatement(let ifStatement):
+      return alwaysReturns(statements: ifStatement.body) && alwaysReturns(statements: ifStatement.elseBody)
+    case .becomeStatement:
+      if statements.count >= 2,
+         let secondLast: Statement = statements[statements.count - 2],
+         case .returnStatement = secondLast {
+        return true
+      }
+    case .returnStatement:
+      return true
+    default: break
+    }
+
+    return false
+  }
+
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var diagnostics = [Diagnostic]()
@@ -436,7 +458,8 @@ extension SemanticAnalyzer {
     }
 
     if returns.isEmpty,
-       let resultType = functionDeclaration.signature.resultType {
+       let resultType = functionDeclaration.signature.resultType,
+       !alwaysReturns(statements: functionDeclaration.body) {
       // Emit an error if a non-void function doesn't have a return statement.
       diagnostics.append(.missingReturnInNonVoidFunction(closeBraceToken: functionDeclaration.closeBraceToken,
                                                          resultType: resultType))
