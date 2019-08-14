@@ -13,8 +13,9 @@ struct Proposal {
   invariant (yesVotes >= 0)
   invariant (noVotes >= 0)
   invariant (quorum >= 0)
-  //invariant (yesVotes + noVotes == SimpleDAO.totalSupply)
-  //invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
+
+  invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
+  invariant (finished == false ==> success == false)
 
   public init() {
     self.voted = [:]
@@ -28,9 +29,18 @@ contract SimpleDAO (Join, Propose, Vote) {
   var balances: [Address: Int]
   var totalSupply: Int = 0
 
-  invariant (avaliableMemberSlots == 3 - members.size)
+  invariant (members.size <= 3)
+  invariant (avaliableMemberSlots + members.size == 3)
   invariant (totalSupply >= 0)
+  // invariant (forall (a, Address, balances[a] > 0))
+
+  // invariant (proposal.yesVotes + proposal.noVotes == totalSupply) //does not hold when calling leave
+
   // want to say that each balance is less than the total supply
+  // invariant (forall (a, Address, balances[a] < totalSupply))
+
+  // sum of all the balances in the accounts corresbonding to memebers
+  
 }
 
 SimpleDAO @(any) :: (any) {
@@ -47,6 +57,7 @@ SimpleDAO @(any) :: (any) {
 SimpleDAO @(Propose) :: caller <- (members) {
   public func newProposal(recipient: Address, value: Int)
     mutates (proposal, Proposal.proposer, Proposal.value, Proposal.recipient, Proposal.yesVotes, Proposal.noVotes, Proposal.quorum, Proposal.finished, Proposal.success, Proposal.voted)
+    post (value >= 0 ==> proposal.proposer == caller && proposal.value == value && proposal.recipient == recipient && proposal.quorum == self.totalSupply / 2)
   {
     // Satisfy invariant
     if (value < 0) {
@@ -64,6 +75,10 @@ SimpleDAO @(Propose) :: caller <- (members) {
   // This isn't a good function because they don't stop being a member when they leave, but it's sufficient for testing
   public func leave()
     mutates (balances, totalSupply)
+    pre (totalSupply >= balances[caller])
+    post (totalSupply == prev(totalSupply) - prev(balances[caller]))
+    post (balances[caller] == 0)
+    post (forall (i, Int, 0 <= i && i < members.size ==> balances[members[i]] == prev(balances[members[i]]) || members[i] == caller))
   {
     let balance: Int = balances[caller]
 
@@ -76,6 +91,12 @@ SimpleDAO @(Propose) :: caller <- (members) {
 SimpleDAO @(Vote) :: caller <- (members) {
   public func vote(approve: Bool)
     mutates (proposal, Proposal.voted, Proposal.yesVotes, Proposal.noVotes)
+    pre (proposal.finished == false)
+    pre (balances[caller] > 0) // can remove after the invariant is fixed
+
+    post (proposal.voted[caller])
+    post (approve ==> proposal.yesVotes == prev(proposal.yesVotes) + balances[caller] && proposal.noVotes == prev(proposal.noVotes))
+    post (approve == false ==> proposal.noVotes == prev(proposal.noVotes) + balances[caller] && proposal.yesVotes == prev(proposal.yesVotes))
   {
     if proposal.voted[caller] {
       fatalError()
@@ -92,6 +113,9 @@ SimpleDAO @(Vote) :: caller <- (members) {
 
   public func executeProposal()
     mutates (proposal, Proposal.success, Proposal.finished)
+    pre (proposal.finished == false)
+    post (proposal.finished)
+    post (proposal.success == ((proposal.yesVotes + proposal.noVotes) >= proposal.quorum && proposal.yesVotes > proposal.noVotes))
   {
     if(caller != proposal.proposer || proposal.finished) {
       fatalError()
@@ -110,6 +134,15 @@ SimpleDAO @(Join) :: caller <- (any) {
 
   public func join(value: Int)
     mutates (balances, members, totalSupply, avaliableMemberSlots)
+    pre (value > 0)
+    pre(avaliableMemberSlots > 0)
+
+    post (balances[caller] == value)
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller)) //change balance
+    post (totalSupply == prev(totalSupply) + value)
+    post (members[3 - prev(avaliableMemberSlots)] == caller)
+    post (forall (i, Int, 0 <= i && i < members.size ==> members[i] == prev(members[i]) || (i == 3 - prev(avaliableMemberSlots)))) //change memebers
+    post (avaliableMemberSlots == prev(avaliableMemberSlots) - 1)
   {
     balances[caller] = value
     totalSupply += value
@@ -121,13 +154,18 @@ SimpleDAO @(Join) :: caller <- (any) {
     }
   }
 
-  public func isJoin() -> Bool {
+  public func isJoin() -> Bool
+  post (returns (true))
+  {
     return true
   }
 }
 
 SimpleDAO @(any) :: (any) {
-  public func isMember(candidate: Address) -> Bool {
+  public func isMember(candidate: Address) -> Bool
+  post (returns (arrayContains(members, candidate)))
+  // post (returns (exists (i, Int, 0 <= i && i < members.size ==> members[i] == candidate)))
+  {
     var found: Bool = false
     for let member: Address in members {
       if member == candidate {
@@ -137,8 +175,9 @@ SimpleDAO @(any) :: (any) {
     return found
   }
 
-  public func slotsLeft() -> Int {
+  public func slotsLeft() -> Int
+  post (returns (avaliableMemberSlots))
+  {
     return avaliableMemberSlots
   }
 }
-
