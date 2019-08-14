@@ -34,6 +34,9 @@ extension MovePreprocessor {
         parameterAssignedFunction.signature.parameters = parameterAssignedFunction.signature.parameters
             .filter { $0.identifier.name != parameter.identifier.name }
 
+        parameterAssignedFunction.scopeContext?.parameters = parameterAssignedFunction.signature.parameters
+        parameterAssignedFunction.scopeContext?.localVariables = []
+
         // TODO fix by maybe mangling argument names into function names?
         //  Right now we cannot have two functions with the same name and type,
         //  so we're just generating the one with the last/most likely parameter filled in
