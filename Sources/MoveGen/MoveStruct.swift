@@ -2,7 +2,7 @@
 //  MoveStruct.swift
 //  MoveGen
 //
-//  Created by Franklin Schrans on 5/3/18.
+//  Created on <check date>.
 //
 
 import AST
@@ -30,7 +30,7 @@ public struct MoveStruct {
       }
     }.joined(separator: ",\n")
 
-    let declaration = members.count > 0
+    return members.count > 0
         ? #"""
           struct \#(structDeclaration.identifier.name) {
             \#(members.indented(by: 2))
@@ -38,9 +38,10 @@ public struct MoveStruct {
 
           """#
         : ""
+  }
 
+  public func renderCommon() -> String {
     return #"""
-           \#(declaration)\#
            \#(renderInitializers())\#
            //// ~:   Functions    :~ ////
 

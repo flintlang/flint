@@ -68,12 +68,17 @@ struct MoveContract {
       }
     }.joined(separator: ",\n")
 
+    let structs = structDeclarations
+        .map { "\n" + MoveStruct(structDeclaration: $0, environment: environment).rendered() }
+        .joined(separator: "")
+
     // Main contract body.
     return #"""
     module \#(contractDeclaration.identifier.name) {
       resource T {
         \#(members.indented(by: 4))
       }
+      \#(structs.indented(by: 2))
       \#(initializerBody.indented(by: 2))
 
       //////////////////////////////////////
@@ -102,7 +107,7 @@ struct MoveContract {
       return """
              //// \(structDeclaration.identifier.name)::\(structDeclaration.sourceLocation)  ////
 
-             \(MoveStruct(structDeclaration: structDeclaration, environment: environment).rendered())
+             \(MoveStruct(structDeclaration: structDeclaration, environment: environment).renderCommon())
              """
     }.joined(separator: "\n\n")
   }
@@ -139,8 +144,7 @@ struct MoveContract {
 
      let structHeader = """
      //////////////////////////////////////
-     //// --       Structs and      -- ////
-     //// --     their Functions    -- ////
+     //// --    Struct Functions    -- ////
      //////////////////////////////////////
      """
      let runtimeHeader = """

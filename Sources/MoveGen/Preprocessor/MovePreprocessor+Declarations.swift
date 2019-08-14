@@ -190,8 +190,8 @@ extension MovePreprocessor {
   public func postProcess(functionDeclaration: FunctionDeclaration,
                           passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
-    functionDeclaration.body
-      = getDeclarations(passContext: passContext) + deleteDeclarations(in: functionDeclaration.body)
+    functionDeclaration.body = getDeclarations(passContext: passContext)
+      + DeclarationDeleter().apply(functionDeclaration.body)
 
     // Add trailing return statement to all functions if none is present
     if functionDeclaration.isVoid {
@@ -231,8 +231,8 @@ extension MovePreprocessor {
   public func postProcess(specialDeclaration: SpecialDeclaration,
                           passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
-    specialDeclaration.body
-      = getDeclarations(passContext: passContext) + deleteDeclarations(in: specialDeclaration.body)
+    specialDeclaration.body = getDeclarations(passContext: passContext)
+      + DeclarationDeleter().apply(specialDeclaration.body)
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -274,28 +274,14 @@ extension MovePreprocessor {
     }
     return declarations
   }
+}
 
-  private func deleteDeclarations(in statements: [Statement]) -> [Statement] {
-    return statements.compactMap { statement -> Statement? in
-      switch statement {
-      case .expression(let expression):
-        if case .variableDeclaration(_) = expression {
-          return nil
-        }
-      case .forStatement(var stmt):
-        stmt.body = deleteDeclarations(in: stmt.body)
-        return .forStatement(stmt)
-      case .ifStatement(var stmt):
-        stmt.body = deleteDeclarations(in: stmt.body)
-        return .ifStatement(stmt)
-      case .doCatchStatement(var stmt):
-        stmt.catchBody = deleteDeclarations(in: stmt.catchBody)
-        stmt.doBody = deleteDeclarations(in: stmt.doBody)
-        return .doCatchStatement(stmt)
-      default:
-        return statement
-      }
-      return statement
+class DeclarationDeleter: StatementMapping {
+  public func map(statement: Statement) -> [Statement]? {
+    switch statement {
+    case .expression(.variableDeclaration(_)):
+      return []
+    default: return nil
     }
   }
 }
