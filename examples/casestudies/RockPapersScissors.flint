@@ -11,6 +11,7 @@ contract RockPaperScissors {
 RockPaperScissors :: (any) {
   public init()
     mutates (winner)
+    post (winner == false)
   {
     winner = false
   }
