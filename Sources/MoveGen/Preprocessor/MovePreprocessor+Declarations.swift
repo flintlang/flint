@@ -279,7 +279,7 @@ extension MovePreprocessor {
 class DeclarationDeleter: StatementMapping {
   public func map(statement: Statement) -> [Statement]? {
     switch statement {
-    case .expression(.variableDeclaration(_)):
+    case .expression(.variableDeclaration):
       return []
     default: return nil
     }
