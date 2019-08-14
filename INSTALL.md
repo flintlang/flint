@@ -40,7 +40,7 @@ echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 In your terminal, run the following commands
 ```bash
 # Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 # No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
@@ -55,7 +55,7 @@ make
 ## Docker
 To run the environment without doing any package installations:
 ```bash
-git clone --recurse-submodules https://github.com/flintlang/flint.git
+git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 sudo docker build -t "flint_docker" .
 ### ---------------------------------------------- ###
@@ -85,6 +85,7 @@ The following must be installed to build Flint on Macs:
 * homebrew - https://brew.sh, update brew if it isn't new with brew update
 * brew install node - get node and npm if you don't have them
 * brew install wget - get wget if you don't have it
+* brew cask install mono-mdk
 * install swiftenv - here is a script to do this:
 ```
 git clone https://github.com/kylef/swiftenv.git ~/.swiftenv

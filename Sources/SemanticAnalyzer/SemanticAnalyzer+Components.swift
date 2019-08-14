@@ -108,7 +108,7 @@ extension SemanticAnalyzer {
           // In initializers or fallback
           if passContext.specialDeclarationContext != nil {
             // Check if the property has been marked as assigned yet.
-            if let first = passContext.unassignedProperties!.index(where: {
+            if let first = passContext.unassignedProperties!.firstIndex(where: {
               $0.identifier.name == identifier.name && $0.identifier.enclosingType == identifier.enclosingType
             }) {
               // Mark the property as assigned.
