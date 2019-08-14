@@ -4,6 +4,8 @@ contract Test {
   var arr: Address[10]
   var p1: Address
   var p2: Address
+
+  // invariant ()
 }
 
 Test :: (any) {
@@ -30,6 +32,9 @@ Test :: (any) {
 Test :: (p1, p2) {
   public func setPosition(addr: Address, position: Int)
     mutates (arr)
+    post (position < arr.size ==> arr[position] == addr)
+    post (position >= arr.size ==> arr[position] == prev(arr[position]))
+    post (forall (i, Int, (0 <= i && i < arr.size ==> arr[i] == prev(arr[i]) || i == position)))
   {
     if position < arr.size {
       arr[position] = addr
@@ -38,6 +43,9 @@ Test :: (p1, p2) {
 
   public func write(pos: Int, value: Int)
     mutates (dict)
+    post (pos < arr.size ==> dict[arr[pos]] == value)
+    post (pos >= arr.size ==> dict[arr[pos]] == prev(dict[arr[pos]]))
+    post (forall (a, Address, (dict[a] == prev(dict[a]) || (a == arr[pos]))))
   {
     if pos < arr.size {
       var key: Address = arr[pos]
@@ -45,7 +53,9 @@ Test :: (p1, p2) {
     }
   }
 
-  public func getValue(pos: Int) -> Int {
+  public func getValue(pos: Int) -> Int
+  post (returning (r, (pos < arr.size ==> r == dict[arr[pos]]) || (pos >= arr.size ==> r == 0)))
+  {
     if pos < arr.size {
       var key: Address = arr[pos]
       return dict[key]
