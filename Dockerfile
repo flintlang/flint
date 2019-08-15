@@ -11,7 +11,7 @@ RUN echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" 
 RUN add-apt-repository -y ppa:ethereum/ethereum
 RUN curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash -
 RUN apt-get update
-RUN apt-get install -y solc nodejs mono-complete clang
+RUN apt-get install -y solc nodejs mono-complete clang z3
 WORKDIR /root
 RUN git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
 RUN echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile

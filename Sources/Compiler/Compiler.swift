@@ -174,7 +174,7 @@ extension Compiler {
   private static func createConstructor(constructor: SpecialDeclaration,
                                         enclosingType: String) -> FunctionDeclaration? {
 
-    if !(constructor.signature.specialToken.kind == .init) {
+    if !(constructor.signature.specialToken.kind == .`init`) {
       return nil
     }
 
@@ -402,7 +402,7 @@ extension Compiler {
 
   private static func createConstructorRepl(constructor: SpecialDeclaration) -> FunctionDeclaration? {
 
-    if !(constructor.signature.specialToken.kind == .init) {
+    if !(constructor.signature.specialToken.kind == .`init`) {
       return nil
     }
 

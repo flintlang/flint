@@ -3,6 +3,7 @@ SYMBOOGLIX_EXE=symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe
 Z3=z3/build/z3
 Boogie_Z3_slink=boogie/Binaries/z3.exe
 Symbooglix_Z3_slink=symbooglix/src/SymbooglixDriver/bin/Release/z3.exe
+Z3_SYSTEM_PATH = $(shell which z3)
 .PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
 
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
@@ -19,7 +20,7 @@ xcode:
 	swift package generate-xcodeproj
 
 run:
-	swift build
+	swift build $(TARGET_FLAGS)
 	swift run dev_version
 
 zip: release
@@ -75,8 +76,10 @@ $(Symbooglix_Z3_slink):
 	  && cd ..
 
 $(Z3):
-	cd z3 && python scripts/mk_make.py --prefix=$(pwd)/bin \
-	  && cd build && make && cd ../..
+	mkdir -p z3/build/
+	ln -sf $(Z3_SYSTEM_PATH) $(Z3)
+#	cd z3 && python scripts/mk_make.py --prefix=$(pwd)/bin \
+#	  && cd build && make && cd ../..
 
 clean:
 	-swift package clean

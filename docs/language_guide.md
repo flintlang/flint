@@ -1253,7 +1253,7 @@ ToyWallet :: (getOwner) {
 Traits can be declared for external contracts using the syntax:
 
 ```swift
-contract trait <trait-name> {
+external trait <trait-name> {
   // trait members
 }
 ```

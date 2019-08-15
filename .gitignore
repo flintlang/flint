@@ -5,6 +5,7 @@
 /*.xcodeproj
 /node_modules
 Sources.old
+/*.backup
 .idea
 venv
 /.vscode

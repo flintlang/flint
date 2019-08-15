@@ -171,12 +171,12 @@ Flint Improvement Proposals \(FIPs\) track the design and implementation of larg
 ## Cloning Repo
 
 ```bash
-git clone --recurse-submodules https://github.com/flintlang/flint
+git clone --recurse-submodule https://github.com/flintlang/flint
 ```
 Or if you cloned normally, make sure to
 ```bash
-git submodules init
-git submodules update
+git submodule init
+git submodule update
 ```
 
 Make sure you have Mono installed
