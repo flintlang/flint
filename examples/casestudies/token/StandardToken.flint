@@ -13,6 +13,17 @@ contract StandardToken {
 
     event Transfer (from: Address, to: Address, value: Int)
     event Approval (from: Address, to: Address, value: Int)
+    // invariant (forall (a, Address, balances[a] >= 0))
+    // invariant (forall (a1, Address, forall (a2, Address, allowed[a1][a2] >= 0)))
+
+
+    // allowed[a1][a2] == m ==> a1 called approve(a2, m) || was allowed[a1][a2] == m + m', a2.called transferFrom(a1, _, m')
+    // invariant (forall (s : StandardToken, m : Int, a1: External, a2: External) :: (allowed[a1][a2] == m ==> Prev<(a1.Calls(s.approve(a2, m)) || (exists (m' : Int) :: (allowed[a1][a2] == m + m' && a2.Calls(s.transferFrom(a1, _, m')))))>))
+    // balances[a] == m ==> 1.transfer 2.transferFrom
+    // invariant (forall (s : StandardToken, m : Int, a : External) :: (balances[a] == m ==> Prev((exists (m' : Nat, e : External) :: balances[a] == m + m' && (a.Calls(s.transfer(_, m')) || e.Calls(s.transferFrom(a, _, m'))))))
+    //
+    // invariant (forall (s : StandardToken, m : Int, a : External) :: (balances[a] == m ==> Prev((exists (m' : Nat, e : External) :: balances[a] == m - m' && (e.Calls(s.transfer(a, m')) || e.Calls(s.transferFrom(_, a, m'))))))
+
 }
 
 StandardToken :: (any) {
@@ -22,14 +33,18 @@ StandardToken :: (any) {
   }
 
   // Total number of tokens in existence
-  public func totalSupply() -> Int {
+  public func totalSupply() -> Int
+  post (returns (totalSupply))
+  {
     return totalSupply
   }
 
   // Gets the balance of the specified address.
   // - param owner: The address to query the the balance of.
   // - return: An Int representing the amount owned by the passed address
-  public func balanceOf(owner: Address) -> Int {
+  public func balanceOf(owner: Address) -> Int
+  post (returns(balances[owner]))
+  {
     return balances[owner]
   }
 
@@ -37,28 +52,42 @@ StandardToken :: (any) {
   // - param owner: The address which owns the funds.
   // - param spender: The address which will spend the funds.
   // - return: An Int specifying the amount of tokens still available for the spender.
-  public func allowance(owner: Address, spender: Address) -> Int {
+  public func allowance(owner: Address, spender: Address) -> Int
+  post (returns (allowed[owner][spender]))
+  {
     return allowed[owner][spender]
   }
 }
-StandardToken :: caller <- (any) {
 
+
+StandardToken :: caller <- (any) {
   // Transfer token for a specified address
   // - param to: The address to transfer to.
   // - param value: The amount to be transferred.
   // - return: true or is reverted
   public func transfer(to: Address, value: Int) -> Bool
     mutates (balances)
+    pre (value > 0)
+    pre (balances[caller] >= value)
+    pre (to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    pre (to != caller)
+
+    post (balances[to] == prev(balances[to]) + prev(value))
+    post (balances[caller] == prev(balances[caller]) - prev(value))
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller || a == to))
+    post (returns (true))
+
+
   {
+
     assert(balances[caller] >= value)
     assert(to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
 
     balances[caller] -= value
     balances[to] += value
-
     emit Transfer(from: caller, to: to, value: value)
 
-    return true;
+    return true
   }
 
   // Approve the passed address to spend the specified amount of tokens on behalf of caller.
@@ -67,6 +96,11 @@ StandardToken :: caller <- (any) {
   // - return: true or is reverted
   public func approve(spender: Address, value: Int) -> Bool
     mutates (allowed)
+    pre (value > 0)
+    post (allowed[caller][spender] == value)
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall (a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (returns (true))
+
   {
     allowed[caller][spender] = value
 
@@ -82,6 +116,17 @@ StandardToken :: caller <- (any) {
 
   public func transferFrom(from: Address, to: Address, value: Int) -> Bool
     mutates (balances, allowed)
+    pre (value > 0)
+    pre (balances[from] >= value && allowed[from][caller] >= value)
+    pre (to != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+    pre (from != to)
+    post (balances[from] == prev(balances[from]) - prev(value))
+    post (balances[to] == prev(balances[to]) + prev(value))
+    post (allowed[from][caller] == prev(allowed[from][caller]) - prev(value))
+    post (returns (true))
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == from || a == to))
+    post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == from && a2 == caller))))
+
   {
     let allowance: Int = allowed[from][caller]
     assert(balances[from] >= value && allowance >= value)
