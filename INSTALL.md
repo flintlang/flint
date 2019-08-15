@@ -71,7 +71,7 @@ To use flint to compile a flint contract (in this example `counter.flint`) into 
 ```bash
 export FLINTPATH=$(pwd)
 export PATH=$FLINTPATH/.build/debug:$PATH
-flintc --emit-ir --ir-output ./ examples/valid/counter.flint
+flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
 ```
 This will generate a main.sol file inside the current directory which can then be compiled to be depolyed on the Etherum blockchain. To test it, we recommend using Remix IDE, following these instructions https://docs.flintlang.org/docs/language_guide#remix-integration
 
