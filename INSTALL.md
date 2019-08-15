@@ -73,7 +73,12 @@ export FLINTPATH=$(pwd)
 export PATH=$FLINTPATH/.build/debug:$PATH
 flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
 ```
-This will generate a main.sol file inside the current directory which can then be compiled to be depolyed on the Etherum blockchain. To test it, we recommend using Remix IDE, following these instructions https://docs.flintlang.org/docs/language_guide#remix-integration
+This will generate a main.sol file inside the bin sub-directory which can then be compiled to be depolyed on the Etherum blockchain. If you wish to have the output file in the current directory remove bin from the previous command:
+```
+flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
+```
+
+To test it, we recommend using Remix IDE, following these instructions https://docs.flintlang.org/docs/language_guide#remix-integration
 
 ## macOS
 
@@ -103,3 +108,7 @@ source ~/.bash_profile
 
 make
 ````
+
+## Usage
+
+Same as for linux above.
