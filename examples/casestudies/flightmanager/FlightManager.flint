@@ -10,42 +10,31 @@ contract FlightManager {
 
   var amountPaid: [Address: Wei] = [:]
 
-  //holistic
-  // invariant (forall (s: String, f : FlightManager, a: Address, t: Int, ns: Int) :: (f.flightInformation.flightID == s && f.admin == a&& f.ticketPrice == t && f.numSeats == ns) ==> Was(Calls(f.init(s,a,t,s))))
-  // if flightInformation.isCancelled ==> was called cancelFlight()
-  // invariant (forall (f : FlightManager) :: (f.flightInformation.isCancelled ==> Was(f.admin.Calls(cancelFlight()))))
-  // if amountPaid == 0 ==> admin.isFlightCancelled and passenger.retrieveRefund
-  // invariant (forall (f : FlightManager, e : External) :: (amountPaid[e].rawValue == 0 ==> (arrayContains(passengers, e) == false || (arrayContains(passengers, e) && f.flightInformation.isCancelled && Was(e.Calls(retrieveRefund())))) ))
-
 
   invariant (numPassengers == passengers.size)
   invariant (numRemainingSeats >= 0)
   invariant (numPassengers >= 0)
   invariant (ticketPrice > 0)
-  // invariant (forall (a, Address, arrayContains(passengers, a) == false ==> amountPaid[a].rawValue == 0))
-  // invariant (arrayEach (p, passengers, amountPaid[p].rawValue == ticketPrice))
-  // invariant (forall (a, Address, dictContains(amountPaid, a) ==> amountPaid[a].rawValue > 0))
   invariant (numPassengers + numRemainingSeats == totalSeats)
-  // invariant (forall (a, Address, a > 0 ==> a > 0)
+
+  invariant (forall (a, Address, dictContains(amountPaid, a) ==> amountPaid[a].rawValue == ticketPrice))
+  invariant (forall (a, Address, 0 < a  ==> a > 0))
+
 }
-//
+
 FlightManager :: caller <- (any) {
   public init(
-    // flightID: String,
               admin: Address,
               ticketPrice: Int,
               numSeats: Int)
     mutates (FlightInformation.isCancelled)
     pre(numSeats > 0 && ticketPrice > 0)
   {
-    // self.flightInformation = FlightInformation(flightID)
     self.flightInformation = FlightInformation()
     self.admin = admin
     self.ticketPrice = ticketPrice
     self.numRemainingSeats = numSeats
     self.totalSeats = numSeats
-    // self.passengers = []
-    // self.amountPaid = [:]
   }
 
   @payable
@@ -54,8 +43,8 @@ FlightManager :: caller <- (any) {
     mutates (amountPaid, numPassengers, numRemainingSeats, passengers, Wei.rawValue)
     // pre (arrayContains(passengers, caller) == false)
 
-    pre (dictContains (amountPaid, caller))
     pre (value.rawValue == ticketPrice)
+    pre (dictContains (amountPaid, caller) == true)
     pre (numRemainingSeats > 0)
     pre (flightInformation.isCancelled == false)
 
@@ -83,12 +72,6 @@ FlightManager :: caller <- (any) {
 
     numRemainingSeats -= 1
   }
-
-  // public func getFlightID() -> String
-  // post (returns (flightInformation.flightID))
-  // {
-  //   return flightInformation.flightID
-  // }
 
   public func isFlightCancelled() -> Bool
   post (returns (self.flightInformation.isCancelled))
@@ -119,33 +102,10 @@ FlightManager :: (admin) {
   }
 }
 
-// FlightManager :: passenger <- (passengers) {
-//   public func retrieveRefund()
-//   // mutates (flightInformation, admin, ticketPrice, numRemainingSeats, totalSeats, passengers, numPassengers, amountPaid, FlightManager.isCancelled)
-//   mutates (flightInformation, admin, ticketPrice, numRemainingSeats, totalSeats, passengers, numPassengers, amountPaid, FlightInformation.isCancelled, Wei.rawValue)
-//
-//   pre (dictContains (amountPaid, passenger))
-//   pre (flightInformation.isCancelled)
-//
-//   post (amountPaid[passenger].rawValue == 0)
-//   post (forall (a, Address, amountPaid[a] == prev(amountPaid[a]) || a == passenger))
-//   {
-//     assert(flightInformation.isCancelled)
-//     send(passenger, &amountPaid[passenger])
-//   }
-// }
-
 struct FlightInformation {
-  // var flightID: String
   var isCancelled: Bool = false
 
-  // init(flightID: String) {
-  //   self.flightID = flightID
-  // }
-
-  // init()
-  // // mutates(isCancelled)
-  // {}
+  public init() {}
 
   func cancelFlight()
     mutates (isCancelled)
