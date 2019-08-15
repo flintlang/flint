@@ -1,47 +1,65 @@
-contract KotET {
-  var king: Address
-  visible var claimPrice: Int = 100
-  var owner: Address
-  var pot: Wei
-}
-
-KotET :: caller <- (any) {
-  public init()
-    mutates (Wei.rawValue)
-  {
-    self.owner = caller
-    self.king = caller
-    self.pot = Wei(0)
-  }
-
-  @payable
-  public func dethrone(implicit value: Wei)
-    mutates (Wei.rawValue, king, claimPrice, pot, owner)
-  {
-    if value.getRawValue() < claimPrice {
-      fatalError()
-    }
-
-    let oldKing: Address = king
-    let compensation: Wei = Wei(&pot, calculateCompensation())
-
-    self.claimPrice = calculateNewPrice(bid: value.getRawValue())
-    self.king = caller
-
-    pot.transfer(source: &value)
-    send(oldKing, &compensation) // To add new external call syntax
-    // Currently vulnerable to an oldKing that throws when sending
-    // Should delegate to another function to call
-  }
-
-  func calculateNewPrice(bid: Int) -> Int {
-    return bid + 100
-  }
-
-  func calculateCompensation() -> Int {
-    return pot.getRawValue()
-  }
-}
+// contract KotET {
+//   var king: Address
+//   visible var claimPrice: Int = 100
+//   var owner: Address
+//   var pot: Wei
+//
+//   invariant (pot.rawValue >= 0)
+//   invariant (claimPrice >= 100)
+//   // invariant (pot.rawValue != 0 ==> claimPrice == pot.rawValue + 100)
+//   // invariant (forall (k : KotET, e: External) :: (e == owner ==> Prev(e.Calls(k.init()))))
+//   // invariant (forall (k : KotET) :: (Prev (k.king.Calls(k.dethrone(pot)))))
+// }
+//
+// KotET :: caller <- (any) {
+//   public init()
+//     mutates (Wei.rawValue)
+//   {
+//     self.owner = caller
+//     self.king = caller
+//     self.pot = Wei(0)
+//   }
+//
+//   @payable
+//   public func dethrone(implicit value: Wei)
+//     mutates (Wei.rawValue, king, claimPrice, pot, owner)
+//     pre (value.rawValue > 0)
+//
+//     post (prev(value.rawValue) >= claimPrice ==> claimPrice == prev(value.rawValue) + 100 && pot.rawValue == prev(value.rawValue))
+//     post (prev(value.rawValue) >= claimPrice ==> king == caller)
+//     // post (prev(value.rawValue) >= claimPrice ==> claimPrice == pot.rawValue + 100)
+//   {
+//     if value.rawValue < claimPrice {
+//       fatalError()
+//     }
+//
+//     let oldKing: Address = king
+//     let compensation: Wei = Wei(&pot, calculateCompensation())
+//
+//     // self.claimPrice = calculateNewPrice(bid: value.rawValue)
+//     self.claimPrice = value.rawValue + 10
+//     self.king = caller
+//
+//
+//     pot.transfer(source: &value)
+//     // send(oldKing, &compensatiosn)
+//     // To add new external call syntax
+//     // Currently vulnerable to an oldKing that throws when sending
+//     // Should delegate to another function to call
+//   }
+//
+//   func calculateNewPrice(bid: Int) -> Int
+//     post (returns (bid + 100))
+//   {
+//     return bid + 100
+//   }
+//
+//   func calculateCompensation() -> Int
+//     post (returns (pot.rawValue))
+//   {
+//     return pot.rawValue
+//   }
+// }
 
 contract ValidKotET {
   var king: Address
@@ -49,6 +67,16 @@ contract ValidKotET {
   var owner: Address
   var pot: Wei
   var pastKings: [Address: Wei]
+
+  // invariant (claimPrice == pot.rawValue + 100)
+  invariant (pot.rawValue >= 0)
+  invariant (claimPrice >= 100)
+  // invariant (forall (a, Address, pastKings[a].rawValue > 0 ==> pastKings[a].rawValue < pot.rawValue))
+
+//   invariant (forall (v : ValidKotET, e: External) :: (e == owner ==> Prev(e.Calls(v.init()))))
+//   invariant (forall (v : ValidKotET) :: (Prev (k.king.Calls(v.dethrone(pot)))))
+// //I assume that each caller can only call once
+//   invariant (forall (v : ValidKotET, a : Address) :: (pastKings[a].rawValue > 0 ==> Was(a.Calls(v.dethrone(pastKings[a])))))
 }
 
 ValidKotET :: caller <- (any) {
@@ -65,11 +93,22 @@ ValidKotET :: caller <- (any) {
   @payable
   public func dethrone(implicit value: Wei)
     mutates (Wei.rawValue, claimPrice, king, pot, pastKings)
+    pre (dictContains(pastKings, pot) == false)
+    pre (arrayContains(pastKings, king))
+    post (prev(value.rawValue) >= claimPrice ==> claimPrice == pot.rawValue + 100)
+    post (prev(value.rawValue) >= claimPrice ==> king == caller)
+    post (prev(value.rawValue) >= claimPrice ==> pot.rawValue == prev(value.rawValue))
+
+    post (prev(value.rawValue) >= claimPrice ==> pastKings[prev(king)].rawValue == prev(pot.rawValue))
+    post (forall (a, Address, dictContains(pastKings, a) ==> pastKings[a] == prev(pastKings[a]) || a == prev(king)))
   {
     if value.getRawValue() < claimPrice {
       fatalError()
     }
-    pastKings[king] = Wei(&pot, calculateCompensation())
+
+    // let compensation: Wei = Wei(&pot, calculateCompensation())
+    pastKings[king] = Wei(&pot, calculateCompensation())      //what if some caller called dethrone twice?
+    // pastKings[king].transfer(source: &compensation)
 
     self.claimPrice = calculateNewPrice(bid: value.getRawValue())
     self.king = caller
@@ -77,11 +116,15 @@ ValidKotET :: caller <- (any) {
     pot.transfer(source: &value)
   }
 
-  func calculateNewPrice(bid: Int) -> Int {
+  func calculateNewPrice(bid: Int) -> Int
+  post (returns (bid + 100))
+  {
     return bid + 100
   }
 
-  func calculateCompensation() -> Int {
+  func calculateCompensation() -> Int
+  post (returns (pot.rawValue))
+  {
     return pot.getRawValue()
   }
 }
@@ -92,7 +135,8 @@ ValidKotET :: king <- (any) {
   // should be mutating, but send is not a mutating function although it should
   // be in this case
   public func withdrawCompensation()
-    mutates (Wei.rawValue, king, claimPrice, pot, owner)
+    mutates (Wei.rawValue, king, claimPrice, pot, pastKings, owner)
+    post(pastKings[king].rawValue == 0)
   {
     send(king, &pastKings[king])
   }

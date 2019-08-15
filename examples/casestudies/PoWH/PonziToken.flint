@@ -5,6 +5,16 @@ contract PonziToken {
     var allowed: [Address: [Address: Int]] = [:]
     var totalSupply: Int = 0
     let deployedAddress: Address
+
+    invariant (totalSupply <= 0)
+    invariant (forall (a, Address, dictContains(balances, a) ==> balances[a] >= 0))
+    invariant (forall (a1, Address, forall(a2, Address, dictContains(allowed, a1) && dictContains(allowed[a1], a2) ==> allowed[a1][a2] >= 0)))
+
+    // holistic specification
+    // invariant (forall (p: PonziToken) :: (totalSupply == 0 ==> exists (e :External) :: (Was(e.Calls(p.init(p.deployedAddress))))))
+    // invariant (forall (p: PonziToken, m,m':Int, from: Address, e: External) :: (p.allowed[from][e] == m + m' && next(p.allowed[from][e]) == m ==> e.Calls(p.transferFrom(from,_,m'))))
+    // invariant (forall (p: PonziToken, m: Int, m': Int) :: (p.totalSupply == m + m' && next(p.totalSupply == m) ==> exists (e: External, t: Address) :: (e.Calls(p.sell(m')) || (t == p.deployedAddress && (e.Calls(p.transferTokens(_, t, m')) || e.Calls(p.transferFrom(_, t, m'))))))
+
 }
 
 PonziToken :: (any) {
@@ -16,6 +26,19 @@ PonziToken :: (any) {
 PonziToken :: caller <- (any) {
   public func transferFrom(from: Address, to: Address, value: Int) -> Bool
     mutates (allowed, totalSupply, balances)
+    pre (value >= 0)
+    pre (allowed[from][caller] >= value)
+    pre (balances[from] >= value)
+
+    post (returns (true))
+    post (allowed[from][caller] == prev(allowed[from][caller] - value))
+    post (forall (a1, Address, forall(a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == from && a2 == caller))))
+    post (to != deployedAddress ==> totalSupply == prev(totalSupply) && arrayEach(b, balances, b == prev(b)))
+    post (to == deployedAddress ==> ((totalSupply == prev(totalSupply) - value) && (balances[caller] == prev(balances[caller]) &- value)))
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller ))
+
+    // will (allowed[from][caller] >= value ==> caller.Calls(transferTokens(from, to value)))
+    // not sure about the correct way to use will
   {
     let allowance: Int = allowed[from][caller]
     assert(allowance >= value)
@@ -28,6 +51,13 @@ PonziToken :: caller <- (any) {
 
   func transferTokens(from: Address, to: Address, value: Int)
     mutates (totalSupply, balances)
+    pre (value >= 0)
+    pre (balances[from] >= value)
+    post (to != deployedAddress ==> totalSupply == prev(totalSupply) && arrayEach(b, balances, b == prev(b)))
+
+    post (to == deployedAddress ==> ((totalSupply == prev(totalSupply) - value) && (balances[caller] == prev(balances[caller]) &- value)))
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller ))
+    // will (balances[from] >= value && to == deployedAddress ==> caller.Calls(sell(value)))
   {
     assert(balances[from] >= value)
     if to == deployedAddress {
@@ -38,6 +68,10 @@ PonziToken :: caller <- (any) {
 
   func sell(amount: Int)
     mutates (totalSupply, balances)
+		 pre (amount >= 0)
+     post (totalSupply == prev(totalSupply) - amount)
+     post (balances[caller] == prev(balances[caller]) &- amount)
+		 post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller ))
   {
     // remove tokens
     totalSupply -= amount
@@ -56,20 +90,21 @@ PonziToken :: caller <- (any) {
 // Which then calls sell(1)
 // sell(1) updates the balances[bob] which equals 0 to -1 leading to 2^256 - 1
 // as the current balance of bob.
-contract Bob {
-  let ponziToken: Address
-  let claire: Address
-}
-
-Bob :: (any) {
-  public init(target: Address, proxy: Address) {
-    ponziToken = target
-    claire = proxy
-  }
-
-  public func exploit()
-    mutates (PonziToken.allowed, PonziToken.totalSupply, PonziToken.balances)
-  {
-    transferFrom(claire, ponziToken, 1)
-  }
-}
+// contract Bob {
+//   let ponziToken: Address
+//   let claire: Address
+// }
+//
+// Bob :: (any) {
+//   public init(target: Address, proxy: Address) {
+//     ponziToken = target
+//     claire = proxy
+//   }
+//
+//   public func exploit()
+//     mutates (PonziToken.allowed, PonziToken.totalSupply, PonziToken.balances)
+//     pre (balances[claire] >= value)
+//   {
+//      transferFrom(claire, ponziToken, 1)
+//   }
+// }

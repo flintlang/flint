@@ -1,22 +1,28 @@
 contract Counter {
   var value: Int = 0
+  // invariant (forall (c:Counter, e:External, m:Int) :: (next(c.value = m) && c.value != m ==> (c.value == m - 1 && e.Calls(c.increment())) || (e.Calls(c.set(m)))))
+
 }
 
 Counter :: (any) {
   public init() {}
 
-  public func getValue() -> Int {
+  public func getValue() -> Int
+  post (returns(value))
+  {
     return value
   }
 
   public func increment()
     mutates (value)
+    post (value == prev(value) + 1)
   {
     value += 1
   }
 
   public func set(value: Int)
     mutates (value)
+    post (value == value)
   {
     self.value = value
   }

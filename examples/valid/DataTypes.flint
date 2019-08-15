@@ -4,6 +4,13 @@ contract Test {
   var arr: Address[10]
   var p1: Address
   var p2: Address
+
+  // holistic_inv (forall (t: Test, p1: Address) :: (t.p1 == p1 ==> prev(Calls(t.init(p1, _))) || prev(Calls(t.setP1(p1)))))
+  // holistic_inv (forall (t: Test, p2: Address) :: (t.p2 == p2 ==> prev(Calls(t.init(_, p2))) || prev(Calls(t.setP2(p2)))))
+
+  // holistic_inv (forall (t: test, i: Int, a: Address) :: (arr[i] == a ==> (prev(t.p1.Calls(t.setPosition(a, i))) || prev(t.p2.Calls(t.setPosition(a, i))))))
+  // holistic_inv (forall (t: test, i: Int, a: Address, m: Int) :: (arr[i] == a && dict[a] == m ==> (prev(t.p1.Calls(t.write(i, m))) || prev(t.p2.Calls(t.write(i, m))))))
+
 }
 
 Test :: (any) {
@@ -30,6 +37,9 @@ Test :: (any) {
 Test :: (p1, p2) {
   public func setPosition(addr: Address, position: Int)
     mutates (arr)
+    post (position < arr.size ==> arr[position] == addr)
+    post (position >= arr.size ==> arr[position] == prev(arr[position]))
+    post (forall (i, Int, (0 <= i && i < arr.size ==> arr[i] == prev(arr[i]) || i == position)))
   {
     if position < arr.size {
       arr[position] = addr
@@ -38,6 +48,9 @@ Test :: (p1, p2) {
 
   public func write(pos: Int, value: Int)
     mutates (dict)
+    post (pos < arr.size ==> dict[arr[pos]] == value)
+    post (pos >= arr.size ==> dict[arr[pos]] == prev(dict[arr[pos]]))
+    post (forall (a, Address, (dict[a] == prev(dict[a]) || (a == arr[pos]))))
   {
     if pos < arr.size {
       var key: Address = arr[pos]
@@ -45,7 +58,9 @@ Test :: (p1, p2) {
     }
   }
 
-  public func getValue(pos: Int) -> Int {
+  public func getValue(pos: Int) -> Int
+  post (returning (r, (pos < arr.size ==> r == dict[arr[pos]]) || (pos >= arr.size ==> r == 0)))
+  {
     if pos < arr.size {
       var key: Address = arr[pos]
       return dict[key]

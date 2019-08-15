@@ -16,12 +16,24 @@ struct Proposal {
   var success: Bool = false
   var voted: [Address: Bool]
 
-  init(proposer: Address, payout: Int, recipient: Address) {
+  init(proposer: Address, payout: Int, recipient: Address)
+  {
     self.proposer = proposer
     self.payout = payout
     self.recipient = recipient
     self.voted = [:]
   }
+
+  invariant (finished ==> (success ==> yea > nay))
+  invariant (finished ==> (success == false ==> yea <= nay))
+  invariant (finished == false ==> success == false)
+
+  invariant (yea >= 0)
+  invariant (nay >= 0)
+  //number of voted == yea + nay
+  invariant (payout >= 0)
+
+
 }
 
 contract SimpleDAO (Join, Propose, Vote) {
@@ -31,6 +43,7 @@ contract SimpleDAO (Join, Propose, Vote) {
   var balances: [Address: Wei]
 
   invariant (proposal < proposals.size)
+  // invariant (forall (a, Address, dictContains(balances, a) ==> balances[a] >= 0))
 }
 
 SimpleDAO @(any) :: caller <- (any) {
@@ -41,15 +54,22 @@ SimpleDAO @(any) :: caller <- (any) {
     become Join
   }
 
-  public fallback() {
-    fatalError()
+  // public fallback() {
+  //   fatalError()
+  // }
+
+  public func tokenHolder(addr: Address) -> Bool
+  post (returns (balances[addr].rawValue != 0))
+  {
+    return balances[addr].rawValue != 0
   }
 
-  public func tokenHolder(addr: Address) -> Bool {
-    return balances[addr].getRawValue() != 0
-  }
-
-  public func getTotalStake() -> Int {
+  public func getTotalStake() -> Int
+  pre (forall (a, Address, dictContains(balances, a) ==> balances[a].rawValue >= 0))  //delete after invariant fixed
+  post (returning (r, r >= 0))
+  // r == totalSupply?
+//////////////////////////////////////////////
+  {
     var sum: Int = 0
     for let balance: Wei in balances {
       sum += balance.getRawValue()
@@ -63,9 +83,14 @@ SimpleDAO @(Join) :: caller <- (any) {
   @payable
   public func join(implicit value: inout Wei)
     mutates (balances, Wei.rawValue)
+    pre (dictContains(balances, caller))
+
+    post (balances[caller].rawValue == prev(balances[caller].rawValue) + prev(value.rawValue))
+    post (forall (a, Address, balances[a] == prev(balances[a]) || a == caller))
   {
     balances[caller].transfer(source: &value)
   }
+
 }
 
 SimpleDAO @(Join) :: (curator) {
@@ -76,7 +101,13 @@ SimpleDAO @(Join) :: (curator) {
 
 SimpleDAO @(Propose) :: caller <- (tokenHolder) {
   public func newProposal(value: Int, recipient: Address) -> Int
-    mutates (proposals, Proposal.proposer, Proposal.payout, Proposal.recipient, Proposal.yea, Proposal.nay, Proposal.finished, Proposal.success, Proposal.voted, curator, proposal, balances)
+  // why this also mutates curator and balances?
+    mutates (proposals, Proposal.proposer, Proposal.payout, Proposal.recipient, Proposal.yea, Proposal.nay, Proposal.finished, Proposal.success, Proposal.voted)
+    post (proposals.size == prev(proposals.size) + 1)
+    // post (proposals.[prev(proposals.size)].proposer == caller && proposals.[prev(proposals.size)].payout == value && proposals.[prev(proposals.size)].recipient == recipient)
+    // post (proposals.[prev(proposals.size)].yea == 0 && proposals.[prev(proposals.size)].nay == 0 && proposals.[prev(proposals.size)].finished == false && proposals.[prev(proposals.size)].success == false)
+    post (returns (proposals.size - 1))
+
   {
     // Sanity checks omitted to be concise
     let pID: Int = proposals.size
@@ -84,22 +115,27 @@ SimpleDAO @(Propose) :: caller <- (tokenHolder) {
     return pID
   }
 
-  public func leave()
-    mutates (Wei.rawValue, curator, proposal, balances, proposals)
-  {
-    // requiring mutating keyword
-    send(caller, &balances[caller])
-  }
+  // public func leave()
+  //   mutates (Wei.rawValue, curator, proposal, balances, proposals)
+  //   //why this also mutates curator, proposal
+  //   post (balances[caller] == 0)
+  //   post (forall (i, Int, 0 <= i && i < members.size ==> balances[members[i]] == prev(balances[members[i]]) || members[i] == caller))
+  //
+  // {
+  //   // requiring mutating keyword
+  //   send(caller, &balances[caller])
+  // }
 }
 
 SimpleDAO @(Propose) :: (curator) {
-  public func beginVote(proposal: Int)
+  public func beginVote(_proposal: Int)
     mutates (proposal)
+    post (_proposal < proposals.size ==> self.proposal == _proposal)
   {
-    if proposal >= proposals.size {
+    if _proposal >= proposals.size {
       fatalError()
     }
-    self.proposal = proposal
+    self.proposal = _proposal
     become Vote
   }
 }
@@ -107,15 +143,18 @@ SimpleDAO @(Propose) :: (curator) {
 SimpleDAO @(Vote) :: caller <- (tokenHolder) {
   public func vote(approve: Bool)
     mutates (proposals, Proposal.yea, Proposal.nay, Proposal.voted)
+    post (proposals[proposal].voted[caller])
+    post (prev(proposals[proposal].voted[caller]) == false && approve ==> proposals[proposal].yea == prev(proposals[proposal].yea) + balances[caller].rawValue && proposals[proposal].nay == prev(proposals[proposal].nay))
+    post (prev(proposals[proposal].voted[caller]) == false && approve == false ==> proposals[proposal].nay == prev(proposals[proposal].nay) + balances[caller].rawValue && proposals[proposal].yea == prev(proposals[proposal].yea))
   {
     if proposals[proposal].voted[caller] {
       fatalError()
     }
 
     if approve {
-      proposals[proposal].yea += balances[caller].getRawValue()
+      proposals[proposal].yea += balances[caller].rawValue
     } else {
-      proposals[proposal].nay += balances[caller].getRawValue()
+      proposals[proposal].nay += balances[caller].rawValue
     }
 
     proposals[proposal].voted[caller] = true
@@ -123,6 +162,13 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
 
   public func executeProposal()
     mutates (proposals, Proposal.finished, Proposal.success, Wei.rawValue, curator, proposal, balances, proposals)
+    // pre (getTotalStake > 0)
+    pre (forall (a, Address, dictContains(balances, a) ==> balances[a].rawValue >= 0))  //delete after invariant fixed
+
+    post (proposals[proposal].finished)
+    post (proposals[proposal].yea > proposals[proposal].nay ==> (proposals[proposal].success))
+    // post (forall (a, Address, balances[a].rawValue == prev(balances[a].rawValue) - (proposals[proposal].payout * prev(balances[a].rawValue)) / getTotalStake()))
+    post (forall (i, Int, proposals[i] == prev(proposals[i]) || (proposals[proposal].yea > proposals[proposal].nay && i == proposal)))
   {
     if(caller != proposals[proposal].proposer || proposals[proposal].finished) {
       fatalError()
@@ -135,10 +181,10 @@ SimpleDAO @(Vote) :: caller <- (tokenHolder) {
        let transfervalue: Wei = Wei(0)
        let totalstake: Int = getTotalStake()
        for let value: Wei in balances {
-         let rawvalue: Int = (proposals[proposal].payout * value.getRawValue()) / totalstake
+         let rawvalue: Int = (proposals[proposal].payout * value.rawValue) / totalstake
          transfervalue.transfer(source: &value, amount: rawvalue)
        }
-       send(proposals[proposal].recipient, &transfervalue)
+       // send(proposals[proposal].recipient, &transfervalue)
     }
 
     become Propose

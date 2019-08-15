@@ -4,6 +4,16 @@ contract Test {
   var arr2: Int[10]
   var arr3: [Int]
   var numWrites: Int = 0
+
+//holistic specification
+	 // invariant (forall (t: Test, m: Int) :: (t.numWrites = m && next(t.numWrites = m + 1) ==> exists (e: External) :: e.Calls(t.increaseNumWrites()))))
+   // invariant (forall (t: Test, e: External, i: Int) :: (e.Calls(t.write(i, _) && i <arr.size ==> Next(e.Calls(t.increaseNumWrites())))))
+   // invariant (forall (t: Test, e: External, i: Int) :: (e.Calls(t.write2(_, _) ==> Next(e.Calls(t.increaseNumWrites())))))
+
+   // invariant (forall (t: Test) :: (t.arr3[0] == 4 ==> exists (e: External) :: (Was(e.Calls(t.write3())))))
+   // invariant (forall (t: Test, i: Int, val: Int) :: (arr[i] == val ==> exists (e: External) :: (Was(e.Calls(t.write(i, val))))))
+   // invariant (forall (t: Test, i: Int, val: Int) :: (arr2[i] == val ==> exists (e: External) :: (Was(e.Calls(t.write2(i, val))))))
+
 }
 
 Test :: caller <- (any) {
@@ -16,29 +26,37 @@ Test :: caller <- (any) {
     self.arr3 = []
   }
 
+
   func increaseNumWrites()
     mutates (numWrites)
+		post (numWrites == prev(numWrites) + 1)
   {
     self.numWrites += 1
   }
 
   public func write(index: Int, val: Int)
     mutates (numWrites, arr)
-  {
+		post (index >= prev(arr.size) ==> (arrayEach(i, arr, (i == prev(i)) && numWrites == prev(numWrites))))
+		post (index < prev(arr.size) ==> (forall (i, Int, arr[i] == prev(arr[i]) || i == index) && numWrites == prev(numWrites) + 1))
+    {
     if index < arr.size {
       arr[index] = val
       increaseNumWrites()
     }
   }
 
-  public func value(index: Int) -> Int {
+  public func value(index: Int) -> Int
+	post (returning (r, (index < arr.size ==> r == arr[index]) || r == 0))
+	{
     if index < arr.size {
       return arr[index]
     }
     return 0
   }
 
-  public func value2(index: Int) -> Int {
+  public func value2(index: Int) -> Int
+  post (returning (r, (index < arr2.size ==> r == arr2[index]) || r == 1))
+  {
     if index < arr2.size {
       return arr2[index]
     }
@@ -47,6 +65,8 @@ Test :: caller <- (any) {
 
   public func write2(index: Int, val: Int)
     mutates (arr2, numWrites)
+    post (numWrites == prev(numWrites) + 1)
+    post (index < prev(arr2.size) ==> forall (i, Int, arr2[i] == prev(arr2[i]) || i == index))
   {
     if index < arr2.size {
       arr2[index] = val
@@ -54,19 +74,26 @@ Test :: caller <- (any) {
     increaseNumWrites()
   }
 
-  public func valueBoth(index: Int) -> Int {
+  public func valueBoth(index: Int) -> Int
+  post (returning (r, r == 3 || (index < arr.size && index < arr2.size ==> r == arr[index] + arr2[index])))
+
+  {
     if index < arr.size && index < arr2.size {
       return arr[index] + arr2[index]
     }
     return 3
   }
 
-  public func numWrites() -> Int {
+  public func numWrites() -> Int
+  post (returning (r, r == numWrites))
+  {
     return numWrites
   }
 
   public func write3()
     mutates (arr3)
+    post (arr3[0] == 4)
+    post (forall(i, Int, 0 <= i && i < prev(arr3.size) ==> arr3[i] == prev(arr3[i]) || (i == 0)))
   {
     arr3[0] = 4
   }

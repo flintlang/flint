@@ -52,6 +52,9 @@ contract WalletLibrary {
   // pending transactions we have at present.
   var txs: [Int: Transaction] = [:]
 
+  invariant (numOwners == owners.size)
+  invariant (owners.size <= maxOwners)
+
   // EVENTS //
   // Confirmation - owner and operation hash
   event Confirmation (
@@ -120,7 +123,9 @@ WalletLibrary :: caller <- (any) {
   // }
 
   // BUG: when [Address] is used as argument to init
-  public init(_owners: Address, _required: Int) {
+  public init(_owners: Address, _required: Int)
+
+  {
 
     // Doesn't make sense if _owners: Address
     // numOwners = _owners.size + 1
@@ -157,6 +162,10 @@ WalletLibrary :: caller <- (owners) {
 
   public func changeOwner(_from: Address, _to: Address)
     mutates (owners, ownerIndex)
+    post (owners[currentOwner] == _to)
+  //  post (forall (a: Address) :: (owners[a] == prev(owners[a]) || a == currentOwner))
+
+    post (ownerIndex[_from] == 0 && ownerIndex[_to] == currentOwner)
   {
     if (isOwner(_owner: _to) == false) && isOwner(_owner: _from) {
       //clearPending()
@@ -169,11 +178,15 @@ WalletLibrary :: caller <- (owners) {
     }
   }
 
-  func isOwner(_owner: Address) -> Bool {
+  func isOwner(_owner: Address) -> Bool
+  post (returns(ownerIndex[_owner] > 0))
+  {
     return self.ownerIndex[_owner] > 0
   }
 
-  func getOwner(ownerIndex: Int) -> Address {
+  func getOwner(ownerIndex: Int) -> Address
+  post (returns(owners[ownerIndex + 1]))
+  {
     return self.owners[ownerIndex + 1]
   }
 }

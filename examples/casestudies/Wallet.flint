@@ -1,6 +1,17 @@
 contract Wallet {
   var owner: Address
   var contents: Wei
+
+
+  //owner has called init
+  // invariant (forall (w: Wallet, e: External) :: (e == w.owner ==> Was(e.Calls(w.init()))))
+
+  //rawValue of content increased by m'
+  // invariant (forall (w: Wallet, e: External, m: Int, m': Int) :: (w.content.rawValue == m && next (w.content.rawValue == m + m') ==> e.Calls(w.deposit(Wei(m')))))
+  //rawVallue of the content decreased by m'
+  // invariant (forall (w: Wallet,  m: Int, m': Int) :: (w.content.rawValue == m + m' && next (w.content.rawValue == m) ==> w.owner.Calls(w.withdraw(m'))))
+
+
 }
 
 Wallet :: caller <- (any) {
@@ -14,6 +25,7 @@ Wallet :: caller <- (any) {
   @payable
   public func deposit(implicit value: Wei)
     mutates (contents, Wei.rawValue)
+    post (contents.rawValue == prev(contents.rawValue) + prev(value.rawValue))
   {
     // Record the Wei received into the contents state property.
     contents.transfer(source: &value)
@@ -23,6 +35,8 @@ Wallet :: caller <- (any) {
 Wallet :: (owner) {
   public func withdraw(value: Int)
     mutates (contents, owner, Wei.rawValue)
+    pre (value > 0)
+    post (contents.rawValue == prev(contents.rawValue) - prev(value))
   {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.
@@ -32,7 +46,9 @@ Wallet :: (owner) {
     send(owner, &w)
   }
 
-  public func getContents() -> Int {
-    return contents.getRawValue()
+  public func getContents() -> Int
+  post (returns (contents.rawValue))
+  {
+    return contents.rawValue
   }
 }

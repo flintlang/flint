@@ -4,19 +4,47 @@ contract WesternUnion {
 
   var customers: [Address]
   var numCustomers: Int = 0
+  var accounts: [Address: Wei] //= [:]
+  // var hhh: Wei = Wei(0)
 
   invariant (numCustomers == customers.size)
+  invariant (numCustomers >= 0)
+  
+  // invariant (arrayEach(a, customers, dictContains(accounts,a)))
+  // invariant (forall (a, Address, dictContains(accounts, a) ==> accounts[a].rawValue >= 0))
+
+
+
 
   //only customers can withdraw money from bank
 
+
+
+
+
+//if it is a customer, it has been added
+//   invariant (forall (w : WesternUnion, e : Address) :: (arrayContains(customers, e) ==> Was(w.manager.Calls(w.addCustomer(e)))))
+//
+// // has manager ==> has been initialized
+//   invariant (forall (w: WesternUnion) :: (exists (e' : External) :: (e'.Calls(init(w.manager)))))
+// // money in account increase
+//   invariant (forall (w : WesternUnion, c : External, m: Int, m': Int) :: (accounts[c].rawValue == m  && next(accounts[c].rawValue == m + m') ==> exists (e: External) :: (e.Calls(deposit(Wei(m'), c)))))
+// // money decrease ==> withdraw
+// invariant (forall (w : WesternUnion, c : External, m: Int, m': Int) :: (accounts[c].rawValue == m + m' && next(accounts[c].rawValue == m) ==> exists (e: External) :: (c.Calls(deposit(Wei(m'), e)))))
+//
+// invariant (forall (w : WesternUnion, c : External) :: (accounts[c].rawValue == 0 ==> Was(c.Calls(withdraw()))))
+
+
   // customer can only withdraw the amount of money in their account
+
   // customer cannot withdraw more money than is in their account
-  var accounts: [Address: Wei] //= [:]
 }
 
 
 WesternUnion :: (any) {
-  public init(manager: Address) {
+  public init(manager: Address)
+  // mutates (Wei.rawValue)
+  {
     self.manager = manager
     self.customers = []
     self.accounts = [:]
@@ -26,6 +54,10 @@ WesternUnion :: (any) {
 WesternUnion :: (manager) {
   public func addCustomer(customer: Address)
     mutates (customers, numCustomers)
+
+    pre (arrayContains(customers, customer) == false)
+    post (numCustomers == prev(numCustomers) + 1)
+    post (customers[prev(numCustomers)] == customer && arrayEach(c, customers, c == prev(c) || c == customer) && arrayContains(customers, customer))
   {
     customers[numCustomers] = customer
     numCustomers += 1 //Issue if we don't increment numCustomers
@@ -37,15 +69,27 @@ WesternUnion :: customer <- (customers) {
   @payable
   public func deposit(implicit amount: Wei, recipient: Address)
     mutates (accounts, Wei.rawValue)
+    pre (arrayContains(customers, recipient))
+    pre (dictContains(accounts, recipient))
+    post (accounts[recipient].rawValue == (prev(accounts[recipient].rawValue) + prev(amount.rawValue)))
+    post (forall (a, Address, (accounts[a] == prev(accounts[a]) || a == recipient)))
   {
     accounts[recipient].transfer(source: &amount)
-    var a: Wei = Wei(0-1);
+    var a: Wei = Wei(0-1)
   }
 
+
+
   public func withdraw()
-    mutates (accounts, Wei.rawValue)
+    mutates (accounts, Wei.rawValue, customers, manager, numCustomers)
+    pre (dictContains(accounts, customer))
+    pre (arrayContains(customers, customer))
+
+    post (accounts[customer].rawValue == 0)
+    post (forall (a, Address, (dictContains(accounts,a) ==> (accounts[a] == prev(accounts[a]) || a == customer))))
   {
-    var amt: Wei = Wei(&accounts[customer])
-    send(customer, &amt)
+    //var amt: Wei = Wei(&)
+    send(customer, &accounts[customer])
+    // hhh.transfer(source: &accounts[customer])
   }
 }
