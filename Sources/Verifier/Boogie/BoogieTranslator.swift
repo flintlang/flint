@@ -875,7 +875,7 @@ class BoogieTranslator {
       let inSizeRange = sizeConstraints(
           base: {
             (isStructTLD
-                ? .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name), .identifier("i")) 
+                ? .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name), .identifier("i"))
                 : .identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name)
             )
           },
