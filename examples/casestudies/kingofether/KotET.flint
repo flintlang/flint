@@ -16,7 +16,7 @@ KotET :: caller <- (any) {
 
   @payable
   public func dethrone(implicit value: Wei)
-    mutates (Wei.rawValue, king, claimPrice, pot)
+    mutates (Wei.rawValue, king, claimPrice, pot, owner)
   {
     if value.getRawValue() < claimPrice {
       fatalError()
@@ -92,7 +92,7 @@ ValidKotET :: king <- (any) {
   // should be mutating, but send is not a mutating function although it should
   // be in this case
   public func withdrawCompensation()
-    mutates (Wei.rawValue)
+    mutates (Wei.rawValue, king, claimPrice, pot, owner)
   {
     send(king, &pastKings[king])
   }

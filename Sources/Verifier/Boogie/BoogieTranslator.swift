@@ -867,23 +867,31 @@ class BoogieTranslator {
       }
       let namedParams = isDict.enumerated().map({ ("i\($0.0)", $0.1) })
       let params = namedParams.map({ BParameterDeclaration(name: $0.0, rawName: $0.0, type: .int) })
-      let nestedReadsExpr = nestedReads(base: (isStructTLD ? {
-        .mapRead(.identifier($0), .identifier("i"))
-      } : {
-        .identifier($0)
-      }), params: namedParams, name: name)
-      let inSizeRange = sizeConstraints(base: { (
-          isStructTLD ? .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name), .identifier("i")
-          ) : .identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name)) },
-                                        paramNames: namedParams.map({ $0.0 }))
-      properties.append(.quantified(.forall,
-                                    (isStructTLD ? [BParameterDeclaration(name: "i", rawName: "i", type: .int)] : []
-                                    ) + params,
-                                    .implies(inSizeRange,
-                                             .and(.lessThan(nestedReadsExpr,
-                                                            .identifier(normaliser.generateStructInstanceVariable(
-                                                                structName: udt))),
-                                                  .greaterThanOrEqual(nestedReadsExpr, .integer(0))))))
+      let nestedReadsExpr = nestedReads(
+          base: (isStructTLD ? { .mapRead(.identifier($0), .identifier("i")) } : { .identifier($0) }),
+          params: namedParams,
+          name: name
+      )
+      let inSizeRange = sizeConstraints(
+          base: {
+            (isStructTLD
+                ? .mapRead(.identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name), .identifier("i")) 
+                : .identifier(normaliser.getShadowArraySizePrefix(depth: $0) + name)
+            )
+          },
+          paramNames: namedParams.map({ $0.0 })
+      )
+      properties.append(.quantified(
+          .forall,
+          (isStructTLD ? [BParameterDeclaration(name: "i", rawName: "i", type: .int)] : []) + params,
+          .implies(inSizeRange,
+                   .and(.lessThan(nestedReadsExpr,
+                                  .identifier(normaliser.generateStructInstanceVariable(
+                                      structName: udt))),
+                        .greaterThanOrEqual(nestedReadsExpr, .integer(0))
+                   )
+          )
+      ))
 
         // If type is struct then invariant that value < nextInstance
     case .inoutType(.userDefinedType(let udt)), .userDefinedType(let udt):
@@ -913,7 +921,7 @@ class BoogieTranslator {
 
     var paramNames = paramNames
     let name = paramNames.remove(at: 0)
-    return .and(.and(.greaterThanOrEqual(.identifier(paramNames.first!), .integer(0)),
+    return .and(.and(.greaterThanOrEqual(.identifier(name), .integer(0)),
                      .greaterThan(base(count), .identifier(name))),
                 sizeConstraints(base: { .mapRead(base($0), .identifier(name)) }, paramNames: paramNames,
                                 count: count + 1))
