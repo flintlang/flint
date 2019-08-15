@@ -82,7 +82,8 @@ FlintToken @(any) :: caller <- (any) {
     pre (dictContains(allowed[caller], spender))
 
     post (allowed[caller][spender] == value)
-    // post (forall (a1, Address, dictContains(allowed, a1) ==> forall (a2, Address, dictContains(allowed[a1]) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall (a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
     post (returns (true))
   {
     allowed[caller][spender] = value
@@ -114,7 +115,7 @@ FlintToken @(any) :: caller <- (any) {
     post (allowed[from][caller] == prev(allowed[from][caller]) - value)
     post (returns (true))
     post (forall (a, Address, dictContains(balances, a) ==> balances[a] == prev(balances[a]) || a == from || a == to))
-    // post (forall (a1, Address, forall(a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == from && a2 == caller))))
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall(a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == from && a2 == caller))))
 
 
   {
@@ -145,7 +146,7 @@ FlintToken @(any) :: caller <- (any) {
     pre (dictContains(allowed[caller], spender))
 
     post (allowed[caller][spender] == prev(allowed[caller][spender]) + addedValue)
-    // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall(a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
     post (returns (true))
 
   {
@@ -170,6 +171,7 @@ FlintToken @(any) :: caller <- (any) {
 
     post (subtractedValue >= prev(allowed[caller][spender]) ==> allowed[caller][spender] == 0)
     post (subtractedValue < prev(allowed[caller][spender]) ==> allowed[caller][spender] == prev(allowed[caller][spender]) - subtractedValue)
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall(a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
     // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
     post (returns (true))
   {

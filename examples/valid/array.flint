@@ -6,7 +6,13 @@ contract Test {
   var numWrites: Int = 0
 
 //holistic specification
-	 // invariant (forall (t:Test, e:External, m:Int) :: (numWrites = m && next(numWrites = m + 1) ==> e.Calls(t.increaseNumWrites())))
+	 // invariant (forall (t: Test, m: Int) :: (t.numWrites = m && next(t.numWrites = m + 1) ==> exists (e: External) :: e.Calls(t.increaseNumWrites()))))
+   // invariant (forall (t: Test, e: External, i: Int) :: (e.Calls(t.write(i, _) && i <arr.size ==> Next(e.Calls(t.increaseNumWrites())))))
+   // invariant (forall (t: Test, e: External, i: Int) :: (e.Calls(t.write2(_, _) ==> Next(e.Calls(t.increaseNumWrites())))))
+
+   // invariant (forall (t: Test) :: (t.arr3[0] == 4 ==> exists (e: External) :: (Was(e.Calls(t.write3())))))
+   // invariant (forall (t: Test, i: Int, val: Int) :: (arr[i] == val ==> exists (e: External) :: (Was(e.Calls(t.write(i, val))))))
+   // invariant (forall (t: Test, i: Int, val: Int) :: (arr2[i] == val ==> exists (e: External) :: (Was(e.Calls(t.write2(i, val))))))
 
 }
 

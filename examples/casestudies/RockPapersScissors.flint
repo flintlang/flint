@@ -6,6 +6,7 @@
 
 contract RockPaperScissors {
   var winner: Bool
+
 }
 
 RockPaperScissors :: (any) {

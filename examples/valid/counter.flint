@@ -1,7 +1,6 @@
 contract Counter {
   var value: Int = 0
-  // invariant (forall (c:Counter, e:External, m:Int) :: (value = m && next(numWrites = m + 1) ==> e.Calls(c.increment())))
-
+  // invariant (forall (c:Counter, e:External, m:Int) :: (next(c.value = m) && c.value != m ==> (c.value == m - 1 && e.Calls(c.increment())) || (e.Calls(c.set(m)))))
 }
 
 Counter :: (any) {
@@ -22,6 +21,7 @@ Counter :: (any) {
 
   public func set(value: Int)
     mutates (value)
+    post (value == value)
   {
     self.value = value
   }

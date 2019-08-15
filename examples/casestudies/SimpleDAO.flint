@@ -40,7 +40,6 @@ contract SimpleDAO (Join, Propose, Vote) {
   // invariant (forall (a, Address, balances[a] < totalSupply))
 
   // sum of all the balances in the accounts corresbonding to memebers
-  
 }
 
 SimpleDAO @(any) :: (any) {

@@ -98,7 +98,7 @@ StandardToken :: caller <- (any) {
     mutates (allowed)
     pre (value > 0)
     post (allowed[caller][spender] == value)
-    // post (forall (a1, Address, forall (a2, Address, allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
+    post (forall (a1, Address, dictContains(allowed, a1) ==> forall (a2, Address, dictContains(allowed[a1], a2) ==> allowed[a1][a2] == prev(allowed[a1][a2]) || (a1 == caller && a2 == spender))))
     post (returns (true))
 
   {

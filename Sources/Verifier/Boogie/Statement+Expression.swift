@@ -1,4 +1,5 @@
 import AST
+import Utils
 
 import BigInt
 
@@ -428,7 +429,7 @@ extension BoogieTranslator {
       fatalError()
 
     case .`self`:
-      return (.nop, [], [])
+      return (.identifier(structInstanceVariableName!), [], [])
 
     case .typeConversionExpression(let typeConversionExpression):
       //TODO: Handle as? / as! ...
