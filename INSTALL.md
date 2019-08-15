@@ -77,7 +77,7 @@ This will generate a main.sol file inside the current directory which can then b
 
 ## macOS
 
-This guides you through installing Flint in its current state on macOS
+This guides you through installing Flint in its current state on macOS. You can use the Docker instructions above if you would prefer to have a docker container.
 
 ## Prerequisites
 The following must be installed to build Flint on Macs:
@@ -93,4 +93,11 @@ echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
 echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
 echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 ```
+## Installation
+git clone --recurse-submodule https://github.com/flintlang/flint.git
+cd flint
+# Create a FLINTPATH for the compiler to run (this may be removed in a future version)
+echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
+source ~/.bash_profile
 
+make
