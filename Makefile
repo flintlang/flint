@@ -64,12 +64,12 @@ $(BOOGIE_EXE): $(Boogie_Z3_slink)
 	  && mono ./nuget.exe restore Source/Boogie.sln \
 	  && msbuild Source/Boogie.sln /verbosity:quiet && cd ..
 
-$(Boogie_Z3_slink):
+$(Boogie_Z3_slink): $(Z3)
 	cd boogie \
 	  && (test -L Binaries/z3.exe || ln -s ../../$(Z3) Binaries/z3.exe) \
 	  && cd .. \
 
-$(Symbooglix_Z3_slink):
+$(Symbooglix_Z3_slink): $(Z3)
 	cd symbooglix \
 	  && (test -L src/SymbooglixDriver/bin/Release/z3.exe || (mkdir -p src/SymbooglixDriver/bin/Release && ln -sf ../../../../../$(Z3) src/SymbooglixDriver/bin/Release/z3.exe)) \
 	  && (test -L src/Symbooglix/bin/Release/z3.exe || (mkdir -p src/Symbooglix/bin/Release/z3.exe && ln -sf ../../../../../$(Z3) src/Symbooglix/bin/Release/z3.exe)) \
