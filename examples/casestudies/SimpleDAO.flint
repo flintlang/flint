@@ -17,7 +17,6 @@ struct Proposal {
   invariant (finished ==> (success == ((yesVotes + noVotes) >= quorum && yesVotes > noVotes)))
   invariant (finished == false ==> success == false)
 
-
   public init() {
     self.voted = [:]
   }
@@ -41,7 +40,6 @@ contract SimpleDAO (Join, Propose, Vote) {
   // invariant (forall (a, Address, balances[a] < totalSupply))
 
   // sum of all the balances in the accounts corresbonding to memebers
-
 }
 
 SimpleDAO @(any) :: (any) {

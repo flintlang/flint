@@ -28,6 +28,19 @@ FlintToken @(any) :: caller <- (any) {
     become Minting
   }
 
+  func example(value: Int)
+  // post (returning (r, r == value > totalSupply))
+  // post (returning (r, value > totalSupply ==> r == 0 && value <= totalSupply ==> r == 1))
+  post (value > totalSupply ==> totalSupply == 1)
+  post (value <= totalSupply ==> totalSupply == 0
+  {
+    if value <= totalSupply {
+      totalSupply == 0
+    } else {
+    totalSupply == 1
+  }
+  }
+
   // Transfer token for a specified address
   // - param to: The address to transfer to.
   // - param value: The amount to be transferred.

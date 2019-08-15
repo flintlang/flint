@@ -10,7 +10,6 @@ contract Test {
 
   // holistic_inv (forall (t: test, i: Int, a: Address) :: (arr[i] == a ==> (prev(t.p1.Calls(t.setPosition(a, i))) || prev(t.p2.Calls(t.setPosition(a, i))))))
   // holistic_inv (forall (t: test, i: Int, a: Address, m: Int) :: (arr[i] == a && dict[a] == m ==> (prev(t.p1.Calls(t.write(i, m))) || prev(t.p2.Calls(t.write(i, m))))))
-
 }
 
 Test :: (any) {
