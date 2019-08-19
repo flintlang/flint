@@ -30,12 +30,12 @@ struct trait Asset {
 
 
 // Concept stage
-external trait LibraCoin {
-  zero() -> LibraCoin.T
-  value(coin_ref: &LibraCoin.T) -> u64
-  deposit(coin_ref: &mut LibraCoin.T, check: LibraCoin.T)
-  withdraw(coin_ref: &mut LibraCoin.T, amount: u64): LibraCoin.T
-}
+//external trait LibraCoin {
+//  zero() -> LibraCoin.T
+//  value(coin_ref: &LibraCoin.T) -> u64
+//  deposit(coin_ref: &mut LibraCoin.T, check: LibraCoin.T)
+//  withdraw(coin_ref: &mut LibraCoin.T, amount: u64): LibraCoin.T
+//}
 
 external trait LibraAccount {
   deposit(payee: address, to_deposit: R#LibraCoin.T)
