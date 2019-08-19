@@ -7,6 +7,7 @@
 
 import MoveIR
 import AST
+import Lexer
 
 /// Context used when generating code the body of a function.
 class FunctionContext: CustomStringConvertible {
@@ -34,8 +35,10 @@ class FunctionContext: CustomStringConvertible {
   /// Fresh variable counter.
   private var counter: Int
 
-  var selfType: RawType? {
-    return scopeContext.type(for: "self") // FIXME TODO
+  var selfType: RawType {
+    return scopeContext.type(for: "self") ?? environment.type(of: .`self`(Token.DUMMY),
+                                                              enclosingType: enclosingTypeName,
+                                                              scopeContext: scopeContext)
   }
 
   init(environment: Environment,

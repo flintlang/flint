@@ -46,7 +46,7 @@ struct MoveIdentifier {
       return irIdentifier
     } else if position == .accessed {
       return .operation(.dereference(.operation(.mutableReference(
-          .transfer(.copy(.identifier(MoveSelf.name)))
+          .transfer(.copy(irIdentifier))
       ))))
     } else {
       return .transfer(.copy(irIdentifier))

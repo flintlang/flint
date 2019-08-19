@@ -7,6 +7,7 @@
 
 import AST
 import Lexer
+import Foundation
 
 /// A prepocessing step to update the program's AST before code generation.
 extension MovePreprocessor {
@@ -17,12 +18,12 @@ extension MovePreprocessor {
 
     if case .binaryExpression(let binaryExpression) = expression {
       if case .dot = binaryExpression.opToken,
-        case .identifier(let lhsId) = binaryExpression.lhs,
-        case .identifier(let rhsId) = binaryExpression.rhs,
-        environment.isEnumDeclared(lhsId.name),
-        let matchingProperty = environment.propertyDeclarations(in: lhsId.name)
-          .filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
-        matchingProperty.type!.rawType != .errorType {
+         case .identifier(let lhsId) = binaryExpression.lhs,
+         case .identifier(let rhsId) = binaryExpression.rhs,
+         environment.isEnumDeclared(lhsId.name),
+         let matchingProperty = environment.propertyDeclarations(in: lhsId.name)
+             .filter({ $0.identifier.identifierToken.kind == rhsId.identifierToken.kind }).first,
+         matchingProperty.type!.rawType != .errorType {
         expression = matchingProperty.value!
       }
 
@@ -42,6 +43,7 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
+    var preStatements = [Statement]()
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
       let sourceLocation = binaryExpression.op.sourceLocation
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
@@ -52,13 +54,103 @@ extension MovePreprocessor {
     } else if case .dot = binaryExpression.opToken {
       let trail = passContext.functionCallReceiverTrail ?? []
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
+
+      switch binaryExpression.lhs {
+      case .identifier(let identifier):
+        guard var scopeContext = passContext.scopeContext else { break }
+        if let type = scopeContext.type(for: identifier.name),
+           !type.isInout {
+          // Handle `x.y` when x is not a reference
+          // FIXME cannot currently handle self as cannot tell if has been constructed yet
+          let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
+          let declaration = VariableDeclaration(identifier: newId,
+                                                type: Type(inferredType: .inoutType(type),
+                                                           identifier: newId))
+          preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
+              lhs: .identifier(newId),
+              op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
+              rhs: binaryExpression.lhs
+          ))))
+          binaryExpression = BinaryExpression(lhs: .identifier(newId),
+                                              op: binaryExpression.op,
+                                              rhs: binaryExpression.rhs)
+          passContext.scopeContext?.localVariables.append(declaration)
+          passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
+          passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+        } else if identifier.enclosingType != nil,
+                  let enclosingType = passContext.enclosingTypeIdentifier.map({ $0.name }),
+                  let type: RawType = passContext.environment?.type(
+                      of: binaryExpression.lhs,
+                      enclosingType: enclosingType,
+                      scopeContext: scopeContext
+                  ) {
+          // Handle x.y when x is implicitly self.x
+          if binaryExpression.opToken == .dot {
+            let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
+            let declaration = VariableDeclaration(identifier: newId,
+                                                  type: Type(inferredType: .inoutType(type),
+                                                             identifier: newId))
+            preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
+                lhs: .identifier(newId),
+                op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
+                rhs: Expression.inoutExpression(InoutExpression(
+                    ampersandToken: Token(kind: .punctuation(.ampersand),
+                                          sourceLocation: binaryExpression.op.sourceLocation),
+                    expression: binaryExpression.lhs
+                ))
+            ))))
+            binaryExpression = BinaryExpression(lhs: .identifier(newId),
+                                                op: binaryExpression.op,
+                                                rhs: binaryExpression.rhs)
+            passContext.scopeContext?.localVariables.append(declaration)
+            passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
+            passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+          }
+        }
+      case .binaryExpression(let binary):
+        guard var scopeContext = passContext.scopeContext,
+              let enclosingType = passContext.enclosingTypeIdentifier.map({ $0.name }),
+              let type: RawType = passContext.environment?.type(
+                  of: binaryExpression.lhs,
+                  enclosingType: enclosingType,
+                  scopeContext: scopeContext
+              ) else {
+          break
+        }
+        if binaryExpression.opToken == .dot {
+          // Handle x.y.z
+          let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
+          let declaration = VariableDeclaration(identifier: newId,
+                                                type: Type(inferredType: .inoutType(type),
+                                                           identifier: newId))
+          preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
+              lhs: .identifier(newId),
+              op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
+              rhs: Expression.inoutExpression(InoutExpression(
+                  ampersandToken: Token(kind: .punctuation(.ampersand),
+                                        sourceLocation: binaryExpression.op.sourceLocation),
+                  expression: binaryExpression.lhs
+              ))
+          ))))
+          binaryExpression = BinaryExpression(lhs: .identifier(newId),
+                                              op: binaryExpression.op,
+                                              rhs: binaryExpression.rhs)
+          passContext.scopeContext?.localVariables.append(declaration)
+          passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
+          passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+        }
+      default: break
+      }
     }
 
-    return ASTPassResult(element: binaryExpression, diagnostics: [], passContext: passContext)
+    return ASTPassResult(element: binaryExpression,
+                         diagnostics: [],
+                         passContext: passContext,
+                         preStatements: preStatements)
   }
 
   func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression
-    where Expressions.Element == Expression {
+      where Expressions.Element == Expression {
     guard expressions.count > 1 else { return expressions.first! }
     let head = expressions.first!
     let tail = expressions.dropFirst()
@@ -67,18 +159,18 @@ extension MovePreprocessor {
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
 
-  /* DEBUGGING
-  public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    print(functionCall.identifier.name, functionCall.mangledIdentifier ?? "nil")
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
-  }*/
+/* DEBUGGING
+public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+  print(functionCall.identifier.name, functionCall.mangledIdentifier ?? "nil")
+  return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+}*/
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let environment = passContext.environment!
     var receiverTrail = passContext.functionCallReceiverTrail ?? []
     let enclosingType = passContext.enclosingTypeIdentifier!.name
-    let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
+    //let typeStates = passContext.contractBehaviorDeclarationContext?.typeStates ?? []
     let callerProtections = passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
@@ -115,22 +207,44 @@ extension MovePreprocessor {
       // If it returns a dynamic type, pass the receiver as the first parameter.
       let environment = passContext.environment!
       if environment.isStructDeclared(declarationEnclosingType)
-        || environment.isContractDeclared(declarationEnclosingType) {
+             || environment.isContractDeclared(declarationEnclosingType) {
         if !isGlobalFunctionCall {
-          let receiver = constructExpression(from: receiverTrail)
-          let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand),
-                                                                      sourceLocation: receiver.sourceLocation),
-                                                expression: receiver)
-          functionCall.arguments.insert(FunctionArgument(.inoutExpression(inoutExpression)), at: 0)
+          var receiver = constructExpression(from: receiverTrail)
+          let type: RawType
+          switch receiver {
+          case .`self`:
+            type = scopeContext.type(for: "self")
+                ?? environment.type(of: receiver,
+                                    enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                    scopeContext: scopeContext)
+          case .identifier(let identifier):
+            type = scopeContext.type(for: identifier.name)
+              ?? environment.type(of: receiver,
+                                  enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                  scopeContext: scopeContext)
+          default:
+            type = environment.type(of: receiver,
+                                    enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                    scopeContext: scopeContext)
+          }
+
+          if !type.isInout {
+            let inoutExpression = InoutExpression(ampersandToken: Token(kind: .punctuation(.ampersand),
+                                                                        sourceLocation: receiver.sourceLocation),
+                                                  expression: receiver)
+            receiver = .inoutExpression(inoutExpression)
+          }
+
+          functionCall.arguments.insert(FunctionArgument(receiver), at: 0)
         }
       }
     }
 
     guard case .failure(let candidates) =
-      environment.matchEventCall(functionCall,
-                                 enclosingType: enclosingType,
-                                 scopeContext: passContext.scopeContext ?? ScopeContext()),
-      candidates.isEmpty else {
+    environment.matchEventCall(functionCall,
+                               enclosingType: enclosingType,
+                               scopeContext: passContext.scopeContext ?? ScopeContext()),
+          candidates.isEmpty else {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
@@ -149,10 +263,10 @@ extension MovePreprocessor {
     let enclosingType: String = functionCall.identifier.enclosingType ?? passContext.enclosingTypeIdentifier!.name
 
     // Don't mangle event calls
-    if case .matchedEvent(_) =
-      environment.matchEventCall(functionCall,
-                                 enclosingType: enclosingType,
-                                 scopeContext: passContext.scopeContext ?? ScopeContext()) {
+    if case .matchedEvent =
+    environment.matchEventCall(functionCall,
+                               enclosingType: enclosingType,
+                               scopeContext: passContext.scopeContext ?? ScopeContext()) {
       return functionCall.identifier.name
     }
 
@@ -174,7 +288,7 @@ extension MovePreprocessor {
         isContract = environment.isContractDeclared(enclosingType)
       } else {
         isContract = functionCall.identifier.enclosingType == nil
-            && passContext.contractBehaviorDeclarationContext != nil
+        && passContext.contractBehaviorDeclarationContext != nil
       }
 
       return Mangler.mangleFunctionName(declaration.identifier.name,
@@ -229,4 +343,5 @@ extension MovePreprocessor {
 
     return false
   }
+
 }

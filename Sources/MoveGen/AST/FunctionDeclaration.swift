@@ -53,9 +53,9 @@ extension AST.FunctionDeclaration {
 
     let returnStmt: Statement = .returnStatement(.init(returnToken: returnToken,
                                                        expression: isVoid ? nil : functionCallExpr))
-    wrapperFunctionDeclaration.body = self.isVoid ?
-      [selfDeclarationStmt, selfAssignmentStmt, .expression(functionCallExpr), returnStmt] :
-      [returnVariableDeclarationStmt, selfDeclarationStmt, selfAssignmentStmt, returnStmt]
+    wrapperFunctionDeclaration.body = self.isVoid
+      ? [selfDeclarationStmt, selfAssignmentStmt, .expression(functionCallExpr), returnStmt]
+      : [returnVariableDeclarationStmt, selfDeclarationStmt, selfAssignmentStmt, returnStmt]
     return wrapperFunctionDeclaration
   }
 }

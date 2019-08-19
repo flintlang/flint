@@ -118,6 +118,7 @@ extension MovePreprocessor {
   public func process(functionDeclaration: FunctionDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
+    var passContext = passContext
 
     // Mangle the function name in the declaration.
     let parameters = functionDeclaration.signature.parameters.rawTypes
@@ -167,6 +168,7 @@ extension MovePreprocessor {
         type: .userDefinedType(structDeclarationContext.structIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
+      passContext.scopeContext?.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
       Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       let parameter = Parameter.constructThisParameter(
@@ -174,6 +176,7 @@ extension MovePreprocessor {
         sourceLocation: functionDeclaration.sourceLocation)
 
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
+      passContext.scopeContext?.parameters.insert(parameter, at: 0)
 
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
         functionDeclaration.body.insert(
@@ -191,7 +194,7 @@ extension MovePreprocessor {
                           passContext: ASTPassContext) -> ASTPassResult<FunctionDeclaration> {
     var functionDeclaration = functionDeclaration
     functionDeclaration.body = getDeclarations(passContext: passContext)
-      + DeclarationDeleter().apply(functionDeclaration.body)
+      + deleteDeclarations(in: functionDeclaration.body)
 
     // Add trailing return statement to all functions if none is present
     if functionDeclaration.isVoid {
@@ -232,7 +235,7 @@ extension MovePreprocessor {
                           passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
     specialDeclaration.body = getDeclarations(passContext: passContext)
-      + DeclarationDeleter().apply(specialDeclaration.body)
+      + deleteDeclarations(in: specialDeclaration.body)
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
@@ -274,14 +277,28 @@ extension MovePreprocessor {
     }
     return declarations
   }
-}
 
-class DeclarationDeleter: StatementMapping {
-  public func map(statement: Statement) -> [Statement]? {
-    switch statement {
-    case .expression(.variableDeclaration):
-      return []
-    default: return nil
+  private func deleteDeclarations(in statements: [Statement]) -> [Statement] {
+    return statements.compactMap { statement -> Statement? in
+      switch statement {
+      case .expression(let expression):
+        if case .variableDeclaration = expression {
+          return nil
+        }
+      case .forStatement(var stmt):
+        stmt.body = deleteDeclarations(in: stmt.body)
+        return .forStatement(stmt)
+      case .ifStatement(var stmt):
+        stmt.body = deleteDeclarations(in: stmt.body)
+        return .ifStatement(stmt)
+      case .doCatchStatement(var stmt):
+        stmt.catchBody = deleteDeclarations(in: stmt.catchBody)
+        stmt.doBody = deleteDeclarations(in: stmt.doBody)
+        return .doCatchStatement(stmt)
+      default:
+        return statement
+      }
+      return statement
     }
   }
 }

@@ -1,6 +1,6 @@
 struct Rectangle {
-  public var width: Int = 0
-  public var height: Int = 0
+  public var width: Int
+  public var height: Int
 
   public init(width: Int, height: Int) {
     self.width = width
