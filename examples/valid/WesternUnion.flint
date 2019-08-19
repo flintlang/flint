@@ -9,19 +9,12 @@ contract WesternUnion {
 
   invariant (numCustomers == customers.size)
   invariant (numCustomers >= 0)
-  
+
   // invariant (arrayEach(a, customers, dictContains(accounts,a)))
   // invariant (forall (a, Address, dictContains(accounts, a) ==> accounts[a].rawValue >= 0))
 
 
-
-
-  //only customers can withdraw money from bank
-
-
-
-
-
+//only customers can withdraw money from bank
 //if it is a customer, it has been added
 //   invariant (forall (w : WesternUnion, e : Address) :: (arrayContains(customers, e) ==> Was(w.manager.Calls(w.addCustomer(e)))))
 //
@@ -33,10 +26,7 @@ contract WesternUnion {
 // invariant (forall (w : WesternUnion, c : External, m: Int, m': Int) :: (accounts[c].rawValue == m + m' && next(accounts[c].rawValue == m) ==> exists (e: External) :: (c.Calls(deposit(Wei(m'), e)))))
 //
 // invariant (forall (w : WesternUnion, c : External) :: (accounts[c].rawValue == 0 ==> Was(c.Calls(withdraw()))))
-
-
   // customer can only withdraw the amount of money in their account
-
   // customer cannot withdraw more money than is in their account
 }
 
@@ -55,12 +45,21 @@ WesternUnion :: (manager) {
   public func addCustomer(customer: Address)
     mutates (customers, numCustomers)
 
-    pre (arrayContains(customers, customer) == false)
-    post (numCustomers == prev(numCustomers) + 1)
-    post (customers[prev(numCustomers)] == customer && arrayEach(c, customers, c == prev(c) || c == customer) && arrayContains(customers, customer))
+    // pre (arrayContains(customers, customer) == false)
+    // pre condition satisfied
+    post (prev(arrayContains(customers, customer)) == false ==> numCustomers == prev(numCustomers) + 1)
+    post (prev(arrayContains(customers, customer)) == false ==> customers[prev(numCustomers)] == customer)
+    post (prev(arrayContains(customers, customer)) == false ==> forall (i, Int, 0 <= i && i < numCustomers ==> customers[i] == prev(customers[i]) || i == prev(numCustomers)))
+
+    // pre condition not satisfied
+    post (prev(arrayContains(customers, customer)) == false)
+    post (prev(arrayContains(customers, customer)) ==> numCustomers == prev(numCustomers))
+    post (prev(arrayContains(customers, customer)) ==> forall (i, Int, 0 <= i && i < numCustomers ==> customers[i] == prev(customers[i])))
   {
-    customers[numCustomers] = customer
-    numCustomers += 1 //Issue if we don't increment numCustomers
+    if arrayContains(customers, customer) == false {
+      customers[numCustomers] = customer
+      numCustomers += 1 //Issue if we don't increment numCustomers
+    }
   }
 }
 
@@ -69,27 +68,36 @@ WesternUnion :: customer <- (customers) {
   @payable
   public func deposit(implicit amount: Wei, recipient: Address)
     mutates (accounts, Wei.rawValue)
-    pre (arrayContains(customers, recipient))
-    pre (dictContains(accounts, recipient))
-    post (accounts[recipient].rawValue == (prev(accounts[recipient].rawValue) + prev(amount.rawValue)))
-    post (forall (a, Address, (accounts[a] == prev(accounts[a]) || a == recipient)))
+    // pre conditions
+    // pre (arrayContains(customers, recipient))
+    // pre (dictContains(accounts, recipient))
+
+    post ((arrayContains(customers, recipient) && dictContains(accounts, recipient)) ==> accounts[recipient].rawValue == (prev(accounts[recipient].rawValue) + prev(amount.rawValue)))
+    post ((arrayContains(customers, recipient) && dictContains(accounts, recipient)) ==> forall (a, Address, dictContains(accounts, a) ==> (accounts[a] == prev(accounts[a]) || a == recipient)))
+
+    post ((arrayContains(customers, recipient) == false || dictContains(accounts, recipient) == false) ==> forall (a, Address, dictContains(accounts, a) ==> accounts[a] == prev(accounts[a])))
   {
-    accounts[recipient].transfer(source: &amount)
-    var a: Wei = Wei(0-1)
+    if arrayContains(customers, customer) && dictContains(accounts, recipient) {
+      accounts[recipient].transfer(source: &amount)
+      var a: Wei = Wei(0-1)
+    }
   }
 
 
 
   public func withdraw()
     mutates (accounts, Wei.rawValue, customers, manager, numCustomers)
-    pre (dictContains(accounts, customer))
-    pre (arrayContains(customers, customer))
+    // pre (dictContains(accounts, customer))
+    // pre (arrayContains(customers, customer))
 
-    post (accounts[customer].rawValue == 0)
-    post (forall (a, Address, (dictContains(accounts,a) ==> (accounts[a] == prev(accounts[a]) || a == customer))))
+    post ((dictContains(accounts, customer) && arrayContains(customers, customer)) ==> accounts[customer].rawValue == 0)
+    post ((dictContains(accounts, customer) && arrayContains(customers, customer)) ==> forall (a, Address, (dictContains(accounts,a) ==> (accounts[a] == prev(accounts[a]) || a == customer))))
+
+    post ((dictContains(accounts, customer) && arrayContains(customers, customer)) == false ==> forall (a, Address, (dictContains(accounts,a) ==> (accounts[a] == prev(accounts[a])))))
   {
-    //var amt: Wei = Wei(&)
-    send(customer, &accounts[customer])
-    // hhh.transfer(source: &accounts[customer])
+    if dictContains(accounts, customer) && arrayContains(customers, customer) {
+      send(customer, &accounts[customer])
+    }
+
   }
 }

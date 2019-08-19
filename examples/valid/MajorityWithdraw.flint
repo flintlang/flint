@@ -28,13 +28,17 @@ MajorityWithdraw @(Preparing) :: (leader) {
     mutates (participants, numParticipants) // mutates here means other fields are not changed
     pre (arrayContains(participants, participant) == false)
 
-    post (numParticipants == prev(numParticipants) + 1)
-    post (participants[prev(numParticipants)] == participant)
-    post (forall (i, Int, participants[i] == prev(participants[i]) || i == prev(numParticipants)))
-    post (arrayContains(participants, participant))
+    post (arrayContains(participants, participant) == false ==> numParticipants == prev(numParticipants) + 1)
+    post (arrayContains(participants, participant) == false ==> participants[prev(numParticipants)] == participant)
+    post (arrayContains(participants, participant) == false ==> forall (i, Int, 0 <= i && i < numParticipants ==> participants[i] == prev(participants[i]) || i == prev(numParticipants)))
+
+    post (arrayContains(participants, participant) ==> numParticipants == prev(numParticipants))
+    post (arrayContains(participants, participant) ==> forall (i, Int, 0 <= i && i < numParticipants ==> participants[i] == prev(participants[i])))
   {
-    participants[numParticipants] = participant
-    numParticipants += 1
+    if arrayContains(participants, participant) == false {
+      participants[numParticipants] = participant
+      numParticipants += 1
+    }
   }
 
   public func openVoting() {
@@ -51,10 +55,16 @@ MajorityWithdraw @(Voting) :: (leader) {
 MajorityWithdraw @(Voting) :: participant <- (participants) {
   public func vote(vote: Bool)
     mutates (participantVotes)
-    post (participantVotes[participant] == vote)
-    post (forall (p, Address, (participantVotes[p] == prev(participantVotes[p]) || p == participant)))
+    pre (dictContains(participantVotes, participant))
+
+    post (dictContains(participantVotes, participant) ==> participantVotes[participant] == vote)
+    post (dictContains(participantVotes, participant) ==> forall (p, Address, dictContains(participantVotes, p) ==> (participantVotes[p] == prev(participantVotes[p]) || p == participant)))
+
+    post (dictContains(participantVotes, participant) == false ==> forall (p, Address, dictContains(participantVotes, p) ==> participantVotes[p] == prev(participantVotes[p])))
   {
-    participantVotes[participant] = vote
+    if dictContains(participantVotes, participant) {
+      participantVotes[participant] = vote
+    }
   }
 }
 
