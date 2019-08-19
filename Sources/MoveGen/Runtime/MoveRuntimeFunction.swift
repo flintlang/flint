@@ -15,6 +15,8 @@ enum MoveRuntimeFunction {
     case fatalError
     case power
     case revertIfGreater
+    case withdrawAll
+    case transfer
 
     var mangled: String {
       return "Self.\(Environment.runtimeFunctionPrefix)\(self)"
@@ -23,6 +25,16 @@ enum MoveRuntimeFunction {
 
   static func fatalError() -> String {
     return "\(Identifiers.fatalError.mangled)()"
+  }
+
+  static func withdrawAll(source: MoveIR.Expression) -> MoveIR.Expression {
+    return .functionCall(FunctionCall(Identifiers.withdrawAll.mangled, source))
+  }
+
+  static func transfer(destination: MoveIR.Expression,
+                       source: MoveIR.Expression,
+                       amount: MoveIR.Expression) -> MoveIR.Expression {
+    return .functionCall(FunctionCall(Identifiers.transfer.mangled, destination, source, amount))
   }
 
   static func power(b: MoveIR.Expression, e: MoveIR.Expression) -> MoveIR.Expression {
@@ -35,6 +47,8 @@ enum MoveRuntimeFunction {
 
   static let allDeclarations: [String] = [
     MoveRuntimeFunctionDeclaration.send,
+    MoveRuntimeFunctionDeclaration.withdrawAll,
+    MoveRuntimeFunctionDeclaration.transfer,
     MoveRuntimeFunctionDeclaration.fatalError,
     MoveRuntimeFunctionDeclaration.power,
     MoveRuntimeFunctionDeclaration.revertIfGreater
@@ -45,8 +59,31 @@ struct MoveRuntimeFunctionDeclaration {
 
   static let send =
   """
-  flint$send(_value: R#LibraCoin.T, _address: address) {
-    LibraAccount.deposit(move(_address), move(_value));
+  flint$send(money: &mut LibraCoin.T, addr: address) {
+    LibraAccount.deposit(move(addr), flint$withdrawAll(move(money)));
+    return;
+  }
+  """
+
+  static let withdrawAll =
+  """
+  flint$withdrawAll(source: &mut LibraCoin.T): LibraCoin.T {
+    let coin_value: u64;
+    let ret: LibraCoin.T;
+    coin_value = LibraCoin.value(freeze(copy(coin_ref)));
+    ret = LibraCoin.withdraw(copy(coin_ref), copy(coin_value));
+    release(move(coin_ref));
+    return move(ret);
+  }
+  """
+
+  // TODO Import LibraCoin within the produced module
+  static let transfer =
+  """
+  flint$transfer(destination: &mut LibraCoin.T, source: &mut LibraCoin.T, amount: u64) {
+    let desposit: LibraCoin.T;
+    deposit = LibraCoin.withdraw(move(source), copy(amount));
+    LibraCoin.deposit(move(destination), move(deposit));
     return;
   }
   """
