@@ -49,7 +49,7 @@ extension AST.FunctionDeclaration {
                    closeBracketToken: self.closeBraceToken,
                    isAttempted: false))
     let returnToken: Token = .init(kind: .return,
-                                   sourceLocation: self.body.last!.sourceLocation)
+                                   sourceLocation: self.closeBraceToken.sourceLocation)
 
     let returnStmt: Statement = .returnStatement(.init(returnToken: returnToken,
                                                        expression: isVoid ? nil : functionCallExpr))

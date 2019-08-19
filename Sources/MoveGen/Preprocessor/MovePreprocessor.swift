@@ -51,6 +51,14 @@ public struct MovePreprocessor: ASTPass {
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
+    var passContext = passContext
+    var returnStatement = returnStatement
+    returnStatement.cleanupStatements = passContext.postStatements
+    passContext.postStatements = []  // No post-statements after a return statement, it maketh no sense
+    return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     var statement = statement
     var passContext = passContext
@@ -67,7 +75,7 @@ public struct MovePreprocessor: ASTPass {
            scopeContext: passContext.scopeContext!) {
       // TODO check to make sure real result type
       let identifier = passContext.scopeContext!.freshIdentifier(sourceLocation: statement.sourceLocation)
-      passContext.scopeContext?.parameters
+
       let variableDeclaration: Expression = .variableDeclaration(VariableDeclaration(
           modifiers: [],
           declarationToken: nil,

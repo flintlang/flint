@@ -233,6 +233,16 @@ extension ASTPassContext {
     get { return self[IsPropertyDefaultAssignment.self] ?? false }
     set { self[IsPropertyDefaultAssignment.self] = newValue }
   }
+
+  public var preStatements: [Statement] {
+    get { return self[PreStatementsEntry.self] ?? [] }
+    set { self[PreStatementsEntry.self] = newValue }
+  }
+
+  public var postStatements: [Statement] {
+    get { return self[PostStatementsEntry.self] ?? [] }
+    set { self[PostStatementsEntry.self] = newValue }
+  }
 }
 
 /// A entry used to index in an `ASTPassContext`.
@@ -288,6 +298,14 @@ private struct EnumDeclarationContextEntry: PassContextEntry {
 
 private struct TraitDeclarationContextEntry: PassContextEntry {
   typealias Value = TraitDeclarationContext
+}
+
+private struct PreStatementsEntry: PassContextEntry {
+  typealias Value = [Statement]
+}
+
+private struct PostStatementsEntry: PassContextEntry {
+  typealias Value = [Statement]
 }
 
 private struct EventDeclarationContextEntry: PassContextEntry {

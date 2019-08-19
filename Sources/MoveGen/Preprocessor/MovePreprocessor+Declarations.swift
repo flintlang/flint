@@ -207,12 +207,20 @@ extension MovePreprocessor {
         )))
       }
     } else {
+      guard let last = functionDeclaration.body.last(where: { (statement: Statement) in
+        switch statement {
+        case .expression(.rawAssembly): return false
+        default: return true
+        }
+      }) else {
+        fatalError("AAAAHHHHHHHHHHHHHHHHH!")
+      }
       // Add return variable
       let returnVariableDeclaration = VariableDeclaration(
         modifiers: [],
         declarationToken: nil,
         identifier: Identifier(name: MoveFunction.returnVariableName,
-                               sourceLocation: functionDeclaration.body.last!.sourceLocation),
+                               sourceLocation: last.sourceLocation),
         type: functionDeclaration.signature.resultType!)
       functionDeclaration.body.insert(.expression(.variableDeclaration(returnVariableDeclaration)), at: 0)
     }

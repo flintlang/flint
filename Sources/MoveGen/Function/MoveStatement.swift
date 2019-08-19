@@ -235,6 +235,9 @@ struct MoveReturnStatement {
       = .init(name: MoveFunction.returnVariableName, sourceLocation: returnStatement.sourceLocation)
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
     functionContext.emit(.expression(.assignment(Assignment(returnVariableIdentifier.name, renderedExpression))))
+    for statement: AST.Statement in returnStatement.cleanupStatements ?? [] {
+      functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
+    }
     functionContext.emitReleaseReferences()
     return .inline("return move(\(returnVariableIdentifier.name))")
   }

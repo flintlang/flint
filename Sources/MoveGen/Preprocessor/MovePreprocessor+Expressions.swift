@@ -43,7 +43,9 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
-    var preStatements = [Statement]()
+    var preStatements = passContext.preStatements
+    var postStatements = passContext.postStatements
+
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
       let sourceLocation = binaryExpression.op.sourceLocation
       let token = Token(kind: .punctuation(op), sourceLocation: sourceLocation)
@@ -71,6 +73,7 @@ extension MovePreprocessor {
               op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
               rhs: binaryExpression.lhs
           ))))
+          postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
           binaryExpression = BinaryExpression(lhs: .identifier(newId),
                                               op: binaryExpression.op,
                                               rhs: binaryExpression.rhs)
@@ -86,25 +89,45 @@ extension MovePreprocessor {
                   ) {
           // Handle x.y when x is implicitly self.x
           if binaryExpression.opToken == .dot {
-            let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
-            let declaration = VariableDeclaration(identifier: newId,
-                                                  type: Type(inferredType: .inoutType(type),
-                                                             identifier: newId))
-            preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-                lhs: .identifier(newId),
-                op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
-                rhs: Expression.inoutExpression(InoutExpression(
-                    ampersandToken: Token(kind: .punctuation(.ampersand),
-                                          sourceLocation: binaryExpression.op.sourceLocation),
-                    expression: binaryExpression.lhs
-                ))
-            ))))
+            let newId: Identifier
+            if let statement: Statement = preStatements.first(where: { (statement: Statement) in
+              if case .expression(.binaryExpression(let binary)) = statement,
+                 binary.opToken == .equal,
+                 case .inoutExpression(let expression) = binary.rhs,
+                 expression.expression == binaryExpression.lhs,
+                 case .identifier = binary.lhs {
+                return true
+              }
+              return false
+            }) {
+              guard case .expression(.binaryExpression(let binary)) = statement,
+                    case .identifier(let identifier) = binary.lhs else {
+                fatalError("Cannot find expected identifier for `\(binaryExpression.lhs)`") 
+              }
+              newId = identifier
+            } else {
+              newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
+              let declaration = VariableDeclaration(identifier: newId,
+                                                    type: Type(inferredType: .inoutType(type),
+                                                               identifier: newId))
+              preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
+                  lhs: .identifier(newId),
+                  op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
+                  rhs: Expression.inoutExpression(InoutExpression(
+                      ampersandToken: Token(kind: .punctuation(.ampersand),
+                                            sourceLocation: binaryExpression.op.sourceLocation),
+                      expression: binaryExpression.lhs
+                  ))
+              ))))
+              postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
+              passContext.scopeContext?.localVariables.append(declaration)
+              passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
+              passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+            }
+
             binaryExpression = BinaryExpression(lhs: .identifier(newId),
                                                 op: binaryExpression.op,
                                                 rhs: binaryExpression.rhs)
-            passContext.scopeContext?.localVariables.append(declaration)
-            passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
-            passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
           }
         }
       case .binaryExpression(let binary):
@@ -117,7 +140,7 @@ extension MovePreprocessor {
               ) else {
           break
         }
-        if binaryExpression.opToken == .dot {
+        if binary.opToken == .dot {
           // Handle x.y.z
           let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
           let declaration = VariableDeclaration(identifier: newId,
@@ -132,6 +155,7 @@ extension MovePreprocessor {
                   expression: binaryExpression.lhs
               ))
           ))))
+          postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
           binaryExpression = BinaryExpression(lhs: .identifier(newId),
                                               op: binaryExpression.op,
                                               rhs: binaryExpression.rhs)
@@ -143,10 +167,11 @@ extension MovePreprocessor {
       }
     }
 
+    passContext.preStatements = preStatements
+    passContext.postStatements = postStatements
     return ASTPassResult(element: binaryExpression,
                          diagnostics: [],
-                         passContext: passContext,
-                         preStatements: preStatements)
+                         passContext: passContext)
   }
 
   func constructExpression<Expressions: Sequence & RandomAccessCollection>(from expressions: Expressions) -> Expression
