@@ -35,7 +35,7 @@ extension AST.FunctionDeclaration {
                                           op: Token(kind: .punctuation(.equal),
                                                     sourceLocation: self.sourceLocation),
                                           rhs: .rawAssembly(
-                                            "borrow_global<T>(move(\(firstParameter.identifier.name.mangled))",
+                                            "borrow_global<T>(move(\(firstParameter.identifier.name.mangled)))",
                                             resultType: selfParameter.type.rawType))
     let selfAssignmentStmt: Statement = .expression(.binaryExpression(selfAssignment))
 
@@ -53,9 +53,9 @@ extension AST.FunctionDeclaration {
 
     let returnStmt: Statement = .returnStatement(.init(returnToken: returnToken,
                                                        expression: isVoid ? nil : functionCallExpr))
-    wrapperFunctionDeclaration.body = self.isVoid ?
-      [selfDeclarationStmt, selfAssignmentStmt, .expression(functionCallExpr), returnStmt] :
-      [returnVariableDeclarationStmt, selfDeclarationStmt, selfAssignmentStmt, returnStmt]
+    wrapperFunctionDeclaration.body = self.isVoid
+      ? [selfDeclarationStmt, selfAssignmentStmt, .expression(functionCallExpr), returnStmt]
+      : [returnVariableDeclarationStmt, selfDeclarationStmt, selfAssignmentStmt, returnStmt]
     return wrapperFunctionDeclaration
   }
 }

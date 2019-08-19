@@ -4,6 +4,8 @@
 //
 //  Created by Hails, Daniel R on 29/08/2018.
 //
+
+import Foundation
 import AST
 import MoveIR
 
@@ -12,10 +14,18 @@ struct MoveVariableDeclaration {
   var variableDeclaration: AST.VariableDeclaration
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
-    let typeIR: MoveIR.`Type` = CanonicalType(
+    guard let typeIR: MoveIR.`Type` = CanonicalType(
         from: variableDeclaration.type.rawType,
         environment: functionContext.environment
-    )!.render(functionContext: functionContext)
+    )?.render(functionContext: functionContext) else {
+      print("""
+            Cannot get variable declaration type from \(variableDeclaration.type.rawType) \
+            at position \(variableDeclaration.sourceLocation).
+
+            flintc internal error located at \(#file):\(#line)
+            """)
+      exit(1)
+    }
     guard !variableDeclaration.identifier.isSelf else {
       return .variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, typeIR)))
     }

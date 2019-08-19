@@ -4,6 +4,7 @@
 //
 //  Created by Franklin Schrans on 1/16/18.
 //
+
 import Diagnostic
 
 /// The result of processing an AST node during a pass. The generic type `T` represents the type of the AST node which
@@ -19,10 +20,26 @@ public struct ASTPassResult<T> {
   /// The pass context after visiting the AST node.
   public var passContext: ASTPassContext
 
-  public init(element: T, diagnostics: [Diagnostic], passContext: ASTPassContext) {
+  // Allows adding set-up and clean up statements around the current AST node
+  //  does nothing when not inside a statement
+  public var preStatements: [Statement]
+  public var postStatements: [Statement]
+
+  // Allows deleting the current statement
+  public var deleteCurrentStatement: Bool
+
+  public init(element: T,
+              diagnostics: [Diagnostic],
+              passContext: ASTPassContext,
+              preStatements: [Statement] = [],
+              postStatements: [Statement] = [],
+              deleteCurrentStatement: Bool = false) {
     self.element = element
     self.diagnostics = diagnostics
     self.passContext = passContext
+    self.preStatements = preStatements
+    self.postStatements = postStatements
+    self.deleteCurrentStatement = deleteCurrentStatement
   }
 
   /// Combines two processings of AST nodes, by merging contexts if required.
@@ -38,7 +55,9 @@ public struct ASTPassResult<T> {
       // Use the newest entry in case both contexts have values for the same key.
       return rhs
     })
-
+    preStatements.append(contentsOf: newPassResult.preStatements)
+    postStatements.append(contentsOf: newPassResult.postStatements)
+    deleteCurrentStatement = deleteCurrentStatement || newPassResult.deleteCurrentStatement
     return newPassResult.element
   }
 }
