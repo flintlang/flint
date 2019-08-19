@@ -4,11 +4,11 @@ contract WesternUnion {
 
   var customers: [Address]
   var numCustomers: Int = 0
-  var accounts: [Address: Wei] //= [:]
-  // var hhh: Wei = Wei(0)
+  var accounts: [Address: Wei]
 
   invariant (numCustomers == customers.size)
   invariant (numCustomers >= 0)
+
 
   // invariant (arrayEach(a, customers, dictContains(accounts,a)))
   // invariant (forall (a, Address, dictContains(accounts, a) ==> accounts[a].rawValue >= 0))
@@ -28,6 +28,7 @@ contract WesternUnion {
 // invariant (forall (w : WesternUnion, c : External) :: (accounts[c].rawValue == 0 ==> Was(c.Calls(withdraw()))))
   // customer can only withdraw the amount of money in their account
   // customer cannot withdraw more money than is in their account
+
 }
 
 

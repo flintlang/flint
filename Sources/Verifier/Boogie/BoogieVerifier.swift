@@ -295,8 +295,11 @@ public class BoogieVerifier: Verifier {
   private func lookupTranslationInformation(line: Int,
                                             mapping: [Int: TranslationInformation]) -> TranslationInformation {
     guard let translationInformation = mapping[line] else {
-      print("cannot find mapping for failing proof obligation on line \(line)")
-      fatalError()
+      print("Error: cannot find mapping for failing proof obligation on line \(line)")
+      return TranslationInformation(
+          sourceLocation: .INVALID,
+          failingMsg: "Error: cannot find mapping for failing proof obligation on line \(line)"
+      )
     }
     return translationInformation
   }

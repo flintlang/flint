@@ -1,0 +1,15 @@
+contract Assert {
+  var i: Int
+}
+
+Assert :: (any) {
+  public init() {
+    i = 0
+  }
+
+  public func failIfNotZero()
+  {
+    assert(i == 0)
+  }
+}
+

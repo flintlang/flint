@@ -323,6 +323,7 @@ class BoogieTranslator {
 
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       self.currentTLD = .contractDeclaration(contractDeclaration)
+      self.currentScopeContext = ScopeContext(localVariables: contractDeclaration.variableDeclarations)
       // Add caller global variable, for the contract
       declarations.append(.variableDeclaration(
           BVariableDeclaration(name: translateGlobalIdentifierName("caller"),
@@ -1140,7 +1141,7 @@ class BoogieTranslator {
   }
 
   func getCurrentScopeContext() -> ScopeContext? {
-    return self.currentScopeContext
+    return currentScopeContext
   }
 
   func setCurrentScopeContext(_ ctx: ScopeContext?) -> ScopeContext? {
