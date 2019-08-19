@@ -131,12 +131,12 @@ public indirect enum Expression: ASTNode {
     case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
     case .returnsExpression(let returnsExpression): return "returns " + returnsExpression.description
     case .rawAssembly(let value, let resultType):
-      return "rawAssembly({\(value)}: \(resultType.debugDescription ?? "nil"))"
+      return "rawAssembly({\(value)}: \(resultType.debugDescription))"
     case .emptyExpr: fatalError("EMPTY EXPR")
     }
   }
 
-  public static func ==(left: Expression, right: Expression) -> Bool {
+  public static func == (left: Expression, right: Expression) -> Bool {
     return left.description == right.description
   }
 }

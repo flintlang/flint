@@ -34,7 +34,7 @@ enum MoveRuntimeFunction {
   }
 
   static let allDeclarations: [String] = [
-    MoveRuntimeFunctionDeclaration.send,
+    // Not currently available as no money yet: MoveRuntimeFunctionDeclaration.send,
     MoveRuntimeFunctionDeclaration.fatalError,
     MoveRuntimeFunctionDeclaration.power,
     MoveRuntimeFunctionDeclaration.revertIfGreater

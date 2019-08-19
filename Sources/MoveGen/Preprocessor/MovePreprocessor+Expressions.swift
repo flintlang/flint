@@ -43,8 +43,6 @@ extension MovePreprocessor {
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
     var binaryExpression = binaryExpression
-    var preStatements = passContext.preStatements
-    var postStatements = passContext.postStatements
 
     if let op = binaryExpression.opToken.operatorAssignmentOperator {
       let sourceLocation = binaryExpression.op.sourceLocation
@@ -64,111 +62,22 @@ extension MovePreprocessor {
            !type.isInout {
           // Handle `x.y` when x is not a reference
           // FIXME cannot currently handle self as cannot tell if has been constructed yet
-          let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
-          let declaration = VariableDeclaration(identifier: newId,
-                                                type: Type(inferredType: .inoutType(type),
-                                                           identifier: newId))
-          preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-              lhs: .identifier(newId),
-              op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
-              rhs: binaryExpression.lhs
-          ))))
-          postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
-          binaryExpression = BinaryExpression(lhs: .identifier(newId),
-                                              op: binaryExpression.op,
-                                              rhs: binaryExpression.rhs)
-          passContext.scopeContext?.localVariables.append(declaration)
-          passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
-          passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
-        } else if identifier.enclosingType != nil,
-                  let enclosingType = passContext.enclosingTypeIdentifier.map({ $0.name }),
-                  let type: RawType = passContext.environment?.type(
-                      of: binaryExpression.lhs,
-                      enclosingType: enclosingType,
-                      scopeContext: scopeContext
-                  ) {
+          binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
+        } else if identifier.enclosingType != nil {
           // Handle x.y when x is implicitly self.x
           if binaryExpression.opToken == .dot {
-            let newId: Identifier
-            if let statement: Statement = preStatements.first(where: { (statement: Statement) in
-              if case .expression(.binaryExpression(let binary)) = statement,
-                 binary.opToken == .equal,
-                 case .inoutExpression(let expression) = binary.rhs,
-                 expression.expression == binaryExpression.lhs,
-                 case .identifier = binary.lhs {
-                return true
-              }
-              return false
-            }) {
-              guard case .expression(.binaryExpression(let binary)) = statement,
-                    case .identifier(let identifier) = binary.lhs else {
-                fatalError("Cannot find expected identifier for `\(binaryExpression.lhs)`") 
-              }
-              newId = identifier
-            } else {
-              newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
-              let declaration = VariableDeclaration(identifier: newId,
-                                                    type: Type(inferredType: .inoutType(type),
-                                                               identifier: newId))
-              preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-                  lhs: .identifier(newId),
-                  op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
-                  rhs: Expression.inoutExpression(InoutExpression(
-                      ampersandToken: Token(kind: .punctuation(.ampersand),
-                                            sourceLocation: binaryExpression.op.sourceLocation),
-                      expression: binaryExpression.lhs
-                  ))
-              ))))
-              postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
-              passContext.scopeContext?.localVariables.append(declaration)
-              passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
-              passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
-            }
-
-            binaryExpression = BinaryExpression(lhs: .identifier(newId),
-                                                op: binaryExpression.op,
-                                                rhs: binaryExpression.rhs)
+            binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
           }
         }
       case .binaryExpression(let binary):
-        guard var scopeContext = passContext.scopeContext,
-              let enclosingType = passContext.enclosingTypeIdentifier.map({ $0.name }),
-              let type: RawType = passContext.environment?.type(
-                  of: binaryExpression.lhs,
-                  enclosingType: enclosingType,
-                  scopeContext: scopeContext
-              ) else {
-          break
-        }
         if binary.opToken == .dot {
           // Handle x.y.z
-          let newId = scopeContext.freshIdentifier(sourceLocation: binaryExpression.lhs.sourceLocation)
-          let declaration = VariableDeclaration(identifier: newId,
-                                                type: Type(inferredType: .inoutType(type),
-                                                           identifier: newId))
-          preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-              lhs: .identifier(newId),
-              op: Token(kind: .punctuation(.equal), sourceLocation: binaryExpression.op.sourceLocation),
-              rhs: Expression.inoutExpression(InoutExpression(
-                  ampersandToken: Token(kind: .punctuation(.ampersand),
-                                        sourceLocation: binaryExpression.op.sourceLocation),
-                  expression: binaryExpression.lhs
-              ))
-          ))))
-          postStatements.append(Statement.expression(.rawAssembly("release(move(\(newId.name)))", resultType: nil)))
-          binaryExpression = BinaryExpression(lhs: .identifier(newId),
-                                              op: binaryExpression.op,
-                                              rhs: binaryExpression.rhs)
-          passContext.scopeContext?.localVariables.append(declaration)
-          passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
-          passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+          binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
         }
       default: break
       }
     }
 
-    passContext.preStatements = preStatements
-    passContext.postStatements = postStatements
     return ASTPassResult(element: binaryExpression,
                          diagnostics: [],
                          passContext: passContext)
@@ -183,12 +92,6 @@ extension MovePreprocessor {
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
-
-/* DEBUGGING
-public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-  print(functionCall.identifier.name, functionCall.mangledIdentifier ?? "nil")
-  return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
-}*/
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
@@ -369,4 +272,86 @@ public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext)
     return false
   }
 
+  public func postProcess(functionArgument: FunctionArgument,
+                          passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+    var functionArgument = functionArgument
+    var passContext = passContext
+    switch functionArgument.expression {
+    case .identifier(let identifier):
+      // Handle x where x is implicitly self.x
+      if identifier.enclosingType != nil {
+        functionArgument.expression = preAssign(functionArgument.expression, passContext: &passContext)
+      }
+    case .binaryExpression(let binary):
+      // Handle x.y
+      if binary.opToken == .dot {
+        functionArgument.expression = preAssign(functionArgument.expression, passContext: &passContext)
+      }
+    default: break
+    }
+    return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
+  }
+
+  func preAssign(_ element: Expression, passContext: inout ASTPassContext) -> Expression {
+    let newId: Identifier
+    if let statement: Statement = passContext.preStatements.first(where: { (statement: Statement) in
+      if case .expression(.binaryExpression(let binary)) = statement,
+         binary.opToken == .equal,
+         case .identifier = binary.lhs {
+        if case .inoutExpression(let expression) = binary.rhs,
+           expression.expression == element {
+          return true
+        }
+        return binary.rhs == element
+      }
+      return false
+    }) {
+      guard case .expression(.binaryExpression(let binary)) = statement,
+            case .identifier(let identifier) = binary.lhs else {
+        fatalError("Cannot find expected identifier for `\(element)`")
+      }
+      newId = identifier
+    } else {
+      guard let environment = passContext.environment,
+            var scopeContext = passContext.scopeContext,
+            let enclosingType = passContext.enclosingTypeIdentifier?.name else {
+        print("Cannot infer type for \(element.sourceLocation)")
+        exit(1)
+      }
+      newId = scopeContext.freshIdentifier(sourceLocation: element.sourceLocation)
+      let type = environment.type(of: element,
+                                  enclosingType: enclosingType,
+                                  scopeContext: scopeContext)
+      let declaration: VariableDeclaration
+      let assigned: Expression
+      if type.isBuiltInType {
+        declaration = VariableDeclaration(identifier: newId,
+                                          type: Type(inferredType: type,
+                                                     identifier: newId))
+        assigned = element
+      } else {
+        declaration = VariableDeclaration(identifier: newId,
+                                          type: Type(inferredType: .inoutType(type),
+                                                     identifier: newId))
+        assigned = .inoutExpression(InoutExpression(
+            ampersandToken: Token(kind: .punctuation(.ampersand),
+                                  sourceLocation: element.sourceLocation),
+            expression: element
+        ))
+        passContext.postStatements.append(Statement.expression(
+            .rawAssembly("release(move(\(Mangler.mangleName(newId.name))))", resultType: nil)
+        ))
+      }
+
+      passContext.preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
+          lhs: .identifier(newId),
+          op: Token(kind: .punctuation(.equal), sourceLocation: element.sourceLocation),
+          rhs: assigned
+      ))))
+      passContext.scopeContext?.localVariables.append(declaration)
+      passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
+      passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+    }
+    return .identifier(newId)
+  }
 }

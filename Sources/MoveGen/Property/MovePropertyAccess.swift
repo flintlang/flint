@@ -17,9 +17,6 @@ struct MovePropertyAccess {
     let environment = functionContext.environment
     let scopeContext = functionContext.scopeContext
     let enclosingTypeName = functionContext.enclosingTypeName
-    let isInStructFunction = functionContext.isInStructFunction
-
-    let lhsType = environment.type(of: lhs, enclosingType: enclosingTypeName, scopeContext: scopeContext)
 
     if case .identifier(let enumIdentifier) = lhs,
       case .identifier(let propertyIdentifier) = rhs,

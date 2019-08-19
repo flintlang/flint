@@ -36,14 +36,14 @@ struct MoveAssignment {
       let lhsIr = MoveExpression(expression: lhs, position: .left).rendered(functionContext: functionContext)
 
       if functionContext.isInStructFunction {
-        let enclosingName: String
+        /* let enclosingName: String
         if let enclosingParameter = functionContext.scopeContext.enclosingParameter(
             expression: lhs,
             enclosingTypeName: functionContext.enclosingTypeName) {
           enclosingName = enclosingParameter
         } else {
           enclosingName = "this"
-        }
+        } */
         return .assignment(Assignment(lhsIr.description, rhsIr))
       } else if let enclosingIdentifier = lhs.enclosingIdentifier,
         functionContext.scopeContext.containsVariableDeclaration(for: enclosingIdentifier.name) {

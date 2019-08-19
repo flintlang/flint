@@ -51,7 +51,8 @@ public struct MovePreprocessor: ASTPass {
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
-  public func postProcess(returnStatement: ReturnStatement, passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
+  public func postProcess(returnStatement: ReturnStatement,
+                          passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
     var passContext = passContext
     var returnStatement = returnStatement
     returnStatement.cleanupStatements = passContext.postStatements
