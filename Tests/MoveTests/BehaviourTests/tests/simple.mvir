@@ -1,0 +1,12 @@
+import Transaction.Simple;
+
+main () {
+  let addr: address;
+  let simple: &mut Simple.T;
+  addr = get_txn_sender();
+  Simple.publish();
+  assert(Simple.getCount(copy(addr)) == 0, 1);
+  Simple.increment(copy(addr));
+  assert(Simple.getCount(copy(addr)) == 1, 1);
+  return;
+}

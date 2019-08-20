@@ -163,8 +163,7 @@ extension MovePreprocessor {
     let parameters = functionDeclaration.signature.parameters.rawTypes
     let name = Mangler.mangleFunctionName(functionDeclaration.identifier.name,
                                           parameterTypes: parameters,
-                                          enclosingType: passContext.enclosingTypeIdentifier!.name,
-                                          isContract: passContext.contractBehaviorDeclarationContext != nil)
+                                          enclosingType: passContext.enclosingTypeIdentifier!.name)
     functionDeclaration.mangledIdentifier = name
 
     // Bind the implicit Libra value of the transaction to a variable.
