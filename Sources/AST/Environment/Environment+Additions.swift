@@ -123,6 +123,22 @@ extension Environment {
                                   isSignature: false))
   }
 
+  public func removeFunction(_ functionDeclaration: FunctionDeclaration,
+                             enclosingType: RawTypeIdentifier,
+                             states: [TypeState],
+                             callerProtections: [CallerProtection]) {
+    if let type: TypeInformation = types[enclosingType],
+       let implementations: [FunctionInformation] = type.functions[functionDeclaration.identifier.name] {
+      types[enclosingType]?.functions[functionDeclaration.identifier.name]
+          = implementations.filter { (info: FunctionInformation) in
+        return info.declaration.identifierTypes != functionDeclaration.identifierTypes
+                || info.declaration.identifier.name != functionDeclaration.identifier.name
+                || info.callerProtections != callerProtections
+                || info.typeStates != states
+      }
+    }
+  }
+
   /// Add an initializer declaration to a type (contract or struct). In the case of a contract, a list of caller
   /// protections is expected.
   public func addInitializer(_ initializerDeclaration: SpecialDeclaration,

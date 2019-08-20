@@ -57,7 +57,7 @@ extension MovePreprocessor {
 
       switch binaryExpression.lhs {
       case .identifier(let identifier):
-        guard var scopeContext = passContext.scopeContext else { break }
+        guard let scopeContext = passContext.scopeContext else { break }
         if let type = scopeContext.type(for: identifier.name),
            !type.isInout {
           // Handle `x.y` when x is not a reference
@@ -216,9 +216,8 @@ extension MovePreprocessor {
         isContract = environment.isContractDeclared(enclosingType)
       } else {
         isContract = functionCall.identifier.enclosingType == nil
-        && passContext.contractBehaviorDeclarationContext != nil
+            && passContext.contractBehaviorDeclarationContext != nil
       }
-
       return Mangler.mangleFunctionName(declaration.identifier.name,
                                         parameterTypes: parameterTypes,
                                         enclosingType: enclosingType,

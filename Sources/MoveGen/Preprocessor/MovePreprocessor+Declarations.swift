@@ -22,20 +22,47 @@ extension MovePreprocessor {
   }
 
   func generateParameterAssignedFunctions(_ base: FunctionDeclaration,
-                                          enclosingType: String) -> [FunctionDeclaration] {
+                                          enclosingType: String,
+                                          passContext: inout ASTPassContext) -> [FunctionDeclaration] {
     let defaultParameters = base.signature.parameters.filter { $0.assignedExpression != nil }.reversed()
     var functions = [base]
 
     for parameter: Parameter in defaultParameters {
-      var parameterAssignedFunctions = [FunctionDeclaration]()
-
+      var processed = [FunctionDeclaration]()
       for function in functions {
         var parameterAssignedFunction = function
+        var defaultRemovedFunction = function
+
         parameterAssignedFunction.signature.parameters = parameterAssignedFunction.signature.parameters
             .filter { $0.identifier.name != parameter.identifier.name }
+        defaultRemovedFunction.signature.parameters = defaultRemovedFunction.signature.parameters
+            .map { (p: Parameter) in
+          if p.identifier.name == parameter.identifier.name {
+            var defaultRemoved = p
+            defaultRemoved.assignedExpression = nil
+            return defaultRemoved
+          }
+          return p
+        }
 
         parameterAssignedFunction.scopeContext?.parameters = parameterAssignedFunction.signature.parameters
         parameterAssignedFunction.scopeContext?.localVariables = []
+
+        // Note, the initial function may be duplicated by the TraitResolver
+        // Remove current function to add default removed function
+        passContext.environment?.removeFunction(
+            function,
+            enclosingType: enclosingType,
+            states: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+            callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
+        )
+        passContext.environment?.addFunction(
+            defaultRemovedFunction,
+            enclosingType: enclosingType,
+            states: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+            callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
+        )
+        processed.append(defaultRemovedFunction)
 
         // TODO fix by maybe mangling argument names into function names?
         //  Right now we cannot have two functions with the same name and type,
@@ -50,9 +77,10 @@ extension MovePreprocessor {
         let arguments = function.explicitParameters.map { (p: Parameter) -> FunctionArgument in
           if p.identifier.name == parameter.identifier.name {
             var expression = parameter.assignedExpression!
-            return FunctionArgument(expression.assigningEnclosingType(type: enclosingType))
+            return FunctionArgument(identifier: p.identifier,
+                                    expression: expression.assigningEnclosingType(type: enclosingType))
           }
-          return FunctionArgument(.identifier(p.identifier))
+          return FunctionArgument(identifier: p.identifier, expression: .identifier(p.identifier))
         }
         if parameterAssignedFunction.signature.resultType != nil {
           parameterAssignedFunction.body = [.returnStatement(
@@ -76,9 +104,15 @@ extension MovePreprocessor {
             )))
           ]
         }
-        parameterAssignedFunctions.append(parameterAssignedFunction)
+        passContext.environment?.addFunction(
+            parameterAssignedFunction,
+            enclosingType: enclosingType,
+            states: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+            callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? []
+        )
+        processed.append(parameterAssignedFunction)
       }
-      functions += parameterAssignedFunctions
+      functions = processed
     }
     return functions
   }
@@ -86,12 +120,14 @@ extension MovePreprocessor {
   public func process(contractBehaviorDeclaration: ContractBehaviorDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     var contractBehaviorDeclaration = contractBehaviorDeclaration
+    var passContext = passContext
     contractBehaviorDeclaration.members = contractBehaviorDeclaration.members
         .flatMap { (member: ContractBehaviorMember) -> [ContractBehaviorMember] in
       if case .functionDeclaration(let function) = member {
         return generateParameterAssignedFunctions(
             function,
-            enclosingType: contractBehaviorDeclaration.contractIdentifier.name
+            enclosingType: contractBehaviorDeclaration.contractIdentifier.name,
+            passContext: &passContext
         ).map { .functionDeclaration($0) }
       }
       return [member]
@@ -103,15 +139,18 @@ extension MovePreprocessor {
   public func process(structDeclaration: StructDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<StructDeclaration> {
     var structDeclaration = structDeclaration
+    var passContext = passContext
     structDeclaration.members = structDeclaration.members
         .flatMap { (member: StructMember) -> [StructMember] in
       if case .functionDeclaration(let function) = member {
-        return generateParameterAssignedFunctions(function, enclosingType: structDeclaration.identifier.name)
-            .map { .functionDeclaration($0) }
+        return generateParameterAssignedFunctions(
+            function,
+            enclosingType: structDeclaration.identifier.name,
+            passContext: &passContext
+        ).map { .functionDeclaration($0) }
       }
       return [member]
     }
-
     return ASTPassResult(element: structDeclaration, diagnostics: [], passContext: passContext)
   }
 

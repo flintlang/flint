@@ -78,6 +78,10 @@ public struct FunctionDeclaration: ASTNode {
     return identifier.name
   }
 
+  public var identifierTypes: [String: RawTypeIdentifier] {
+    return Dictionary(uniqueKeysWithValues: signature.parameters.map { ($0.identifier.name, $0.type.name) })
+  }
+
   // MARK: - ASTNode
   public var description: String {
     let bodyText = body.map({ $0.description }).joined(separator: "\n")
