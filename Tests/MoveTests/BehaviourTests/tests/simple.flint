@@ -8,4 +8,8 @@ Simple :: (any) {
   public func increment(by: Int = 1) mutates (count) {
     count += by
   }
+
+  public func reset() mutates (count) {
+    count = 0
+  }
 }

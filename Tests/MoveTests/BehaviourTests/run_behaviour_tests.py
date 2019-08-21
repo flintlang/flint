@@ -31,12 +31,6 @@ class Programme:
         with open(self.path) as file:
             return file.read()
 
-    def __lshift__(self, other):
-        # Require the two programmes to be of the same type before joining them
-        assert type(self) == type(other)
-        with open(TestRunner.default_path / "temp" / self.path.name, "w") as file:
-            file.write(str(self) + "\n" + str(other))
-
     @property
     def name(self):
         return self.path.stem
@@ -150,13 +144,20 @@ class TestFormatter:
 
     @classmethod
     def all_failed(cls, tests: Iterable[BehaviourTest]):
-        print(f"{cls.FAIL}Failed tests{cls.END}")
+        print(f"{cls.FAIL}Failed tests:{cls.END}")
         for test in tests:
             print(f"\t{cls.FAIL}{test.programme.path}{cls.END}")
 
     @classmethod
     def complete(cls):
         print(f"\n\t{cls.SUCCESS}All MoveIR tests passed!{cls.END}\n")
+
+    @classmethod
+    def not_configured(cls):
+        print("""\
+MoveIR tests not yet configured on this computer
+To run them please symlink `./libra' to your local copy of the libra repository\
+""")
 
 
 class TestRunner(NamedTuple):
@@ -194,6 +195,6 @@ class TestRunner(NamedTuple):
 if __name__ == '__main__':
     os.chdir(os.environ['FLINTPATH'])
     if not Path(MoveIRProgramme.libra_path).exists():
-        print("MoveIR tests not yet configured on this computer")
+        TestFormatter.not_configured()
         sys.exit(0)
     sys.exit(TestRunner.from_all().run())

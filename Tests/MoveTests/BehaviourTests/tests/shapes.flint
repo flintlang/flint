@@ -40,4 +40,8 @@ Shapes :: caller <- (any) {
   public func smallerWidth(otherRectWidth: Int) -> Bool {
     return self.rectangle.width < otherRectWidth
   }
+
+  public func setWidth(width: Int) mutates (rectangle) {
+    rectangle.width = width
+  }
 }
