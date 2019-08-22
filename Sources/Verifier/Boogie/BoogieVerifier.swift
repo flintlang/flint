@@ -272,11 +272,15 @@ public class BoogieVerifier: Verifier {
             message: "Illegal modification of variable not declared in `mutates(...)'"
         ))
 
-      case .genericFailure://_, let line):
+      case .genericFailure(let information, let line)://_, let line):
         //let ti = lookupTranslationInformation(line: line, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: SourceLocation.INVALID,
-                                      message: "Flint to Boogie translation error. Unsupported construct used."))
+                                      message: """
+                                               Flint to Boogie translation error. Unsupported construct used.
+                                               Details: \(information)
+                                               (Translation Line: \(line))
+                                               """))
           //print("Boogie error: \(string)")
 
           //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):

@@ -28,8 +28,8 @@ extension SemanticAnalyzer {
     var diagnostics = [Diagnostic]()
 
     // Disallow identifiers from containing special characters.
-    if let char =
-    identifier.name.first(where: { return identifierReservedCharacters.contains($0.unicodeScalars.first!) }) {
+    if let char
+        = identifier.name.first(where: { return identifierReservedCharacters.contains($0.unicodeScalars.first!) }) {
       diagnostics.append(.invalidCharacter(identifier, character: char))
     }
 
@@ -79,7 +79,7 @@ extension SemanticAnalyzer {
           // declaration in which the function appears.
           identifier.enclosingType = passContext.enclosingTypeIdentifier!.name
         } else if !(passContext.isEnclosing) {
-          // Checking if we are refering to 'foo' in 'a.foo'
+          // Checking if we are referring to 'foo' in 'a.foo'
           diagnostics.append(.invalidReference(identifier))
         }
       }
@@ -118,11 +118,12 @@ extension SemanticAnalyzer {
 
           if let functionDeclarationContext = passContext.functionDeclarationContext {
             // The variable is being mutated in a function.
-            if !functionDeclarationContext.isMutating {
-              // The function is declared non-mutating.
-              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(
+            if !functionDeclarationContext.mutates.map({ $0.name }).contains(identifier.name) {
+              diagnostics.append(.useOfMutatingExpressionOnNonMutatingProperty(
                   .identifier(identifier),
-                  functionDeclaration: functionDeclarationContext.declaration))
+                  functionDeclaration: functionDeclarationContext.declaration
+              ))
+              diagnostics.append(.noteAllMutating(functionDeclarationContext.declaration))
             }
             // Record the mutating expression in the context.
             addMutatingExpression(.identifier(identifier), passContext: &passContext)
@@ -132,13 +133,14 @@ extension SemanticAnalyzer {
     } else if passContext.isInBecome {
       if let functionDeclarationContext = passContext.functionDeclarationContext {
         // The variable is being mutated in a function.
-        if !functionDeclarationContext.isMutating {
+        //if !functionDeclarationContext.isMutating {
           // The function is declared non-mutating.
           // TODO: Must become make function be explicitly marked mutating?
-          //  diagnostics.append(
-          //    .useOfMutatingExpressionInNonMutatingFunction(.identifier(identifier),
-          //                                               unctionDeclaration: functionDeclarationContext.declaration))
-        }
+          //    diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(
+          //        .identifier(identifier),
+          //        functionDeclaration: functionDeclarationContext.declaration
+          //    ))
+        //}
         // Record the mutating expression in the context.
         addMutatingExpression(.identifier(identifier), passContext: &passContext)
       }

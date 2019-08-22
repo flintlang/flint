@@ -10,7 +10,7 @@ import Source
 public typealias RawTypeIdentifier = String
 
 // A Flint raw type, without a source location.
-public indirect enum RawType: Equatable {
+public indirect enum RawType: Equatable, Hashable {
   case basicType(BasicType)
   case rangeType(RawType)
   case arrayType(RawType)

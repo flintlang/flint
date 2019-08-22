@@ -14,7 +14,7 @@ contract Constants {
 Constants :: (any) {
   public init() {} // expected-error {{Return from initializer without initializing all properties}}
 
-  func foo() mutates (a) {
+  func foo() mutates (a, d, f) {
     let a: Int = 2 // expected-note {{'a' is declared here}}
     a = 3 // expected-error {{Cannot reassign to value: 'a' is a 'let' constant}}
 

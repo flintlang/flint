@@ -44,7 +44,7 @@ Bank :: account <- (any) {
 
   @payable
   public func donate(implicit value: Wei)
-    mutates (Wei.rawValue)
+    mutates (totalDonations)
 
     post (totalDonations.rawValue == prev(totalDonations.rawValue) + prev(value.rawValue))
   {
@@ -56,10 +56,10 @@ Bank :: account <- (any) {
 // Only the manager can call these functions.
 Bank :: (manager) {
 
-  // This function needs to be declared "mutating" as its body mutates
+  // This function needs to be declared "mutates (...)" as its body mutates
   // the contract's state.
   public func freeDeposit(account: Address, amount: Int)
-    mutates (Wei.rawValue)
+    mutates (balances)
 
     pre (dictContains(balances, account))
   {
@@ -69,7 +69,7 @@ Bank :: (manager) {
   }
 
   public func clear(account: Address)
-    mutates (balances, Wei.rawValue)
+    mutates (balances)
 
     pre (dictContains(balances, account))
     post (balances[account].rawValue == 0)
@@ -98,7 +98,7 @@ Bank :: account <- (accounts) {
   }
 
   public func transfer(amount: Int, destination: Address)
-    mutates (balances, Wei.rawValue)
+    mutates (balances)
 
     pre(dictContains(balances, destination))
     pre(dictContains(balances, account))
