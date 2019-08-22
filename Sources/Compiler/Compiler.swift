@@ -361,13 +361,14 @@ extension Compiler {
   public static func genSolFile(config: CompilerContractAnalyserConfiguration, ast: TopLevelModule,
                                 env: Environment) throws {
 
+    let sourceContext: SourceContext = .init(sourceFiles: config.sourceFiles,
+                                             sourceCodeString: config.sourceCode,
+                                             isForServer: true)
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
              in: env,
-             sourceContext: SourceContext(sourceFiles: config.sourceFiles,
-                                          sourceCodeString: config.sourceCode,
-                                          isForServer: true))
+             sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
@@ -376,8 +377,13 @@ extension Compiler {
     }
 
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
-        .generateCode()
+    //let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
+    //    .generateCode()
+    
+    let evmTarget: EVMTarget = .init(config: config.asCompilerConfiguration(),
+                                     environment: passRunnerOutcome.environment,
+                                     sourceContext: sourceContext)
+    let irCode = try evmTarget.generate(ast: passRunnerOutcome.element)
 
     // Compile the YUL IR code using solc.
     try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
@@ -637,6 +643,24 @@ public struct CompilerContractAnalyserConfiguration {
     self.outputDirectory = outputDirectory
     self.diagnostics = diagnostics
     self.astPasses = astPasses
+  }
+  
+  public func asCompilerConfiguration() -> CompilerConfiguration {
+    return CompilerConfiguration(inputFiles: sourceFiles,
+                                 stdlibFiles: StandardLibrary.default.files,
+                                 outputDirectory: outputDirectory,
+                                 dumpAST: false,
+                                 emitBytecode: true,
+                                 dumpVerifierIR: false,
+                                 printVerificationOutput: false,
+                                 skipHolisticCheck: true,
+                                 printHolisticRunStats: false,
+                                 maxHolisticTimeout: 0,
+                                 maxTransactionDepth: 0,
+                                 skipVerifier: true,
+                                 skipCodeGen: false,
+                                 diagnostics: diagnostics,
+                                 target: .evm)
   }
 }
 

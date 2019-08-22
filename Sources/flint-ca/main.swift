@@ -34,8 +34,8 @@ func main() {
 }
 
 func main_d() throws {
-  let fileName = Path.getFullUrl(path: "flint_contracts/demo/counter.flint").absoluteString
-  let inputFiles = [URL(fileURLWithPath: fileName)]
+  let fileName = Path.getFullUrl(path: "examples/valid/counter.flint").absoluteString
+  let inputFiles = [Path.getFullUrl(path: "examples/valid/counter.flint")]
   let sourceCode = try String(contentsOf: inputFiles[0])
 
   do {
