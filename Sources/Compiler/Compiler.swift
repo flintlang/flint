@@ -379,10 +379,6 @@ extension Compiler {
       exit(0)
     }
 
-    // Generate YUL IR code.
-    //let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
-    //    .generateCode()
-    
     let evmTarget: EVMTarget = .init(config: config.asCompilerConfiguration(),
                                      environment: passRunnerOutcome.environment,
                                      sourceContext: sourceContext)
@@ -647,7 +643,7 @@ public struct CompilerContractAnalyserConfiguration {
     self.diagnostics = diagnostics
     self.astPasses = astPasses
   }
-  
+
   public func asCompilerConfiguration() -> CompilerConfiguration {
     return CompilerConfiguration(inputFiles: sourceFiles,
                                  stdlibFiles: StandardLibrary.default.files,

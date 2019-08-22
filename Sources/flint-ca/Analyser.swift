@@ -24,21 +24,19 @@ struct Analyser {
     let inputFiles = [URL(fileURLWithPath: contractFile)]
     //let outputDirectory = Path.getFullUrl(path: "utils/gasEstimator")
     let outputDirectory = URL(fileURLWithPath: Path.getFullUrl(path: "utils/gasEstimator").absoluteString)
-    
-    
+
     let diagnosticPool = DiagnosticPool(shouldVerify: false,
                                         quiet: false,
                                         sourceContext: SourceContext(
                                           sourceFiles: inputFiles,
                                           sourceCodeString: sourceCode,
                                           isForServer: true))
-    
+
     let config = CompilerContractAnalyserConfiguration(sourceFiles: inputFiles,
                                                        sourceCode: sourceCode,
                                                        stdlibFiles: StandardLibrary.default.files,
                                                        outputDirectory: outputDirectory,
                                                        diagnostics: diagnosticPool)
-  
 
     let (ast, environment) = try Compiler.getAST(config: config)
 
@@ -50,8 +48,6 @@ struct Analyser {
       }
 
     }
-    
-    
 
     if estimateGas {
       let gasEstimator = GasEstimator(test_run: test_run)
