@@ -289,7 +289,7 @@ extension MovePreprocessor {
                           passContext: ASTPassContext) -> ASTPassResult<ContractBehaviorDeclaration> {
     var contractBehaviorDeclaration = contractBehaviorDeclaration
     contractBehaviorDeclaration.members = contractBehaviorDeclaration.members
-      .flatMap { member -> [ContractBehaviorMember] in
+        .flatMap { member -> [ContractBehaviorMember] in
       guard case .functionDeclaration(var functionDeclaration) = member else {
         return [member]
       }

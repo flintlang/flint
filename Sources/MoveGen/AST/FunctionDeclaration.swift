@@ -17,6 +17,7 @@ extension AST.FunctionDeclaration {
         enclosingType: "",
         isContract: true
     )
+    wrapperFunctionDeclaration.compilerTags += ["acquires T"]
     wrapperFunctionDeclaration.body.removeAll()
     let returnVariableDeclarationStmt = self.body.first!
     let firstParameter = Parameter.constructParameter(name: "_address_\(MoveSelf.name)",
