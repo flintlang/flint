@@ -1,0 +1,20 @@
+// Invalid
+
+contract SimplePaymentChannel (Pro){
+  var sender: Address
+  var recipient: Address
+}
+
+SimplePaymentChannel :: caller <- (any) {
+  public init(recipient: Address) {
+    self.recipient = recipient
+    self.sender = caller
+  }
+
+}
+
+
+
+SimplePaymentChannel :: (any) {
+  public fun isValidSigniture(amount : Int)
+}

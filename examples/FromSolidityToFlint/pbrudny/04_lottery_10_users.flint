@@ -1,0 +1,83 @@
+contract Lottery10Users {
+  var participants: Address[10] = []
+  var participantsCount: Int = 0
+  var randNonce: Int = 0
+  var balance: Wei
+
+  invariant (balance.rawValue >= 0 && balance.rawValue < 1)
+  invariant (randNonce >= 0)
+  invariant (participantsCount >= 0)
+}
+
+Lottery10Users :: caller <- (any) {
+  public init()
+  mutates (Wei.rawValue)
+  {
+    self.balance = Wei(0)
+  }
+
+  @payable
+  public func join(implicit value: inout Wei)
+  mutates (Wei.rawValue, participants, participantsCount, balance, randNonce)
+  pre (value.rawValue == 0.1) // 0.1 ether. do not support? ==> change to 1
+  pre (participantsCount < 10)
+  // pre (joinedAlready(caller) == false)
+  // pre ((exist (i, Int, participants[i] == caller)) == false)
+  // pre (arrayEach(a, participants, a != caller))
+
+  post (participantsCount == prev(participantsCount) + 1)
+  post (participants[prev(participantsCount)] == caller)
+  // post (forall (i, Int, 0 <= i && i < participants.size ==> participants[i] == prev(participants[i]) || i == prev(participantsCount)))
+
+  post (balance.rawValue >= 0 && balance.rawValue < 1)
+
+  post (participantsCount == 10 ==> balance.rawValue == 0)
+  post (participantsCount != 10 ==> balance.rawValue == prev(balance.rawValue) + prev(value.rawValue))
+  {
+      // assert (joinedAlready(participant: caller) == false)
+      participants[participantsCount] = caller
+      participantsCount += 1
+
+      balance.transfer(source: &value)
+      if participantsCount == 10 {
+        selectWinner()
+      }
+  }
+
+  func joinedAlready(participant: Address) -> Bool
+  // post (returns (exists (i, Int, participants[i] == participant)))
+  {
+    // var contains: Bool = false
+    // for var a: Address in participants {
+    //   if a == participant {
+    //     return true
+    //   }
+    // }
+    return false
+  }
+
+
+
+
+  func selectWinner() -> Address
+  mutates (randNonce, participants, participantsCount, balance, Wei.rawValue)
+  pre (participantsCount == 10)
+  pre (balance.rawValue == 1)
+  post (balance.rawValue == 0)
+  post (participantsCount == 0)
+  {
+    let winner: Address = participants[0]
+    // transfer all the Weis in balances
+    participantsCount = 0
+    send(winner, &balance)
+    return winner
+  }
+
+
+  // func randomNumber() -> Int {
+  //   // missing ways to get a random number.
+  //   let rand: Int = ...
+  //   randNonce += 1
+  //   return rand
+  // }
+}

@@ -1,0 +1,66 @@
+contract TokenErc20 {
+  // var name: String
+  // var symbol: String
+  var decimals: Int
+  var totalSupply: Int = 0
+
+  var balances: [Address : Int] = [:]
+  var allowances: [Address : [Address : Int]] = [:]
+
+  event Transfer(indexed_from : Address, indexed_to : Address, value: Int)
+  event Approval(indexed_owner : Address, indexed_spender : Address, value: Int)
+}
+
+TokenErc20 :: caller <- (any) {
+  public init(_decimals: Int, _initialSupply: Int) {
+  // public init(_name: String, _symbol: String, _decimals: Int, _initialSupply: Int) {
+    // self.name = _name
+    // self.symbol = _symbol
+    self.decimals = _decimals
+    balances[caller] = _initialSupply
+  }
+
+  public func transfer(_to: Address, _value: Int)
+  mutates(balances)
+  pre (balances[caller] >= _value)
+  // pre (allowances[caller][_to] >= _value)
+  {
+    transferFrom(_from: caller, _to: _to, _value: _value)
+  }
+
+
+  public func transferFrom (_from: Address, _to: Address, _value: Int)
+  mutates (balances)
+  // pre (balances[_from] >= _value)
+  // pre (allowances[_from][_to] >= _value)
+
+  {
+      assert (balances[_from] >= _value)
+      assert (allowances[_from][_to] >= _value)
+
+      balances[_from] -= _value
+      balances[_to] += _value
+
+      emit Transfer(indexed_from: _from, indexed_to: _to, value: _value)
+
+      // return true
+  }
+
+  public func approve(spender: Address, value: Int)
+  mutates (allowances)
+  {
+    allowances[caller][spender] == value
+  }
+
+}
+
+TokenErc20 :: (any) {
+  public func balanceOf(_owner: Address) -> Int {
+    return balances[_owner]
+  }
+
+  public func allowance(owner: Address, spender: Address) -> Int
+  {
+    return allowances[owner][spender]
+  }
+}

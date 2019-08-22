@@ -1,0 +1,83 @@
+// contract Ownable {
+//   var owner: Address
+// }
+//
+//
+//   Ownable :: (any) {
+//     public init(addr: Address) {
+//        self.owner = addr
+//      }
+//
+//     public func getOwner() -> Address {
+//       return owner
+//     }
+//   }
+//
+//   Ownable :: (getOwner) {
+//     func setOwner(newOwner: Address)
+//     mutates (owner)
+//     {
+//       self.owner = newOwner
+//     }
+//
+//     public func renounceOwnership()
+//     mutates (owner)
+//     {
+//       setOwner(newOwner: 0x0000_0000_0000_0000_0000_0000_0000_0000_0000_0000)
+//     }
+//
+//     public func transferOwnership(newOwner: Address)
+//     mutates(owner)
+//     pre (newOwner != 0x0000_0000_0000_0000_0000_0000_0000_0000_0000_0000)
+//
+//     {
+//       assert(newOwner != 0x0000_0000_0000_0000_0000_0000_0000_0000_0000_0000)
+//       setOwner(newOwner: newOwner)
+//     }
+//   }
+
+
+
+contract trait Ownable {
+  event OwnershipRenounced(previousOwner: Address)
+  event OwnershipTransfered(previousOwner: Address, newOwner: Address)
+
+  self :: (any) {
+    public func getOwner() -> Address
+  }
+
+  self :: (getOwner) {
+    func setOwner(newOwner: Address)
+
+    public func renounceOwnership() {
+      emit OwnershipRenounced(getOwner())
+      setOwner(0x0000000000000000)
+    }
+
+    public func transferOwnership(newOwner: Address) {
+      assert(newOwner != 0x0000000000000000)
+      emit OwnershipTransfered(getOwner(), newOwner)
+      setOwner(newOwner)
+    }
+  }
+}
+
+contract ToyWallet: Ownable {
+  visible var owner: Address // visible automatically creates getOwner
+  // Skipping initialiser not relevant for this example
+}
+
+ToyWallet :: (any) {
+  public init(addr: Address) {
+    self.owner = addr
+  }
+  public func getOwner() -> Address {
+    return owner
+  }
+}
+
+ToyWallet :: (getOwner) {
+  func setOwner(newOwner: Address){
+    self.owner = newOwner
+  }
+}

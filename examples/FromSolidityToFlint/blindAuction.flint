@@ -1,0 +1,212 @@
+ struct Bid {
+  // var blindedBid : String
+  var deposit : Wei
+
+  // init (blindedBid : String, deposit : inout Wei)
+  init (deposit : inout Wei)
+  mutates (Wei.rawValue)
+  {
+    // self.blindedBid = blindedBid
+    self.deposit = Wei(&deposit)
+  }
+}
+
+contract BlindAuction (Bidding, Reveal, End){
+  var beneficiary : Address
+  var ended : Bool = false
+  var bids : [Address : [Bid]]
+  var highestBidder : Address
+  var highestBid : Wei
+
+  var pendingReturns : [Address : Wei]
+  var refund:
+
+  event AuctionEnded(winner: Address, highestBid_value: Int)
+}
+
+BlindAuction@(any) :: caller <- (any) {
+  public init()
+  mutates (Wei.rawValue)
+  {
+    self.beneficiary = caller
+    self.highestBidder = 0x00000_00000_00000_00000_00000_00000_00000_00000
+    self.highestBid = Wei(0)
+    self.bids = [:]
+    self.pendingReturns = [:]
+    become Bidding
+  }
+}
+
+
+
+
+BlindAuction@(Bidding) :: caller <- (any) {
+  @payable
+  public func bid(implicit depositValue : inout Wei)
+  // public func bid(_blindedBid : String, implicit depositValue : inout Wei)
+
+  pre (dictContains(bids, beneficiary))
+  post (bids[caller].size == prev(bids[caller].size) + 1)
+  post (bids[caller][prev(bids[caller].size)].deposit.rawValue == depositValue.rawValue)
+  // post (bids[caller][prev(bids[caller].size)].deposit.blindedBid == _blindedBid)
+  post (forall (a, Address, dictContains(bids, a) ==> forall (i, Int, dictContains(bids[a], i) ==> bids[a][i] == prev(bids[a][i]) || (a == caller && i == prev(bids[caller].size)))))
+  {
+    // let newBid : Bid = Bid(_blindedBid, &depositValue)
+    let newBid : Bid = Bid(&depositValue)
+    bids[caller][bids[caller].size] = newBid
+  }
+}
+
+BlindAuction@(Bidding) :: (beneficiary) {
+  public func startReveal() {
+    become Reveal
+  }
+}
+
+
+// BlindAuction@(Bidding) :: caller <- (any) {
+//   @payable
+//   func placeBid(implicit value : inout Wei) -> Bool
+//   mutates (Wei.rawValue, highestBid, highestBidder)
+//   pre (value.rawValue > 0)
+//   pre (dictContains(pendingReturns, highestBidder) == true)
+//   post (returns(value.rawValue > highestBid.rawValue))
+//
+//   {
+//     if value.rawValue <= highestBid.rawValue {
+//       return false
+//     } else {
+//     // if highestBidder != 0x00000_00000_00000_00000_00000_00000_00000_00000 {
+//     //   // pendingReturns[highestBidder] += highestBid
+//       pendingReturns[highestBidder].transfer(source: &highestBid)
+//     // }
+//     highestBid.transfer(source: &value)
+//     highestBidder = caller
+//     return true
+//   }
+//   }
+//
+//
+//   func example(value: Int) -> Bool
+//   mutates(ended)
+//   post (value <= highestBid.rawValue ==> returns(false))
+//   post (value > highestBid.rawValue ==> returns(true))
+//
+//   {
+//     if value <= highestBid.rawValue {
+//       return false
+//     } else {
+//       return true
+//     }
+//   }
+// }
+
+BlindAuction@(Reveal) :: caller <-(any) {
+  public func reveal(_values: [Int], _secret: [String], _fake:[Bool]){
+    let bs: [Bid] = bids[caller]
+    for var i: Int in (0..<bs.size) {
+      let b: Bid = bs[i]
+      revealCurr(i: i, bidTocheck: &b, valueToCheck: _values[i], secretToCheck: _secret[i], fake: _fake[i])
+    }
+  }
+
+
+
+  public func revealCurr(i: Int, bidTocheck: inout Bid, valueToCheck: int, secretToCheck: String, fake: Bool) {
+    //revealed[caller][i] = true
+    if bidTocheck.secret == "" {
+      return
+    }
+    // isInvalidBid[caller][i] = false
+
+    if bidTocheck.secret != secretToCheck || bidTocheck.deposit.rawValue < valueToCheck {
+      // isInvalidBid[caller][i] = true
+      return
+    }
+
+//deposit >= value satisfied
+    var refund': Wei = Wei(0)
+    refund'.transfer(source: &bidTocheck.deposit)
+    if (valueToCheck > highestBid.rawValue) {
+      //wasHighestBid[caller][i] = true
+      // numBid = i
+      if highestBidder != 0x00000_00000_00000_00000_00000_00000_00000_00000 {
+        pendingReturns[highestBidder].transfer(source: &highestBid)
+        assert(highestBid.rawValue == 0)
+      }
+
+      highestBid.transfer(source: &refund', amount: value)
+      highestBidder = caller
+
+    }
+
+    bids[caller][i].blindedBid = ""
+    refund[caller].transfer(source: &refund')
+  }
+
+  // public func reveal(
+  //     _values : Wei[],
+  //     _fake : Bool[],
+  //     _secret : String[]
+  // )
+  // mutates(Wei.rawValue, bids)
+  // {
+  //   let length : Int = bids[caller].size
+  //   assert (_values.size == length)
+  //   assert (_fake.size == length)
+  //   assert (_secret.size == length)
+  //
+  //   var refund : Wei
+  //   for let i : Int in (0..<length) {
+  //     let bidTocheck : Bid = bids[caller][i]
+  //     let value : Wei = _values[i]
+  //     let fake : Bool = _fake[i]
+  //     let secret : String = _secret[i]
+  //
+  //     // check if bid is actually revealed here
+  //
+  //
+  //     refund += bidTocheck.deposit
+  //
+  //     if fake == false && bidTocheck.deposit >= value {
+  //       if secret == self.blindedBid {
+  //         refund -= value
+  //       }
+  //     }
+  //
+  //     bids[caller][i].blindedBid = String(0)
+  //   }
+  //   send(caller, refund)
+  // }
+
+
+}
+
+BlindAuction@(Reveal) :: (beneficiary) {
+  public func auctionEnd()
+  mutates (Wei.rawValue, highestBid, ended)
+  pre (ended == false)
+  post (ended == true)
+  post (highestBid.rawValue == 0)
+
+  {
+    let _value : Int = highestBid.rawValue
+    emit AuctionEnded(winner: highestBidder, highestBid_value: _value)
+    ended = true
+    send(beneficiary, &highestBid)
+  }
+}
+
+// BlindAuction@(any) :: caller <- (any){
+//   public func withdraw()
+//   mutates (pendingReturns, Wei.rawValue)
+//   post (pendingReturns[caller].rawValue == 0)
+//   {
+//     let amount : Wei = Wei(&pendingReturns[caller])
+//     if amount.rawValue > 0 {
+//       // pendingReturns[caller] = 0
+//       assert (pendingReturns[caller].rawValue == 0)
+//       send(caller, &amount)
+//     }
+//   }
+// }

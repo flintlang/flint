@@ -1,0 +1,25 @@
+contract A {
+  var as2: [Int] = []
+}
+
+A :: (any) {
+  public init() {}
+
+    public func join (a: Int) {
+      as2[as2.size] = a
+    }
+  // public func(a: Int)
+  // {
+  //   for _A: Int in as {
+  //     if _A == a {
+  //       return true
+  //     }
+  //   }
+  //   return false
+  // }
+
+  // returnarray?
+  public func ret() -> [Int] {
+    return as2
+  }
+}

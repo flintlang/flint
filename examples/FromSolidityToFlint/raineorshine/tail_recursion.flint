@@ -1,0 +1,55 @@
+contract TailRecursion {
+
+}
+
+TailRecursion :: (any) {
+  func sum(n: Int) -> Int
+  pre (n >= 0)
+  post (n == 0 ==> returns(0))
+
+  {
+    if n == 0 {
+      return 0
+    } else {
+      return n + sum(n: n - 1)
+    }
+  }
+
+
+// #397
+  func sumloop(n: Int) -> Int
+  pre (n >= 0)
+  post (n == 0 ==> returns(0))
+
+  {
+    var total: Int = 0
+    for var i: Int in (1...n) {
+      total += i
+    }
+
+    return total
+  }
+
+
+
+
+  func sumTailHelper(n: Int, acc: Int) -> Int
+  pre (n >= 0)
+  post (n == 0 ==> returns(acc))
+  post (n != 0 ==> returns())
+  {
+    if n == 0 {
+      return acc
+    } else {
+      return sumTailHelper(n: n - 1, acc: acc + n)
+    }
+  }
+
+  func sumTail(n: Int) -> Int
+  pre (n >= 0)
+  post (n == 0 ==> returns(0))
+
+  {
+    return sumTailHelper(n: n, acc: 0)
+  }
+}

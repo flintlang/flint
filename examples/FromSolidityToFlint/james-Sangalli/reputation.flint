@@ -1,0 +1,100 @@
+// String NOT supported in Boogie. Issue#441
+contract Reputation {
+  let feedbackSubmissionFee: Int
+  var burnAddress: Address = 0x0000_0000_0000_0000_0000_0000_0000_0000_0000_0000
+
+  var ratings: [Address : [Feedback]] = [:]
+
+
+}
+
+struct Feedback {
+  var isPositive: Bool
+  var reviewer: Address
+  var optionalMessage: String
+
+  init(message: String, isPositive: Bool, reviewer: Address) {
+    self.isPositive = isPositive
+    self.reviewer = reviewer
+    self.optionalMessage = message
+  }
+}
+
+
+Reputation :: caller <- (any) {
+  public init(feedbackSubmissionFee: Int) {
+    self.feedbackSubmissionFee = feedbackSubmissionFee
+  }
+
+
+
+  @payable
+  // should be public here, but public function do not support struct as argument
+  // #465
+  // public func submitFeedback(implicit value: inout Wei, feedback: inout Feedback, recipientOfFeedBack: Address)
+
+  public func submitFeedback(implicit value: inout Wei, message: String, isPositive: Bool, recipientOfFeedBack: Address)
+  mutates(ratings, Wei.rawValue, feedbackSubmissionFee, burnAddress, Feedback.isPositive, Feedback.reviewer, Feedback.optionalMessage)
+  pre (dictContains(ratings, recipientOfFeedBack) == true)
+
+  post (ratings[recipientOfFeedBack][prev(ratings[recipientOfFeedBack].size)].optionalMessage == message)
+  post (ratings[recipientOfFeedBack][prev(ratings[recipientOfFeedBack].size)].reviewer == caller)
+  post (ratings[recipientOfFeedBack][prev(ratings[recipientOfFeedBack].size)].isPositive == isPositive)
+
+  post (ratings[recipientOfFeedBack].size == prev(ratings[recipientOfFeedBack].size) + 1)
+
+  post (forall (a, Address, dictContains(ratings, a) ==> forall (i, Int, ratings[a][i] == prev(ratings[a][i]) || (a == recipientOfFeedBack && i == prev(ratings[recipientOfFeedBack].size)))))
+  {
+    assert (value.getRawValue() == feedbackSubmissionFee)
+    send(burnAddress, &value)
+    var f: Feedback = Feedback(message: message, isPositive: isPositive, reviewer: caller)
+    // ratings[recipientOfFeedBack][ratings[recipientOfFeedBack].size] = feedback
+    ratings[recipientOfFeedBack][ratings[recipientOfFeedBack].size] = f
+  }
+
+  ////////////////////////////# 462
+  public func getFeedbackForAddress(recipient: Address) -> [Feedback] {
+    return rating[recipient]
+  }
+
+
+  ///////////////////#466 with feedback cannot be defined as local variable
+  func getNumberOfPositiveReviews(recipient: Address) -> Int
+  // mutates (Feedback.isPositive, Feedback.reviewer, Feedback.optionalMessage)
+  pre (dictContains(ratings, recipient) == true)
+  post (returning(r, exist(arr, [Feedback], arr.size == r && arrayEach(f, arr, arrayContains(ratings[recipient], f) && f.isPositive) && forall (otherArrays, [Feedback], arrayEach(f, otherArrays, arrayContains(ratings[recipient], f) && f.isPositive) ==> otherArrays.size <= arr.size))))
+  //r is the number of elements in this array.
+  // each element in arr is also in ratings[recipient], and they are positive
+  // all the other arrays satisfy this property have less elements than arr, this makes arr contains all the positive feedbacks
+  {
+    let feedbacks: [Feedback] = ratings[recipient]
+    var count: Int = 0
+
+    for var f: Feedback in feedbacks {
+      if f.isPositive {
+        count += 1
+      }
+    }
+
+    return count
+  }
+
+
+  ////////////////////////////////////////// issue #466
+  public func getNumberOfPositiveReviews(recipient: Address) -> Int
+  post (returning(r, exist(arr, [Feedback], arr.size == r && arrayEach(f, arr, arrayContains(ratings[recipient], f) && f.isPositive == false) && forall (otherArrays, [Feedback], arrayEach(f, otherArrays, arrayContains(ratings[recipient], f) && f.isPositive == false) ==> otherArrays.size <= arr.size))))
+
+  {
+    var feedbacks: [Feedback] = ratings[recipient]
+    var count: Int = 0
+
+    for var f: Feedback in feedbacks {
+      if f.isPositive == false {
+        count += 1
+      }
+    }
+
+    return count
+  }
+
+}

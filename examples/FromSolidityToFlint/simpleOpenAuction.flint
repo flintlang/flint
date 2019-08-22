@@ -1,0 +1,77 @@
+// Same as ... in case studies
+
+contract SimpleAuction (Bidding, End) {
+
+    var beneficiary: Address
+    var highestBidder: Address
+    var highestBid: Wei
+    var pendingReturns : [Address : Int] = [:]
+    var ended : Bool = false
+
+    event HighestBidIncreased(bidder: Address, amount: Int)
+    event AuctionEnded(winner: Address, amount: Int)
+}
+
+
+SimpleAuction@(any) :: caller <- (any){
+  public init() {
+    self.beneficiary = caller
+    self.highestBidder = caller
+    self.highestBid = Wei(0)
+    become Bidding
+  }
+}
+
+
+SimpleAuction@(Bidding) :: caller <- (any) {
+  @payable
+  public func bid(implicit value : Wei) mutates(pendingReturns)
+  pre (value > 0)
+  // invariant (ended == false)
+  post (highestBidder != beneficiary && highestBid == value)
+
+  {
+    assert (value.getRawValue() > highestBid.getRawValue())
+    if highestBid.getRawValue() != 0 {
+      pendingReturns[highestBidder] += highestBid.getRawValue();
+      highestBid = value
+      highestBidder = caller
+
+      let v : Int = highestBid.getRawValue()
+      emit HighestBidIncreased(bidder: highestBidder, amount: v)
+    }
+  }
+
+
+  public func withdraw() -> Bool mutates(pendingReturns)
+//  invariant (ended == false)
+   post (returns true)
+  {
+    let amount : Int = pendingReturns[caller]
+    if amount > 0 {
+      pendingReturns[caller] = 0
+
+    //  if caller.send(amount) == false {
+      //  pendingReturns[caller] = amount
+        //return false
+      //}
+    }
+
+
+    return true
+  }
+}
+
+SimpleAuction@(Bidding) :: (beneficiary) {
+  public func auctionEnd() mutates(ended)
+  pre (ended == false)
+
+  post (ended == true)
+  {
+    ended = true
+
+    let v: Int = highestBid.getRawValue()
+    emit AuctionEnded(winner: highestBidder, amount: v)
+    become End
+  }
+}

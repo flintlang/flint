@@ -1,0 +1,20 @@
+contract ReceiverPays {
+  var owner : Address
+  var usedNonces m: [Int : Bool] = [:]
+}
+
+ReceiverPays :: (any){
+  public init() {}
+
+  public func claimPayment() {
+
+  }
+
+  public func kill() {
+
+  }
+
+  func splitSignature() -> (Int, String, String) {
+    
+  }
+}

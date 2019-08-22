@@ -1,0 +1,67 @@
+//trait here useless
+// contract trait MachineLearningSolutionAttemp {
+//   var applicant: Address
+//
+//   self :: caller <- (any) {
+//     public init() {
+//       applicant = caller
+//     }
+//   }
+// }
+
+contract MachineLearningVerification (NotExpired, Expired){
+  var author: Address
+  var modelData: String
+
+  var authorContribution: Wei
+  var claimed: Bool = false
+
+  var winner: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000
+  var winningContract: Address = 0x00000_00000_00000_00000_00000_00000_00000_00000
+}
+
+MachineLearningVerification@(any) :: caller <- (any) {
+  @payable
+  public init(implicit value: inout Wei, data: String, )
+  mutates(Wei.rawValue)
+  {
+    self.author = caller
+    self.modelData = data
+    self.authorContribution = Wei(source: &value)
+    become NotExpired
+  }
+}
+
+
+MachineLearningVerification@(NotExpired) :: caller <- (any) {
+  // wrong function
+  public func verifyInput(applicantContract: Address, hashedValue: String)
+  mutates (claimed, winningContract)
+  {
+  //   assert(claimed == false)
+  //   let hashOfCorrectOutput: String = soliditySelectorHex(modelData) // this function does not work
+  //
+  //   if hashedValue == hashOfCorrectOutput {
+  //     self.claimed == true
+  //     self.winningContract = applicantContract
+  //
+  //     send(caller, authorContribution)
+  //   }
+  }
+}
+
+
+MachineLearningVerification@(NotExpired) :: (author) {
+  public func becomeExpired() {
+    become Expired
+  }
+
+  @payable
+  public func increaseAuthorContribution(implicit value: inout Wei)
+  mutates (Wei.rawValue, authorContribution)
+  {
+    authorContribution.transfer(source: &value)
+  }
+
+
+}
