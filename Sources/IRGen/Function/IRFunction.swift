@@ -155,11 +155,16 @@ struct IRFunctionBody {
     var statements = statements
     var emitLastBrace = false
     while !statements.isEmpty {
-      let statement = statements.removeFirst()
+      let statement: Statement = statements.removeFirst()
       functionContext.emit(IRStatement(statement: statement).rendered(functionContext: functionContext))
-      if case .ifStatement(let ifStatement) = statement, ifStatement.endsWithReturnStatement {
-        functionContext.emit(.inline("default {"))
-        emitLastBrace = true
+      if case .ifStatement(let ifStatement) = statement,
+         ifStatement.endsWithReturnStatement {
+        if ifStatement.elseBody.isEmpty {
+          functionContext.emit(.inline("default {"))
+          emitLastBrace = true
+        } else if !statements.isEmpty {
+          fatalError("Cannot have an if/else statement which contains a `return' statement and is followed by code")
+        }
       }
     }
     if emitLastBrace {

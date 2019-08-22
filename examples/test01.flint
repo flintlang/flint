@@ -25,10 +25,10 @@ Test :: (any) {
   public func ifElse() -> Int {
     if (x.size == 0) {
       id(int: x.size)
+      return 0
     } else {
       id(int: 0)
+      return 0
     }
-    id(int: x.size)
-    return 0
   }
 }
