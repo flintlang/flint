@@ -31,7 +31,10 @@ public struct Compiler {
     ConstructorPreProcessor()]
 
   public static let verifierASTPasses: [ASTPass] = [
-    CallGraphGenerator()]
+    CallGraphGenerator(),
+    GenerateCalledConstructors(),
+    ModifiesPreProcessor()
+  ]
 
   private static func exitWithFailure() -> Never {
     print("ERROR")

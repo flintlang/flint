@@ -272,11 +272,15 @@ public class BoogieVerifier: Verifier {
             message: "Illegal modification of variable not declared in `mutates(...)'"
         ))
 
-      case .genericFailure://_, let line):
+      case .genericFailure(let information, let line)://_, let line):
         //let ti = lookupTranslationInformation(line: line, mapping: b2fSourceMapping)
         flintErrors.append(Diagnostic(severity: .error,
                                       sourceLocation: SourceLocation.INVALID,
-                                      message: "Flint to Boogie translation error. Unsupported construct used."))
+                                      message: """
+                                               Flint to Boogie translation error. Unsupported construct used.
+                                               Details: \(information)
+                                               (Translation Line: \(line))
+                                               """))
           //print("Boogie error: \(string)")
 
           //  case .loopInvariantMaintenanceFailure(let lineNumber, let line):
@@ -295,8 +299,11 @@ public class BoogieVerifier: Verifier {
   private func lookupTranslationInformation(line: Int,
                                             mapping: [Int: TranslationInformation]) -> TranslationInformation {
     guard let translationInformation = mapping[line] else {
-      print("cannot find mapping for failing proof obligation on line \(line)")
-      fatalError()
+      print("Error: cannot find mapping for failing proof obligation on line \(line)")
+      return TranslationInformation(
+          sourceLocation: .INVALID,
+          failingMsg: "Error: cannot find mapping for failing proof obligation on line \(line)"
+      )
     }
     return translationInformation
   }

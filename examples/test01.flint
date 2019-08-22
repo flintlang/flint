@@ -1,0 +1,34 @@
+contract Test {
+  public var test: Wei = Wei(0)
+  var x: [Int] = []
+}
+
+Test :: (any) {
+  public init() {}
+
+  public func other2() mutates (test) {
+    other()
+  }
+
+  public func other() mutates (test) {
+    let x: Wei = Wei(0)
+    test.setRawValue(value: 10)
+    if (test.rawValue == self.x.size) {
+      other2()
+    }
+  }
+
+  public func id(int: Int) -> Int {
+    return int
+  }
+
+  public func ifElse() -> Int {
+    if (x.size == 0) {
+      id(int: x.size)
+      return 0
+    } else {
+      id(int: 0)
+      return 0
+    }
+  }
+}

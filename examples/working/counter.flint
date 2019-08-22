@@ -1,6 +1,7 @@
 contract Counter {
   var value: Int = 0
   // invariant (forall (c:Counter, e:External, m:Int) :: (next(c.value = m) && c.value != m ==> (c.value == m - 1 && e.Calls(c.increment())) || (e.Calls(c.set(m)))))
+
 }
 
 Counter :: (any) {
@@ -24,18 +25,5 @@ Counter :: (any) {
     post (value == value)
   {
     self.value = value
-  }
-
-  public func ooOohWereHalfWayThere(ooOoh: Int) -> Int
-   mutates (value) {
-    set(value: 9001)
-    let livingOnAPrayer: Int = 10
-    let noop: Bool
-    if ooOoh >= (1 / 2) {
-      if ooOoh >= (3/4) {
-        set(value: livingOnAPrayer + ooOoh)
-      }
-    }
-    return getValue() + ooOoh
   }
 }
