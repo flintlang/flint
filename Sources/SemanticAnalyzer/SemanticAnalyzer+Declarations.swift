@@ -373,7 +373,7 @@ extension SemanticAnalyzer {
       return alwaysReturns(statements: ifStatement.body) && alwaysReturns(statements: ifStatement.elseBody)
     case .becomeStatement:
       if statements.count >= 2,
-         let secondLast: Statement = statements[statements.count - 2],
+         let secondLast: Statement = try? statements[statements.count - 2],
          case .returnStatement = secondLast {
         return true
       }
