@@ -75,8 +75,8 @@ public struct FunctionDeclarationContext {
     self.declaration = declaration
   }
 
-  public var isMutating: Bool {
-    return declaration.isMutating
+  public var mutates: [Identifier] {
+    return declaration.mutates
   }
 }
 

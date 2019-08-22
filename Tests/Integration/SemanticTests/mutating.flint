@@ -10,7 +10,7 @@ Test :: (any) {
   public init() {}
 
   func foo() -> Int {
-    a[0] = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+    a[0] = 2 // expected-error {{Illegal modification of property not declared in `mutates(...)'}}
     return a[0]
   }
 
@@ -20,7 +20,7 @@ Test :: (any) {
   }
 
   func a() {
-    b(a: c()) // expected-error {{Use of mutating statement in a nonmutating function}}
+    b(a: c()) // expected-error {{Illegal modification of property `any' not declared in `mutates(...)'}}
   }
 
   func b(a: Int) mutates (any) {
@@ -49,7 +49,7 @@ Test :: (any) {
 
   func h() {
     var b: Int = 2
-    self.b = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+    self.b = 2 // expected-error {{Illegal modification of property not declared in `mutates(...)'}}
   }
 
   func i(f: Foo) {} // expected-error {{Structs cannot be passed by value yet, and have to be passed inout}}
@@ -78,6 +78,6 @@ struct Foo {
   init(a: inout Foo) {}
 
   func h() { 
-    a = 2 // expected-error {{Use of mutating statement in a nonmutating function}}
+    a = 2 // expected-error {{Illegal modification of property not declared in `mutates(...)'}}
   }
 }

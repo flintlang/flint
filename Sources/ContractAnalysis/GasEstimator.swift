@@ -17,8 +17,8 @@ public class GasEstimator {
 
       const eth = web3.eth;
 
-      const defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
-      web3.personal.unlockAccount(defaultAcc, "1", 1000);
+      const defaultAcc = "145b8389f8818e09fb63566e7096f01a7533ea4c";
+      web3.personal.unlockAccount(defaultAcc, "", 1000);
       web3.eth.defaultAccount = defaultAcc;
 
       async function deploy_contract(abi, bytecode) {
@@ -46,6 +46,9 @@ public class GasEstimator {
                 }
                  // Note that the returned "myContractReturned" === "myContract",
                 // so the returned "myContractReturned" object will also get the address set.
+             } else {
+               console.log(err);
+               process.exit();
              }
            });
           });
@@ -162,20 +165,24 @@ public class GasEstimator {
 
   func runNode(jsTestFile: String) throws -> String {
     let fileManager = FileManager.init()
-    let path = Path.getFullUrl(path: "utils/gasEstimator/test.js").absoluteString
-    let outputfile = URL(fileURLWithPath: path)
-
-    if !(fileManager.fileExists(atPath: path)) {
-      fileManager.createFile(atPath: Path.getFullUrl(path: "utils/gasEstimator/test.js").absoluteString, contents: nil)
+    let path = Path.getFullUrl(path: "utils/gasEstimator/test.js")
+    let outputfile = path
+    if !(fileManager.fileExists(atPath: path.absoluteString)) {
+      fileManager.createFile(atPath: path.absoluteString, contents: nil)
     }
 
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/gasEstimator")
-    p.arguments = ["node", "test.js"]
+    p.arguments = ["test.js"]
     p.standardOutput = pipe
     try! p.run()
     p.waitUntilExit()
@@ -184,7 +191,7 @@ public class GasEstimator {
     if let out = String(data: data, encoding: .utf8) {
       return out
     } else {
-      return "ERROR : No gas estimates"
+      return "ERROR: No gas estimates"
     }
   }
 }

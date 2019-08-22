@@ -209,9 +209,12 @@ extension SemanticAnalyzer {
 
     var diagnostics = [Diagnostic]()
 
-    let isMutating: Bool =
-      passContext.specialDeclarationContext?.declaration.isInit ?? false ||
-        passContext.functionDeclarationContext?.isMutating ?? false
+    let isInitialiser: Bool = passContext.specialDeclarationContext?.declaration.isInit ?? false
+
+    // TODO Right now there are some things the AST pass cannot check for mutation. This is currently left to the
+    //  verifier, but that has the issue of the verifier not using the same test for mutation (type based rather than
+    //  identifier based)
+    let isMutating: Bool = isInitialiser || passContext.functionDeclarationContext?.declaration.isMutating ?? false
 
     if !passContext.isInEmit {
       // Find the function declaration associated with this function call.
@@ -227,12 +230,22 @@ extension SemanticAnalyzer {
           // The function is mutating.
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
-          if !isMutating {
+          let disallowed: Set<String> = disallowedMutations(
+              caller: passContext.functionDeclarationContext!.declaration,
+              callerEnclosingType: enclosingType,
+              callee: matchingFunction.declaration,
+              calleeEnclosingType: functionCall.identifier.enclosingType ?? enclosingType,
+              environment: passContext.environment!
+          )
+
+          if !disallowed.isEmpty && !isInitialiser {
             // The function in which the function call appears in is not mutating.
-            diagnostics.append(
-              .useOfMutatingExpressionInNonMutatingFunction(
+            diagnostics.append(.useOfMutatingExpressionOnNonMutatingProperties(
                 .functionCall(functionCall),
-                functionDeclaration: passContext.functionDeclarationContext!.declaration))
+                names: Array(disallowed),
+                functionDeclaration: passContext.functionDeclarationContext!.declaration
+            ))
+            diagnostics.append(.noteAllMutating(passContext.functionDeclarationContext!.declaration))
           }
         }
 
@@ -301,6 +314,27 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
+  private func disallowedMutations(caller: FunctionDeclaration,
+                                   callerEnclosingType: RawTypeIdentifier,
+                                   callee: FunctionDeclaration,
+                                   calleeEnclosingType: RawTypeIdentifier,
+                                   environment: Environment) -> Set<String> {
+    if !callee.isMutating {
+      return []
+    } else if callerEnclosingType == calleeEnclosingType {
+      return Set(callee.mutates.map { $0.name })
+          .subtracting(Set(caller.mutates.map { $0.name }))
+    } else {
+      // Cannot properly detect if valid mutation in this case, leave it for the verifier. However, if this function
+      //  is not mutating at all, we can say it's definitely bad
+      return caller.isMutating
+          ? []
+          : Set(environment.types[callerEnclosingType]?.properties
+                    .map { "\(callerEnclosingType).\($0.1.property.identifier.name)" }
+                     ?? [callerEnclosingType])
+    }
+  }
+
   // Checks whether all arguments of a function call are labeled
   private func checkArgumentLabels(_ functionCall: FunctionCall,
                                    _ diagnostics: inout [Diagnostic],
@@ -314,7 +348,7 @@ extension SemanticAnalyzer {
   /// Whether an expression refers to a state property.
   private func isStorageReference(expression: Expression, scopeContext: ScopeContext) -> Bool {
     switch expression {
-    case .self: return true
+    case .`self`: return true
     case .identifier(let identifier): return !scopeContext.containsDeclaration(for: identifier.name)
     case .inoutExpression(let inoutExpression):
       return isStorageReference(expression: inoutExpression.expression, scopeContext: scopeContext)

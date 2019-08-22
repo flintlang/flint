@@ -46,7 +46,7 @@ SimpleDAO @(Propose) :: caller <- (members) {
 
 SimpleDAO @(Vote) :: caller <- (members) {
   public func vote(approve: Bool) 
-    mutates (Proposal.yesVotes, Proposal.noVotes, Proposal.voted) {
+    mutates (proposal) {
     if proposal.voted[caller] {
       fatalError()
     }
@@ -61,7 +61,7 @@ SimpleDAO @(Vote) :: caller <- (members) {
   }
 
   public func executeProposal() 
-    mutates (Proposal.finished, Proposal.success) {
+    mutates (proposal) {
     if(caller != proposal.proposer || proposal.finished) {
       fatalError()
     }

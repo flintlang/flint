@@ -10,6 +10,7 @@
 
   // holistic_inv (forall (d: Dictionary, j: Int, a: Address) :: (d.storage[a] == j ==> exists(e: External) :: (Was(e.Calls(write(a, j))))))
   // holistic_inv (forall (d: Dictionary, j: Int, a: Address) :: (d.storage2[a] == j ==> exists(e: External) :: (Was(e.Calls(write2(a, j))))))
+
 }
 
 Dictionary :: (any) {

@@ -23,23 +23,23 @@ Test :: (any) {
     self.d = e
   }
 
-  public func test1() mutates (a, b) {
+  public func test1() mutates (a, b, c, d) {
     set(a: 1, b: 1)
   }
 
-  public func test2() mutates (a, b, c) {
+  public func test2() mutates (a, b, c, d) {
     set(a: 5, b: 10, c: 5)
   }
 
-  public func test3() mutates (a, b, e) {
+  public func test3() mutates (a, b, c, d) {
     set(a: 7, b: 9, e: 66)
   }
 
-  public func test4() mutates (a, b, c, e) {
+  public func test4() mutates (a, b, c, d) {
     set(a: 11, b: 12, c: 7, e: 90)
   }
 
-  public func test5() mutates (a, b, c, e) {
+  public func test5() mutates (a, b, c, d) {
     set(a: 15, b: 15, c: 7, e: 90)
   }
 
