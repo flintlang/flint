@@ -35,6 +35,10 @@ test: lint generate-mocks release
 	./Tests/VerifierTests/run_verifier_tests.py -vf
 	swift run -c release lite
 
+test-lite:
+	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh
+	swift run -c release lite
+
 test-nogen: lint release
 	swift test
 	cd Tests/Integration/BehaviorTests && ./compile_behavior_tests.sh

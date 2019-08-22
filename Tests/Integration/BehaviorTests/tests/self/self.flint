@@ -1,12 +1,12 @@
 struct trait A {
     func getStoredValue() -> Int
-    func setStoredValue(value: Int) mutates (B.storedValue)
+    func setStoredValue(value: Int) mutates (storedValue)
 
-    func add(other: inout Self) mutates (B.storedValue) {
+    func add(other: inout Self) mutates (storedValue) {
         setStoredValue(value: getStoredValue() + other.getStoredValue())
     }
 
-    func addNoDefault(other: inout Self) mutates (B.storedValue)
+    func addNoDefault(other: inout Self) mutates (b)
 }
 
 struct B: A {
@@ -20,7 +20,7 @@ struct B: A {
         storedValue = value
     }
 
-    func addNoDefault(other: inout B) mutates (B.storedValue) {
+    func addNoDefault(other: inout B) mutates (storedValue) {
       setStoredValue(value: getStoredValue() + other.getStoredValue())
     }
 }
@@ -34,23 +34,23 @@ C :: (any) {
     public init() {}
 
     public func setFirstBValue(val: Int) 
-    mutates (B.storedValue) {
+    mutates (b) {
       b.storedValue = val
     }
 
     public func setSecondBValue(val: Int) 
-    mutates (B.storedValue) {
+    mutates (otherB) {
       otherB.storedValue = val
     }
 
     public func add() -> Int 
-    mutates (B.storedValue) {
+    mutates (b) {
       b.add(other: &otherB)
       return b.getStoredValue()
     }
 
     public func addNoDefault() -> Int
-    mutates (B.storedValue) {
+    mutates (b) {
       b.addNoDefault(other: &otherB)
       return b.getStoredValue()
     }

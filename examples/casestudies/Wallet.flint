@@ -34,9 +34,9 @@ Wallet :: caller <- (any) {
 
 Wallet :: (owner) {
   public func withdraw(value: Int)
-    mutates (contents, owner, Wei.rawValue)
+    mutates (contents, owner)
     pre (value > 0)
-    post (contents.rawValue == prev(contents.rawValue) - prev(value))
+    //post (contents.rawValue == prev(contents.rawValue) - prev(value))
   {
     // Transfer an amount of Wei into a local variable. This
     // removes Wei from the contents state property.

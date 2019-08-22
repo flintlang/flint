@@ -27,7 +27,7 @@ struct B {
     return x.getY()
   }
 
-  func setXx(y: Int) mutates (A.x) {
+  func setXx(y: Int) mutates (x) {
     x.setX(x: y)
   }
 }
@@ -48,7 +48,7 @@ C :: (any) {
     return a.x
   }
 
-  public func setAx(x: Int) mutates (A.x) {
+  public func setAx(x: Int) mutates (a) {
     a.x = x
   }
 
@@ -56,7 +56,7 @@ C :: (any) {
     return a.y
   }
 
-  public func setAy(y: Bool) mutates (A.y) {
+  public func setAy(y: Bool) mutates (a) {
     a.y = y
   }
 
@@ -64,7 +64,7 @@ C :: (any) {
     return b.x.x
   }
 
-  public func setBxx(x: Int) mutates (A.x) {
+  public func setBxx(x: Int) mutates (b) {
     b.x.x = x
   }
 
@@ -76,19 +76,19 @@ C :: (any) {
     return b.getXx2()
   }
 
-  public func setBxx2(x: Int) mutates (A.x) {
+  public func setBxx2(x: Int) mutates (b) {
     b.setXx(y: x)
   }
 
-  public func setBxx3(x: Int) mutates (A.x) {
+  public func setBxx3(x: Int) mutates (b) {
     setB(b: &b, x: x)
   }
 
-  public func setCxx(x: Int) mutates (A.x) {
+  public func setCxx(x: Int) mutates (c) {
     c.setXx(y: x)
   }
 
-  public func setCxx2(x: Int) mutates (A.x) {
+  public func setCxx2(x: Int) mutates (b, c) {
     setB(b: &c, x: x)
   }
 
@@ -96,7 +96,7 @@ C :: (any) {
     return c.getXx()
   }
 
-  func setB(b: inout B, x: Int) mutates (A.x) {
+  func setB(b: inout B, x: Int) mutates (b) {
     b.setXx(y: x)
   }
 
@@ -104,7 +104,7 @@ C :: (any) {
     return b.x.y
   }
 
-  public func setBxy(y: Bool) mutates (A.y) {
+  public func setBxy(y: Bool) mutates (b) {
     b.x.y = y
   }
 
@@ -112,11 +112,11 @@ C :: (any) {
     return b.y
   }
 
-  public func setBy(y: Int) mutates (B.y) {
+  public func setBy(y: Int) mutates (b) {
     b.y = y
   }
 
-  public func append(x: Int) mutates (arr, Array.elements, Array.size) {
+  public func append(x: Int) mutates (arr) {
     arr.add(value: x)
   }
 
@@ -140,6 +140,7 @@ C :: (any) {
 struct Array {
   var elements: [Int] = []
   var size: Int = 0
+  invariant(size == elements.size)
 
   func add(value: Int) mutates (elements, size) {
     elements[size] = value
@@ -147,7 +148,10 @@ struct Array {
   }
 
   func get(n: Int) -> Int {
-    return elements[n]
+    if (n < size) {
+      return elements[n]
+    }
+    return 0
   }
 
   func getSize() -> Int {

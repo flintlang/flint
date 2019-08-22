@@ -191,13 +191,13 @@ extension Environment {
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
           } else {
-            fatalError()
+            fatalError("Arrays only have property `size' when handling \(binaryExpression.sourceLocation)")
           }
         case .fixedSizeArrayType:
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
             return .basicType(.int)
           } else {
-            fatalError()
+            fatalError("Arrays only have property `size' when handling \(binaryExpression.sourceLocation)")
           }
         case .dictionaryType(let keyType, _):
           if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "size" {
@@ -205,7 +205,10 @@ extension Environment {
           } else if case .identifier(let identifier) = binaryExpression.rhs, identifier.name == "keys" {
             return .arrayType(keyType)
           } else {
-            fatalError()
+            fatalError("""
+                       Dictionaries only have properties `size' and `keys' \
+                       when handling \(binaryExpression.sourceLocation)
+                       """)
           }
         default:
           return type(of: binaryExpression.rhs,
