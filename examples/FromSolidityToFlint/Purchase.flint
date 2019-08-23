@@ -1,3 +1,6 @@
+//// #456 issue with send
+//// #471 with init
+
 contract Purchase (Created, Locked, Inactive) {
   var value : Wei
   var seller : Address
@@ -14,48 +17,70 @@ contract Purchase (Created, Locked, Inactive) {
 
 
 Purchase@(any) :: caller <- (any) {
+
+  ///////////////////////////#472
+  @payable
   public init(implicit _value : inout Wei)
   mutates (Wei.rawValue)
   pre (_value > 0)
   pre (_value.rawValue == 2 * (_value.rawValue / 2))
 
-  post (seller == caller && value == _value.rawValue / 2)
+  // post (seller == caller && value.rawValue == prev(_value.rawValue) / 2)
   {
     self.seller = caller
-    let _amount: Int = _value.rawValue / 2
-    self.value = Wei(0)
-    self.value.transfer(source: &_value, amount: _amount)
+    let amountToTransfer: Int = _value.rawValue / 2
+    // assert (2 * amountToTransfer == _value.rawValue)
 
-    self.value = Wei(&_value, _amount)
+    self.value = Wei(0)
+
+    self.value.transfer(source: &_value, amount: amountToTransfer)
+
+    // self.value = Wei(&_value, amountToTransfer)
+    // self.value = Wei(source: &_value)
     self.balance = Wei(0)
-    assert (2 * self.value.rawValue == _value.rawValue)
 
     become Created
   }
-}
 
-Purchase@(Created) :: (seller) {
-  public func abort()
-  post (self.balance == 0)
+  @payable
+  public func init_tester(implicit _value : inout Wei)
+  mutates (Wei.rawValue, value)
+  pre (_value.rawValue == 2 * (_value.rawValue / 2))
+
   {
-    emit Aborted()
+    let amountToTransfer: Int = _value.rawValue / 2
+    assert (2 * amountToTransfer == _value.rawValue)
 
-    // let b : Int = self.balance
-    send(seller, &balance)
-    become Inactive
+    value.transfer(source: &_value, amount: amountToTransfer)
+
   }
 }
+
+
+///////////////#456
+// Purchase@(Created) :: (seller) {
+//   public func abort()
+//   mutates (value, seller, buyer, balance)
+//   post (self.balance == 0)
+//   {
+//     emit Aborted()
+//
+//     // let b : Int = self.balance
+//     send(seller, &balance)
+//     become Inactive
+//   }
+// }
 
 Purchase@(Created) :: caller <- (any) {
   @payable
   public func confirmPurchase(implicit _value : inout Wei)
-  mutates (buyer)
-  pre (buyer == 0x0)
-  pre (_value.getRawValue() == 2 * self.value.getRawValue())
+  mutates (buyer, Wei.rawValue, balance)
+  pre (buyer == 0x00000_00000_00000_00000_00000_00000_00000_00000)
 
+  pre (_value.rawValue == 2 * value.rawValue)
   post (buyer == caller)
   {
-    assert (_value.getRawValue() == 2 * self.value.getRawValue())
+    assert (_value.getRawValue() == 2 * value.rawValue)
     emit PurchaseConfirmed()
     self.buyer = caller
     balance.transfer(source: &_value)
@@ -63,8 +88,10 @@ Purchase@(Created) :: caller <- (any) {
   }
 }
 
+//// #456
 Purchase@(Locked) :: (buyer) {
   public func confirmReceived()
+  mutates (value, seller, buyer, balance)
   post (self.balance == 0)
   {
     emit ItemReceived()

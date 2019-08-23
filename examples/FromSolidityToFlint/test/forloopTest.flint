@@ -1,0 +1,17 @@
+contract A {
+  var arr1: Int[10] = []
+}
+
+A :: (any) {
+  public init() {}
+
+    func joinedAlready(participant: Int) -> Bool
+    {
+      for var i: Int in arr1 {
+        if i == participant {
+          return true
+        }
+      }
+      return false
+    }
+}

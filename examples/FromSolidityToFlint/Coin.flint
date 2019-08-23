@@ -1,3 +1,5 @@
+//// invalid way to express numbers: 1e60
+
 contract Coin {
     var minter : Address
     var balance: [Address : Int] = [:]
@@ -9,18 +11,33 @@ Coin :: caller <- (any) {
         self.minter = caller
     }
 
-    public func mint(receiver : Address, amount: Int) mutates (balance){
-        assert (caller == minter)
-        assert (amount < 1e60)
 
-        balance[receiver] += amount
-    }
+    public func send(receiver : Address, amount : Int)
+    mutates(balance)
+    pre (amount <= balance[caller])
+    pre (caller != receiver)
 
-    public func send(receiver : Address, amount : Int) mutates(balance){
+    post (balance[caller] == prev(balance[caller]) - amount)
+    post (balance[receiver] == prev(balance[receiver]) + amount)
+    {
         assert (amount <= balance[caller])
 
         balance[caller] -= amount
         balance[receiver] += amount
         emit Sent(from: caller, to: receiver, amount: amount)
     }
+}
+
+
+Coin :: (minter) {
+
+      public func mint(receiver : Address, amount: Int)
+      mutates (balance)
+      pre (amount < 1e60)
+      post (balance[receiver] == prev(balance[receiver] + amount))
+      {
+          assert (amount < 1e60)
+
+          balance[receiver] += amount
+      }
 }

@@ -1,3 +1,9 @@
+//// cannot get hashed value
+//// can we get a contract using the address #473. Can change function verifyInput
+
+
+
+
 //trait here useless
 // contract trait MachineLearningSolutionAttemp {
 //   var applicant: Address
@@ -36,17 +42,27 @@ MachineLearningVerification@(any) :: caller <- (any) {
 MachineLearningVerification@(NotExpired) :: caller <- (any) {
   // wrong function
   public func verifyInput(applicantContract: Address, hashedValue: String)
-  mutates (claimed, winningContract)
+  mutates (claimed, winningContract, author, modelData, authorContribution, Wei.rawValue, winner)
+  pre (claimed == false)
+
+  post (hashedValue == hashOfCorrectOutput ==> claimed == true)
+  post (hashedValue == hashOfCorrectOutput ==> winningContract == applicantContract)
+  post (hashedValue == hashOfCorrectOutput ==> authorContribution.rawValue == 0)
+  
+  post (hashedValue != hashOfCorrectOutput ==> claimed == prev(claimed))
+  post (hashedValue != hashOfCorrectOutput ==> winningContract == prev(winningContract))
+  post (hashedValue != hashOfCorrectOutput ==> authorContribution.rawValue == prev(authorContribution.rawValue))
+
   {
-  //   assert(claimed == false)
-  //   let hashOfCorrectOutput: String = soliditySelectorHex(modelData) // this function does not work
-  //
-  //   if hashedValue == hashOfCorrectOutput {
-  //     self.claimed == true
-  //     self.winningContract = applicantContract
-  //
-  //     send(caller, authorContribution)
-  //   }
+    assert(claimed == false)
+    let hashOfCorrectOutput: String = soliditySelectorHex(modelData) // this function does not work
+
+    if hashedValue == hashOfCorrectOutput {
+      self.claimed == true
+      self.winningContract = applicantContract
+
+      send(caller, authorContribution)
+    }
   }
 }
 
@@ -59,6 +75,7 @@ MachineLearningVerification@(NotExpired) :: (author) {
   @payable
   public func increaseAuthorContribution(implicit value: inout Wei)
   mutates (Wei.rawValue, authorContribution)
+  post (authorContribution.rawValue == prev(authorContribution.rawValue) + prev(value.rawValue))
   {
     authorContribution.transfer(source: &value)
   }

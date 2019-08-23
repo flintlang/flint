@@ -58,7 +58,8 @@ IntergrationExample :: (any) {
   }
 
 }
-123
+
+
 IntergrationExample :: (getAdmin) {
 //   func handleTiers(tier: Tier, caller: Address) {
 //     //NOT implemented int the example
