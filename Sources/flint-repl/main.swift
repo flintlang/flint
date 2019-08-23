@@ -21,9 +21,10 @@ func main() {
   }.run()
 }
 
-func main_d() throws {
-
-  let repl = REPL(contractFilePath: Path.getFullUrl(path: "repl_eval/Counter.flint").absoluteString,
+func mainTest() throws {
+  let contractFilePath = Path.getFullUrl(path: "examples/valid/counter.flint").path
+  print(contractFilePath)
+  let repl = REPL(contractFilePath: contractFilePath,
                   contractAddress: "")
   do {
     try repl.run()
@@ -33,4 +34,4 @@ func main_d() throws {
 }
 
 main()
-//try main_d()
+//try mainTest()
