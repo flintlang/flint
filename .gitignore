@@ -11,6 +11,7 @@ venv
 /.vscode
 /temp
 *.opcode
+*.bin
 
 *.sol
 !sol_emitter.sol
