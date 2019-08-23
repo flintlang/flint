@@ -1,25 +1,60 @@
-contract A {
-  var as2: [Int] = []
+// contract A {
+//   var as2: [Int] = []
+// }
+//
+// A :: (any) {
+//   public init() {}
+//
+//     public func join (a: Int) {
+//       as2[as2.size] = a
+//     }
+//   // public func(a: Int)
+//   // {
+//   //   for _A: Int in as {
+//   //     if _A == a {
+//   //       return true
+//   //     }
+//   //   }
+//   //   return false
+//   // }
+//
+//   // returnarray?
+//   public func ret() -> [Int] {
+//     return as2
+//   }
+// }
+
+
+contract MiniDAO {
+  var balances: [Address: Int]
+  var total: Wei
 }
 
-A :: (any) {
-  public init() {}
 
-    public func join (a: Int) {
-      as2[as2.size] = a
-    }
-  // public func(a: Int)
-  // {
-  //   for _A: Int in as {
-  //     if _A == a {
-  //       return true
-  //     }
-  //   }
-  //   return false
-  // }
-
-  // returnarray?
-  public func ret() -> [Int] {
-    return as2
+MiniDAO :: (any) {
+  public init()
+  mutates (Wei.rawValue)
+  {
+    self.balances = [:]
+    self.total = Wei(0)
   }
+}
+
+contract Attacker {
+  var stack: Int = 0
+  let stackLimit: Int = 10
+  var amount: Int
+  var dao: MiniDAO
+}
+
+Attacker :: caller <- (any) {
+  @payable
+  public init(implicit value: inout Wei)
+  mutates (Wei.rawValue, MiniDAO.total, MiniDAO.balances)
+  pre (value.rawValue > 0)
+  {
+    self.dao = MiniDAO()
+    self.amount = value.rawValue
+  }
+
 }
