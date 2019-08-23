@@ -33,7 +33,7 @@ func main() {
   }.run()
 }
 
-func main_d() throws {
+func mainTest() throws {
   let fileName = Path.getFullUrl(path: "examples/valid/counter.flint").absoluteString
   let inputFiles = [Path.getFullUrl(path: "examples/valid/counter.flint")]
   let sourceCode = try String(contentsOf: inputFiles[0])
@@ -53,5 +53,5 @@ func main_d() throws {
   }
 }
 
-//try main_d()
+//try mainTest()
 main()
