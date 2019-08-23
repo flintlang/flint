@@ -83,10 +83,10 @@ script:
 class FlintProgramme(Programme):
     def compile(self) -> MoveIRProgramme:
         process = subprocess.Popen([
-            f"./.build/debug/flintc",
+            f"./.build/release/flintc",
             "--target", "move", "--no-stdlib", "--emit-ir", "--skip-verifier", str(self.path)
-        ], stdout=subprocess.PIPE)
-        output = process.stdout.read()
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = process.stdout.read() + process.stderr.read()
         if b"Produced binary" not in output:
             raise FlintCompilationError(output.decode("utf8"))
         return MoveIRProgramme(Path("./bin/main.mvir"))
@@ -112,7 +112,7 @@ class BehaviourTest(NamedTuple):
         try:
             test = self.programme.compile()
         except FlintCompilationError as e:
-            TestFormatter.failed(self.programme.name, str(e))
+            TestFormatter.failed(self.programme.name, f"Flint Compilation Error: `{e !s}`")
             return False
         if self.testsuite:
             test.with_testsuite(self.testsuite)
@@ -121,7 +121,7 @@ class BehaviourTest(NamedTuple):
         try:
             test.run()
         except MoveRuntimeError as e:
-            TestFormatter.failed(self.programme.name, str(e))
+            TestFormatter.failed(self.programme.name, f"Move Runtime Error: `{e !s}`")
             return False
         TestFormatter.passed(self.programme.name)
         return True
@@ -165,10 +165,11 @@ class TestRunner(NamedTuple):
     default_path = Path("Tests/MoveTests/BehaviourTests/tests")
 
     @classmethod
-    def from_all(cls):
+    def from_all(cls, names=[]):
         return TestRunner([BehaviourTest.from_name(file.stem)
                            for file in cls.default_path.iterdir()
-                           if file.suffix.endswith("flint")])
+                           if file.suffix.endswith("flint")
+                           if not names or file.stem in names])
 
     def run(self):
         passed = set()
@@ -178,10 +179,11 @@ class TestRunner(NamedTuple):
                     passed.add(test)
             except BaseException as e:
                 print(f"Unexpected error `{e}`. Assuming failure")
-                raise e from e
 
-        shutil.rmtree(MoveIRProgramme.libra_path / MoveIRProgramme.temporary_test_path)
-        shutil.rmtree(self.default_path / "temp")
+        try:
+            shutil.rmtree(MoveIRProgramme.libra_path / MoveIRProgramme.temporary_test_path)
+            shutil.rmtree(self.default_path / "temp")
+        except: pass
 
         failed = set(self.tests) - passed
         if failed:
@@ -197,4 +199,4 @@ if __name__ == '__main__':
     if not Path(MoveIRProgramme.libra_path).exists():
         TestFormatter.not_configured()
         sys.exit(0)
-    sys.exit(TestRunner.from_all().run())
+    sys.exit(TestRunner.from_all(sys.argv[1:]).run())

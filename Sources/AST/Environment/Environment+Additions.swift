@@ -216,7 +216,13 @@ extension Environment {
 
   /// Add a property to a type.
   func addProperty(_ property: Property, enclosingType: RawTypeIdentifier) {
-    if types[enclosingType]!.properties[property.identifier.name] == nil {
+    guard let type = types[enclosingType] else {
+      fatalError("""
+                 Encoutered Property `\(property.identifier.name)': \(property.type?.name ?? "<Unknown>") \
+                 on unrecognised type `\(enclosingType)' whilst handling \(property.sourceLocation)
+                 """)
+    }
+    if type.properties[property.identifier.name] == nil {
       types[enclosingType]!.properties[property.identifier.name] = PropertyInformation(property: property)
     }
   }

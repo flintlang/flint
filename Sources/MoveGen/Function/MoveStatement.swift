@@ -42,8 +42,10 @@ struct MoveIfStatement {
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     let condition = MoveExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
 
+    let outerParameters = functionContext.scopeContext.parameters
     let functionContext = functionContext
     functionContext.scopeContext = ifStatement.ifBodyScopeContext!
+    functionContext.scopeContext.parameters = outerParameters
 
     let body = functionContext.withNewBlock {
       ifStatement.body.forEach { statement in
@@ -53,6 +55,7 @@ struct MoveIfStatement {
 
     if !ifStatement.elseBody.isEmpty {
       functionContext.scopeContext = ifStatement.elseBodyScopeContext!
+      functionContext.scopeContext.parameters = outerParameters
       let elseBody = functionContext.withNewBlock {
         ifStatement.elseBody.forEach { statement in
           functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
@@ -70,8 +73,10 @@ struct MoveForStatement {
   var forStatement: ForStatement
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
+    let outerParameters = functionContext.scopeContext.parameters
     let functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
+    functionContext.scopeContext.parameters = outerParameters
 
     switch forStatement.iterable {
     case .identifier(let arrayIdentifier):

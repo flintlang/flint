@@ -129,7 +129,6 @@ class FunctionContext: CustomStringConvertible {
     return doCatchStatementStack.last
   }
 
-  // Maybe rename to reflect checks if id is a MoveIR reference?
   func isReferenceParameter(identifier: AST.Identifier) -> Bool {
     return scopeContext.parameters.contains(where: { (parameter: Parameter) in
       if parameter.identifier.name == identifier.name {

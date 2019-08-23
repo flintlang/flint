@@ -39,6 +39,33 @@ extension MovePreprocessor {
     return ASTPassResult(element: expression, diagnostics: [], passContext: updatedContext)
   }
 
+  func expandProperties(_ expression: Expression, passContext: inout ASTPassContext) -> Expression {
+    switch expression {
+    case .identifier(let identifier):
+      guard let scopeContext = passContext.scopeContext else { break }
+      if let type = scopeContext.type(for: identifier.name),
+         !type.isInout {
+        // Handle `x.y` when x is not a reference
+        // FIXME cannot currently handle self in constructors as cannot tell if has been constructed yet
+        return preAssign(expression, passContext: &passContext)
+      } else if identifier.enclosingType != nil {
+        // Handle x.y when x is implicitly self.x
+        return preAssign(expression, passContext: &passContext)
+      }
+    case .binaryExpression(var binary):
+      if binary.opToken == .dot {
+        binary.lhs = expandProperties(binary.lhs, passContext: &passContext)
+        return preAssign(.binaryExpression(binary), passContext: &passContext)
+      } else {
+        binary.lhs = expandProperties(binary.lhs, passContext: &passContext)
+        binary.rhs = expandProperties(binary.rhs, passContext: &passContext)
+        return preAssign(.binaryExpression(binary), passContext: &passContext)
+      }
+    default: break
+    }
+    return expression
+  }
+
   public func process(binaryExpression: BinaryExpression,
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     var passContext = passContext
@@ -56,23 +83,12 @@ extension MovePreprocessor {
       passContext.functionCallReceiverTrail = trail + [binaryExpression.lhs]
 
       switch binaryExpression.lhs {
-      case .identifier(let identifier):
-        guard let scopeContext = passContext.scopeContext else { break }
-        if let type = scopeContext.type(for: identifier.name),
-           !type.isInout {
-          // Handle `x.y` when x is not a reference
-          // FIXME cannot currently handle self as cannot tell if has been constructed yet
-          binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
-        } else if identifier.enclosingType != nil {
-          // Handle x.y when x is implicitly self.x
-          if binaryExpression.opToken == .dot {
-            binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
-          }
-        }
+      case .identifier:
+        binaryExpression.lhs = expandProperties(binaryExpression.lhs, passContext: &passContext)
       case .binaryExpression(let binary):
         if binary.opToken == .dot {
-          // Handle x.y.z
-          binaryExpression.lhs = preAssign(binaryExpression.lhs, passContext: &passContext)
+          // Handle w.x...y.z
+          binaryExpression.lhs = expandProperties(binaryExpression.lhs, passContext: &passContext)
         }
       default: break
       }
@@ -103,6 +119,7 @@ extension MovePreprocessor {
     let isGlobalFunctionCall = self.isGlobalFunctionCall(functionCall, in: passContext)
 
     let scopeContext = passContext.scopeContext!
+    var passContext = passContext
 
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
       // Don't further process runtime functions.
@@ -139,6 +156,9 @@ extension MovePreprocessor {
         if !isGlobalFunctionCall {
           var receiver = constructExpression(from: receiverTrail)
           let type: RawType
+
+          receiver = expandProperties(receiver, passContext: &passContext)
+
           switch receiver {
           case .`self`:
             type = scopeContext.type(for: "self")
@@ -176,7 +196,7 @@ extension MovePreprocessor {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
-    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
+    passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
   }
 
@@ -263,28 +283,42 @@ extension MovePreprocessor {
     return false
   }
 
-  public func postProcess(functionArgument: FunctionArgument,
-                          passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
+  public func process(functionArgument: FunctionArgument,
+                      passContext: ASTPassContext) -> ASTPassResult<FunctionArgument> {
     var functionArgument = functionArgument
     var passContext = passContext
-    switch functionArgument.expression {
+
+    var expression: Expression
+    if case .inoutExpression(let inOut) = functionArgument.expression {
+      expression = inOut.expression
+    } else {
+      expression = functionArgument.expression
+    }
+
+    switch expression {
     case .identifier(let identifier):
       // Handle x where x is implicitly self.x
       if identifier.enclosingType != nil {
-        functionArgument.expression = preAssign(functionArgument.expression, passContext: &passContext)
+        expression = preAssign(expression, passContext: &passContext)
       }
     case .binaryExpression(let binary):
       // Handle x.y
       if binary.opToken == .dot {
-        functionArgument.expression = preAssign(functionArgument.expression, passContext: &passContext)
+        expression = expandProperties(expression, passContext: &passContext)
       }
-    default: break
+    default:
+      if case .inoutExpression = functionArgument.expression {
+        expression = functionArgument.expression
+      }
     }
+
+    functionArgument.expression = expression
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
   func preAssign(_ element: Expression, passContext: inout ASTPassContext) -> Expression {
-    let newId: Identifier
+    let temporaryId: Identifier
+    // Check if this expression's already been assigned
     if let statement: Statement = passContext.preStatements.first(where: { (statement: Statement) in
       if case .expression(.binaryExpression(let binary)) = statement,
          binary.opToken == .equal,
@@ -301,41 +335,42 @@ extension MovePreprocessor {
             case .identifier(let identifier) = binary.lhs else {
         fatalError("Cannot find expected identifier for `\(element)`")
       }
-      newId = identifier
+      temporaryId = identifier
     } else {
+      // Otherwise create a new identifier and handle set-up and clean up
       guard let environment = passContext.environment,
             var scopeContext = passContext.scopeContext,
             let enclosingType = passContext.enclosingTypeIdentifier?.name else {
         print("Cannot infer type for \(element.sourceLocation)")
         exit(1)
       }
-      newId = scopeContext.freshIdentifier(sourceLocation: element.sourceLocation)
+      temporaryId = scopeContext.freshIdentifier(sourceLocation: element.sourceLocation)
       let type = environment.type(of: element,
                                   enclosingType: enclosingType,
                                   scopeContext: scopeContext)
       let declaration: VariableDeclaration
       let assigned: Expression
       if type.isBuiltInType {
-        declaration = VariableDeclaration(identifier: newId,
+        declaration = VariableDeclaration(identifier: temporaryId,
                                           type: Type(inferredType: type,
-                                                     identifier: newId))
+                                                     identifier: temporaryId))
         assigned = element
       } else {
-        declaration = VariableDeclaration(identifier: newId,
+        declaration = VariableDeclaration(identifier: temporaryId,
                                           type: Type(inferredType: .inoutType(type),
-                                                     identifier: newId))
+                                                     identifier: temporaryId))
         assigned = .inoutExpression(InoutExpression(
             ampersandToken: Token(kind: .punctuation(.ampersand),
                                   sourceLocation: element.sourceLocation),
             expression: element
         ))
         passContext.postStatements.append(Statement.expression(
-            .rawAssembly("release(move(\(Mangler.mangleName(newId.name))))", resultType: nil)
+            .rawAssembly("release(move(\(Mangler.mangleName(temporaryId.name))))", resultType: nil)
         ))
       }
 
       passContext.preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-          lhs: .identifier(newId),
+          lhs: .identifier(temporaryId),
           op: Token(kind: .punctuation(.equal), sourceLocation: element.sourceLocation),
           rhs: assigned
       ))))
@@ -343,6 +378,6 @@ extension MovePreprocessor {
       passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
       passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
     }
-    return .identifier(newId)
+    return .identifier(temporaryId)
   }
 }

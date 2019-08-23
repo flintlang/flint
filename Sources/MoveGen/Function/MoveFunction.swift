@@ -107,8 +107,8 @@ struct MoveFunction {
     let returnType = functionDeclaration.signature.resultType != nil && withReturn
         ? ": \(resultCanonicalType!.render(functionContext: functionContext))"
         : ""
-    let tags = functionDeclaration.compilerTags.joined(separator: " ")
-    return "\(modifiers)\(name)(\(parametersString))\(returnType) \(tags)"
+    let tags = functionDeclaration.compilerTags.reduce("") { $0 + " " + $1 }
+    return "\(modifiers)\(name)(\(parametersString))\(returnType)\(tags)"
   }
 
   /// The string representation of this function's signature, used for generating a IR interface.
