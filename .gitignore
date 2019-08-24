@@ -12,6 +12,8 @@ venv
 /temp
 *.opcode
 *.bin
+file
+solc-static-linux
 
 *.sol
 !sol_emitter.sol
