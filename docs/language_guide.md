@@ -1324,11 +1324,9 @@ Functions can then be called from within a contract protection block with the sa
 @payable
     public func Apply(Name: String, implicit Fee: Wei ) mutates (Member){
       var thisMember: Member
-      var result: Bool = false
       var stake: Int = 0
 
       thisMember = Member(Name, caller)
-     
       stake = Admission
       bankroll(applicant: caller, amount: stake)    
     }
