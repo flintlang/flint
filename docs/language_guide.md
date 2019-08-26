@@ -1322,20 +1322,15 @@ Functions can then be called from within a contract protection block with the sa
 
 ````
 @payable
-    public func Apply(Name: String, implicit Fee: Wei ) -> Bool  mutates (Member){
+    public func Apply(Name: String, implicit Fee: Wei ) mutates (Member){
       var thisMember: Member
       var result: Bool = false
       var stake: Int = 0
 
       thisMember = Member(Name, caller)
-      Roster[caller] = thisMember
-
-      if (Fee.getRawValue() >= EntryPrice) {
-        stake = Admission
-        bankroll(applicant: caller, amount: stake)
-        result = true
-      }
-      return result
+     
+      stake = Admission
+      bankroll(applicant: caller, amount: stake)    
     }
 
   func bankroll (applicant: Address, amount: Int ) -> Int mutates (balances) {
