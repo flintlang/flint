@@ -61,6 +61,7 @@ utils/block/go-ethereum/*
 bin/
 contracts/
 build/
+libra/
 
 *.generated.swift
 Package.resolved
