@@ -78,19 +78,7 @@ public struct MovePreprocessor: ASTPass {
              callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
              scopeContext: passContext.scopeContext!),
          .basicType(.void) != function.resultType {
-        let identifier = passContext.scopeContext!.freshIdentifier(sourceLocation: statement.sourceLocation)
-
-        let variableDeclaration: Expression = .variableDeclaration(VariableDeclaration(
-            modifiers: [],
-            declarationToken: nil,
-            identifier: identifier,
-            type: AST.Type(inferredType: function.resultType, identifier: identifier)
-        ))
-        statement = .expression(.binaryExpression(
-            BinaryExpression(lhs: variableDeclaration,
-                             op: Token(kind: .punctuation(.equal), sourceLocation: statement.sourceLocation),
-                             rhs: expression)
-        ))
+        statement = Move.release(expression: expression, type: function.resultType)
       }
     }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)

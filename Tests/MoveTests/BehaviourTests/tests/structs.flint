@@ -81,19 +81,19 @@ C :: (any) {
     return b.getXx2()
   }
 
-  public func setBxx2(x: Int) mutates (A.x) {
+  public func setBxx2(x: Int) mutates (b) {
     b.setXx(y: x)
   }
 
-  public func setBxx3(x: Int) mutates (A.x) {
+  public func setBxx3(x: Int) mutates (b, a) {
     setB(b: &b, x: x)
   }
 
-  public func setCxx(x: Int) mutates (A.x) {
+  public func setCxx(x: Int) mutates (c) {
     c.setXx(y: x)
   }
 
-  public func setCxx2(x: Int) mutates (A.x) {
+  public func setCxx2(x: Int) mutates (b) {
     setB(b: &c, x: x)
   }
 
@@ -101,7 +101,7 @@ C :: (any) {
     return c.getXx()
   }
 
-  func setB(b: inout B, x: Int) mutates (A.x) {
+  func setB(b: inout B, x: Int) mutates (b) {
     b.setXx(y: x)
   }
 
@@ -110,6 +110,7 @@ C :: (any) {
   }
 
   public func setBxy(y: Bool) mutates (b) {
+    let marker: Int = 1000020
     b.x.y = y
   }
 
@@ -121,7 +122,7 @@ C :: (any) {
     b.y = y
   }
 
-  public func append(x: Int) mutates (arr, Maybe.element, Maybe.size) {
+  public func append(x: Int) mutates (arr) {
     arr.add(value: x)
   }
 

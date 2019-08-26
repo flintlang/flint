@@ -12,7 +12,7 @@ struct MoveBinaryExpression {
   var binaryExpression: BinaryExpression
   var position: Position
 
-  init(binaryExpression: BinaryExpression, position: Position = .left) {
+  init(binaryExpression: BinaryExpression, position: Position = .normal) {
     self.binaryExpression = binaryExpression
     self.position = position
   }

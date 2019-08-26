@@ -39,7 +39,9 @@ extension MovePreprocessor {
     return ASTPassResult(element: expression, diagnostics: [], passContext: updatedContext)
   }
 
-  func expandProperties(_ expression: Expression, passContext: inout ASTPassContext) -> Expression {
+  func expandProperties(_ expression: Expression,
+                        passContext: inout ASTPassContext,
+                        borrowLocal: Bool = false) -> Expression {
     switch expression {
     case .identifier(let identifier):
       guard let scopeContext = passContext.scopeContext else { break }
@@ -47,19 +49,19 @@ extension MovePreprocessor {
          !type.isInout {
         // Handle `x.y` when x is not a reference
         // FIXME cannot currently handle self in constructors as cannot tell if has been constructed yet
-        return preAssign(expression, passContext: &passContext)
+        return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
       } else if identifier.enclosingType != nil {
         // Handle x.y when x is implicitly self.x
-        return preAssign(expression, passContext: &passContext)
+        return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
       }
     case .binaryExpression(var binary):
       if binary.opToken == .dot {
-        binary.lhs = expandProperties(binary.lhs, passContext: &passContext)
-        return preAssign(.binaryExpression(binary), passContext: &passContext)
+        binary.lhs = expandProperties(binary.lhs, passContext: &passContext, borrowLocal: borrowLocal)
+        return preAssign(.binaryExpression(binary), passContext: &passContext, borrowLocal: borrowLocal)
       } else {
-        binary.lhs = expandProperties(binary.lhs, passContext: &passContext)
-        binary.rhs = expandProperties(binary.rhs, passContext: &passContext)
-        return preAssign(.binaryExpression(binary), passContext: &passContext)
+        binary.lhs = expandProperties(binary.lhs, passContext: &passContext, borrowLocal: borrowLocal)
+        binary.rhs = expandProperties(binary.rhs, passContext: &passContext, borrowLocal: borrowLocal)
+        return preAssign(.binaryExpression(binary), passContext: &passContext, borrowLocal: borrowLocal)
       }
     default: break
     }
@@ -289,8 +291,10 @@ extension MovePreprocessor {
     var passContext = passContext
 
     var expression: Expression
+    var borrowLocal = false
     if case .inoutExpression(let inOut) = functionArgument.expression {
       expression = inOut.expression
+      borrowLocal = true
     } else {
       expression = functionArgument.expression
     }
@@ -299,12 +303,12 @@ extension MovePreprocessor {
     case .identifier(let identifier):
       // Handle x where x is implicitly self.x
       if identifier.enclosingType != nil {
-        expression = preAssign(expression, passContext: &passContext)
+        expression = preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
       }
     case .binaryExpression(let binary):
       // Handle x.y
       if binary.opToken == .dot {
-        expression = expandProperties(expression, passContext: &passContext)
+        expression = expandProperties(expression, passContext: &passContext, borrowLocal: borrowLocal)
       }
     default:
       if case .inoutExpression = functionArgument.expression {
@@ -316,18 +320,36 @@ extension MovePreprocessor {
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
-  func preAssign(_ element: Expression, passContext: inout ASTPassContext) -> Expression {
+  func preAssign(_ element: Expression, passContext: inout ASTPassContext, borrowLocal: Bool = false) -> Expression {
+    guard let environment = passContext.environment,
+          var scopeContext = passContext.scopeContext,
+          let enclosingType = passContext.enclosingTypeIdentifier?.name else {
+      print("Cannot infer type for \(element.sourceLocation)")
+      exit(1)
+    }
+
+    let type = environment.type(of: element,
+                                enclosingType: enclosingType,
+                                scopeContext: scopeContext)
+
+    let expression: Expression
+    if borrowLocal || type.isBuiltInType {
+      expression = element
+    } else {
+      expression = .inoutExpression(InoutExpression(
+          ampersandToken: Token(kind: .punctuation(.ampersand),
+                                sourceLocation: element.sourceLocation),
+          expression: element
+      ))
+    }
+
     let temporaryId: Identifier
     // Check if this expression's already been assigned
     if let statement: Statement = passContext.preStatements.first(where: { (statement: Statement) in
       if case .expression(.binaryExpression(let binary)) = statement,
          binary.opToken == .equal,
          case .identifier = binary.lhs {
-        if case .inoutExpression(let expression) = binary.rhs,
-           expression.expression == element {
-          return true
-        }
-        return binary.rhs == element
+        return binary.rhs == expression
       }
       return false
     }) {
@@ -338,45 +360,37 @@ extension MovePreprocessor {
       temporaryId = identifier
     } else {
       // Otherwise create a new identifier and handle set-up and clean up
-      guard let environment = passContext.environment,
-            var scopeContext = passContext.scopeContext,
-            let enclosingType = passContext.enclosingTypeIdentifier?.name else {
-        print("Cannot infer type for \(element.sourceLocation)")
-        exit(1)
-      }
       temporaryId = scopeContext.freshIdentifier(sourceLocation: element.sourceLocation)
-      let type = environment.type(of: element,
-                                  enclosingType: enclosingType,
-                                  scopeContext: scopeContext)
       let declaration: VariableDeclaration
       let assigned: Expression
-      if type.isBuiltInType {
+      if type.isBuiltInType || borrowLocal {
         declaration = VariableDeclaration(identifier: temporaryId,
                                           type: Type(inferredType: type,
                                                      identifier: temporaryId))
-        assigned = element
       } else {
         declaration = VariableDeclaration(identifier: temporaryId,
                                           type: Type(inferredType: .inoutType(type),
                                                      identifier: temporaryId))
-        assigned = .inoutExpression(InoutExpression(
-            ampersandToken: Token(kind: .punctuation(.ampersand),
-                                  sourceLocation: element.sourceLocation),
-            expression: element
-        ))
-        passContext.postStatements.append(Statement.expression(
-            .rawAssembly("release(move(\(Mangler.mangleName(temporaryId.name))))", resultType: nil)
-        ))
+        passContext.postStatements.append(Move.release(expression: .identifier(temporaryId),
+                                                       type: .inoutType(type)))
       }
 
       passContext.preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
           lhs: .identifier(temporaryId),
           op: Token(kind: .punctuation(.equal), sourceLocation: element.sourceLocation),
-          rhs: assigned
+          rhs: expression
       ))))
       passContext.scopeContext?.localVariables.append(declaration)
       passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
       passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
+    }
+
+    if borrowLocal {
+      return .inoutExpression(InoutExpression(
+          ampersandToken: Token(kind: .punctuation(.and),
+                                sourceLocation: element.sourceLocation),
+          expression: .identifier(temporaryId)
+      ))
     }
     return .identifier(temporaryId)
   }

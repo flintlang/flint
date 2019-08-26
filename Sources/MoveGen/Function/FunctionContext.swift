@@ -166,7 +166,7 @@ class FunctionContext: CustomStringConvertible {
     referencesToRelease.forEach { reference in
       let referenceExpression: MoveIR.Expression
           = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
-      self.emit(.inline("release(\(referenceExpression))"))
+      self.emit(.inline("_ = \(referenceExpression)"))
     }
   }
 }
