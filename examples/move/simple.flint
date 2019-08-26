@@ -1,11 +1,21 @@
 contract Simple {
   visible var count: Int = 0
+  var owner: Address
 }
 
-Simple :: (any) {
-  public init() { }
+Simple :: caller <- (any) {
+  public init() {
+    owner = caller
+  }
+}
 
+
+Simple :: caller <- (owner) {
   public func increment(by: Int = 1) mutates (count) {
     count += by
+  }
+
+  public func reset() mutates (count) {
+    count = 0
   }
 }

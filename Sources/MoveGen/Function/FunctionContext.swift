@@ -163,7 +163,7 @@ class FunctionContext: CustomStringConvertible {
     let referencesToRelease: [AST.Identifier] = scopeContext.parameters
         .filter { $0.isInout }
         .map { $0.identifier }
-    referencesToRelease.forEach { reference in
+    for reference in referencesToRelease {
       let referenceExpression: MoveIR.Expression
           = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
       self.emit(.inline("_ = \(referenceExpression)"))
