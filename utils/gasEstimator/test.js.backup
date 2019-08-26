@@ -1,12 +1,14 @@
 const Web3 = require('web3');
 const fs = require('fs');
 const path = require('path');
+const solc = require('solc');
 const web3 = new Web3();
-const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
-const defaultAcc = web3.personal.newAccount("");
-web3.personal.unlockAccount(defaultAcc, "", 1000);
+const eth = web3.eth;
+
+const defaultAcc = "5c624cad4352cf2a3f61a8918c0fb238604363a8";
+web3.eth.personal.unlockAccount(defaultAcc, "", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
 async function deploy_contract(abi, bytecode) {
@@ -24,7 +26,7 @@ async function deploy_contract(abi, bytecode) {
            // e.g. check tx hash on the first call (transaction send)
           if(!contract.address) {
           //console.log(contract.transactionHash) // The hash of the transaction, which deploys the contract
-         
+
           // check address on the second call (contract deployed)
           } else {
               //newContract = myContract;
@@ -38,42 +40,26 @@ async function deploy_contract(abi, bytecode) {
      });
     });
 }
-
-async function check_tx_mined(tx_hash) {
-    let txs = eth.getBlock("latest").transactions;
-    return new Promise(function(resolve, reject) {
-        while (!txs.includes(tx_hash)) {
-            txs = eth.getBlock("latest").transactions;
+async function estimate_gas(pathToContract, nameOfContract) {
+    let res_dict = {}
+    let source = fs.readFileSync(pathToContract, 'utf8');
+    let solVersion = 'v0.4.24+commit.e67f0147'
+    solc.loadRemoteVersion('latest', async (err, remoteSolc) => {
+        if (err) {
+            console.log("Error retriving remote solidity version")
+            process.exit();
         }
-        resolve("true");
+        let compiledContract = remoteSolc.compile(source, 1);
+	let abi = compiledContract.contracts[':_Interface' + nameOfContract].interface;
+    	let bytecode = "0x" + compiledContract.contracts[':' + nameOfContract].bytecode;
+    	let c = await deploy_contract(abi, bytecode);
+    	res_dict['contract'] = web3.eth.estimateGas({data: bytecode}); 
+    	res_dict["accessOutOfBounds"] = c.accessOutOfBounds.estimateGas(); 
+    	res_dict["numWrites"] = c.numWrites.estimateGas(); 
+    	res_dict["write3"] = c.write3.estimateGas(); 
+    	res_dict["increaseNumWrites"] = c.increaseNumWrites.estimateGas(); 
+    	console.log(JSON.stringify(res_dict));
     });
-}
-
-async function transactional_method(contract, methodName, args) {
-    var tx_hash = await new Promise(function(resolve, reject) {
-        contract[methodName]['sendTransaction'](...args, function(err, result) {
-            resolve(result);
-        });
-    });
-
-    let isMined = await check_tx_mined(tx_hash);
-
-    return new Promise(function(resolve, reject) {
-        resolve(tx_hash);
-    });
-}
-
-async function main() {
-	let abi = process.argv[2];
-	let bytecode  = process.argv[3];
-	let constructor_args = JSON.parse(process.argv[4]);
-	let dep_contract = await deploy_contract(abi, bytecode);
-	if (constructor_args.length > 0) {
-            await transactional_method(dep_contract, 'replConstructor', constructor_args)
-	}
-
-	console.log(dep_contract.address);
+     
 } 
-
-main()
-
+estimate_gas('main.sol', 'Test');

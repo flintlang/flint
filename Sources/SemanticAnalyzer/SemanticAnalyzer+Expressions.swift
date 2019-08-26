@@ -9,14 +9,15 @@ import AST
 import Diagnostic
 
 extension SemanticAnalyzer {
-
   public func process(binaryExpression: BinaryExpression,
                       passContext: ASTPassContext) -> ASTPassResult<BinaryExpression> {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
+    var passContext = passContext
 
     switch binaryExpression.opToken {
     case .dot:
+      passContext.functionCallReceiverTrail += [binaryExpression.lhs]
       let enclosingType = passContext.enclosingTypeIdentifier!
       let lhsType = environment.type(of: binaryExpression.lhs,
                                      enclosingType: enclosingType.name,
@@ -96,6 +97,7 @@ extension SemanticAnalyzer {
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     let environment = passContext.environment!
     var diagnostics = [Diagnostic]()
+    var functionCall = functionCall
 
     if environment.isInitializerCall(functionCall),
       !passContext.inAssignment,
@@ -104,6 +106,9 @@ extension SemanticAnalyzer {
       diagnostics.append(.noReceiverForStructInitializer(functionCall))
     }
 
+    functionCall.receiverTrail = passContext.functionCallReceiverTrail
+
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
@@ -214,7 +219,7 @@ extension SemanticAnalyzer {
     // TODO Right now there are some things the AST pass cannot check for mutation. This is currently left to the
     //  verifier, but that has the issue of the verifier not using the same test for mutation (type based rather than
     //  identifier based)
-    let isMutating: Bool = isInitialiser || passContext.functionDeclarationContext?.declaration.isMutating ?? false
+    let isMutating: Bool = isInitialiser || (passContext.functionDeclarationContext?.declaration.isMutating ?? false)
 
     if !passContext.isInEmit {
       // Find the function declaration associated with this function call.
@@ -231,11 +236,10 @@ extension SemanticAnalyzer {
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
           let disallowed: Set<String> = disallowedMutations(
-              caller: passContext.functionDeclarationContext!.declaration,
-              callerEnclosingType: enclosingType,
-              callee: matchingFunction.declaration,
-              calleeEnclosingType: functionCall.identifier.enclosingType ?? enclosingType,
-              environment: passContext.environment!
+              functionCall,
+              caller: (passContext.functionDeclarationContext!.declaration, enclosingType),
+              callee: (matchingFunction.declaration, functionCall.identifier.enclosingType ?? enclosingType),
+              passContext: passContext
           )
 
           if !disallowed.isEmpty && !isInitialiser {
@@ -314,25 +318,59 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: functionCall, diagnostics: diagnostics, passContext: passContext)
   }
 
-  private func disallowedMutations(caller: FunctionDeclaration,
-                                   callerEnclosingType: RawTypeIdentifier,
-                                   callee: FunctionDeclaration,
-                                   calleeEnclosingType: RawTypeIdentifier,
-                                   environment: Environment) -> Set<String> {
+  private func disallowedMutations(_ call: FunctionCall,
+                                   caller: (FunctionDeclaration, RawTypeIdentifier),
+                                   callee: (FunctionDeclaration, RawTypeIdentifier),
+                                   passContext: ASTPassContext) -> Set<String> {
+    guard let environment = passContext.environment,
+          let scopeContext = passContext.scopeContext else {
+      return []
+    }
+
+    let (caller, callerEnclosingType) = caller
+    let (callee, calleeEnclosingType) = callee
+
     if !callee.isMutating {
+      // If the called function doesn't mutate, we're not changing anything bad
       return []
     } else if callerEnclosingType == calleeEnclosingType {
+      // If we're in the same type, return the difference between what we can mutate and what the called function
+      //  can. This should result in the empty set if all mutated parameters are allowed to be in the calling function
       return Set(callee.mutates.map { $0.name })
           .subtracting(Set(caller.mutates.map { $0.name }))
-    } else {
-      // Cannot properly detect if valid mutation in this case, leave it for the verifier. However, if this function
-      //  is not mutating at all, we can say it's definitely bad
-      return caller.isMutating
-          ? []
-          : Set(environment.types[callerEnclosingType]?.properties
-                    .map { "\(callerEnclosingType).\($0.1.property.identifier.name)" }
-                     ?? [callerEnclosingType])
+    } else if let receiverTrail = call.receiverTrail,
+              let first: Expression = receiverTrail.first,
+              let last: Expression = receiverTrail.last {
+      switch first {
+      case .identifier(let identifier):
+        // If there is no local declaration, safely assume it is a property
+        if !scopeContext.containsDeclaration(for: identifier.name) {
+          return caller.mutates.contains(where: { $0.name == identifier.name }) ? [] : [identifier.name]
+        }
+      case .binaryExpression(let binary):
+        let mutated: Identifier
+        if case .`self` = last,
+           receiverTrail.count >= 2,
+           case .binaryExpression(let binary) = receiverTrail[receiverTrail.count - 2],
+           case .identifier(let identifier) = binary.rhs {
+          mutated = identifier
+        } else if case .identifier(let identifier) = last,
+                  !scopeContext.containsDeclaration(for: identifier.name) { // Safely assume it is a property
+          mutated = identifier
+        } else {
+          break
+        }
+
+        return caller.mutates.contains(where: { $0.name == mutated.name }) ? [] : [mutated.name]
+      default: break
+      }
+
+      // Receiver trail includes function calls or other expressions early on, we're probably okay I guess
     }
+
+    // Cannot properly detect if valid mutation in this case, leave it for the verifier. Even if this function
+    //  is not mutating at all, we can't say it's definitely bad as it might be calling a non-property
+    return []
   }
 
   // Checks whether all arguments of a function call are labeled

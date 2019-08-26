@@ -3,14 +3,13 @@ contract MajorityWithdraw (Preparing, Voting, Completed) {
 
   var participants: [Address]
   var numParticipants: Int = 0
-  var participantVotes: [Address: Bool]
-  let leader: Address
-
   invariant (numParticipants == participants.size)
-  invariant (amount.rawValue >= 0)
+
+  var participantVotes: [Address: Bool]
+
+  let leader: Address
 }
 
-//amount == 0 ==> just called init(m.leader)
 MajorityWithdraw @(any) :: (any) {
   public init(leader: Address)
     mutates (Wei.rawValue)
@@ -25,20 +24,12 @@ MajorityWithdraw @(any) :: (any) {
 
 MajorityWithdraw @(Preparing) :: (leader) {
   public func addParticipant(participant: Address)
-    mutates (participants, numParticipants) // mutates here means other fields are not changed
-    pre (arrayContains(participants, participant) == false)
+    mutates (participants, numParticipants)
 
-    post (arrayContains(participants, participant) == false ==> numParticipants == prev(numParticipants) + 1)
-    post (arrayContains(participants, participant) == false ==> participants[prev(numParticipants)] == participant)
-    post (arrayContains(participants, participant) == false ==> forall (i, Int, 0 <= i && i < numParticipants ==> participants[i] == prev(participants[i]) || i == prev(numParticipants)))
-
-    post (arrayContains(participants, participant) ==> numParticipants == prev(numParticipants))
-    post (arrayContains(participants, participant) ==> forall (i, Int, 0 <= i && i < numParticipants ==> participants[i] == prev(participants[i])))
+    post (participants.size == prev(participants.size) + 1)
   {
-    if arrayContains(participants, participant) == false {
-      participants[numParticipants] = participant
-      numParticipants += 1
-    }
+    participants[numParticipants] = participant
+    numParticipants += 1
   }
 
   public func openVoting() {
@@ -55,30 +46,20 @@ MajorityWithdraw @(Voting) :: (leader) {
 MajorityWithdraw @(Voting) :: participant <- (participants) {
   public func vote(vote: Bool)
     mutates (participantVotes)
-    pre (dictContains(participantVotes, participant))
-
-    post (dictContains(participantVotes, participant) ==> participantVotes[participant] == vote)
-    post (dictContains(participantVotes, participant) ==> forall (p, Address, dictContains(participantVotes, p) ==> (participantVotes[p] == prev(participantVotes[p]) || p == participant)))
-
-    post (dictContains(participantVotes, participant) == false ==> forall (p, Address, dictContains(participantVotes, p) ==> participantVotes[p] == prev(participantVotes[p])))
   {
-    if dictContains(participantVotes, participant) {
-      participantVotes[participant] = vote
-    }
+    participantVotes[participant] = vote
   }
 }
 
 MajorityWithdraw @(Completed) :: participant <- (participants) {
-  public func getResult() -> Bool
-  pre (numParticipants != 0)
-  // post () I don't think we have sum func in Flint
-  {
+  public func getResult() -> Bool {
     var count: Int = 0
     for let p: Address in participants {
       if participantVotes[p] {
         count += 1
       }
     }
+
     return (count * 100 / numParticipants) >= 50
   }
 }

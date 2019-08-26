@@ -1,0 +1,32 @@
+contract A {
+  // var arr1: Int[10] = []
+  var arr1: [Int] = []
+}
+
+A :: (any) {
+  public init() {}
+
+  func joinedAlready(participant: Int) -> Bool
+  post (returns (exists (i, Int, arr1[i] == participant)))
+  {
+    for var i: Int in arr1 {
+      if i == participant {
+        return true
+      }
+    }
+    return false
+  }
+
+
+  func joinedAlready2(participant: Int) -> Bool
+  post (returns (exists (i, Int, arr1[i] == participant)))
+  {
+    var res: Bool = false
+    for var i: Int in arr1 {
+      if i == participant {
+        res = true
+      }
+    }
+    return res
+  }
+}

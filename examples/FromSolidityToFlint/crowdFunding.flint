@@ -1,0 +1,103 @@
+struct Funder{
+  var addr : Address
+  var amount2 : Int
+
+  init(_addr : Address, _amount : Int)
+  // pre (_amount > 0)
+  {
+    self.addr = _addr
+    self.amount2 = _amount
+  }
+}
+
+struct Campaign {
+  var beneficiary : Address
+  var fundingGoal : Int
+  var numFunders : Int = 0
+  var amount : Int = 0
+  // var funders : [Int : Funder] = [:]
+  var funders : [Funder] = []
+
+  init(_beneficiary: Address, _fundingGoal : Int)
+  pre (_beneficiary != 0x0 && _fundingGoal >  0)
+  {
+    self.beneficiary = _beneficiary
+    self.fundingGoal = _fundingGoal
+  }
+
+  invariant (numFunders == funders.size)
+  invariant (beneficiary != 0x00000_00000_00000_00000_00000_00000_00000_00000)
+  invariant (numFunders >= 0)
+  invariant (fundingGoal > 0)
+  invariant (amount >= 0)
+}
+
+contract CrowdFunding {
+  var numCampaigns : Int
+  var campaigns : [Campaign] = []
+
+  invariant (numCampaigns == campaigns.size)
+}
+
+CrowdFunding :: (any) {
+  public func newCampaign(beneficiary : Address, goal : Int)
+  mutates(campaigns, numCampaigns, Campaign.beneficiary, Campaign.fundingGoal, Campaign.numFunders, Campaign.amount, Campaign.funders)
+  pre (beneficiary != 0x0 && goal > 0)
+  post (campaigns[numCampaigns - 1].beneficiary == beneficiary)
+  post (campaigns[numCampaigns - 1].fundingGoal == goal)
+  post (campaigns[numCampaigns - 1].numFunders == 0)
+  post (campaigns[numCampaigns - 1].amount == 0)
+
+  post (numCampaigns == prev(numCampaigns) + 1)
+  post (forall (i, Int, campaigns[i] == prev(campaigns[i]) || i == prev(numCampaigns)))
+  {
+    // campaigns[numCampaigns] = Campaign(_beneficiary: beneficiary, _fundingGoal: goal, _numFunders: 0, _amount: 0)
+    campaigns[numCampaigns] = Campaign(beneficiary, goal)
+
+    numCampaigns += 1
+  }
+
+
+  public init() {
+    self.numCampaigns = 0
+  }
+
+  public func checkGoalReached(campaignID : Int) -> Bool
+  // pre (campaignID >= 0 && campaignID < numCampaigns)
+  // post (returns (campaigns[campaignID].amount >= campaigns[campaignID].fundingGoal))
+  {
+    let c : Campaign = campaigns[campaignID]
+  //   // if c.amount < c.fundingGoal {
+  //   //   return false
+  //   // } else {return true}
+  //   // return true
+  //   return (c.amount >= c.fundingGoal)
+  //
+  }
+}
+
+CrowdFunding :: caller <- (any) {
+  // @payable
+  // public func contribute(campaignID : Int, implicit value : inout Wei)
+  public func contribute(campaignID : Int, value : Int)
+  mutates (campaigns, Funder.addr, Funder.amount2, Campaign.funders, Campaign.numFunders, Campaign.amount)
+  pre (value > 0)
+  pre (campaignID >= 0 && campaignID < campaigns.size)
+  post (campaigns[campaignID].numFunders == prev(campaigns[campaignID].numFunders) + 1)
+  post (campaigns[campaignID].amount == prev(campaigns[campaignID].amount) + value)
+  post (forall (i, Int, 0 <= i && i < campaigns.size ==> campaigns[i].numFunders == prev(campaigns[i].numFunders) || i == campaignID))
+  // post (campaigns[campaignID].funders[campaigns[campaignID].numFunders - 1].addr == caller)
+  // post (campaigns[campaignID].funders[campaigns[campaignID].numFunders - 1].amount2 == value)
+  post (forall (i, Int, forall (j, Int, campaigns[i].funders[j] == prev(campaigns[i].funders[j]) || (i == campaignID && j == campaigns[campaignID].numFunders - 1))))
+
+  {
+    let f : Funder = Funder(caller, value)
+
+    let numF : Int = campaigns[campaignID].numFunders
+    campaigns[campaignID].numFunders += 1
+    campaigns[campaignID].funders[numF] = f
+    campaigns[campaignID].amount += value
+
+    // send (campaigns[campaignID].beneficiary, &value)
+  }
+}
