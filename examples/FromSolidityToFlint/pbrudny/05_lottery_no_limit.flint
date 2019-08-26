@@ -1,3 +1,6 @@
+// issue with send() #456
+// cannnot get random number
+
 contract LotteryNoLimit{
   var owner: Address
   var users: [Address] = []
@@ -17,7 +20,7 @@ LotteryNoLimit :: caller <- (any) {
   @payable
   public func join(implicit value: inout Wei)
   mutates (users, balance, Wei.rawValue)
-  pre (value.rawValue == 0.1)
+  pre (value.rawValue == 1)
 
   post (balance.rawValue == prev(balance.rawValue) + prev(value.rawValue))
   post (users.size == prev(users.size) + 1)
@@ -25,7 +28,7 @@ LotteryNoLimit :: caller <- (any) {
   post (forall (i, Int, 0 <= i && i < users.size - 1 ==> users[i] == prev(users[i]) || i == prev(users.size)))
   {
     users[users.size] = caller
-    balance.transfer(&Wei)
+    balance.transfer(source: &value)
   }
 }
 
@@ -33,10 +36,10 @@ LotteryNoLimit :: (owner) {
   public func selectWinner()
   mutates(balance, Wei.rawValue)
   pre (users.size > 0)
-
   post (balance.rawValue == 0)
   {
-    let winner: Int = ... some random number with limit
+    // let winner: Int = ... some random number with limit
+    let winner: Int = 0
     send(users[winner], &balance)
   }
 

@@ -3,6 +3,7 @@ contract TailRecursion {
 }
 
 TailRecursion :: (any) {
+  // #438
   func sum(n: Int) -> Int
   pre (n >= 0)
   post (n == 0 ==> returns(0))
@@ -32,7 +33,7 @@ TailRecursion :: (any) {
 
 
 
-
+  // #438
   func sumTailHelper(n: Int, acc: Int) -> Int
   pre (n >= 0)
   post (n == 0 ==> returns(acc))

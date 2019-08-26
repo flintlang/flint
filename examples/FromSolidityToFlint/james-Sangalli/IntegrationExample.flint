@@ -67,7 +67,7 @@ IntergrationExample :: (getAdmin) {
 //
 
 //#61 cannot have dynamic parameters
-  public func addApprovedFungibleTokens(approvedTokensFungibleToAdd: inout [ApprovedTokensFungible])
+  public func addApprovedFungibleTokens(approvedTokensFungibleToAdd: [ApprovedTokensFungible])
   mutates (approvedTokensFungible, ApprovedTokensFungible.contractAddress, ApprovedTokensFungible.tier, ApprovedTokensFungible.balance)
   // post (approvedTokensFungibleToAdd.size == approvedTokensFungible.size)
   post (approvedTokensFungible.size - prev(approvedTokensFungible.size) == approvedTokensFungibleToAdd.size)

@@ -1,3 +1,6 @@
+// send issue#456
+// array issue #464
+
 contract LotteryMultipleWinners (Accepting, Finished){
   var owner: Address
   var randNonce: Int = 0
@@ -40,7 +43,7 @@ LotteryMultipleWinners @(Accepting) :: caller <- (any) {
   @payable
   public func join(chosenNumber: Int, implicit value: inout Wei)
   mutates (balance, Wei.rawValue, choices)
-  pre (chosenNumber > 0 && chosenNumber <= 100)
+  pre (chosenNumber >= 0 && chosenNumber < choices.size)
   pre (value.rawValue == 1)
 
   post (balance.rawValue == prev(balance.rawValue) + prev(value.rawValue))
@@ -55,50 +58,53 @@ LotteryMultipleWinners @(Accepting) :: caller <- (any) {
 
 LotteryMultipleWinners @(Finished) :: caller <- (any) {
   func isWinner() -> Bool
+  pre (winners.size > 0)
   post (returns (exists (i, Int, winners[i] == caller)))
   {
-    let max: Int = winners.size
+    // var res: Bool = false
     for var a: Address in winners {
       if a == caller {
         return true
+        // res = true
       }
     }
     return false
   }
 
-  public func withdrawReward()
-  mutates (gotReward, Wei.rawValue)
-  // pre (isWinner())
-  pre (exists (i, Int, winners[i] == caller))
-  pre (gotReward[caller] == false) //problem here ; Arrays and dictionaries cannot be defined as local variables yet "skip verifier" but solved if I do not skip verifier
-
-  post (gotReward[caller] == true)
-  post (balance.rawValue == prev(balance.rawValue) - prize)
-
-  {
-    // assert (gotReward[caller] == false)
-    let toSend: Wei = Wei(source: &balance, amount: prize)
-    gotReward[caller] = true
-    send(caller, &toSend)
-  }
+  // public func withdrawReward()
+  // mutates (gotReward, Wei.rawValue)
+  // // pre (isWinner())
+  // pre (exists (i, Int, winners[i] == caller))
+  // pre (gotReward[caller] == false) //problem here ; Arrays and dictionaries cannot be defined as local variables yet "skip verifier" but solved if I do not skip verifier
+  //
+  // post (gotReward[caller] == true)
+  // post (balance.rawValue == prev(balance.rawValue) - prize)
+  //
+  // {
+  //   // assert (gotReward[caller] == false)
+  //   let toSend: Wei = Wei(source: &balance, amount: prize)
+  //   gotReward[caller] = true
+  //   send(caller, &toSend)
+  // }
 }
 
-LotteryMultipleWinners @(any) :: (owner) {
-  public func selectWinners() -> Int
-  mutates (winners, prize)
-  pre (winners.size != 0) // wrong
-
-  post (returning (r, forall (i, Int, 0 <= i && i < winners.size ==> winners[i] == choices[r][i]) && choices[r].size == winners.size))
-  post (prize == balance.rawValue / winners.size)
-  {
-    // let chosen: Int = randomNumber(100) + 1 // cannot get a random number here
-    // self.winners = choices[0]
-    // self.winners = choices[chosen] //problem here
-    assert (winners.size != 0)
-    self.prize = balance.rawValue / winners.size
-    return chosen
-    become Finished
-  }
-
-
-}
+// LotteryMultipleWinners @(any) :: (owner) {
+//   public func selectWinners() -> Int
+//   mutates (winners, prize)
+//   // pre (winners.size != 0) // wrong
+//
+//   post (returning (r, forall (i, Int, 0 <= i && i < winners.size ==> winners[i] == choices[r][i]) && choices[r].size == winners.size))
+//   post (prize == balance.rawValue / winners.size)
+//   {
+//     // let chosen: Int = randomNumber(100) + 1 // cannot get a random number here
+//     let chosen: Int = 0
+//     // self.winners = choices[0]
+//     self.winners = choices[chosen] // issue #464
+//     assert (winners.size != 0)
+//     self.prize = balance.rawValue / winners.size
+//     return chosen
+//     become Finished
+//   }
+//
+//
+// }
