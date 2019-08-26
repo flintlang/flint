@@ -12,9 +12,9 @@ Test :: (any) {
 
   public func other() mutates (test) {
     let x: Wei = Wei(0)
-    test.setRawValue(value: 10)
+    self.test.setRawValue(value: 10)
     if (test.rawValue == self.x.size) {
-      other2()
+      self.other2()
     }
   }
 

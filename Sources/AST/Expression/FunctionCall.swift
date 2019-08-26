@@ -16,6 +16,9 @@ public struct FunctionCall: ASTNode {
 
   public var mangledIdentifier: String?
 
+  // Used for storing built up receivers where necessary
+  public var receiverTrail: [Expression]?
+
   public init(identifier: Identifier,
               arguments: [FunctionArgument],
               closeBracketToken: Token,
