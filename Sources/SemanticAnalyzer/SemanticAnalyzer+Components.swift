@@ -118,7 +118,6 @@ extension SemanticAnalyzer {
 
           if let functionDeclarationContext = passContext.functionDeclarationContext {
             // The variable is being mutated in a function.
-            let mutatedNames = functionDeclarationContext.mutates.map({ $0.name })
             if !functionDeclarationContext.mutates
                 .map({ $0.name })
                 .contains(identifier.name) {

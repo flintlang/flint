@@ -286,13 +286,15 @@ extension Compiler {
 
     let p = Parser(ast: ast)
     let environment = p.getEnv()
+    let sourceContext = SourceContext(sourceFiles: config.sourceFiles,
+                                      sourceCodeString: config.sourceCode,
+                                      isForServer: true)
 
     // Run all of the passes. (Semantic checks)
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
              in: environment,
-             sourceContext: SourceContext(sourceFiles: config.sourceFiles, sourceCodeString: config.sourceCode,
-                                          isForServer: true))
+             sourceContext: sourceContext)
 
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
@@ -303,9 +305,10 @@ extension Compiler {
 
     ast = insertConstructorFunc(ast: passRunnerOutcome.element)
 
-    // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: ast, environment: passRunnerOutcome.environment)
-        .generateCode()
+    let evmTarget: EVMTarget = .init(config: config.asCompilerConfiguration(),
+                                     environment: environment,
+                                     sourceContext: sourceContext)
+    let irCode = try evmTarget.generate(ast: ast)
 
     // Compile the YUL IR code using solc.
     try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
@@ -314,8 +317,7 @@ extension Compiler {
     try config.diagnostics.display()
 
     let fileName = "main.sol"
-    let irFileURL: URL
-    irFileURL = config.outputDirectory.appendingPathComponent(fileName)
+    let irFileURL: URL = config.outputDirectory.appendingPathComponent(fileName)
     do {
       try irCode.write(to: irFileURL, atomically: true, encoding: .utf8)
     } catch {
@@ -573,7 +575,6 @@ extension Compiler {
 
     // add semantic diagnostics
     config.diagnostics.appendAll(passRunnerOutcome.diagnostics)
-
     return config.diagnostics.getDiagnostics()
   }
 }
@@ -709,6 +710,24 @@ public struct CompilerTestFrameworkConfiguration {
     self.outputDirectory = outputDirectory
     self.diagnostics = diagnostics
     self.astPasses = astPasses
+  }
+
+  public func asCompilerConfiguration() -> CompilerConfiguration {
+    return CompilerConfiguration(inputFiles: sourceFiles,
+                                 stdlibFiles: StandardLibrary.default.files,
+                                 outputDirectory: outputDirectory,
+                                 dumpAST: false,
+                                 emitBytecode: true,
+                                 dumpVerifierIR: false,
+                                 printVerificationOutput: false,
+                                 skipHolisticCheck: true,
+                                 printHolisticRunStats: false,
+                                 maxHolisticTimeout: 0,
+                                 maxTransactionDepth: 0,
+                                 skipVerifier: true,
+                                 skipCodeGen: false,
+                                 diagnostics: diagnostics,
+                                 target: .evm)
   }
 }
 
