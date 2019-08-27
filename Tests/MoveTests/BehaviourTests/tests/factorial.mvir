@@ -1,0 +1,105 @@
+import Transaction.Operators;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Factorial.publish();
+  assert(Factorial.getValue(copy(this)) == 0, 1);
+
+  Factorial.calculate(copy(this), 0);
+  assert(Factorial.getValue(copy(this)) == 1, 100);
+
+  Factorial.calculate(copy(this), 1);
+  assert(Factorial.getValue(copy(this)) == 1, 101);
+
+  Factorial.calculate(copy(this), 2);
+  assert(Factorial.getValue(copy(this)) == 2, 102);
+
+  Factorial.calculate(copy(this), 3);
+  assert(Factorial.getValue(copy(this)) == 6, 103);
+
+  Factorial.calculate(copy(this), 4);
+  assert(Factorial.getValue(copy(this)) == 24, 104);
+
+  Factorial.calculate(copy(this), 5);
+  assert(Factorial.getValue(copy(this)) == 120, 105);
+
+  Factorial.calculate(copy(this), 6);
+  assert(Factorial.getValue(copy(this)) == 720, 106);
+
+  Factorial.calculate(copy(this), 7);
+  assert(Factorial.getValue(copy(this)) == 5040, 107);
+
+  Factorial.calculate(copy(this), 8);
+  assert(Factorial.getValue(copy(this)) == 40320, 108);
+
+  Factorial.calculate(copy(this), 9);
+  assert(Factorial.getValue(copy(this)) == 362880, 109);
+
+  Factorial.calculate(copy(this), 10);
+  assert(Factorial.getValue(copy(this)) == 3628800, 110);
+
+  Factorial.calculate(copy(this), 11);
+  assert(Factorial.getValue(copy(this)) == 39916800, 111);
+
+  Factorial.calculate(copy(this), 12);
+  assert(Factorial.getValue(copy(this)) == 479001600, 112);
+
+  Factorial.calculate(copy(this), 13);
+  assert(Factorial.getValue(copy(this)) == 6227020800, 113);
+
+  Factorial.calculate(copy(this), 14);
+  assert(Factorial.getValue(copy(this)) == 87178291200, 114);
+
+  Factorial.calculate(copy(this), 15);
+  assert(Factorial.getValue(copy(this)) == 1307674368000, 115);
+
+  Factorial.calculate(copy(this), 16);
+  assert(Factorial.getValue(copy(this)) == 20922789888000, 116);
+
+  Factorial.calculate(copy(this), 17);
+  assert(Factorial.getValue(copy(this)) == 355687428096000, 117);
+
+  Factorial.calculate(copy(this), 18);
+  assert(Factorial.getValue(copy(this)) == 6402373705728000, 118);
+
+  Factorial.calculate(copy(this), 19);
+  assert(Factorial.getValue(copy(this)) == 121645100408832000, 119);
+
+  Factorial.calculate(copy(this), 20);
+  assert(Factorial.getValue(copy(this)) == 2432902008176640000, 120);
+
+  Factorial.calculate(copy(this), 21);
+  assert(Factorial.getValue(copy(this)) == 51090942171709440000, 121);
+
+  Factorial.calculate(copy(this), 22);
+  assert(Factorial.getValue(copy(this)) == 1124000727777607680000, 122);
+
+  Factorial.calculate(copy(this), 23);
+  assert(Factorial.getValue(copy(this)) == 25852016738884976640000, 123);
+
+  Factorial.calculate(copy(this), 24);
+  assert(Factorial.getValue(copy(this)) == 620448401733239439360000, 124);
+
+  Factorial.calculate(copy(this), 25);
+  assert(Factorial.getValue(copy(this)) == 15511210043330985984000000, 125);
+
+  Factorial.calculate(copy(this), 26);
+  assert(Factorial.getValue(copy(this)) == 403291461126605635584000000, 126);
+
+  Factorial.calculate(copy(this), 27);
+  assert(Factorial.getValue(copy(this)) == 10888869450418352160768000000, 127);
+
+  Factorial.calculate(copy(this), 28);
+  assert(Factorial.getValue(copy(this)) == 304888344611713860501504000000, 128);
+
+  Factorial.calculate(copy(this), 29);
+  assert(Factorial.getValue(copy(this)) == 8841761993739701954543616000000, 129);
+
+  Factorial.calculate(copy(this), 30);
+  assert(Factorial.getValue(copy(this)) == 265252859812191058636308480000000, 130);
+
+  Factorial.calculate(copy(this), 31);
+  assert(Factorial.getValue(copy(this)) == 8222838654177922817725562880000000, 131);
+  return;
+}
