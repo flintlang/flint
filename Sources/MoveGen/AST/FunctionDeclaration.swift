@@ -92,13 +92,15 @@ extension AST.FunctionDeclaration {
       ))
     }
 
-    if !contractBehaviourDeclaration.states.isEmpty {
-      let typeStatePredicates = contractBehaviourDeclaration.states.enumerated()
-          .map { (indexState: (Int, TypeState)) -> Expression in
-        let (index, state) = indexState
+    if !contractBehaviourDeclaration.states.contains(where: { $0.isAny }) {
+      let typeStatePredicates = contractBehaviourDeclaration.states
+          .map { (state: TypeState) -> Expression in
+        let index = passContext.environment!.getStateValue(
+            state.identifier,
+            in: contractBehaviourDeclaration.contractIdentifier.name
+        )
         return .binaryExpression(BinaryExpression(
-            lhs: .literal(Token(kind: .literal(.decimal(.integer(index))),
-                                sourceLocation: state.sourceLocation)),
+            lhs: index,
             op: Token(kind: .punctuation(.doubleEqual), sourceLocation: state.sourceLocation),
             rhs: .identifier(Identifier(
                 name: "\(MoveContract.stateVariablePrefix)\(contractBehaviourDeclaration.contractIdentifier.name)",
