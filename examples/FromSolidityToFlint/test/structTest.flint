@@ -1,0 +1,85 @@
+// struct S {
+//   var x: Int
+//   var y: Int
+//
+//   init(x: Int, y: Int) {
+//     self.x = x
+//     self.y = y
+//   }
+// }
+//
+// contract A  {
+//   var s: S
+//   var s2: S
+//   var arr: [S] = []
+//   var arr2: [Address: [S]] = [:]
+// }
+//
+// A :: caller <- (any) {
+//   public init(x: Int, y: Int)
+//   mutates(S.x, S.y)
+//   post (s.x == s2.x)
+//   {
+//     self.s = S(x: 8, y: 7)
+//     self.s2 = S(x: 8, y: 7)
+//     // byReference(s: &s)
+//   }
+//
+//   func changes(newS: inout S, index: Int)
+//   mutates(arr, S.x)
+//   pre (index < arr.size)
+//   post (arr[index] == newS)
+//   post (forall(i, Int, arr[i] == prev(arr[i]) || i == index))
+//   {
+//     arr[index] = newS
+//   }
+//
+//   func changes2(index: Int, x: Int)
+//   mutates(arr, S.x)
+//   pre (index < arr.size)
+//   post (arr[index].x == x && arr[index].y == prev(arr[index].y))
+//   post (forall(i, Int, arr[i] == prev(arr[i]) || i == index))
+//   {
+//     arr[index].x = x
+//   }
+//
+//   func byReference(s3: inout S)
+//   mutates(s2, S.x, S.y)
+//   post (self.s2 == s3)
+//   {
+//     self.s2 = s3
+//   }
+//
+//
+//   // func getarr2(caller: Address)
+//   // // pre (dictContains(arr2, caller) == true)
+//   // {
+//   //   var ss: [S] = arr2[caller]
+//   // }
+//
+// }
+
+struct S {
+  var x: Int
+  var y: Int
+
+  init(x: Int, y: Int) {
+    self.x = x
+    self.y = y
+  }
+}
+
+contract A  {
+  var arr2: [Address: [S]] = [:]
+}
+
+A :: caller <- (any) {
+  public init()  {}
+
+  func getarr2()
+  pre (dictContains(arr2, caller) == true)
+  {
+    var ss: [S] = arr2[caller]
+  }
+
+}

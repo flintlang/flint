@@ -51,34 +51,35 @@ public struct MovePreprocessor: ASTPass {
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
   }
 
+  public func postProcess(returnStatement: ReturnStatement,
+                          passContext: ASTPassContext) -> ASTPassResult<ReturnStatement> {
+    var passContext = passContext
+    var returnStatement = returnStatement
+    returnStatement.cleanupStatements = passContext.postStatements
+    passContext.postStatements = []  // No post-statements after a return statement, it maketh no sense
+    return ASTPassResult(element: returnStatement, diagnostics: [], passContext: passContext)
+  }
+
   public func process(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     var statement = statement
     var passContext = passContext
-    if case .expression(let expression) = statement,
-       case .binaryExpression(let binaryExpression) = expression,
-       case .punctuation(.dot) = binaryExpression.op.kind,
-       case .functionCall(let call) = binaryExpression.rhs,
-       let environment = passContext.environment,
-       case .matchedFunction(let function) = environment.matchFunctionCall(
-           call,
-           enclosingType: passContext.enclosingTypeIdentifier?.name ?? "",
-           typeStates: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
-           callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
-           scopeContext: passContext.scopeContext!) {
-      // TODO check to make sure real result type
-      let identifier = passContext.scopeContext!.freshIdentifier(sourceLocation: statement.sourceLocation)
-      passContext.scopeContext?.parameters
-      let variableDeclaration: Expression = .variableDeclaration(VariableDeclaration(
-          modifiers: [],
-          declarationToken: nil,
-          identifier: identifier,
-          type: AST.Type(inferredType: function.resultType, identifier: identifier)
-      ))
-      statement = .expression(.binaryExpression(
-          BinaryExpression(lhs: variableDeclaration,
-                           op: Token(kind: .punctuation(.equal), sourceLocation: statement.sourceLocation),
-                           rhs: expression)
-      ))
+    if case .expression(let expression) = statement {
+      var functionCall = expression
+      if case .binaryExpression(let binaryExpression) = expression,
+         case .punctuation(.dot) = binaryExpression.op.kind {
+        functionCall = binaryExpression.rhs
+      }
+      if case .functionCall(let call) = functionCall,
+         let environment = passContext.environment,
+         case .matchedFunction(let function) = environment.matchFunctionCall(
+             call,
+             enclosingType: passContext.enclosingTypeIdentifier?.name ?? "",
+             typeStates: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+             callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
+             scopeContext: passContext.scopeContext!),
+         .basicType(.void) != function.resultType {
+        statement = Move.release(expression: expression, type: function.resultType)
+      }
     }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
   }

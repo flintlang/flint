@@ -24,11 +24,18 @@ struct MoveFunctionCall {
         .rendered(functionContext: functionContext)
     }
 
+    // Remove the self argument if it's there
+    var lookupCall = functionCall
+    if let first: FunctionArgument = functionCall.arguments.first,
+       case .`self` = first.expression {
+      lookupCall.arguments.remove(at: 0)
+    }
+
     if case .matchedInitializer(let initializer) =
-      environment.matchFunctionCall(functionCall, enclosingType: enclosingType,
+      environment.matchFunctionCall(lookupCall, enclosingType: enclosingType,
                                     typeStates: [], callerProtections: [], scopeContext: scopeContext),
       initializer.declaration.generated {
-      return MoveExpression(expression: functionCall.arguments[0].expression, position: .normal)
+      return MoveExpression(expression: lookupCall.arguments[0].expression, position: .normal)
         .rendered(functionContext: functionContext)
     }
 

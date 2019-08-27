@@ -31,7 +31,10 @@ public struct Compiler {
     ConstructorPreProcessor()]
 
   public static let verifierASTPasses: [ASTPass] = [
-    CallGraphGenerator()]
+    CallGraphGenerator(),
+    GenerateCalledConstructors(),
+    ModifiesPreProcessor()
+  ]
 
   private static func exitWithFailure() -> Never {
     print("ERROR")
@@ -361,13 +364,14 @@ extension Compiler {
   public static func genSolFile(config: CompilerContractAnalyserConfiguration, ast: TopLevelModule,
                                 env: Environment) throws {
 
+    let sourceContext: SourceContext = .init(sourceFiles: config.sourceFiles,
+                                             sourceCodeString: config.sourceCode,
+                                             isForServer: true)
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
              in: env,
-             sourceContext: SourceContext(sourceFiles: config.sourceFiles,
-                                          sourceCodeString: config.sourceCode,
-                                          isForServer: true))
+             sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
         exitWithFailure()
@@ -375,9 +379,10 @@ extension Compiler {
       exit(0)
     }
 
-    // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
-        .generateCode()
+    let evmTarget: EVMTarget = .init(config: config.asCompilerConfiguration(),
+                                     environment: passRunnerOutcome.environment,
+                                     sourceContext: sourceContext)
+    let irCode = try evmTarget.generate(ast: passRunnerOutcome.element)
 
     // Compile the YUL IR code using solc.
     try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
@@ -400,7 +405,8 @@ extension Compiler {
 // MARK: Compile hook for repl
 extension Compiler {
 
-  private static func createConstructorRepl(constructor: SpecialDeclaration) -> FunctionDeclaration? {
+  private static func createConstructorRepl(constructor: SpecialDeclaration,
+                                            contractProperties: [Identifier]) -> FunctionDeclaration? {
 
     if !(constructor.signature.specialToken.kind == .`init`) {
       return nil
@@ -414,7 +420,8 @@ extension Compiler {
     sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation: sig.sourceLocation))
     let tok: Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
     let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes,
-                                                      modifiers: sig.modifiers, mutates: [],
+                                                      modifiers: sig.modifiers,
+                                                      mutates: contractProperties,
                                                       identifier: Identifier(name: "replConstructor",
                                                                              sourceLocation: sig.sourceLocation),
                                                       parameters: sig.parameters, prePostConditions: [],
@@ -425,7 +432,7 @@ extension Compiler {
     return newFunc
   }
 
-  private static func insertConstructorFuncRepl(ast: TopLevelModule) -> TopLevelModule {
+  private static func insertConstructorFuncRepl(ast: TopLevelModule, environment: Environment) -> TopLevelModule {
 
     var newDecs: [TopLevelDeclaration] = []
 
@@ -436,7 +443,9 @@ extension Compiler {
         for cm in cbdec.members {
           switch cm {
           case .specialDeclaration(let spdec):
-            if let constructorFunc = createConstructorRepl(constructor: spdec) {
+            let contractProperties: [Identifier]
+              = environment.propertyDeclarations(in: cbdec.contractIdentifier.name).map { $0.identifier }
+            if let constructorFunc = createConstructorRepl(constructor: spdec, contractProperties: contractProperties) {
               let cBeh: ContractBehaviorMember = .functionDeclaration(constructorFunc)
               mems.append(cBeh)
               mems.append(.specialDeclaration(spdec))
@@ -474,7 +483,7 @@ extension Compiler {
       exitWithFailure()
     }
 
-    ast = insertConstructorFuncRepl(ast: parserAST!)
+    ast = insertConstructorFuncRepl(ast: parserAST!, environment: environment)
 
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
@@ -494,11 +503,13 @@ extension Compiler {
 
   public static func genSolFile(config: CompilerReplConfiguration, ast: TopLevelModule, env: Environment) throws {
 
+    let sourceContext = SourceContext(sourceFiles: config.sourceFiles)
+
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
              in: env,
-             sourceContext: SourceContext(sourceFiles: config.sourceFiles))
+             sourceContext: sourceContext)
 
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
@@ -507,9 +518,12 @@ extension Compiler {
       exit(0)
     }
 
+    let evmTarget: EVMTarget = .init(config: config.asCompilerConfiguration(),
+                                     environment: passRunnerOutcome.environment,
+                                     sourceContext: sourceContext)
+
     // Generate YUL IR code.
-    let irCode = IRCodeGenerator(topLevelModule: passRunnerOutcome.element, environment: passRunnerOutcome.environment)
-        .generateCode()
+    let irCode = try evmTarget.generate(ast: passRunnerOutcome.element)
 
     // Compile the YUL IR code using solc.
     try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
@@ -615,6 +629,23 @@ public struct CompilerReplConfiguration {
     self.astPasses = astPasses
   }
 
+  public func asCompilerConfiguration() -> CompilerConfiguration {
+    return CompilerConfiguration(inputFiles: sourceFiles,
+                                 stdlibFiles: StandardLibrary.default.files,
+                                 outputDirectory: outputDirectory,
+                                 dumpAST: false,
+                                 emitBytecode: true,
+                                 dumpVerifierIR: false,
+                                 printVerificationOutput: false,
+                                 skipHolisticCheck: true,
+                                 printHolisticRunStats: false,
+                                 maxHolisticTimeout: 0,
+                                 maxTransactionDepth: 0,
+                                 skipVerifier: true,
+                                 skipCodeGen: false,
+                                 diagnostics: diagnostics,
+                                 target: .evm)
+  }
 }
 
 public struct CompilerContractAnalyserConfiguration {
@@ -637,6 +668,24 @@ public struct CompilerContractAnalyserConfiguration {
     self.outputDirectory = outputDirectory
     self.diagnostics = diagnostics
     self.astPasses = astPasses
+  }
+
+  public func asCompilerConfiguration() -> CompilerConfiguration {
+    return CompilerConfiguration(inputFiles: sourceFiles,
+                                 stdlibFiles: StandardLibrary.default.files,
+                                 outputDirectory: outputDirectory,
+                                 dumpAST: false,
+                                 emitBytecode: true,
+                                 dumpVerifierIR: false,
+                                 printVerificationOutput: false,
+                                 skipHolisticCheck: true,
+                                 printHolisticRunStats: false,
+                                 maxHolisticTimeout: 0,
+                                 maxTransactionDepth: 0,
+                                 skipVerifier: true,
+                                 skipCodeGen: false,
+                                 diagnostics: diagnostics,
+                                 target: .evm)
   }
 }
 

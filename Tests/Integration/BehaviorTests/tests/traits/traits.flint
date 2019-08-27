@@ -20,7 +20,7 @@ C :: (any) {
     public init() {}
 
     public func setFoo(val: Int)
-    mutates (B.storedFoo) {
+    mutates (b) {
         b.storedFoo = val
     }
 

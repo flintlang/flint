@@ -5,7 +5,7 @@ In solidity, Wei is implicitly passed along with the transaction rather than bei
 
 This, however, cannot be the case for the representation of Libra inside Flint as, in Move, the parameters of a method that moves money around the blockchain are themselves safe wrappers around integers (i.e. instances of the `LibraCoin.T` resource). Hence, Libra in Flint must be either a safe wrapper (likely a struct that implements the `Asset` trait) around an instance of `LibraCoin.T` or a placeholder for `LibraCoin.T` that gets correctly replaced at the Move code generation stage. 
 
-One of the consequences of this is that the current implementation of the `transfer` method for the `Asset` trait will not work on Libra as it relies on the ability to change the value of its internal integer representation through the `setRawValue` method but no similar method is exposed by the move module `LibraCoin` for understandable safety reasons.
+One of the consequences of this is that the current implementation of the `transfer` method for the `Asset` trait will not work on Libra as it relies on the ability to change the value of its internal integer representation through the `setRawValue` method, but no similar method is exposed by the move module `LibraCoin` for understandable safety reasons.
 
 ## Resources and values in Flint?
 
@@ -37,10 +37,30 @@ public any_func(coin_ref: &mut LibraCoin.T) {
     // ...rest of the body...
 }
 ```
-This would suggest that representing and using Libra from within Flint might be possible just by operating at the code generation stage. However, such an implementation could be limiting in the general case when using external calls e.g. if some other Move module defines a resource type which cannot easily be generated starting from a mutable reference to another instance of that type.
+This would suggest that representing and using Libra from within Flint is possible just by operating at the code generation stage. However, such an implementation could be limiting in the general case when using external calls e.g. if some other Move module defines a resource type which cannot easily be generated starting from a mutable reference to another instance of that type.
 
+## Libra implementation in the stdlib
+Having enstablished that the Libra implentation based on passing mutable references is the one that we want to go for as it doesn't require changing Flint, and that such an implementation is viable. We start with a struct implementing the `Asset` trait that wraps around some `LibraCoin` type.
 
+```swift
+struct Libra: Asset {
+  let coin: LibraCoin
+  // ...initialisers and methods...
+```
+However, we are now left with the problem of defining the `LibraCoin` type. We could make `LibraCoin` just a special Move type within Flint that maps to the Move `LibraCoin.T` type, but that does not generalise very well to types defined by other Move modules. So, we need a way of importing a representation of `LibraCoin.T` Flint that is generalisable to other modules. Fortunately, Flint provides us with `external` traits, and external calls (*external calls refer to a Flint contract calling the functions of other contracts deployed on the Ethereum network*, Flint Programming Language Guide). Which would allow us to write the following
+```swift
+external trait LibraCoin {
+    // functions made available by the module
+}
 
+struct Libra: Asset {
+  let coin: LibraCoin
+  // ...initialisers and methods...
+```
+However, external traits are not immediately usable on the libra blockchain as there is no concept of Move contracts, but just of Move modules. Thus, an implementation of Flint external traits that works with the libra blockchain is necessary before moving forward. 
+
+---
+## TO DO:
 ## Some hypothetical translation examples
 This set of examples serves to investigate whether Libra can be handled correctly just by using mutable references, i.e. without changing the current Flint's constraint that structs can only be passed by reference.
 

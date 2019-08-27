@@ -1,0 +1,43 @@
+import Transaction.Operators;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Operators.publish();
+  assert(Operators.getTest(copy(this)) == true, 1);
+
+  // Comparison
+  assert(Operators.lt$Int_Int(copy(this), 0, 1), 2);
+  assert(Operators.gt$Int_Int(copy(this), 1, 0), 2);
+  assert(Operators.le$Int_Int(copy(this), 1, 1), 2);
+  assert(Operators.le$Int_Int(copy(this), 0, 1), 2);
+  assert(Operators.ge$Int_Int(copy(this), 1, 1), 2);
+  assert(Operators.ge$Int_Int(copy(this), 1, 0), 2);
+  assert(Operators.equal$Int_Int(copy(this), 0, 0), 2);
+  assert(Operators.equal$Int_Int(copy(this), 1, 1), 2);
+  assert(Operators.notEqual$Int_Int(copy(this), 0, 1), 2);
+  assert(Operators.notEqual$Int_Int(copy(this), 1, 0), 2);
+
+  // Arithmetic
+  assert(Operators.plus$Int_Int(copy(this), 9, 3) == 12, 3);
+  assert(Operators.plus$Int_Int(copy(this), 0, 12) == 12, 3);
+  assert(Operators.minus$Int_Int(copy(this), 21, 9) == 12, 3);
+  assert(Operators.minus$Int_Int(copy(this), 10000, 9988) == 12, 3);
+  assert(Operators.times$Int_Int(copy(this), 3, 4) == 12, 3);
+  assert(Operators.times$Int_Int(copy(this), 2, 6) == 12, 3);
+  assert(Operators.divide$Int_Int(copy(this), 24, 2) == 12, 3);
+  assert(Operators.divide$Int_Int(copy(this), 156, 13) == 12, 3);
+  assert(Operators.power$Int_Int(copy(this), 5, 2) == 25, 3);
+  assert(Operators.power$Int_Int(copy(this), 2, 10) == 1024, 3);
+
+  // Logic
+  assert(Operators.andOp$Bool_Bool(copy(this), false, false) == false, 4);
+  assert(Operators.andOp$Bool_Bool(copy(this), true, false) == false, 4);
+  assert(Operators.andOp$Bool_Bool(copy(this), false, true) == false, 4);
+  assert(Operators.andOp$Bool_Bool(copy(this), true, true) == true, 4);
+  assert(Operators.orOp$Bool_Bool(copy(this), false, false) == false, 4);
+  assert(Operators.orOp$Bool_Bool(copy(this), true, false) == true, 4);
+  assert(Operators.orOp$Bool_Bool(copy(this), false, true) == true, 4);
+  assert(Operators.orOp$Bool_Bool(copy(this), true, true) == true, 4);
+  return;
+}

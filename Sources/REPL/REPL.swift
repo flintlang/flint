@@ -20,29 +20,32 @@ public class REPL {
   }
 
   func getContractData() throws -> String {
-    let fileManager = FileManager.init()
-    //let path = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/compile_contract.js"
-    let path = Path.getFullUrl(path: "utils/repl/compile_contract.js").absoluteString
-
-    if !(fileManager.fileExists(atPath: path)) {
+    let fileManager = FileManager()
+    let path = Path.getFullUrl(path: "utils/repl/compile_contract.js").path
+    if !fileManager.fileExists(atPath: path) {
       print("FATAL ERROR: compile_contract file does not exist, cannot compile contract for repl. Exiting.")
       exit(0)
     }
 
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    //p.currentDirectoryPath = "/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl"
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["node", "--no-warnings", "compile_contract.js"]
+    p.arguments = ["--no-warnings", "compile_contract.js"]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
 
-    let contractJsonFilePath = Path.getFullUrl(path: "utils/repl/contract.json").absoluteString
-
-    let get_contents_of_json = try String(contentsOf: URL(fileURLWithPath: contractJsonFilePath))
+    let contractJsonFile = Path.getFullUrl(path: "utils/repl/contract.json")
+    let get_contents_of_json = try String(contentsOf: contractJsonFile)
 
     return get_contents_of_json
-
   }
 
   public func queryContractInfo(contractName: String) -> REPLContract? {
@@ -149,8 +152,9 @@ public class REPL {
 
   private func deploy_contracts() {
     let inputFiles = [URL(fileURLWithPath: self.contractFilePath)]
-    let outputDirectory = URL(fileURLWithPath: Path.getFullUrl(path: "utils/repl").absoluteString)
-    let config = CompilerReplConfiguration(sourceFiles: inputFiles, stdlibFiles: StandardLibrary.default.files,
+    let outputDirectory = Path.getFullUrl(path: "utils/repl")
+    let config = CompilerReplConfiguration(sourceFiles: inputFiles,
+                                           stdlibFiles: StandardLibrary.default.files,
                                            outputDirectory: outputDirectory,
                                            diagnostics: DiagnosticPool(shouldVerify: false, quiet: false,
                                                                        sourceContext: SourceContext(
@@ -158,9 +162,12 @@ public class REPL {
 
     do {
       let (ast, environment) = try Compiler.getAST(config: config)
+
       try Compiler.genSolFile(config: config, ast: ast, env: environment)
+      print("Generated solidity file")
 
       let contract_data = try getContractData()
+      print("Got contract data")
 
       guard let dataFromString = contract_data.data(using: .utf8, allowLossyConversion: false) else {
         print("ERROR : Unable to extract contract information")
@@ -196,9 +203,9 @@ public class REPL {
         default:
           continue
         }
-
       }
 
+      print("Contracts deployed")
     } catch let err {
       print(err)
       print("Contract file \(self.contractFilePath) was not deployed")

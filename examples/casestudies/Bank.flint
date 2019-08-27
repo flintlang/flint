@@ -7,6 +7,14 @@ contract Bank {
 
   invariant (lastIndex == accounts.size)
 
+//holistic
+  // invariant (forall (b: Bank, a: Address) :: (arrayContains(accounts, a) ==> Was(a.Cals(b.register()))))
+  // invariant (forall (b: Bank) :: (exists (e: External) :: (totalDonations.rawValue > 0 ==> Was(e.Calls(b.donate(_))))))
+  // invariant (forall (b: Bank, e: External, m: Int, m': Int) :: ((b.balances[e].rawValue == m && next(b.balances[e].rawValue  == m + m')) ==> (b.manager.Calls(b.freeDeposit(e, m')) || e.Calls(b.deposit(Wei(m'))) || exists (from: External) :: (from.Calls(b.transfer(e, m))))))
+  // invariant (forall (b: Bank, e: External, m: Int, m': Int) :: ((b.balances[e].rawValue == m + m' && next(b.balances[e].rawValue == m)) ==> (e.Calls(b.withDraw(m') || e.Calls(b.transfer(_, m')) || (b.manager.Calls(b.clear(e)) ==> m == m')))))
+  // invariant (forall (b: Bank, e: External) :: ((e.Calls(b.freeDeposit(_, _)) || e.Calls(b.clear(_)) || e.Calls(getDonations())) ==> (exists (e': External) :: (Was(e.Calls(init(e))) && (b.manager == e)))))
+
+  invariant (totalDonations.rawValue >= 0)
   var totalDonations: Wei = Wei(0)
 
   event didCompleteTransfer (from: Address, to: Address, value: Int)
@@ -24,18 +32,26 @@ Bank :: account <- (any) {
   // Returns the manager's address.
   public func register()
     mutates (accounts, lastIndex)
+		pre (arrayContains(accounts, account) == false)
+		post (lastIndex == prev(lastIndex) + 1)
+    post (accounts[lastIndex - 1] == account)
+		post (arrayContains(accounts, account))
+    post (forall (i, Int, (accounts[i] == prev(accounts[i]) || i == lastIndex - 1)))
   {
     accounts[lastIndex] = account
     lastIndex += 1
   }
 
-  public func getManager() -> Address {
+  public func getManager() -> Address
+  post (returns (manager))
+  {
     return manager
   }
 
   @payable
   public func donate(implicit value: Wei)
     mutates (totalDonations, Wei.rawValue)
+    post (totalDonations.rawValue == prev(totalDonations.rawValue) + value.rawValue)
   {
     // This will transfer the funds into totalDonations.
     totalDonations.transfer(source: &value)
@@ -49,6 +65,10 @@ Bank :: (manager) {
   // the contract's state.
   public func freeDeposit(account: Address, amount: Int)
     mutates (balances, Wei.rawValue)
+    pre (amount > 0)
+    pre (arrayContains(accounts, account) == false)
+    post (balances[account].rawValue == prev(balances[account].rawValue + amount))
+    post (forall (a, Address, (balances[a] == prev(balances[a]) || a == account)))
   {
     var i: Int = (0-1)
     var w: Wei = Wei(amount)
@@ -57,27 +77,40 @@ Bank :: (manager) {
 
   public func clear(account: Address)
     mutates (balances, Wei.rawValue)
+    pre (arrayContains(accounts, account))
+    post (balances[account].rawValue == 0)
+    post (forall (a, Address, (balances[a] == prev(balances[a]) || a == account)))
+
   {
     balances[account] = Wei(0)
   }
 
   // This function is non-mutating.
-  public func getDonations() -> Int {
-    return totalDonations.getRawValue()
+  public func getDonations() -> Int
+  post (returns(totalDonations.rawValue))
+  {
+    return totalDonations.rawValue
   }
 }
 
 // Any user in accounts can call these functions.
 // The matching user's address is bound to the variable account.
 Bank :: account <- (accounts) {
-  public func getBalance() -> Int {
-    return balances[account].getRawValue()
+  public func getBalance() -> Int
+  post (returns (balances[account].rawValue))
+  {
+    return balances[account].rawValue
   }
 
   public func transfer(amount: Int, destination: Address)
     mutates (balances, Wei.rawValue)
-
+    pre (arrayContains(accounts, destination))
+    pre (balances[account].rawValue >= amount)
     pre (amount > 0)
+
+    post (balances[destination].rawValue == prev(balances[destination].rawValue) + amount)
+    post (balances[account].rawValue == prev(balances[account].rawValue) - amount)
+    post (forall (a, Address, (balances[a] == prev(balances[a]) || a == account || a == destination)))
   {
     // Transfer Wei from one account to another. The balances of the
     // originator and the destination are updated atomically.
@@ -91,20 +124,29 @@ Bank :: account <- (accounts) {
   @payable
   public func deposit(implicit value: Wei)
     mutates(balances, Wei.rawValue)
+    pre (value.rawValue > 0)
+    post (balances[account].rawValue == prev(balances[account].rawValue) + value.rawValue)
+    post (forall (a, Address, (balances[a] == prev(balances[a]) || a == account)))
   {
     balances[account].transfer(source: &value)
   }
+
+
+
+
 
   public func withdraw(amount: Int)
     mutates(balances, Wei.rawValue, manager, accounts, lastIndex,totalDonations)
 
     pre (amount > 0)
+    post (balances[account] == prev(balances[account]) - amount)
+    post (forall (a, Address, (balances[a] == prev(balances[a]) || a == account)))
   {
     // Transfer some Wei from balances[account] into a local variable.
     let w: Wei = Wei(&balances[account], amount)
 
     // Send the amount back to the Ethereum user.
     send(account, &w)
-    assert(w.getRawValue() == 0)
+    assert(w.rawValue == 0)
   }
 }

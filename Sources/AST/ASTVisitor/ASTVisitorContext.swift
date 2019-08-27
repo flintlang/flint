@@ -86,8 +86,8 @@ public struct FunctionDeclarationContext {
     self.innerDeclarations = innerDeclarations
   }
 
-  public var isMutating: Bool {
-    return declaration.isMutating
+  public var mutates: [Identifier] {
+    return declaration.mutates
   }
 }
 

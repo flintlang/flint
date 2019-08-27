@@ -7,6 +7,7 @@
 
 import AST
 import Lexer
+import Foundation
 
 extension Parser {
   // MARK: Modules
@@ -502,7 +503,11 @@ extension Parser {
 
   func parsePrePostCondition() throws -> Expression {
     _ = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
-    let expression = try parseExpression(upTo: indexOfFirstAtCurrentDepth([.newline])!)
+    guard let index = indexOfFirstAtCurrentDepth([.newline]) else {
+      raise(.expectedCloseParen(at: latestSource))
+      exit(1)
+    }
+    let expression = try parseExpression(upTo: index)
     return expression
   }
 

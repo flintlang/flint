@@ -11,7 +11,13 @@ import Lexer
 extension AST.FunctionDeclaration {
   public func generateWrapper() -> FunctionDeclaration {
     var wrapperFunctionDeclaration = self
-    wrapperFunctionDeclaration.mangledIdentifier = self.name
+    wrapperFunctionDeclaration.mangledIdentifier = Mangler.mangleFunctionName(
+        self.name,
+        parameterTypes: Array(signature.parameters.dropFirst()).rawTypes,
+        enclosingType: "",
+        isContract: true
+    )
+    wrapperFunctionDeclaration.compilerTags += ["acquires T"]
     wrapperFunctionDeclaration.body.removeAll()
     let returnVariableDeclarationStmt = self.body.first!
     let firstParameter = Parameter.constructParameter(name: "_address_\(MoveSelf.name)",
@@ -49,7 +55,7 @@ extension AST.FunctionDeclaration {
                    closeBracketToken: self.closeBraceToken,
                    isAttempted: false))
     let returnToken: Token = .init(kind: .return,
-                                   sourceLocation: self.body.last!.sourceLocation)
+                                   sourceLocation: self.closeBraceToken.sourceLocation)
 
     let returnStmt: Statement = .returnStatement(.init(returnToken: returnToken,
                                                        expression: isVoid ? nil : functionCallExpr))

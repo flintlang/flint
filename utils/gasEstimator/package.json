@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "solc": "^0.4.25",
-    "web3": "^0.20.7"
+    "web3": "^0.20.1"
   }
 }

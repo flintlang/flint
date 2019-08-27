@@ -1,0 +1,71 @@
+contract A {
+  var amounts: [Int] = []
+}
+
+A :: (any) {
+  public init() {}
+//   public func join(_amounts: inout [Int])
+//   mutates (amounts)
+//
+//   post (forall(i, Int, 0 <= i && i < amounts.size ==> amounts[i] == _amounts[i]))
+//   {
+//     for var i: Int in _amounts {
+//       self.amounts[amounts.size] == i
+//     }
+//   }
+}
+
+
+contract Factory{
+  var listOfData: [Address : AData] = [:]
+}
+
+
+
+struct AData {
+  var amount: [Int]
+
+  // related: #464 on github compiles when skip verifier
+
+  public init(_amount: [Int])
+  // mutates (self.amount)
+  // pre (_amount.size > 0)
+  // post (amount.size == _amount.size)
+  // post (forall (i, Int, 0 <= i && i < amount.size ==> amount[i] == _amount[i]))
+  {
+    self.amount = _amount
+    // var currIndex: Int = 0
+    // for var i: Int in _amount {
+    //   self.amount[currIndex] == i
+    //   currIndex += 1
+    // }
+  }
+}
+
+
+
+Factory :: caller <- (any) {
+  public init() {}
+
+  public func set(amount:  [Int])
+  mutates (listOfData, AData.amount)
+
+  // post (forall (a, Address, listOfData[a] == prev(listOfData[a]) || a == caller))
+  // post (forall (i, Int, 0 <= i && i < amount.size ==> listOfData[caller].amount[i] == amount[i]))
+  {
+    listOfData[caller] = AData(amount)
+  }
+
+
+////////////////////////anything to return here?
+  func make()
+  mutates (A.amounts)
+  pre (listOfData[caller].amount.size > 0)
+  // post ()
+  {
+    var a: A = A()
+    call! a.join(_amounts: &listOfData[caller].amount)
+    // return address of a here?
+
+  }
+}

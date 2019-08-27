@@ -1,22 +1,34 @@
+//pass
 contract Factorial {
   var value: Int = 0
+  invariant (value >= 0)
 }
 
 Factorial :: (any) {
   public init() {}
 
-  func factorial(n: Int) -> Int {
-    if (n < 2) { return 1 } 
-    return n * factorial(n: n - 1)
-  }
+  func factorial(n: Int) -> Int
+  post (n < 2 ==> (returns (1)))
+  post (n >= 2 ==> (returning (r, r == n * factorial(n - 1))))
+  // post (n >=2 ==> returns(0))
 
-  public func calculate(n: Int)
-    mutates (value)
   {
-    value = factorial(n: n)
+    if (n < 2) { return 1 }
+    return n * factorial(n: n - 1)
+    // return 0
   }
 
-  public func getValue() -> Int {
-    return value
-  }
+  // public func calculate(n: Int)
+  //   mutates (value)
+  //   post (n < 2 ==> value == 1)
+  //   post (n >= 2 ==> value == n * factorial(n: n - 1))
+  // {
+  //   value = factorial(n: n)
+  // }
+  //
+  // public func getValue() -> Int
+  // post (returns(self.value))
+  // {
+  //   return value
+  // }
 }

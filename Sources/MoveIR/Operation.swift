@@ -50,7 +50,7 @@ public enum Operation: CustomStringConvertible {
     case .equal(let left, let right): return "\(left) == \(right)"
     case .notEqual(let left, let right): return "\(left) != \(right)"
     case .or(let left, let right): return "\(left) || \(right)"
-    case .and(let left, let right): return "\(left) || \(right)"
+    case .and(let left, let right): return "\(left) && \(right)"
     case .not(let expression): return "!\(expression)"
     case .power(let left, let right): return "\(left) ** \(right)"
     case .access(let object, let field): return "\(object).\(field)"

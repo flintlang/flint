@@ -10,6 +10,11 @@ Sources.old
 venv
 /.vscode
 /temp
+*.opcode
+*.bin
+file
+solc-static-linux
+
 /*.mvir
 /*.flint
 *.sol
@@ -56,6 +61,7 @@ utils/block/go-ethereum/*
 bin/
 contracts/
 build/
+libra/
 
 *.generated.swift
 Package.resolved

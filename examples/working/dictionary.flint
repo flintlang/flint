@@ -1,0 +1,77 @@
+ contract Dictionary {
+  var storage: [Address: Int]
+  var foo: Int = 0
+  var storage2: [Address: Int]
+  var bar: Int = 0
+
+  //holistic invariant
+  // holistic_inv (forall (d: Dictionary, j: Int, e: External) :: (d.getFoo() == j ==> j == 0 || Was(e.Calls(setFoo(j)))))
+  // holistic_inv (forall (d: Dictionary, j: Int, e: External) :: (d.getBar() == j ==> j == 0 || Was(e.Calls(setBar(j)))))
+
+  // holistic_inv (forall (d: Dictionary, j: Int, a: Address) :: (d.storage[a] == j ==> exists(e: External) :: (Was(e.Calls(write(a, j))))))
+  // holistic_inv (forall (d: Dictionary, j: Int, a: Address) :: (d.storage2[a] == j ==> exists(e: External) :: (Was(e.Calls(write2(a, j))))))
+
+}
+
+Dictionary :: (any) {
+  public init() {
+    self.storage = [:]
+    self.storage2 = [:]
+  }
+
+  public func write(addr: Address, value: Int)
+    mutates (storage)
+    // pre (dictContains(storage, addr))
+    post (storage[addr] == value)
+    post (forall (a, Address, (storage[a] == prev(storage[a]) || a == addr)))
+  {
+    storage[addr] = value
+  }
+
+  public func get(addr: Address) -> Int
+  post (returns(storage[addr]))
+  {
+    return storage[addr]
+  }
+
+  public func write2(addr: Address, value: Int)
+    mutates (storage2)
+    post (storage2[addr] == value)
+    post (forall (a, Address, (storage2[a] == prev(storage2[a]) || a == addr)))
+
+  {
+    storage2[addr] = value
+  }
+
+  public func get2(addr: Address) -> Int
+  post (returns(storage2[addr]))
+  {
+    return storage2[addr]
+  }
+
+  public func getFoo() -> Int
+  post (returns (foo))
+  {
+    return foo
+  }
+
+  public func setFoo(val: Int)
+    mutates (foo)
+    post (foo == val)
+  {
+    foo = val
+  }
+
+  public func getBar() -> Int
+  post (returns (bar))
+  {
+    return bar
+  }
+
+  public func setBar(val: Int)
+    mutates (bar)
+    post (bar == val)
+  {
+    bar = val
+  }
+}

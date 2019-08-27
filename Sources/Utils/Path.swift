@@ -21,9 +21,9 @@ public class Path {
     }
     var url: URL = URL(fileURLWithPath: flintPath)
     url.appendPathComponent(path)
-    guard FileManager.default.fileExists(atPath: url.path) else {
-      fatalError("Unable to find \(url.absoluteString)")
-    }
+    //guard FileManager.default.fileExists(atPath: url.path) else {
+    //  fatalError("Unable to find \(url.absoluteString)")
+    //}
 
     return url
   }
