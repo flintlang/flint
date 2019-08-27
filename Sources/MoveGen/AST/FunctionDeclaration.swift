@@ -88,7 +88,8 @@ extension AST.FunctionDeclaration {
           predicates: predicates,
           functionContext: FunctionContext(environment: passContext.environment!,
                                            scopeContext: scopeContext!,
-                                           enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name)
+                                           enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name),
+          error: sourceLocation.line
       ))
     }
 
@@ -113,7 +114,8 @@ extension AST.FunctionDeclaration {
           predicates: typeStatePredicates,
           functionContext: FunctionContext(environment: passContext.environment!,
                                            scopeContext: scopeContext!,
-                                           enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name)
+                                           enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name),
+          error: sourceLocation.line
       ))
     }
 

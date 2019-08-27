@@ -8,7 +8,19 @@ from contextlib import contextmanager
 
 class CompilationError(Exception): ...
 class FlintCompilationError(CompilationError): ...
-class MoveRuntimeError(RuntimeError): ...
+
+
+class MoveRuntimeError(RuntimeError):
+    def __init__(self, message, line=None):
+        self.line = line
+        super().__init__(message)
+
+    @classmethod
+    def from_output(cls, output):
+        line = re.search(r"Aborted\((\d+)\)", output)
+        if line:
+            line = int(line.group(1))
+        return cls(output, line)
 
 
 @contextmanager
@@ -27,7 +39,7 @@ class Programme:
     def __init__(self, path):
         self.path = path
 
-    def __str__(self):
+    def contents(self):
         with open(self.path) as file:
             return file.read()
 
@@ -49,7 +61,7 @@ class MoveIRProgramme(Programme):
             )
         output = process.stdout.read().decode("utf8") + process.stderr.read().decode("utf8")
         if re.search(r"[^0\s]\s+failed", output) or not re.search(r"[1-9]\s+passed", output):
-            raise MoveRuntimeError(output)
+            raise MoveRuntimeError.from_output(output)
 
     def with_testsuite(self, testsuite):
         assert isinstance(testsuite, MoveIRProgramme)
@@ -61,10 +73,10 @@ class MoveIRProgramme(Programme):
         with open(new, "w") as file:
             file.write(f"""\
 modules:
-{ self !s}
+{ self.contents() !s}
 
 script:
-{ testsuite !s}
+{ testsuite.contents() !s}
 """)
         self.path = new
 
@@ -95,17 +107,35 @@ class FlintProgramme(Programme):
 class BehaviourTest(NamedTuple):
     programme: FlintProgramme
     testsuite: Optional[MoveIRProgramme] = None
+    expected_fail_line: Optional[int] = None
 
     @classmethod
     def from_name(cls, name: str):
+        """
+        Creates a behaviour test from a test name, searching for .flint and .mvir files
+        The .flint file must exist, however the .mvir file is optional (it will just
+        check compilation in such case).
+
+        If you want your test to fail on an assertion on line x in Flint, you can write
+        `// expect fail x`, however, this expects the assertion to have that line number
+        which may not be the case if the assertion is generated through fatalErrors or
+        similar functions. It will work if a disallowed operation (type states, caller
+        protections) has been attempted. Also note, only one fail is allowed per test.
+        """
+
         move_path = TestRunner.default_path / (name + ".mvir")
         move_programme = None
+        expected_fail_line = None
         if move_path.exists():
             move_programme = MoveIRProgramme(move_path)
+            expect_fail = re.search(r"// expect fail (\d+)", move_programme.contents(), flags=re.IGNORECASE)
+            if expect_fail:
+                expected_fail_line = int(expect_fail.group(1))
 
-        return BehaviourTest(
+        return cls(
             FlintProgramme(TestRunner.default_path / (name + ".flint")),
-            move_programme
+            move_programme,
+            expected_fail_line
         )
 
     def test(self) -> bool:
@@ -121,8 +151,10 @@ class BehaviourTest(NamedTuple):
         try:
             test.run()
         except MoveRuntimeError as e:
-            TestFormatter.failed(self.programme.name, f"Move Runtime Error: `{e !s}`")
-            return False
+            if not self.expected_fail_line or self.expected_fail_line != e.line:
+                TestFormatter.failed(self.programme.name,
+                                     f"Move Runtime Error: Error in {self.programme.path.name} line {e.line}: {e !s}")
+                return False
         TestFormatter.passed(self.programme.name)
         return True
 
