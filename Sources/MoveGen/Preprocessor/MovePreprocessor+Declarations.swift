@@ -267,6 +267,19 @@ extension MovePreprocessor {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func process(contractDeclaration: ContractDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
+    var contractDeclaration = contractDeclaration
+    if !contractDeclaration.states.isEmpty {
+      contractDeclaration.members.append(.variableDeclaration(VariableDeclaration(
+          identifier: Identifier(name: "\(MoveContract.stateVariablePrefix)\(contractDeclaration.identifier.name)",
+                                 sourceLocation: contractDeclaration.sourceLocation),
+          type: Type(inferredType: .basicType(.int), identifier: contractDeclaration.identifier)
+      )))
+    }
+    return ASTPassResult(element: contractDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration

@@ -24,8 +24,9 @@ public struct Identifier: Hashable, ASTNode {
     self.identifierToken = identifierToken
   }
 
-  public init(name: String, sourceLocation: SourceLocation) {
+  public init(name: String, sourceLocation: SourceLocation, enclosingType: String? = nil) {
     self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
+    self.enclosingType = enclosingType
   }
 
   public func hash(into hasher: inout Hasher) {

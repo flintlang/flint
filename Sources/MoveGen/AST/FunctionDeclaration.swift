@@ -66,7 +66,7 @@ extension AST.FunctionDeclaration {
           MovePreprocessor.generateCallerBindingStatement(callerBindingIdentifier: callerBinding)
       )
 
-      let predicate = contractBehaviourDeclaration.callerProtections
+      let predicates = contractBehaviourDeclaration.callerProtections
           .map { (protection: CallerProtection) -> AST.Expression in
         var identifier = protection.identifier
         identifier.enclosingType = contractBehaviourDeclaration.contractIdentifier.name
@@ -82,28 +82,37 @@ extension AST.FunctionDeclaration {
           ))
         default: fatalError("Can currently only handle caller protection π(x) where x: Address")
         }
-      }.reduce (nil) { (checks, check) -> Expression? in
-        guard let checks = checks else {
-          return check
-        }
-        return Expression.binaryExpression(BinaryExpression(
-            lhs: checks,
-            op: Token(kind: .punctuation(.or), sourceLocation: callerBinding.sourceLocation),
-            rhs: check
-        ))
       }
 
-      let predicateExpression = MoveExpression(expression: predicate!).rendered(
+      wrapperFunctionDeclaration.body.append(generateAssertion(
+          predicates: predicates,
           functionContext: FunctionContext(environment: passContext.environment!,
                                            scopeContext: scopeContext!,
                                            enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name)
-      )
-      wrapperFunctionDeclaration.body.append(
-          Statement.expression(.rawAssembly("""
-                                            assert(\(predicateExpression), 1)
-                                            """,
-                                            resultType: RawType.errorType))
-      )
+      ))
+    }
+
+    if !contractBehaviourDeclaration.states.isEmpty {
+      let typeStatePredicates = contractBehaviourDeclaration.states.enumerated()
+          .map { (indexState: (Int, TypeState)) -> Expression in
+        let (index, state) = indexState
+        return .binaryExpression(BinaryExpression(
+            lhs: .literal(Token(kind: .literal(.decimal(.integer(index))),
+                                sourceLocation: state.sourceLocation)),
+            op: Token(kind: .punctuation(.doubleEqual), sourceLocation: state.sourceLocation),
+            rhs: .identifier(Identifier(
+                name: "\(MoveContract.stateVariablePrefix)\(contractBehaviourDeclaration.contractIdentifier.name)",
+                sourceLocation: state.sourceLocation,
+                enclosingType: contractBehaviourDeclaration.contractIdentifier.name
+            ))
+        ))
+      }
+      wrapperFunctionDeclaration.body.append(generateAssertion(
+          predicates: typeStatePredicates,
+          functionContext: FunctionContext(environment: passContext.environment!,
+                                           scopeContext: scopeContext!,
+                                           enclosingTypeName: contractBehaviourDeclaration.contractIdentifier.name)
+      ))
     }
 
     let args: [FunctionArgument] = signature.parameters.map { parameter in
@@ -127,5 +136,25 @@ extension AST.FunctionDeclaration {
         expression: isVoid ? nil : functionCallExpr
     )))
     return wrapperFunctionDeclaration
+  }
+
+  private func generateAssertion(predicates: [AST.Expression],
+                                 functionContext: FunctionContext,
+                                 error: Int = 1) -> Statement {
+    let predicate = predicates.reduce (nil) { (checks, check) -> Expression? in
+      guard let checks = checks else {
+        return check
+      }
+      return Expression.binaryExpression(BinaryExpression(
+          lhs: checks,
+          op: Token(kind: .punctuation(.or), sourceLocation: SourceLocation.DUMMY),
+          rhs: check
+      ))
+    } ?? Expression.literal(Token(kind: .literal(.boolean(.true)), sourceLocation: SourceLocation.DUMMY))
+    let predicateExpression = MoveExpression(expression: predicate).rendered(functionContext: functionContext)
+    return .expression(.rawAssembly("""
+                                    assert(\(predicateExpression), \(error))
+                                    """,
+                                    resultType: RawType.errorType))
   }
 }
