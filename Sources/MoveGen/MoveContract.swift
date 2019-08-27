@@ -46,13 +46,6 @@ struct MoveContract {
 
     let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 2)
 
-    functions.filter { !$0.containsAnyCaller }.forEach { print($0) }
-    // Generate wrapper functions
-    let wrapperCode = functions
-     .filter { !$0.containsAnyCaller }
-     .map { MoveWrapperFunction(function: $0).rendered(enclosingType: contractDeclaration.identifier.name) }
-     .joined(separator: "\n\n")
-     .indented(by: 2)
     let initializerBody = renderPublicInitializer()
     let context = FunctionContext(environment: environment,
                                   scopeContext: ScopeContext(),
@@ -86,12 +79,6 @@ struct MoveContract {
       //////////////////////////////////////
 
       \#(functionsCode)
-
-      //////////////////////////////////////
-      //// --   Wrapper functions    -- ////
-      //////////////////////////////////////
-
-      \#(wrapperCode)\#
 
       //////////////////////////////////////
       //// -- // ~ // Common // ~ // -- ////

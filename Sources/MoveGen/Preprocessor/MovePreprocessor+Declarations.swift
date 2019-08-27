@@ -6,6 +6,7 @@
 
 import AST
 import Lexer
+import Source
 
 extension MovePreprocessor {
   public func process(variableDeclaration: VariableDeclaration,
@@ -208,7 +209,7 @@ extension MovePreprocessor {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
       passContext.scopeContext?.parameters.insert(parameter, at: 0)
     } else if let contractBehaviorDeclarationContext = passContext.contractBehaviorDeclarationContext,
-      Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
+              Environment.globalFunctionStructName != passContext.enclosingTypeIdentifier?.name {
       let parameter = Parameter.constructThisParameter(
         type: .userDefinedType(contractBehaviorDeclarationContext.contractIdentifier.name),
         sourceLocation: functionDeclaration.sourceLocation)
@@ -216,10 +217,60 @@ extension MovePreprocessor {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
       passContext.scopeContext?.parameters.insert(parameter, at: 0)
 
+      var callerBinding: Identifier?
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
+        callerBinding = callerBindingIdentifier
         functionDeclaration.body.insert(
-          generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
-          at: 0)
+            generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+            at: 0
+        )
+      } else if !contractBehaviorDeclarationContext.anyCaller {
+        callerBinding = Identifier(name: "__caller",
+                                   sourceLocation: functionDeclaration.sourceLocation)
+        functionDeclaration.body.insert(
+            generateCallerBindingStatement(callerBindingIdentifier: callerBinding!),
+            at: 0
+        )
+      }
+      if let callerBinding = callerBinding,
+         !contractBehaviorDeclarationContext.anyCaller {
+        let predicate = contractBehaviorDeclarationContext.callerProtections
+            .map { (protection: CallerProtection) -> AST.Expression in
+          let type = passContext.environment!.type(of: .identifier(protection.identifier),
+                                                   enclosingType: passContext.enclosingTypeIdentifier!.name,
+                                                   scopeContext: ScopeContext())
+          switch type {
+          case .basicType(.address):
+            return Expression.binaryExpression(BinaryExpression(
+                lhs: .identifier(protection.identifier),
+                op: Token(kind: .punctuation(.doubleEqual), sourceLocation: protection.sourceLocation),
+                rhs: .identifier(callerBinding)
+            ))
+          default: fatalError("Can currently only handle caller protection π(x) where x: Address")
+          }
+        }.reduce (nil) { (checks, check) -> Expression? in
+          guard let checks = checks else {
+            return check
+          }
+          return Expression.binaryExpression(BinaryExpression(
+              lhs: checks,
+              op: Token(kind: .punctuation(.or), sourceLocation: callerBinding.sourceLocation),
+              rhs: check
+          ))
+        }
+        var assertName = Identifier(name: "assert", sourceLocation: SourceLocation.DUMMY)
+        //assertName.enclosingType = Environment.globalFunctionStructName
+        functionDeclaration.body.insert(
+            Statement.expression(.functionCall(FunctionCall(
+                identifier: assertName,
+                arguments: [FunctionArgument(predicate!),
+                            FunctionArgument(.literal(Token(kind: .literal(.decimal(.integer(1))),
+                                                            sourceLocation: SourceLocation.DUMMY)))],
+                closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: SourceLocation.DUMMY),
+                isAttempted: false
+            ))),
+            at: 1
+        )
       }
     }
 

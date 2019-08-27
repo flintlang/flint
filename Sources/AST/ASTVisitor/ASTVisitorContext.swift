@@ -22,6 +22,10 @@ public struct ContractBehaviorDeclarationContext {
   public var callerProtections: [CallerProtection]
   public var declaration: ContractBehaviorDeclaration
 
+  public var anyCaller: Bool {
+    return callerProtections.isEmpty || callerProtections.contains(where: { $0.isAny })
+  }
+
   public init(contractIdentifier: Identifier,
               typeStates: [TypeState],
               callerBinding: Identifier?,
