@@ -151,10 +151,14 @@ class BehaviourTest(NamedTuple):
         try:
             test.run()
         except MoveRuntimeError as e:
-            if not self.expected_fail_line or self.expected_fail_line != e.line:
-                TestFormatter.failed(self.programme.name,
-                                     f"Move Runtime Error: Error in {self.programme.path.name} line {e.line}: {e !s}")
-                return False
+            line, message = e.line, f"Move Runtime Error: " \
+                f"Error in {self.programme.path.name} line {e.line}: {e !s}"
+        else:
+            line, message = None, f"Move Missing Error: " \
+                f"No error raised in {self.programme.path.name} line {self.expected_fail_line}"
+        if self.expected_fail_line != line:
+            TestFormatter.failed(self.programme.name, message)
+            return False
         TestFormatter.passed(self.programme.name)
         return True
 

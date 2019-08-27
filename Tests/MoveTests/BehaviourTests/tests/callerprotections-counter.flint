@@ -1,0 +1,29 @@
+contract Counter {
+  visible var count: Int = 0
+  visible var owner: Address = 0x1000000000000000000000000000000000000000
+  visible var friend: Address
+}
+
+Counter :: caller <- (any) {
+  public init() {
+    friend = caller
+  }
+}
+
+Counter :: caller <- (owner) {
+  public func increment(by: Int = 1) mutates (count) {
+    count += by
+  }
+}
+
+Counter :: from <- (owner, friend) {
+  public func switch() mutates (owner, friend) {
+    if friend == from {
+      owner = from
+      friend = 0x1000000000000000000000000000000000000000
+    } else {
+      owner = 0x1000000000000000000000000000000000000000
+      friend = from
+    }
+  }
+}
