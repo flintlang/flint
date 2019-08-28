@@ -501,7 +501,10 @@ public struct ASTVisitor {
 
     processResult.passContext.isInsideIfCondition = false
 
-    let scopeContext = passContext.scopeContext
+    var scopeContext = passContext.scopeContext
+    let blockContext = processResult.passContext.blockContext
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.ifBodyScopeContext ?? passContext.scopeContext!)
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
       processResult.passContext.preStatements = []
       processResult.passContext.postStatements = []
@@ -512,9 +515,15 @@ public struct ASTVisitor {
 
     if processResult.element.ifBodyScopeContext == nil {
       processResult.element.ifBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.ifBodyScopeContext = blockContext.scopeContext
     }
 
+    scopeContext?.counter += processResult.passContext.scopeContext?.localVariables.count ?? 1
+    scopeContext?.counter += processResult.passContext.blockContext?.scopeContext.localVariables.count ?? 1
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.elseBodyScopeContext ?? passContext.scopeContext!)
 
     processResult.element.elseBody = processResult.element.elseBody.flatMap { (statement: Statement) -> [Statement] in
       processResult.passContext.preStatements = []
@@ -526,9 +535,14 @@ public struct ASTVisitor {
 
     if processResult.element.elseBodyScopeContext == nil {
       processResult.element.elseBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.elseBodyScopeContext = blockContext.scopeContext
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = blockContext
+    processResult.passContext.preStatements = []
+    processResult.passContext.postStatements = []
 
     let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -538,7 +552,7 @@ public struct ASTVisitor {
 
   func visit(_ forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     var passContext = passContext
-    var processResult = pass.process(forStatement: forStatement, passContext: passContext)
+    var processResult: ASTPassResult<ForStatement> = pass.process(forStatement: forStatement, passContext: passContext)
 
     processResult.element.variable = processResult.combining(visit(processResult.element.variable,
                                                                    passContext: processResult.passContext))
@@ -546,6 +560,9 @@ public struct ASTVisitor {
                                                                    passContext: processResult.passContext))
 
     let scopeContext = passContext.scopeContext
+    let blockContext = passContext.blockContext
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.forBodyScopeContext ?? passContext.scopeContext!)
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
       processResult.passContext.preStatements = []
       processResult.passContext.postStatements = []
@@ -556,9 +573,15 @@ public struct ASTVisitor {
 
     if processResult.element.forBodyScopeContext == nil {
       processResult.element.forBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.forBodyScopeContext = blockContext.scopeContext
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = blockContext
+    processResult.passContext.preStatements = []
+    processResult.passContext.postStatements = []
+
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -574,7 +597,7 @@ public struct ASTVisitor {
       $0.doCatchStatementStack.append(doCatchStatement)
     }
 
-    let scopeContext = passContext.scopeContext
+    var scopeContext = passContext.scopeContext
 
     processResult.element.doBody = processResult.element.doBody
         .flatMap { (statement: Statement) -> [Statement] in
@@ -593,6 +616,7 @@ public struct ASTVisitor {
       _ = $0.doCatchStatementStack.popLast()
     }
 
+    scopeContext?.counter += processResult.passContext.scopeContext?.localVariables.count ?? 1
     processResult.passContext.scopeContext = scopeContext
 
     processResult.element.catchBody = processResult.element.catchBody
@@ -606,6 +630,9 @@ public struct ASTVisitor {
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.preStatements = []
+    processResult.passContext.postStatements = []
+
     let postProcessResult = pass.postProcess(doCatchStatement: processResult.element,
                                              passContext: processResult.passContext)
 

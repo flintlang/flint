@@ -144,6 +144,11 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
+  public var blockContext: BlockContext? {
+    get { return self[BlockContextContextEntry.self] }
+    set { self[BlockContextContextEntry.self] = newValue }
+  }
+
   /// When visiting an external call's function call, this property is set to `true`.
   public var isExternalFunctionCall: Bool {
     get { return self[IsExternalFunctionCallContextEntry.self] ?? false }
@@ -318,6 +323,10 @@ private struct FunctionDeclarationContextEntry: PassContextEntry {
 
 private struct InitializerDeclarationContextEntry: PassContextEntry {
   typealias Value = SpecialDeclarationContext
+}
+
+private struct BlockContextContextEntry: PassContextEntry {
+  typealias Value = BlockContext
 }
 
 private struct ScopeContextContextEntry: PassContextEntry {
