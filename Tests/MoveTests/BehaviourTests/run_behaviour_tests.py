@@ -96,7 +96,7 @@ class FlintProgramme(Programme):
     def compile(self) -> MoveIRProgramme:
         process = subprocess.Popen([
             f"./.build/release/flintc",
-            "--target", "move", "--no-stdlib", "--emit-ir", "--skip-verifier", str(self.path)
+            "--target", "move", "--emit-ir", "--skip-verifier", str(self.path)
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = process.stdout.read() + process.stderr.read()
         if b"Produced binary" not in output:

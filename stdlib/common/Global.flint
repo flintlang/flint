@@ -1,0 +1,12 @@
+// The functions in this special struct are accessible globally.
+struct Flint$Global {
+  // Aborts the transaction with an error.
+  func fatalError() {
+    flint$fatalError()
+  }
+
+  // Ensure the given condition holds, otherwise crash.
+  func assert(condition: Bool) {
+    if condition == false { fatalError() }
+  }
+}

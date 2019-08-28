@@ -17,7 +17,7 @@ func main() {
 
       let config = CompilerLSPConfiguration(sourceFiles: inputFiles,
                                             sourceCode: sourceCode,
-                                            stdlibFiles: StandardLibrary.default.files,
+                                            stdlibFiles: StandardLibrary.from(target: .evm).files,
                                             diagnostics: DiagnosticPool(shouldVerify: false,
                                                                         quiet: false,
                                                                         sourceContext: SourceContext(
@@ -49,7 +49,7 @@ func main_d() throws {
 
     let config = CompilerLSPConfiguration(sourceFiles: inputFiles,
                                           sourceCode: sourceCode,
-                                          stdlibFiles: StandardLibrary.default.files,
+                                          stdlibFiles: StandardLibrary.from(target: .evm).files,
                                           diagnostics: DiagnosticPool(shouldVerify: false,
                                                                       quiet: false,
                                                                       sourceContext: SourceContext(
