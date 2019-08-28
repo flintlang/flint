@@ -3,7 +3,7 @@ contract Inits {
   var b: Address
   var s: Bool
   var z: Address = 0x7298107734724875709188430880267982837124
-  var t: T = T(0, false)
+  var v: V = V(0, false)
 }
 
 Inits :: caller <- (any) {
@@ -29,24 +29,24 @@ Inits :: caller <- (any) {
     return z
   }
 
-  public func setT(x: Int, y: Bool) mutates(t) {
-    t = T(x, y)
+  public func setT(x: Int, y: Bool) mutates(v) {
+    v = V(x, y)
   }
 
   public func getTx() -> Int {
-    return t.x
+    return v.x
   }
 
   public func getTy() -> Bool {
-    return t.y
+    return v.y
   }
 
   public func getTs() -> Bool {
-    return t.s
+    return v.s
   }
 }
 
-struct T {
+struct V {
   var x: Int
   var y: Bool
   var s: Bool = false

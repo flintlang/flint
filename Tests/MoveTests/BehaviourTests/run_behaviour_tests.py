@@ -72,10 +72,9 @@ class MoveIRProgramme(Programme):
             pass
         with open(new, "w") as file:
             file.write(f"""\
-modules:
 { self.contents() !s}
 
-script:
+//! new-transaction
 { testsuite.contents() !s}
 """)
         self.path = new
@@ -148,17 +147,21 @@ class BehaviourTest(NamedTuple):
             test.with_testsuite(self.testsuite)
 
         test.move_to_libra()
+
         try:
             test.run()
         except MoveRuntimeError as e:
-            line, message = e.line, f"Move Runtime Error: " \
+            line, message = e.line or 0, f"Move Runtime Error: " \
                 f"Error in {self.programme.path.name} line {e.line}: {e !s}"
         else:
-            line, message = None, f"Move Missing Error: " \
-                f"No error raised in {self.programme.path.name} line {self.expected_fail_line}"
+            line = message = None
         if self.expected_fail_line != line:
-            TestFormatter.failed(self.programme.name, message)
+            TestFormatter.failed(self.programme.name,
+                                 message or f"Move Missing Error: "
+                                 f"No error raised in {self.programme.path.name} line {self.expected_fail_line}"
+                                 )
             return False
+
         TestFormatter.passed(self.programme.name)
         return True
 
