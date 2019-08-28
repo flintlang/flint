@@ -1323,7 +1323,7 @@ Functions can then be called from within a contract protection block with the sa
 
 ````swift
 @payable
-  public func Apply(Name: String, implicit Fee: Wei ) mutates (Roster){
+  public func Apply(Name: String, implicit Fee: Wei ) mutates (roster){
     var thisMember: Member
     var stake: Int = 0
    
