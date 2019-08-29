@@ -31,7 +31,6 @@ struct MoveExternalCall {
       fatalError("cannot match function signature in external call")
     }
 
-    
     matchingFunction.parameterTypes.forEach { paremeterType in
       switch paremeterType {
       case .basicType, .externalType:
@@ -40,7 +39,6 @@ struct MoveExternalCall {
         fatalError("cannot use non-basic type in external call")
       }
     }
-
 
     switch externalCall.mode {
     case .normal:

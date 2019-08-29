@@ -16,8 +16,16 @@ public struct MoveGenerator {
 
   public func generateCode() -> String {
 
-    var contracts: [MoveContract] = []
+    var externalTraitDeclarations = topLevelModule.declarations.compactMap { declaration -> TraitDeclaration? in
+      switch declaration {
+      case .traitDeclaration(let traitDeclaration):
+        return traitDeclaration.moveModuleAddress != nil ? traitDeclaration : nil
+      default:
+        return nil
+      }
+    }
 
+    var contracts: [MoveContract] = []
     // Find the contract behavior declarations associated with each contract.
     for case .contractDeclaration(let contractDeclaration) in topLevelModule.declarations {
       let behaviorDeclarations: [ContractBehaviorDeclaration] = topLevelModule.declarations
@@ -36,7 +44,8 @@ public struct MoveGenerator {
       let contract = MoveContract(contractDeclaration: contractDeclaration,
                                 contractBehaviorDeclarations: behaviorDeclarations,
                                 structDeclarations: structDeclarations,
-                                environment: environment)
+                                environment: environment,
+                                externalTraitDeclarations: externalTraitDeclarations)
       contracts.append(contract)
     }
 

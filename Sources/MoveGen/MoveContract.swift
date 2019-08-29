@@ -7,6 +7,7 @@
 
 import AST
 import Lexer
+import MoveIR
 
 /// Generates code for a contract.
 struct MoveContract {
@@ -18,16 +19,24 @@ struct MoveContract {
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
   var structDeclarations: [StructDeclaration]
   var environment: Environment
+  var externalTraitDeclarations: [TraitDeclaration]
 
-  init(contractDeclaration: ContractDeclaration, contractBehaviorDeclarations: [ContractBehaviorDeclaration],
-       structDeclarations: [StructDeclaration], environment: Environment) {
+  init(contractDeclaration: ContractDeclaration,
+       contractBehaviorDeclarations: [ContractBehaviorDeclaration],
+       structDeclarations: [StructDeclaration],
+       environment: Environment,
+       externalTraitDeclarations: [TraitDeclaration]) {
     self.contractDeclaration = contractDeclaration
     self.contractBehaviorDeclarations = contractBehaviorDeclarations
     self.structDeclarations = structDeclarations
     self.environment = environment
+    self.externalTraitDeclarations = externalTraitDeclarations
   }
 
   func rendered() -> String {
+    let imports: [MoveIR.Statement] = externalTraitDeclarations
+      .map { .`import`(ModuleImport(name: $0.identifier.name, address: $0.moveModuleAddress!)) }
+    let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
       return contractBehaviorDeclaration.members.compactMap { member -> MoveFunction? in
@@ -68,6 +77,8 @@ struct MoveContract {
     // Main contract body.
     return #"""
     module \#(contractDeclaration.identifier.name) {
+      \#(renderedImports.indented(by: 2))
+
       resource T {
         \#(members.indented(by: 4))
       }

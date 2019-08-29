@@ -113,6 +113,7 @@ extension MovePreprocessor {
   }
 
   public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    // Update trait name for external calls
     var externalCall = externalCall
     let environment = passContext.environment!
     let enclosingType = passContext.enclosingTypeIdentifier!.name
@@ -122,7 +123,7 @@ extension MovePreprocessor {
     externalCall.externalTraitName = receiverType.name
     return ASTPassResult(element: externalCall, diagnostics: [], passContext: passContext)
   }
-  
+
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let environment = passContext.environment!
@@ -143,9 +144,9 @@ extension MovePreprocessor {
     if receiverTrail.isEmpty {
       receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
     }
-    
+
     functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
-    
+
     if !environment.isInitializerCall(functionCall) && !environment.isTraitDeclared(functionCall.identifier.name) {
       // Get the result type of the call.
       let declarationEnclosingType: RawTypeIdentifier

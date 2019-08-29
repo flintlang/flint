@@ -11,7 +11,7 @@ import MoveIR
 struct MoveFunctionCall {
   var functionCall: AST.FunctionCall
   var moduleName: String
-    
+
   public init(functionCall: AST.FunctionCall, moduleName: String = "Self") {
     self.functionCall = functionCall
     self.moduleName = moduleName
