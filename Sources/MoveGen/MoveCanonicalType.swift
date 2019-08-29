@@ -32,7 +32,7 @@ indirect enum CanonicalType: CustomStringConvertible {
         print("rawType: \(rawType)")
         return nil
       }
-      
+
     case .userDefinedType(let identifier):
       if rawType.isCurrencyType || (environment?.isContractDeclared(identifier) ?? false) {
         self = .resource(identifier)

@@ -129,16 +129,14 @@ extension MovePreprocessor {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
-    
-    
     if receiverTrail.isEmpty {
       receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
     }
-    
+
     let receiver = receiverTrail.last!
     let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
     let isExternalTraitFunctionCall = receiverType.isExternalTraitType(environment: environment)
-    
+
     if isExternalTraitFunctionCall {
       let moduleName = receiverType.name
       functionCall.mangledIdentifier = "\(moduleName).\(functionCall.identifier.name)"
