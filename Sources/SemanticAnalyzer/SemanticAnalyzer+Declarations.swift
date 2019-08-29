@@ -176,7 +176,7 @@ extension SemanticAnalyzer {
   // MARK: Traits
   public func process(traitDeclaration: TraitDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
-    var diagnostics = [Diagnostic]()
+    var diagnostics: [Diagnostic] = []
     let environment = passContext.environment!
 
     if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
@@ -200,7 +200,7 @@ extension SemanticAnalyzer {
 
   // MARK: Enum
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
-    var diagnostics = [Diagnostic]()
+    var diagnostics: [Diagnostic] = []
 
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
@@ -300,7 +300,7 @@ extension SemanticAnalyzer {
     }
 
     // Check whether Solidity types are allowed in the current context
-    checkWhetherSolidityTypesAreAllowedInContext(type: variableDeclaration.type,
+    checkWhetherExternalTypesAreAllowedInContext(type: variableDeclaration.type,
                                                  passContext: passContext,
                                                  diagnostics: &diagnostics)
 
@@ -359,7 +359,7 @@ extension SemanticAnalyzer {
                       passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
     var diagnostics: [Diagnostic] = []
     if let resultType = functionSignatureDeclaration.resultType {
-      checkWhetherSolidityTypesAreAllowedInContext(type: resultType,
+      checkWhetherExternalTypesAreAllowedInContext(type: resultType,
                                                    passContext: passContext,
                                                    diagnostics: &diagnostics)
     }

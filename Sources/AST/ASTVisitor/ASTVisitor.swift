@@ -786,7 +786,6 @@ public struct ASTVisitor {
     let declarations = processResult.passContext.specialDeclarationContext!.innerDeclarations
     processResult.passContext.scopeContext?.localVariables = declarations
     processResult.passContext.specialDeclarationContext = nil
-
     let postProcessResult = pass.postProcess(specialDeclaration: processResult.element,
                                              passContext: processResult.passContext)
 
@@ -798,15 +797,12 @@ public struct ASTVisitor {
   func visit(_ specialSignatureDeclaration: SpecialSignatureDeclaration,
              passContext: ASTPassContext) -> ASTPassResult<SpecialSignatureDeclaration> {
     var processResult = pass.process(specialSignatureDeclaration: specialSignatureDeclaration, passContext: passContext)
-
     processResult.element.attributes = processResult.element.attributes.map { attribute in
       return processResult.combining(visit(attribute, passContext: processResult.passContext))
     }
-
     processResult.element.parameters = processResult.element.parameters.map { parameter in
       return processResult.combining(visit(parameter, passContext: processResult.passContext))
     }
-
     let postProcessResult = pass.postProcess(specialSignatureDeclaration: processResult.element,
                                              passContext: processResult.passContext)
 
@@ -958,10 +954,9 @@ public struct ASTVisitor {
              passContext: ASTPassContext) -> ASTPassResult<TypeConversionExpression> {
     var processResult = pass.process(typeConversionExpression: typeConversionExpression, passContext: passContext)
 
+    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: passContext))
     processResult.element.expression = processResult.combining(visit(processResult.element.expression,
                                                                      passContext: passContext))
-    processResult.element.type = processResult.combining(visit(processResult.element.type, passContext: passContext))
-
     let postProcessResult = pass.postProcess(typeConversionExpression: processResult.element,
                                              passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -1153,7 +1148,6 @@ public struct ASTVisitor {
 
   func visit(_ type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
     var processResult = pass.process(type: type, passContext: passContext)
-
     processResult.element.genericArguments = processResult.element.genericArguments.map { genericArgument in
       return processResult.combining(visit(genericArgument, passContext: processResult.passContext))
     }

@@ -155,7 +155,7 @@ extension SemanticAnalyzer {
   public func process(parameter: Parameter, passContext: ASTPassContext) -> ASTPassResult<Parameter> {
     var diagnostics = [Diagnostic]()
 
-    checkWhetherSolidityTypesAreAllowedInContext(type: parameter.type,
+    checkWhetherExternalTypesAreAllowedInContext(type: parameter.type,
                                                  passContext: passContext,
                                                  diagnostics: &diagnostics)
 
@@ -172,18 +172,18 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: parameter, diagnostics: diagnostics, passContext: passContext)
   }
 
-  func checkWhetherSolidityTypesAreAllowedInContext(type: Type,
+  func checkWhetherExternalTypesAreAllowedInContext(type: Type,
                                                     passContext: ASTPassContext,
                                                     diagnostics: inout [Diagnostic]) {
     if let kind = passContext.traitDeclarationContext?.traitKind.kind, kind == .external {
-      if case .solidityType = type.rawType {
+      if case .externalType = type.rawType {
       } else {
         // typeAnnotation is describing a Flint type but we are in an external trait declaration
         diagnostics.append(.flintTypeUsedInExternalTrait(type, at: type.sourceLocation))
       }
-    } else if case .solidityType = type.rawType {
+    } else if case .externalType = type.rawType {
       // type annotation is describing a Solidity type but we are not in an external trait declaration
-      diagnostics.append(.solidityTypeUsedOutsideExternalTrait(type, at: type.sourceLocation))
+      diagnostics.append(.externalTypeUsedOutsideExternalTrait(type, at: type.sourceLocation))
     }
 
   }

@@ -72,7 +72,7 @@ struct MoveCallerProtectionChecks {
             let check = MoveRuntimeFunction.isValidCallerProtection(address: "sload(\(offset!)))")
             return "\(variableName) := add(\(variableName), \(check)" */
       case .basicType, .rangeType, .dictionaryType, .userDefinedType,
-           .inoutType, .functionType, .any, .errorType, .solidityType:
+           .inoutType, .functionType, .any, .errorType, .externalType:
         return ""
       case .selfType:
         fatalError("Self type should have been replaced with concrete type")

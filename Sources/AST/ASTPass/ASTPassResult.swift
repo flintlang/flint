@@ -40,8 +40,8 @@ public struct ASTPassResult<T> {
   ///   - mergingContexts: Whether the contexts should be merged.
   /// - Returns: The element type of the new pass result.
   mutating func combining<S>(_ newPassResult: ASTPassResult<S>, mergingContexts: Bool = false) -> S {
+    var newPassResult = newPassResult
     diagnostics.append(contentsOf: newPassResult.diagnostics)
-
     passContext.storage.merge(newPassResult.passContext.storage, uniquingKeysWith: { _, rhs in
       // Use the newest entry in case both contexts have values for the same key.
       return rhs

@@ -1209,7 +1209,7 @@ class BoogieTranslator {
       return convertType(type)
     case .userDefinedType:
       return .int
-    case .solidityType(let solidityType):
+    case .externalType(let solidityType):
       guard let flintParallel = solidityType.basicParallel,
             let flintType = RawType.BasicType(rawValue: flintParallel) else {
         print("unkown solidity type to convert to Flint type \(solidityType)")

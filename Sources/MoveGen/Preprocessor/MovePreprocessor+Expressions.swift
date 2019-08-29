@@ -128,17 +128,28 @@ extension MovePreprocessor {
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
+    
+    
     if receiverTrail.isEmpty {
       receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
     }
-
-    // Mangle initializer call.
-    if environment.isInitializerCall(functionCall) {
-      functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
+    
+    let receiver = receiverTrail.last!
+    let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
+    let isExternalTraitFunctionCall = receiverType.isExternalTraitType(environment: environment)
+    
+    if isExternalTraitFunctionCall {
+      let moduleName = receiverType.name
+      functionCall.mangledIdentifier = "\(moduleName).\(functionCall.identifier.name)"
     } else {
+      if let functionName = mangledFunctionName(for: functionCall, in: passContext) {
+         functionCall.mangledIdentifier = "Self.\(functionName)"
+      }
+    }
+
+   if !environment.isInitializerCall(functionCall) && !environment.isTraitDeclared(functionCall.identifier.name) {
       // Get the result type of the call.
       let declarationEnclosingType: RawTypeIdentifier
-
       if isGlobalFunctionCall {
         declarationEnclosingType = Environment.globalFunctionStructName
       } else {
@@ -148,13 +159,11 @@ extension MovePreprocessor {
                                                                  scopeContext: scopeContext).name
       }
 
-      // Set the mangled identifier for the function.
-      functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
-
       // If it returns a dynamic type, pass the receiver as the first parameter.
       let environment = passContext.environment!
       if environment.isStructDeclared(declarationEnclosingType)
-             || environment.isContractDeclared(declarationEnclosingType) {
+        || environment.isContractDeclared(declarationEnclosingType)
+        || environment.isExternalTraitDeclared(declarationEnclosingType) {
         if !isGlobalFunctionCall {
           var receiver = constructExpression(from: receiverTrail)
           let type: RawType
@@ -328,9 +337,12 @@ extension MovePreprocessor {
       exit(1)
     }
 
-    let type = environment.type(of: element,
+    var type: RawType = environment.type(of: element,
                                 enclosingType: enclosingType,
                                 scopeContext: scopeContext)
+    if type.isExternalTraitType(environment: environment) {
+      type = RawType.externalTraitType
+    }
 
     let expression: Expression
     if borrowLocal || type.isBuiltInType {

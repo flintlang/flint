@@ -23,7 +23,6 @@ public struct MovePreprocessor: ASTPass {
 
     return propertiesInEnclosingType.compactMap { declaration -> Statement? in
       guard let assignedExpression = declaration.value else { return nil }
-
       var identifier = declaration.identifier
       identifier.enclosingType = enclosingType
 
@@ -35,6 +34,15 @@ public struct MovePreprocessor: ASTPass {
     }
   }
 
+  public func process(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
+    // Used to turn external trait types into addresses
+    var type = type
+    if let environment = passContext.environment, type.rawType.isExternalTraitType(environment: environment) {
+      type.rawType = RawType.externalTraitType
+    }
+    return ASTPassResult(element: type, diagnostics: [], passContext: passContext)
+  }
+
   // MARK: Statement
   public func process(becomeStatement: BecomeStatement, passContext: ASTPassContext) -> ASTPassResult<BecomeStatement> {
     var becomeStatement = becomeStatement
@@ -43,9 +51,7 @@ public struct MovePreprocessor: ASTPass {
     let enumReference: Expression = .identifier(
         Identifier(identifierToken: Token(kind: .identifier(enumName), sourceLocation: becomeStatement.sourceLocation)))
     let state = becomeStatement.expression.assigningEnclosingType(type: enumName)
-
     let dot = Token(kind: .punctuation(.dot), sourceLocation: becomeStatement.sourceLocation)
-
     becomeStatement.expression = .binaryExpression(BinaryExpression(lhs: enumReference, op: dot, rhs: state))
 
     return ASTPassResult(element: becomeStatement, diagnostics: [], passContext: passContext)
