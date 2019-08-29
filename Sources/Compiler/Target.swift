@@ -85,6 +85,7 @@ public class MoveTarget: Target {
         passes: (!config.skipVerifier ? [AssertPreprocessor()] : [])
             + [PreConditionPreprocessor(checkAllFunctions: config.skipVerifier),
                MoveScopeProcessor(),
+               MoveMultipleBorrowPreventer(),
                MovePreprocessor()],
         in: environment,
         sourceContext: sourceContext)

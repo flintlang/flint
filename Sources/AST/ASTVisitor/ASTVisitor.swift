@@ -500,6 +500,8 @@ public struct ASTVisitor {
                                     passContext: processResult.passContext))
 
     processResult.passContext.isInsideIfCondition = false
+    let conditionPreStatements = processResult.passContext.preStatements
+    let conditionPostStatements = processResult.passContext.postStatements
 
     var scopeContext = passContext.scopeContext
     let blockContext = processResult.passContext.blockContext
@@ -541,8 +543,8 @@ public struct ASTVisitor {
 
     processResult.passContext.scopeContext = scopeContext
     processResult.passContext.blockContext = blockContext
-    processResult.passContext.preStatements = []
-    processResult.passContext.postStatements = []
+    processResult.passContext.preStatements = conditionPreStatements
+    processResult.passContext.postStatements = conditionPostStatements
 
     let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -561,6 +563,8 @@ public struct ASTVisitor {
 
     let scopeContext = passContext.scopeContext
     let blockContext = passContext.blockContext
+    let topPreStatements = processResult.passContext.preStatements
+    let topPostStatements = processResult.passContext.postStatements
     processResult.passContext.blockContext = BlockContext(
         scopeContext: processResult.element.forBodyScopeContext ?? passContext.scopeContext!)
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
@@ -579,8 +583,8 @@ public struct ASTVisitor {
 
     processResult.passContext.scopeContext = scopeContext
     processResult.passContext.blockContext = blockContext
-    processResult.passContext.preStatements = []
-    processResult.passContext.postStatements = []
+    processResult.passContext.preStatements = topPreStatements
+    processResult.passContext.postStatements = topPostStatements
 
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)

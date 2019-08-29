@@ -20,7 +20,9 @@ struct MoveVariableDeclaration {
     )?.render(functionContext: functionContext) else {
       print("""
             Cannot get variable declaration type from \(variableDeclaration.type.rawType) \
-            at position \(variableDeclaration.sourceLocation).
+            at position \(variableDeclaration.sourceLocation) for variable \(variableDeclaration.identifier.name).
+
+            \(functionContext.blockStack)
 
             flintc internal error located at \(#file):\(#line)
             """)
