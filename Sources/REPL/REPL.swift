@@ -154,7 +154,7 @@ public class REPL {
     let inputFiles = [URL(fileURLWithPath: self.contractFilePath)]
     let outputDirectory = Path.getFullUrl(path: "utils/repl")
     let config = CompilerReplConfiguration(sourceFiles: inputFiles,
-                                           stdlibFiles: StandardLibrary.default.files,
+                                           stdlibFiles: StandardLibrary.from(target: .evm).files,
                                            outputDirectory: outputDirectory,
                                            diagnostics: DiagnosticPool(shouldVerify: false, quiet: false,
                                                                        sourceContext: SourceContext(

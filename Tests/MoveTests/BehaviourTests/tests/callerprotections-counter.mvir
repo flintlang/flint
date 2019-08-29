@@ -1,0 +1,24 @@
+import Transaction.Counter;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Counter.publish();
+  assert(Counter.getCount(copy(this)) == 0, 1);
+  assert(Counter.getFriend(copy(this)) == copy(this), 1001);
+  assert(Counter.getOwner(copy(this)) == 0x1000000000000000000000000000000000000000, 1002);
+  Counter.switch(copy(this));
+  assert(Counter.getCount(copy(this)) == 0, 2);
+  assert(Counter.getFriend(copy(this)) == 0x1000000000000000000000000000000000000000, 2001);
+  assert(Counter.getOwner(copy(this)) == copy(this), 2002);
+  Counter.increment(copy(this));
+  assert(Counter.getCount(copy(this)) == 1, 3);
+  assert(Counter.getFriend(copy(this)) == 0x1000000000000000000000000000000000000000, 3001);
+  assert(Counter.getOwner(copy(this)) == copy(this), 3002);
+  Counter.switch(copy(this));
+  assert(Counter.getCount(copy(this)) == 1, 4);
+  assert(Counter.getFriend(copy(this)) == copy(this), 4001);
+  assert(Counter.getOwner(copy(this)) == 0x1000000000000000000000000000000000000000, 4002);
+  Counter.increment(copy(this));  // expect fail 14
+  return;
+}

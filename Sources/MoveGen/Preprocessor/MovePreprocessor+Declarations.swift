@@ -6,7 +6,6 @@
 
 import AST
 import Lexer
-import Source
 
 extension MovePreprocessor {
   public func process(variableDeclaration: VariableDeclaration,
@@ -217,59 +216,10 @@ extension MovePreprocessor {
       functionDeclaration.signature.parameters.insert(parameter, at: 0)
       passContext.scopeContext?.parameters.insert(parameter, at: 0)
 
-      var callerBinding: Identifier?
       if let callerBindingIdentifier = contractBehaviorDeclarationContext.callerBinding {
-        callerBinding = callerBindingIdentifier
         functionDeclaration.body.insert(
-            generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+            MovePreprocessor.generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
             at: 0
-        )
-      } else if !contractBehaviorDeclarationContext.anyCaller {
-        callerBinding = Identifier(name: "__caller",
-                                   sourceLocation: functionDeclaration.sourceLocation)
-        functionDeclaration.body.insert(
-            generateCallerBindingStatement(callerBindingIdentifier: callerBinding!),
-            at: 0
-        )
-      }
-      if let callerBinding = callerBinding,
-         !contractBehaviorDeclarationContext.anyCaller {
-        let predicate = contractBehaviorDeclarationContext.callerProtections
-            .map { (protection: CallerProtection) -> AST.Expression in
-          let type = passContext.environment!.type(of: .identifier(protection.identifier),
-                                                   enclosingType: passContext.enclosingTypeIdentifier!.name,
-                                                   scopeContext: ScopeContext())
-          switch type {
-          case .basicType(.address):
-            return Expression.binaryExpression(BinaryExpression(
-                lhs: .identifier(protection.identifier),
-                op: Token(kind: .punctuation(.doubleEqual), sourceLocation: protection.sourceLocation),
-                rhs: .identifier(callerBinding)
-            ))
-          default: fatalError("Can currently only handle caller protection π(x) where x: Address")
-          }
-        }.reduce (nil) { (checks, check) -> Expression? in
-          guard let checks = checks else {
-            return check
-          }
-          return Expression.binaryExpression(BinaryExpression(
-              lhs: checks,
-              op: Token(kind: .punctuation(.or), sourceLocation: callerBinding.sourceLocation),
-              rhs: check
-          ))
-        }
-        var assertName = Identifier(name: "assert", sourceLocation: SourceLocation.DUMMY)
-        //assertName.enclosingType = Environment.globalFunctionStructName
-        functionDeclaration.body.insert(
-            Statement.expression(.functionCall(FunctionCall(
-                identifier: assertName,
-                arguments: [FunctionArgument(predicate!),
-                            FunctionArgument(.literal(Token(kind: .literal(.decimal(.integer(1))),
-                                                            sourceLocation: SourceLocation.DUMMY)))],
-                closeBracketToken: Token(kind: .punctuation(.closeBracket), sourceLocation: SourceLocation.DUMMY),
-                isAttempted: false
-            ))),
-            at: 1
         )
       }
     }
@@ -317,12 +267,25 @@ extension MovePreprocessor {
     return ASTPassResult(element: functionDeclaration, diagnostics: [], passContext: passContext)
   }
 
+  public func process(contractDeclaration: ContractDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<ContractDeclaration> {
+    var contractDeclaration = contractDeclaration
+    if !contractDeclaration.states.isEmpty {
+      contractDeclaration.members.append(.variableDeclaration(VariableDeclaration(
+          identifier: Identifier(name: "\(MoveContract.stateVariablePrefix)\(contractDeclaration.identifier.name)",
+                                 sourceLocation: contractDeclaration.sourceLocation),
+          type: Type(inferredType: .basicType(.int), identifier: contractDeclaration.identifier)
+      )))
+    }
+    return ASTPassResult(element: contractDeclaration, diagnostics: [], passContext: passContext)
+  }
+
   public func process(specialDeclaration: SpecialDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
     var specialDeclaration = specialDeclaration
     if let callerBindingIdentifier = passContext.contractBehaviorDeclarationContext?.callerBinding {
       specialDeclaration.body.insert(
-        generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
+        MovePreprocessor.generateCallerBindingStatement(callerBindingIdentifier: callerBindingIdentifier),
         at: 0)
     }
     return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
@@ -344,7 +307,10 @@ extension MovePreprocessor {
       guard case .functionDeclaration(var functionDeclaration) = member else {
         return [member]
       }
-      let wrapperFunctionDeclaration: FunctionDeclaration = functionDeclaration.generateWrapper()
+      let wrapperFunctionDeclaration: FunctionDeclaration = functionDeclaration.generateContractWrapper(
+          contractBehaviourDeclaration: contractBehaviorDeclaration,
+          passContext: passContext
+      )
       functionDeclaration.signature.modifiers.removeAll(where: { $0.kind == .`public` })
       return [.functionDeclaration(functionDeclaration),
               .functionDeclaration(wrapperFunctionDeclaration)]
@@ -353,13 +319,12 @@ extension MovePreprocessor {
     return ASTPassResult(element: contractBehaviorDeclaration, diagnostics: [], passContext: passContext)
   }
 
-  private func generateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
-    let addressType: RawType = .basicType(.address)
+  public static func generateCallerBindingStatement(callerBindingIdentifier: Identifier) -> Statement {
     let callerBindingAssignment = BinaryExpression(
       lhs: .identifier(callerBindingIdentifier),
       op: Token(kind: .punctuation(.equal),
                 sourceLocation: callerBindingIdentifier.sourceLocation),
-      rhs: .rawAssembly("get_txn_sender()", resultType: addressType))
+      rhs: .rawAssembly("get_txn_sender()", resultType: .basicType(.address)))
     return .expression(.binaryExpression(callerBindingAssignment))
   }
 

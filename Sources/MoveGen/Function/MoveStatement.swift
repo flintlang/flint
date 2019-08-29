@@ -256,7 +256,8 @@ struct MoveBecomeStatement {
     let sl = becomeStatement.sourceLocation
     let stateVariable: AST.Expression = .identifier(
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
-                 sourceLocation: .DUMMY))
+                 sourceLocation: sl,
+                 enclosingType: functionContext.enclosingTypeName))
     let selfState: AST.Expression = .binaryExpression(
       BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: sl)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: sl),

@@ -15,7 +15,7 @@ RockPaperScissors :: (any) {
     // PAPER == 1
     // SCISSORS == 2
   {
-    var outcome: Int = ((3 + left - right))
+    var outcome: Int = (3 + left) - right
     winner = outcome % 3 == 1
   }
 }

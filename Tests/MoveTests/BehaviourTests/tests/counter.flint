@@ -1,8 +1,8 @@
-contract Simple {
+contract Counter {
   visible var count: Int = 0
 }
 
-Simple :: (any) {
+Counter :: (any) {
   public init() { }
 
   public func increment(by: Int = 1) mutates (count) {

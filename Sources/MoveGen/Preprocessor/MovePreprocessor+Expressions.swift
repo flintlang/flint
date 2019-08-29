@@ -48,8 +48,7 @@ extension MovePreprocessor {
       if let type = scopeContext.type(for: identifier.name),
          !type.isInout {
         // Handle `x.y` when x is not a reference
-        // FIXME cannot currently handle self in constructors as cannot tell if has been constructed yet
-        return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
+        return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal, isReference: false)
       } else if identifier.enclosingType != nil {
         // Handle x.y when x is implicitly self.x
         return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
@@ -86,7 +85,9 @@ extension MovePreprocessor {
 
       switch binaryExpression.lhs {
       case .identifier:
-        binaryExpression.lhs = expandProperties(binaryExpression.lhs, passContext: &passContext)
+        if case .functionCall = binaryExpression.rhs {} else {
+          binaryExpression.lhs = expandProperties(binaryExpression.lhs, passContext: &passContext)
+        }
       case .binaryExpression(let binary):
         if binary.opToken == .dot {
           // Handle w.x...y.z
@@ -168,7 +169,11 @@ extension MovePreprocessor {
           var receiver = constructExpression(from: receiverTrail)
           let type: RawType
 
-          receiver = expandProperties(receiver, passContext: &passContext)
+          if receiver.enclosingType != nil {
+            receiver = expandProperties(receiver, passContext: &passContext)
+          } else if case .binaryExpression = receiver {
+            receiver = expandProperties(receiver, passContext: &passContext)
+          }
 
           switch receiver {
           case .`self`:
@@ -329,7 +334,10 @@ extension MovePreprocessor {
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
   }
 
-  func preAssign(_ element: Expression, passContext: inout ASTPassContext, borrowLocal: Bool = false) -> Expression {
+  func preAssign(_ element: Expression,
+                 passContext: inout ASTPassContext,
+                 borrowLocal: Bool = false,
+                 isReference: Bool = true) -> Expression {
     guard let environment = passContext.environment,
           var scopeContext = passContext.scopeContext,
           let enclosingType = passContext.enclosingTypeIdentifier?.name else {
@@ -345,7 +353,7 @@ extension MovePreprocessor {
     }
 
     let expression: Expression
-    if borrowLocal || type.isBuiltInType {
+    if borrowLocal || type.isBuiltInType || !isReference {
       expression = element
     } else {
       expression = .inoutExpression(InoutExpression(
@@ -392,10 +400,12 @@ extension MovePreprocessor {
           op: Token(kind: .punctuation(.equal), sourceLocation: element.sourceLocation),
           rhs: expression
       ))))
-      passContext.scopeContext?.localVariables.append(declaration)
+      passContext.blockContext?.scopeContext.localVariables.append(declaration)
       passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
       passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
     }
+
+    passContext.scopeContext = scopeContext
 
     if borrowLocal {
       return .inoutExpression(InoutExpression(

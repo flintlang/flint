@@ -34,7 +34,7 @@ struct Analyser {
 
     let config = CompilerContractAnalyserConfiguration(sourceFiles: inputFiles,
                                                        sourceCode: sourceCode,
-                                                       stdlibFiles: StandardLibrary.default.files,
+                                                       stdlibFiles: StandardLibrary.from(target: .evm).files,
                                                        outputDirectory: outputDirectory,
                                                        diagnostics: diagnosticPool)
 

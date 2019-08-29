@@ -52,7 +52,7 @@ struct TestRunner {
 
     let config = CompilerTestFrameworkConfiguration(sourceFiles: inputFiles,
                                                     sourceCode: contract_sourceCode,
-                                                    stdlibFiles: StandardLibrary.default.files,
+                                                    stdlibFiles: StandardLibrary.from(target: .evm).files,
                                                     outputDirectory: outputDirectory,
                                                     diagnostics: DiagnosticPool(shouldVerify: false,
                                                                                 quiet: false,
