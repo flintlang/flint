@@ -111,24 +111,18 @@ extension MovePreprocessor {
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
-  
-  public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
-    let enclosingType = passContext.enclosingTypeIdentifier!.name
-    let environment = passContext.environment!
-    let scopeContext = passContext.scopeContext!
-    var functionCall = functionCall
-    
-    if passContext.isExternalFunctionCall {
-      let receiver = functionCall.receiverTrail!.first!
-      let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
-      let moduleName = receiverType.name
-      functionCall.mangledIdentifier = "\(moduleName).\(functionCall.identifier.name)"
-    } else if let mangledFunctionName = mangledFunctionName(for: functionCall, in: passContext) {
-      functionCall.mangledIdentifier = "Self.\(mangledFunctionName)"
-    }
-    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
-  }
 
+  public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    var externalCall = externalCall
+    let environment = passContext.environment!
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let scopeContext = passContext.scopeContext!
+    let receiver = externalCall.functionCall.lhs
+    let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
+    externalCall.externalTraitName = receiverType.name
+    return ASTPassResult(element: externalCall, diagnostics: [], passContext: passContext)
+  }
+  
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
     let environment = passContext.environment!
@@ -149,8 +143,10 @@ extension MovePreprocessor {
     if receiverTrail.isEmpty {
       receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
     }
-
-   if !environment.isInitializerCall(functionCall) && !environment.isTraitDeclared(functionCall.identifier.name) {
+    
+    functionCall.mangledIdentifier = mangledFunctionName(for: functionCall, in: passContext)
+    
+    if !environment.isInitializerCall(functionCall) && !environment.isTraitDeclared(functionCall.identifier.name) {
       // Get the result type of the call.
       let declarationEnclosingType: RawTypeIdentifier
       if isGlobalFunctionCall {
@@ -219,8 +215,9 @@ extension MovePreprocessor {
   }
 
   func mangledFunctionName(for functionCall: FunctionCall, in passContext: ASTPassContext) -> String? {
-    // Don't mangle runtime functions
-    guard !Environment.isRuntimeFunctionCall(functionCall) else {
+    // Don't mangle runtime and external functions
+    guard !Environment.isRuntimeFunctionCall(functionCall),
+          !passContext.isExternalFunctionCall else {
       return functionCall.identifier.name
     }
 

@@ -10,11 +10,14 @@ import MoveIR
 /// Generates code for a function call.
 struct MoveFunctionCall {
   var functionCall: AST.FunctionCall
+  var moduleName: String
+    
+  public init(functionCall: AST.FunctionCall, moduleName: String = "Self") {
+    self.functionCall = functionCall
+    self.moduleName = moduleName
+  }
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
-    if functionCall.identifier.name == "LibraCoin" {
-      print("DEBUG")
-    }
     let environment = functionContext.environment
     let enclosingType: RawTypeIdentifier = functionContext.enclosingTypeName
     let scopeContext: ScopeContext = functionContext.scopeContext
@@ -39,7 +42,8 @@ struct MoveFunctionCall {
                                          typeStates: [], callerProtections: [], scopeContext: scopeContext),
        initializer.declaration.generated {*/
     if environment.isExternalTraitInitializer(functionCall: lookupCall) {
-      return MoveExpression(expression: lookupCall.arguments[0].expression, position: .normal)
+      let externalContractAddress = lookupCall.arguments[0].expression
+      return MoveExpression(expression: externalContractAddress, position: .normal)
         .rendered(functionContext: functionContext)
     }
 
@@ -48,13 +52,7 @@ struct MoveFunctionCall {
           .rendered(functionContext: functionContext)
     })
 
-    // TODO please replace once module infrastructure has been implemented
-    // It's okay because all function calls are on the local modules
-
-    //let module = functionContext.environment.isTraitDeclared(functionCall.identifier.name) ?
-    //functionCall.identifier.name : "Self."
-    //let module = "Self"
-    let identifier = functionCall.mangledIdentifier ?? functionCall.identifier.name
+    let identifier = "\(moduleName).\(functionCall.mangledIdentifier ?? functionCall.identifier.name)"
     return .functionCall(MoveIR.FunctionCall(identifier, args))
   }
 }
