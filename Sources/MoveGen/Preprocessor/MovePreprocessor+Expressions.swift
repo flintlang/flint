@@ -111,6 +111,23 @@ extension MovePreprocessor {
     let op = Token(kind: .punctuation(.dot), sourceLocation: head.sourceLocation)
     return .binaryExpression(BinaryExpression(lhs: head, op: op, rhs: constructExpression(from: tail)))
   }
+  
+  public func postProcess(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
+    let enclosingType = passContext.enclosingTypeIdentifier!.name
+    let environment = passContext.environment!
+    let scopeContext = passContext.scopeContext!
+    var functionCall = functionCall
+    
+    if passContext.isExternalFunctionCall {
+      let receiver = functionCall.receiverTrail!.first!
+      let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
+      let moduleName = receiverType.name
+      functionCall.mangledIdentifier = "\(moduleName).\(functionCall.identifier.name)"
+    } else if let mangledFunctionName = mangledFunctionName(for: functionCall, in: passContext) {
+      functionCall.mangledIdentifier = "Self.\(mangledFunctionName)"
+    }
+    return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
+  }
 
   public func process(functionCall: FunctionCall, passContext: ASTPassContext) -> ASTPassResult<FunctionCall> {
     var functionCall = functionCall
@@ -131,19 +148,6 @@ extension MovePreprocessor {
 
     if receiverTrail.isEmpty {
       receiverTrail = [.`self`(Token(kind: .`self`, sourceLocation: functionCall.sourceLocation))]
-    }
-
-    let receiver = receiverTrail.last!
-    let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
-    let isExternalTraitFunctionCall = receiverType.isExternalTraitType(environment: environment)
-
-    if isExternalTraitFunctionCall {
-      let moduleName = receiverType.name
-      functionCall.mangledIdentifier = "\(moduleName).\(functionCall.identifier.name)"
-    } else {
-      if let functionName = mangledFunctionName(for: functionCall, in: passContext) {
-         functionCall.mangledIdentifier = "Self.\(functionName)"
-      }
     }
 
    if !environment.isInitializerCall(functionCall) && !environment.isTraitDeclared(functionCall.identifier.name) {
