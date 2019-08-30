@@ -9,6 +9,6 @@ main () {
   assert(Counter.getCount(copy(this)) == 1, 2);
   Counter.reset(copy(this));
   assert(Counter.getCount(copy(this)) == 0, 3);
-  Counter.reset(copy(this));  // expect fail 17
+  Counter.reset(copy(this));  //! expect fail 17
   return;
 }

@@ -71,11 +71,18 @@ class MoveIRProgramme(Programme):
         except FileExistsError:
             pass
         with open(new, "w") as file:
-            file.write(f"""\
-{ self.contents() !s}
+            testsuite_contents = testsuite.contents().split("//! provide module")
+            for module in testsuite_contents[1:]:
+                file.write(f"""
+{ module !s}
 
 //! new-transaction
-{ testsuite.contents() !s}
+""")
+            file.write(f"""\
+{ self.contents().replace("import 0x00.", "import Transaction.") !s}
+
+//! new-transaction
+{ testsuite_contents[0] !s}
 """)
         self.path = new
 
@@ -116,7 +123,7 @@ class BehaviourTest(NamedTuple):
         check compilation in such case).
 
         If you want your test to fail on an assertion on line x in Flint, you can write
-        `// expect fail x`, however, this expects the assertion to have that line number
+        `//! expect fail x`, however, this expects the assertion to have that line number
         which may not be the case if the assertion is generated through fatalErrors or
         similar functions. It will work if a disallowed operation (type states, caller
         protections) has been attempted. Also note, only one fail is allowed per test.
@@ -127,7 +134,7 @@ class BehaviourTest(NamedTuple):
         expected_fail_line = None
         if move_path.exists():
             move_programme = MoveIRProgramme(move_path)
-            expect_fail = re.search(r"// expect fail (\d+)", move_programme.contents(), flags=re.IGNORECASE)
+            expect_fail = re.search(r"//! expect fail (\d+)", move_programme.contents(), flags=re.IGNORECASE)
             if expect_fail:
                 expected_fail_line = int(expect_fail.group(1))
 
@@ -160,6 +167,7 @@ class BehaviourTest(NamedTuple):
                                  message or f"Move Missing Error: "
                                  f"No error raised in {self.programme.path.name} line {self.expected_fail_line}"
                                  )
+            print(test.contents())
             return False
 
         TestFormatter.passed(self.programme.name)
