@@ -7,27 +7,27 @@
 
 ## Introduction
 
-Contracts can be created "from outside" via Ethereum transactions or from within Flint Contracts. They contain persistent data in state variables and functions that can modify these variables. Calling a function on a different contract \(instance\) will perform an EVM Function call and thus switch the context such that state variables in the old context are inaccessible.
+Contracts can be created "from outside" via Ethereum transactions or from within Flint Contracts. They contain persistent data in state variables and functions that can modify these variables. Calling a function on a different contract (instance) will perform an EVM Function call and thus switch the context such that state variables in the old context are inaccessible.
 
 ## Motivations
 
 Calls to untrusted contracts can introduce several unexpected risks and errors.
 
-When the internal contract calls to an external contract \(i.e. the callee contract\) the callee may execute, potentially malicious, but always arbitrary code. This code can itself include external calls to any other contract, which themselves allow arbitrary code execution and so on.
+When the internal contract calls to an external contract (i.e. the callee contract) the callee may execute, potentially malicious, but always arbitrary code. This code can itself include external calls to any other contract, which themselves allow arbitrary code execution and so on.
 
 As such, **every** external call should be treated as a security risk because it requires the integrity of every contract in this chain.
 
 However external calls are necessary to accomplish key features of smart contracts, including:
 
-* Paying other users
-* Interacting with other Contracts e.g. Tokens or Wallets
+ - Paying other users
+ - Interacting with other Contracts e.g. Tokens or Wallets
 
-There have been several published best practice guidelines for programming with external calls \([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)\). This proposal will attempt to integrate best practices into the language design. Below are causes for concern with external calls:
+There have been several published best practice guidelines for programming with external calls ([Consensys Recommendations](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls), [OpenZeppelin](http://openzeppelin.org/), [Solium Security](https://github.com/duaraghav8/solium-plugin-security), [Mythril](https://github.com/ConsenSys/mythril), [Solcheck](https://github.com/federicobond/solcheck)). This proposal will attempt to integrate best practices into the language design. Below are causes for concern with external calls:
 
-1. Contracts are untrustworthy by default;
-2. External calls may execute arbitrary code;
-3. External calls may fail silently;
-4. Interfaces may be incorrectly specified.
+ 1. Contracts are untrustworthy by default;
+ 2. External calls may execute arbitrary code;
+ 3. External calls may fail silently;
+ 4. Interfaces may be incorrectly specified.
 
 ### 1. Contracts are untrustworthy by default
 
@@ -50,11 +50,11 @@ function makeUntrustedWithdrawal(uint amount) { // Name is explicit
 
 It is possible to indicate trustworthiness of contracts using proper naming of functions and variables. However, this is at the discretion of the programmer and can be easily overlooked when dealing with a more complex codebase.
 
-Instead, the language syntax itself \(or the compiler\) should make it plain that external calls are potentially dangerous.
+Instead, the language syntax itself (or the compiler) should make it plain that external calls are potentially dangerous.
 
 ### 2. External calls may execute arbitrary code
 
-Calling functions of an external contract is also problematic since the control flow is completely taken over by the called contract and there is no way to limit exactly what the external contract will do. Consider a simple bank-like contract which stores the balances of clients \(in the `put` function\) and then allows clients to take out their balance \(in the `get` function\):
+Calling functions of an external contract is also problematic since the control flow is completely taken over by the called contract and there is no way to limit exactly what the external contract will do. Consider a simple bank-like contract which stores the balances of clients (in the `put` function) and then allows clients to take out their balance (in the `get` function):
 
 ```swift
 contract HoneyPot {
@@ -108,24 +108,24 @@ contract AttackContract {
 
 The call chain might look something like:
 
-* `AttackContract.init()`
-  * `HoneyPot.put()`
-  * `HoneyPot.get()`
-    * `AttackContract.collectMoney()`
-      * `HoneyPot.get()`
-        * `AttackContract.collectMoney()`
-          * ...
+ - `AttackContract.init()`
+   - `HoneyPot.put()`
+   - `HoneyPot.get()`
+     - `AttackContract.collectMoney()`
+       - `HoneyPot.get()`
+         - `AttackContract.collectMoney()`
+           - ...
 
-That is, the `collectMoney` function calls `HoneyPot.get()` _before_ the call to `collectMoney` is finished. This means that `balance[caller]` is never set to zero and more and more money \(in multiples of the original `balance[caller]`\) is transferred from `HoneyPot` to `AttackContract`.
+That is, the `collectMoney` function calls `HoneyPot.get()` _before_ the call to `collectMoney` is finished. This means that `balance[caller]` is never set to zero and more and more money (in multiples of the original `balance[caller]`) is transferred from `HoneyPot` to `AttackContract`.
 
 This illustrates how easily control flow can be hijacked due to external calls.
 
 In Solidity, `someAddress.send()` and `someAddress.transfer()` are considered safe against re-entrancy due to a workaround: while these methods still trigger code execution, the called contract is only given a stipend of `2300 gas` which is currently only enough to log an event. This:
 
-* Prevents re-entrancy attacks but is incompatible with any contract whose `fallback` function requires 2300 gas or more.
-* Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
+ - Prevents re-entrancy attacks but is incompatible with any contract whose `fallback` function requires 2300 gas or more.
+ - Sometimes the programmer won't want this, but then has to fall back onto the dangerous raw calls.
 
-In most cases, re-entrancy is not desirable, so Flint should prevent external calls to call functions of the caller \(Flint\) contract.
+In most cases, re-entrancy is not desirable, so Flint should prevent external calls to call functions of the caller (Flint) contract.
 
 ### 3. External calls may fail silently
 
@@ -165,9 +165,9 @@ contract Bob {
 }
 ```
 
-To call `Bob.set()`, the contract `Alice` has to specify the interface \(trait\) for `Bob`, but it may easily be specified incorrectly:
+To call `Bob.set()`, the contract `Alice` has to specify the interface (trait) for `Bob`, but it may easily be specified incorrectly:
 
-```text
+```
 contract trait Bob {
   public func set(value: Int) // note Int instead of Bool
 }
@@ -182,25 +182,29 @@ contract Alice {
 
 The two will produce different method IDs. As a result, `Alice` will call the fallback function of `Bob` rather than `set`, most likely with unwanted results.
 
-This type of error is responsible for the bug in [King of the Ether](https://www.kingoftheether.com/postmortem.html) \(line numbers: [100](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L100), [107](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L107), [120](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L120), [161](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L161)\)
+This type of error is responsible for the bug in [King of the Ether](https://www.kingoftheether.com/postmortem.html) (line numbers:
+	[100](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L100),
+	[107](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L107),
+	[120](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L120),
+	[161](https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol#L161))
 
 ## Proposed solution
 
 The following solution was reworked following the discussion on October 25th, with the following goals in mind, roughly in order of decreasing importance:
 
-1. External contracts should be considered untrustworthy, and there will not \(yet\) be a way to change this.
-2. External calls should always be surrounded with `do-catch` blocks, where any call implies a `try`.
-3. Any data related to an external call should be specified at the call site.
-4. External calls should have a syntax distinct from regular function calls.
-5. The supporting syntax should feel similar to Swift \(wherever possible\).
+ 1. External contracts should be considered untrustworthy, and there will not (yet) be a way to change this.
+ 2. External calls should always be surrounded with `do-catch` blocks, where any call implies a `try`.
+ 3. Any data related to an external call should be specified at the call site.
+ 4. External calls should have a syntax distinct from regular function calls.
+ 5. The supporting syntax should feel similar to Swift (wherever possible).
 
 A valid external call should specify the following data:
 
-* Contract \(`callee`\) address
-* Function name
-* Function arguments
-* Gas allocation
-* Ether \(Wei\) allocation
+ - Contract (`callee`) address
+ - Function name
+ - Function arguments
+ - Gas allocation
+ - Ether (Wei) allocation
 
 Gas allocation and Ether allocation are special values that the external function uses / consumes, but they do not form a part of its signature; they are implicit in EVM. In the remainder of the text they will be referred to as "hyper-parameters".
 
@@ -208,18 +212,18 @@ Gas allocation and Ether allocation are special values that the external functio
 
 The function interface of the external contract has to be specified using an "external" trait. External traits are similar to contract traits, but have a number of limitations, due to the nature of the low-level ABI of Solidity and the fact that Flint-specific features cannot be supported on Solidity contracts:
 
-* Type states cannot be specified
-* Caller protection blocks cannot be specified
-* `mutating` or `public` keywords cannot be specified on functions
-* Default implementations cannot be specified
-* `Self` cannot be used
+ - Type states cannot be specified
+ - Caller protection blocks cannot be specified
+ - `mutating` or `public` keywords cannot be specified on functions
+ - Default implementations cannot be specified
+ - `Self` cannot be used
 
 Some additional caveats:
 
-* Function arguments can be given labels, but these are for internal use only \(since they do not affect the ABI signature\)
-* Functions can be given return types, but there is no trivial way to check if a returned value is of the required type \(e.g. a `Bool` `true` value has the same representation as a `Int` `1` in the Solidity ABI\)
-* External traits have an implicit constructor, so that an address can be "cast" into the trait, allowing function calls
-* Functions of external trait instances cannot be called using the regular function call syntax, but must use the `call` keyword, which also allows hyper-parameters to be specified
+ - Function arguments can be given labels, but these are for internal use only (since they do not affect the ABI signature)
+ - Functions can be given return types, but there is no trivial way to check if a returned value is of the required type (e.g. a `Bool` `true` value has the same representation as a `Int` `1` in the Solidity ABI)
+ - External traits have an implicit constructor, so that an address can be "cast" into the trait, allowing function calls
+ - Functions of external trait instances cannot be called using the regular function call syntax, but must use the `call` keyword, which also allows hyper-parameters to be specified
 
 ```swift
 external trait Alpha {
@@ -227,7 +231,7 @@ external trait Alpha {
   func functionWithArguments(value: Int, tax: Int)
   func functionWithReturn() -> Int
   func functionWithBoolReturn() -> Bool
-
+  
   @payable
   func expensiveFunction()
 }
@@ -242,7 +246,7 @@ let alpha: Alpha = Alpha(adress: someAddress)
 
 Then we can call functions on `alpha` using the `call` keyword, which is modeled to resemble the semantics of `try` in Swift. It has the following grammar:
 
-```text
+```
 externalCall =
   "call" WSP
   [ "(" [expression] *( "," WSP expression ) ")" ] WSP
@@ -250,9 +254,9 @@ externalCall =
   functionCall
 ```
 
-In other words, following the `call` keyword, hyper-parameters may optionally be specified, then `!` \(exit on error\) or `?` \(return an `Optional`\) may optionally change the `call` mode, then the actual external call is specificed.
+In other words, following the `call` keyword, hyper-parameters may optionally be specified, then `!` (exit on error) or `?` (return an `Optional`) may optionally change the `call` mode, then the actual external call is specificed.
 
-Examples of \(syntactically\) valid uses of the `!` mode, which will cause a transaction rollback on any error:
+Examples of (syntactically) valid uses of the `!` mode, which will cause a transaction rollback on any error:
 
 ```swift
 call! alpha.simpleFunction()
@@ -261,7 +265,7 @@ call(value: Wei(100))! alpha.expensiveFunction()
 call(gas: 5000)! alpha.simpleFunction()
 ```
 
-Examples of \(syntactically\) valid uses of the default mode, which must be used in a `do-catch` block:
+Examples of (syntactically) valid uses of the default mode, which must be used in a `do-catch` block:
 
 ```swift
 do {
@@ -278,7 +282,7 @@ do {
 }
 ```
 
-Examples of \(syntactically\) valid uses of the `?` mode, which returns an optional, and is therefore best used in a `if let ...` condition:
+Examples of (syntactically) valid uses of the `?` mode, which returns an optional, and is therefore best used in a `if let ...` condition:
 
 ```swift
 if let returnedValue: Int = call? alpha.functionWithReturn() {
@@ -321,13 +325,13 @@ alpha.simpleFunction()
 
 The `call` keyword accepts the following parameters:
 
-* `gas` - an `Int` value, specifying the computational time allowed for the external call; default: `2300`
-* `value` - a `Wei` value that is paid into the external contract; must be specified for functions marked `@payable`, otherwise invalid
-* `reentrant` - a `Bool` value that specifies if it should be possible to call functions of the current \(Flint\) contract from the external contract _during_ an external call \(see re-entrancy problem discussed in motivation and re-entrancy discussion below\); default: `false`
+ - `gas` - an `Int` value, specifying the computational time allowed for the external call; default: `2300`
+ - `value` - a `Wei` value that is paid into the external contract; must be specified for functions marked `@payable`, otherwise invalid
+ - `reentrant` - a `Bool` value that specifies if it should be possible to call functions of the current (Flint) contract from the external contract _during_ an external call (see re-entrancy problem discussed in motivation and re-entrancy discussion below); default: `false`
 
 ### `reentrant`
 
-Just before an external call, the Flint contract is moved into a special type state. This type state is generated automatically by the compiler, and it disallows any function to be called, preventing re-entrancy issues. After the external call is finished \(no matter what the result was\) the contract is placed back into the previous type state.
+Just before an external call, the Flint contract is moved into a special type state. This type state is generated automatically by the compiler, and it disallows any function to be called, preventing re-entrancy issues. After the external call is finished (no matter what the result was) the contract is placed back into the previous type state.
 
 This behaviour may be overridden if the user chooses to do so by specifying `reentrant: true` as a hyper-parameter to the `call` keyword.
 
@@ -335,35 +339,34 @@ This behaviour may be overridden if the user chooses to do so by specifying `ree
 
 In the parser:
 
-* `call` keyword, grammar for `externalCall` expression \(statement?\)
-* `do-catch` blocks
-* `if let` blocks
+ - `call` keyword, grammar for `externalCall` expression (statement?)
+ - `do-catch` blocks
+ - `if let` blocks
 
 In the semantic analyser:
 
-* check that `@payable` functions are given `wei`
-* check that non-`@payable` functions are not given `wei`
-* check that `if let ... = call? ...` calls a function with a return type
-* check that `if let ... = call? ...` calls a function with the correct return type
-* check that `call? ...` is used in `if let ...` \(may be a parser check\)
-* put bound return variable in scope of `if let ...` block
+ - check that `@payable` functions are given `wei`
+ - check that non-`@payable` functions are not given `wei`
+ - check that `if let ... = call? ...` calls a function with a return type
+ - check that `if let ... = call? ...` calls a function with the correct return type
+ - check that `call? ...` is used in `if let ...` (may be a parser check)
+ - put bound return variable in scope of `if let ...` block
 
 In the IR generator:
 
-* better exception handling \(stack of exception handlers / addresses for each type of exception, for now only `ExternalCallError`\)
-* rollback on unhandled exceptions / `!` mode
-* bind optional value to a variable in `if let ...`
-* add special external call type state, enter into it before a call, leave it after a call
+ - better exception handling (stack of exception handlers / addresses for each type of exception, for now only `ExternalCallError`)
+ - rollback on unhandled exceptions / `!` mode
+ - bind optional value to a variable in `if let ...`
+ - add special external call type state, enter into it before a call, leave it after a call
 
 Test suite:
 
-* add tests
+ - add tests
 
 ### Solidity ABI
-
 Behind the scenes all of these interfaces are decoded into ABI function calls. [ABI Specification](https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html)
 
-```text
+```
 function:    sam(bytes, bool, uint[])
 called with: "dave", true, [1,2,3]
 
@@ -381,7 +384,7 @@ called with: "dave", true, [1,2,3]
 
 ### Warnings
 
-If the contract storage is changed after an external call \(i.e. the external call modified the state\) then a warning should be emitted. This should encourage two things:
+If the contract storage is changed after an external call (i.e. the external call modified the state) then a warning should be emitted. This should encourage two things:
 
 1. `checks-effects-interactions` pattern.
 2. `Pull over push` for external calls. This is considered a [best practice](https://consensys.github.io/smart-contract-best-practices/recommendations/#favor-pull-over-push-for-external-calls) as it helps isolate each external call into its own transaction that can be initiated by the recipient of the call.
@@ -496,7 +499,7 @@ call Name {
 
 ### Previous version of this proposal
 
-The following was the previous version of this proposal. Several issues have since been addressed, namely that contracts are always untrusted, that hyper-parameters were specified on a stateful `Director` \(leading to potential problems when the state is specified far from an actual call\), that the syntax seemed too different from Swift.
+The following was the previous version of this proposal. Several issues have since been addressed, namely that contracts are always untrusted, that hyper-parameters were specified on a stateful `Director` (leading to potential problems when the state is specified far from an actual call), that the syntax seemed too different from Swift.
 
 ```swift
 // THIS SYNTAX WILL NOT BE SUPPORTED!
@@ -525,22 +528,22 @@ contract AlphaUser {
   public init() {
     // Director allows external calls and setting of hyper-parameters
     let alpha: Director<Alpha> = 0x... // address of a deployed Alpha contract
-
+    
     try alpha!.doesNothing() then {
       // Successful Call
     } catch {
       // If it fails
     }
-
+    
     try! alpha!.doesNothingWithArgs(a: x, b: y, c: z)
     // Catch can not be provided by using try!, then if the call fails then transaction reverts.
-
+    
     try! alpha!.withdraw() // This flags an error as the return value is not dealt with
-
+    
     try! boundReturn <- alpha!.withdraw() then {
       // Optionally do something with boundReturn
     }
-
+    
     // Setting hyper parameters
     // Asset types are atomically transferred to preserve special properties.
     alpha!.transfer(Wei(200))
@@ -553,9 +556,9 @@ contract AlphaUser {
 
 The following features were completely removed from this proposal, since they have been deemed too ambitious / unnecessary for the time being:
 
-* Importing trusted contracts from the Flint Package Manager
-* Importing contracts from URLs
-* Deploying contracts
+ - Importing trusted contracts from the Flint Package Manager
+ - Importing contracts from URLs
+ - Deploying contracts
 
 An example of the above features:
 
@@ -576,4 +579,3 @@ import Directory.Contract
 let contract: Contract<URLContract> = deploy(URLContract)
 contract.argumentName() // Value and Gas are automatically set based upon properties
 ```
-

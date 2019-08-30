@@ -107,8 +107,8 @@ public indirect enum Expression: ASTNode {
     case .range(let rangeExpression): return rangeExpression.sourceLocation
     case .sequence(let expressions): return expressions.first!.sourceLocation
     case .returnsExpression(let returnsExpression): return returnsExpression.sourceLocation
-    case .rawAssembly: fatalError()
-    case .emptyExpr: fatalError("EMPTY EXPR")
+    case .rawAssembly: fatalError("Attempted to access the source location of raw expression")
+    case .emptyExpr: fatalError("Attempted to access the source location of an empty expression")
     }
   }
   public var description: String {
@@ -130,8 +130,13 @@ public indirect enum Expression: ASTNode {
     case .range(let rangeExpression): return rangeExpression.description
     case .sequence(let expressions): return expressions.map({ $0.description }).joined(separator: "\n")
     case .returnsExpression(let returnsExpression): return "returns " + returnsExpression.description
-    case .rawAssembly(let value, let resultType): return "rawAssembly({\(value)}: \(resultType))"
+    case .rawAssembly(let value, let resultType):
+      return "rawAssembly({\(value)}: \(resultType.debugDescription))"
     case .emptyExpr: fatalError("EMPTY EXPR")
     }
+  }
+
+  public static func == (left: Expression, right: Expression) -> Bool {
+    return left.description == right.description
   }
 }

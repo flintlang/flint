@@ -129,7 +129,6 @@ class FunctionContext: CustomStringConvertible {
     return doCatchStatementStack.last
   }
 
-  // Maybe rename to reflect checks if id is a MoveIR reference?
   func isReferenceParameter(identifier: AST.Identifier) -> Bool {
     return scopeContext.parameters.contains(where: { (parameter: Parameter) in
       if parameter.identifier.name == identifier.name {
@@ -164,10 +163,10 @@ class FunctionContext: CustomStringConvertible {
     let referencesToRelease: [AST.Identifier] = scopeContext.parameters
         .filter { $0.isInout }
         .map { $0.identifier }
-    referencesToRelease.forEach { reference in
+    for reference in referencesToRelease {
       let referenceExpression: MoveIR.Expression
           = MoveIdentifier(identifier: reference).rendered(functionContext: self, forceMove: true)
-      self.emit(.inline("release(\(referenceExpression))"))
+      self.emit(.inline("_ = \(referenceExpression)"))
     }
   }
 }

@@ -1,0 +1,58 @@
+contract Inits {
+  var a: Int
+  var b: Address
+  var s: Bool
+  var z: Address = 0x7298107734724875709188430880267982837124
+  var v: V = V(0, false)
+}
+
+Inits :: caller <- (any) {
+  public init(a: Int, s: Bool) {
+    self.a = a
+    self.b = caller
+    self.s = s
+  }
+
+  public func getA() -> Int {
+    return a
+  }
+
+  public func getB() -> Address {
+    return b
+  }
+
+  public func getS() -> Bool {
+    return s
+  }
+
+  public func getZ() -> Address {
+    return z
+  }
+
+  public func setT(x: Int, y: Bool) mutates(v) {
+    v = V(x, y)
+  }
+
+  public func getTx() -> Int {
+    return v.x
+  }
+
+  public func getTy() -> Bool {
+    return v.y
+  }
+
+  public func getTs() -> Bool {
+    return v.s
+  }
+}
+
+struct V {
+  var x: Int
+  var y: Bool
+  var s: Bool = false
+  
+  public init(x: Int, y: Bool) {
+    self.x = x
+    self.y = y
+  }
+}

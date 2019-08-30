@@ -21,6 +21,9 @@ public struct FunctionDeclaration: ASTNode {
   // Contextual information for the scope defined by the function.
   public var scopeContext: ScopeContext?
 
+  // Any tags the compiler needs to attach to the function
+  public var compilerTags: [String] = []
+
   public init(signature: FunctionSignatureDeclaration,
               body: [Statement],
               closeBraceToken: Token,
@@ -76,6 +79,10 @@ public struct FunctionDeclaration: ASTNode {
 
   public var name: String {
     return identifier.name
+  }
+
+  public var identifierTypes: [String: RawTypeIdentifier] {
+    return Dictionary(uniqueKeysWithValues: signature.parameters.map { ($0.identifier.name, $0.type.name) })
   }
 
   // MARK: - ASTNode

@@ -1,0 +1,104 @@
+//// #456 with send
+//// #471 with loop
+//// cannot get random number
+
+contract Lottery10Users {
+  var participants: Address[10] = []
+  var participantsCount: Int = 0
+  var randNonce: Int = 0
+  var balance: Wei
+
+  invariant (balance.rawValue >= 0 && balance.rawValue <= 10)
+  invariant (randNonce >= 0)
+  invariant (participantsCount >= 0)
+  invariant (balance.rawValue == participantsCount)
+}
+
+Lottery10Users :: caller <- (any) {
+  public init()
+  mutates (Wei.rawValue)
+  {
+    self.balance = Wei(0)
+  }
+
+  @payable
+  public func join(implicit value: inout Wei)
+  mutates (Wei.rawValue, participants, participantsCount, balance, randNonce)
+  pre (value.rawValue == 1) // 0.1 ether. do not support? ==> change to 1
+  pre (participantsCount < 10)
+  pre (arrayContains(participants, caller) == false)
+
+
+  post (prev(participantsCount) == 9 ==> balance.rawValue == 0)
+  post (prev(participantsCount) == 9 ==> participantsCount == 0)
+  post (prev(participantsCount) == 9 ==> forall (i, Int, 0 <= i && i < participantsCount ==> participants[i] == prev(participants[i])))
+
+  post (prev(participantsCount) < 9 ==> balance.rawValue == prev(balance.rawValue) + prev(value.rawValue))
+  post (prev(participantsCount) < 9 ==> participantsCount == prev(participantsCount) + 1)
+  post (prev(participantsCount) < 9 ==> participants[prev(participantsCount)] == caller)
+  post (prev(participantsCount) < 9 ==> forall (i, Int, 0 <= i && i < participantsCount ==> participants[i] == prev(participants[i]) || i == prev(participantsCount)))
+
+  {
+      // assert (joinedAlready(participant: caller) == false)
+      participants[participantsCount] = caller
+      participantsCount += 1
+      balance.transfer(source: &value)
+
+      if participantsCount == 10 {
+        selectWinner()
+      }
+  }
+
+
+//#471
+  func joinedAlready(participant: Address) -> Bool
+  post (returns (arrayContains(participants, participant)))
+  {
+    for var i: Int in (0..<10) {
+      if participants[i] == participant {
+        return true
+      }
+    }
+    // for var a: Address in participants {
+    //   if a == participant {
+    //     return true
+    //   }
+    // }
+    return false
+  }
+
+
+
+// #456 still aske for more mutates augument here.
+  func selectWinner() -> Address
+  // func selectWinner(message: String) -> Address
+  mutates (Wei.rawValue, randNonce, participants, participantsCount, balance)
+
+  pre (participantsCount == 10)
+  pre (balance.rawValue == 10)
+
+  post (balance.rawValue == 0)
+  post (participantsCount == 0)
+  {
+    // let rand: Int = randomNumber(message: massage)
+    // should use randomNumber here.
+    let rand: Int = 0
+    let winner: Address = participants[rand]
+    var toSend: Wei = Wei(source: &balance)
+    // transfer all the Weis in balances
+    participantsCount = 0
+    send(winner, &toSend)
+    return winner
+  }
+
+
+  // func randomNumber(message: String) -> Int
+  // post (randNonce == prev(randNonce) + 1)
+  // {
+  //   // missing ways to get a random number.
+  //   let temp : [Int] = soliditySelectorRaw(of signature : message) // not a correct function
+  //   let rand: Int = temp[0] % 8
+  //   randNonce += 1
+  //   return rand
+  // }
+}

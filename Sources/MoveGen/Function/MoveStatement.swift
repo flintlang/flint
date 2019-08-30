@@ -42,8 +42,10 @@ struct MoveIfStatement {
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
     let condition = MoveExpression(expression: ifStatement.condition).rendered(functionContext: functionContext)
 
+    let outerParameters = functionContext.scopeContext.parameters
     let functionContext = functionContext
     functionContext.scopeContext = ifStatement.ifBodyScopeContext!
+    functionContext.scopeContext.parameters = outerParameters
 
     let body = functionContext.withNewBlock {
       ifStatement.body.forEach { statement in
@@ -53,6 +55,7 @@ struct MoveIfStatement {
 
     if !ifStatement.elseBody.isEmpty {
       functionContext.scopeContext = ifStatement.elseBodyScopeContext!
+      functionContext.scopeContext.parameters = outerParameters
       let elseBody = functionContext.withNewBlock {
         ifStatement.elseBody.forEach { statement in
           functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
@@ -70,154 +73,60 @@ struct MoveForStatement {
   var forStatement: ForStatement
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Statement {
+    let outerParameters = functionContext.scopeContext.parameters
     let functionContext = functionContext
     functionContext.scopeContext = forStatement.forBodyScopeContext!
+    functionContext.scopeContext.parameters = outerParameters
 
     switch forStatement.iterable {
-    case .identifier(let arrayIdentifier):
-      return .for(generateArraySetupCode(prefix: "flint$\(forStatement.variable.identifier.name)$",
-        iterable: arrayIdentifier, functionContext: functionContext))
     case .range(let rangeExpression):
-      return .for(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
+      if case .literal = rangeExpression.initial,
+         case .literal = rangeExpression.bound {
+        return .for(generateRangeSetupCode(iterable: rangeExpression, functionContext: functionContext))
+      } else {
+        // Can easily be done by branching, but not currently permitted in the parser
+        fatalError("Flint doesn't currently support variable ranges")
+      }
     default:
       fatalError("The iterable \(forStatement.iterable) is not yet supported in for loops")
     }
   }
 
-  func generateArraySetupCode(prefix: String, iterable: AST.Identifier, functionContext: FunctionContext) -> ForLoop {
-    // Iterating over an array
-    let isLocal = functionContext.scopeContext.containsVariableDeclaration(for: iterable.name)
-    let offset: MoveIR.Expression
-    if !isLocal,
-      let intOffset = functionContext.environment.propertyOffset(for: iterable.name,
-                                                                 enclosingType: functionContext.enclosingTypeName) {
-      // Is contract array
-      offset = .literal(.num(intOffset))
-    } else if isLocal {
-      offset = .identifier("_\(iterable.name)")
-    } else {
-      fatalError("Couldn't find offset for iterable")
-    }
-
-    let loadArrLen: MoveIR.Expression
-    let toAssign: MoveIR.Expression
-
-    let type = functionContext.environment.type(of: iterable.name,
-                                                enclosingType: functionContext.enclosingTypeName,
-                                                scopeContext: functionContext.scopeContext)
-    switch type {
-    /* case .arrayType:
-      let arrayElementOffset = MoveRuntimeFunction.storageArrayOffset(
-        arrayOffset: offset, index: .identifier("\(prefix)i"))
-      loadArrLen = MoveRuntimeFunction.load(address: offset, inMemory: false)
-      switch forStatement.variable.type.rawType {
-      case .arrayType, .fixedSizeArrayType:
-        toAssign = arrayElementOffset
-      default:
-        toAssign = MoveRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
-      }
-
-    case .fixedSizeArrayType:
-      let typeSize = functionContext.environment.size(of: type)
-      loadArrLen = .literal(.num(typeSize))
-      let arrayElementOffset = MoveRuntimeFunction.storageFixedSizeArrayOffset(
-        arrayOffset: offset, index: .identifier("\(prefix)i"), arraySize: typeSize)
-      toAssign = MoveRuntimeFunction.load(address: arrayElementOffset, inMemory: false)
-
-    case .dictionaryType:
-      loadArrLen = MoveRuntimeFunction.load(address: offset, inMemory: false)
-      let keysArrayOffset = MoveRuntimeFunction.storageDictionaryKeysArrayOffset(dictionaryOffset: offset)
-      let keyOffset = MoveRuntimeFunction.storageOffsetForKey(baseOffset: keysArrayOffset,
-        key: .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))
-      let key = MoveRuntimeFunction.load(address: keyOffset, inMemory: false)
-      let dictionaryElementOffset
-        = MoveRuntimeFunction.storageDictionaryOffsetForKey(dictionaryOffset: offset, key: key)
-      toAssign = MoveRuntimeFunction.load(address: dictionaryElementOffset, inMemory: false) */
-
-    default:
-      fatalError()
-    }
-
-    let initialize = Block(.inline("""
-    let \(prefix)i := 0
-    let \(prefix)arrLen := \(loadArrLen)
-    """))
-
-    let condition = MoveIR.Expression.functionCall(
-      FunctionCall("lt", .identifier("\(prefix)i"), .identifier("\(prefix)arrLen")))
-    let step = Block(
-      .expression(.assignment(Assignment("\(prefix)i",
-        .functionCall(FunctionCall("add", .identifier("\(prefix)i"), .literal(.num(1)))))))
-    )
-
-    let body = functionContext.withNewBlock {
-      functionContext.emit(.expression(
-        .variableDeclaration(VariableDeclaration((forStatement.variable.identifier.name.mangled, .any))))) // toAssign
-      forStatement.body.forEach { statement in
-        functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
-      }
-    }
-
-    return ForLoop(initialize, condition, step, body)
-  }
-
   func generateRangeSetupCode(iterable: AST.RangeExpression, functionContext: FunctionContext) -> ForLoop {
-    // Iterating over a range
-    // Check valid range
-    guard case .literal(let rangeStart) = iterable.initial,
-      case .literal(let rangeEnd) = iterable.bound else {
-        fatalError("Non-literal ranges are not supported")
-    }
-    guard case .literal(.decimal(.integer(let start))) = rangeStart.kind,
-      case .literal(.decimal(.integer(let end))) = rangeEnd.kind else {
-        fatalError("Only integer decimal ranges supported")
+    guard case .literal(let initialToken) = iterable.initial,
+          case .literal(let boundToken) = iterable.bound,
+          case .literal(.decimal(.integer(let start))) = initialToken.kind,
+          case .literal(.decimal(.integer(let end))) = boundToken.kind else {
+      // Can easily be done by branching, but not currently permitted in the parser
+      fatalError("Flint doesn't currently support variable ranges")
     }
 
-    let ascending = start < end
+    let accumulate = start <= end
+    let comparison = accumulate
+        ? (iterable.op.kind == .punctuation(.halfOpenRange) ? Operation.lessThan : Operation.lessThanOrEqual)
+        : (iterable.op.kind == .punctuation(.halfOpenRange) ? Operation.greaterThan : Operation.greaterThanOrEqual)
+    let nextStep = accumulate ? Operation.add : Operation.subtract
 
-    var comparisonToken: Token.Kind = ascending ? .punctuation(.lessThanOrEqual) : .punctuation(.greaterThanOrEqual)
-    if case .punctuation(.halfOpenRange) = iterable.op.kind {
-      comparisonToken = ascending ? .punctuation(.openAngledBracket) : .punctuation(.closeAngledBracket)
+    let incrementor: MoveIR.Expression = MoveIdentifier(identifier: forStatement.variable.identifier)
+        .rendered(functionContext: functionContext)
+    let incrementorName = Mangler.mangleName(forStatement.variable.identifier.name)
+
+    var initialize = MoveIR.Statement.expression(.assignment(Assignment(
+        incrementorName,
+        MoveExpression(expression: iterable.initial).rendered(functionContext: functionContext)
+    )))
+    let condition = MoveIR.Expression.operation(comparison(
+        incrementor,
+        MoveExpression(expression: iterable.bound).rendered(functionContext: functionContext)
+    ))
+    var body = Block()
+    body.statements = forStatement.body.map { (statement: AST.Statement) in
+      return MoveStatement(statement: statement).rendered(functionContext: functionContext)
     }
-
-    let changeToken: Token.Kind = ascending ? .punctuation(.plus) : .punctuation(.minus)
-
-    // Create IR statements for loop sub-statements
-    let initialisation = MoveAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: iterable.initial)
-      .rendered(functionContext: functionContext, asTypeProperty: false)
-    var condition = BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
-                                     op: Token(kind: comparisonToken, sourceLocation: forStatement.sourceLocation),
-                                     rhs: .identifier(
-                                      Identifier(identifierToken: Token(kind: .identifier("bound"),
-                                                                        sourceLocation: forStatement.sourceLocation))))
-    let change: AST.Expression = .binaryExpression(
-      BinaryExpression(lhs: .identifier(forStatement.variable.identifier),
-                       op: Token(kind: changeToken, sourceLocation: forStatement.sourceLocation),
-                       rhs: .literal(Token(kind: .literal(.decimal(.integer(1))),
-                                           sourceLocation: forStatement.sourceLocation))))
-    let update = MoveAssignment(lhs: .identifier(forStatement.variable.identifier), rhs: change)
-      .rendered(functionContext: functionContext, asTypeProperty: false).description
-
-    let rangeExpression = MoveExpression(expression: iterable.bound).rendered(functionContext: functionContext)
-    let binaryExpression = MoveExpression(expression: .binaryExpression(condition))
-      .rendered(functionContext: functionContext)
-
-    let initialize = Block(.inline("""
-      let \(initialisation.description)
-      let _bound := \(rangeExpression.description)
-    """))
-
-    let step = Block(.inline("""
-      \(update)
-    """))
-
-    let body = functionContext.withNewBlock {
-      forStatement.body.forEach { statement in
-        functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
-      }
-    }
-
-    return ForLoop(initialize, binaryExpression, step, body)
+    let step = MoveIR.Statement.expression(.assignment(Assignment(
+        incrementorName,
+        .operation(nextStep(incrementor, .literal(.num(1)))))))
+    return ForLoop(Block(initialize), condition, Block(step), body)
   }
 }
 
@@ -235,6 +144,9 @@ struct MoveReturnStatement {
       = .init(name: MoveFunction.returnVariableName, sourceLocation: returnStatement.sourceLocation)
     let renderedExpression = MoveExpression(expression: expression).rendered(functionContext: functionContext)
     functionContext.emit(.expression(.assignment(Assignment(returnVariableIdentifier.name, renderedExpression))))
+    for statement: AST.Statement in returnStatement.cleanupStatements ?? [] {
+      functionContext.emit(MoveStatement(statement: statement).rendered(functionContext: functionContext))
+    }
     functionContext.emitReleaseReferences()
     return .inline("return move(\(returnVariableIdentifier.name))")
   }
@@ -248,7 +160,8 @@ struct MoveBecomeStatement {
     let sl = becomeStatement.sourceLocation
     let stateVariable: AST.Expression = .identifier(
       Identifier(name: MoveContract.stateVariablePrefix + functionContext.enclosingTypeName,
-                 sourceLocation: .DUMMY))
+                 sourceLocation: sl,
+                 enclosingType: functionContext.enclosingTypeName))
     let selfState: AST.Expression = .binaryExpression(
       BinaryExpression(lhs: .`self`(Token(kind: .`self`, sourceLocation: sl)),
                        op: Token(kind: .punctuation(.dot), sourceLocation: sl),

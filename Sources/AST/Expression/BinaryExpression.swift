@@ -27,6 +27,15 @@ public struct BinaryExpression: ASTNode {
     return false
   }
 
+  public var isComputation: Bool {
+    switch opToken {
+    case .equal, .dot, .arrow, .at, .implies, .leftArrow, .colon, .comma,
+         .doubleColon:
+      return false
+    default: return true
+    }
+  }
+
   public init(lhs: Expression, op: Token, rhs: Expression) {
     self.lhs = lhs
 

@@ -31,6 +31,9 @@ public class Environment {
   // Call graph - using normalised names
   public var callGraph: [String: [(String, FunctionDeclaration)]] = [:]
 
+  // Called constructors - using normalised names for keys
+  public var calledConstructors: [String: [TypeInformation]] = [:]
+
   // Which functions have external calls
   public var functionCallsExternal: [String: Bool] = [:]
 

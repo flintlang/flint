@@ -18,7 +18,7 @@ public struct Mangler {
                                         isContract: Bool = false) -> String {
     let parameters = parameterTypes.map { $0.name }.joined(separator: "_")
     let dollar = parameters.isEmpty ? "" : "$"
-    let type = isContract && false ? "" : enclosingType + "$"
+    let type = isContract ? "" : enclosingType + "$"
     return "\(type)\(name)\(dollar)\(parameters)"
   }
 

@@ -53,7 +53,6 @@ func main() {
     do {
       let compilerConfig = CompilerConfiguration(
           inputFiles: inputFiles,
-          stdlibFiles: StandardLibrary.default.files,
           outputDirectory: outputDirectory,
           dumpAST: dumpAST,
           emitBytecode: emitBytecode,
@@ -68,7 +67,7 @@ func main() {
           diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
                                       quiet: quiet,
                                       sourceContext: SourceContext(sourceFiles: inputFiles)),
-          loadStdlib: !noStdlib,
+          stdLib: (noStdlib ? nil : StandardLibrary.from(target: compilerTarget)),
           target: compilerTarget
       )
       compilationOutcome = try Compiler.compile(config: compilerConfig)

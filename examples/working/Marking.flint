@@ -1,0 +1,65 @@
+contract Marking {
+  var lecturer: Address
+  var markers: [Address]
+  var numMarkers: Int = 0
+  var grades: [Address: Int]
+
+  invariant(numMarkers == markers.size)
+  // invariant (forall(a, Address, dictContains(grades, a) ==> grades[a] >= 0))
+
+
+
+//numMarkers increase & markers[i] == marker ==> lecturer call the addMarker
+  // holistic_inv (forall (m: Marking, i: Int, a: Address) :: (m.numMarkers == i && next(m.numMarkers == i + 1 && m.markers[i] == a) ==> m.lecturer.Calls(m.addMarker(a))))
+// change in grade ==> exists marker calls assignGrade
+  // holistic_inv (forall (m: Marking, a: Address) :: (next(change(m.grades[a])) ==> exists (e: External) :: (arrayContains(markers, e) && e.Calls(m.assignGrade(a, _)))))
+
+}
+
+Marking :: (any) {
+  public init(lecturer: Address) {
+    self.lecturer = lecturer
+    self.markers = []
+    self.grades = [:]
+  }
+}
+
+Marking :: (lecturer) {
+  public func addMarker(marker: Address)
+    mutates (markers, numMarkers)
+    // pre (arrayContains(markers, marker) == false)
+
+    // pre condition satisfied
+    post (prev(arrayContains(markers, marker) == false) ==> numMarkers == prev(numMarkers) + 1)
+    post (prev(arrayContains(markers, marker) == false) ==> markers[prev(numMarkers)] == marker)
+    post (prev(arrayContains(markers, marker) == false) ==> forall (i, Int, 0 <= i && i < numMarkers ==> markers[i] == prev(markers[i]) || i == prev(numMarkers)))
+
+    // pre condition not satisfied
+    post (prev(arrayContains(markers, marker)) ==> numMarkers == prev(numMarkers))
+    post (prev(arrayContains(markers, marker)) ==> forall (i, Int, 0 <= i && i < numMarkers ==> markers[i] == prev(markers[i])))
+  {
+    if arrayContains(markers, marker) == false  {
+      markers[numMarkers] = marker
+      numMarkers += 1
+    }
+  }
+}
+
+Marking :: (markers) {
+  public func assignGrade(student: Address, grade: Int)
+    mutates (grades)
+    post (forall (a, Address, dictContains(grades, a) ==> (grades[a] == prev(grades[a]) || (a == student && grades[a] == grade))))
+  {
+    grades[student] = grade
+  }
+}
+
+Marking :: caller <- (any) {
+  public func getGrade() -> Int
+  post (returning (r, r == grades[caller]))
+  {
+    return grades[caller]
+  }
+
+
+}

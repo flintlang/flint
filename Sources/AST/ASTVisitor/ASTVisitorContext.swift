@@ -22,6 +22,10 @@ public struct ContractBehaviorDeclarationContext {
   public var callerProtections: [CallerProtection]
   public var declaration: ContractBehaviorDeclaration
 
+  public var anyCaller: Bool {
+    return callerProtections.isEmpty || callerProtections.contains(where: { $0.isAny })
+  }
+
   public init(contractIdentifier: Identifier,
               typeStates: [TypeState],
               callerBinding: Identifier?,
@@ -76,6 +80,10 @@ public struct TraitDeclarationContext {
   }
 }
 
+public struct BlockContext {
+  public var scopeContext: ScopeContext
+}
+
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
@@ -86,8 +94,8 @@ public struct FunctionDeclarationContext {
     self.innerDeclarations = innerDeclarations
   }
 
-  public var isMutating: Bool {
-    return declaration.isMutating
+  public var mutates: [Identifier] {
+    return declaration.mutates
   }
 }
 

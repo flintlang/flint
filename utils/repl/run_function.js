@@ -11,8 +11,9 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 //	process.exit(0);
 //}
 
-let defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
-web3.personal.unlockAccount(defaultAcc, "1", 1000);
+//let defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
+const defaultAcc = web3.eth.accounts[web3.eth.accounts.length - 1]
+web3.personal.unlockAccount(defaultAcc, "", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
 function log(data) {

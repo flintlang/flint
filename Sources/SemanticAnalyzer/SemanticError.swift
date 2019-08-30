@@ -187,6 +187,32 @@ extension Diagnostic {
                       message: "Use of mutating statement in a nonmutating function")
   }
 
+  static func useOfMutatingExpressionOnNonMutatingProperty(_ expression: Expression,
+                                                           functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation,
+                      message: "Illegal modification of property not declared in `mutates(...)'")
+  }
+
+  static func useOfMutatingExpressionOnNonMutatingProperties(_ expression: Expression,
+                                                             names: [String],
+                                                             functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    let plural = names.count == 1 ? "y" : "ies"
+    return Diagnostic(severity: .error, sourceLocation: expression.sourceLocation,
+                      message: """
+                               Illegal modification of propert\(plural) \
+                               \(names.map { "`\($0)'" }.joined(separator: ", ")) \
+                               not declared in `mutates(...)'
+                               """)
+  }
+
+  static func noteAllMutating(_ functionDeclaration: FunctionDeclaration) -> Diagnostic {
+    return Diagnostic(severity: .note, sourceLocation: functionDeclaration.signature.sourceLocation,
+                      message: """
+                               The following properties were declared mutating in function \(functionDeclaration.name):
+                               \t\(functionDeclaration.mutates.map { $0.name }.joined(separator: ", "))\n
+                               """)
+  }
+
   static func payableFunctionDoesNotHavePayableValueParameter(
     _ functionDeclaration: FunctionDeclaration) -> Diagnostic {
     return Diagnostic(

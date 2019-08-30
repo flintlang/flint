@@ -8,7 +8,7 @@
 /// A list of properties and functions declared in a type.
 public struct TypeInformation {
   var orderedProperties = [String]()
-  var properties = [String: PropertyInformation]()
+  internal(set) public var properties = [String: PropertyInformation]()
   public var functions = [String: [FunctionInformation]]()
   var events = [String: [EventInformation]]()
   var initializers = [SpecialInformation]()

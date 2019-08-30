@@ -37,7 +37,7 @@ Caller :: (owners) {
 }
 
 Caller :: (owner) {
-  public func addOwner(newOwner: Address) mutates (owner, lastIndex) {
+  public func addOwner(newOwner: Address) mutates (owners, lastIndex) {
     owners[lastIndex] = newOwner
     lastIndex += 1
   }

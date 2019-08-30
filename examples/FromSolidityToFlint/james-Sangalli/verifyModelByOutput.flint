@@ -1,0 +1,202 @@
+// String NOT supported in Boogie. Issue#441
+
+
+contract VerifyModelByOutput {
+  var owner: Address
+  var winner: Address
+  var bounty: Wei
+  var assignmentComplete: Bool = false
+
+  var highestScore: Int
+  var minimunScore: Int
+
+  var ownerEmailAddress: String
+  var codeURLS: [String]
+  var assignmentInformationWebsiteURL: String
+
+  var correctOutput: [String]
+  var submissions: [Submission]
+
+  invariant (highestScore == 0 || highestScore >= minimunScore)
+  invariant (minimunScore >= 0)
+  invariant (bounty.rawValue >= 0)
+
+}
+
+
+struct Submission {
+  var output: [String] = []
+  var submitter: Address
+  var codeURL: String //optional
+
+
+  public init(submitter: Address, codeURL: String) {
+    self.submitter = submitter
+    self.codeURL = codeURL
+  }
+}
+
+VerifyModelByOutput :: caller <- (any) {
+  @payable
+  public init(ownerEmail: String, requiredScore: Int, assignmentURL: String, reputationContract: Address, implicit value: inout Wei)
+  mutates(Wei.rawValue, Submission.output, Submission.submitter, Submission.codeURL)
+  pre (requiredScore >= 0)
+  pre (value.rawValue >= 0)
+  {
+    self.owner = caller
+    self.winner = caller
+    self.bounty = Wei(source: &value)
+
+    self.highestScore = 0
+    self.minimunScore = requiredScore
+
+    self.ownerEmailAddress = ownerEmail
+    self.codeURLS = []
+    self.assignmentInformationWebsiteURL = assignmentURL
+
+    self.correctOutput = []
+    self.submissions = []
+
+    //experimental reputatble owner... Reputation contract in Reputation.flint
+    // sorry Don't know how to get the contract using ( reputationContract: Address )
+
+  }
+
+
+
+
+  ///////////////////////////#466 #462
+  public func getCOdeURLSForSubmitter(submitter: Address) -> [String]
+  post (returning(urls, exists (subs, [Submission], subs.size == urls.size && arrayEach(s, subs, s.codeURL == urls[i] && s.submitter == submitter && arrayContains(submissions, s)) && forall (others, [Submission], arrayEach(s, others, s.submitter == submitter && arrayContains(submissions, s)) ==> others.size <= subs.size))))
+  // urls is as same size as subs
+  // urls is the list of codeURL of elements in subs
+  // subs is a subset of submissions which all its elements' submitter is the argument passed in
+
+  // all the other arrays with same propertiies has less elements than subs. This means subs contains all the submissions we want
+  {
+    var urls: [String] = []
+    for var s: Submission in submissions {
+      if s.submitter == submitter {
+        urls[urls.size] = s.codeURL
+      }
+    }
+    return urls
+  }
+
+}
+
+VerifyModelByOutput :: (owner) {
+  @payable
+  public func topupBounty(implicit value: inout Wei)
+  pre (value.rawValue >= 0)
+
+  post (bounty.rawValue == prev(bounty.rawValue) + prev(value.rawValue))
+  {
+    bounty.transfer(source: &value)
+  }
+
+
+/////////////////////////#61
+  // public func submitCorrectOutputForSubmissions(output: [String])
+  // mutates (correctOutput, assignmentComplete, winner, highestScore)
+  // pre (assignmentComplete == false)
+  //
+  // post (submissions.size == 0 ==> correctOutput == prev(correctOutput))
+  // post (submissions.size == 0 ==> assignmentComplete == prev(assignmentComplete))
+  //
+  // post (submissions.size != 0 ==> forall(i, Int, 0 <= i && i < correctOutput.size ==> correctOutput[i] == output[i]))
+  // post (submissions.size != 0 ==> correctOutput.size == output.size)
+  //
+  // {
+  //   assert (submissions.size != 0)
+  //
+  //   correctOutput = output // array = array here, but not allowed in Flint
+  //   assignmentComplete = true
+  //
+  //   checkForWinner()
+  // }
+  //
+  //
+  //
+    func checkForWinner() -> Address
+    mutates(highestScore, winner)
+    // post (returning (r, r has the highestAccsuracy..))
+    {
+      assert (assignmentComplete)
+
+      if (assignmentComplete) {
+        highestScore = 0
+        var applicant: Address
+        for var s: Submission in submissions {
+          let accuracy: Int = checkAccuracyRate(s.output)
+          if accuracy > highestScore && accuracy >= minimunScore {
+            self.highestScore = accuracy
+            applicant = s.submitter
+          }
+        }
+        self.winner = applicant
+      }
+    }
+
+
+////////////////// #397 range #61 pass in array
+    func checkAccuracyRate(output: [String]) -> Int
+    post (returning (r, exists (res, [String], res.size == r && arrayEach(s, res, exists(i, Int, output[i] == correctOutput[i] && output[i] == s)) && forall(other, [String], arrayEach(s, other, exists(i, Int, output[i] == correctOutput[i] && output[i] == s)) ==> other.size <= res.size))))
+    // same reason why the post is soooo long as some others
+    {
+      assert(assignmentComplete)
+      var score: Int = 0
+      // error here with output.length
+      for var i: Int in (0..<output.length) {
+        if output[i] == correctOutput[i] {
+          score += 1
+        }
+      }
+      return score
+    }
+
+
+    public func approvePayout()
+    mutates(Wei.rawValue, owner, winner, bounty, assignmentComplete, highestScore, minimunScore, ownerEmailAddress, codeURLS, assignmentInformationWebsiteURL, correctOutput, submissions, Submission.output, Submission.submitter, Submission.codeURL)
+    post (bounty.rawValue == 0)
+    {
+      send(winner, &bounty)
+    }
+
+
+//     public func cancelContract() {
+//       assert(assignmentComplete == false)
+//       //TODO: selfDestruct.
+//     }
+}
+
+
+VerifyModelByOutput :: (any) {
+  public func getAssignmentWebsite() -> String
+  post (returns(assignmentInformationWebsiteURL))
+  {
+    return assignmentInformationWebsiteURL
+  }
+
+  public func getBounty() -> Int
+  post (returns(bounty.rawValue))
+  {
+    return bounty.getRawValue()
+  }
+
+  func submitOutput(submission: inout Submission)
+  mutates (submissions)
+  // pre (assignmentComplete == false)
+  post (assignmentComplete == false ==> submissions.size ==prev(submissions.size) + 1)
+  post (assignmentComplete == false ==> submissions[prev(submissions.size)] == submission) // implement struct == struct, set to defsult that true if all the fields are equal
+  post (assignmentComplete == false ==> forall (i, Int, 0 <= i && i < submissions.size ==> submissions[i] == prev(submissions[i]) || i == prev(submissions.size)))
+
+  post (assignmentComplete ==> submissions.size ==prev(submissions.size))
+  post (assignmentComplete ==> forall (i, Int, 0 <= i && i < submissions.size ==> submissions[i] == prev(submissions[i])))
+
+  {
+    if assignmentComplete == false {
+      submissions[submissions.size] = submission
+    }
+  }
+}

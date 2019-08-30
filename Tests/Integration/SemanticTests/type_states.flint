@@ -56,7 +56,7 @@ TypeStates @(State1) :: (any) {
   }
 
   public func moveToState2AndDoStuff() {
-    becomeState2() // expected-error {{Use of mutating statement in a nonmutating function}}
+    becomeState2() // expected-error {{Illegal modification of property `any' not declared in `mutates(...)'}}
     let x: Int = 0
   }
 }

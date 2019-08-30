@@ -1,0 +1,45 @@
+import Transaction.Factorial;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Factorial.publish();
+  assert(Factorial.getValue(copy(this)) == 0, 1);
+
+  Factorial.calculate$Int(copy(this), 0);
+  assert(Factorial.getValue(copy(this)) == 1, 100);
+
+  Factorial.calculate$Int(copy(this), 1);
+  assert(Factorial.getValue(copy(this)) == 1, 101);
+
+  Factorial.calculate$Int(copy(this), 2);
+  assert(Factorial.getValue(copy(this)) == 2, 102);
+
+  Factorial.calculate$Int(copy(this), 3);
+  assert(Factorial.getValue(copy(this)) == 6, 103);
+
+  Factorial.calculate$Int(copy(this), 4);
+  assert(Factorial.getValue(copy(this)) == 24, 104);
+
+  Factorial.calculate$Int(copy(this), 5);
+  assert(Factorial.getValue(copy(this)) == 120, 105);
+
+  Factorial.calculate$Int(copy(this), 6);
+  assert(Factorial.getValue(copy(this)) == 720, 106);
+
+  Factorial.calculate$Int(copy(this), 7);
+  assert(Factorial.getValue(copy(this)) == 5040, 107);
+
+  Factorial.calculate$Int(copy(this), 8);
+  assert(Factorial.getValue(copy(this)) == 40320, 108);
+
+  Factorial.calculate$Int(copy(this), 9);
+  assert(Factorial.getValue(copy(this)) == 362880, 109);
+
+  Factorial.calculate$Int(copy(this), 10);
+  assert(Factorial.getValue(copy(this)) == 3628800, 110);
+
+  Factorial.calculate$Int(copy(this), 11);
+  assert(Factorial.getValue(copy(this)) == 39916800, 111);
+  return;
+}

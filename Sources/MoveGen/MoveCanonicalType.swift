@@ -35,6 +35,13 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .userDefinedType(let id):
       if rawType.isCurrencyType || (environment?.isContractDeclared(id) ?? false) {
         self = .resource(id)
+      } else if let environment = environment,
+                environment.isEnumDeclared(rawType.name),
+                let type: TypeInformation = environment.types[rawType.name],
+                let value: AST.Expression = type.properties.values.first?.property.value {
+        self = CanonicalType(from: environment.type(of: value,
+                                                    enclosingType: rawType.name,
+                                                    scopeContext: ScopeContext()))!
       } else {
         self = .struct(id)
       }

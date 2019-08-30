@@ -146,7 +146,7 @@ struct MoveInitializerBody {
   func renderBody<S: RandomAccessCollection & RangeReplaceableCollection>(_ statements: S,
                                                                           functionContext: FunctionContext) -> String
       where S.Element == AST.Statement, S.Index == Int {
-    guard !statements.isEmpty else { return "" }
+    guard !statements.isEmpty else { return "return T {};" }
     var declarations = self.properties
     var statements = statements
 

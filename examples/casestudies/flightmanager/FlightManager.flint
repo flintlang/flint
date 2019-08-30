@@ -2,33 +2,64 @@ contract FlightManager {
   var flightInformation: FlightInformation
   let admin: Address
   var ticketPrice: Int
-  
-  var numRemainingSeats: Int
 
-  var passengers: [Address]
+  var numRemainingSeats: Int
+  var totalSeats: Int
+  var passengers: [Address] = []
   var numPassengers: Int = 0
 
-  var amountPaid: [Address: Wei]
+  var amountPaid: [Address: Wei] = [:]
+
+
+  invariant (numPassengers == passengers.size)
+  invariant (numRemainingSeats >= 0)
+  invariant (numPassengers >= 0)
+  invariant (ticketPrice > 0)
+  invariant (numPassengers + numRemainingSeats == totalSeats)
+
+  invariant (forall (a, Address, dictContains(amountPaid, a) ==> amountPaid[a].rawValue == ticketPrice))
+  invariant (forall (a, Address, 0 < a  ==> a > 0))
+
 }
 
 FlightManager :: caller <- (any) {
-  public init(flightID: String, 
-              admin: Address, 
-              ticketPrice: Int, 
-              numSeats: Int) {
-    self.flightInformation = FlightInformation(flightID)
+  public init(
+              admin: Address,
+              ticketPrice: Int,
+              numSeats: Int)
+    mutates (FlightInformation.isCancelled)
+    pre(numSeats > 0 && ticketPrice > 0)
+  {
+    self.flightInformation = FlightInformation()
     self.admin = admin
     self.ticketPrice = ticketPrice
     self.numRemainingSeats = numSeats
-    self.passengers = []
-    self.amountPaid = [:]
+    self.totalSeats = numSeats
   }
 
   @payable
   public func buy(implicit value: Wei)
+  // flightInformation, admin, ticketPrice, totalSeats
     mutates (amountPaid, numPassengers, numRemainingSeats, passengers, Wei.rawValue)
+    // pre (arrayContains(passengers, caller) == false)
+
+    pre (value.rawValue == ticketPrice)
+    pre (dictContains (amountPaid, caller) == true)
+    pre (numRemainingSeats > 0)
+    pre (flightInformation.isCancelled == false)
+
+    post (numPassengers == prev(numPassengers) + 1)
+    post (numRemainingSeats == prev(numRemainingSeats) - 1)
+    post (numPassengers + numRemainingSeats == prev(numPassengers) + prev(numRemainingSeats))
+
+    post (passengers[prev(numPassengers)] == caller)
+    post (forall (i, Int, passengers[i] == prev(passengers[i]) || i == prev(numPassengers)))
+
+    post (amountPaid[caller].rawValue == prev(amountPaid[caller].rawValue) + prev(value.rawValue))
+    post (forall (a, Address, dictContains(amountPaid, a) ==> amountPaid[a] == prev(amountPaid[a]) || a == caller))
+
   {
-    let amountGiven: Int = value.getRawValue()
+    let amountGiven: Int = value.rawValue
     assert(amountGiven == ticketPrice)
     assert(numRemainingSeats > 0)
     assert(flightInformation.isCancelled == false)
@@ -42,19 +73,21 @@ FlightManager :: caller <- (any) {
     numRemainingSeats -= 1
   }
 
-  public func getFlightID() -> String {
-    return flightInformation.flightID
-  }
-
-  public func isFlightCancelled() -> Bool {
+  public func isFlightCancelled() -> Bool
+  post (returns (self.flightInformation.isCancelled))
+  {
     return flightInformation.isCancelled
   }
 
-  public func getTicketPrice() -> Int {
+  public func getTicketPrice() -> Int
+  post (returns (self.ticketPrice))
+  {
     return ticketPrice
   }
 
-  public func getNumRemainingSeats() -> Int {
+  public func getNumRemainingSeats() -> Int
+  post (returns (self.numRemainingSeats))
+  {
     return numRemainingSeats
   }
 }
@@ -62,28 +95,22 @@ FlightManager :: caller <- (any) {
 FlightManager :: (admin) {
   public func cancelFlight()
     mutates (FlightInformation.isCancelled)
+    pre (flightInformation.isCancelled == false)
+    post (flightInformation.isCancelled)
   {
     flightInformation.cancelFlight()
   }
 }
 
-FlightManager :: passenger <- (passengers) {
-  public func retrieveRefund() {
-    assert(flightInformation.isCancelled)
-    send(passenger, &amountPaid[passenger])
-  }
-}
-
 struct FlightInformation {
-  var flightID: String
   var isCancelled: Bool = false
 
-  init(flightID: String) {
-    self.flightID = flightID
-  }
+  public init() {}
 
   func cancelFlight()
     mutates (isCancelled)
+    pre (isCancelled == false)
+    post (isCancelled)
   {
     isCancelled = true
   }

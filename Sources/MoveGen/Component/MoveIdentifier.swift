@@ -36,7 +36,6 @@ struct MoveIdentifier {
     }
 
     let irIdentifier = MoveIR.Expression.identifier(identifier.name.mangled)
-
     if forceMove {
       return .transfer(.move(irIdentifier))
     } else if let type = functionContext.scopeContext.type(for: identifier.name),

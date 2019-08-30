@@ -1,0 +1,15 @@
+import Transaction.Counter;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Counter.publish();
+  assert(Counter.getCount(copy(this)) == 0, 1);
+  Counter.increment(copy(this));
+  assert(Counter.getCount(copy(this)) == 1, 2);
+  Counter.increment$Int(copy(this), 4);
+  assert(Counter.getCount(copy(this)) == 5, 3);
+  Counter.reset(copy(this));
+  assert(Counter.getCount(copy(this)) == 0, 4);
+  return;
+}

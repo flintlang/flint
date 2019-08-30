@@ -8,10 +8,53 @@ contract Ballot (Proposing, Voting) {
 
   // The list of proposals.
   var proposals: [Proposal] = []
+
+  invariant (forall (a, Address, arrayContains(votersKeys, a) ==> voters[a].weight > 0 && (voters[a].voted ==> voters[a].vote != (0-1))))
+  invariant (forall (a, Address, arrayContains(votersKeys, a) ==> voters[a].weight > 0 && (voters[a].vote != (0-1) ==> voters[a].voted)))
+  invariant (forall (a, Address, arrayContains(votersKeys, a) ==> dictContains(voters, a)))
+
+  //holistic
+  // invariant (forall (b: Ballot) :: ())
+
+}
+
+struct Voter {
+  // The weight of this voter's vote. Increases when other voters delegate
+  // their vote to this voter.
+  var votingWeight: Int
+
+  // Whether the voter has voted for a proposal.
+  var hasVoted: Bool = false
+
+  // The voter this voter has delegated its vote to.
+  var delegate: Address = 0x0000000000000000000000000000000000000000
+
+  // The ID of the proposal this voter has voted for.
+  var votedProposalID: Int = (0-1)
+
+  public init(weight: Int) {
+    votingWeight = weight
+  }
+}
+
+struct Proposal {
+  // The name of the proposal.
+  var name: String
+
+  // The number of votes for this proposal.
+  var numVotes: Int = 0
+
+  public init(name: String) {
+    self.name = name
+  }
+
+
 }
 
 Ballot@(any) :: caller <- (any) {
-  public init() {
+  public init()
+  mutates (Voter.hasVoted, Voter.delegate, Voter.votedProposalID, Voter.votingWeight)
+  {
     chairperson = caller
 
     // Chairperson is a normal voter.
@@ -26,6 +69,8 @@ Ballot@(Proposing) :: (chairperson) {
   // Add a proposal to the list of proposals to vote on.
   public func addProposal(proposalName: String)
     mutates (proposals, Proposal.name, Proposal.numVotes)
+    post (proposals[proposals.size - 1].name == proposalName && proposals[proposals.size - 1].numVotes == 0)
+    post (forall (i, Int, proposals[i] == prev(proposal[i]) || i == prev(proposals.size)))
   {
     proposals[proposals.size] = Proposal(proposalName)
   }
@@ -33,10 +78,18 @@ Ballot@(Proposing) :: (chairperson) {
   // Allow an address to vote.
   public func giveRightToVote(voter: Address)
     mutates (voters, votersKeys)
+    pre (arrayContains(votersKeys, voter) == false)
+    pre (voters[voter].votingWeight == 0)
+    
+    post (voters[voter].votingWeight == 1 && voters[voter].hasVoted == false && voters[voter].votedProposalID == 0)
+    post (forall (a, Address, voters[a] == prev(voters[a]) || a == voter))
+    post (votersKeys.size == prev(votersKeys.size) + 1)
+    post (votersKeys[votersKeys.size - 1] == voter)
+    post (forall (i, Int, votersKeys[i] == prev(votersKeys[i]) || i == votersKeys.size - 1))
+
   {
     // Ensure the voter has not been initialised yet, by checking the weight.
     assert(voters[voter].votingWeight == 0)
-
     // Create voter and add to dictionary.
     voters[voter] = Voter(1)
     votersKeys[votersKeys.size] = voter
@@ -52,6 +105,18 @@ Ballot@(Voting) :: voter <- (votersKeys) {
   // Delegate vote to another voter.
   public func delegate(target: Address)
     mutates (Voter.hasVoted, Voter.delegate, Voter.votingWeight, Proposal.numVotes)
+    post (voters[voter].hasVoted)
+    post (forall (a, Address, voters[a].hasVoted == prev(voters[a].hasVoted) || a == voter))
+
+    post (voters[voter].delegate == target && voters[target].delegate == prev(voters[target].delegate))
+    post (forall (a, Address, voters[a].delegate == prev(voters[a].delegate) || a == voter))
+
+    post (voters[target].votingWeight  == prev(voters[target].votingWeight) + prev(voters[voter].votingWeight))
+    post (forall (a, Address, voters[a].votingWeight == prev(voters[a].votingWeight) || a == target))
+
+    post (voters[target].hasVoted ==> proposals[voters[target].votedProposalID] == prev(proposals[voters[target].votedProposalID]) + prev (voters[voter].votingWeight))
+    post (forall (i, Int, proposals[i].numVotes == prev(proposals[i].numVotes) || (voters[target].hasVoted && i == voters[target.votedProposalID])))
+
   {
     // Ensure the delegator has not already voted, the delegator is not the delegate,
     // and that the delegate has the right to vote.
@@ -82,6 +147,15 @@ Ballot@(Voting) :: voter <- (votersKeys) {
 
   public func vote(proposalID: Int)
     mutates (Voter.hasVoted, Voter.votedProposalID, Proposal.numVotes)
+    post (voters[voter].hasVoted == false)
+    post (forall (a, Address, voters[a].hasVoted == prev(voters[a].hasVoted) || a == voter))
+
+    post (voters[voter].proposalID == proposalID)
+    post (forall (a, Address, voters[a].proposalID == prev(voters[a].proposalID) || a == voter))
+
+    post (proposals[proposalID].numVotes == prev(proposals[proposalID].numVotes) + voters[voter].votingWeight)
+    post (forall (i, Int, proposals[i].numVotes == prev(proposals[i].numVotes) || i == proposalID))
+
   {
     assert(voters[voter].hasVoted == false)
     voters[voter].hasVoted = true
@@ -93,7 +167,9 @@ Ballot@(Voting) :: voter <- (votersKeys) {
 }
 
 Ballot@(Voting) :: (any) {
-  public func getWinningProposalID() -> Int {
+  public func getWinningProposalID() -> Int
+  post (returning (r, forall (i, Int, proposals[i].numVotes <= proposals[r].numVotes)))
+  {
     var winningProposalID: Int = 0
 
     var i: Int = 0
@@ -108,38 +184,9 @@ Ballot@(Voting) :: (any) {
     return winningProposalID
   }
 
-  public func getWinningProposalName() -> String {
+  public func getWinningProposalName() -> String
+  // post ()
+  {
     return proposals[getWinningProposalID()].name
-  }
-}
-
-struct Voter {
-  // The weight of this voter's vote. Increases when other voters delegate
-  // their vote to this voter.
-  var votingWeight: Int
-
-  // Whether the voter has voted for a proposal.
-  var hasVoted: Bool = false
-
-  // The voter this voter has delegated its vote to.
-  var delegate: Address = 0x0000000000000000000000000000000000000000
-
-  // The ID of the proposal this voter has voted for.
-  var votedProposalID: Int = 0
-
-  public init(weight: Int) {
-    votingWeight = weight
-  }
-}
-
-struct Proposal {
-  // The name of the proposal.
-  var name: String
-
-  // The number of votes for this proposal.
-  var numVotes: Int = 0
-
-  public init(name: String) {
-    self.name = name
   }
 }

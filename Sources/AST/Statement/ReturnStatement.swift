@@ -11,10 +11,12 @@ import Lexer
 public struct ReturnStatement: ASTNode {
   public var returnToken: Token
   public var expression: Expression?
+  public var cleanupStatements: [Statement]?
 
   public init(returnToken: Token, expression: Expression?) {
     self.returnToken = returnToken
     self.expression = expression
+    self.cleanupStatements = nil
   }
 
   // MARK: - ASTNode

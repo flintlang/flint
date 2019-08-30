@@ -1,11 +1,28 @@
-contract Simple {
+contract Simple (Unset, Counting) {
   visible var count: Int = 0
+  var owner: Address
+  var homies: Address = 0x0000000000000000000000000000000000000000
 }
 
-Simple :: (any) {
-  public init() { }
+Simple @(Unset, Counting) :: caller <- (any) {
+  public init() {
+    owner = caller
+    become Unset
+  }
+}
 
+
+Simple @(Unset, Counting) :: (owner, homies) {
   public func increment(by: Int = 1) mutates (count) {
     count += by
+    become Counting
+  }
+}
+
+Simple @(Counting) :: caller <- (any) {
+  public func reset() mutates (count, homies) {
+    count = 0
+    homies = caller
+    become Unset
   }
 }

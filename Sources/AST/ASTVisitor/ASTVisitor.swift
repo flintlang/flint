@@ -430,8 +430,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -450,8 +448,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -470,8 +466,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -491,15 +485,13 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
 
   func visit(_ ifStatement: IfStatement, passContext: ASTPassContext) -> ASTPassResult<IfStatement> {
     var passContext = passContext
-    var processResult = pass.process(ifStatement: ifStatement, passContext: passContext)
+    var processResult: ASTPassResult<IfStatement> = pass.process(ifStatement: ifStatement, passContext: passContext)
 
     processResult.passContext.isInsideIfCondition = true
 
@@ -508,31 +500,51 @@ public struct ASTVisitor {
                                     passContext: processResult.passContext))
 
     processResult.passContext.isInsideIfCondition = false
+    let conditionPreStatements = processResult.passContext.preStatements
+    let conditionPostStatements = processResult.passContext.postStatements
 
-    let scopeContext = passContext.scopeContext
+    var scopeContext = passContext.scopeContext
+    let blockContext = processResult.passContext.blockContext
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.ifBodyScopeContext ?? passContext.scopeContext!)
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements : []
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements : []
     }
 
     if processResult.element.ifBodyScopeContext == nil {
       processResult.element.ifBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.ifBodyScopeContext = blockContext.scopeContext
     }
 
+    scopeContext?.counter += processResult.passContext.scopeContext?.localVariables.count ?? 1
+    scopeContext?.counter += processResult.passContext.blockContext?.scopeContext.localVariables.count ?? 1
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.elseBodyScopeContext ?? passContext.scopeContext!)
 
     processResult.element.elseBody = processResult.element.elseBody.flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements : []
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements : []
     }
 
     if processResult.element.elseBodyScopeContext == nil {
       processResult.element.elseBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.elseBodyScopeContext = blockContext.scopeContext
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = blockContext
+    processResult.passContext.preStatements = conditionPreStatements
+    processResult.passContext.postStatements = conditionPostStatements
 
     let postProcessResult = pass.postProcess(ifStatement: processResult.element, passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -542,7 +554,7 @@ public struct ASTVisitor {
 
   func visit(_ forStatement: ForStatement, passContext: ASTPassContext) -> ASTPassResult<ForStatement> {
     var passContext = passContext
-    var processResult = pass.process(forStatement: forStatement, passContext: passContext)
+    var processResult: ASTPassResult<ForStatement> = pass.process(forStatement: forStatement, passContext: passContext)
 
     processResult.element.variable = processResult.combining(visit(processResult.element.variable,
                                                                    passContext: processResult.passContext))
@@ -550,17 +562,30 @@ public struct ASTVisitor {
                                                                    passContext: processResult.passContext))
 
     let scopeContext = passContext.scopeContext
+    let blockContext = passContext.blockContext
+    let topPreStatements = processResult.passContext.preStatements
+    let topPostStatements = processResult.passContext.postStatements
+    processResult.passContext.blockContext = BlockContext(
+        scopeContext: processResult.element.forBodyScopeContext ?? passContext.scopeContext!)
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements : []
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements : []
     }
 
     if processResult.element.forBodyScopeContext == nil {
       processResult.element.forBodyScopeContext = processResult.passContext.scopeContext
+    } else if let blockContext = processResult.passContext.blockContext {
+      processResult.element.forBodyScopeContext = blockContext.scopeContext
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.blockContext = blockContext
+    processResult.passContext.preStatements = topPreStatements
+    processResult.passContext.postStatements = topPostStatements
+
     let postProcessResult = pass.postProcess(forStatement: processResult.element,
                                              passContext: processResult.passContext)
     return ASTPassResult(element: postProcessResult.element,
@@ -576,13 +601,15 @@ public struct ASTVisitor {
       $0.doCatchStatementStack.append(doCatchStatement)
     }
 
-    let scopeContext = passContext.scopeContext
+    var scopeContext = passContext.scopeContext
 
     processResult.element.doBody = processResult.element.doBody
         .flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements
           : []
     }
 
@@ -593,17 +620,23 @@ public struct ASTVisitor {
       _ = $0.doCatchStatementStack.popLast()
     }
 
+    scopeContext?.counter += processResult.passContext.scopeContext?.localVariables.count ?? 1
     processResult.passContext.scopeContext = scopeContext
 
     processResult.element.catchBody = processResult.element.catchBody
         .flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements
           : []
     }
 
     processResult.passContext.scopeContext = scopeContext
+    processResult.passContext.preStatements = []
+    processResult.passContext.postStatements = []
+
     let postProcessResult = pass.postProcess(doCatchStatement: processResult.element,
                                              passContext: processResult.passContext)
 
@@ -667,8 +700,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -691,9 +722,11 @@ public struct ASTVisitor {
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.signature.parameters)
 
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements
           : []
     }
 
@@ -774,9 +807,11 @@ public struct ASTVisitor {
     processResult.passContext.scopeContext!.parameters.append(contentsOf: functionDeclaration.signature.parameters)
 
     processResult.element.body = processResult.element.body.flatMap { (statement: Statement) -> [Statement] in
+      processResult.passContext.preStatements = []
+      processResult.passContext.postStatements = []
       let element = processResult.combining(visit(statement, passContext: processResult.passContext))
       return !processResult.deleteCurrentStatement
-          ? processResult.preStatements + [element] + processResult.postStatements
+          ? processResult.passContext.preStatements + [element] + processResult.passContext.postStatements
           : []
     }
     let declarations = processResult.passContext.specialDeclarationContext!.innerDeclarations
@@ -882,8 +917,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -898,8 +931,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -908,7 +939,7 @@ public struct ASTVisitor {
     var processResult = pass.process(binaryExpression: binaryExpression, passContext: passContext)
 
     if case .punctuation(let punctuation) = binaryExpression.op.kind, punctuation.isAssignment {
-      if case .variableDeclaration(_) = binaryExpression.lhs {} else {
+      if case .variableDeclaration = binaryExpression.lhs {} else {
         processResult.passContext.asLValue = true
       }
     }
@@ -950,8 +981,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -969,8 +998,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1001,8 +1028,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1035,8 +1060,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1051,8 +1074,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1075,8 +1096,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1093,8 +1112,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1111,8 +1128,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1132,8 +1147,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1165,8 +1178,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
@@ -1249,8 +1260,6 @@ public struct ASTVisitor {
     return ASTPassResult(element: postProcessResult.element,
                          diagnostics: processResult.diagnostics + postProcessResult.diagnostics,
                          passContext: postProcessResult.passContext,
-                         preStatements: processResult.preStatements + postProcessResult.preStatements,
-                         postStatements: processResult.postStatements + postProcessResult.postStatements,
                          deleteCurrentStatement: processResult.deleteCurrentStatement
                              || postProcessResult.deleteCurrentStatement)
   }
