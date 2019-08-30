@@ -37,10 +37,6 @@ struct MoveFunctionCall {
        lookupCall.arguments.remove(at: 0)
     }
 
-    /*if case .matchedInitializer(let initializer)
-         = environment.matchFunctionCall(lookupCall, enclosingType: enclosingType,
-                                         typeStates: [], callerProtections: [], scopeContext: scopeContext),
-       initializer.declaration.generated {*/
     if environment.isExternalTraitInitializer(functionCall: lookupCall) {
       let externalContractAddress = lookupCall.arguments[0].expression
       return MoveExpression(expression: externalContractAddress, position: .normal)
