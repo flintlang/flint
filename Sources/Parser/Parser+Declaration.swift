@@ -46,7 +46,7 @@ extension Parser {
       case .enum:
         let enumDeclaration = try parseEnumDeclaration()
         declarations.append(.enumDeclaration(enumDeclaration))
-      case .identifier, .self:
+      case .identifier, .`self`:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       case .external:
@@ -515,8 +515,7 @@ extension Parser {
   func parsePrePostCondition() throws -> Expression {
     _ = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
     guard let index = indexOfFirstAtCurrentDepth([.newline]) else {
-      raise(.expectedCloseParen(at: latestSource))
-      exit(1)
+      throw raise(.expectedCloseParen(at: latestSource))
     }
     let expression = try parseExpression(upTo: index)
     return expression

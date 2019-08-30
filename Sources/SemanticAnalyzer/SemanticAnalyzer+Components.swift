@@ -119,9 +119,7 @@ extension SemanticAnalyzer {
           if let functionDeclarationContext = passContext.functionDeclarationContext {
             // The variable is being mutated in a function.
             let mutatedNames = functionDeclarationContext.mutates.map({ $0.name })
-            if !functionDeclarationContext.mutates
-                .map({ $0.name })
-                .contains(identifier.name) {
+            if !mutatedNames.contains(identifier.name) {
               diagnostics.append(.useOfMutatingExpressionOnNonMutatingProperty(
                   .identifier(identifier),
                   functionDeclaration: functionDeclarationContext.declaration
@@ -134,16 +132,16 @@ extension SemanticAnalyzer {
         }
       }
     } else if passContext.isInBecome {
-      if let functionDeclarationContext = passContext.functionDeclarationContext {
+      if passContext.functionDeclarationContext != nil {
         // The variable is being mutated in a function.
-        //if !functionDeclarationContext.isMutating {
-          // The function is declared non-mutating.
-          // TODO: Must become make function be explicitly marked mutating?
-          //    diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(
-          //        .identifier(identifier),
-          //        functionDeclaration: functionDeclarationContext.declaration
-          //    ))
-        //}
+//        if !functionDeclarationContext.isMutating {
+//           The function is declared non-mutating.
+//           TODO: Must become make function be explicitly marked mutating?
+//              diagnostics.append(.useOfMutatingExpressionInNonMutatingFunction(
+//                  .identifier(identifier),
+//                  functionDeclaration: functionDeclarationContext.declaration
+//              ))
+//        }
         // Record the mutating expression in the context.
         addMutatingExpression(.identifier(identifier), passContext: &passContext)
       }

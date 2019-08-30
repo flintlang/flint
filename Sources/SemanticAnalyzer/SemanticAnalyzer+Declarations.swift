@@ -376,10 +376,11 @@ extension SemanticAnalyzer {
     case .ifStatement(let ifStatement):
       return alwaysReturns(statements: ifStatement.body) && alwaysReturns(statements: ifStatement.elseBody)
     case .becomeStatement:
-      if statements.count >= 2,
-         let secondLast: Statement = try? statements[statements.count - 2],
-         case .returnStatement = secondLast {
-        return true
+      if statements.count >= 2 {
+        let secondLast: Statement = statements[statements.count - 2]
+        if case .returnStatement = secondLast {
+          return true
+        }
       }
     case .returnStatement:
       return true
@@ -607,7 +608,7 @@ extension SemanticAnalyzer {
       case .externalCall:
         return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
-           .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
+           .dictionaryLiteral, .`self`, .variableDeclaration, .bracketedExpression,
         .subscriptExpression, .range, .returnsExpression:
         return false
       case .rawAssembly, .sequence:

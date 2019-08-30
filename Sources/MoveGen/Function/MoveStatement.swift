@@ -111,7 +111,7 @@ struct MoveForStatement {
         .rendered(functionContext: functionContext)
     let incrementorName = Mangler.mangleName(forStatement.variable.identifier.name)
 
-    var initialize = MoveIR.Statement.expression(.assignment(Assignment(
+    let initialize = MoveIR.Statement.expression(.assignment(Assignment(
         incrementorName,
         MoveExpression(expression: iterable.initial).rendered(functionContext: functionContext)
     )))
