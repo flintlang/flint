@@ -1,0 +1,24 @@
+external trait 0x00.BaseCounter {  // 0x00 is replaced by `Transaction.` by the testsuite
+  public func add(n: uint64)
+
+  public func count() -> uint64
+}
+
+contract Counter {
+  visible var base: BaseCounter
+}
+
+Counter :: sender <- (any) {
+  public init() {
+    base = BaseCounter(address: sender)
+  }
+
+  public func increment(by: Int = 1) mutates (count) {
+    call! base.add(n: by as! uint64)
+  }
+
+  public func getCount() -> Int {
+    let count: Int = (call! base.count()) as! Int
+    return count
+  }
+}

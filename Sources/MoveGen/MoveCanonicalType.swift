@@ -53,11 +53,11 @@ indirect enum CanonicalType: CustomStringConvertible {
       self = .mutableReference(type)
     // FIXME The collection types are just stub to make the code work
     // and should probably be modified
-    case .fixedSizeArrayType(let type, let size):
+    case .fixedSizeArrayType(let type, _):
       self = CanonicalType(from: type)!
     case .arrayType(let type):
       self = CanonicalType(from: type)!
-    case .dictionaryType(let key, let value):
+    case .dictionaryType(let key, _):
       self = CanonicalType(from: key)!
     default:
       print("rawType': \(rawType)")

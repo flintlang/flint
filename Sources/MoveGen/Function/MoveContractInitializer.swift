@@ -203,20 +203,37 @@ struct MoveInitializerBody {
 
     functionContext.isConstructor = false
 
+    let shadowSelfName = "flint$self_raw"
     let selfType = renderMoveType(functionContext: functionContext)
     functionContext.emit(
-        .expression(.variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, selfType)))),
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, .mutableReference(to: selfType))))),
+        at: 0
+    )
+    functionContext.emit(
+        .expression(.variableDeclaration(MoveIR.VariableDeclaration((Mangler.mangleName(shadowSelfName), selfType)))),
         at: 0
     )
     let selfIdentifier = MoveSelf.generate(sourceLocation: declaration.sourceLocation).identifier
+    let shadowSelfIdentifier = AST.Identifier(name: shadowSelfName, sourceLocation: declaration.sourceLocation)
     functionContext.scopeContext.localVariables.append(AST.VariableDeclaration(
         modifiers: [],
         declarationToken: nil,
         identifier: selfIdentifier,
-        type: AST.Type(inferredType: .userDefinedType(functionContext.enclosingTypeName),
+        type: AST.Type(inferredType: .inoutType(.userDefinedType(functionContext.enclosingTypeName)),
                        identifier: selfIdentifier)
     ))
-    functionContext.emit(.expression(.assignment(Assignment(MoveSelf.name, constructor))))
+    functionContext.scopeContext.localVariables.append(AST.VariableDeclaration(
+        modifiers: [],
+        declarationToken: nil,
+        identifier: shadowSelfIdentifier,
+        type: AST.Type(inferredType: .userDefinedType(functionContext.enclosingTypeName),
+                       identifier: shadowSelfIdentifier)
+    ))
+    functionContext.emit(.expression(.assignment(Assignment(Mangler.mangleName(shadowSelfName), constructor))))
+    functionContext.emit(.expression(.assignment(Assignment(
+        MoveSelf.name,
+        MoveIdentifier(identifier: shadowSelfIdentifier).rendered(functionContext: functionContext)
+    ))))
 
     while !statements.isEmpty {
       let statement: AST.Statement = statements.removeFirst()
@@ -224,10 +241,12 @@ struct MoveInitializerBody {
     }
 
     functionContext.emitReleaseReferences()
-    let selfExpression: MoveIR.Expression = MoveSelf
-        .generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
+    let selfExpression = MoveSelf.generate(sourceLocation: declaration.closeBraceToken.sourceLocation)
         .rendered(functionContext: functionContext, forceMove: true)
-    functionContext.emit(.return(selfExpression))
+    functionContext.emit(.inline("_ = \(selfExpression)"))
+    let shadowSelfExpression: MoveIR.Expression = MoveIdentifier(identifier: shadowSelfIdentifier)
+        .rendered(functionContext: functionContext, forceMove: true)
+    functionContext.emit(.return(shadowSelfExpression))
     return functionContext.finalise()
   }
 

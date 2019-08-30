@@ -22,19 +22,16 @@ struct MoveInOutExpression {
     if case .inoutType = functionContext.environment.type(of: expression.expression,
                                                           enclosingType: functionContext.enclosingTypeName,
                                                           scopeContext: functionContext.scopeContext) {
-      if case .`self` = expression.expression,
-         functionContext.scopeContext.type(for: "self").map({ $0 == RawType.selfType }) ?? true {
-        return .operation(.mutableReference(MoveExpression(expression: expression.expression, position: .inOut)
-          .rendered(functionContext: functionContext)))
-      }
       return MoveExpression(expression: expression.expression, position: position)
           .rendered(functionContext: functionContext)
-    }
-    if position != .accessed,
+    } else if position != .accessed,
        case .identifier(let identifier) = expression.expression,
        identifier.enclosingType == nil {
       return .operation(.mutableReference(MoveExpression(expression: expression.expression, position: .left)
                                               .rendered(functionContext: functionContext)))
+    } else if case .`self` = expression.expression {
+      return MoveExpression(expression: expression.expression, position: position)
+          .rendered(functionContext: functionContext)
     }
     return .operation(.mutableReference(MoveExpression(expression: expression.expression, position: .inOut)
                                             .rendered(functionContext: functionContext)))

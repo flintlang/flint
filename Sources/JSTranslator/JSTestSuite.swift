@@ -39,9 +39,7 @@ public class JSTranslator {
     self.contractFunctionNames = []
     self.contractFunctionInfo = [:]
     self.contractEventInfo = [:]
-    let path_to_test_framework = URL(
-        fileURLWithPath: Path.getFullUrl(path: "utils/testRunner/test_framework.js").absoluteString)
-    self.firstHalf = try! String(contentsOf: path_to_test_framework)
+    self.firstHalf = try! String(contentsOf: Path.getFullUrl(path: "utils/testRunner/test_framework.js"))
     self.ast = ast
     self.coverage = coverage
     loadLibraryFuncs()

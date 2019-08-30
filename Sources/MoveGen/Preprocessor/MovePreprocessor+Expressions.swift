@@ -52,7 +52,7 @@ extension MovePreprocessor {
         // Handle `x.y` when x is not a reference
         return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal, isReference: false)
       } else if identifier.enclosingType != nil {
-        // Handle x.y when x is implicitly self.x
+        // Handle `x.y` when x is implicitly self.x
         return preAssign(expression, passContext: &passContext, borrowLocal: borrowLocal)
       }
     case .binaryExpression(var binary):
@@ -177,11 +177,6 @@ extension MovePreprocessor {
           }
 
           switch receiver {
-          case .`self`:
-            type = scopeContext.type(for: "self")
-                ?? environment.type(of: receiver,
-                                    enclosingType: passContext.enclosingTypeIdentifier!.name,
-                                    scopeContext: scopeContext)
           case .identifier(let identifier):
             type = scopeContext.type(for: identifier.name)
               ?? environment.type(of: receiver,

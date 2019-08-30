@@ -322,8 +322,7 @@ extension SemanticAnalyzer {
                                    caller: (FunctionDeclaration, RawTypeIdentifier),
                                    callee: (FunctionDeclaration, RawTypeIdentifier),
                                    passContext: ASTPassContext) -> Set<String> {
-    guard let environment = passContext.environment,
-          let scopeContext = passContext.scopeContext else {
+    guard let scopeContext = passContext.scopeContext else {
       return []
     }
 
@@ -347,7 +346,7 @@ extension SemanticAnalyzer {
         if !scopeContext.containsDeclaration(for: identifier.name) {
           return caller.mutates.contains(where: { $0.name == identifier.name }) ? [] : [identifier.name]
         }
-      case .binaryExpression(let binary):
+      case .binaryExpression:
         let mutated: Identifier
         if case .`self` = last,
            receiverTrail.count >= 2,

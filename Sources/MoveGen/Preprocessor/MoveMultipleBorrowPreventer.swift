@@ -51,7 +51,7 @@ public struct MoveMultipleBorrowPreventer: ASTPass {
     var passContext = passContext
     var referenced = [Identifier]()
 
-    duplicateReferences(binaryExpression.lhs, passContext: passContext, referenced: &referenced)
+    _ = duplicateReferences(binaryExpression.lhs, passContext: passContext, referenced: &referenced)
 
     if duplicateReferences(binaryExpression.rhs, passContext: passContext, referenced: &referenced) {
       binaryExpression.rhs = preAssign(binaryExpression.rhs, passContext: &passContext)

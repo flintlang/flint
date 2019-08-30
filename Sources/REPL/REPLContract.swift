@@ -69,15 +69,21 @@ public class REPLContract {
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["node", "event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
+    p.arguments = ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
 
-    let result_file_path = Path.getFullUrl(path: "utils/repl/event_result.txt"
-    ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/event_result.txt" */
-    if let res = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) {
+    if let res = try? String(contentsOf: Path.getFullUrl(path: "utils/repl/event_result.txt")) {
       return res
     }
 

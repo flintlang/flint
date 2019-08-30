@@ -15,8 +15,6 @@ struct MovePropertyAccess {
 
   func rendered(functionContext: FunctionContext) -> MoveIR.Expression {
     let environment = functionContext.environment
-    let scopeContext = functionContext.scopeContext
-    let enclosingTypeName = functionContext.enclosingTypeName
 
     if case .identifier(let enumIdentifier) = lhs,
       case .identifier(let propertyIdentifier) = rhs,

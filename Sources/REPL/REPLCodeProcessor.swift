@@ -144,8 +144,7 @@ public class REPLCodeProcessor {
 
   private func getNewAddress() -> String {
     let fileManager = FileManager.init()
-    let path = Path.getFullUrl(path: "utils/repl/gen_address.js"
-    ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/gen_address.js" */
+    let path = Path.getFullUrl(path: "utils/repl/gen_address.js").path
 
     if !(fileManager.fileExists(atPath: path)) {
       print("FATAL ERROR: gen_address file does not exist, cannot gen new addr. Exiting.")
@@ -153,15 +152,21 @@ public class REPLCodeProcessor {
     }
 
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["node", "--no-warnings", "gen_address.js"]
+    p.arguments = ["--no-warnings", "gen_address.js"]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
 
-    let addr_file_path = Path.getFullUrl(path: "utils/repl/gen_addr.txt").absoluteString
-
-    let addr = try! String(contentsOf: URL(fileURLWithPath: addr_file_path))
+    let addr = try! String(contentsOf: Path.getFullUrl(path: "utils/repl/gen_addr.txt"))
 
     return addr
 

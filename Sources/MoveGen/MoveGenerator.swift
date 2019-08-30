@@ -16,7 +16,7 @@ public struct MoveGenerator {
 
   public func generateCode() -> String {
 
-    var externalTraitDeclarations = topLevelModule.declarations.compactMap { declaration -> TraitDeclaration? in
+    let externalTraitDeclarations = topLevelModule.declarations.compactMap { declaration -> TraitDeclaration? in
       switch declaration {
       case .traitDeclaration(let traitDeclaration):
         return traitDeclaration.moduleAddress != nil ? traitDeclaration : nil

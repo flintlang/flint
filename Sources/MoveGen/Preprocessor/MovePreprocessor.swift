@@ -97,10 +97,10 @@ public struct MovePreprocessor: ASTPass {
 }
 
 extension ASTPass {
-  public func preAssign(_ element: Expression,
-                        passContext: inout ASTPassContext,
-                        borrowLocal: Bool = false,
-                        isReference: Bool = true) -> Expression {
+  func preAssign(_ element: Expression,
+                 passContext: inout ASTPassContext,
+                 borrowLocal: Bool = false,
+                 isReference: Bool = true) -> Expression {
     guard let environment = passContext.environment,
           var scopeContext = passContext.scopeContext,
           let enclosingType = passContext.enclosingTypeIdentifier?.name else {
@@ -108,9 +108,12 @@ extension ASTPass {
       exit(1)
     }
 
-    let type = environment.type(of: element,
-                                enclosingType: enclosingType,
-                                scopeContext: scopeContext)
+    var type: RawType = environment.type(of: element,
+                                         enclosingType: enclosingType,
+                                         scopeContext: scopeContext)
+    if type.isExternalTraitType(environment: environment) {
+      type = RawType.externalTraitType
+    }
 
     let expression: Expression
     if borrowLocal || type.isBuiltInType || !isReference {

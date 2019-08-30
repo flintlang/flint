@@ -30,7 +30,7 @@ struct MoveAssignment {
       return .variableDeclaration(MoveIR.VariableDeclaration((mangledName, typeIR)))
     case .identifier(let identifier) where identifier.enclosingType == nil:
       return .assignment(Assignment(identifier.name.mangled, rhsIr))
-    case .rawAssembly(let string, let type):
+    case .rawAssembly(let string, _):
       // If this is a releasing assignment, force move the identifier to destroy it
       if string == "_",
          case .identifier(let identifier) = rhs {
