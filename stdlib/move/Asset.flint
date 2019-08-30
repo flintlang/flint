@@ -1,6 +1,5 @@
 // Any currency should implement this trait to be able to use the currency
-// fully. The default implementations should be left intact, only
-// `getRawValue` and `setRawValue` need to be implemented.
+// fully.
 
 struct trait Asset {
 
@@ -26,54 +25,46 @@ struct trait Asset {
   }
 
   // Returns the funds contained in this asset, as an integer.
-  func setRawValue(value: Int) -> Int
-
-  // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
 }
 
+// This needs to be removed and made a Flint special type
+struct LibraCoin {}
 
-
-
-struct Wei: Asset {
-  var rawValue: Int = 0
+struct Libra: Asset {
+  var coin: LibraCoin
 
   init(unsafeRawValue: Int) {
     if unsafeRawValue != 0 {
       fatalError()
     }
-    self.rawValue = unsafeRawValue
+    coin = LibraCoin()
   }
 
-  // Should be invisible to the user and implemented internally
-  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
-    if youAreTheCompiler == false {
-      fatalError()
-    }
-    self.rawValue = unsafeRawValue
+  // Shouldn't be made available to the Flint's programmer 
+  // Should only be used to initialised Libra received from public contract methods
+  init(source: inout LibraCoin) {
+    coin = LibraCoin()
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
   }
 
-  init(source: inout Wei, amount: Int) {
+  init(source: inout Libra, amount: Int) {
+    coin = LibraCoin()
     transfer(source: &source, amount: amount)
   }
 
-  init(source: inout Wei) {
+  init(source: inout Libra) {
+    coin = LibraCoin()
     transfer(source: &source)
   }
 
-  func setRawValue(value: Int) -> Int
-    mutates (rawValue)
-
-    post(self.rawValue == value)
-    post(returns value)
-  {
-    rawValue = value
-    return rawValue
+  func transfer(source: inout Libra, amount: Int) {
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
   }
 
   func getRawValue() -> Int
-    post(returns rawValue)
   {
-    return rawValue
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
+    return 0
   }
 }
