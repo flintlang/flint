@@ -1,6 +1,5 @@
 // Any currency should implement this trait to be able to use the currency
-// fully. The default implementations should be left intact, only
-// `getRawValue` and `setRawValue` need to be implemented.
+// fully.
 
 struct trait Asset {
 
@@ -29,10 +28,10 @@ struct trait Asset {
   func getRawValue() -> Int
 }
 
-// Consider removing and making it a Flint type
+// This needs to be removed and made a Flint special type
 struct LibraCoin {}
 
-struct Libra {
+struct Libra: Asset {
   var coin: LibraCoin
 
   init(unsafeRawValue: Int) {
@@ -40,6 +39,13 @@ struct Libra {
       fatalError()
     }
     coin = LibraCoin()
+  }
+
+  // Shouldn't be made available to the Flint's programmer 
+  // Should only be used to initialised Libra received from public contract methods
+  init(source: inout LibraCoin) {
+    coin = LibraCoin()
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
   }
 
   init(source: inout Libra, amount: Int) {
@@ -53,66 +59,12 @@ struct Libra {
   }
 
   func transfer(source: inout Libra, amount: Int) {
-    // TO BE IMPLEMNTED
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
   }
 
   func getRawValue() -> Int
   {
-    // TO BE IMPLEMENTED
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
     return 0
-  }
-}
-
-struct Wei: Asset {
-  var rawValue: Int = 0
-
-  init(unsafeRawValue: Int) {
-    if unsafeRawValue != 0 {
-      fatalError()
-    }
-    self.rawValue = unsafeRawValue
-  }
-
-  // Should be invisible to the user and implemented internally
-  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
-    if youAreTheCompiler == false {
-      fatalError()
-    }
-    self.rawValue = unsafeRawValue
-  }
-
-  init(source: inout Wei, amount: Int) {
-    transfer(source: &source, amount: amount)
-  }
-
-  init(source: inout Wei) {
-    transfer(source: &source)
-  }
-
-  func transfer(source: inout Wei, amount: Int)
-  mutates (source, rawValue)
-  {
-    if source.getRawValue() < amount {
-       fatalError()
-    }
-
-    // TODO: support let _: Int = ...
-    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
-    let unused2: Int = setRawValue(value: getRawValue() + amount)
-  }
-
-  func setRawValue(value: Int) -> Int
-    mutates (rawValue)
-    post(self.rawValue == value)
-    post(returns value)
-  {
-    rawValue = value
-    return rawValue
-  }
-
-  func getRawValue() -> Int
-    post(returns rawValue)
-  {
-    return rawValue
   }
 }

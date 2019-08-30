@@ -72,7 +72,7 @@ struct MoveRuntimeFunctionDeclaration {
     let ret: LibraCoin.T;
     coin_value = LibraCoin.value(freeze(copy(coin_ref)));
     ret = LibraCoin.withdraw(copy(coin_ref), copy(coin_value));
-    release(move(coin_ref));
+    _ = move(coin_ref));
     return move(ret);
   }
   """
