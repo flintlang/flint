@@ -721,7 +721,6 @@ public struct CompilerTestFrameworkConfiguration {
 
   public func asCompilerConfiguration() -> CompilerConfiguration {
     return CompilerConfiguration(inputFiles: sourceFiles,
-                                 stdlibFiles: StandardLibrary.default.files,
                                  outputDirectory: outputDirectory,
                                  dumpAST: false,
                                  emitBytecode: true,
@@ -734,6 +733,7 @@ public struct CompilerTestFrameworkConfiguration {
                                  skipVerifier: true,
                                  skipCodeGen: false,
                                  diagnostics: diagnostics,
+                                 stdLib: .from(target: .evm),
                                  target: .evm)
   }
 }
