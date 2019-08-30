@@ -32,6 +32,8 @@ extension MovePreprocessor {
         expression = variableDeclaration.assignment(to: binaryExpression.rhs)
         updatedContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
         updatedContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
+        updatedContext.functionDeclarationContext?.declaration.scopeContext?.localVariables += [variableDeclaration]
+        updatedContext.specialDeclarationContext?.declaration.scopeContext.localVariables += [variableDeclaration]
         updatedContext.scopeContext?.localVariables += [variableDeclaration]
       }
     }
@@ -137,7 +139,7 @@ extension MovePreprocessor {
     var passContext = passContext
 
     guard !Environment.isRuntimeFunctionCall(functionCall) else {
-      // Don't further process runtime functions.
+      // Don't further process runtime functions
       return ASTPassResult(element: functionCall, diagnostics: [], passContext: passContext)
     }
 
@@ -332,88 +334,5 @@ extension MovePreprocessor {
 
     functionArgument.expression = expression
     return ASTPassResult(element: functionArgument, diagnostics: [], passContext: passContext)
-  }
-
-  func preAssign(_ element: Expression,
-                 passContext: inout ASTPassContext,
-                 borrowLocal: Bool = false,
-                 isReference: Bool = true) -> Expression {
-    guard let environment = passContext.environment,
-          var scopeContext = passContext.scopeContext,
-          let enclosingType = passContext.enclosingTypeIdentifier?.name else {
-      print("Cannot infer type for \(element.sourceLocation)")
-      exit(1)
-    }
-
-    var type: RawType = environment.type(of: element,
-                                enclosingType: enclosingType,
-                                scopeContext: scopeContext)
-    if type.isExternalTraitType(environment: environment) {
-      type = RawType.externalTraitType
-    }
-
-    let expression: Expression
-    if borrowLocal || type.isBuiltInType || !isReference {
-      expression = element
-    } else {
-      expression = .inoutExpression(InoutExpression(
-          ampersandToken: Token(kind: .punctuation(.ampersand),
-                                sourceLocation: element.sourceLocation),
-          expression: element
-      ))
-    }
-
-    let temporaryId: Identifier
-    // Check if this expression's already been assigned
-    if let statement: Statement = passContext.preStatements.first(where: { (statement: Statement) in
-      if case .expression(.binaryExpression(let binary)) = statement,
-         binary.opToken == .equal,
-         case .identifier = binary.lhs {
-        return binary.rhs == expression
-      }
-      return false
-    }) {
-      guard case .expression(.binaryExpression(let binary)) = statement,
-            case .identifier(let identifier) = binary.lhs else {
-        fatalError("Cannot find expected identifier for `\(element)`")
-      }
-      temporaryId = identifier
-    } else {
-      // Otherwise create a new identifier and handle set-up and clean up
-      temporaryId = scopeContext.freshIdentifier(sourceLocation: element.sourceLocation)
-      let declaration: VariableDeclaration
-      let assigned: Expression
-      if type.isBuiltInType || borrowLocal {
-        declaration = VariableDeclaration(identifier: temporaryId,
-                                          type: Type(inferredType: type,
-                                                     identifier: temporaryId))
-      } else {
-        declaration = VariableDeclaration(identifier: temporaryId,
-                                          type: Type(inferredType: .inoutType(type),
-                                                     identifier: temporaryId))
-        passContext.postStatements.append(Move.release(expression: .identifier(temporaryId),
-                                                       type: .inoutType(type)))
-      }
-
-      passContext.preStatements.append(Statement.expression(.binaryExpression(BinaryExpression(
-          lhs: .identifier(temporaryId),
-          op: Token(kind: .punctuation(.equal), sourceLocation: element.sourceLocation),
-          rhs: expression
-      ))))
-      passContext.blockContext?.scopeContext.localVariables.append(declaration)
-      passContext.functionDeclarationContext?.innerDeclarations.append(declaration)
-      passContext.specialDeclarationContext?.innerDeclarations.append(declaration)
-    }
-
-    passContext.scopeContext = scopeContext
-
-    if borrowLocal {
-      return .inoutExpression(InoutExpression(
-          ampersandToken: Token(kind: .punctuation(.and),
-                                sourceLocation: element.sourceLocation),
-          expression: .identifier(temporaryId)
-      ))
-    }
-    return .identifier(temporaryId)
   }
 }

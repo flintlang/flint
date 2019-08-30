@@ -35,7 +35,7 @@ struct MoveContract {
 
   func rendered() -> String {
     let imports: [MoveIR.Statement] = externalTraitDeclarations
-      .map { .`import`(ModuleImport(name: $0.identifier.name, address: $0.moveModuleAddress!)) }
+      .map { .`import`(ModuleImport(name: $0.identifier.name, address: $0.moduleAddress!)) }
     let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
@@ -53,7 +53,8 @@ struct MoveContract {
       }
     }
 
-    let functionsCode = functions.map { $0.rendered() }.joined(separator: "\n\n").indented(by: 2)
+    let functionsCode = functions.map { $0.rendered() }
+      .joined(separator: "\n\n").indented(by: 2)
 
     let initializerBody = renderPublicInitializer()
     let context = FunctionContext(environment: environment,

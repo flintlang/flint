@@ -19,7 +19,7 @@ public struct MoveGenerator {
     var externalTraitDeclarations = topLevelModule.declarations.compactMap { declaration -> TraitDeclaration? in
       switch declaration {
       case .traitDeclaration(let traitDeclaration):
-        return traitDeclaration.moveModuleAddress != nil ? traitDeclaration : nil
+        return traitDeclaration.moduleAddress != nil ? traitDeclaration : nil
       default:
         return nil
       }

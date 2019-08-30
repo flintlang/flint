@@ -1,0 +1,34 @@
+struct trait A {
+    func foo() -> Int
+    func bar() -> Bool {
+        return false
+    }
+}
+
+struct B: A {
+    var storedFoo: Int = 0
+    func foo() -> Int {
+        return storedFoo
+    }
+}
+
+contract C {
+    var b: B = B()
+}
+
+C :: (any) {
+    public init() {}
+
+    public func setFoo(val: Int)
+    mutates (b) {
+        b.storedFoo = val
+    }
+
+    public func foo() -> Int {
+        return b.foo()
+    }
+
+    public func bar() -> Bool {
+        return b.bar()
+    }
+}

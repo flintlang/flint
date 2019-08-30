@@ -28,7 +28,7 @@ generate_libra_instance(coin_ref: &mut LibraCoin.T): LibraCoin.T {
     let ret: LibraCoin.T;
     coin_value = LibraCoin.value(freeze(copy(coin_ref)));
     ret = LibraCoin.withdraw(copy(coin_ref), copy(coin_value));
-    release(move(coin_ref));
+    _ = move(coin_ref);
     return move(ret);
 }
 
@@ -58,6 +58,8 @@ struct Libra: Asset {
   // ...initialisers and methods...
 ```
 However, external traits are not immediately usable on the libra blockchain as there is no concept of Move contracts, but just of Move modules. Thus, an implementation of Flint external traits that works with the libra blockchain is necessary before moving forward. 
+
+However, this is still problematic as external trait require
 
 ---
 ## TO DO:

@@ -1,0 +1,16 @@
+import Transaction.ForLoop;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  ForLoop.publish();
+  assert(ForLoop.sumToFive(copy(this)) == 15, 101);
+  assert(ForLoop.sumUpToFive(copy(this)) == 10, 102);
+  assert(ForLoop.sumFromFive(copy(this)) == 15, 103);
+  assert(ForLoop.sumFromFiveDownToOne(copy(this)) == 14, 104);
+  assert(ForLoop.toFive(copy(this)) == 12345, 105);
+  assert(ForLoop.fromFive(copy(this)) == 54321, 106);
+  assert(ForLoop.nested(copy(this)) == 1230023400345, 107);
+  assert(ForLoop.successive(copy(this)) == 60, 108);
+  return;
+}
