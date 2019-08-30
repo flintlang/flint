@@ -6,7 +6,6 @@ import Parser
 import SemanticAnalyzer
 import TypeChecker
 import Optimizer
-import LSP
 import IRGen
 import JSTranslator
 import Compiler
@@ -78,6 +77,7 @@ struct TestRunner {
     // create java script file and then run it
     jsTestSuite.convertAST()
     let jsTestFile: String = jsTestSuite.genFile()
+
     if test_run {
       print(jsTestFile)
     } else {
@@ -91,27 +91,43 @@ struct TestRunner {
 
   func genCovReport(contract_name: String, contract_file_path: String) throws {
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/coverage")
-    p.arguments = ["node", "--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
+    p.arguments = ["--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
   }
 
   func runNode(jsTestFile: String) throws {
-    let fileManager = FileManager.init()
-    let outputfile = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: false)
-        .appendingPathComponent("utils")
-        .appendingPathComponent("testRunner")
-        .appendingPathComponent("test.js")
+    let outputfile = Path.getFullUrl(path: "utils/testRunner/test.js")
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
 
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/testRunner")
-    p.arguments = ["node", "--no-warnings", "test.js"]
+    p.arguments = ["--no-warnings", "test.js"]
+    let outputPipe = Pipe()
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = outputPipe
+    p.standardError = FileHandle.nullDevice
     try! p.run()
+    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+    let output = String(decoding: outputData, as: UTF8.self)
     p.waitUntilExit()
+    print(output)
   }
 
   func exitWithFailure() -> Never {

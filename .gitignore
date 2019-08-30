@@ -54,6 +54,7 @@ utils/coverage/statements.json
 utils/coverage/coverage.info
 utils/coverage/html/*
 utils/coverage/node_modules/*
+utils/coverage/address.txt
 
 utils/block/keystore/*
 utils/block/geth/*
