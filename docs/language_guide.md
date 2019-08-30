@@ -1320,6 +1320,24 @@ The expressions available in Flint are:
 
 Functions can then be called from within a contract protection block with the same identifier. The call arguments must be provided in the same order as the one they are declared in (in the function signature), and they must be labeled accordingly (the exception for this is [struct initialisers](#instances)). If any of the optional parameters are not provided, then their default values are going to be used automatically.
 
+
+````swift
+@payable
+  public func Apply(Name: String, implicit Fee: Wei ) mutates (roster){
+    var thisMember: Member
+    var stake: Int = 0
+   
+    thisMember = Member(Name, caller)
+    stake = Admission
+    bankroll(applicant: caller, amount: stake)
+    ...
+  }
+
+  func bankroll (applicant: Address, amount: Int ) mutates (balances) {
+    balances [applicant] = amount
+  }
+````
+
 ## Literals
 
 Literals represent fixed values in the source code that can be assigned to constants and variables.
