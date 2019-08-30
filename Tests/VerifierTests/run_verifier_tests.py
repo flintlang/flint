@@ -39,7 +39,7 @@ def parse_flint_errors(stdout_lines):
 def parse_fail_lines(flint_lines):
     fail_lines = set()
     warning_lines = set()
-    for (current_line, line) in enumerate(flint_lines, 1): # Humans count from 1
+    for (current_line, line) in enumerate(flint_lines, 1):  # Humans count from 1
         line = line.rstrip().strip()
         if line == "//VERIFY-FAIL":
             # The annotation is always placed the line of interest
@@ -71,11 +71,11 @@ def test_contract(contract_path, fail_lines, warning_lines):
         contract_verify_result[contract_path] = (expected_return_code and failed_verification_lines == fail_lines and warning_verification_lines == warning_lines)
         if verbose:
             if contract_verify_result[contract_path]:
-                print(f"{contract_path}: passed")
+                print(f"{contract_path}: \033[1;38;5;114mpassed\033[m")
             else:
                 print(f"{contract_path}:\n fail_lines = {fail_lines !r:>23} failed = {failed_verification_lines !r:>20}\n"
                       f" warning_lines = {warning_lines !r:>20} warned = {warning_verification_lines !r:>20}")
-                print(" failed\n")
+                print(" \033[1;38;5;196mfailed\033[m\n")
     except Exception as e:
         if verbose:
             print(f"Exception on run, assuming contract fail: {e}")
@@ -148,15 +148,24 @@ for contract, result in contract_verify_result.items():
         failed.append(contract)
 
 print("Verification tests")
-print("Passed: %i" % len(passed))
+if passed:
+    print("\033[1;38;5;114mPassed\033[0m: %i" % len(passed))
+else:
+    print("Passed: 0")
 if list_passed:
-    for passed in passed:
-        print("\tPass: %s" % passed)
-print("Skipped: %i" % len(skipped))
+    for pass_ in passed:
+        print("\tPass: %s" % pass_)
+if skipped:
+    print("\033[1;38;5;179mSkipped\033[0m: %i" % len(skipped))
+else:
+    print("Skipped: 0")
 if list_skipped:
     for skip in skipped:
         print("\tSkip: %s" % skip)
-print("Failed: %i" % len(failed))
+if failed:
+    print("\033[1;38;5;196mFailed\033[0m: %i" % len(failed))
+else:
+    print("Failed: 0")
 if list_failed:
     for fail in failed:
         print("\tFail: %s" % fail)

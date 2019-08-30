@@ -26,7 +26,7 @@ let package = Package(
         "file-check",
       ]
     ),
-  ], 
+  ],
   dependencies: [
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
     .package(url: "https://github.com/onevcat/Rainbow.git", .branch("master")),
@@ -276,13 +276,19 @@ let package = Package(
           "Diagnostic",
           "AST",
           "CryptoSwift",
-          "YUL",
+          "MoveIR",
           "Utils",
         ]
     ),
     // MARK: YUL -
     .target(
       name: "YUL",
+      dependencies: [
+        "Utils",
+      ]
+    ),
+    .target(
+      name: "MoveIR",
       dependencies: [
         "Utils",
       ]

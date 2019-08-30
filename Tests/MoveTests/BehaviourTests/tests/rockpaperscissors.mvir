@@ -1,0 +1,27 @@
+import Transaction.RockPaperScissors;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  RockPaperScissors.publish();
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 1);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 0, 0);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 2);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 1, 1);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 3);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 2, 2);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 4);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 0, 1);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 2);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 0, 2);
+  assert(RockPaperScissors.getWinner(copy(this)) == true, 2);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 1, 0);
+  assert(RockPaperScissors.getWinner(copy(this)) == true, 3);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 1, 2);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 3);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 2, 0);
+  assert(RockPaperScissors.getWinner(copy(this)) == false, 4);
+  RockPaperScissors.leftWins$Int_Int(copy(this), 2, 1);
+  assert(RockPaperScissors.getWinner(copy(this)) == true, 4);
+  return;
+}

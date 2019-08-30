@@ -1,0 +1,86 @@
+contract C {
+  var s: S = S(0, 0x0000000000000000000000000000000000000000)
+  var v: V = V(2)
+}
+
+C :: (any) {
+  public init() {}
+
+  public func setS(a: Int, b: Address)
+  mutates (s) {
+    let s: S = S(a, b)
+    s.incrementA()
+    self.s = S(s.a, s.s)
+  }
+
+  public func setV1(a: Int)
+  mutates (v) {
+    let t1: V = V(a)
+    let t2: V = V(a + 1)
+
+    self.v = V(t1.x)
+  }
+
+  public func setV2(a: Int)
+  mutates (v) {
+    let t1: V = V(a)
+    let t2: V = V(a + 1)
+
+    self.v = V(t2.x)
+  }
+
+  public func setV3(c: Bool, a: Int, b: Int)
+  mutates (v) {
+    if c {
+      let v: V = V(a)
+      v.increment()
+      self.v = V(v.x)
+    } else {
+      let v: V = V(b)
+      v.increment()
+      self.v = V(v.x)
+    }
+  }
+
+  public func getSa() -> Int {
+    return s.a
+  }
+
+  public func getSs() -> Address {
+    return s.s
+  }
+
+  public func getVx() -> Int {
+    return v.x
+  }
+}
+
+struct S {
+  var a: Int
+  var b: Int = 3
+  var s: Address
+  var v: V = V(0)
+
+  init(a: Int, s: Address) {
+    self.a = a
+    self.s = s
+  }
+
+  func incrementA()
+  mutates (a) {
+    self.a += 1
+  }
+}
+
+struct V {
+  var x: Int
+
+  init(x: Int) {
+    self.x = x
+  }
+
+  func increment()
+  mutates (x) {
+    self.x += 1
+  }
+}

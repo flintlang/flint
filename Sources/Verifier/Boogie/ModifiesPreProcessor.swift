@@ -142,7 +142,7 @@ public class ModifiesPreProcessor: ASTPass {
       return []
     }
 
-    var visited = visited.union([type])
+    let visited = visited.union([type])
 
     switch type {
     case .userDefinedType(let name):

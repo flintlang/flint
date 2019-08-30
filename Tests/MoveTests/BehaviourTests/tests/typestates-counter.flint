@@ -1,0 +1,21 @@
+contract Counter (Unset, Counting) {
+  visible var count: Int = 0
+}
+
+Counter @(Unset, Counting) :: (any) {
+  public init() {
+    become Unset
+  }
+
+  public func increment(by: Int = 1) mutates (count) {
+    count += by
+    become Counting
+  }
+}
+
+Counter @(Counting) :: (any) {
+  public func reset() mutates (count) {
+    count = 0
+    become Unset
+  }
+}

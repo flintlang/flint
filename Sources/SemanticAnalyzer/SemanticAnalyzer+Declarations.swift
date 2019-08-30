@@ -123,7 +123,9 @@ extension SemanticAnalyzer {
     let declarationContext =
         ContractBehaviorDeclarationContext(contractIdentifier: contractBehaviorDeclaration.contractIdentifier,
                                            typeStates: contractBehaviorDeclaration.states,
-                                           callerProtections: contractBehaviorDeclaration.callerProtections)
+                                           callerBinding: contractBehaviorDeclaration.callerBinding,
+                                           callerProtections: contractBehaviorDeclaration.callerProtections,
+                                           declaration: contractBehaviorDeclaration)
 
     let passContext = passContext.withUpdates { $0.contractBehaviorDeclarationContext = declarationContext }
 
@@ -174,7 +176,7 @@ extension SemanticAnalyzer {
   // MARK: Traits
   public func process(traitDeclaration: TraitDeclaration,
                       passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
-    var diagnostics = [Diagnostic]()
+    var diagnostics: [Diagnostic] = []
     let environment = passContext.environment!
 
     if let conflict = environment.conflictingTypeDeclaration(for: traitDeclaration.identifier) {
@@ -198,7 +200,7 @@ extension SemanticAnalyzer {
 
   // MARK: Enum
   public func process(enumDeclaration: EnumDeclaration, passContext: ASTPassContext) -> ASTPassResult<EnumDeclaration> {
-    var diagnostics = [Diagnostic]()
+    var diagnostics: [Diagnostic] = []
 
     if let conflict = passContext.environment!.conflictingTypeDeclaration(for: enumDeclaration.identifier) {
       diagnostics.append(.invalidRedeclaration(enumDeclaration.identifier, originalSource: conflict))
@@ -298,7 +300,7 @@ extension SemanticAnalyzer {
     }
 
     // Check whether Solidity types are allowed in the current context
-    checkWhetherSolidityTypesAreAllowedInContext(type: variableDeclaration.type,
+    checkWhetherExternalTypesAreAllowedInContext(type: variableDeclaration.type,
                                                  passContext: passContext,
                                                  diagnostics: &diagnostics)
 
@@ -310,6 +312,8 @@ extension SemanticAnalyzer {
 
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
+      passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     } else if let enclosingType = passContext.enclosingTypeIdentifier?.name {
       // It's a property declaration.
       if let conflict = environment.conflictingPropertyDeclaration(for: variableDeclaration.identifier,
@@ -355,7 +359,7 @@ extension SemanticAnalyzer {
                       passContext: ASTPassContext) -> ASTPassResult<FunctionSignatureDeclaration> {
     var diagnostics: [Diagnostic] = []
     if let resultType = functionSignatureDeclaration.resultType {
-      checkWhetherSolidityTypesAreAllowedInContext(type: resultType,
+      checkWhetherExternalTypesAreAllowedInContext(type: resultType,
                                                    passContext: passContext,
                                                    diagnostics: &diagnostics)
     }
@@ -372,10 +376,11 @@ extension SemanticAnalyzer {
     case .ifStatement(let ifStatement):
       return alwaysReturns(statements: ifStatement.body) && alwaysReturns(statements: ifStatement.elseBody)
     case .becomeStatement:
-      if statements.count >= 2,
-         let secondLast: Statement = try? statements[statements.count - 2],
-         case .returnStatement = secondLast {
-        return true
+      if statements.count >= 2 {
+        let secondLast: Statement = statements[statements.count - 2]
+        if case .returnStatement = secondLast {
+          return true
+        }
       }
     case .returnStatement:
       return true
@@ -603,7 +608,7 @@ extension SemanticAnalyzer {
       case .externalCall:
         return true
       case .identifier, .inoutExpression, .literal, .arrayLiteral,
-           .dictionaryLiteral, .self, .variableDeclaration, .bracketedExpression,
+           .dictionaryLiteral, .`self`, .variableDeclaration, .bracketedExpression,
         .subscriptExpression, .range, .returnsExpression:
         return false
       case .rawAssembly, .sequence:

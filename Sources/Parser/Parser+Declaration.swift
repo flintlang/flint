@@ -46,7 +46,7 @@ extension Parser {
       case .enum:
         let enumDeclaration = try parseEnumDeclaration()
         declarations.append(.enumDeclaration(enumDeclaration))
-      case .identifier, .self:
+      case .identifier, .`self`:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       case .external:
@@ -121,6 +121,16 @@ extension Parser {
   func parseTraitDeclaration() throws -> TraitDeclaration {
     let traitKind = try consume(anyOf: [.struct, .contract, .external], or: .badDeclaration(at: latestSource))
     let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
+    // This is move-specific syntax required to get module address that a Move module defining
+    // the external trait is published at
+    let moduleAddress: String? = attempt {
+      let moduleAddressToken: Token = try parseLiteral()
+      try consume(.punctuation(.dot), or: .expectedMoveModuleAddress(at: latestSource))
+      if case .literal(.address(let addressStr)) = moduleAddressToken.kind {
+        return addressStr
+      }
+      throw raise(.expectedMoveModuleAddress(at: latestSource))
+    }
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
     let traitMembers = try parseTraitMembers()
@@ -130,7 +140,8 @@ extension Parser {
         traitKind: traitKind,
         traitToken: traitToken,
         identifier: identifier,
-        members: traitMembers
+        members: traitMembers,
+        moduleAddress: moduleAddress
     )
   }
 
@@ -504,8 +515,7 @@ extension Parser {
   func parsePrePostCondition() throws -> Expression {
     _ = try consume(anyOf: [.pre, .post], or: .badPrePostConditionDeclaration(at: latestSource))
     guard let index = indexOfFirstAtCurrentDepth([.newline]) else {
-      raise(.expectedCloseParen(at: latestSource))
-      exit(1)
+      throw raise(.expectedCloseParen(at: latestSource))
     }
     let expression = try parseExpression(upTo: index)
     return expression

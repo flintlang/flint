@@ -1,0 +1,21 @@
+contract RockPaperScissors {
+  visible var winner: Bool
+}
+
+RockPaperScissors :: (any) {
+  public init()
+    mutates (winner)
+  {
+    winner = false
+  }
+
+  public func leftWins(left: Int, right: Int)
+    mutates (winner)
+    // ROCK == 0
+    // PAPER == 1
+    // SCISSORS == 2
+  {
+    var outcome: Int = (3 + left) - right
+    winner = outcome % 3 == 1
+  }
+}

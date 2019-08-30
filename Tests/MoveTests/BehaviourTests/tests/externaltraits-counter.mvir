@@ -1,0 +1,47 @@
+import Transaction.Counter;
+import Transaction.BaseCounter;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  BaseCounter.publish(0);
+  Counter.publish();
+  assert(Counter.getCount(copy(this)) == 0, 1);
+  Counter.increment(copy(this));
+  assert(Counter.getCount(copy(this)) == 1, 2);
+  Counter.increment$Int(copy(this), 4);
+  assert(Counter.getCount(copy(this)) == 5, 3);
+  return;
+}
+
+//! provide module
+module BaseCounter {
+  resource T {
+    value: u64
+  }
+
+  public publish(start: u64) {
+    let t: Self.T;
+    t = T {
+      value: move(start)
+    };
+    move_to_sender<T>(move(t));
+    return;
+  }
+
+  public add(this_address: address, n: u64) acquires T {
+    let this: &mut Self.T;
+    let newValue: u64;
+    this = borrow_global<T>(move(this_address));
+    newValue = *&copy(this).value + move(n);
+    *&mut copy(this).value = move(newValue);
+    _ = move(this);
+    return;
+  }
+
+  public count(this_address: address): u64 acquires T {
+    let this: &mut Self.T;
+    this = borrow_global<T>(move(this_address));
+    return *&move(this).value;
+  }
+}

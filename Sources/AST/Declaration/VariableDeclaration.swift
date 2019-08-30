@@ -15,8 +15,8 @@ public struct VariableDeclaration: ASTNode {
   public var type: Type
   public var assignedExpression: Expression?
 
-  public init(modifiers: [Token],
-              declarationToken: Token?,
+  public init(modifiers: [Token] = [],
+              declarationToken: Token? = nil,
               identifier: Identifier,
               type: Type,
               assignedExpression: Expression? = nil) {
@@ -51,6 +51,19 @@ public struct VariableDeclaration: ASTNode {
   private func hasModifier(kind: Token.Kind) -> Bool {
     return modifiers.contains { $0.kind == kind }
   }
+
+  public func assignment() -> Expression? {
+    return assignedExpression.map(self.assignment)
+  }
+
+  public func assignment(to: AST.Expression) -> Expression {
+    return Expression.binaryExpression(
+        BinaryExpression(lhs: identifier.isSelf ? .`self`(identifier.identifierToken) : .identifier(identifier),
+                         op: Token(kind: .punctuation(.equal), sourceLocation: self.sourceLocation),
+                         rhs: to)
+    )
+  }
+
   // MARK: - ASTNode
   public var description: String {
     return "\(declarationToken?.description ?? "") \(identifier): \(type) = \(assignedExpression?.description ?? "")"

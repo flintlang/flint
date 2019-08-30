@@ -1,0 +1,77 @@
+contract ForLoop {}
+
+ForLoop :: (any) {
+  public init() {}
+
+  public func sumToFive() -> Int {
+    var a: Int = 0
+    for let x: Int in (1...5) {
+      a += x
+    }
+    return a
+  }
+
+  public func sumUpToFive() -> Int {
+    var a: Int = 0
+    for let x: Int in (1..<5) {
+       a += x
+    }
+    return a
+  }
+
+  public func sumFromFive() -> Int {
+    var a: Int = 0
+    for let x: Int in (5...1) {
+      a += x
+    }
+    return a
+  }
+
+  public func sumFromFiveDownToOne() -> Int {
+    var a: Int = 0
+    for let x: Int in (5..<1) {
+       a += x
+    }
+    return a
+  }
+
+  public func toFive() -> Int {
+    var a: Int = 0
+    for let x: Int in (1...5) {
+       a = (a * 10) + x
+    }
+    return a
+  }
+
+  public func fromFive() -> Int {
+    var a: Int = 0
+    for let x: Int in (5...1) {
+       a = (a * 10) + x
+    }
+    return a
+  }
+
+  public func nested() -> Int {
+    var a: Int = 0
+    for let x: Int in (1...3) {
+       a *= 10 ** 2
+       for let y: Int in (0..<3) {
+          a = (a * 10) + x + y
+       }
+    }
+    return a
+  }
+
+  public func successive() -> Int {
+    var a: Int = 1
+    for let x: Int in (1...3) {
+       a *= x
+    }
+    a += 4
+    for let x: Int in (1...3) {
+       a *= x
+    }
+    return a
+  }
+}
+

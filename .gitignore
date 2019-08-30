@@ -14,8 +14,10 @@ venv
 *.bin
 file
 solc-static-linux
+libra
 
-
+/*.mvir
+/*.flint
 *.sol
 !sol_emitter.sol
 !sol_external.sol
@@ -61,6 +63,7 @@ utils/block/go-ethereum/*
 bin/
 contracts/
 build/
+libra/
 
 *.generated.swift
 Package.resolved

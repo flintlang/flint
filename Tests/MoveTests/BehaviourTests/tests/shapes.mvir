@@ -1,0 +1,15 @@
+import Transaction.Shapes;
+
+main () {
+  let this: address;
+  this = get_txn_sender();
+  Shapes.publish(10);
+  assert(Shapes.area(copy(this)) == 200, 1);
+  assert(Shapes.smallerWidth$Int(copy(this), 25), 2);
+  assert(!Shapes.smallerWidth$Int(copy(this), 15), 3);
+  assert(Shapes.perimeter(copy(this)) == 60, 4);
+  Shapes.setWidth$Int(copy(this), 5);
+  assert(Shapes.perimeter(copy(this)) == 30, 5);
+  assert(Shapes.semiPerimeter(copy(this)) * 2 == Shapes.perimeter(copy(this)), 6);
+  return;
+}

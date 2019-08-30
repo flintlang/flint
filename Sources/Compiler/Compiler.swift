@@ -42,10 +42,11 @@ public struct Compiler {
     exit(1)
   }
 
-  private static func tokenizeFiles(inputFiles: [URL], withStandardLibrary: Bool = true) throws -> [Token] {
+  private static func tokenizeFiles(inputFiles: [URL],
+                                    standardLibrary: StandardLibrary? = nil) throws -> [Token] {
     let stdlibTokens: [Token]
-    if withStandardLibrary {
-      stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+    if let standardLibrary = standardLibrary {
+      stdlibTokens = try standardLibrary.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
     } else {
       stdlibTokens = []
     }
@@ -55,8 +56,10 @@ public struct Compiler {
     return stdlibTokens + userTokens
   }
 
-  private static func tokenizeSourceCode(sourceFile: URL, sourceCode: String) throws -> [Token] {
-    let stdlibTokens = try StandardLibrary.default.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
+  private static func tokenizeSourceCode(sourceFile: URL,
+                                         sourceCode: String,
+                                         standardLibrary: StandardLibrary = .default) throws -> [Token] {
+    let stdlibTokens = try standardLibrary.files.flatMap { try Lexer(sourceFile: $0, isFromStdlib: true).lex() }
     let userTokens = try Lexer(sourceFile: sourceFile, isFromStdlib: false, isForServer: true, sourceCode: sourceCode
     ).lex()
     return stdlibTokens + userTokens
@@ -90,7 +93,7 @@ extension Compiler {
 // MARK: - Compilation
 extension Compiler {
   public static func compile(config: CompilerConfiguration) throws -> CompilationOutcome {
-    let tokens = try tokenizeFiles(inputFiles: config.inputFiles, withStandardLibrary: config.loadStdlib)
+    let tokens = try tokenizeFiles(inputFiles: config.inputFiles, standardLibrary: config.stdLib)
 
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
@@ -330,7 +333,9 @@ extension Compiler {
 extension Compiler {
   public static func getAST(config: CompilerContractAnalyserConfiguration) throws -> (TopLevelModule, Environment) {
 
-    let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0], sourceCode: config.sourceCode)
+    let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0],
+                                        sourceCode: config.sourceCode,
+                                        standardLibrary: StandardLibrary.from(target: .evm))
 
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
@@ -548,7 +553,9 @@ extension Compiler {
 // MARK: Compile hook for language server
 extension Compiler {
   public static func ide_compile(config: CompilerLSPConfiguration) throws -> [Diagnostic] {
-    let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0], sourceCode: config.sourceCode)
+    let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0],
+                                        sourceCode: config.sourceCode,
+                                        standardLibrary: StandardLibrary.from(target: .evm))
 
     // Turn the tokens into an Abstract Syntax Tree (AST).
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
@@ -632,7 +639,6 @@ public struct CompilerReplConfiguration {
 
   public func asCompilerConfiguration() -> CompilerConfiguration {
     return CompilerConfiguration(inputFiles: sourceFiles,
-                                 stdlibFiles: StandardLibrary.default.files,
                                  outputDirectory: outputDirectory,
                                  dumpAST: false,
                                  emitBytecode: true,
@@ -645,6 +651,7 @@ public struct CompilerReplConfiguration {
                                  skipVerifier: true,
                                  skipCodeGen: false,
                                  diagnostics: diagnostics,
+                                 stdLib: StandardLibrary.from(target: .evm),
                                  target: .evm)
   }
 }
@@ -673,7 +680,6 @@ public struct CompilerContractAnalyserConfiguration {
 
   public func asCompilerConfiguration() -> CompilerConfiguration {
     return CompilerConfiguration(inputFiles: sourceFiles,
-                                 stdlibFiles: StandardLibrary.default.files,
                                  outputDirectory: outputDirectory,
                                  dumpAST: false,
                                  emitBytecode: true,
@@ -686,6 +692,7 @@ public struct CompilerContractAnalyserConfiguration {
                                  skipVerifier: true,
                                  skipCodeGen: false,
                                  diagnostics: diagnostics,
+                                 stdLib: StandardLibrary.from(target: .evm),
                                  target: .evm)
   }
 }
@@ -714,7 +721,6 @@ public struct CompilerTestFrameworkConfiguration {
 
   public func asCompilerConfiguration() -> CompilerConfiguration {
     return CompilerConfiguration(inputFiles: sourceFiles,
-                                 stdlibFiles: StandardLibrary.default.files,
                                  outputDirectory: outputDirectory,
                                  dumpAST: false,
                                  emitBytecode: true,
@@ -727,6 +733,7 @@ public struct CompilerTestFrameworkConfiguration {
                                  skipVerifier: true,
                                  skipCodeGen: false,
                                  diagnostics: diagnostics,
+                                 stdLib: .from(target: .evm),
                                  target: .evm)
   }
 }
@@ -738,7 +745,10 @@ public enum CompilerTarget {
   public static func fromString(name: String) -> CompilerTarget {
     switch name {
     case "move":  return move
-    default:      return evm
+    case "evm":   return evm
+    default:
+      print("Unrecognised target, defaulting to `evm`")
+      return evm
     }
   }
 
@@ -748,11 +758,17 @@ public enum CompilerTarget {
     case .move: return MoveTarget.self
     }
   }
+
+  public var fileType: String {
+    switch self {
+    case .evm: return "sol"
+    case .move: return "mvir"
+    }
+  }
 }
 
 public struct CompilerConfiguration {
   public let inputFiles: [URL]
-  public let stdlibFiles: [URL]
   public let outputDirectory: URL
   public let dumpAST: Bool
   public let emitBytecode: Bool
@@ -765,12 +781,11 @@ public struct CompilerConfiguration {
   public let maxTransactionDepth: Int
   public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
-  public let loadStdlib: Bool
+  public let stdLib: StandardLibrary?
   public let astPasses: [ASTPass]
   public let target: CompilerTarget
 
   public init(inputFiles: [URL],
-              stdlibFiles: [URL],
               outputDirectory: URL,
               dumpAST: Bool,
               emitBytecode: Bool,
@@ -783,11 +798,10 @@ public struct CompilerConfiguration {
               skipVerifier: Bool,
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
-              loadStdlib: Bool = true,
+              stdLib: StandardLibrary? = StandardLibrary.default,
               astPasses: [ASTPass]? = nil,
               target: CompilerTarget) {
     self.inputFiles = inputFiles
-    self.stdlibFiles = stdlibFiles
     self.outputDirectory = outputDirectory
     self.dumpAST = dumpAST
     self.emitBytecode = emitBytecode
@@ -801,8 +815,12 @@ public struct CompilerConfiguration {
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics //Compiler.defaultASTPasses
     self.astPasses = astPasses ?? (Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses))
-    self.loadStdlib = loadStdlib
+    self.stdLib = stdLib
     self.target = target
+  }
+
+  public var stdlibFiles: [URL] {
+    return stdLib?.files ?? []
   }
 }
 

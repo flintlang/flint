@@ -16,6 +16,7 @@ public struct ExternalCall: ASTNode {
   public var hyperParameters: [FunctionArgument]
   public var functionCall: BinaryExpression
   public var mode: Mode
+  public var externalTraitName: String?
 
   public init(hyperParameters: [FunctionArgument],
               functionCall: BinaryExpression,

@@ -1,0 +1,92 @@
+// Any currency should implement this trait to be able to use the currency
+// fully. The default implementations should be left intact, only
+// `getRawValue` and `setRawValue` need to be implemented.
+
+struct trait Asset {
+
+  // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
+  init(unsafeRawValue: Int)
+
+  // Initialises the asset by transferring `amount` from an existing asset.
+  // Should check if `source` has sufficient funds, and cause a fatal error
+  // if not.
+  init(source: inout Self, amount: Int)
+
+  // Initialises the asset by transferring all funds from `source`.
+  // `source` should be left empty.
+  init(source: inout Self)
+
+  // Moves `amount` from `source` into `this` asset.
+  func transfer(source: inout Self, amount: Int)
+//    post (source.rawValue == prev(source.rawValue) - amount
+//            && self.rawValue == prev(self.rawValue) + amount
+//            || self == source
+//    )
+  {
+    if source.getRawValue() < amount {
+       fatalError()
+    }
+
+    // TODO: support let _: Int = ...
+    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
+    let unused2: Int = setRawValue(value: getRawValue() + amount)
+  }
+
+  func transfer(source: inout Self)
+//    post (source.rawValue == 0 || source == self)
+  {
+    transfer(source: &source, amount: source.getRawValue())
+  }
+
+  // Returns the funds contained in this asset, as an integer.
+  func setRawValue(value: Int) -> Int
+
+  // Returns the funds contained in this asset, as an integer.
+  func getRawValue() -> Int
+}
+
+
+
+
+struct Wei: Asset {
+  var rawValue: Int = 0
+
+  init(unsafeRawValue: Int) {
+    if unsafeRawValue != 0 {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  // Should be invisible to the user and implemented internally
+  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
+    if youAreTheCompiler == false {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout Wei, amount: Int) {
+    transfer(source: &source, amount: amount)
+  }
+
+  init(source: inout Wei) {
+    transfer(source: &source)
+  }
+
+  func setRawValue(value: Int) -> Int
+    mutates (rawValue)
+
+    post(self.rawValue == value)
+    post(returns value)
+  {
+    rawValue = value
+    return rawValue
+  }
+
+  func getRawValue() -> Int
+    post(returns rawValue)
+  {
+    return rawValue
+  }
+}

@@ -53,9 +53,11 @@ public struct IRPreprocessor: ASTPass {
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
 
-    if passContext.functionDeclarationContext != nil {
+    if passContext.inFunctionOrInitializer {
       // We're in a function. Record the local variable declaration.
       passContext.scopeContext?.localVariables += [variableDeclaration]
+      passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
 
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
@@ -140,15 +142,6 @@ public struct IRPreprocessor: ASTPass {
                                 identifier: identifier),
                      implicitToken: nil,
                      assignedExpression: nil)
-  }
-
-  public func process(specialDeclaration: SpecialDeclaration,
-                      passContext: ASTPassContext) -> ASTPassResult<SpecialDeclaration> {
-    var specialDeclaration = specialDeclaration
-    if specialDeclaration.isInit {
-      specialDeclaration.body.insert(contentsOf: defaultValueAssignments(in: passContext), at: 0)
-    }
-    return ASTPassResult(element: specialDeclaration, diagnostics: [], passContext: passContext)
   }
 
   // MARK: Statement

@@ -1,0 +1,43 @@
+struct Rectangle {
+  public var width: Int
+  public var height: Int
+
+  public init(width: Int, height: Int) {
+    self.width = width
+    self.height = height
+  }
+
+  public func diagonal(wideness: Int = width, tallness: Int = height) -> Int {
+    return (wideness ** 2 + tallness ** 2) ** 0
+  }
+}
+
+contract Shapes {
+  var rectangle: Rectangle
+}
+
+Shapes :: caller <- (any) {
+  public init(rectangle: Int) {
+    self.rectangle = Rectangle(
+        width: 2 * rectangle,
+        height: rectangle
+    )
+    self.area()
+  }
+
+  public func area() -> Int {
+    return rectangle.width * rectangle.height
+  }
+
+  public func semiPerimeter() -> Int {
+    return rectangle.width + rectangle.height
+  } 
+
+  public func perimeter() -> Int {
+    return 2 * semiPerimeter()
+  }
+
+  public func smallerWidth(otherRectWidth: Int) -> Bool {
+    return self.rectangle.width < otherRectWidth
+  }
+}
