@@ -32,7 +32,7 @@ public struct StandardLibrary {
   public static func from(target: CompilerTarget) -> StandardLibrary {
     switch target {
     case .evm: return StandardLibrary.from(name: "evm")
-    case .move: return StandardLibrary.from(name: "common")
+    case .move: return StandardLibrary.from(name: "move")
     default: return StandardLibrary.default
     }
   }

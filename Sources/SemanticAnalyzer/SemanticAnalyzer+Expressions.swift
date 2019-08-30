@@ -235,7 +235,7 @@ extension SemanticAnalyzer {
           // The function is mutating.
           addMutatingExpression(.functionCall(functionCall), passContext: &passContext)
 
-          let disallowed: Set<String> = disallowedMutations(
+          let disallowed: Set<String> = isInitialiser ? [] : disallowedMutations(
               functionCall,
               caller: (passContext.functionDeclarationContext!.declaration, enclosingType),
               callee: (matchingFunction.declaration, functionCall.identifier.enclosingType ?? enclosingType),

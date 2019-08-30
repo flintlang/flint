@@ -26,14 +26,42 @@ struct trait Asset {
   }
 
   // Returns the funds contained in this asset, as an integer.
-  func setRawValue(value: Int) -> Int
-
-  // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
 }
 
+// Consider removing and making it a Flint type
+struct LibraCoin {}
 
+struct Libra {
+  var coin: LibraCoin
 
+  init(unsafeRawValue: Int) {
+    if unsafeRawValue != 0 {
+      fatalError()
+    }
+    coin = LibraCoin()
+  }
+
+  init(source: inout Libra, amount: Int) {
+    coin = LibraCoin()
+    transfer(source: &source, amount: amount)
+  }
+
+  init(source: inout Libra) {
+    coin = LibraCoin()
+    transfer(source: &source)
+  }
+
+  func transfer(source: inout Libra, amount: Int) {
+    // TO BE IMPLEMNTED
+  }
+
+  func getRawValue() -> Int
+  {
+    // TO BE IMPLEMENTED
+    return 0
+  }
+}
 
 struct Wei: Asset {
   var rawValue: Int = 0
@@ -61,9 +89,20 @@ struct Wei: Asset {
     transfer(source: &source)
   }
 
+  func transfer(source: inout Wei, amount: Int)
+  mutates (source, rawValue)
+  {
+    if source.getRawValue() < amount {
+       fatalError()
+    }
+
+    // TODO: support let _: Int = ...
+    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
+    let unused2: Int = setRawValue(value: getRawValue() + amount)
+  }
+
   func setRawValue(value: Int) -> Int
     mutates (rawValue)
-
     post(self.rawValue == value)
     post(returns value)
   {
