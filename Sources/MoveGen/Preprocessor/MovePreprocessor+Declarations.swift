@@ -252,7 +252,7 @@ extension MovePreprocessor {
         default: return true
         }
       }) else {
-        fatalError("AAAAHHHHHHHHHHHHHHHHH!")
+        fatalError("A non-void function declaration cannot have 0 lines in its body")
       }
       // Add return variable
       let returnVariableDeclaration = VariableDeclaration(

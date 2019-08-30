@@ -19,9 +19,14 @@ struct trait Asset {
   // Moves `amount` from `source` into `this` asset.
   func transfer(source: inout Self, amount: Int)
 
-  func transfer(source: inout Self) {
+  func transfer(source: inout Self)
+//    post (source.rawValue == 0 || source == self)
+  {
     transfer(source: &source, amount: source.getRawValue())
   }
+
+  // Returns the funds contained in this asset, as an integer.
+  func setRawValue(value: Int) -> Int
 
   // Returns the funds contained in this asset, as an integer.
   func getRawValue() -> Int
@@ -29,51 +34,6 @@ struct trait Asset {
 
 
 
-// Concept stage
-external trait LibraCoin {
-  zero() -> LibraCoin.T
-  value(coin_ref: &LibraCoin.T) -> u64
-  deposit(coin_ref: &mut LibraCoin.T, check: LibraCoin.T)
-  withdraw(coin_ref: &mut LibraCoin.T, amount: u64): LibraCoin.T
-}
-
-external trait LibraAccount {
-  deposit(payee: address, to_deposit: R#LibraCoin.T)
-}
-
-struct Libra: Asset {
-  let coin: R#LibraCoin.T
-
-  init(unsafeRawValue: Int) {
-    if unsafeRawValue != 0 {
-      fatalError()
-    }
-    self.coin = call! LibraCoin.zero()
-  }
-
-  init(source: inout Libra, amount: Int) {
-    transfer(source: &source, amount: amount)
-  }
-
-  init(source: inout Libra) {
-    transfer(source: &source)
-  }
-
-  func transfer(source: inout Self, amount: Int) {
-    if source.getRawValue() < amount {
-       fatalError()
-    }
-    flint$transfer(&coin, &source)
-  }  
-
-  func getRawValue() -> Int {
-    return (call! LibraCoin.value(&coin)) as! Int
-  }
-
-  func setRawValue() -> Int {
-    return getRawValue()
-  }
-}
 
 struct Wei: Asset {
   var rawValue: Int = 0
@@ -100,16 +60,6 @@ struct Wei: Asset {
   init(source: inout Wei) {
     transfer(source: &source)
   }
-
-  func transfer(source: inout Self, amount: Int) {
-    if source.getRawValue() < amount {
-       fatalError()
-    }
-
-    // TODO: support let _: Int = ...
-    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
-    let unused2: Int = setRawValue(value: getRawValue() + amount)
-  }  
 
   func setRawValue(value: Int) -> Int
     mutates (rawValue)

@@ -20,7 +20,7 @@ extension Environment {
     case .any: return 0
     case .errorType: return 0
     case .functionType: return 0
-    case .solidityType: return 1
+    case .externalType: return 1
     case .userDefinedType(let identifier):
       if isEnumDeclared(identifier),
         case .enumCase(let enumCase) = types[identifier]!.properties.first!.value.property {

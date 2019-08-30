@@ -19,10 +19,14 @@ public indirect enum RawType: Equatable, Hashable {
   case userDefinedType(RawTypeIdentifier)
   case inoutType(RawType)
   case functionType(parameters: [RawType], result: RawType)
-  case solidityType(SolidityType)
+  case externalType(ExternalType)
   case selfType
   case any
   case errorType
+
+  public static var externalTraitType: RawType {
+    return .basicType(.address)
+  }
 
   public enum BasicType: RawTypeIdentifier {
     case address = "Address"
@@ -32,7 +36,7 @@ public indirect enum RawType: Equatable, Hashable {
     case bool = "Bool"
     case event = "Event"
 
-    private static let solidityParallels: [BasicType: SolidityType] = [
+    private static let solidityParallels: [BasicType: ExternalType] = [
       .address: .address,
       .int: .int256,
       .string: .bytes32,
@@ -52,7 +56,7 @@ public indirect enum RawType: Equatable, Hashable {
     case wei = "Wei"
   }
 
-  public enum SolidityType: RawTypeIdentifier {
+  public enum ExternalType: RawTypeIdentifier {
     // Address
     case address = "address"
 
@@ -189,7 +193,7 @@ public indirect enum RawType: Equatable, Hashable {
     case .errorType: return "Flint$ErrorType"
     case .functionType(let parameters, let result):
       return "(\(parameters.map { $0.name }.joined(separator: ", ")) -> \(result)"
-    case .solidityType(let solidityType): return solidityType.rawValue
+    case .externalType(let solidityType): return solidityType.rawValue
     }
   }
 
@@ -204,7 +208,7 @@ public indirect enum RawType: Equatable, Hashable {
     case .selfType: return false
     case .userDefinedType: return false
     case .functionType: return false
-    case .solidityType: return true
+    case .externalType: return true
     }
   }
 
@@ -236,8 +240,8 @@ public indirect enum RawType: Equatable, Hashable {
     return self == .selfType
   }
 
-  public var isSolidityType: Bool {
-    if case .solidityType(_) = self {
+  public var isExternalType: Bool {
+    if case .externalType(_) = self {
       return true
     }
 
@@ -309,7 +313,7 @@ public indirect enum RawType: Equatable, Hashable {
     // If other is basic, we can reinterpret to other if we are basic or solidity
     if case .basicType(let basic) = other {
       // Other is solidity
-      if case .solidityType(let solidity) = self {
+      if case .externalType(let solidity) = self {
         return basic.isIntegral && solidity.isIntegral ||
           basic == .string && solidity == .string ||
           basic == .address && solidity == .address ||
@@ -321,14 +325,14 @@ public indirect enum RawType: Equatable, Hashable {
     }
 
     // Two solidity types
-    if case .solidityType(let x) = self,
-      case .solidityType(let y) = other {
+    if case .externalType(let x) = self,
+      case .externalType(let y) = other {
       // Allow integral types to eachother, but equality otherwise
       return x.isIntegral && y.isIntegral || x == y
     }
 
     // If other is solidity type, for now we treat this identically to the above
-    if other.isSolidityType {
+    if other.isExternalType {
       return other.canReinterpret(as: self)
     }
 
@@ -340,7 +344,7 @@ public indirect enum RawType: Equatable, Hashable {
 /// A Flint type.
 public struct Type: ASTNode {
   public var rawType: RawType
-  public var genericArguments = [Type]()
+  public var genericArguments: [Type] = []
 
   public var name: String {
     return rawType.name
@@ -360,8 +364,8 @@ public struct Type: ASTNode {
     let name = identifier.name
     if let builtInType = RawType.BasicType(rawValue: name) {
       rawType = .basicType(builtInType)
-    } else if let solidityType = RawType.SolidityType(rawValue: name) {
-      rawType = .solidityType(solidityType)
+    } else if let solidityType = RawType.ExternalType(rawValue: name) {
+      rawType = .externalType(solidityType)
     } else {
       rawType = .userDefinedType(name)
     }

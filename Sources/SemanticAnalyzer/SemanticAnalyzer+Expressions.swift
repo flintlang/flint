@@ -64,8 +64,8 @@ extension SemanticAnalyzer {
       // 1. If we have an external function call, we allow conversions between any kind of type
       // 2. If we have a solidity type conversion to a non-solidity type conversion we always allow it as the
       //    only place where we can get a Solidity type is from an external call
-      if !passContext.isExternalFunctionCall && typeConversionExpression.type.rawType.isSolidityType {
-        diagnostics.append(.badSolidityTypeConversion(typeConversionExpression, expressionType: expressionType))
+      if !passContext.isExternalFunctionCall && typeConversionExpression.type.rawType.isExternalType {
+        diagnostics.append(.badExternalTypeConversion(typeConversionExpression, expressionType: expressionType))
       }
     } else {
       diagnostics.append(.typesNotReinterpretable(typeConversionExpression, expressionType: expressionType))

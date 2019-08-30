@@ -22,7 +22,6 @@ extension Parser {
     default:
       throw raise(.expectedIdentifier(at: latestSource))
     }
-
   }
 
   func parseIdentifierGroup() throws -> (identifiers: [Identifier], closeBracketToken: Token) {

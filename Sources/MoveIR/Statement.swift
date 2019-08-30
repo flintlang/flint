@@ -17,6 +17,7 @@ public enum Statement: CustomStringConvertible, Throwing {
   case noop
   case inline(String)
   case `return`(Expression)
+  case `import`(ModuleImport)
 
   public var catchableSuccesses: [Expression] {
     switch self {
@@ -55,6 +56,8 @@ public enum Statement: CustomStringConvertible, Throwing {
       return ""
     case .inline(let s):
       return s + ";"
+    case .`import`(let module):
+      return module.description + ";"
     }
   }
 

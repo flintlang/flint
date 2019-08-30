@@ -32,9 +32,12 @@ indirect enum CanonicalType: CustomStringConvertible {
         print("rawType: \(rawType)")
         return nil
       }
-    case .userDefinedType(let id):
-      if rawType.isCurrencyType || (environment?.isContractDeclared(id) ?? false) {
-        self = .resource(id)
+
+    case .userDefinedType(let identifier):
+      if rawType.isCurrencyType || (environment?.isContractDeclared(identifier) ?? false) {
+        self = .resource(identifier)
+      } else if environment?.isExternalTraitDeclared(identifier) ?? false {
+        self = .address
       } else if let environment = environment,
                 environment.isEnumDeclared(rawType.name),
                 let type: TypeInformation = environment.types[rawType.name],
@@ -43,7 +46,7 @@ indirect enum CanonicalType: CustomStringConvertible {
                                                     enclosingType: rawType.name,
                                                     scopeContext: ScopeContext()))!
       } else {
-        self = .struct(id)
+        self = .struct(identifier)
       }
     case .inoutType(let rawType):
       guard let type = CanonicalType(from: rawType, environment: environment) else { return nil }
@@ -87,7 +90,6 @@ indirect enum CanonicalType: CustomStringConvertible {
       }
       return .resource(name: "\(name).T")
     case .mutableReference(let type):
-      //return type.render(functionContext: functionContext)
       return .mutableReference(to: type.render(functionContext: functionContext))
     }
 

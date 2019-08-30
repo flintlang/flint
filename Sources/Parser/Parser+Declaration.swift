@@ -121,6 +121,16 @@ extension Parser {
   func parseTraitDeclaration() throws -> TraitDeclaration {
     let traitKind = try consume(anyOf: [.struct, .contract, .external], or: .badDeclaration(at: latestSource))
     let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
+    // This is move-specific syntax required to get module address that a Move module defining
+    // the external trait is published at
+    let moduleAddress: String? = attempt {
+      let moduleAddressToken: Token = try parseLiteral()
+      try consume(.punctuation(.dot), or: .expectedMoveModuleAddress(at: latestSource))
+      if case .literal(.address(let addressStr)) = moduleAddressToken.kind {
+        return addressStr
+      }
+      throw raise(.expectedMoveModuleAddress(at: latestSource))
+    }
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
     let traitMembers = try parseTraitMembers()
@@ -130,7 +140,8 @@ extension Parser {
         traitKind: traitKind,
         traitToken: traitToken,
         identifier: identifier,
-        members: traitMembers
+        members: traitMembers,
+        moduleAddress: moduleAddress
     )
   }
 

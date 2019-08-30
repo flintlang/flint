@@ -46,10 +46,10 @@ enum MoveRuntimeFunction {
   }
 
   static let allDeclarations: [String] = [
-    MoveRuntimeFunctionDeclaration.send,
-    MoveRuntimeFunctionDeclaration.withdrawAll,
-    MoveRuntimeFunctionDeclaration.transfer,
     // Not currently available as no money yet: MoveRuntimeFunctionDeclaration.send,
+    //MoveRuntimeFunctionDeclaration.send,
+    //MoveRuntimeFunctionDeclaration.withdrawAll,
+    //MoveRuntimeFunctionDeclaration.transfer,
     MoveRuntimeFunctionDeclaration.fatalError,
     MoveRuntimeFunctionDeclaration.power,
     MoveRuntimeFunctionDeclaration.revertIfGreater

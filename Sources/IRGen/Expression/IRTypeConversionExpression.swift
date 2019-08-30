@@ -85,7 +85,7 @@ struct IRTypeConversionExpression {
       default:
         return (size: 256, signed: false)
       }
-    case .solidityType(let solidityType):
+    case .externalType(let solidityType):
       switch solidityType {
       case .int8:
         return (size: 8, signed: true)

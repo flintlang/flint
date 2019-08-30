@@ -80,6 +80,12 @@ extension Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected identifier")
   }
 
+  static func expectedMoveModuleAddress(at sourceLocation: SourceLocation) -> Diagnostic {
+    return Diagnostic(severity: .error,
+                      sourceLocation: sourceLocation,
+                      message: "Expected address for a move module followed by a dot and its name e.g. 0x0.LibraCoin")
+  }
+
   static func expectedAttribute(at sourceLocation: SourceLocation) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: sourceLocation, message: "Expected '@' declared attribute")
   }
