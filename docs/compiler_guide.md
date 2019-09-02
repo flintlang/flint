@@ -27,6 +27,7 @@ The Flint compiler is separated into the following modules, all source files are
 - [IRGen](#irgen) ouputs the intermediate representation of the program (currently [YUL (formerly IULIA)](https://solidity.readthedocs.io/en/latest/yul.html) assembly code embedded in a Solidity contract). This comprises of:
   - A preprocessing AST pass that modifies the AST to strip out any convenience syntax and mangle function names so that there are no conflicts. (`Preprocessor/`)
   - IR generation structures for AST Nodes (`IR*.swift`) which render the IR strings.
+- [MoveGen](#movegen) generates the MoveIR representation of the programme.
 - [Lite](#lite) is the test runner.
 - [File Check](#file-check) does a comparison of files. Used in [Parser Tests](#parser-tests).
 - [flintc](#flintc) is the main module that controls the command line interface to pass to the Compiler (`Compiler.swift`) that coordinates all of the modules detailed above to generate the IR. It also preprends the source code of the [Standard Library](#standard-library) to the source code of the inputted files that is passed to the Solidity Compiler (`SolcCompiler.swift`).
