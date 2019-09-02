@@ -1,6 +1,5 @@
 // Any currency should implement this trait to be able to use the currency
-// fully. The default implementations should be left intact, only
-// `getRawValue` and `setRawValue` need to be implemented.
+// fully.
 
 struct trait Asset {
 

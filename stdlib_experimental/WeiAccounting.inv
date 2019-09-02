@@ -1,2 +1,0 @@
-Wei:
-  totalValue_Wei == receivedValue_Wei - sentValue_Wei
