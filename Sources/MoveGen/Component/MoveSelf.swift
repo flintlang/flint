@@ -10,6 +10,7 @@ import Lexer
 import MoveIR
 import Source
 import AST
+import Diagnostic
 
 /// Generates code for a "self" expression.
 struct MoveSelf {
@@ -32,14 +33,21 @@ struct MoveSelf {
       fatalError("Unexpected token \(token.kind)")
     }
     guard !functionContext.isConstructor else {
-      print(#"""
-            \#u{001B}[1;38;5;196mMoveIR generation error:\#u{001B}[0m \#
-            `self' reference before all fields initialized in function `init' in \#(token.sourceLocation)
-            \#tCannot use `self' in a constructor before all attributes have been assigned to, \#
-            as some are still unitialized. This includes any method calls which could access instance fields.
-            \#tInstead try moving method calls to after all values have been initialized.
-            """#)
-      exit(1)
+      Diagnostics.add(Diagnostic(severity: .error,
+                                 sourceLocation: token.sourceLocation,
+                                 message: "`self' reference before all fields initialized in function `init'"))
+      Diagnostics.add(Diagnostic(severity: .note,
+                                 sourceLocation: token.sourceLocation,
+                                 message: #"""
+                                          Cannot use `self' in a constructor before all \#
+                                          attributes have been assigned to, \#
+                                          as some are still unitialised. This includes any \#
+                                          method calls which could access instance fields. \#
+
+                                          Instead try moving method calls to after all values \#
+                                          have been initialized.
+                                          """#))
+      Diagnostics.displayAndExit()
     }
 
     if position == .left {

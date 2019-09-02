@@ -28,9 +28,9 @@ struct Analyser {
     let diagnosticPool = DiagnosticPool(shouldVerify: false,
                                         quiet: false,
                                         sourceContext: SourceContext(
-                                          sourceFiles: inputFiles,
-                                          sourceCodeString: sourceCode,
-                                          isForServer: true))
+                                            sourceFiles: inputFiles,
+                                            sourceCodeString: sourceCode,
+                                            isForServer: true))
 
     let config = CompilerContractAnalyserConfiguration(sourceFiles: inputFiles,
                                                        sourceCode: sourceCode,

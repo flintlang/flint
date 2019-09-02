@@ -10,6 +10,7 @@ import AST
 import Foundation
 import Source
 import Lexer
+import Diagnostic
 
 /// A preprocessing step to update the program's AST before code generation.
 public struct MovePreprocessor: ASTPass {
@@ -104,8 +105,10 @@ extension ASTPass {
     guard let environment = passContext.environment,
           var scopeContext = passContext.scopeContext,
           let enclosingType = passContext.enclosingTypeIdentifier?.name else {
-      print("Cannot infer type for \(element.sourceLocation)")
-      exit(1)
+      Diagnostics.add(Diagnostic(severity: .error,
+                                 sourceLocation: element.sourceLocation,
+                                 message: "Insufficient information to deduce type"))
+      Diagnostics.displayAndExit()
     }
 
     var type: RawType = environment.type(of: element,
