@@ -222,12 +222,7 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
+    p.executableURL = Path.nodeLocation
     p.standardInput = FileHandle.nullDevice
     p.standardOutput = pipe
     p.standardError = FileHandle.nullDevice
@@ -237,8 +232,8 @@ public class REPLContract {
     try! p.run()
     p.waitUntilExit()
 
-    let result_file_path = Path.getFullUrl(path: "utils/repl/result.txt").path
-    guard let result = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) else {
+    let resultFile = Path.getFullUrl(path: "utils/repl/result.txt")
+    guard let result = try? String(contentsOf: resultFile) else {
       print("Could not extract result of function \(fCall.identifier.name)".lightRed.bold)
       return nil
     }
@@ -376,12 +371,7 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
+    p.executableURL = Path.nodeLocation
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = ["deploy_contract.js", self.abi, self.bytecode, rawString]
     p.standardInput = FileHandle.nullDevice
