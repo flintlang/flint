@@ -13,13 +13,20 @@ import MoveIR
 struct MoveContract {
 
   static var stateVariablePrefix = "flintState$"
-  static var reentrancyProtectorValue = 10000
 
   var contractDeclaration: ContractDeclaration
   var contractBehaviorDeclarations: [ContractBehaviorDeclaration]
   var structDeclarations: [StructDeclaration]
   var environment: Environment
   var externalTraitDeclarations: [TraitDeclaration]
+
+  var externalModules: [TraitDeclaration] {
+    return externalTraitDeclarations.filter { $0.isModule }
+  }
+
+  var externalStructs: [TraitDeclaration] {
+    return externalTraitDeclarations.filter { $0.isStruct }
+  }
 
   init(contractDeclaration: ContractDeclaration,
        contractBehaviorDeclarations: [ContractBehaviorDeclaration],
@@ -34,12 +41,16 @@ struct MoveContract {
   }
 
   func rendered() -> String {
-    let imports: [MoveIR.Statement] = externalTraitDeclarations
-      .map { .`import`(ModuleImport(name: $0.identifier.name, address: $0.moduleAddress!)) }
+    let imports: [MoveIR.Statement] = externalTraitDeclarations.compactMap { (declaration: TraitDeclaration) in
+      declaration.moduleAddress.map {
+        .`import`(ModuleImport(name: declaration.identifier.name, address: $0))
+      }
+    }
     let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
+
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.members.compactMap { member -> MoveFunction? in
+      contractBehaviorDeclaration.members.compactMap { member -> MoveFunction? in
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }

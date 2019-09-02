@@ -26,7 +26,7 @@ extension Diagnostic {
   }
 
   static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
-    return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation,
+    return Diagnostic(severity: .warning, sourceLocation: literalToken.sourceLocation,
                       message: "Address literal should be 40 digits long after the prefix")
   }
 
@@ -87,7 +87,7 @@ extension Diagnostic {
         } else {
           // Is fallback
           return Diagnostic(severity: .note, sourceLocation: candidate.declaration.sourceLocation,
-                            message: "Perhaps you meant this fallback function")
+                            message: "Perhaps you meant this function")
         }
       }
     }
@@ -678,7 +678,7 @@ extension Diagnostic {
 
     return Diagnostic(severity: .error, sourceLocation: location,
                       // swiftlint:disable line_length
-                      message: "Only Solidity types may be used in external traits. '\(type.name)' is a Flint type", notes: notes)
+                      message: "Only external types may be used in external traits. '\(type.name)' is a Flint type", notes: notes)
                       // swiftlint:enable line_length
   }
 
@@ -692,7 +692,7 @@ extension Diagnostic {
 
     return Diagnostic(severity: .error, sourceLocation: location,
                       // swiftlint:disable line_length
-                      message: "Solidity types may not be used outside of external traits. '\(type.name)' is a Solidity type", notes: notes)
+                      message: "External types may not be used outside of external traits. '\(type.name)' is a external type", notes: notes)
                       // swiftlint:enable line_length
   }
 

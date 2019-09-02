@@ -1,3 +1,4 @@
+
 # Language Guide
 
 :+1::tada: First of all, thank you for the interest in Flint! :tada::+1:
@@ -5,6 +6,8 @@
 Even though the [Ethereum](https://www.ethereum.org/) platform requires smart contract programmers to ensure the correct behaviour of their program before deployment, it has not seen a language designed with safety in mind. Solidity and others do not tailor for Ethereum’s unique programming model and instead, mimic existing popular languages like JavaScript, Python, or C, without providing additional safety mechanisms.
 
 Flint changes that, as a new programming language built for easily writing safe Ethereum smart contracts. Flint is approachable to both experienced and new Ethereum developers, and presents a variety of security features. Much of the language syntax is inspired by [the Swift language](https://swift.org/), making it more approachable than Solidity.
+
+Flint also supports [Libra](https://github.com/libra/libra), Facebook's new block-chain, targeting Move, the IR for programmes on it. This is still somewhat experimental, especially as the blockchain is still only at the test-net stage, however, it does provide a much easier way of writing contracts _(modules)_ on Libra, and is easily extensible as Libra develops.
 
 For a quick start, please have a look at the [Installation](#installation) section first, followed by the [Example](#example) section.
 
@@ -113,18 +116,23 @@ The first step before using the Flint compiler is to install it. The simplest wa
 
 ### Docker
 
-The Flint compiler and its dependencies can be installed using [Docker](https://www.docker.com/):
+The Flint compiler and its dependencies can be installed using [Docker](https://www.docker.com/). To run the environment without doing any package installations:
 
 ```bash
-$ git clone https://github.com/flintlang/flint.git
-$ cd flint
-$ docker build -t flint .
-$ docker run -it flint
+git clone --recurse-submodule https://github.com/flintlang/flint.git
+cd flint
+sudo docker build -t "flint_docker" .
+#### ---------------------------------------------- ###
+## Docker will build, this process may take some time #
+#### ---------------------------------------------- ###
+sudo docker run --privileged -i -t flint_docker
+## Then, inside the docker container, run
+source ~/.bash_profile
 ```
 
 ### Installing `solc`, the Solidity compiler
 
-A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html).
+A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html).
 
 ### Binary packages
 
@@ -133,31 +141,82 @@ Flint is compatible with macOS and Linux platforms, and can be installed by down
 The latest releases are available on the [GitHub releases page](https://github.com/flintlang/flint/releases).
 
 ### Building from source
+#### Prerequisites
+The following must be installed to build Flint:
+* mono 5.20 or later (C# 7.0)
+* swiftenv
+* clang
+* nodejs npm
+* swiftlint
 
-The Flint compiler is written in [Swift](https://swift.org/), and requires the Swift compiler to be installed. See the [Swift download page](https://swift.org/download/#releases) for latest releases.
+##### Additionally for testing
+To run the testing libraries, install:
+* truffle 4
 
- > For older macOS machines and some Linux distributions it may be easier to use `swiftenv`. See the [`swiftenv` website](https://swiftenv.fuller.li/en/latest/) for installation instructions.
-
-Once Swift is installed, Flint can be compiled by cloning the GitHub repository and invoking `make`:
+##### On macOS
+* xcode - preferences/Locations/Command Line tools must not be empty (the default)
+* homebrew - https://brew.sh, update brew if it isn't new with brew update
+* `brew install node` - get node and npm if you don't have them
+* `brew install wget` - get wget if you don't have it
+* `brew cask install mono-mdk`
 
 ```bash
-$ git clone https://github.com/flintlang/flint.git
-$ cd flint
-$ swiftenv install # only if using swiftenv
-$ make
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 ```
 
-The built binary will be available in `.build/debug/flintc`. You can then add `flintc` to your `PATH` using:
-
+##### On Ubuntu 18.04 LTS
+This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments will need to be made to this process.
 ```bash
-$ export PATH=$PATH:`pwd`/.build/debug/flintc
+sudo apt install nodejs npm clang
+
+## Mono - https://www.mono-project.com/download/stable/
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" \
+  | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+sudo apt update
+sudo apt install mono-devel
+
+## Swiftenv - https://swiftenv.fuller.li/en/latest/installation.html
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 ```
 
-If you are planning to contribute to the Flint project or wish to run the tests, please also install:
+#### Installation
 
- - [Node.js](https://nodejs.org/en/)
- - [The Truffle suite](https://truffleframework.com) - for testing contracts and running the integration tests
- - [SwiftLint](https://github.com/realm/SwiftLint) - to ensure there are no stylistic or formatting issues with the code
+In your terminal, run the following commands
+```bash
+## Use -jN for multi-core speedup (N >= 2)
+git clone --recurse-submodule https://github.com/flintlang/flint.git
+cd flint
+## No need iff swiftenv has already installed relevent swift version or not using swiftenv
+swiftenv install
+swift package update
+## Create a FLINTPATH for the compiler to run (this may be removed in a future version)
+echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
+source ~/.bash_profile
+
+make
+```
+
+#### Usage
+To use Flint to compile a Flint contract (in this example `counter.flint`) into Solidity code, run the following code from inside the Flint project folder:
+```bash
+export PATH=$FLINTPATH/.build/debug:$PATH
+flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
+```
+
+This will generate a main.sol file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
+
+```
+flintc --emit-ir --ir-output ./<destination> examples/valid/counter.flint
+```
+
+To test it, we recommend using Remix IDE, following [these instructions](https://docs.flintlang.org/docs/language_guide#remix-integration)
 
 ## Example
 
@@ -315,7 +374,7 @@ Syntax highlighting in Atom can be obtained by installing the [`language-flint` 
 
 ## Compilation
 
-Flint compiles Flint source code to [YUL IR](https://solidity.readthedocs.io/en/latest/yul.html) wrapped in Solidity contracts. These can then be compiled into EVM bytecode using the Solidity compiler, and deployed to the Ethereum blockchain using a standard client or the Truffle framework.
+Flint compiles Flint source code to [YUL IR](https://solidity.readthedocs.io/en/latest/yul.html) wrapped in Solidity contracts. These can then be compiled into EVM bytecode using the Solidity compiler, and deployed to the Ethereum blockchain using a standard client or the Truffle framework. It also compiles them to MoveIR modules, using the `--target move` flag.
 
 A Flint source file named `main.flint` containing a contract `Counter` can be compiled to a Solidity file using:
 
@@ -369,7 +428,7 @@ Comments may be used throughout the source code. Comments are started with a dou
 Flint is a statically-typed language with a simple type system, with basic support for subtyping through [traits](#traits).
 
  > **Planned feature**
- > 
+ >
  > Currently, the types of all constants, variables, function arguments, etc. have to be explicitly declared. Type inference is a planned feature.
 
 Flint is a type-safe language. A type safe language encourages clarity about the types of values your code can work with. It performs type checks when compiling code and flags any mismatched types as errors. This enables you to catch and fix errors as early as possible in the development process.
@@ -394,6 +453,14 @@ Flint is a type-safe language. A type safe language encourages clarity about the
 | Polymorphic self | `Self` | See [polymorphic self](#polymorphic-self). |
 | Structs | | Structs (structures), including [user-defined structs](#structs). |
 
+> **Warning**
+>
+> As MoveIR doesn't yet support collections, no collection types work when `target --move` is set
+
+> **Planned feature**
+>
+> When MoveIR supports collections, arrays and dictionaries will work in Move-targeted code
+
 ### Range types
 
 Flint includes two range types, which are shortcuts for expressing ranges of values. These can only be used with `for-in` loops.
@@ -417,12 +484,12 @@ for let i: Int in (0...5) {
 At the moment, both `a` and `b` must be integer literals, not variables!
 
  > **Planned feature**
- > 
+ >
  > In the future, it will be possible to iterate up to an arbitrary value. See https://github.com/flintlang/flint/issues/397.
 
-### Solidity types
+### External types
 
-When specifying an [external interface](#external-calls), Solidity types must be used. The types usable in Flint are:
+When specifying an [external interface](#external-calls), External types must be used. The types usable in Flint are:
 
  - `int8`, `int16`, `int24`, ... `int256` (all multiples of 8 bits)
  - `uint8`, `uint16`, `uint24`, ... `uint256` (all multiples of 8 bits)
@@ -430,6 +497,8 @@ When specifying an [external interface](#external-calls), Solidity types must be
  - `string`
  - `bool`
  - `bytes32`
+
+> Note that only `bool`, `uint64`, `address` are available in MoveIR due to target restrictions
 
 See [casting](#casting-to-and-from-solidity-types) for more information.
 
@@ -601,8 +670,7 @@ Initialisers are special functions called to create a struct or contract instanc
 The statements that can be used in initialisers are limited to "simple" statements, which means no external calls, control flow statements, etc. After an initialiser is executed, all the state properties of its containing struct or contract should have a value.
 
 ### Payable
-
-(Contract-specific.)
+_Only in: Contracts on Solidity_
 
 When a user creates a transaction to call a function, they can attach Wei to send to the contract. Functions which expect Wei to be attached when called must be annotated with the `@payable` annotation, otherwise the transaction will revert when the function is called.
 
@@ -620,8 +688,7 @@ public func receiveMoney(implicit value: Wei) {
 Payable functions may have an arbitrary amount of parameters, but exactly one needs to be implicit and of a currency type. There may only be one function marked `@payable` in a contract.
 
 ### Fallback
-
-(Contract-specific.)
+_Only in: Contracts on Solidity_
 
 Fallback functions are another special kind of function, with a slightly modified declaration syntax:
 
@@ -669,7 +736,7 @@ The declaration of a struct only describes what types of variables it contains, 
 ```
 
  > **Bug**
- > 
+ >
  > Unlike for [function calls](#function-calls), it is not required to write the labels for struct initialiser parameters.
 
 Example:
@@ -714,7 +781,7 @@ bigRectangle.area() // evaluates to 4000000 by calling the `area` function
 ```
 
  > **Planned feature**
- > 
+ >
  > In the future a `static` keyword will be added to indicate struct functions which are callable without creating a specific instance. See https://github.com/flintlang/flint/issues/419
 
 ### Structs as function arguments
@@ -758,7 +825,7 @@ func byReference(s: inout S) {
 ```
 
  > **Planned feature**
- > 
+ >
  > Passing structs by value (copying the struct into storage or memory) is a planned feature. See https://github.com/flintlang/flint/issues/133.
 
 ## Contracts
@@ -871,6 +938,8 @@ Caller groups consist of a list of caller members enclosed in parentheses. These
 | State property (dictionary of addresses) | `[T: Address]` | The caller address must be contained with in the values of the dictionary. |
 | Any | `any` | Always. |
 
+> _Move-specific:_ Note that only state properties and `any` work in caller protection blocks due to target limitations. It will be expanded once collections are implemented in the underlying MoveIR
+
 Examples:
 
 ```swift
@@ -892,7 +961,7 @@ Lottery :: (lucky) {
 }
 ```
 
-The Ethereum address of the caller of a function is unforgeable. It is not possible to impersonate another user, as a consequence of Ethereum’s mechanism which generates public addresses from private keys. Transactions are signed using a private key, and determine the public key of the caller. Stealing a caller capability would hence require stealing a private key. The recommended way for Ethereum users to transfer their ability to call functions is to either change the backing address of the caller capability they have (the smart contract must have a function which allows this), or to securely send their private key to the new owner, outside of the Ethereum platform.
+The address of the caller of a function is unforgeable. It is not possible to impersonate another user, as a consequence of both Ethereum’s mechanism which generates public addresses from private keys and MoveIR's transaction system. On Ethereum, transactions are signed using a private key, and determine the public key of the caller. Stealing a caller capability would hence require stealing a private key. The recommended way for Ethereum users to transfer their ability to call functions is to either change the backing address of the caller capability they have (the smart contract must have a function which allows this), or to securely send their private key to the new owner, outside of the Ethereum platform.
 
 Calls to Flint functions are validated both at compile-time and runtime, with runtime checks only being added where necessary.
 
@@ -1062,6 +1131,7 @@ public func getName() -> String
 ```
 
 ### Events
+_Only on: Solidity_
 
 JavaScript applications can listen to events emitted by an Ethereum smart contract.
 
@@ -1100,7 +1170,7 @@ Flint has the concept of 'traits', based in part on [traits in the Rust language
 Contracts or structs can conform to multiple traits. The Flint compiler enforces the implementation of function signatures in the trait and allows usage of the functions declared in them. Traits allow a level of abstraction and code reuse for contracts and structs.
 
  > **Planned feature**
- > 
+ >
  > In the future, the Flint standard library will include traits providing common functionality to contracts (`Ownable`, `Burnable`, `MultiSig`, `Pausable`, `ERC20`, `ERC721`, etc.) and structs (`Transferable`, `RawValued`, `Describable` etc.). It will also form the basis for allowing end users to access compiler level guarantees and restrictions as in [assets](#assets) and Numerics.
 
 ### Struct traits
@@ -1244,9 +1314,10 @@ ToyWallet :: (getOwner) {
 
 ### External traits
 
-Traits can be declared for external contracts using the syntax:
+External traits allow interfacing with contracts (and resources) from the target language. Traits can be declared for external contracts using the syntax:
 
 ```swift
+<attributes>
 external trait <trait-name> {
   // trait members
 }
@@ -1311,31 +1382,26 @@ The expressions available in Flint are:
 | Struct reference | `&<expr>` | See [structs as function arguments](#structs-as-function-arguments). |
 | Function call | `<function-name>(<param-1>: <expr-1>, <param-2>: <expr-2>, ...)` | Call to the function `<function-name>` with the results of the given expressions `<expr-1,2,...>` as parameters. See [function calls](#function-calls). |
 | Dot access | `<expr-1>.<field>` | Access to the `<field>` field (variable, constant, function) or the result of `<expr-1>`. |
-| Index / key access | `<expr-1>[<expr-2>]` | Access to the given key of a list or dictionary. |
+| Index / key access | `<expr-1>[<expr-2>]` | Access to the given key of a list or dictionary. _(Only on Solidity)_ |
 | External call | `call <external-contract>.<function-name>(<param-1>: <expr-1>, <param-2>: <expr-2>, ...)` | Call to the function of an external contract; see [external calls](#external-calls). |
 | Type cast | `<expr> as! <type>` | Forced cast of the result of `<expr>` to `<type>`; see [casting to and from Solidity types](#casting-to-and-from-solidity-types). |
 | Attempt | `try? <call>`, `try! <call>` | Attempt to call a function in a different protection block, see [dynamic checking](#dynamic-checking). |
 
 ### Function calls
 
-Functions can then be called from within a contract protection block with the same identifier. The call arguments must be provided in the same order as the one they are declared in (in the function signature), and they must be labeled accordingly (the exception for this is [struct initialisers](#instances)). If any of the optional parameters are not provided, then their default values are going to be used automatically.
+Functions can then be called from within a contract protection block with the same identifier. The call arguments must be provided in the same order as the one they are declared in (in the function signature), and they must be labeled accordingly (the exception for this is [struct initialisers](#instances)). If any of the optional parameters are not provided, then their default values are used automatically.
 
 
 ````swift
 @payable
-  public func Apply(Name: String, implicit Fee: Wei ) mutates (roster){
-    var thisMember: Member
-    var stake: Int = 0
-   
-    thisMember = Member(Name, caller)
-    stake = Admission
-    bankroll(applicant: caller, amount: stake)
-    ...
-  }
+public func apply(name: String, implicit Fee: Wei ) mutates (balances) {
+  bankroll(applicant: caller, amount: stake)
+  ...
+}
 
-  func bankroll (applicant: Address, amount: Int ) mutates (balances) {
-    balances [applicant] = amount
-  }
+func bankroll (applicant: Address, amount: Int ) mutates (balances) {
+  balances[applicant] = amount
+}
 ````
 
 ## Literals
@@ -1372,6 +1438,7 @@ Examples:
 Boolean literals (Flint type `Bool`) are simply `true` and `false`.
 
 ### String literals
+_Only on: Solidity `--skip-verifier`_
 
 String literals (Flint type `String`) are sets of characters enclosed in double quotes `"..."`.
 
@@ -1384,23 +1451,25 @@ Examples:
 ```
 
  > **Bug**
- > 
+ >
  > Due to the fact that `Strings` are currently stored in a single EVM memory slot, they cannot be longer than 32 bytes. See https://github.com/flintrocks/flint/issues/133.
 
 ### List literals
+_Only on: Solidity_
 
 List literals (Flint type `[T]` or `T[n]` for some Flint type `T`) currently only include the empty list `[]`.
 
  > **Planned feature**
- > 
+ >
  > In the future, Flint will have non-empty list literals written as `[x, y, z, ...]` where `x`, `y`, `z`, etc. are literals of type `T`. See https://github.com/flintlang/flint/issues/420.
 
 ### Dictionary literals
+_Only on: Solidity_
 
 Dictionary literals (Flint type `[T: U]` for some Flint types `T` and `U`) currently only include the empty dictionary `[:]`.
 
  > **Planned feature**
- > 
+ >
  > In the future, Flint will have non-empty dictionary literals written as `[x: a, y: b, z: c, ...]` where `x`, `y`, `z`, etc. are literals of type `T` and `a`, `b`, `c`, etc. are literals of type `U`. See https://github.com/flintlang/flint/issues/420.
 
 ### Self
@@ -1439,6 +1508,8 @@ overflowing operators, which will not crash on overflow:
  - `&+` - Unsafe addition
  - `&-` - Unsafe subtraction
  - `&*` - Unsafe multiplication
+
+> _Move-specific:_ Due to MoveIR not allowing unsafe operations, unsafe operators are translated into safe operators, so act like `+`, `-`, and `*`
 
 ### Boolean operators
 
@@ -1567,8 +1638,7 @@ if x == 2 {
 ```
 
 ### Become statements
-
-(Contract-specific.)
+_Only on: Contracts_
 
 The `become` statement can be used to change the type state (see [type states](#type-states)) of the current contract. The execution of code is terminated after a `become` statement is executed, and the contract will then transition to the specified type state. Syntax:
 
@@ -1634,7 +1704,7 @@ However, external contracts include their own set of possible risks and security
  2. Interfaces of external contracts may be incorrectly specified – since the EVM does not retain any type information, it is up to the programmer to correctly specify the functions available on an external contract. If the interface is specified incorrectly, this may lead to the wrong function being called and money being lost.
 
  > **Planned feature**
- > 
+ >
  > In the future, external calls will include automatic re-entrancy attack protection, where no function of a Flint contract will be callable during the execution of an external call. See https://github.com/flintrocks/flint/issues/74.
 
 ### Specifying the interface
@@ -1642,12 +1712,13 @@ However, external contracts include their own set of possible risks and security
 The interface of an external contract is specified using a special `external` trait. Syntax:
 
 ```swift
+<attributes>
 external trait <trait-name> {
   // functions
 }
 ```
 
-The functions declared inside an external trait may not include any modifiers, and their parameters and return types (if used) must be specified using [Solidity types](#solidity-types).
+The functions declared inside an external trait may not include any modifiers, and their parameters and return types (if used) must be specified using [External types](#external-types) on Ethereum. On Move, they may return Move structs.
 
 Currently, deploying contracts from within Flint code is not supported, so neither initialisers nor fallbacks can be provided in external traits.
 
@@ -1659,6 +1730,16 @@ external trait ExternalBank {
   func pay() -> int256
   func withdraw(amount: int256) -> int256
 }
+```
+
+#### External Trait Attributes
+
+External trait attributes are a way of providing compiler directives so Flint can understand how to handle the external traits you've declarared in the produced output. They are used by the target's code generation, and thus are target-specific. Currently, the evm target doesn't have any trait attributes. Move uses the following to allow you to provide enough information about how to handle your external traits:
+
+```swift
+@module(address: 0x0)  // Provide the address of the module (the address of the resource is provided as in Ethereum)
+@data                  // The following trait is for a Move struct, not a contract
+@resource              // Used with @data, the following external struct is a resource
 ```
 
 ### Creating an instance
@@ -1718,7 +1799,7 @@ X :: (any) {
 ```
 
  > **Planned feature**
- > 
+ >
  > A third mode will be available in the future, `call?`. It will return an `Optional` type, like in Swift, intended to be used with the (also planned) `if let ...` construct. See https://github.com/flintrocks/flint/issues/140.
 
 ### Specifying hyper-parameters
@@ -1770,7 +1851,7 @@ X :: (any) {
 The forced cast (`as!`) expression converts Flint types to Solidity types and vice versa, after performing some basic runtime checks to make sure that the original value fits into the target value, since Solidity supports integer types of smaller sizes than the Flint default of 256 bits. An error results in the transaction being reverted.
 
  > **Planned feature**
- > 
+ >
  > In the future, casting failures will be possible to handle using `do-catch` blocks or an optional cast mode `as?`.
 
 ## Enumerations
@@ -1825,7 +1906,8 @@ enum Numbers: Int {
 
 # Standard library
 
-## Assets
+## Wei
+_Only on: Solidity_
 
 Numerous attacks targeting smart contracts, such as ones relating to re-entrancy calls (see TheDAO), allowed hackers to steal a contract’s Ether. Some of these happened because smart contracts encoded Ether values as integers, making it easy to make mistakes when performing Ether transfers between variables, or to forget to record Ether arriving or leaving the smart contract.
 
@@ -1897,6 +1979,7 @@ Wallet :: (owner) {
 }
 ```
 
+## Assets
 Wei is an example of an asset, and it is a struct conforming to the `struct trait Asset`, available in the standard library. It is possible to declare custom structs which will behave like assets:
 
 ```swift
@@ -1961,5 +2044,6 @@ if x == 2 {
 `fatalError()` is a function exposed that reverts a transaction when called. This means that any contract storage changes are rolledback and no values are returned.
 
 ### Send
+_Only on: Solidity_
 
 `send(address: Address, value: inout Wei)` sends the `value` Wei to the Ethereum address `address`, and clears the contents of `value`. It is a simpler way to perform a money transfer compared to [external calls](#external-calls), but does not allow hyper-parameters to be specified.

@@ -21,23 +21,18 @@ struct MoveExternalCall {
     var lookupCall = functionCall
     // remove external contract address from lookup
     lookupCall.arguments.removeFirst()
-    guard case .matchedFunction(let matchingFunction) =
-      functionContext.environment.matchFunctionCall(lookupCall,
-                                                    enclosingType: functionCall.identifier.enclosingType ??
-                                                      functionContext.enclosingTypeName,
-                                                    typeStates: [],
-                                                    callerProtections: [],
-                                                    scopeContext: functionContext.scopeContext) else {
-      fatalError("cannot match function signature in external call")
-    }
-
-    matchingFunction.parameterTypes.forEach { paremeterType in
-      switch paremeterType {
-      case .basicType, .externalType:
-        break
-      default:
-        fatalError("cannot use non-basic type in external call")
-      }
+    let matched = functionContext.environment.matchFunctionCall(lookupCall,
+                                                                enclosingType: functionCall.identifier.enclosingType ??
+                                                                    functionContext.enclosingTypeName,
+                                                                typeStates: [],
+                                                                callerProtections: [],
+                                                                scopeContext: functionContext.scopeContext)
+    if case .matchedFunction = matched {
+    } else if case .failure(let candidates) = matched,
+              let candidate: CallableInformation = candidates.first,
+              case .functionInformation = candidate {
+    } else {
+      fatalError("cannot match function signature `\(lookupCall)' in external call")
     }
 
     switch externalCall.mode {

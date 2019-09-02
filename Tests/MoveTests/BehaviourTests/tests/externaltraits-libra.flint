@@ -1,0 +1,26 @@
+@module(address: 0x00) // 0x00 is replaced by `Transaction.` by the test suite
+@resource
+@data
+external trait Libra {
+  public func getValue() -> uint64
+  public func withdraw(amount: uint64) -> Libra
+  public func transfer(to: inout Libra)
+}
+
+contract Account {
+  visible var value: Libra
+}
+
+Account :: sender <- (any) {
+  public init() {
+    value = Libra(0x0)
+  }
+
+  public func balance() -> Int {
+    return (call! value.getValue()) as! Int
+  }
+
+  func transfer(to: inout Libra) mutates (value) {
+    call! value.transfer(to: &to)
+  }
+}

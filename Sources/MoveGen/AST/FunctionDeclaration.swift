@@ -120,7 +120,7 @@ extension AST.FunctionDeclaration {
     }
 
     let args: [FunctionArgument] = signature.parameters.map { parameter in
-      return FunctionArgument(.identifier(parameter.identifier))
+      FunctionArgument(.identifier(parameter.identifier))
     }
 
     let functionCallExpr: Expression = .functionCall(

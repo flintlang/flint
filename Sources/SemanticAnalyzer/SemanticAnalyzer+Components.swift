@@ -175,7 +175,7 @@ extension SemanticAnalyzer {
                                                     diagnostics: inout [Diagnostic]) {
     if let kind = passContext.traitDeclarationContext?.traitKind.kind, kind == .external {
       if case .externalType = type.rawType {
-      } else {
+      } else if !allowExternalStructs {
         // typeAnnotation is describing a Flint type but we are in an external trait declaration
         diagnostics.append(.flintTypeUsedInExternalTrait(type, at: type.sourceLocation))
       }
@@ -223,12 +223,14 @@ extension SemanticAnalyzer {
   }
 
   public func process(token: Token, passContext: ASTPassContext) -> ASTPassResult<Token> {
-    var diagnostics = [Diagnostic]()
     if case .literal(let tokenKind) = token.kind,
        case .address(let address) = tokenKind,
        address.count != 42 {
-      diagnostics.append(.invalidAddressLiteral(token))
+      let strip0x = address.index(address.startIndex, offsetBy: 2)
+      var token = token
+      token.kind = .literal(.address("0x\(String(repeating: "0", count: 42 - address.count))\(address[strip0x...])"))
+      return ASTPassResult(element: token, diagnostics: [.invalidAddressLiteral(token)], passContext: passContext)
     }
-    return ASTPassResult(element: token, diagnostics: diagnostics, passContext: passContext)
+    return ASTPassResult(element: token, diagnostics: [], passContext: passContext)
   }
 }

@@ -52,7 +52,7 @@ func main() {
     let compilationOutcome: CompilationOutcome
     do {
       var skipVerifier = skipVerifier
-      if compilerTarget == .move && !skipVerifier {
+      if compilerTarget == .move && !skipVerifier && !quiet {
         warnMoveVerifierSkip()
         skipVerifier = true
       }
@@ -107,7 +107,7 @@ private func warnMoveVerifierSkip() {
   print("""
         \u{001B}[0;33mWarning: `--target move' is not currently compatible with the verifier
         \tSkipping verifier
-        \tTo disable this warning, run with `--skip-verifier'\u{001B}[0;0m
+        \tTo disable this warning, run with `--skip-verifier' or `--quiet'\u{001B}[0;0m
         """)
 }
 

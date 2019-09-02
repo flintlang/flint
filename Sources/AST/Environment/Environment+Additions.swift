@@ -263,6 +263,9 @@ extension Environment {
       let special = externalTraitInitializer(trait)
       addInitializerSignature(special, enclosingType: trait.identifier.name, callerProtections: [],
                               generated: true)
+      if !trait.decorators.isEmpty {
+        types[trait.identifier.name]?.decorators = trait.decorators
+      }
     } else {
       isExternal = false
     }

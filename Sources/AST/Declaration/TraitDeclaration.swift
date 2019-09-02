@@ -14,20 +14,20 @@ public struct TraitDeclaration: ASTNode {
   public var identifier: Identifier
   // TODO: public var states: [TypeState]
   public var members: [TraitMember]
-  public var moduleAddress: String? // Move-specific
+  public var decorators: [FunctionCall] // Move-specific
 
   public init(
     traitKind: Token,
     traitToken: Token,
     identifier: Identifier,
     members: [TraitMember],
-    moduleAddress: String? = nil
+    decorators: [FunctionCall] = []
   ) {
     self.traitKind = traitKind
     self.traitToken = traitToken
     self.identifier = identifier
     self.members = members
-    self.moduleAddress = moduleAddress
+    self.decorators = decorators
   }
 
   // MARK: - ASTNode

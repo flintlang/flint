@@ -96,7 +96,10 @@ public class MoveTarget: Target {
       }
       exit(0)
     }
-    let generator = MoveGenerator(ast: irPreprocessOutcome.element, environment: environment)
+
+    let generator = MoveGenerator(ast: irPreprocessOutcome.element,
+                                  environment: environment,
+                                  sourceContext: sourceContext)
     return generator.generateCode()
   }
 }
