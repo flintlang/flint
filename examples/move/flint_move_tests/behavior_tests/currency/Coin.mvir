@@ -1,0 +1,60 @@
+modules:
+module Coin {
+    struct T {
+        value: u64,
+    }
+
+    public new_t_0(amount: u64): V#Self.T {
+        return T {
+            value: move(amount),
+        };
+    }
+
+    public new_t_1(other: &mut V#Self.T, amount: u64): V#Self.T {
+        let other_immut_ref: &V#Self.T;
+        let def_value: u64;
+        // This is not a perfect translation of the flint code as I am assuming
+        // a default Int value of 0. I do think that the flint code itself might
+        // be wrong as it should be value = amount (line 9 of Coin.flint)
+        // Also I don't think this translation would be easy to generate programmatically
+        def_value = 0;
+        other_immut_ref = freeze(copy(other));
+        if (Self.getValue(move(other_immut_ref)) >= copy(amount)) {
+            *&mut move(other).value = *&copy(other).value - copy(amount);
+            return T {
+                value: move(def_value) + move(amount),
+            };
+        }
+        release(move(other));
+        return T {
+            value: move(def_value),
+        };
+    }
+
+    public destroy_t(this: V#Self.T) {
+        let value: u64;
+        T { value } = move(this);
+        return;
+    }
+
+    public getValue(this: &V#Self.T): u64 {
+        return *&move(this).value;
+    }
+
+    public transfer(this: &mut V#Self.T, other: &mut V#Self.T, amount: u64) {
+        if (Self.getValue(freeze(copy(other))) >= copy(amount)) {
+            *&mut copy(this).value = *&copy(other).value + copy(amount);
+            *&mut copy(other).value = *&copy(other).value - copy(amount);
+        }
+        release(move(this));
+        release(move(other));
+        return;
+    }
+}
+
+script:
+import Transaction.Coin;
+
+main() {
+    return;
+}

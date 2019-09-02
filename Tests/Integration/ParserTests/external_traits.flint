@@ -74,7 +74,7 @@ Contract :: (any) {
       //   CHECK-AST:     )
       //   CHECK-AST:   )
       //   CHECK-AST: )
-      call(value: 100) contr.g(b: true as! bool)
+      call(value: Wei(100)) contr.g(b: true as! bool)
     } catch is ExternalCallError {}
 
     //   CHECK-AST: Expression (
@@ -107,7 +107,7 @@ Contract :: (any) {
     //   CHECK-AST:     )
     //   CHECK-AST:   )
     //   CHECK-AST: )
-    call(value: 100)! contr.g(b: false as! bool)
+    call(value: Wei(100))! contr.g(b: false as! bool)
 
     //   CHECK-AST: Expression (
     //   CHECK-AST:   ExternalCall (

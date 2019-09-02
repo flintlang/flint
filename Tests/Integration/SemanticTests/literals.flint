@@ -11,6 +11,6 @@ Literals :: (any) {
 
   func bar() {
     // 41 characters
-    let a: Address = 0x668Cb74A4E9901972057cf4BEAC00b8826Fa99D // expected-error {{Address literal should be 42 characters long}}
+    let a: Address = 0x668Cb74A4E9901972057cf4BEAC00b8826Fa99D // expected-error {{Address literal should be 40 digits long after the prefix}}
   }
 }

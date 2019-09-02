@@ -1,0 +1,49 @@
+contract Counter {
+  var value: Int = 10
+  var backup: Int = 0
+}
+
+external trait WoopWoop {
+  func thatsTheSoundOf(da: int256)
+  func woopWoop(woop: int256)
+}
+
+Counter :: (any) {
+  public init() {
+    backup = 10
+  }
+
+  public func getValue() -> Int {
+    return value
+  }
+
+  public func increment()
+    mutates (value)
+  {
+    value += 1
+  }
+
+  public func set(value: Int)
+    mutates (value)
+  {
+    self.value = value
+  }
+
+  public func ooOohWereHalfWayThere(ooOoh: Int) -> Int
+   mutates (value) {
+    set(value: 9001)
+    let livingOnAPrayer: Int = 10
+    let noop: Bool
+    if ooOoh >= (1 / 2) {
+      let boop: Bool = true
+      if ooOoh >= (3/4) && boop {
+        set(value: livingOnAPrayer + ooOoh)
+        let address: Address = 0x0000000000000000000000000000000000000000
+        let local: WoopWoop = WoopWoop(address: address)
+        ooOohWereHalfWayThere(ooOoh: 0) // BREAK
+        call! local.woopWoop(woop: 3 as! int256)
+      }
+    }
+    return getValue() + ooOoh
+  }
+}

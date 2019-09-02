@@ -20,13 +20,12 @@ struct SolcCompiler {
 
     let process = Process()
 
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/solc")
 
-    //verifySolc(launchPath: process.executableURL!.absoluteString)
+    verifySolc(launchPath: process.executableURL!.path)
     process.standardError = Pipe()
     process.arguments = Array([
       [
-        "solc",
         temporaryFile.path,
         "--bin"
       ],
@@ -38,6 +37,9 @@ struct SolcCompiler {
     ].joined())
 
     try! process.run()
+    let out = String(decoding: (process.standardError as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data(),
+                     as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+    print(out)
     process.waitUntilExit()
   }
 

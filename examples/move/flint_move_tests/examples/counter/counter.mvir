@@ -1,0 +1,39 @@
+modules:
+module Counter {
+    resource T {
+        value: u64,
+    }
+
+    public new_t(): R#Self.T {
+        return T {
+            value: 0,
+        };
+    }
+
+    public destroy_t(this: R#Self.T) {
+        let value: u64;
+        T { value } = move(this);
+        return;
+    }
+
+    public getValue(this: &R#Self.T): u64 {
+        return *&move(this).value;
+    }
+
+    public increment(this: &mut R#Self.T) {
+        *&mut move(this).value = *&copy(this).value + 1;
+        return;
+    }
+
+    public set(this: &mut R#Self.T, value: u64) {
+        *&mut move(this).value = move(value);
+        return;
+    }
+}
+
+script:
+import Transaction.Counter;
+
+main() {
+    return;
+}

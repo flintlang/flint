@@ -7,7 +7,7 @@
 
 /// Information collected when performing a pass over an AST.
 ///
-/// Entries in a context are accessible as properties, or through a subscript, which takes a `PassContexEntry` value.
+/// Entries in a context are accessible as properties, or through a subscript, which takes a `PassContextEntry` value.
 public struct ASTPassContext {
   /// Backing storage for the context.
   var storage = [AnyHashable: Any]()
@@ -144,6 +144,11 @@ extension ASTPassContext {
     set { self[IsFunctionCallContextEntry.self] = newValue }
   }
 
+  public var blockContext: BlockContext? {
+    get { return self[BlockContextContextEntry.self] }
+    set { self[BlockContextContextEntry.self] = newValue }
+  }
+
   /// When visiting an external call's function call, this property is set to `true`.
   public var isExternalFunctionCall: Bool {
     get { return self[IsExternalFunctionCallContextEntry.self] ?? false }
@@ -233,6 +238,16 @@ extension ASTPassContext {
     get { return self[IsPropertyDefaultAssignment.self] ?? false }
     set { self[IsPropertyDefaultAssignment.self] = newValue }
   }
+
+  public var preStatements: [Statement] {
+    get { return self[PreStatementsEntry.self] ?? [] }
+    set { self[PreStatementsEntry.self] = newValue }
+  }
+
+  public var postStatements: [Statement] {
+    get { return self[PostStatementsEntry.self] ?? [] }
+    set { self[PostStatementsEntry.self] = newValue }
+  }
 }
 
 /// A entry used to index in an `ASTPassContext`.
@@ -290,6 +305,14 @@ private struct TraitDeclarationContextEntry: PassContextEntry {
   typealias Value = TraitDeclarationContext
 }
 
+private struct PreStatementsEntry: PassContextEntry {
+  typealias Value = [Statement]
+}
+
+private struct PostStatementsEntry: PassContextEntry {
+  typealias Value = [Statement]
+}
+
 private struct EventDeclarationContextEntry: PassContextEntry {
   typealias Value = EventDeclarationContext
 }
@@ -300,6 +323,10 @@ private struct FunctionDeclarationContextEntry: PassContextEntry {
 
 private struct InitializerDeclarationContextEntry: PassContextEntry {
   typealias Value = SpecialDeclarationContext
+}
+
+private struct BlockContextContextEntry: PassContextEntry {
+  typealias Value = BlockContext
 }
 
 private struct ScopeContextContextEntry: PassContextEntry {

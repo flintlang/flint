@@ -1,0 +1,95 @@
+// #trait error, No.460
+
+contract trait IntergrationERC {
+
+  self :: (any) {
+    public func getAdmin() -> Address
+  }
+
+//#460 on github
+  // self :: (getAdmin) {
+  //   func handleTiers(tier: Tier, caller: Address)
+  //   public func addApprovedFungibleTokens(approvedTokensFungibleToAdd: [ApprovedTokensFungible])
+  //   public func addApprovedNonFungibleTokens(ApprovedTokensNonFungibleToAdd: [ApprovedTokensNonFungible])
+  // }
+}
+
+struct ApprovedTokensFungible {
+  var contractAddress: Address
+  var tier: Tier
+  var balance: Int
+}
+
+struct ApprovedTokensNonFungible {
+  var contractAddress: Address
+  var tier: Tier
+  var balance: [Int]
+}
+
+enum Tier: Int {
+  case first
+  case second
+  case third
+}
+
+
+contract IntergrationExample : IntergrationERC {
+  var admin: Address
+  var balanceFungible: [Address: Int] = [:]
+  var balanceNonFungible: [Address: Int] = [:]
+
+  var approvedTokensFungible: [ApprovedTokensFungible] = []
+  var approvedTokensNonFungible: [ApprovedTokensNonFungible] = []
+}
+
+
+IntergrationExample :: (any) {
+  public init(administrator: Address) {
+  // public init(administrator: Address, initialApprovedTokensFungible: inout [ApprovedTokensFungible], initialApprovedTokensNonFungible: inout [ApprovedTokensNonFungible]) {
+    self.admin = administrator
+    // addApprovedFungibleTokens(approvedTokensFungibleToAdd: initialApprovedTokensFungible)
+    // addApprovedNonFungibleTokens(ApprovedTokensNonFungibleToAdd: initialApprovedTokensNonFungible)
+  }
+
+  public func getAdmin() -> Address
+  post (returns(admin))
+  {
+    return self.admin
+  }
+
+}
+
+
+IntergrationExample :: (getAdmin) {
+//   func handleTiers(tier: Tier, caller: Address) {
+//     //NOT implemented int the example
+//   }
+//
+
+//#61 cannot have dynamic parameters
+  public func addApprovedFungibleTokens(approvedTokensFungibleToAdd: [ApprovedTokensFungible])
+  mutates (approvedTokensFungible, ApprovedTokensFungible.contractAddress, ApprovedTokensFungible.tier, ApprovedTokensFungible.balance)
+  // post (approvedTokensFungibleToAdd.size == approvedTokensFungible.size)
+  post (approvedTokensFungible.size - prev(approvedTokensFungible.size) == approvedTokensFungibleToAdd.size)
+  post (forall (i, Int, 0 <= i && i < prev(approvedTokensFungible.size) ==> prev(approvedTokensFungible[i]) == approvedTokensFungible[i]))
+  post (forall(i, Int, prev(approvedTokensFungible.size) <= i && i < approvedTokensFungible.size ==> approvedTokensFungible[i].contractAddress == approvedTokensFungibleToAdd[i - prev(approvedTokensFungible.size)].contractAddress && approvedTokensFungible[i].tier == approvedTokensFungibleToAdd[i - prev(approvedTokensFungible.size)].tier && approvedTokensFungible[i].balance == approvedTokensFungibleToAdd[i  - prev(approvedTokensFungible.size)].balance))
+  {
+    for var token: ApprovedTokensFungible in approvedTokensFungibleToAdd {
+      approvedTokensFungible[approvedTokensFungible.size] = token
+    }
+  }
+//
+//   public func addApprovedNonFungibleTokens(approvedTokensNonFungibleToAdd: [ApprovedTokensNonFungible])
+//   mutates (approvedTokensNonFungible, ApprovedTokensNonFungible.contractAddress, ApprovedTokensNonFungible.tier, ApprovedTokensNonFungible.balance)
+//
+//   post (approvedTokensNonFungible.size - prev(approvedTokensNonFungible.size) == approvedTokensNonFungibleToAdd.size)
+//   post (forall (i, Int, 0 <= i && i < prev(approvedTokensNonFungible.size) ==> prev(approvedTokensNonFungible[i]) == approvedTokensNonFungible[i]))
+//   post (forall(i, Int, prev(approvedTokensNonFungible.size) <= i && i < approvedTokensNonFungible.size ==> approvedTokensNonFungible[i].contractAddress == approvedTokensNonFungibleToAdd[i - prev(approvedTokensNonFungible.size)].contractAddress && approvedTokensNonFungible[i].tier == approvedTokensNonFungibleToAdd[i - prev(approvedTokensNonFungible.size)].tier && approvedTokensNonFungible[i].balance == approvedTokensNonFungibleToAdd[i - prev(approvedTokensNonFungible.size)].balance))
+// //balance is an array here
+//   {
+//     for var token: ApprovedTokensNonFungible in approvedTokensNonFungible {
+//       approvedTokensNonFungible[approvedTokensNonFungible.size] = token
+//     }
+//   }
+//
+}

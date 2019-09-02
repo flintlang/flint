@@ -6,6 +6,7 @@
 //
 
 import Lexer
+import Source
 
 /// Contextual information used when visiting the state properties declared in a contract declaration.
 public struct ContractStateDeclarationContext {
@@ -17,12 +18,24 @@ public struct ContractStateDeclarationContext {
 public struct ContractBehaviorDeclarationContext {
   public var contractIdentifier: Identifier
   public var typeStates: [TypeState]
+  public var callerBinding: Identifier?
   public var callerProtections: [CallerProtection]
+  public var declaration: ContractBehaviorDeclaration
 
-  public init(contractIdentifier: Identifier, typeStates: [TypeState], callerProtections: [CallerProtection]) {
+  public var anyCaller: Bool {
+    return callerProtections.isEmpty || callerProtections.contains(where: { $0.isAny })
+  }
+
+  public init(contractIdentifier: Identifier,
+              typeStates: [TypeState],
+              callerBinding: Identifier?,
+              callerProtections: [CallerProtection],
+              declaration: ContractBehaviorDeclaration) {
     self.contractIdentifier = contractIdentifier
-    self.typeStates         = typeStates
+    self.typeStates = typeStates
+    self.callerBinding = callerBinding
     self.callerProtections = callerProtections
+    self.declaration = declaration
   }
 }
 
@@ -67,12 +80,18 @@ public struct TraitDeclarationContext {
   }
 }
 
+public struct BlockContext {
+  public var scopeContext: ScopeContext
+}
+
 /// Contextual information used when visiting statements in a function, such as if the function is mutating or not.
 public struct FunctionDeclarationContext {
   public var declaration: FunctionDeclaration
+  public var innerDeclarations: [VariableDeclaration]
 
-  public init(declaration: FunctionDeclaration) {
+  public init(declaration: FunctionDeclaration, innerDeclarations: [VariableDeclaration] = []) {
     self.declaration = declaration
+    self.innerDeclarations = innerDeclarations
   }
 
   public var mutates: [Identifier] {
@@ -83,9 +102,11 @@ public struct FunctionDeclarationContext {
 /// Contextual information used when visiting statements in an initializer.
 public struct SpecialDeclarationContext {
   public var declaration: SpecialDeclaration
+  public var innerDeclarations: [VariableDeclaration]
 
-  public init(declaration: SpecialDeclaration) {
+  public init(declaration: SpecialDeclaration, innerDeclarations: [VariableDeclaration] = []) {
     self.declaration = declaration
+    self.innerDeclarations = innerDeclarations
   }
 }
 
@@ -95,6 +116,7 @@ public struct ScopeContext: Equatable {
   public var parameters = [Parameter]()
   public var localVariables = [VariableDeclaration]()
   public var boundVariablesStack: [Identifier] = []
+  var counter: Int = 0
 
   public init(parameters: [Parameter] = [], localVariables: [VariableDeclaration] = []) {
     self.parameters = parameters
@@ -123,6 +145,12 @@ public struct ScopeContext: Equatable {
     return all.first(where: { $0.identifier.name == variable })?.type.rawType
   }
 
+  public mutating func freshIdentifier(sourceLocation: SourceLocation) -> Identifier {
+    counter += 1
+    return Identifier(name: "$temp$\(localVariables.count + parameters.count + counter)",
+                      sourceLocation: sourceLocation)
+  }
+
   /// Whether the given parameter is implicit.
   public func isParameterImplicit(_ parameterName: String) -> Bool {
     guard let parameter = parameters.first(where: { $0.identifier.name == parameterName }) else {
@@ -137,8 +165,8 @@ public struct ScopeContext: Equatable {
   /// function.
   public func enclosingParameter(expression: Expression, enclosingTypeName: String) -> String? {
     guard expression.enclosingType != enclosingTypeName,
-      let enclosingIdentifier = expression.enclosingIdentifier,
-      containsParameterDeclaration(for: enclosingIdentifier.name) else {
+          let enclosingIdentifier = expression.enclosingIdentifier,
+          containsParameterDeclaration(for: enclosingIdentifier.name) else {
       return nil
     }
 

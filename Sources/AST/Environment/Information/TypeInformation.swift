@@ -15,7 +15,6 @@ public struct TypeInformation {
   var fallbacks = [SpecialInformation]()
   public var publicInitializer: SpecialDeclaration?
   var publicFallback: SpecialDeclaration?
-
   var conformances: [TypeInformation] = []
 
   public var allFunctions: [String: [FunctionInformation]] {

@@ -88,7 +88,7 @@ extension Environment {
     }
 
     if let functions = types[enclosingType]?.allFunctions[functionCall.identifier.name] {
-      for candidate in functions {
+      for candidate: FunctionInformation in functions {
         guard areFunctionCallArgumentsCompatible(source: candidate,
                                                  target: functionCall,
                                                  enclosingType: enclosingType,
@@ -98,7 +98,6 @@ extension Environment {
             candidates.append(.functionInformation(candidate))
             continue
         }
-
         return .matchedFunction(candidate)
       }
 

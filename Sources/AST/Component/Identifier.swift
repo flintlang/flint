@@ -13,7 +13,7 @@ public struct Identifier: Hashable, ASTNode {
   public var enclosingType: String?
 
   public var name: String {
-    if case .self = identifierToken.kind {
+    if case .`self` = identifierToken.kind {
       return "self"
     }
     guard case .identifier(let name) = identifierToken.kind else { fatalError() }
@@ -24,8 +24,9 @@ public struct Identifier: Hashable, ASTNode {
     self.identifierToken = identifierToken
   }
 
-  public init(name: String, sourceLocation: SourceLocation) {
+  public init(name: String, sourceLocation: SourceLocation, enclosingType: String? = nil) {
     self.identifierToken = Token(kind: .identifier(name), sourceLocation: sourceLocation)
+    self.enclosingType = enclosingType
   }
 
   public func hash(into hasher: inout Hasher) {
@@ -40,6 +41,10 @@ public struct Identifier: Hashable, ASTNode {
 
   public var description: String {
     return "\(identifierToken)"
+  }
+
+  public var isSelf: Bool {
+    return self.identifierToken.kind == Token.Kind.`self`
   }
 }
 

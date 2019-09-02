@@ -120,8 +120,17 @@ extension ASTPassContext {
     get { return self[MutatingExpressionContextEntry.self] }
     set { self[MutatingExpressionContextEntry.self] = newValue }
   }
+
+  var functionCallReceiverTrail: [Expression] {
+    get { return self[FunctionCallReceiverTrailContextEntry.self] ?? [] }
+    set { self[FunctionCallReceiverTrailContextEntry.self] = newValue }
+  }
 }
 
 struct MutatingExpressionContextEntry: PassContextEntry {
+  typealias Value = [Expression]
+}
+
+struct FunctionCallReceiverTrailContextEntry: PassContextEntry {
   typealias Value = [Expression]
 }

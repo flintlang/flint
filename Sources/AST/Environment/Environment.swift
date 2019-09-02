@@ -357,6 +357,20 @@ public class Environment {
     return declaredTraits.contains { $0.name == type }
   }
 
+  /// Wheter an external trait has been declared in the program.
+  public func isExternalTraitDeclared(_ type: RawTypeIdentifier) -> Bool {
+    guard isTraitDeclared(type) else {
+      return false
+    }
+    let traitInitializers = initializers(in: type)
+    return traitInitializers.count == 1
+      && traitInitializers.first!.declaration.generated
+  }
+
+  public func isExternalTraitInitializer(functionCall: FunctionCall) -> Bool {
+    return isExternalTraitDeclared(functionCall.identifier.name)
+  }
+
   /// Whether a type has been declared in the program.
   public func isTypeDeclared(_ type: RawTypeIdentifier) -> Bool {
     return types[type] != nil

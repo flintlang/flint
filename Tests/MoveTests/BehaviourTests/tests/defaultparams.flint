@@ -1,0 +1,59 @@
+contract Test {
+  var a: Int
+  var b: Int
+  var c: Int
+  var d: Int
+}
+
+Test :: (any) {
+  public init(caller: Address) {
+    self.a = 0
+    self.b = 0
+    self.c = 0
+    self.d = 0
+  }
+
+  func set(a: Int, b: Int, c: Int = 10, e: Int = 20)
+    mutates (a, b, c, d) {
+    self.a = a
+    self.b = b
+    self.c = c
+    self.d = e
+  }
+
+  public func test1() mutates (a, b, c, d) {
+    set(a: 1, b: 1)
+  }
+
+  public func test2() mutates (a, b, c, d) {
+    set(a: 5, b: 10, c: 5)
+  }
+
+  public func test3() mutates (a, b, c, d) {
+    set(a: 7, b: 9, e: 66)
+  }
+
+  public func test4() mutates (a, b, c, d) {
+    set(a: 11, b: 12, c: 7, e: 90)
+  }
+
+  public func test5() mutates (a, b, c, d) {
+    set(a: 15, b: 15, c: 7, e: 90)
+  }
+
+  public func getA() -> Int {
+    return self.a
+  }
+
+  public func getB() -> Int {
+    return self.b
+  }
+
+  public func getC() -> Int {
+    return self.c
+  }
+
+  public func getD() -> Int {
+    return self.d
+  }
+}

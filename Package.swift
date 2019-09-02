@@ -26,18 +26,27 @@ let package = Package(
         "file-check",
       ]
     ),
-  ], 
+  ],
   dependencies: [
-    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
-    .package(url: "https://github.com/onevcat/Rainbow.git", .branch("master")),
-    .package(url: "https://github.com/kylef/Commander", .branch("master")),
-    .package(url: "https://github.com/llvm-swift/Lite.git", .branch("master")),
-    .package(url: "https://github.com/llvm-swift/FileCheck.git", .branch("master")),
-    .package(url: "https://github.com/llvm-swift/Symbolic.git", .branch("master")),
+    .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", 
+             .revision("5d114736f5a98caa8a0ca1c254526f1ce5688f91")),
+    .package(url: "https://github.com/onevcat/Rainbow.git", 
+             .revision("9c52c1952e9b2305d4507cf473392ac2d7c9b155")),
+    .package(url: "https://github.com/kylef/Commander.git", 
+             .revision("dc97e80a1cf5df6c5768528f039c65ad8c564712")),
+    .package(url: "https://github.com/llvm-swift/Lite.git", 
+             .revision("769455af208c8a4e191f187be9d6400422d258a4")),
+    .package(url: "https://github.com/llvm-swift/FileCheck.git",
+             .revision("00945abac615e5203701be0f090ed0e2d2ff15bf")),
+    .package(url: "https://github.com/llvm-swift/Symbolic.git", 
+             .revision("076fbd317c880af5ee622633c0b1a9386e2e16bc")),
     .package(url: "https://github.com/flintlang/Cuckoo.git", .branch("master")),
-    .package(url: "https://github.com/behrang/YamlSwift.git", .branch("master")),
-    .package(url: "https://github.com/attaswift/BigInt.git", .branch("master")),
-    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .branch("master"))
+    .package(url: "https://github.com/behrang/YamlSwift.git", 
+             .revision("287f5cab7da0d92eb947b5fd8151b203ae04a9a3")),
+    .package(url: "https://github.com/attaswift/BigInt.git", 
+             .revision("7bd99f7ebb8886cd3a0dfac26fea9c1049027a08")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", 
+             .revision("bad5f2f94a71216a32c030a3586bdcfc1f7e660b"))
   ],
   targets: [
     .target(
@@ -276,13 +285,19 @@ let package = Package(
           "Diagnostic",
           "AST",
           "CryptoSwift",
-          "YUL",
+          "MoveIR",
           "Utils",
         ]
     ),
     // MARK: YUL -
     .target(
       name: "YUL",
+      dependencies: [
+        "Utils",
+      ]
+    ),
+    .target(
+      name: "MoveIR",
       dependencies: [
         "Utils",
       ]

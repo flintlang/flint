@@ -19,8 +19,10 @@ public struct EnclosingTypeAssigner: ASTPass {
                       passContext: ASTPassContext) -> ASTPassResult<VariableDeclaration> {
     var passContext = passContext
     if passContext.inFunctionOrInitializer {
-        // We're in a function. Record the local variable declaration.
-        passContext.scopeContext?.localVariables += [variableDeclaration]
+      // We're in a function. Record the local variable declaration.
+      passContext.scopeContext?.localVariables += [variableDeclaration]
+      passContext.functionDeclarationContext?.innerDeclarations += [variableDeclaration]
+      passContext.specialDeclarationContext?.innerDeclarations += [variableDeclaration]
     }
     return ASTPassResult(element: variableDeclaration, diagnostics: [], passContext: passContext)
   }
@@ -38,12 +40,12 @@ public struct EnclosingTypeAssigner: ASTPass {
                                      enclosingType: enclosingType.name,
                                      scopeContext: passContext.scopeContext!)
       if case .identifier(let enumIdentifier) = binaryExpression.lhs,
-        environment.isEnumDeclared(enumIdentifier.name) {
+         environment.isEnumDeclared(enumIdentifier.name) {
         binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: enumIdentifier.name)
       } else if lhsType == .selfType {
         if let traitDeclarationContext = passContext.traitDeclarationContext {
           binaryExpression.rhs =
-            binaryExpression.rhs.assigningEnclosingType(type: traitDeclarationContext.traitIdentifier.name)
+              binaryExpression.rhs.assigningEnclosingType(type: traitDeclarationContext.traitIdentifier.name)
         }
       } else {
         binaryExpression.rhs = binaryExpression.rhs.assigningEnclosingType(type: lhsType.name)

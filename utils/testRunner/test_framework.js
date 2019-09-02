@@ -11,9 +11,9 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 // add checks to see if test net is operating
 let defaultAcc;
 try {
-	//defaultAcc = web3.personal.newAccount("1");//eth.accounts[3];
-	defaultAcc = "33ef01cede4b041d64f6ee1e63a3996dab1a0d30";
-	web3.personal.unlockAccount(defaultAcc, "1", 1000);
+	//defaultAcc = web3.personal.newAccount("");//eth.accounts[3];
+	defaultAcc = "145b8389f8818e09fb63566e7096f01a7533ea4c";
+	web3.personal.unlockAccount(defaultAcc, "", 1000);
 	web3.eth.defaultAccount = defaultAcc;	
 } catch(err) {
 	console.log(chalk.red("Test accounts could not be located, please run a local geth installation with accounts loaded. Tip: Use flint-block"));
@@ -22,12 +22,12 @@ try {
 }
 
 function setAddr(addr) {
-    web3.personal.unlockAccount(addr, "1", 1000);
+    web3.personal.unlockAccount(addr, "", 1000);
     web3.eth.defaultAccount = addr;
 }
 
 function unsetAddr() {
-    web3.personal.unlockAccount(defaultAcc, "1", 1000);
+    web3.personal.unlockAccount(defaultAcc, "", 1000);
     web3.eth.defaultAccount = defaultAcc;
 }
 

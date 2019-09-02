@@ -48,6 +48,11 @@ extension SemanticAnalyzer {
     return ASTPassResult(element: ifStatement, diagnostics: diagnostics, passContext: passContext)
   }
 
+  public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
+    let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
+    return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+
   // TODO: disabled, check doesn't work for value-returning calls
   /*
   public func postProcess(doCatchStatement: DoCatchStatement,

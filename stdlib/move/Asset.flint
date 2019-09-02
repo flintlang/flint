@@ -1,0 +1,70 @@
+// Any currency should implement this trait to be able to use the currency
+// fully.
+
+struct trait Asset {
+
+  // Initialises the asset "unsafely", i.e. from `amount` given as an integer.
+  init(unsafeRawValue: Int)
+
+  // Initialises the asset by transferring `amount` from an existing asset.
+  // Should check if `source` has sufficient funds, and cause a fatal error
+  // if not.
+  init(source: inout Self, amount: Int)
+
+  // Initialises the asset by transferring all funds from `source`.
+  // `source` should be left empty.
+  init(source: inout Self)
+
+  // Moves `amount` from `source` into `this` asset.
+  func transfer(source: inout Self, amount: Int)
+
+  func transfer(source: inout Self)
+//    post (source.rawValue == 0 || source == self)
+  {
+    transfer(source: &source, amount: source.getRawValue())
+  }
+
+  // Returns the funds contained in this asset, as an integer.
+  func getRawValue() -> Int
+}
+
+// This needs to be removed and made a Flint special type
+struct LibraCoin {}
+
+struct Libra: Asset {
+  var coin: LibraCoin
+
+  init(unsafeRawValue: Int) {
+    if unsafeRawValue != 0 {
+      fatalError()
+    }
+    coin = LibraCoin()
+  }
+
+  // Shouldn't be made available to the Flint's programmer 
+  // Should only be used to initialised Libra received from public contract methods
+  init(source: inout LibraCoin) {
+    coin = LibraCoin()
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
+  }
+
+  init(source: inout Libra, amount: Int) {
+    coin = LibraCoin()
+    transfer(source: &source, amount: amount)
+  }
+
+  init(source: inout Libra) {
+    coin = LibraCoin()
+    transfer(source: &source)
+  }
+
+  func transfer(source: inout Libra, amount: Int) {
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
+  }
+
+  func getRawValue() -> Int
+  {
+    // TO BE IMPLEMENTED (probably using MoveRuntimeFunctions)
+    return 0
+  }
+}

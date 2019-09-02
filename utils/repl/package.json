@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "node": "^12.8.1",
     "solc": "^0.4.25",
     "web3": "^0.20.7",
     "why-is-node-running": "^2.1.0"

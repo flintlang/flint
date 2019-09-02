@@ -11,7 +11,7 @@ func main() {
       Flag("emit-ir", flag: "i", description: "Emit the internal representation of the code."),
       Option<String>("ir-output", default: "", description: "The path at which the IR file should be created."),
       Flag("emit-bytecode", flag: "b", description: "Emit the EVM bytecode representation of the code."),
-      Flag("dump-verifier-ir", flag: "d", description: "Emit the representation of the code used by the verifier."),
+      Flag("dump-verifier-ir", flag: "d", description: "Emit the repressentation of the code used by the verifier."),
       Flag("print-verifier-output", flag: "o", description: "Emit the verifier's raw verification output"),
       Flag("skip-holistic", flag: "l", description: "Skip checking holistic specifications"),
       Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),
@@ -48,11 +48,16 @@ func main() {
       exitWithDirectoryNotCreatedDiagnostic(outputDirectory: outputDirectory)
     }
 
+    let compilerTarget = CompilerTarget.fromString(name: target)
     let compilationOutcome: CompilationOutcome
     do {
+      var skipVerifier = skipVerifier
+      if compilerTarget == .move && !skipVerifier {
+        warnMoveVerifierSkip()
+        skipVerifier = true
+      }
       let compilerConfig = CompilerConfiguration(
           inputFiles: inputFiles,
-          stdlibFiles: StandardLibrary.default.files,
           outputDirectory: outputDirectory,
           dumpAST: dumpAST,
           emitBytecode: emitBytecode,
@@ -67,8 +72,8 @@ func main() {
           diagnostics: DiagnosticPool(shouldVerify: shouldVerify,
                                       quiet: quiet,
                                       sourceContext: SourceContext(sourceFiles: inputFiles)),
-          loadStdlib: !noStdlib,
-          target: CompilerTarget.fromString(name: target)
+          stdLib: (noStdlib ? nil : StandardLibrary.from(target: compilerTarget)),
+          target: compilerTarget
       )
       compilationOutcome = try Compiler.compile(config: compilerConfig)
     } catch let err {
@@ -82,7 +87,7 @@ func main() {
     }
 
     if emitIR {
-      let fileName = "main.sol"
+      let fileName = "main." + compilerTarget.fileType
       let irFileURL: URL
       if irOutputPath.isEmpty {
         irFileURL = outputDirectory.appendingPathComponent(fileName)
@@ -96,6 +101,14 @@ func main() {
       }
     }
   }.run()
+}
+
+private func warnMoveVerifierSkip() {
+  print("""
+        \u{001B}[0;33mWarning: `--target move' is not currently compatible with the verifier
+        \tSkipping verifier
+        \tTo disable this warning, run with `--skip-verifier'\u{001B}[0;0m
+        """)
 }
 
 main()

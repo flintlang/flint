@@ -27,7 +27,7 @@ extension Diagnostic {
 
   static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: literalToken.sourceLocation,
-                      message: "Address literal should be 42 characters long")
+                      message: "Address literal should be 40 digits long after the prefix")
   }
 
   static func noTryForFunctionCall(_ functionCall: FunctionCall,
@@ -682,9 +682,9 @@ extension Diagnostic {
                       // swiftlint:enable line_length
   }
 
-  static func solidityTypeUsedOutsideExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
+  static func externalTypeUsedOutsideExternalTrait(_ type: Type, at location: SourceLocation) -> Diagnostic {
     var notes: [Diagnostic] = []
-    if case .solidityType(let solidityType) = type.rawType,
+    if case .externalType(let solidityType) = type.rawType,
       let basicParallel = solidityType.basicParallel {
       notes.append(Diagnostic(severity: .note, sourceLocation: location,
                               message: "Perhaps you meant to use '\(basicParallel)'"))
@@ -715,7 +715,7 @@ extension Diagnostic {
                       // swiftlint:enable line_length
   }
 
-  static func badSolidityTypeConversion(_ typeConversionExpression: TypeConversionExpression,
+  static func badExternalTypeConversion(_ typeConversionExpression: TypeConversionExpression,
                                         expressionType: RawType) -> Diagnostic {
     return Diagnostic(severity: .error, sourceLocation: typeConversionExpression.sourceLocation,
                       // swiftlint:disable line_length

@@ -64,7 +64,7 @@ struct IRExternalCall {
     var staticSize = 0
     for parameterType in matchingFunction.parameterTypes {
       switch parameterType {
-      case .solidityType:
+      case .externalType:
         staticSize += 32
       default:
         fatalError("cannot use non-solidity type in external call")
@@ -84,7 +84,7 @@ struct IRExternalCall {
         dynamicSlots.append(IRExpression(expression: parameter.expression, asLValue: false)
           .rendered(functionContext: functionContext))
         dynamicSize += 32
-      case .basicType, .solidityType:
+      case .basicType, .externalType:
         staticSlots.append(IRExpression(expression: parameter.expression, asLValue: false)
           .rendered(functionContext: functionContext))
       default:

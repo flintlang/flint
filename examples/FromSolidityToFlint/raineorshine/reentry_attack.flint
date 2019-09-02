@@ -1,0 +1,107 @@
+contract MiniDAO {
+  var balances: [Address: Int]
+  var total: Wei
+}
+
+
+MiniDAO :: (any) {
+  public init()
+  mutates (Wei.rawValue)
+  {
+    self.balances = [:]
+    self.total = Wei(0)
+  }
+}
+
+
+MiniDAO :: caller <- (any) {
+  @payable
+  public func deposit(implicit value: inout Wei)
+  mutates (total, balances, Wei.rawValue)
+  pre (value.rawValue >= 0)
+  post (balances[caller] == prev(balances[caller]) + prev(value.rawValue))
+  post (forall (a, Address, dictContains(balances, a) ==> balances[a] == prev(balances[a]) || a == caller))
+  post (total.rawValue == prev(total.rawValue) + prev(value.rawValue))
+  {
+    balances[caller] += value.rawValue
+    total.transfer(source: &value)
+  }
+
+
+
+//////////////////////#456
+  public func withdraw(amount: Int)
+  mutates (balances, total, Wei.rawValue)
+  // pre (balances[caller] >= amount)
+  post (prev(balances[caller]) >= amount ==> balances[caller] == prev(balances[caller]) - amount)
+  post (prev(balances[caller]) >= amount ==> forall (a, Address, dictContains(balances, a) ==> balances[a] == prev(balances[a]) || a == caller))
+  post (prev(balances[caller]) >= amount ==> total.rawValue == prev(total.rawValue) - amount)
+
+  post (prev(balances[caller]) < amount ==> forall (a, Address, dictContains(balances, a) ==> balances[a] == prev(balances[a])))
+  post (prev(balances[caller]) < amount ==> total.rawValue == prev(total.rawValue))
+  {
+    // please pick one from if or assert.
+    // assert (balances[caller] >= amount)
+    if (balances[caller] >= amount) {
+      balances[caller] -= amount
+      var toSend: Wei = Wei(source: &total, amount: amount)
+      // send(caller, &toSend) //send here causes post condition of balances not holds
+    }
+  }
+}
+
+
+contract Attacker {
+  var stack: Int = 0
+  let stackLimit: Int = 10
+  var amount: Int
+  var dao: MiniDAO
+}
+
+Attacker :: caller <- (any) {
+
+  //////////////// issue#468
+  @payable
+  public init(implicit value: inout Wei)
+  mutates (Wei.rawValue, MiniDAO.total, MiniDAO.balances)
+  pre (value.rawValue > 0)
+  //
+  // post (dao.balances[caller] == prev(value.rawValue))
+  // post (forall (a, Address, dictContains(dao.balances, a) ==> dao.balances[a] == (prev(dao.balances[a]) && dao.balances[a].rawValue == 0) || a == caller))
+  // post (dao.total.rawValue == prev(value.rawValue))
+
+  {
+    self.dao = MiniDAO()
+    self.amount = value.rawValue
+    call! dao.deposit(value: &value)
+  }
+
+  // func attack()
+  // mutates (dao, MiniDAO.balances, MiniDAO.total, Wei.rawValue)
+  // post (dao.balances[caller] >= amount ==> dao.balances[caller] == prev(dao.balances[caller]) - amount)
+  // post (dao.balances[caller] >= amount ==> forall (a, Address, dictContains(dao.balances, a) ==> dao.balances[a] == prev(dao.balances[a]) || a == caller))
+  // post (dao.balances[caller] >= amount ==> dao.total.rawValue == prev(dao.total.rawValue) - amount)
+  //
+  // post (dao.balances[caller] < amount ==> forall (a, Address, dictContains(dao.balances, a) ==> dao.balances[a] == prev(dao.balances[a])))
+  // post (dao.balances[caller] < amount ==> dao.total.rawValue == prev(total.rawValue))
+  //
+  // {
+  //   call! dao.withdraw(amount: amount)
+  // }
+
+  // func saferWithdraw()
+  // mutates (stack, dao, MiniDAO.balances, MiniDAO.total, Wei.rawValue)
+  // post (stack == prev(stack) + 1)
+  // post (stack < 10 && dao.balances[caller] >= amount ==> dao.balances[caller] == prev(dao.balances[caller]) - amount)
+  // post (stack < 10 && dao.balances[caller] >= amount ==> forall (a, Address, dictContains(dao.balances, a) ==> dao.balances[a] == prev(dao.balances[a]) || a == caller))
+  // post (stack < 10 && dao.balances[caller] >= amount ==> dao.total.rawValue == prev(dao.total.rawValue) - amount)
+  //
+  // post (stack >= 10 || dao.balances[caller] < amount ==> forall (a, Address, dictContains(dao.balances, a) ==> dao.balances[a] == prev(dao.balances[a])))
+  // post (stack >= 10 || dao.balances[caller] < amount ==> dao.total.rawValue == prev(total.rawValue))
+  // {
+  //   stack += 1
+  //   if stack < 10 {
+  //     call! dao.withdraw(amount: amount)
+  //   }
+  // }
+}

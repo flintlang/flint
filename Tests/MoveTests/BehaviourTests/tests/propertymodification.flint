@@ -1,0 +1,35 @@
+contract C {
+  var v: V = V(2)
+  var u: Int
+}
+
+C :: (any) {
+  public init() {
+    u = 1
+    self.v = V(3) // Last thing to do
+    v.x = 4
+    v()
+    u = 2
+    let x: Int = u
+    assert(u == x)
+  }
+
+  public func v() {
+    var v: V = V(1)
+    assert(v.x == 1)
+    v.x = 1
+  }
+}
+
+struct V {
+  var x: Int = 0
+
+  init(x: Int) {
+    self.x = x
+  }
+
+  func increment()
+  mutates (x) {
+    self.x += 1
+  }
+}

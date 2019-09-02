@@ -1,0 +1,38 @@
+modules:
+module Assert {
+    resource T { }
+
+    public new_t(): R#Self.T {
+        return T { };
+    }
+
+    public destroy_t(this: R#Self.T) {
+        T { } = move(this); 
+        return;
+    }
+
+    public shouldNotCrash(this: &R#Self.T) {
+        assert(true, 1);
+        release(move(this));
+        return;
+    }
+    
+    public shouldCrash(this: &R#Self.T) {
+        assert(false, 1);
+        release(move(this));
+        return;
+    }
+}
+
+script:
+import Transaction.Assert;
+
+main() {
+    let assert_contract: R#Assert.T;
+    assert_contract = Assert.new_t();
+    // Should not crash on assertion success
+    Assert.shouldNotCrash(&assert_contract);
+    Assert.destroy_t(move(assert_contract));
+    return;
+}
+

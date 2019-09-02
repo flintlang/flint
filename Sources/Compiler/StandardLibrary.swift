@@ -22,7 +22,17 @@ public struct StandardLibrary {
   }
 
   public static var `default`: StandardLibrary {
-    let url = Path.getFullUrl(path: "stdlib")
-    return StandardLibrary(url: url)
+    return StandardLibrary.from(name: "common")
+  }
+
+  public static func from(name: String) -> StandardLibrary {
+    return StandardLibrary(url: Path.getFullUrl(path: "stdlib/\(name)"))
+  }
+
+  public static func from(target: CompilerTarget) -> StandardLibrary {
+    switch target {
+    case .evm: return StandardLibrary.from(name: "evm")
+    case .move: return StandardLibrary.from(name: "common")
+    }
   }
 }

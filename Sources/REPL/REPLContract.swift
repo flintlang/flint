@@ -69,15 +69,21 @@ public class REPLContract {
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
     let p = Process()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["node", "event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
+    p.arguments = ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
 
-    let result_file_path = Path.getFullUrl(path: "utils/repl/event_result.txt"
-    ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/event_result.txt" */
-    if let res = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) {
+    if let res = try? String(contentsOf: Path.getFullUrl(path: "utils/repl/event_result.txt")) {
       return res
     }
 
@@ -180,9 +186,8 @@ public class REPLContract {
 
     let transactionAddress = self.repl.transactionAddress
 
-    let fileManager = FileManager.init()
-    let path = Path.getFullUrl(path: "utils/repl/run_function.js"
-    ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/run_function.js" */
+    let fileManager = FileManager()
+    let path = Path.getFullUrl(path: "utils/repl/run_function.js").path
 
     if !(fileManager.fileExists(atPath: path)) {
       print("FATAL ERROR: run_function file does not exist, cannot deploy contract for repl. Exiting.".lightRed.bold)
@@ -190,7 +195,6 @@ public class REPLContract {
     }
 
     var node_args = [
-      "node",
       "run_function.js",
       self.abi,
       addr,
@@ -203,7 +207,7 @@ public class REPLContract {
 
     if let weiVal = wei_value {
       node_args = [
-        "node", "run_function.js",
+        "run_function.js",
         self.abi,
         addr.trimmingCharacters(in: .whitespacesAndNewlines),
         fCall.identifier.name,
@@ -218,15 +222,22 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
+    p.standardInput = FileHandle.nullDevice
     p.standardOutput = pipe
+    p.standardError = FileHandle.nullDevice
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
     p.arguments = node_args
+    print("Running contract method...")
     try! p.run()
     p.waitUntilExit()
 
-    let result_file_path = Path.getFullUrl(path: "utils/repl/result.txt").absoluteString
-
+    let result_file_path = Path.getFullUrl(path: "utils/repl/result.txt").path
     guard let result = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) else {
       print("Could not extract result of function \(fCall.identifier.name)".lightRed.bold)
       return nil
@@ -236,7 +247,6 @@ public class REPLContract {
   }
 
   private func process_func_call_args(args: [FunctionArgument]) -> [String]? {
-
     var result_args: [String] = []
 
     for a in args {
@@ -354,9 +364,8 @@ public class REPLContract {
       return nil
     }
 
-    let fileManager = FileManager.init()
-    let path = Path.getFullUrl(path: "utils/repl/deploy_contract.js"
-    ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/repl/deploy_contract.js" */
+    let fileManager = FileManager()
+    let path = Path.getFullUrl(path: "utils/repl/deploy_contract.js").path
 
     if !(fileManager.fileExists(atPath: path)) {
       print("FATAL ERROR: deploy_contract file does not exist, cannot deploy contract for repl. Exiting.".lightRed.bold)
@@ -367,10 +376,17 @@ public class REPLContract {
 
     let p = Process()
     let pipe = Pipe()
-    p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    p.standardOutput = pipe
+    #if os(macOS)
+    let nodeLocation = "/usr/local/bin/node"
+    #else
+    let nodeLocation = "/usr/bin/node"
+    #endif
+    p.executableURL = URL(fileURLWithPath: nodeLocation)
     p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["node", "deploy_contract.js", self.abi, self.bytecode, rawString]
+    p.arguments = ["deploy_contract.js", self.abi, self.bytecode, rawString]
+    p.standardInput = FileHandle.nullDevice
+    p.standardOutput = pipe
+    p.standardError = FileHandle.nullDevice
     try! p.run()
     p.waitUntilExit()
 

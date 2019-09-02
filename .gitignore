@@ -1,5 +1,5 @@
 .DS_Store
-/.build
+**/.build
 /.derived-tests
 /Packages
 /*.xcodeproj
@@ -10,7 +10,14 @@ Sources.old
 venv
 /.vscode
 /temp
+*.opcode
+*.bin
+file
+solc-static-linux
+libra
 
+/*.mvir
+/*.flint
 *.sol
 !sol_emitter.sol
 !sol_external.sol
@@ -47,6 +54,7 @@ utils/coverage/statements.json
 utils/coverage/coverage.info
 utils/coverage/html/*
 utils/coverage/node_modules/*
+utils/coverage/address.txt
 
 utils/block/keystore/*
 utils/block/geth/*
@@ -55,6 +63,7 @@ utils/block/go-ethereum/*
 bin/
 contracts/
 build/
+libra/
 
 *.generated.swift
 Package.resolved

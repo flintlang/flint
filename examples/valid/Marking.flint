@@ -29,11 +29,9 @@ Marking :: (lecturer) {
     // pre condition not satisfied
     post (prev(arrayContains(markers, marker)) ==> numMarkers == prev(numMarkers))
     post (prev(arrayContains(markers, marker)) ==> forall (i, Int, 0 <= i && i < numMarkers ==> markers[i] == prev(markers[i])))
-  {
-    if arrayContains(markers, marker) == false  {
-      markers[numMarkers] = marker
-      numMarkers += 1
-    }
+  { 
+    markers[numMarkers] = marker
+    numMarkers += 1
   }
 }
 
