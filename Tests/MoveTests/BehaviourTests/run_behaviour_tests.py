@@ -167,7 +167,6 @@ class BehaviourTest(NamedTuple):
                                  message or f"Move Missing Error: "
                                  f"No error raised in {self.programme.path.name} line {self.expected_fail_line}"
                                  )
-            print(test.contents())
             return False
 
         TestFormatter.passed(self.programme.name)

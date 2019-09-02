@@ -37,7 +37,7 @@ public struct MovePreprocessor: ASTPass {
   public func process(type: Type, passContext: ASTPassContext) -> ASTPassResult<Type> {
     // Used to turn external trait types into addresses
     var type = type
-    if let environment = passContext.environment, type.rawType.isExternalTraitType(environment: environment) {
+    if let environment = passContext.environment, type.rawType.isExternalContract(environment: environment) {
       type.rawType = RawType.externalTraitType
     }
     return ASTPassResult(element: type, diagnostics: [], passContext: passContext)
@@ -111,7 +111,7 @@ extension ASTPass {
     var type: RawType = environment.type(of: element,
                                          enclosingType: enclosingType,
                                          scopeContext: scopeContext)
-    if type.isExternalTraitType(environment: environment) {
+    if type.isExternalContract(environment: environment) {
       type = RawType.externalTraitType
     }
 

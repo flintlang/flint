@@ -1,0 +1,54 @@
+import Transaction.Account;
+import Transaction.Libra;
+
+main () {
+  _ = get_txn_sender();
+  return;
+}
+
+//! provide module
+module Libra {
+  import 0x0.LibraCoin;
+
+  resource T {
+    coin: LibraCoin.T
+  }
+
+  public new(zero: address): Self.T {
+    if (move(zero) != 0x0) {
+      assert(false, 9001);
+    }
+    return T {
+      coin: LibraCoin.zero()
+    };
+  }
+
+  public getValue(this: &mut Self.T): u64 {
+    let coin: &LibraCoin.T;
+    coin = &move(this).coin;
+    return LibraCoin.value(move(coin));
+  }
+
+  public withdraw(this: &mut Self.T, amount: u64): Self.T {
+    let coin: &mut LibraCoin.T;
+    coin = &mut move(this).coin;
+    return T {
+      coin: LibraCoin.withdraw(move(coin), move(amount))
+    };
+  }
+
+  public transfer(this: &mut Self.T, other: &mut Self.T) {
+    let coin_temp: &LibraCoin.T;
+    let coin: &mut LibraCoin.T;
+    let other_coin: &mut LibraCoin.T;
+    let temporary: LibraCoin.T;
+    let amount: u64;
+    coin_temp = &copy(this).coin;
+    amount = LibraCoin.value(move(coin_temp));
+    coin = &mut move(this).coin;
+    temporary = LibraCoin.withdraw(move(coin), move(amount));
+    other_coin = &mut move(other).coin;
+    LibraCoin.deposit(move(other_coin), move(temporary));
+    return;
+  }
+}
