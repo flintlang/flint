@@ -3,7 +3,7 @@ import Foundation
 
 class Diagnostics {
   public static var diagnostics: [Diagnostic] = []
-  public static var sourceContext: SourceContext? = nil
+  public static var sourceContext: SourceContext?
 
   static func add(_ diagnostics: Diagnostic...) {
     self.diagnostics.append(contentsOf: diagnostics)
