@@ -129,23 +129,15 @@ extension Compiler {
 
     // Run verifier
     if !config.skipVerifier {
-      #if os(macOS)
-        let monoLocation = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono"
-      #else
-        let monoLocation = "/usr/bin/mono"
-      #endif
       let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
-                                              boogieLocation: Path.getFullUrl(
-                                                  path: "boogie/Binaries/Boogie.exe").absoluteString,
-                                              symbooglixLocation: Path.getFullUrl(
-                                                  path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe"
-                                              ).absoluteString,
+                                              boogieLocation: Path.boogieLocation.path,
+                                              symbooglixLocation: Path.symbooglixLocation.path,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: monoLocation,
+                                              monoLocation: Path.monoLocation.path,
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
