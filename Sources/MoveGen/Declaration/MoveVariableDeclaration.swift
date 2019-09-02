@@ -8,6 +8,7 @@
 import Foundation
 import AST
 import MoveIR
+import Diagnostic
 
 /// Generates code for a variable declaration.
 struct MoveVariableDeclaration {
@@ -18,15 +19,12 @@ struct MoveVariableDeclaration {
         from: variableDeclaration.type.rawType,
         environment: functionContext.environment
     )?.render(functionContext: functionContext) else {
-      print("""
-            Cannot get variable declaration type from \(variableDeclaration.type.rawType) \
-            at position \(variableDeclaration.sourceLocation) for variable \(variableDeclaration.identifier.name).
-
-            \(functionContext.blockStack)
-
-            flintc internal error located at \(#file):\(#line)
-            """)
-      exit(1)
+      Diagnostics.add(Diagnostic(
+          severity: .error,
+          sourceLocation: variableDeclaration.sourceLocation,
+          message: "Cannot get variable declaration type from \(variableDeclaration.type.rawType)"
+      ))
+      Diagnostics.displayAndExit()
     }
     guard !variableDeclaration.identifier.isSelf else {
       return .variableDeclaration(MoveIR.VariableDeclaration((MoveSelf.name, typeIR)))

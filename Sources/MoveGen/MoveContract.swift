@@ -39,7 +39,7 @@ struct MoveContract {
     let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
     // Generate code for each function in the contract.
     let functions = contractBehaviorDeclarations.flatMap { contractBehaviorDeclaration in
-      return contractBehaviorDeclaration.members.compactMap { member -> MoveFunction? in
+      contractBehaviorDeclaration.members.compactMap { member -> MoveFunction? in
         guard case .functionDeclaration(let functionDeclaration) = member else {
           return nil
         }

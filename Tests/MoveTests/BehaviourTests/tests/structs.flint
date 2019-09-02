@@ -38,12 +38,13 @@ contract C {
   var b: B = B()
   var c: B = B()
   let d: Int = 5
-  var e: Bool = true
+  var e: Bool
 }
 
 C :: (any) {
   public init() {
     getE()
+    e = true
   }
 
   public func getAx() -> Int {

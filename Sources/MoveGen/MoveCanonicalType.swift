@@ -8,6 +8,7 @@
 import Foundation
 import AST
 import MoveIR
+import Diagnostic
 
 /// A MoveIR type.
 indirect enum CanonicalType: CustomStringConvertible {
@@ -29,7 +30,9 @@ indirect enum CanonicalType: CustomStringConvertible {
       case .bool: self = .bool
       case .string: self = .bytearray
       default:
-        print("rawType: \(rawType)")
+        Diagnostics.add(Diagnostic(severity: .warning,
+                                   sourceLocation: nil,
+                                   message: "Could not detect basic type for `\(rawType)'"))
         return nil
       }
 
@@ -60,7 +63,9 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .dictionaryType(let key, _):
       self = CanonicalType(from: key)!
     default:
-      print("rawType': \(rawType)")
+      Diagnostics.add(Diagnostic(severity: .warning,
+                                 sourceLocation: nil,
+                                 message: "Could not detect type for `\(rawType)'"))
       return nil
     }
   }
