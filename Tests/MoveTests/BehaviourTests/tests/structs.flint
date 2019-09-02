@@ -43,8 +43,8 @@ contract C {
 
 C :: (any) {
   public init() {
-    getE()
     e = true
+    getE()
   }
 
   public func getAx() -> Int {
