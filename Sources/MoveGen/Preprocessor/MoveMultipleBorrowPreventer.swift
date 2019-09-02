@@ -85,12 +85,12 @@ public struct MoveMultipleBorrowPreventer: ASTPass {
       if passContext.specialDeclarationContext != nil {
         return false // If in constructor
       }
-      if referenced.contains(where: { $0.name == "self" }) {
-        return true
-      } else {
+
+      if !referenced.contains(where: { $0.name == "self" }) {
         referenced.append(Identifier(name: "self", sourceLocation: token.sourceLocation))
+        return false
       }
-      return false
+      return true
     case .functionCall(let call):
       // Will only reach unqualified (self.) function call thanks to no right recursion on `x.y`
       return duplicateReferences(.`self`(Token(kind: .`self`, sourceLocation: call.sourceLocation)),

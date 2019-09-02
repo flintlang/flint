@@ -813,7 +813,7 @@ public struct CompilerConfiguration {
     self.maxTransactionDepth = maxTransactionDepth
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
-    self.diagnostics = diagnostics //Compiler.defaultASTPasses
+    self.diagnostics = diagnostics
     self.astPasses = astPasses ?? (Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses))
     self.stdLib = stdLib
     self.target = target
