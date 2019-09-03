@@ -18,7 +18,7 @@ struct SolcCompiler {
     let temporaryFile = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
       .appendingPathComponent(UUID().uuidString)
     try inputSource.write(to: temporaryFile, atomically: true, encoding: .utf8)
-    
+
     verifySolc(launchPath: Configuration.solcLocation.path)
     let arguments: [String] =
       [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
