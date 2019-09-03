@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Utils
 
 /// The solc compiler, used to compile YUL IR.
 struct SolcCompiler {
@@ -17,28 +18,14 @@ struct SolcCompiler {
     let temporaryFile = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
       .appendingPathComponent(UUID().uuidString)
     try inputSource.write(to: temporaryFile, atomically: true, encoding: .utf8)
-
-    let process = Process()
-
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-
-    //verifySolc(launchPath: process.executableURL!.path)
-    process.standardError = Pipe()
-    process.arguments = Array([
-      [
-        "solc",
-        temporaryFile.path,
-        "--bin"
-      ],
-      emitBytecode ? ["--opcodes"] : [],
-      [
-        "-o",
-        outputDirectory.path
-      ]
-    ].joined())
-
-    try! process.run()
-    process.waitUntilExit()
+    
+    verifySolc(launchPath: Configuration.solcLocation.path)
+    let arguments: [String] =
+      [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
+    let processResult = Process.run(executableURL: Configuration.solcLocation,
+                                    arguments: arguments,
+                                    currentDirectoryURL: nil)
+    processResult.standardOutputResult.map { print($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
   }
 
   private func verifySolc(launchPath: String) {

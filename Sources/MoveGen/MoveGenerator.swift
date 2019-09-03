@@ -4,14 +4,16 @@
 
 import Foundation
 import AST
+import Diagnostic
 
 public struct MoveGenerator {
   var topLevelModule: TopLevelModule
   var environment: Environment
 
-  public init(ast topLevelModule: TopLevelModule, environment: Environment) {
+  public init(ast topLevelModule: TopLevelModule, environment: Environment, sourceContext: SourceContext) {
     self.topLevelModule = topLevelModule
     self.environment = environment
+    Diagnostics.sourceContext = sourceContext
   }
 
   public func generateCode() -> String {

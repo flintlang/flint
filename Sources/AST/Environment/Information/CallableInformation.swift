@@ -10,7 +10,7 @@ public enum CallableInformation {
   case functionInformation(FunctionInformation)
   case specialInformation(SpecialInformation)
 
-  var parameterTypes: [RawType] {
+  public var parameterTypes: [RawType] {
     switch self {
     case .functionInformation(let functionInformation):
       return functionInformation.parameterTypes

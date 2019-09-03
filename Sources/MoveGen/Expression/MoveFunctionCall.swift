@@ -37,18 +37,27 @@ struct MoveFunctionCall {
        lookupCall.arguments.remove(at: 0)
     }
 
-    if environment.isExternalTraitInitializer(functionCall: lookupCall) {
-      let externalContractAddress = lookupCall.arguments[0].expression
-      return MoveExpression(expression: externalContractAddress, position: .normal)
-        .rendered(functionContext: functionContext)
+    var moduleName = self.moduleName
+    var callName = functionCall.mangledIdentifier ?? functionCall.identifier.name
+
+    if environment.isExternalTraitInitializer(functionCall: lookupCall),
+       let trait: TypeInformation = environment.types[lookupCall.identifier.name] {
+      if trait.decorators?.contains(where: { $0.identifier.name == "data" }) ?? false {
+        moduleName = lookupCall.identifier.name
+        callName = "new"
+      } else {
+        let externalContractAddress = lookupCall.arguments[0].expression
+        return MoveExpression(expression: externalContractAddress, position: .normal)
+            .rendered(functionContext: functionContext)
+      }
     }
 
     let args: [MoveIR.Expression] = functionCall.arguments.map({ (argument: FunctionArgument) in
-      return MoveExpression(expression: argument.expression, position: .normal)
+      MoveExpression(expression: argument.expression, position: .normal)
           .rendered(functionContext: functionContext)
     })
 
-    let identifier = "\(moduleName).\(functionCall.mangledIdentifier ?? functionCall.identifier.name)"
+    let identifier = "\(moduleName).\(callName)"
     return .functionCall(MoveIR.FunctionCall(identifier, args))
   }
 }

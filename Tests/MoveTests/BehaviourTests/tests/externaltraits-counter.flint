@@ -1,4 +1,5 @@
-external trait 0x00.BaseCounter {  // 0x00 is replaced by `Transaction.` by the testsuite
+@module(address: 0x00) // 0x00 is replaced by `Transaction.` by the testsuite
+external trait BaseCounter {
   public func add(n: uint64)
 
   public func count() -> uint64

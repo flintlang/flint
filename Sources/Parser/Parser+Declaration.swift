@@ -49,7 +49,7 @@ extension Parser {
       case .identifier, .`self`:
         let contractBehaviorDeclaration = try parseContractBehaviorDeclaration()
         declarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
-      case .external:
+      case .external, .punctuation(.at):
         let externalTraitDeclaration = try parseTraitDeclaration()
         declarations.append(.traitDeclaration(externalTraitDeclaration))
       default:
@@ -119,18 +119,13 @@ extension Parser {
   }
 
   func parseTraitDeclaration() throws -> TraitDeclaration {
+    let decorations: [FunctionCall] = attempt {
+      return try parseDecorators()
+    } ?? []
+
     let traitKind = try consume(anyOf: [.struct, .contract, .external], or: .badDeclaration(at: latestSource))
     let traitToken = try consume(.trait, or: .badDeclaration(at: latestSource))
-    // This is move-specific syntax required to get module address that a Move module defining
-    // the external trait is published at
-    let moduleAddress: String? = attempt {
-      let moduleAddressToken: Token = try parseLiteral()
-      try consume(.punctuation(.dot), or: .expectedMoveModuleAddress(at: latestSource))
-      if case .literal(.address(let addressStr)) = moduleAddressToken.kind {
-        return addressStr
-      }
-      throw raise(.expectedMoveModuleAddress(at: latestSource))
-    }
+
     let identifier = try parseIdentifier()
     try consume(.punctuation(.openBrace), or: .leftBraceExpected(in: "trait declaration", at: latestSource))
     let traitMembers = try parseTraitMembers()
@@ -141,8 +136,23 @@ extension Parser {
         traitToken: traitToken,
         identifier: identifier,
         members: traitMembers,
-        moduleAddress: moduleAddress
+        decorators: decorations
     )
+  }
+
+  func parseDecorators() throws -> [FunctionCall] {
+    var decorators = [FunctionCall]()
+    while currentToken?.kind == .punctuation(.at) {
+      try consume(.punctuation(.at), or: .expectedValidOperator(at: latestSource))
+      let decorator = try attempt {
+        return try parseFunctionCall()
+      } ?? FunctionCall(identifier: parseIdentifier(),
+                        arguments: [],
+                        closeBracketToken: Token.DUMMY,
+                        isAttempted: false)
+      decorators.append(decorator)
+    }
+    return decorators
   }
 
   func parseEventDeclaration() throws -> EventDeclaration {

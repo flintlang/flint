@@ -10,6 +10,8 @@ import Diagnostic
 
 /// The `ASTPass` performing semantic analysis.
 public struct SemanticAnalyzer: ASTPass {
+  public var allowExternalStructs = false
+
   public init() {}
 
   public func postProcess(topLevelModule: TopLevelModule,

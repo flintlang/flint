@@ -758,6 +758,16 @@ public enum CompilerTarget {
     case .move: return "mvir"
     }
   }
+
+  public func configureSemanticAnalyser(semanticAnalyser: SemanticAnalyzer) -> SemanticAnalyzer {
+    switch self {
+    case .evm: return semanticAnalyser
+    case .move:
+      var semanticAnalyser = semanticAnalyser
+      semanticAnalyser.allowExternalStructs = true
+      return semanticAnalyser
+    }
+  }
 }
 
 public struct CompilerConfiguration {
@@ -807,7 +817,13 @@ public struct CompilerConfiguration {
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics //Compiler.defaultASTPasses
-    self.astPasses = astPasses ?? (Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses))
+    self.astPasses = (astPasses ?? (Compiler.defaultASTPasses + (skipVerifier ? [] : Compiler.verifierASTPasses)))
+        .map { (pass: ASTPass) in
+      if let pass = pass as? SemanticAnalyzer {
+        return target.configureSemanticAnalyser(semanticAnalyser: pass)
+      }
+      return pass
+    }
     self.stdLib = stdLib
     self.target = target
   }

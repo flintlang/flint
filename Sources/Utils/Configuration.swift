@@ -11,13 +11,14 @@ private struct ConfigurationFile {
   #if os(macOS)
   var nodePath = "/usr/local/bin/node"
   var monoPath = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono"
+  var solcPath = "/usr/local/bin/solc"
   #else
   var nodePath = "/usr/bin/node"
   var monoPath = "/usr/bin/mono"
+  var solcPath = "/usr/bin/solc"
   #endif
   var boogiePath = Path.getFullUrl(path: "boogie/Binaries/Boogie.exe").path
   var symbooglixPath = Path.getFullUrl(path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe").path
-  var solcPath = "/usr/bin/solc"
   var ethereumAddress = "ADDRESS_NOT_SET"
 }
 
