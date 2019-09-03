@@ -22,7 +22,8 @@ public struct StandardLibrary {
   }
 
   public static var `default`: StandardLibrary {
-    return StandardLibrary.from(name: "common")
+    //return StandardLibrary.from(name: "common")
+    return StandardLibrary.from(name: "evm")
   }
 
   public static func from(name: String) -> StandardLibrary {

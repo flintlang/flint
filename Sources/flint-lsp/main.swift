@@ -41,8 +41,7 @@ func main() {
 }
 
 func main_d() throws {
-  let fileName = Path.getFullUrl(path: "ide_examples/curr_examples/test.flint"
-  ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint" */
+  let fileName = Path.getFullUrl(path: "ide_examples/curr_examples/test.flint").path
   let inputFiles = [URL(fileURLWithPath: fileName)]
   let sourceCode = try String(contentsOf: inputFiles[0])
   do {

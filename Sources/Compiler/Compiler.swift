@@ -52,7 +52,6 @@ public struct Compiler {
     }
 
     let userTokens = try inputFiles.flatMap { try Lexer(sourceFile: $0).lex() }
-
     return stdlibTokens + userTokens
   }
 
@@ -133,11 +132,11 @@ extension Compiler {
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
-                                              boogieLocation: Path.boogieLocation.path,
-                                              symbooglixLocation: Path.symbooglixLocation.path,
+                                              boogieLocation: Configuration.boogieLocation.path,
+                                              symbooglixLocation: Configuration.symbooglixLocation.path,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: Path.monoLocation.path,
+                                              monoLocation: Configuration.monoLocation.path,
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
@@ -244,7 +243,7 @@ extension Compiler {
 
   public static func getAST(config: CompilerTestFrameworkConfiguration) throws -> (TopLevelModule, Environment) {
 
-    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
+    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles, standardLibrary: StandardLibrary.from(target: .evm))
 
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
@@ -306,7 +305,9 @@ extension Compiler {
     let irCode = try evmTarget.generate(ast: ast)
 
     // Compile the YUL IR code using solc.
-    try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
+    try SolcCompiler(inputSource: irCode,
+                     outputDirectory: config.outputDirectory,
+                     emitBytecode: false).compile()
 
     // these are warnings from the solc compiler
     try config.diagnostics.display()
@@ -467,7 +468,7 @@ extension Compiler {
 
   public static func getAST(config: CompilerReplConfiguration) throws -> (TopLevelModule, Environment) {
 
-    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
+    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles, standardLibrary: StandardLibrary.from(target: .evm))
 
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
@@ -482,7 +483,7 @@ extension Compiler {
       exitWithFailure()
     }
 
-    ast = insertConstructorFuncRepl(ast: parserAST!, environment: environment)
+   ast = insertConstructorFuncRepl(ast: parserAST!, environment: environment)
 
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)

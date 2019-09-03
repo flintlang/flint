@@ -90,48 +90,22 @@ struct TestRunner {
   }
 
   func genCovReport(contract_name: String, contract_file_path: String) throws {
-    let p = Process()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/coverage")
-    p.arguments = ["--no-warnings", "gen_cov_report.js", contract_name, contract_file_path]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = FileHandle.nullDevice
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["--no-warnings", "gen_cov_report.js", contract_name, contract_file_path],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/coverage"))
   }
 
   func runNode(jsTestFile: String) throws {
     let outputfile = Path.getFullUrl(path: "utils/testRunner/test.js")
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-
-    let p = Process()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/testRunner")
-    p.arguments = ["--no-warnings", "test.js"]
-    let outputPipe = Pipe()
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = outputPipe
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-    let output = String(decoding: outputData, as: UTF8.self)
-    p.waitUntilExit()
-    print(output)
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
+                                    arguments: ["--no-warnings", "test.js"],
+                                    currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
+    print(processResult.standardOutputResult)
   }
 
   func exitWithFailure() -> Never {
     print("Failed to compile.")
-    exit(1)
+    exit(EXIT_FAILURE)
   }
 }

@@ -64,7 +64,7 @@ struct IRContract {
 
     // Main contract body.
     return """
-    pragma solidity ^0.4.21;
+    pragma solidity ^0.4.25;
 
     contract \(contractDeclaration.identifier.name) {
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import re
 from pathlib import Path
 from typing import NamedTuple, Optional, List, Iterable
@@ -242,7 +242,7 @@ class TestRunner(NamedTuple):
 
 
 if __name__ == '__main__':
-    os.chdir(os.environ['FLINTPATH'])
+    os.chdir(os.path.expanduser("~/.flint"))
     if not Path(MoveIRProgramme.libra_path).exists():
         TestFormatter.not_configured()
         sys.exit(0)

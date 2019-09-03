@@ -27,15 +27,9 @@ public class REPL {
       exit(0)
     }
 
-    let p = Process()
-    p.executableURL = Path.nodeLocation
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["--no-warnings", "compile_contract.js"]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = FileHandle.nullDevice
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["--no-warnings", "compile_contract.js"],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
     let contractJsonFile = Path.getFullUrl(path: "utils/repl/contract.json")
     let get_contents_of_json = try String(contentsOf: contractJsonFile)

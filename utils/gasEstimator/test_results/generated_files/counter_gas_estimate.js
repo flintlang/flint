@@ -8,8 +8,8 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 const eth = web3.eth;
 
-const defaultAcc = web3.personal.newAccount("1");
-web3.personal.unlockAccount(defaultAcc, "1", 1000);
+const defaultAcc = web3.personal.newAccount("");
+web3.personal.unlockAccount(defaultAcc, "", 1000);
 web3.eth.defaultAccount = defaultAcc;
 
 async function deploy_contract(abi, bytecode) {

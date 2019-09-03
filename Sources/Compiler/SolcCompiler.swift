@@ -22,7 +22,7 @@ struct SolcCompiler {
 
     process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
 
-    //verifySolc(launchPath: process.executableURL!.absoluteString)
+    //verifySolc(launchPath: process.executableURL!.path)
     process.standardError = Pipe()
     process.arguments = Array([
       [

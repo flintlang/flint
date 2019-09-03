@@ -41,8 +41,7 @@ public class CoverageProvider {
       let data = try JSONSerialization.data(withJSONObject: statememtDict, options: [])
       let json_statement_dict = String(data: data, encoding: .utf8)!
       try json_statement_dict.write(
-          to: URL(fileURLWithPath: Path.getFullUrl(path: "utils/coverage/statements.json").absoluteString
-                  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/statements.json" */),
+          to: Path.getFullUrl(path: "utils/coverage/statements.json"),
           atomically: true, encoding: .utf8)
     } catch {
       print(error)
@@ -53,8 +52,7 @@ public class CoverageProvider {
       let json_branch_dict = String(data: try JSONSerialization.data(withJSONObject: branchDict, options: []),
                                     encoding: .utf8)!
       try json_branch_dict.write(
-          to: URL(fileURLWithPath: Path.getFullUrl(path: "utils/coverage/branch.json").absoluteString
-                  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/branch.json" */),
+          to: Path.getFullUrl(path: "utils/coverage/branch.json"),
           atomically: true, encoding: .utf8)
     } catch let e {
       print(e)
@@ -65,8 +63,7 @@ public class CoverageProvider {
       let json_function_dict = String(data: try JSONSerialization.data(withJSONObject: functionDict, options: []),
                                       encoding: .utf8)!
       try json_function_dict.write(
-          to: URL(fileURLWithPath: Path.getFullUrl(path: "utils/coverage/function.json").absoluteString
-                  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function.json" */),
+          to: Path.getFullUrl(path: "utils/coverage/function.json"),
           atomically: true, encoding: .utf8)
 
     } catch let e {
@@ -78,8 +75,7 @@ public class CoverageProvider {
       let json_function_to_line_no = String(
           data: try JSONSerialization.data(withJSONObject: functionToLineNo, options: []), encoding: .utf8)!
       try json_function_to_line_no.write(
-          to: URL(fileURLWithPath: Path.getFullUrl(path: "utils/coverage/function_to_line.json").absoluteString
-                  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/function_to_line.json" */),
+          to: Path.getFullUrl(path: "utils/coverage/function_to_line.json"),
           atomically: true, encoding: .utf8)
 
     } catch let e {
@@ -90,8 +86,7 @@ public class CoverageProvider {
 
     do {
       let json = String(data: try JSONSerialization.data(withJSONObject: counts, options: []), encoding: .utf8)!
-      try json.write(to: URL(fileURLWithPath: Path.getFullUrl(path: "utils/coverage/counts.json").absoluteString
-                             /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/utils/coverage/counts.json" */),
+      try json.write(to: Path.getFullUrl(path: "utils/coverage/counts.json"),
                      atomically: true, encoding: .utf8)
     } catch let e {
       print(e)

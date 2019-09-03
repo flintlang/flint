@@ -4,6 +4,7 @@ import AST
 import Compiler
 import Commander
 import Diagnostic
+import Utils
 
 /// The main function for the compiler.
 func main() {

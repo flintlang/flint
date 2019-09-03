@@ -151,21 +151,9 @@ public class REPLCodeProcessor {
       exit(0)
     }
 
-    let p = Process()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["--no-warnings", "gen_address.js"]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = FileHandle.nullDevice
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
-
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["--no-warnings", "gen_address.js"],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
     let addr = try! String(contentsOf: Path.getFullUrl(path: "utils/repl/gen_addr.txt"))
 
     return addr

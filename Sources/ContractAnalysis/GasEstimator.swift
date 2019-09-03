@@ -17,7 +17,7 @@ public class GasEstimator {
 
       const eth = web3.eth;
 
-      const defaultAcc = "145b8389f8818e09fb63566e7096f01a7533ea4c";
+      const defaultAcc = "\(Configuration.ethereumAddress)";
       web3.personal.unlockAccount(defaultAcc, "", 1000);
       web3.eth.defaultAccount = defaultAcc;
 
@@ -172,18 +172,10 @@ public class GasEstimator {
     }
 
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-
-    let p = Process()
-    let pipe = Pipe()
-    p.executableURL = Path.nodeLocation
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/gasEstimator")
-    p.arguments = ["test.js"]
-    p.standardOutput = pipe
-    try! p.run()
-    p.waitUntilExit()
-
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    if let out = String(data: data, encoding: .utf8) {
+    let processResult: ProcessResult = Process.run(executableURL: Configuration.nodeLocation,
+                                                   arguments: ["test.js"],
+                                                   currentDirectoryURL: Path.getFullUrl(path: "utils/gasEstimator"))
+    if let out = processResult.standardOutputResult {
       return out
     } else {
       return "ERROR: No gas estimates"

@@ -68,20 +68,9 @@ public class REPLContract {
     let json_event_arg_to_types: String = String(
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
-    let p = Process()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = FileHandle.nullDevice
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
     if let res = try? String(contentsOf: Path.getFullUrl(path: "utils/repl/event_result.txt")) {
       return res
@@ -220,17 +209,10 @@ public class REPLContract {
       ]
     }
 
-    let p = Process()
-    let pipe = Pipe()
-    p.executableURL = Path.nodeLocation
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = pipe
-    p.standardError = FileHandle.nullDevice
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = node_args
-    print("Running contract method...")
-    try! p.run()
-    p.waitUntilExit()
+    print("Running function call...")
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: node_args,
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
     let resultFile = Path.getFullUrl(path: "utils/repl/result.txt")
     guard let result = try? String(contentsOf: resultFile) else {
@@ -368,20 +350,10 @@ public class REPLContract {
     }
 
     print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
-
-    let p = Process()
-    let pipe = Pipe()
-    p.executableURL = Path.nodeLocation
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["deploy_contract.js", self.abi, self.bytecode, rawString]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = pipe
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
-
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    if let addr = String(data: data, encoding: .utf8) {
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
+                                    arguments: ["deploy_contract.js", self.abi, self.bytecode, rawString],
+                                    currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
+    if let addr = processResult.standardOutputResult {
       instanceToAddress[variable_name] = addr
       print(
           "Contract deployed at address: ".lightGreen + addr.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite)
