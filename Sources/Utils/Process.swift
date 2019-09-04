@@ -42,7 +42,7 @@ extension Process {
       print("Arguments: \(arguments)")
       currentDirectoryURL.map { print("Working directory: \($0)") }
       standardOutputText.map { print("stdout: \($0)") }
-      standardErrorText.map { print("stderr: \($0)") } 
+      standardErrorText.map { print("stderr: \($0)") }
     }
 
     return ProcessResult(standardOutputResult: standardOutputText,
