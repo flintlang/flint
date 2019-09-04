@@ -22,7 +22,7 @@ struct SolcCompiler {
     verifySolc(launchPath: Configuration.solcLocation.path)
     let arguments: [String] =
       [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
-    let processResult = Process.execute(executableURL: Configuration.solcLocation,
+    let processResult = Process.run(executableURL: Configuration.solcLocation,
                                     arguments: arguments,
                                     currentDirectoryURL: nil)
     processResult.standardOutputResult.map { print($0.trimmingCharacters(in: .whitespacesAndNewlines)) }

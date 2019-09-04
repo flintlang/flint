@@ -15,7 +15,7 @@ public struct ProcessResult {
 
 extension Process {
   @discardableResult
-  public static func execute(executableURL: URL, arguments: [String], currentDirectoryURL: URL?) -> ProcessResult {
+  public static func run(executableURL: URL, arguments: [String], currentDirectoryURL: URL?) -> ProcessResult {
     let process = Process()
     let standardOutputPipe = Pipe()
     let standardErrorPipe = Pipe()
@@ -36,8 +36,8 @@ extension Process {
     let standardErrorText = String(data: standardErrorData, encoding: String.Encoding.utf8)
     process.waitUntilExit()
 
-    if process.terminationStatus != 0 {
-      print("The following external process call terminated with an error: ")
+    if process.terminationStatus != EXIT_SUCCESS {
+      print("The following external process terminated with an error: ")
       print("Executable: \(executableURL.path)")
       print("Arguments: \(arguments)")
       currentDirectoryURL.map { print("Working directory: \($0)") }

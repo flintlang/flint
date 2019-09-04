@@ -170,7 +170,7 @@ struct Boogie {
   }
 
   static func executeTask(executable: String, arguments: [String], captureOutput: Bool) -> (String?, Int32) {
-    let processResult = Process.execute(executableURL: URL(fileURLWithPath: executable),
+    let processResult = Process.run(executableURL: URL(fileURLWithPath: executable),
                                     arguments: arguments,
                                     currentDirectoryURL: nil)
     return (captureOutput ? processResult.standardOutputResult : nil,

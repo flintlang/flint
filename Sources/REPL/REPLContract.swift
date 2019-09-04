@@ -68,7 +68,7 @@ public class REPLContract {
     let json_event_arg_to_types: String = String(
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
-    Process.execute(executableURL: Configuration.nodeLocation,
+    Process.run(executableURL: Configuration.nodeLocation,
                 arguments: ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
@@ -210,7 +210,7 @@ public class REPLContract {
     }
 
     print("Running function call...")
-    Process.execute(executableURL: Configuration.nodeLocation,
+    Process.run(executableURL: Configuration.nodeLocation,
                 arguments: node_args,
                 currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
@@ -350,7 +350,7 @@ public class REPLContract {
     }
 
     print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
-    let processResult = Process.execute(executableURL: Configuration.nodeLocation,
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
                                     arguments: ["deploy_contract.js", self.abi, self.bytecode, rawString],
                                     currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
     if let addr = processResult.standardOutputResult {
