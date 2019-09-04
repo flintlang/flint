@@ -1,8 +1,0 @@
-{
-  "monoPath" : "/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono",
-  "solcPath" : "/usr/local/bin/solc",
-  "nodePath" : "/usr/local/bin/node",
-  "boogiePath" : "/Users/matteo/.flint/boogie/Binaries/Boogie.exe",
-  "ethereumAddress" : "ADDRESS_NOT_SET",
-  "symbooglixPath" : "/Users/matteo/.flint/symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe"
-}
