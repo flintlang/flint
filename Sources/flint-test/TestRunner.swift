@@ -101,7 +101,6 @@ struct TestRunner {
     let processResult = Process.run(executableURL: Configuration.nodeLocation,
                                     arguments: ["--no-warnings", "test.js"],
                                     currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
-    print(processResult.standardOutputResult)
   }
 
   func exitWithFailure() -> Never {
