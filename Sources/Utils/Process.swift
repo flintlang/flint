@@ -15,13 +15,13 @@ public struct ProcessResult {
 
 extension Process {
   @discardableResult
-  public static func run(executableURL: URL, arguments: [String], currentDirectoryURL: URL?) -> ProcessResult {
+  public static func execute(executableURL: URL, arguments: [String], currentDirectoryURL: URL?) -> ProcessResult {
     let process = Process()
     let standardOutputPipe = Pipe()
     let standardErrorPipe = Pipe()
     process.executableURL = executableURL
     process.arguments = arguments
-    currentDirectoryURL.map { process.currentDirectoryURL = $0}
+    currentDirectoryURL.map { process.currentDirectoryURL = $0 }
     process.standardInput = FileHandle.nullDevice
     process.standardOutput = standardOutputPipe
     process.standardError = standardErrorPipe

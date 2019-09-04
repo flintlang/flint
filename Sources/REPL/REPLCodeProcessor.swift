@@ -151,7 +151,7 @@ public class REPLCodeProcessor {
       exit(0)
     }
 
-    Process.run(executableURL: Configuration.nodeLocation,
+    Process.execute(executableURL: Configuration.nodeLocation,
                 arguments: ["--no-warnings", "gen_address.js"],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
     let addr = try! String(contentsOf: Path.getFullUrl(path: "utils/repl/gen_addr.txt"))

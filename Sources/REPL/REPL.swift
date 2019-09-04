@@ -27,7 +27,7 @@ public class REPL {
       exit(0)
     }
 
-    Process.run(executableURL: Configuration.nodeLocation,
+    Process.execute(executableURL: Configuration.nodeLocation,
                 arguments: ["--no-warnings", "compile_contract.js"],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 

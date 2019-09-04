@@ -172,7 +172,7 @@ public class GasEstimator {
     }
 
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-    let processResult: ProcessResult = Process.run(executableURL: Configuration.nodeLocation,
+    let processResult: ProcessResult = Process.execute(executableURL: Configuration.nodeLocation,
                                                    arguments: ["test.js"],
                                                    currentDirectoryURL: Path.getFullUrl(path: "utils/gasEstimator"))
     if let out = processResult.standardOutputResult {
