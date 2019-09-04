@@ -15,10 +15,11 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
  - [**Getting started**](#getting-started)
    - [Installation](#installation)
-     - [Docker](#docker)
-     - [Installing `solc`, the Solidity compiler](#installing-solc-the-solidity-compiler)
-     - [Binary packages](#binary-packages)
      - [Building from source](#building-from-source)
+     - [Installing `solc`, the Solidity compiler](#installing-solc-the-solidity-compiler)
+     - [Docker](#docker)
+     - [Binary packages](#binary-packages)
+   - [Usage](#usage)
    - [Example](#example)
      - [Creating a simple contract](#creating-a-simple-contract)
      - [Compiling `Counter`](#compiling-counter)
@@ -114,6 +115,58 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
 The first step before using the Flint compiler is to install it. The simplest way is to use [Docker](#docker), though this is currently not recommended, except for casual usage. Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
 
+### Installing `solc`, the Solidity compiler
+
+A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html). You can get the `solc` binary from https://github.com/ethereum/solidity/releases/tag/v0.4.25.
+
+### Building from source
+_This is currently the advised way of installing Flint_
+
+#### Prerequisites
+The following must be installed to build Flint:
+* mono 5.20 or later (C# 7.0)
+* swiftenv
+* clang
+* nodejs npm
+* swiftlint
+
+##### Additionally for testing
+To run the testing libraries, install:
+* truffle 4
+
+##### macOS
+* xcode - preferences/Locations/Command Line tools must not be empty (the default)
+* homebrew - https://brew.sh, update brew if it isn't new with brew update
+* `brew install node` - get node and npm if you don't have them
+* `brew install wget` - get wget if you don't have it
+* `brew cask install mono-mdk`
+* swiftenv, which can be installed as follows
+
+```bash
+git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bashrc
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
+```
+
+#### Install
+Assuming you have all the prerequisites, you should be able to build flint by running
+
+```bash
+git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/.flint
+cd $HOME/.flint
+make release
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+##### Ubuntu 18.04 LTS
+This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
+```
+
 ### Docker
 
 To use Flint in  a [Docker](https://www.docker.com/) container run the following: 
@@ -130,71 +183,25 @@ sudo docker run --privileged -i -t flint_docker
 source ~/.bash_profile
 ```
 
-### Installing `solc`, the Solidity compiler
-
-A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html). You can get the `solc` binary from https://github.com/ethereum/solidity/releases/tag/v0.4.25.
-
-### Binary packages (Currently not mantained)
+### Binary packages
+_Currently not maintained and out of date_
 
 Flint is compatible with macOS and Linux platforms, and can be installed by downloading a built binary directly. Installing `solc` is a pre-requisite for using the binary packages.
 
 The latest releases are available on the [GitHub releases page](https://github.com/flintlang/flint/releases).
 
-### Building from source (Currently mantained)
 
-#### Prerequisites
-The following must be installed to build Flint:
-* mono 5.20 or later (C# 7.0)
-* swiftenv
-* clang
-* nodejs npm
-* swiftlint
+## Usage
 
-##### Additionally for testing
-To run the testing libraries, install:
-* truffle 4
-
-##### On macOS
-* xcode - preferences/Locations/Command Line tools must not be empty (the default)
-* homebrew - https://brew.sh, update brew if it isn't new with brew update
-* `brew install node` - get node and npm if you don't have them
-* `brew install wget` - get wget if you don't have it
-* `brew cask install mono-mdk`
-* swiftenv, which can be installed as follows
-
-```bash
-git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bashrc
-echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
-```
-
-#### Generic installation (macOS or any Linux distro)
-Assuming you have all the prerequisites, you should be able to build flint by running
-```bash
-git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/.flint
-cd $HOME/.flint
-make release
-echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
-source ~/.bashrc
-```
-
-#### Ubuntu Installation
-This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments would need to be made to this process.
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
-```
-
-#### Usage
 To use Flint to compile a Flint contract (in this example `counter.flint`) into Solidity code, run the following code from inside the Flint project folder:
+
 ```bash
 flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
 ```
 
 This will generate a `main.sol` file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
 
-```
+```bash
 flintc --emit-ir --ir-output ./<destination> examples/valid/counter.flint
 ```
 
@@ -267,7 +274,7 @@ Writing unit tests for Solidity (and hence Flint) contracts is possible with the
     var Contract = artifacts.require("./Counter.sol");
     module.exports = (deployer) => deployer.deploy(Contract);
     ```
-  3. Create a `truffle.js` file with the content:
+  1. Create a `truffle.js` file with the content:
     ```javascript
     module.exports = {};
     ```

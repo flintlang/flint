@@ -33,7 +33,7 @@ The documentation (reports and presentations) can be accessed [here](https://git
 
 ## Language Overview
 
-The **Flint Programming Language Guide** [Website](https://docs.flintlang.org), [Local](docs/language_guide.md) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
+The **Flint Programming Language Guide** ([website](https://docs.flintlang.org), [local](docs/language_guide.md)) gives a high-level overview of the language, and helps you getting started with smart contract development in Flint.
 
 Flint is still under active development and proposes a variety of novel _contract-oriented_ features.
 
@@ -151,7 +151,13 @@ In the spirit of reducing vulnerabilities relating to unexpected language semant
 
 ## Installation
 
-The Flint compiler and its dependencies can be installed using Docker:
+For detailed installation instructions, see the [language guide](https://github.com/flintlang/flint/blob/master/docs/language_guide.md#installation), however, to install Flint on Ubuntu 18.04 LTS, you can simply run:
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
+```
+
+which will install Flint into "~/.flint". An older version of the Flint compiler and its dependencies can be installed straight from Docker Hub:
 
 ```bash
 docker pull franklinsch/flint
@@ -169,17 +175,27 @@ The Issues page tracks the tasks which have yet to be completed.
 Flint Improvement Proposals (FIPs) track the design and implementation of larger new features for Flint or the Flint compiler. An example is [FIP-0001: Introduce the Asset trait](proposals/0001-asset-trait.md).
 
 ## Cloning Repo
+_For more information, see [Building from source](docs/language_guide.md#building-from-source) in the language guide_
+
+Assuming you have all the prerequisites, you should be able to build flint by running
 
 ```bash
-git clone --recurse-submodule https://github.com/flintlang/flint
-```
-Or if you cloned normally, make sure to
-```bash
-git submodule init
-git submodule update
+git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/.flint
+cd $HOME/.flint
+make release
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-Make sure you have Mono installed
+
+### Ubuntu 18.04 LTS
+This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
+```
+
+
 
 ## Future plans
 
