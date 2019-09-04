@@ -82,7 +82,7 @@ public struct ContractDeclaration: ASTNode {
 
   // MARK: - ASTNode
   public var description: String {
-    let conformsText = conformances.map ({ $0.description }).joined(separator: ", ")
+    let conformsText = conformances.map({ $0.description }).joined(separator: ", ")
     let stateText = states.map({ $0.description }).joined(separator: ", ")
     let headText = "contract \(identifier): \(conformsText) \(stateText)"
     let membersText = members.map({ $0.description }).joined(separator: "\n")

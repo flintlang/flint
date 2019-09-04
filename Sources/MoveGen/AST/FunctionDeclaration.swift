@@ -145,7 +145,7 @@ extension AST.FunctionDeclaration {
   private func generateAssertion(predicates: [AST.Expression],
                                  functionContext: FunctionContext,
                                  error: Int = 1) -> Statement {
-    let predicate = predicates.reduce (nil) { (checks, check) -> Expression? in
+    let predicate = predicates.reduce(nil) { (checks, check) -> Expression? in
       guard let checks = checks else {
         return check
       }
