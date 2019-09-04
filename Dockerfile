@@ -13,18 +13,16 @@ WORKDIR /root
 RUN git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
 ENV SWIFTENV_ROOT="~/.swiftenv"
 ENV PATH="$SWIFTENV_ROOT/bin:$PATH"
-RUN echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
-RUN source ~/.bash_profile
-RUN cat PATH
+RUN echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
+RUN source ~/.bashrc
 RUN swiftenv install 5.0.2
 RUN swiftenv install 4.2
 RUN git clone https://github.com/realm/SwiftLint.git swiftlint
 WORKDIR /tmp/swiftlint
 RUN swift build -c release --static-swift-stdlib
 ENV PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:${PATH}"
-COPY . /flint
-WORKDIR /flint
+COPY . ~/.flint
+WORKDIR ~/.flint
 RUN npm install
 RUN npm install -g truffle@4
 RUN swift package update
-ENV FLINTPATH="/flint"

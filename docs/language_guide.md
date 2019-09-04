@@ -112,11 +112,11 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
 ## Installation
 
-The first step before using the Flint compiler is to install it. The simplest way is to [use Docker](#docker). Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
+The first step before using the Flint compiler is to install it. The simplest way is to use [Docker](#docker), though this is currently not recommended, except for casual usage. Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
 
 ### Docker
 
-The Flint compiler and its dependencies can be installed using [Docker](https://www.docker.com/). To run the environment without doing any package installations:
+To use Flint in  a [Docker](https://www.docker.com/) container run the following: 
 
 ```bash
 git clone --recurse-submodule https://github.com/flintlang/flint.git
@@ -132,15 +132,16 @@ source ~/.bash_profile
 
 ### Installing `solc`, the Solidity compiler
 
-A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html).
+A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html). You can get the `solc` binary from https://github.com/ethereum/solidity/releases/tag/v0.4.25.
 
-### Binary packages
+### Binary packages (Currently not mantained)
 
 Flint is compatible with macOS and Linux platforms, and can be installed by downloading a built binary directly. Installing `solc` is a pre-requisite for using the binary packages.
 
 The latest releases are available on the [GitHub releases page](https://github.com/flintlang/flint/releases).
 
-### Building from source
+### Building from source (Currently mantained)
+
 #### Prerequisites
 The following must be installed to build Flint:
 * mono 5.20 or later (C# 7.0)
@@ -159,58 +160,39 @@ To run the testing libraries, install:
 * `brew install node` - get node and npm if you don't have them
 * `brew install wget` - get wget if you don't have it
 * `brew cask install mono-mdk`
+* swiftenv, which can be installed as follows
 
 ```bash
 git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
-echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bashrc
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
 ```
 
-##### On Ubuntu 18.04 LTS
-This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments will need to be made to this process.
+#### Generic installation (macOS or any Linux distro)
+Assuming you have all the prerequisites, you should be able to build flint by running
 ```bash
-sudo apt install nodejs npm clang
-
-## Mono - https://www.mono-project.com/download/stable/
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" \
-  | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-sudo apt update
-sudo apt install mono-devel
-
-## Swiftenv - https://swiftenv.fuller.li/en/latest/installation.html
-git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
-echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/.flint
+cd $HOME/.flint
+make release
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-#### Installation
+#### Ubuntu Installation
+This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments would need to be made to this process.
 
-In your terminal, run the following commands
 ```bash
-## Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodule https://github.com/flintlang/flint.git
-cd flint
-## No need iff swiftenv has already installed relevent swift version or not using swiftenv
-swiftenv install
-swift package update
-## Create a FLINTPATH for the compiler to run (this may be removed in a future version)
-echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
-source ~/.bash_profile
-
-make
+bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
 ```
 
 #### Usage
 To use Flint to compile a Flint contract (in this example `counter.flint`) into Solidity code, run the following code from inside the Flint project folder:
 ```bash
-export PATH=$FLINTPATH/.build/debug:$PATH
 flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
 ```
 
-This will generate a main.sol file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
+This will generate a `main.sol` file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
 
 ```
 flintc --emit-ir --ir-output ./<destination> examples/valid/counter.flint
