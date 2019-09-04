@@ -24,16 +24,15 @@ fi
 cd $HOME
 
 ## Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodule https://github.com/flintlang/flint.git ".flint"
-cd ".flint"
+git clone --recurse-submodule https://github.com/flintlang/flint.git "~/.flint"
+cd "~/.flint"
+npm install
 ## No need iff swiftenv has already installed relevent swift version or not using swiftenv
 swiftenv install
 swift package update
-## Create a FLINTPATH for the compiler to run (this may be removed in a future version)
-echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bashrc
 
 make release
 
 mkdir bash
-echo "export PATH=$(pwd)/.build/release/:$PATH" >> ~/.bashrc
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc

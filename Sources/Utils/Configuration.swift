@@ -69,6 +69,7 @@ public class Configuration {
     let jsonConfigurationData: Data = try! encoder.encode(defaultConfigurationFile)
     let jsonText = String(data: jsonConfigurationData, encoding: .utf8)!
       .replacingOccurrences(of: "\\/", with: "/") // Remove escaping backslashes in the config file...not very elegant
+      .appending("\n")
     try! jsonText.write(to: file, atomically: true, encoding: .utf8)
   }
 
