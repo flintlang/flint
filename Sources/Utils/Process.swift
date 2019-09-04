@@ -37,9 +37,11 @@ extension Process {
     process.waitUntilExit()
 
     if process.terminationStatus != EXIT_SUCCESS {
-      print("The following external process terminated with an error: ")
-      print("Executable: \(executableURL.path)")
-      print("Arguments: \(arguments)")
+      print("""
+      The following external process terminated with an error:
+      Executable: \(executableURL.path)
+      Arguments: \(arguments)
+      """)
       currentDirectoryURL.map { print("Working directory: \($0)") }
       standardOutputText.map { print("stdout: \($0)") }
       standardErrorText.map { print("stderr: \($0)") }

@@ -90,7 +90,7 @@ struct TestRunner {
   }
 
   func genCovReport(contract_name: String, contract_file_path: String) throws {
-    Process.execute(executableURL: Configuration.nodeLocation,
+    Process.run(executableURL: Configuration.nodeLocation,
                 arguments: ["--no-warnings", "gen_cov_report.js", contract_name, contract_file_path],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/coverage"))
   }
@@ -98,7 +98,7 @@ struct TestRunner {
   func runNode(jsTestFile: String) throws {
     let outputfile = Path.getFullUrl(path: "utils/testRunner/test.js")
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-    let processResult = Process.execute(executableURL: Configuration.nodeLocation,
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
                                     arguments: ["--no-warnings", "test.js"],
                                     currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
   }
