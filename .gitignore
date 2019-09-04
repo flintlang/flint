@@ -15,6 +15,7 @@ venv
 file*
 solc-static-linux
 libra
+/*.bpl
 
 /*.mvir
 /*.flint
