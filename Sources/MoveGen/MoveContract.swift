@@ -95,7 +95,7 @@ struct MoveContract {
         \#(members.indented(by: 4))
       }
       \#(structs.indented(by: 2))
-           
+
       \#(initializerBody.indented(by: 2))
 
       //////////////////////////////////////

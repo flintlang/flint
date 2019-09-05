@@ -122,7 +122,7 @@ extension MovePreprocessor {
       return ASTPassResult(element: externalCall, diagnostics: [
             Diagnostic(severity: .error,
                        sourceLocation: externalCall.sourceLocation,
-                       message: "Insufficient environment information to deduce external call trait name") 
+                       message: "Insufficient environment information to deduce external call trait name")
       ], passContext: passContext)
     }
     // Update trait name for external calls

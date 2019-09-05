@@ -129,7 +129,7 @@ struct MoveRuntimeFunctionDeclaration {
         if (move(zero) != 0x0) {
           assert(false, 9001);
         }
-        return T {
+        return Libra {
           coin: LibraCoin.zero()
         };
       }
@@ -143,7 +143,7 @@ struct MoveRuntimeFunctionDeclaration {
       public Libra$withdraw(this: &mut Self.Libra, amount: u64): Self.Libra {
         let coin: &mut LibraCoin.T;
         coin = &mut move(this).coin;
-        return T {
+        return Libra {
           coin: LibraCoin.withdraw(move(coin), move(amount))
         };
       }
