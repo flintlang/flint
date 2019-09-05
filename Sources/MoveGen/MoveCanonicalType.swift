@@ -106,6 +106,15 @@ indirect enum CanonicalType: CustomStringConvertible {
     }
   }
 
+  public var isResource: Bool {
+    switch self {
+    case .resource, .external(_, .resource):
+      return true
+    default:
+      return false
+    }
+  }
+
   public func render(functionContext: FunctionContext) -> MoveIR.`Type` {
     switch self {
     case .address: return .address
