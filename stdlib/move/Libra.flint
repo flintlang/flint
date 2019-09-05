@@ -1,15 +1,15 @@
 @resource
-external trait Libra {
+external trait FlintLibraInternalWrapper_ {
   public func getValue() -> uint64
-  public func withdraw(amount: uint64) -> Libra
-  public func transfer(to: inout Libra, value: uint64)
+  public func withdraw(amount: uint64) -> FlintLibraInternalWrapper_
+  public func transfer(to: inout FlintLibraInternalWrapper_, value: uint64)
 }
 
 struct LibraCoin {
-  visible var libra: Libra
+  visible var libra: FlintLibraInternalWrapper_
 
   public init() {
-    libra = Libra(0x0)
+    libra = FlintLibraInternalWrapper_(0x0)
   }
 
   public func balance() -> Int {

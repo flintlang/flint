@@ -29,7 +29,7 @@ struct MoveRuntimeTypeDeclaration {
   // See MoveRuntimeFunctionDeclaration for resource methods
   static let libra =
       """
-      resource Libra {
+      resource FlintLibraInternalWrapper_ {
         coin: LibraCoin.T
       }
       """

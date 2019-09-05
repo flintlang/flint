@@ -132,30 +132,32 @@ struct MoveRuntimeFunctionDeclaration {
 
   static let libra =
       """
-      public Libra$new$Address(zero: address): Self.Libra {
+      public FlintLibraInternalWrapper_$new$Address(zero: address): Self.FlintLibraInternalWrapper_ {
         if (move(zero) != 0x0) {
           assert(false, 9001);
         }
-        return Libra {
+        return FlintLibraInternalWrapper_ {
           coin: LibraCoin.zero()
         };
       }
 
-      public Libra$getValue(this: &mut Self.Libra): u64 {
+      public FlintLibraInternalWrapper_$getValue(this: &mut Self.FlintLibraInternalWrapper_): u64 {
         let coin: &LibraCoin.T;
         coin = &move(this).coin;
         return LibraCoin.value(move(coin));
       }
 
-      public Libra$withdraw(this: &mut Self.Libra, amount: u64): Self.Libra {
+      public FlintLibraInternalWrapper_$withdraw(this: &mut Self.FlintLibraInternalWrapper_, \
+      amount: u64): Self.FlintLibraInternalWrapper_ {
         let coin: &mut LibraCoin.T;
         coin = &mut move(this).coin;
-        return Libra {
+        return FlintLibraInternalWrapper_ {
           coin: LibraCoin.withdraw(move(coin), move(amount))
         };
       }
 
-      public Libra$transfer(this: &mut Self.Libra, other: &mut Self.Libra, amount: u64) {
+      public FlintLibraInternalWrapper_$transfer(this: &mut Self.FlintLibraInternalWrapper_, \
+      other: &mut Self.FlintLibraInternalWrapper_, amount: u64) {
         let coin: &mut LibraCoin.T;
         let other_coin: &mut LibraCoin.T;
         let temporary: LibraCoin.T;

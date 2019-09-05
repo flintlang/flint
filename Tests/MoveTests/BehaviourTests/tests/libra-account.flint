@@ -11,7 +11,7 @@ Account :: sender <- (any) {
     return value.balance()
   }
 
-  func transfer(to: inout LibraCoin) mutates (value) {
-    value.transfer(to: &to, amount: 5)
+  func transfer(to: inout LibraCoin, n: Int) mutates (value) {
+    value.transfer(to: &to, amount: n)
   }
 }
