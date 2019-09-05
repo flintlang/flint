@@ -21,17 +21,7 @@ extension TraitDeclaration {
     return decorators.contains(where: { $0.identifier.name == "module" })
   }
 
-  var associatedModule: String? {
-    guard let argument = decorators.first(where: { $0.identifier.name == "associated" })?.arguments[0],
-          let name = argument.identifier?.name,
-          name == "",
-          case .identifier(let identifier) = argument.expression else {
-      return nil
-    }
-    return identifier.name
-  }
-
   var isStruct: Bool {
-    return decorators.contains(where: { $0.identifier.name == "data" })
+    return decorators.contains(where: { $0.identifier.name == "data" || $0.identifier.name == "resource" })
   }
 }

@@ -16,9 +16,16 @@ extension RawType {
     if case .userDefinedType(let typeIdentifier) = internalRawType {
       return environment.isExternalTraitDeclared(typeIdentifier)
           && !(environment.types[typeIdentifier].flatMap { (information: TypeInformation) in
-        information.decorators?.contains(where: { $0.identifier.name == "data" })
+        information.isExternalStruct
       } ?? false)
     }
     return false
+  }
+}
+
+extension TypeInformation {
+  var isExternalStruct: Bool {
+    return decorators?
+        .contains(where: { $0.identifier.name == "data" || $0.identifier.name == "resource" }) ?? false
   }
 }

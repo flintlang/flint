@@ -1,6 +1,5 @@
-@module(address: 0x00) // 0x00 is replaced by `Transaction.` by the test suite
 @resource
-@data
+@module(address: 0x00) // 0x00 is replaced by `Transaction.` by the test suite
 external trait Libra {
   public func getValue() -> uint64
   public func withdraw(amount: uint64) -> Libra

@@ -42,7 +42,7 @@ struct MoveFunctionCall {
 
     if environment.isExternalTraitInitializer(functionCall: lookupCall),
        let trait: TypeInformation = environment.types[lookupCall.identifier.name] {
-      if trait.decorators?.contains(where: { $0.identifier.name == "data" }) ?? false {
+      if trait.isExternalStruct {
         moduleName = lookupCall.identifier.name
         callName = "new"
       } else {

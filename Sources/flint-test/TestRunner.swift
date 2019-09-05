@@ -98,9 +98,9 @@ struct TestRunner {
   func runNode(jsTestFile: String) throws {
     let outputfile = Path.getFullUrl(path: "utils/testRunner/test.js")
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-    let processResult = Process.run(executableURL: Configuration.nodeLocation,
-                                    arguments: ["--no-warnings", "test.js"],
-                                    currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["--no-warnings", "test.js"],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
   }
 
   func exitWithFailure() -> Never {
