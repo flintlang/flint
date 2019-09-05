@@ -114,11 +114,15 @@ class MoveIRProgramme(Programme):
 
 
 class FlintProgramme(Programme):
+    @property
+    def using_stdlib(self):
+        return "//! disable stdlib" not in self.contents()
+
     def compile(self) -> MoveIRProgramme:
         process = subprocess.Popen([
             f"./.build/release/flintc",
             "--target", "move", "--emit-ir", "--skip-verifier", str(self.path)
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ] + (["--no-stdlib"] if not self.using_stdlib else []), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = process.stdout.read() + process.stderr.read()
         if b"Produced binary" not in output:
             raise FlintCompilationError(output.decode("utf8"))

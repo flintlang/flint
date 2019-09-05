@@ -45,7 +45,7 @@ struct MoveContract {
       declaration.moduleAddress.map {
         .`import`(ModuleImport(name: declaration.identifier.name, address: $0))
       }
-    } + MoveRuntimeType.imports
+    } + MoveRuntimeType.allImports
     let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
 
     // Generate code for each function in the contract.

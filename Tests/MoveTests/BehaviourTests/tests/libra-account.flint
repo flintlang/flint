@@ -1,0 +1,17 @@
+contract Account {
+  visible var value: LibraCoin
+}
+
+Account :: sender <- (any) {
+  public init() {
+    value = LibraCoin()
+  }
+
+  public func getBalance() -> Int {
+    return value.balance()
+  }
+
+  func transfer(to: inout LibraCoin) mutates (value) {
+    value.transfer(to: &to, amount: 5)
+  }
+}

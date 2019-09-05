@@ -312,7 +312,22 @@ extension MovePreprocessor {
     var borrowLocal = false
     if case .inoutExpression(let inOut) = functionArgument.expression {
       expression = inOut.expression
-      borrowLocal = true
+      if let environment = passContext.environment,
+         let scopeContext = passContext.scopeContext,
+         let enclosingType = passContext.enclosingTypeIdentifier?.name {
+        let type = environment.type(
+             of: expression,
+             enclosingType: enclosingType,
+             typeStates: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+             callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
+             scopeContext: scopeContext
+        )
+        if !type.isCurrencyType && !type.isExternalResource(environment: environment) {
+          borrowLocal = true
+        }
+      } else { // If we can't deduce the type, expect it to be an external type
+        borrowLocal = true
+      }
     } else {
       expression = functionArgument.expression
     }

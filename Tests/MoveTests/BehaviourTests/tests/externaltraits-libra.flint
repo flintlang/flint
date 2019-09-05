@@ -1,3 +1,4 @@
+//! disable stdlib
 @resource
 @module(address: 0x00) // 0x00 is replaced by `Transaction.` by the test suite
 external trait Libra {

@@ -45,16 +45,23 @@ enum MoveRuntimeFunction {
     return .functionCall(FunctionCall(Identifiers.revertIfGreater.mangled, value, max))
   }
 
-  static let allDeclarations: [String] = [
+  static let declarations: [String] = [
     // Not currently available as no money yet: MoveRuntimeFunctionDeclaration.send,
     //MoveRuntimeFunctionDeclaration.send,
     //MoveRuntimeFunctionDeclaration.withdrawAll,
     //MoveRuntimeFunctionDeclaration.transfer,
     MoveRuntimeFunctionDeclaration.fatalError,
     MoveRuntimeFunctionDeclaration.power,
-    MoveRuntimeFunctionDeclaration.revertIfGreater,
+    MoveRuntimeFunctionDeclaration.revertIfGreater
+  ]
+  static let declarationsWithStdlib: [String] = [
     MoveRuntimeFunctionDeclaration.libra
   ]
+  static var allDeclarations: [String] = declarations
+
+  static func includeStdlib() {
+    allDeclarations += declarationsWithStdlib
+  }
 }
 
 struct MoveRuntimeFunctionDeclaration {
