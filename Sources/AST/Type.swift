@@ -54,6 +54,7 @@ public indirect enum RawType: Equatable, Hashable {
 
   public enum StdlibType: RawTypeIdentifier {
     case wei = "Wei"
+    case libraCoin = "LibraCoin"
   }
 
   public enum ExternalType: RawTypeIdentifier {
@@ -256,7 +257,8 @@ public indirect enum RawType: Equatable, Hashable {
     }
 
     if case .userDefinedType(let typeIdentifier) = actualType,
-      RawType.StdlibType(rawValue: typeIdentifier) == .wei {
+      RawType.StdlibType(rawValue: typeIdentifier) == .wei
+        || RawType.StdlibType(rawValue: typeIdentifier) == .libraCoin {
       return true
     }
     return false

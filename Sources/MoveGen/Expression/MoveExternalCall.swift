@@ -2,11 +2,11 @@
 //  MoveExternalCall.swift
 //  MoveGen
 //
-//  Created by Yicheng Luo on 11/14/18.
-//
+
 import AST
 import Lexer
 import MoveIR
+import Diagnostic
 
 /// Generates code for an external call.
 struct MoveExternalCall {
@@ -37,9 +37,19 @@ struct MoveExternalCall {
 
     switch externalCall.mode {
     case .normal:
-      fatalError("normal extern call mode not implemented")
+      Diagnostics.add(Diagnostic(
+          severity: .error,
+          sourceLocation: externalCall.sourceLocation,
+          message: "call not yet implemented"
+      ))
+      Diagnostics.displayAndExit()
     case .returnsGracefullyOptional:
-      fatalError("call? not implemented")
+      Diagnostics.add(Diagnostic(
+          severity: .error,
+          sourceLocation: externalCall.sourceLocation,
+          message: "call? not yet implemented"
+      ))
+      Diagnostics.displayAndExit()
     case .isForced:
       if let name = externalCall.externalTraitName,
          let type: TypeInformation = functionContext.environment.types[name],

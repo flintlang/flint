@@ -1191,6 +1191,8 @@ class BoogieTranslator {
       switch sType {
       case .wei:
         return .int
+      case .libraCoin:
+        return .userDefined("LibraCoin")
       }
     }
 

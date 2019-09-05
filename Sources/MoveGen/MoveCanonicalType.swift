@@ -40,26 +40,32 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .userDefinedType(let identifier):
       if let environment = environment,
          CanonicalType.isResourceType(rawType, identifier: identifier, environment: environment) {
+        // If it's inferred to be a resource
         self = .resource(identifier)
       } else if let environment = environment,
                 rawType.isExternalContract(environment: environment) {
+        // If it's an external contract
         self = .address
       } else if let environment = environment,
                 rawType.isExternalModule(environment: environment),
                 let type: TypeInformation = environment.types[identifier] {
         if type.decorators?.contains(where: { $0.identifier.name == "resource" }) ?? false {
+          // If it's an external resource
           self = .external(identifier, .resource("T"))
         } else {
+          // If it's an external struct
           self = .external(identifier, .`struct`("T"))
         }
       } else if let environment = environment,
               environment.isEnumDeclared(identifier),
               let type: TypeInformation = environment.types[identifier],
               let value: AST.Expression = type.properties.values.first?.property.value {
+        // If it's an enum
         self = CanonicalType(from: environment.type(of: value,
                                                     enclosingType: identifier,
                                                     scopeContext: ScopeContext()))!
       } else {
+        // Otherwise
         self = .struct(identifier)
       }
     case .inoutType(let rawType):
