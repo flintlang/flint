@@ -5,7 +5,7 @@ external trait FlintLibraInternalWrapper_ {
   public func transfer(to: inout FlintLibraInternalWrapper_, value: uint64)
 }
 
-struct LibraCoin {
+struct Libra {
   visible var libra: FlintLibraInternalWrapper_
 
   public init() {
@@ -16,7 +16,7 @@ struct LibraCoin {
     return (call! libra.getValue()) as! Int
   }
 
-  func transfer(to: inout LibraCoin, amount: Int) mutates (value) {
+  func transfer(to: inout Libra, amount: Int) mutates (value) {
     call! libra.transfer(to: &to.libra, value: (amount as! uint64))
   }
 }

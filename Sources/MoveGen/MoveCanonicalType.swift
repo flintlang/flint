@@ -123,8 +123,8 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .bytearray: return .bytearray
     case .`struct`(let name): return .`struct`(name: "Self.\(name)")
     case .resource(let name):
-      if name == "LibraCoin" { // FIXME make general in some way
-        return .resource(name: "Self.LibraCoin")
+      if name == "Libra" { // FIXME make general in some way
+        return .resource(name: "Self.Libra")
       } else if functionContext.enclosingTypeName == name {
         return .resource(name: "Self.T")
       }

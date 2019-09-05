@@ -1,5 +1,5 @@
 import Transaction.Account;
-import Transaction.Libra;
+import Transaction.Coin;
 
 main () {
   _ = get_txn_sender();
@@ -7,7 +7,7 @@ main () {
 }
 
 //! provide module
-module Libra {
+module Coin {
   import 0x0.LibraCoin;
 
   resource T {

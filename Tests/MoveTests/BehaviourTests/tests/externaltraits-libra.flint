@@ -1,26 +1,27 @@
 //! disable stdlib
+
 @resource
 @module(address: 0x00) // 0x00 is replaced by `Transaction.` by the test suite
-external trait Libra {
+external trait Coin {
   public func getValue() -> uint64
-  public func withdraw(amount: uint64) -> Libra
-  public func transfer(to: inout Libra, value: uint64)
+  public func withdraw(amount: uint64) -> Coin
+  public func transfer(to: inout Coin, value: uint64)
 }
 
 contract Account {
-  visible var value: Libra
+  visible var value: Coin
 }
 
 Account :: sender <- (any) {
   public init() {
-    value = Libra(0x0)
+    value = Coin(0x0)
   }
 
   public func balance() -> Int {
     return (call! value.getValue()) as! Int
   }
 
-  func transfer(to: inout Libra, amount: Int) mutates (value) {
+  func transfer(to: inout Coin, amount: Int) mutates (value) {
     call! value.transfer(to: &to, value: (amount as! uint64))
   }
 }
