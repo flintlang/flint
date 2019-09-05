@@ -30,7 +30,7 @@ func main() {
   }.run()
 }
 
-func main_d() throws {
+func mainTest() throws {
   let fileName = Path.getFullUrl(path: "counter_ether.tflint").path
   let inputFiles = [URL(fileURLWithPath: fileName)]
   let sourceCode = try String(contentsOf: inputFiles[0])
@@ -51,4 +51,4 @@ func main_d() throws {
 }
 
 main()
-//try main_d()
+//try mainTest()

@@ -67,7 +67,7 @@ struct TestRunner {
         ast = cv.instrument(ast: ast)
       }
 
-      try Compiler.compile_for_test(config: config, in_ast: ast)
+      try Compiler.compileForTest(config: config, inAst: ast)
 
     } catch let err {
       print(err)

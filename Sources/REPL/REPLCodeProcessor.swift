@@ -11,33 +11,33 @@ public class REPLCodeProcessor {
     self.repl = repl
   }
 
-  private func process_equal_expr(expr: BinaryExpression) throws -> (String, String)? {
+  private func processEqualExpression(expression: BinaryExpression) throws -> (String, String)? {
 
     var varName: String = ""
     var varType: String = ""
     var varConst: Bool = false
     var newVar: Bool = true
 
-    switch expr.lhs {
-    case .variableDeclaration(let vdec):
-      varName = vdec.identifier.name
-      varType = vdec.type.name
-      varConst = vdec.isConstant
-    case .identifier(let i):
-      guard let rVar = repl.queryVariableMap(variable: i.name) else {
-        print("Variable \(i.name) not in scope".lightRed.bold)
+    switch expression.lhs {
+    case .variableDeclaration(let variableDeclaration):
+      varName = variableDeclaration.identifier.name
+      varType = variableDeclaration.type.name
+      varConst = variableDeclaration.isConstant
+    case .identifier(let identifier):
+      guard let replVar = repl.queryVariableMap(variable: identifier.name) else {
+        print("Variable \(identifier.name) not in scope".lightRed.bold)
         return nil
       }
-      varName = rVar.variableName
-      varType = rVar.variableType
-      varConst = rVar.varConstant
+      varName = replVar.variableName
+      varType = replVar.variableType
+      varConst = replVar.varConstant
       newVar = false
     default:
-      print("Invalid expression found on the LHS of an equal \(expr.rhs.description)".lightRed.bold)
+      print("Invalid expression found on the LHS of an equal \(expression.rhs.description)".lightRed.bold)
       return nil
     }
 
-    if let (res, resType) = try process_expr(expr: expr.rhs) {
+    if let (res, resType) = try processExpression(expression: expression.rhs) {
 
       if resType != varType {
         print("Mismatch of types \(resType) != \(varType)".lightRed.bold)
@@ -49,49 +49,51 @@ public class REPLCodeProcessor {
         return nil
       }
 
-      let replVar = REPLVariable(variableName: varName, variableType: varType, variableValue: res, varConstant: varConst
-      )
+      let replVar = REPLVariable(variableName: varName,
+                                 variableType: varType,
+                                 variableValue: res,
+                                 varConstant: varConst)
       repl.addVarToMap(replVar: replVar, name: varName)
       return (res, varType)
     } else {
-      print("Invalid expression found on RHS of equal \(expr.rhs.description)".lightRed.bold)
+      print("Invalid expression found on RHS of equal \(expression.rhs.description)".lightRed.bold)
     }
     return nil
   }
 
-  private func process_dot_expr(expr: BinaryExpression) -> (String, String)? {
-    var rC: REPLContract?
+  private func processDotExpression(expression: BinaryExpression) -> (String, String)? {
+    var optionalReplContract: REPLContract?
     var variableName: String = ""
 
-    switch expr.lhs {
-    case .identifier(let i):
-      if let rVar = self.repl.queryVariableMap(variable: i.name) {
-        if let rContract = self.repl.queryContractInfo(contractName: rVar.variableType) {
-          rC = rContract
-          variableName = i.name
+    switch expression.lhs {
+    case .identifier(let identifier):
+      if let replVariable = self.repl.queryVariableMap(variable: identifier.name) {
+        if let replContract = self.repl.queryContractInfo(contractName: replVariable.variableType) {
+          optionalReplContract = replContract
+          variableName = identifier.name
         } else {
           print("Variable is not mapped to a contract".lightRed.bold)
           return nil
         }
       } else {
-        print("Variable \(i.name) not in scope in dot expr".lightRed.bold)
+        print("Variable \(identifier.name) not in scope in dot expr".lightRed.bold)
         return nil
       }
     default:
       print("Only identifiers are allowed on the LHS of a dot expression".lightRed.bold)
     }
 
-    switch expr.rhs {
-    case .functionCall(let fCall):
-      if let res = rC?.run(fCall: fCall, instance: variableName) {
-        let resType = rC!.getResultType(fnc: fCall.identifier.name)
+    switch expression.rhs {
+    case .functionCall(let functionCall):
+      if let res = optionalReplContract?.run(functionCall: functionCall, instance: variableName) {
+        let resType = optionalReplContract!.getResultType(fnc: functionCall.identifier.name)
         return (res, resType)
       }
 
-    case .identifier(let i):
-      let name = i.name
-      if rC!.getEventInfo(eventName: name) != nil {
-        if let res = rC!.getEventLogs(instance: variableName, eventName: name) {
+    case .identifier(let identifier):
+      let name = identifier.name
+      if optionalReplContract!.getEventInfo(eventName: name) != nil {
+        if let res = optionalReplContract!.getEventLogs(instance: variableName, eventName: name) {
           return (res, "nil")
         } else {
           print("Could not process logs for event \(name)".lightRed.bold)
@@ -107,16 +109,16 @@ public class REPLCodeProcessor {
     return nil
   }
 
-  private func tryDeploy(binExp: BinaryExpression) throws -> Bool {
+  private func tryDeploy(binaryExpression: BinaryExpression) throws -> Bool {
     var typeName = ""
     var variableName = ""
 
-    switch binExp.opToken {
+    switch binaryExpression.opToken {
     case .equal:
-      switch binExp.lhs {
-      case .variableDeclaration(let vdec):
-        typeName = vdec.type.name
-        variableName = vdec.identifier.name
+      switch binaryExpression.lhs {
+      case .variableDeclaration(let variableDeclaration):
+        typeName = variableDeclaration.type.name
+        variableName = variableDeclaration.identifier.name
       default:
         break
       }
@@ -125,14 +127,16 @@ public class REPLCodeProcessor {
       break
     }
 
-    if let rC = self.repl.queryContractInfo(contractName: typeName) {
-      if let addr = try rC.deploy(expr: binExp, variable_name: variableName) {
+    if let replContract = self.repl.queryContractInfo(contractName: typeName) {
+      if let addr = try replContract.deploy(expression: binaryExpression, variableName: variableName) {
 
         if addr == "ERROR" {
           return true
         }
 
-        let replVar = REPLVariable(variableName: variableName, variableType: rC.getContractName(), variableValue: addr,
+        let replVar = REPLVariable(variableName: variableName,
+                                   variableType: replContract.getContractName(),
+                                   variableValue: addr,
                                    varConstant: true)
         repl.addVarToMap(replVar: replVar, name: variableName)
         return true
@@ -143,7 +147,7 @@ public class REPLCodeProcessor {
   }
 
   private func getNewAddress() -> String {
-    let fileManager = FileManager.init()
+    let fileManager = FileManager()
     let path = Path.getFullUrl(path: "utils/repl/gen_address.js").path
 
     if !(fileManager.fileExists(atPath: path)) {
@@ -155,49 +159,48 @@ public class REPLCodeProcessor {
                 arguments: ["--no-warnings", "gen_address.js"],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
     let addr = try! String(contentsOf: Path.getFullUrl(path: "utils/repl/gen_addr.txt"))
-
     return addr
 
   }
 
-  public func process_expr(expr: Expression) throws -> (String, String)? {
-    switch expr {
-    case .binaryExpression(let binExp):
+  public func processExpression(expression: Expression) throws -> (String, String)? {
+    switch expression {
+    case .binaryExpression(let binaryExpression):
 
       // returns true if this was a deployment statement
-      if try tryDeploy(binExp: binExp) {
+      if try tryDeploy(binaryExpression: binaryExpression) {
         return nil
       }
 
-      if let (res, type) = try process_binary_expr(expr: binExp) {
+      if let (res, type) = try processBinaryExpression(expression: binaryExpression) {
         return (res, type)
       }
 
-    case .identifier(let i):
-      if let rVar = repl.queryVariableMap(variable: i.name) {
-        return (rVar.variableValue, rVar.variableType)
+    case .identifier(let identifier):
+      if let replVar = repl.queryVariableMap(variable: identifier.name) {
+        return (replVar.variableValue, replVar.variableType)
       } else {
-        print("Variable \(i.name) not in scope".lightRed.bold)
+        print("Variable \(identifier.name) not in scope".lightRed.bold)
       }
-    case .functionCall(let fc):
-      if fc.identifier.name == "newAddress" {
+    case .functionCall(let functionCall):
+      if functionCall.identifier.name == "newAddress" {
         let addr = getNewAddress()
 
         return (addr, "Address")
-      } else if fc.identifier.name == "setAddr" {
-        if fc.arguments.count != 1 {
+      } else if functionCall.identifier.name == "setAddr" {
+        if functionCall.arguments.count != 1 {
           print("Invalid number of arugments passed to setAddr".lightRed.bold)
         }
 
-        switch fc.arguments[0].expression {
-        case .identifier(let i):
-          print(i)
-          if let val = self.repl.queryVariableMap(variable: i.name) {
+        switch functionCall.arguments[0].expression {
+        case .identifier(let identifier):
+          print(identifier)
+          if let val = self.repl.queryVariableMap(variable: identifier.name) {
             let value = val.variableValue
             print(value)
             self.repl.transactionAddress = value
           } else {
-            print("Variable \(i.description) is not in scope".lightRed.bold)
+            print("Variable \(identifier.description) is not in scope".lightRed.bold)
             return nil
           }
         case .literal(let lit):
@@ -216,11 +219,11 @@ public class REPLCodeProcessor {
           print("Invalid expression passed to setAddr".lightRed.bold)
         }
 
-      } else if fc.identifier.name == "unsetAddr" {
+      } else if functionCall.identifier.name == "unsetAddr" {
         self.repl.transactionAddress = ""
 
       } else {
-        print("Function \(fc.identifier.name) not in scope".lightRed.bold)
+        print("Function \(functionCall.identifier.name) not in scope".lightRed.bold)
       }
     case .literal(let li):
       switch li.kind {
@@ -254,14 +257,14 @@ public class REPLCodeProcessor {
     return nil
   }
 
-  private func process_arithmetic_expr(expr: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
+  private func processArithmeticExpression(expression: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
 
-    guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
+    guard let (e1, e1Type) = try processExpression(expression: expression.lhs) else {
       print("Could not process arithmetic expression".lightRed.bold)
       return nil
     }
 
-    guard let (e2, e2Type) = try process_expr(expr: expr.rhs) else {
+    guard let (e2, e2Type) = try processExpression(expression: expression.rhs) else {
       print("Could not process arithmetic expression".lightRed.bold)
       return nil
     }
@@ -297,14 +300,14 @@ public class REPLCodeProcessor {
 
   }
 
-  private func process_logical_expr(expr: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
+  private func processLogicalExpression(expression: BinaryExpression, op: REPLOperator) throws -> (String, String)? {
 
-    guard let (e1, e1Type) = try process_expr(expr: expr.lhs) else {
+    guard let (e1, e1Type) = try processExpression(expression: expression.lhs) else {
       print("Could not process logical expression".lightRed.bold)
       return nil
     }
 
-    guard let (e2, e2Type) = try process_expr(expr: expr.rhs) else {
+    guard let (e2, e2Type) = try processExpression(expression: expression.rhs) else {
       print("Could not process logical expression".lightRed.bold)
       return nil
     }
@@ -337,30 +340,30 @@ public class REPLCodeProcessor {
 
   }
 
-  public func process_binary_expr(expr: BinaryExpression) throws -> (String, String)? {
-    switch expr.opToken {
+  public func processBinaryExpression(expression: BinaryExpression) throws -> (String, String)? {
+    switch expression.opToken {
     case .dot:
-      return process_dot_expr(expr: expr)
+      return processDotExpression(expression: expression)
     case .equal:
-      return try process_equal_expr(expr: expr)
+      return try processEqualExpression(expression: expression)
     case .plus:
-      return try process_arithmetic_expr(expr: expr, op: .add)
+      return try processArithmeticExpression(expression: expression, op: .add)
     case .minus:
-      return try process_arithmetic_expr(expr: expr, op: .minus)
+      return try processArithmeticExpression(expression: expression, op: .minus)
     case .divide:
-      return try process_arithmetic_expr(expr: expr, op: .divide)
+      return try processArithmeticExpression(expression: expression, op: .divide)
     case .power:
-      return try process_arithmetic_expr(expr: expr, op: .power)
+      return try processArithmeticExpression(expression: expression, op: .power)
     case .and:
-      return try process_logical_expr(expr: expr, op: .and)
+      return try processLogicalExpression(expression: expression, op: .and)
     case .or:
-      return try process_logical_expr(expr: expr, op: .or)
+      return try processLogicalExpression(expression: expression, op: .or)
     case .notEqual:
       print("not equal")
     case .doubleEqual:
       print("double equal")
     default:
-      print("This expression is not supported: \(expr.description)".lightRed.bold)
+      print("This expression is not supported: \(expression.description)".lightRed.bold)
     }
 
     return nil
