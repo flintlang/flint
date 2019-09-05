@@ -67,12 +67,13 @@ Make sure to install all the dependencies before installing Flint. The following
 
  - **Swift**: The  `.swift-version` files should tell Swiftenv _(see below)_ what version of swift should be run, if you install 5.0.2 and 4.2 on your system you should be okay, and there shouldn't be much of a issue updating the main Swift version to a slightly newer version, however, 4.2 is required for the test-suite, _(only, you can get away without it if you don't run any tests)_ Cuckoo, and would require working on updating the fork of Cuckoo that Flint relies on to Swift 5 to make Flint entirely dependent on only one version of Swift.
  - **Swiftenv**: We were working with Swiftenv 1.4, but the version of Swiftenv shouldn't matter. What's more important is that Swiftenv is set-up to be in control of `swift` terminal commands, so that as one dependency still runs on Swift 4.2, it can switch to that as is needed.
- -  **Mono**: Mono isn't required for any Flint project code, however is necessary for the Boogie and Symbooglix dependencies to run Flint's built-in verifier. Make sure you download the `mono-devel` as it's necessary to build Boogie and Symbooglix.
+ - **Mono**: Mono isn't required for any Flint project code, however is necessary for the Boogie and Symbooglix dependencies to run Flint's built-in verifier. Make sure you download the `mono-devel` as it's necessary to build Boogie and Symbooglix. Having the `mono-complete` ubuntu package installed might also help.
  - **NodeJS and npm**: Much of the flint ecosystem, due to it working with Ethereum, is built on NodeJS. From the testsuite to the extensions it's quite important that you have it installed.
  - **Swiftlint**: Only necessary as part of the testsuite, please note that it does get updated, and code that may've been fine when we left it might fail linting checks when you start work. We were using version 0.35.0
 
 ### Testing
-To run tests you'll need truffle, specifically version 4. To install it, run `npm install truffle@4`.
+
+To run tests you'll need truffle version 4. To install it, run `npm install truffle@4`. Currently, testing of the Move translation is not enabled by default because it would take too long to build Libra on Travis. However, we strongly encourage future developers of Flint to keep running the Move behaviour tests locally during development before pushing. Moreover, if libra binaries that would allow for testing without building from source were to be provided in the future, we would advise to enable move behaviour testing also on Travis, by downloading said binaries through the `.travis.yaml` config file.
 
 ### Development
 Setting up an environment to work on Flint effectively can be troublesome, so we advise that you take the following seriously to avoid future issues 
@@ -100,7 +101,7 @@ Unfortunately, as Flint has been worked on for some years now, it comes with a b
 
 #### Flintpath
 
-When we received the project, we were faced with something that couldn't run. This was down to absolute paths (_/Users/_ NAME _/Documents/Projects/..._) being used across the programme by some of the previous developers, meaning it would work on their and only their machine. To solve this without using the unpredictable `#dsohandle`, which would be highly dependent on where the binaries were built (and thus on the IDE), we instituted a `$FLINTPATH` environment variable, which stored the root of the Flint directory. This allowed any part of the programme to easily know where to look for other files. Also note that Swift doesn't really allow for relative paths (`./path`), thus necessitating these solutions.
+When we received the project, we were faced with something that couldn't run. This was down to absolute paths (_/Users/_ NAME _/Documents/Projects/..._) being used across the programme by some of the previous developers, meaning it would work on their and only their machine. To solve this without using the unpredictable `#dsohandle`, which would be highly dependent on where the binaries were built (and thus on the IDE), we instituted a `$FLINTPATH` environment variable, which stored the root of the Flint directory. This allowed any part of the programme to easily know where to look for other files. Also note that Swift doesn't really allow for relative paths (`./<path>`), thus necessitating these solutions.
 
 `$FLINTPATH` has since been removed by always placing Flint within `~/.flint` (which is similar to how cargo and cabal organise their system). We would advise looking at how other code handles filepaths before replacing anything you see that may still refer to a Flint path. In particular, you should look at `Sources/Utils/Path.swift` and `Sources/Utils/Configuration.swift`.
 
@@ -175,11 +176,23 @@ Historically Flint had only one target, the EVM, so a lot of the overarching Com
 
 ### Docker
 
-Currently there is a mantained Dockerfile within Flint's repo to reliably build Flint on other platforms through an ubuntu docker container. The instructions on how to use it are in the language guide. Note that there is docker image of flint currently published on Docker Hub (https://hub.docker.com/r/franklinsch/flint), however this version is not mantained and must not be used for development or usage of Flint. 
+Currently there is a mantained Dockerfile within Flint's repo to reliably build Flint on other platforms through an ubuntu docker container. The instructions on how to use it are in the language guide. Note that there is a deprecated docker image of flint currently published on Docker Hub (https://hub.docker.com/r/franklinsch/flint). However, this version is not mantained and must not be used for development or usage of Flint. 
 
 ### Extensions
 
-@matteo
+Currently, there is a set of tools mantained within the main Flint's repository
+- `flint-lsp`
+- `flint-ca`
+- `flint-repl`
+- `flint-test`
+
+and a set of Flint's language extensions mantained under different repositories (historically, these were called Flint-Language-Server, Flint-Colour and Flint-Block respectively, but their names have been lowercased to conform to the rest of the project):
+
+- `flint-language-server`, a VSCode extension which provides a frontend to the language server (`flint-lsp`) and to the contract analysis tool (`flint-ca`).
+- `flint-colour`, a VSCode extension which provides syntax highlighting
+- `flint-block`, a set of scripts used to run a local ethereum blockchain through `geth` in a way that is compatible with the current state of the ecosystem.
+
+Instructions on how to configure and use these tools are provided under `docs/ecosystem_and_extensions.md`.
 
 ## Known issues
 
@@ -197,10 +210,11 @@ The two solutions to this would either be not to allow preconditions on public c
 
 #### Move
 
-Move doesn't work right now with the verifier, thanks to some of the special cases the verifier tries to handle involving Wei and Ethereum. Work would need to be done to get the verifier to reliably work with Move, but for now, the verifier is skipped if the target is Move/
+Move doesn't work right now with the verifier, thanks to some of the special cases the verifier tries to handle involving Wei and Ethereum. Work would need to be done to get the verifier to reliably work with Move, but for now, the verifier is skipped if the target is Move.
 
 #### Invariants and Instantiation 
-@matteo
+
+Currently, the Boogie translation of Flint code that gets verified is not able to correctly keep track of initilisation in a way that allows the Boogie verifier to deduce the state of contract/struct properties within the methods of that contract/struct. The properties are in fact taken to have an arbitrary value, even when their state could be unambiguously deduced by the programmer by looking at the code. It is possible, however, that this issue ([#457 Potential Boogie limitation for simple assertions on contract and struct properties](https://github.com/flintlang/flint/issues/457)) might not have an easy solution, or that implementing one would be out of the scope of what the verifier should be doing. Hence, we advise discussing the issue further before attempting to implement a solution.
 
 ### Move
 
@@ -211,7 +225,15 @@ As the Move target is quite new, there may still be many undiscovered issues we 
 As the Move translation uses a `resource T` to store contract state, as is convention on Move, it doesn't currently allow Flint types to also be called T. This should be a simple fix of name mangling, but it has yet to be implemented.
 
 ### Extensions
-@matteo
+
+Currently, there are significant usability issues with the extensions which rely on a local blockchain running in the background. This problems and possible solutions are discussed in the paragraph [Geth _vs_. Ganache]().
+
+Moreover, while the extension ecosystem has not undergone significant testing, these bugs have emerged so far
+
+- Contract analysis fails immediately on a contract with no defined states: this is likely caused by the input fed to `dot` to generate the state graph not being syntactically valid
+- If contract cost exceeds allowance no information is sent to the VSCode extension when performing gas analysis (see `examples/valid/MajorityWithdraw.flint`)
+
+and we expect more bugs to be present due to the size of the extension ecosystem and the amount of different scripts in different programming languages, external processes and tools that need to work together for it to be fully working.
 
 ## Likely Problems
 
@@ -230,4 +252,4 @@ Unfortunately, Libra is (or was at the time of writing) still in early developme
 To allow Flint to express more expressions more easily in its verification predicates, we're suggesting a system of verifier "macros" which allow a whole host of built in functions to be declared, and for users to declare new ones, in a maintainable and generalised way.
 
 ### Geth _vs._ Ganache
-Currently, part of the ecosystem of extensions developed and currently mantained for Flint rely on a local `geth` blockchain running in the background. This is not ideal as it's rather  
+Currently, part of the ecosystem of extensions developed and currently mantained for Flint rely on a local `geth` blockchain running in the background. This is not ideal as it's extremely slow and has a convoluted setup process, requiring the user to manually create an account and to have multiple terminal windows open at once to use and monitor the blockchain. Mohammad Chowdhury, the original developer of the ecosystem, suggested looking into Ganache as an alternative local blockchain that would help alleviate the usability issues associated with running `geth` in the background. 
