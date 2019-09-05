@@ -79,14 +79,13 @@ public class Configuration {
       print("Warning: configuration file not found, generating default config file at \(file.path)")
       Configuration.generateDefaultConfigurationFile(file: file)
     }
-    do {
-      self.configurationFile = try JSONDecoder().decode(ConfigurationFile.self, from: Data(contentsOf: file))
-    } catch {
+    guard let configurationFile = try? JSONDecoder().decode(ConfigurationFile.self, from: Data(contentsOf: file)) else {
       print("""
-        Error: failed to parse configuration file \(file.path)
+        Error: failed to parse \(file.path)
         Are you missing some options in your configuration file?
         """)
       exit(EXIT_FAILURE)
     }
+    self.configurationFile = configurationFile
   }
 }

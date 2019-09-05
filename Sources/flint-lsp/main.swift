@@ -24,7 +24,7 @@ func main() {
                                                                             sourceFiles: inputFiles,
                                                                             sourceCodeString: sourceCode,
                                                                             isForServer: true)))
-      let diags = try Compiler.ide_compile(config: config)
+      let diags = try Compiler.ideCompile(config: config)
       let lsp_json = try convertFlintDiagToLspDiagJson(diags)
       print(lsp_json)
 
@@ -55,7 +55,7 @@ func main_d() throws {
                                                                           sourceFiles: inputFiles,
                                                                           sourceCodeString: sourceCode,
                                                                           isForServer: true)))
-    let diags = try Compiler.ide_compile(config: config)
+    let diags = try Compiler.ideCompile(config: config)
     let lsp_json = try convertFlintDiagToLspDiagJson(diags)
     print(lsp_json)
 

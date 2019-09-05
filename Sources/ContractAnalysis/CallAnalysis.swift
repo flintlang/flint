@@ -26,87 +26,87 @@ public class CallAnalyser {
     return 0
   }
 
-  private func addStateToFunc(state: String, funcName: String) {
-    if var funcs = stateCallerInfo[state] {
-      funcs.append(funcName)
-      self.stateCallerInfo[state] = funcs
+  private func addStateToFunction(state: String, functionName: String) {
+    if var functions = stateCallerInfo[state] {
+      functions.append(functionName)
+      self.stateCallerInfo[state] = functions
     } else {
       self.stateCallerInfo[state] = []
-      self.stateCallerInfo[state]?.append(funcName)
+      self.stateCallerInfo[state]?.append(functionName)
     }
   }
 
-  private func addCallerCapToFunc(caller: String, funcName: String) {
-    if var funcs = callerCapInfo[caller] {
-      funcs.append(funcName)
-      self.callerCapInfo[caller] = funcs
+  private func addCallerCapToFunction(caller: String, functionName: String) {
+    if var functions = callerCapInfo[caller] {
+      functions.append(functionName)
+      self.callerCapInfo[caller] = functions
     } else {
       self.callerCapInfo[caller] = []
-      self.callerCapInfo[caller]?.append(funcName)
+      self.callerCapInfo[caller]?.append(functionName)
     }
   }
 
   private func getContractBehaviourFunctions(members: [ContractBehaviorMember]) -> [FunctionDeclaration] {
-    var funcs: [FunctionDeclaration] = []
-    for m in members {
-      switch m {
-      case .functionDeclaration(let fdec):
-        funcs.append(fdec)
+    var functions: [FunctionDeclaration] = []
+    for member in members {
+      switch member {
+      case .functionDeclaration(let functionDeclaration):
+        functions.append(functionDeclaration)
       default:
         continue
       }
     }
 
-    return funcs
+    return functions
   }
 
   public func analyse(ast: TopLevelModule) throws -> String {
 
-    let decs = ast.declarations[2...]
+    let declarations = ast.declarations[2...]
 
-    for d in decs {
-      switch d {
-      case .contractBehaviorDeclaration(let cBdec):
-        analyseCallerInfo(cbDec: cBdec)
+    for declaration in declarations {
+      switch declaration {
+      case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
+        analyseCallerInfo(contractBehaviorDeclaration: contractBehaviorDeclaration)
       default:
         continue
       }
     }
 
-    let json_caller_cap_info = try JSONSerialization.data(withJSONObject: callerCapInfo, options: [])
-    let string_json_caller_cap_info = String(data: json_caller_cap_info, encoding: .utf8)
+    let jsonCallerCapInfo = try JSONSerialization.data(withJSONObject: callerCapInfo, options: [])
+    let stringJsonCallerCapInfo = String(data: jsonCallerCapInfo, encoding: .utf8)
 
-    let json_state_call_info = try JSONSerialization.data(withJSONObject: stateCallerInfo, options: [])
-    let string_json_state_call_info = String(data: json_state_call_info, encoding: .utf8)
+    let jsonStateCallInfo = try JSONSerialization.data(withJSONObject: stateCallerInfo, options: [])
+    let stringJsonStateCallInfo = String(data: jsonStateCallInfo, encoding: .utf8)
 
     var callAnalysis: [String: String] = [:]
-    callAnalysis["states"] = string_json_state_call_info
-    callAnalysis["caller"] = string_json_caller_cap_info
+    callAnalysis["states"] = stringJsonStateCallInfo
+    callAnalysis["caller"] = stringJsonCallerCapInfo
     callAnalysis["anyPercent"] = (computeAnyPercentage() * 100).description
 
-    let call_analysis_json = String(data: try JSONSerialization.data(withJSONObject: callAnalysis, options: []),
+    let callAnalysisJson = String(data: try JSONSerialization.data(withJSONObject: callAnalysis, options: []),
                                     encoding: .utf8)
 
-    return call_analysis_json!
+    return callAnalysisJson!
   }
 
-  private func analyseCallerInfo(cbDec: ContractBehaviorDeclaration) {
+  private func analyseCallerInfo(contractBehaviorDeclaration: ContractBehaviorDeclaration) {
     // for each caller, I need to add an entry for each of the funcs
-    for caller in cbDec.callerProtections {
+    for caller in contractBehaviorDeclaration.callerProtections {
       let callerName = caller.name
-      let contractFuncs = getContractBehaviourFunctions(members: cbDec.members)
+      let contractFunctions = getContractBehaviourFunctions(members: contractBehaviorDeclaration.members)
 
-      for fnc in contractFuncs {
-        addCallerCapToFunc(caller: callerName, funcName: fnc.name)
+      for function in contractFunctions {
+        addCallerCapToFunction(caller: callerName, functionName: function.name)
       }
     }
 
-    for state in cbDec.states {
+    for state in contractBehaviorDeclaration.states {
       let stateName = state.name
 
-      let contractFuncs = getContractBehaviourFunctions(members: cbDec.members)
-      for fnc in contractFuncs {
-        addStateToFunc(state: stateName, funcName: fnc.name)
+      let contractFunctions = getContractBehaviourFunctions(members: contractBehaviorDeclaration.members)
+      for function in contractFunctions {
+        addStateToFunction(state: stateName, functionName: function.name)
       }
     }
 

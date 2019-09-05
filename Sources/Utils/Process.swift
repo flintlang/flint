@@ -25,6 +25,7 @@ extension Process {
     #if os(macOS)
     process.standardInput = FileHandle.nullDevice
     #else
+    // If standardInput is set to FileHandle.nullDevice on Linux, the prgoram crashes with an illegal instruction
     process.standardInput = FileHandle(forReadingAtPath: "/dev/null")!
     #endif
     process.standardOutput = standardOutputPipe

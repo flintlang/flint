@@ -59,8 +59,8 @@ struct Wei: Asset {
   }
 
   // Should be invisible to the user and implemented internally
-  init(youAreTheCompiler: Bool, unsafeRawValue: Int) {
-    if youAreTheCompiler == false {
+  init(__unsafeCompilerOverride: Bool, unsafeRawValue: Int) {
+    if __unsafeCompilerOverride == false {
       fatalError()
     }
     self.rawValue = unsafeRawValue
