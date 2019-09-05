@@ -45,7 +45,7 @@ struct MoveContract {
       declaration.moduleAddress.map {
         .`import`(ModuleImport(name: declaration.identifier.name, address: $0))
       }
-    }
+    } + MoveRuntimeType.allImports
     let renderedImports = MoveIR.Statement.renderStatements(statements: imports)
 
     // Generate code for each function in the contract.
@@ -82,9 +82,10 @@ struct MoveContract {
       }
     }.joined(separator: ",\n")
 
-    let structs = structDeclarations
-        .map { "\n" + MoveStruct(structDeclaration: $0, environment: environment).rendered() }
-        .joined(separator: "")
+    let structs = (
+        structDeclarations.map { "\n" + MoveStruct(structDeclaration: $0, environment: environment).rendered() }
+            + MoveRuntimeType.allDeclarations.map { "\n" + $0 }
+    ).joined(separator: "")
 
     // Main contract body.
     return #"""
@@ -93,8 +94,9 @@ struct MoveContract {
 
       resource T {
         \#(members.indented(by: 4))
-      }
+      }\#
       \#(structs.indented(by: 2))
+
       \#(initializerBody.indented(by: 2))
 
       //////////////////////////////////////
@@ -160,6 +162,7 @@ struct MoveContract {
      let runtimeHeader = """
      //////////////////////////////////////
      //// --     Flint Runtime      -- ////
+     //// -- // -  Functions   - // -- ////
      //////////////////////////////////////
      """
 

@@ -10,10 +10,19 @@ public struct MoveGenerator {
   var topLevelModule: TopLevelModule
   var environment: Environment
 
-  public init(ast topLevelModule: TopLevelModule, environment: Environment, sourceContext: SourceContext) {
+  // stdlibIncluded:  doesn't include the stdlib, but notifies if it was included
+  public init(ast topLevelModule: TopLevelModule,
+              environment: Environment,
+              sourceContext: SourceContext,
+              stdlibIncluded: Bool = true) {
     self.topLevelModule = topLevelModule
     self.environment = environment
     Diagnostics.sourceContext = sourceContext
+
+    if stdlibIncluded {
+      MoveRuntimeType.includeStdlib()
+      MoveRuntimeFunction.includeStdlib()
+    }
   }
 
   public func generateCode() -> String {
@@ -44,10 +53,10 @@ public struct MoveGenerator {
       }
 
       let contract = MoveContract(contractDeclaration: contractDeclaration,
-                                contractBehaviorDeclarations: behaviorDeclarations,
-                                structDeclarations: structDeclarations,
-                                environment: environment,
-                                externalTraitDeclarations: externalTraitDeclarations)
+                                  contractBehaviorDeclarations: behaviorDeclarations,
+                                  structDeclarations: structDeclarations,
+                                  environment: environment,
+                                  externalTraitDeclarations: externalTraitDeclarations)
       contracts.append(contract)
     }
 

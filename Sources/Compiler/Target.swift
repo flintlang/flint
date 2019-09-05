@@ -99,7 +99,8 @@ public class MoveTarget: Target {
 
     let generator = MoveGenerator(ast: irPreprocessOutcome.element,
                                   environment: environment,
-                                  sourceContext: sourceContext)
+                                  sourceContext: sourceContext,
+                                  stdlibIncluded: config.stdLib != nil)
     return generator.generateCode()
   }
 }

@@ -1,0 +1,22 @@
+@resource
+external trait FlintLibraInternalWrapper_ {
+  public func getValue() -> uint64
+  public func withdraw(amount: uint64) -> FlintLibraInternalWrapper_
+  public func transfer(to: inout FlintLibraInternalWrapper_, value: uint64)
+}
+
+struct Libra {
+  visible var libra: FlintLibraInternalWrapper_
+
+  public init() {
+    libra = FlintLibraInternalWrapper_(0x0)
+  }
+
+  public func balance() -> Int {
+    return (call! libra.getValue()) as! Int
+  }
+
+  func transfer(to: inout Libra, amount: Int) mutates (value) {
+    call! libra.transfer(to: &to.libra, value: (amount as! uint64))
+  }
+}
