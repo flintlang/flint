@@ -1,7 +1,7 @@
 
 # Language Guide
 
-:+1::tada: First of all, thank you for the interest in Flint! :tada::+1:
+🎉 First of all, thank you for the interest in Flint! 🎉
 
 Even though the [Ethereum](https://www.ethereum.org/) platform requires smart contract programmers to ensure the correct behaviour of their program before deployment, it has not seen a language designed with safety in mind. Solidity and others do not tailor for Ethereum’s unique programming model and instead, mimic existing popular languages like JavaScript, Python, or C, without providing additional safety mechanisms.
 
@@ -175,12 +175,10 @@ To use Flint in  a [Docker](https://www.docker.com/) container run the following
 git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
 sudo docker build -t "flint_docker" .
-#### ---------------------------------------------- ###
-## Docker will build, this process may take some time #
-#### ---------------------------------------------- ###
+### ---------------------------------------------- ###
+# Docker will build, this process may take some time #
+### ---------------------------------------------- ###
 sudo docker run --privileged -i -t flint_docker
-## Then, inside the docker container, run
-source ~/.bash_profile
 ```
 
 ### Binary packages
