@@ -49,7 +49,7 @@ struct MoveTypeConversionExpression {
     40: "1099511627775",
     48: "281474976710655",
     56: "72057594037927935",
-    64: "255"//"18446744073709551615"
+    64: "18446744073709551615"
   ]
 
   private func typeInformation(type: RawType) -> (size: Int, signed: Bool) {
