@@ -8,6 +8,7 @@
 import AST
 import Lexer
 import Foundation
+import Diagnostic
 
 /// A prepocessing step to update the program's AST before code generation.
 extension MovePreprocessor {
@@ -115,11 +116,17 @@ extension MovePreprocessor {
   }
 
   public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    guard let environment = passContext.environment,
+          let enclosingType = passContext.enclosingTypeIdentifier?.name,
+          let scopeContext = passContext.scopeContext else {
+      return ASTPassResult(element: externalCall, diagnostics: [
+            Diagnostic(severity: .error,
+                       sourceLocation: externalCall.sourceLocation,
+                       message: "Insufficient environment information to deduce external call trait name") 
+      ], passContext: passContext)
+    }
     // Update trait name for external calls
     var externalCall = externalCall
-    let environment = passContext.environment!
-    let enclosingType = passContext.enclosingTypeIdentifier!.name
-    let scopeContext = passContext.scopeContext!
     let receiver = externalCall.functionCall.lhs
     let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
     externalCall.externalTraitName = receiverType.name

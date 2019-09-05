@@ -52,7 +52,8 @@ enum MoveRuntimeFunction {
     //MoveRuntimeFunctionDeclaration.transfer,
     MoveRuntimeFunctionDeclaration.fatalError,
     MoveRuntimeFunctionDeclaration.power,
-    MoveRuntimeFunctionDeclaration.revertIfGreater
+    MoveRuntimeFunctionDeclaration.revertIfGreater,
+    MoveRuntimeFunctionDeclaration.libra
   ]
 }
 
@@ -121,4 +122,41 @@ struct MoveRuntimeFunctionDeclaration {
     return move(a);
   }
   """
+
+  static let libra =
+      """
+      public Libra$new$Address(zero: address): Self.Libra {
+        if (move(zero) != 0x0) {
+          assert(false, 9001);
+        }
+        return T {
+          coin: LibraCoin.zero()
+        };
+      }
+
+      public Libra$getValue(this: &mut Self.Libra): u64 {
+        let coin: &LibraCoin.T;
+        coin = &move(this).coin;
+        return LibraCoin.value(move(coin));
+      }
+
+      public Libra$withdraw(this: &mut Self.Libra, amount: u64): Self.Libra {
+        let coin: &mut LibraCoin.T;
+        coin = &mut move(this).coin;
+        return T {
+          coin: LibraCoin.withdraw(move(coin), move(amount))
+        };
+      }
+
+      public Libra$transfer(this: &mut Self.Libra, other: &mut Self.Libra, amount: u64) {
+        let coin: &mut LibraCoin.T;
+        let other_coin: &mut LibraCoin.T;
+        let temporary: LibraCoin.T;
+        coin = &mut move(this).coin;
+        temporary = LibraCoin.withdraw(move(coin), move(amount));
+        other_coin = &mut move(other).coin;
+        LibraCoin.deposit(move(other_coin), move(temporary));
+        return;
+      }
+      """
 }

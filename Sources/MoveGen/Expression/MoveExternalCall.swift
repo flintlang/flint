@@ -41,8 +41,18 @@ struct MoveExternalCall {
     case .returnsGracefullyOptional:
       fatalError("call? not implemented")
     case .isForced:
-      return MoveFunctionCall(functionCall: functionCall, moduleName: externalCall.externalTraitName!)
-        .rendered(functionContext: functionContext)
+      if let name = externalCall.externalTraitName,
+         let type: TypeInformation = functionContext.environment.types[name],
+         type.isExternalModule {
+        return MoveFunctionCall(functionCall: functionCall, moduleName: externalCall.externalTraitName!)
+            .rendered(functionContext: functionContext)
+      } else {
+        var functionCall = functionCall
+        if let name = externalCall.externalTraitName {
+          functionCall.mangledIdentifier = "\(name)$\(functionCall.mangledIdentifier ?? functionCall.identifier.name)"
+        }
+        return MoveFunctionCall(functionCall: functionCall).rendered(functionContext: functionContext)
+      }
     }
   }
 }

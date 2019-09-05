@@ -1,33 +1,17 @@
-//@module(address: 0x0) // 0x00 is replaced by `Transaction.` by the testsuite
-//external trait LibraCoin {
-//  public func add(n: uint64)
-//
-//  public func count() -> uint64
-//
-//  public func zero() -> Libra
-//}
-
-@data
-@module(address: 0x0)
-external trait LibraCoin {
-  func transfer(from: inout LibraCoin)
-
-  func send(to: address)
+contract Account {
+  visible var value: LibraCoin
 }
 
-
-contract Example {
-  visible var coin: LibraCoin
-}
-
-Example :: sender <- (any) {
-  public init(value: inout LibraCoin) {
-    let coin2: LibraCoin = LibraCoin(0x0)
-    coin = value
+Account :: sender <- (any) {
+  public init() {
+    value = LibraCoin()
   }
 
-  public func test() mutates (coin) {
-    let coin2: LibraCoin = LibraCoin(0x0)
-    coin2.transfer(from: &coin)
+  public func getBalance() -> Int {
+    return value.balance()
+  }
+
+  func transfer(to: inout LibraCoin) mutates (value) {
+    value.transfer(to: &to, amount: 5)
   }
 }

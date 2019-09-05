@@ -44,8 +44,9 @@ indirect enum CanonicalType: CustomStringConvertible {
       } else if let environment = environment,
                 rawType.isExternalContract(environment: environment) {
         self = .address
-      } else if environment?.isExternalTraitDeclared(identifier) ?? false,
-                let type: TypeInformation = environment?.types[identifier] {
+      } else if let environment = environment,
+                rawType.isExternalModule(environment: environment),
+                let type: TypeInformation = environment.types[identifier] {
         if type.decorators?.contains(where: { $0.identifier.name == "resource" }) ?? false {
           self = .external(identifier, .resource("T"))
         } else {

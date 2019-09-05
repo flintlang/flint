@@ -3,7 +3,7 @@
 external trait Libra {
   public func getValue() -> uint64
   public func withdraw(amount: uint64) -> Libra
-  public func transfer(to: inout Libra)
+  public func transfer(to: inout Libra, value: uint64)
 }
 
 contract Account {
@@ -19,7 +19,7 @@ Account :: sender <- (any) {
     return (call! value.getValue()) as! Int
   }
 
-  func transfer(to: inout Libra) mutates (value) {
-    call! value.transfer(to: &to)
+  func transfer(to: inout Libra, amount: Int) mutates (value) {
+    call! value.transfer(to: &to, value: (amount as! uint64))
   }
 }
