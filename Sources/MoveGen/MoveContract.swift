@@ -91,9 +91,10 @@ struct MoveContract {
     return #"""
     module \#(contractDeclaration.identifier.name) {
       \#(renderedImports.indented(by: 2))
+
       resource T {
         \#(members.indented(by: 4))
-      }
+      }\#
       \#(structs.indented(by: 2))
 
       \#(initializerBody.indented(by: 2))
