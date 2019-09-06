@@ -22,7 +22,7 @@ func main() {
                                                  quiet: false,
                                                  sourceContext: SourceContext(sourceFiles: inputFiles)),
                      test_run: test_run,
-                     coverage: coverage).run_tests()
+                     coverage: coverage).runTests()
     } catch let err {
       print(err)
       print("Failed to run tests")
@@ -30,7 +30,7 @@ func main() {
   }.run()
 }
 
-func main_d() throws {
+func mainTest() throws {
   let fileName = Path.getFullUrl(path: "counter_ether.tflint").path
   let inputFiles = [URL(fileURLWithPath: fileName)]
   let sourceCode = try String(contentsOf: inputFiles[0])
@@ -42,7 +42,7 @@ func main_d() throws {
                                                quiet: false,
                                                sourceContext: SourceContext(sourceFiles: inputFiles)),
                    test_run: true,
-                   coverage: true).run_tests()
+                   coverage: true).runTests()
 
   } catch let err {
     print(err)
@@ -51,4 +51,4 @@ func main_d() throws {
 }
 
 main()
-//try main_d()
+//try mainTest()

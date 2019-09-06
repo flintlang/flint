@@ -17,13 +17,12 @@ struct Analyser {
   let estimateGas: Bool
   let typeStateDiagram: Bool
   let callerCapabilityAnalysis: Bool
-  let test_run: Bool
-  let function_analysis: Bool
+  let isTestRun: Bool
+  let functionAnalysis: Bool
 
   public func analyse() throws {
     let inputFiles = [URL(fileURLWithPath: contractFile)]
-    //let outputDirectory = Path.getFullUrl(path: "utils/gasEstimator")
-    let outputDirectory = URL(fileURLWithPath: Path.getFullUrl(path: "utils/gasEstimator").absoluteString)
+    let outputDirectory = Path.getFullUrl(path: "utils/gasEstimator")
 
     let diagnosticPool = DiagnosticPool(shouldVerify: false,
                                         quiet: false,
@@ -40,9 +39,9 @@ struct Analyser {
 
     let (ast, environment) = try Compiler.getAST(config: config)
 
-    if function_analysis {
+    if functionAnalysis {
       let fA = FunctionAnalysis()
-      let graphs = fA.analyse(ev: environment)
+      let graphs = fA.analyse(environment: environment)
       for g in graphs {
         print(g.produce_dot_graph())
       }
@@ -50,26 +49,26 @@ struct Analyser {
     }
 
     if estimateGas {
-      let gasEstimator = GasEstimator(test_run: test_run)
-      let new_ast = gasEstimator.processAST(ast: ast)
-      let p = Parser(ast: new_ast)
-      let new_env = p.getEnv()
-      try Compiler.genSolFile(config: config, ast: new_ast, env: new_env)
-      let ge_json = gasEstimator.estimateGas(ast: new_ast, env: new_env)
-      print(ge_json)
+      let gasEstimator = GasEstimator(isTestRun: isTestRun)
+      let newAst = gasEstimator.processAST(ast: ast)
+      let parser = Parser(ast: newAst)
+      let newEnv = parser.getEnv()
+      try Compiler.genSolFile(config: config, ast: newAst, environment: newEnv)
+      let gasEstimatorJson: String = gasEstimator.estimateGas(ast: newAst, environment: newEnv)
+      print(gasEstimatorJson)
     }
 
     if callerCapabilityAnalysis {
       let callerAnalyser = CallAnalyser()
-      let ca_json = try callerAnalyser.analyse(ast: ast)
-      print(ca_json)
+      let callerAnalyserJson: String = try callerAnalyser.analyse(ast: ast)
+      print(callerAnalyserJson)
     }
 
     if typeStateDiagram {
-      let gs: [Graph] = produce_graphs_from_ev(ev: environment)
+      let gs: [Graph] = produceGraphsFromEnvironment(environment: environment)
       var dotFiles: [String] = []
       for g in gs {
-        let dotFile = produce_dot_graph(graph: g)
+        let dotFile = produceDotGraph(graph: g)
         dotFiles.append(dotFile)
       }
       for dot in dotFiles {

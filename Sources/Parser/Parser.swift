@@ -62,10 +62,9 @@ public class Parser {
     return (topLevelModule, environment, diagnostics)
   }
 
-  public func parseRepl() -> ([Statement], [Diagnostic]) {
-    let res = try? parseCodeBlock()
-    if let (stmts, _) = res {
-      return (stmts, diagnostics)
+  public func parseREPL() -> ([Statement], [Diagnostic]) {
+    if let (statements, _) = try? parseCodeBlock() {
+      return (statements, diagnostics)
     }
     return ([], diagnostics)
   }
@@ -76,8 +75,8 @@ public class Parser {
         switch tld {
         case .contractDeclaration(let contract):
           environment.addContract(contract)
-        case .contractBehaviorDeclaration(let behaviour):
-          environment.addContractBehaviour(behaviour)
+        case .contractBehaviorDeclaration(let behavior):
+          environment.addContractBehaviour(behavior)
         case .structDeclaration(let structDeclaration):
           environment.addStruct(structDeclaration)
         case .enumDeclaration(let enumDeclaration):

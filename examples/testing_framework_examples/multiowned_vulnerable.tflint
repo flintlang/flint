@@ -1,5 +1,5 @@
 contract TestMultiOwned {
-  let filePath : String = "[redacted]" 
+  let filePath : String = "multiowned_vulnerable.flint" 
   let contractName : String = "MultiOwnable"
   let TestSuiteName : String = "Unused"
 }
@@ -11,7 +11,7 @@ TestMultiOwned :: (any) {
 
         let mo : MultiOwnable = MultiOwnable(owner)
 
-	setAddr(not_owner)
+	      setAddr(not_owner)
         assertCallerUnsat("addOwner", not_owner)
         unsetAddr() 
    }

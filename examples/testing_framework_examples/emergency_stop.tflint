@@ -1,5 +1,5 @@
 contract TestEmergency {
-  let filePath : String = "[redacted]"
+  let filePath : String = "emergency_stop.flint"
   let contractName: String = "Emergency"   
   let TestSuiteName : String  = "Emergency Tests"
 }

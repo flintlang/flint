@@ -160,12 +160,16 @@ echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+Note that Flint *must* be installed in `~/.flint` to allow the many different components to know where to find everything.
+
 ##### Ubuntu 18.04 LTS
 This assumes a standard Ubuntu build with `sudo`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
 ```
+
+Note that this script can be run from any directory, but will always install Flint in `~/.flint`.
 
 ### Docker
 
@@ -1728,6 +1732,78 @@ External trait attributes are a way of providing compiler directives so Flint ca
 @data                  // The following trait is for a Move struct, not a contract
 @resource              // Used with @data, the following external struct is a resource
 ```
+
+#### Flint Compatible Interfaces
+
+_Only for: Move_
+
+On Solidity, external traits describe standard Solidity contracts, however, on Move, the differences between Move and Flint are too wide for the concept of contract to apply to any arbitrary Move module. Thus, depending on the kind of Move instance you're dealing with, you will need to declare your Flint-interfacing code (possibly through a wrapper) in a certain way.
+
+##### Contracts
+
+_External trait attributes: `@module(address:)`_
+
+Providing a contract-like interface for Flint in Move for it to act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+
+```rust
+contract <name> {
+   // Declare instance types and imports...
+
+   // All Flint-facing functions should be declared as
+   public f(this_addr: address, arg1: t1, ...): tr acquires T {  
+     let this: &mut Self.T;  
+     // Other local variables...
+     this = borrow_global<T>(move(this_addr));  
+     // Main function code...
+     _ = move(this);  
+     return x;  
+  }
+}
+```
+
+_Example: External Traits Counter ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.flint))_
+
+##### Data Modules
+
+_External trait attributes: `@module(address:)` and either `@data` or `@resource`_
+
+These allow you to interface with a Move module that doesn't publish resources but instead is based around a local instance.
+
+```rust
+module <name> {  
+  // Declare instance types and imports...
+  
+  // You must declare a type T for Flint to store
+  // Use resources with `@resource` and structs with `@data`
+  resource T {  
+    ... // Private fields, Flint can't access these
+  }  
+  
+  // The constructor, it must take in an address and return T
+  public new(anyName: address): Self.T {  
+    // Any constructor code here...
+    return T {  
+      ...
+    };  
+  }  
+  
+  // All methods must take in a mutable `this` argument
+  public getSomeField(this: &mut Self.T): u64 {  
+    // Any code to compute the value...
+  }  
+  
+  // Methods may return any type basic type or T
+  public duplicate(this: &mut Self.T, amount: u64): Self.T {  
+    // Any code here to compute the other T
+  }
+}
+```
+
+_Example: External Traits Libra ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.flint))_
+
+> **Note**
+>
+> There are also non-contract external data, using just `@data` or `@resource`, although this is mostly designed for the standard library. If you wish to find out more about it, read through the standard library's Libra implementation.
 
 ### Creating an instance
 

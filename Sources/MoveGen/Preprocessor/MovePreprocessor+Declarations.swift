@@ -6,6 +6,7 @@
 
 import AST
 import Lexer
+import Diagnostic
 
 extension MovePreprocessor {
   public func process(variableDeclaration: VariableDeclaration,
@@ -278,6 +279,21 @@ extension MovePreprocessor {
       )))
     }
     return ASTPassResult(element: contractDeclaration, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(traitDeclaration: TraitDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    let diagnostics: [Diagnostic] = traitDeclaration.decorators.compactMap { (decorator: FunctionCall) in
+      if !["data", "module", "resource"].contains(decorator.identifier.name) {
+        return Diagnostic(
+            severity: .error,
+            sourceLocation: decorator.sourceLocation,
+            message: "Unknown external trait attribute `\(decorator.identifier.name)'"
+        )
+      }
+      return nil
+    }
+    return ASTPassResult(element: traitDeclaration, diagnostics: diagnostics, passContext: passContext)
   }
 
   public func process(specialDeclaration: SpecialDeclaration,

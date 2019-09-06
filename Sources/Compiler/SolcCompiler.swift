@@ -21,7 +21,7 @@ struct SolcCompiler {
 
     verifySolc(launchPath: Configuration.solcLocation.path)
     let arguments: [String] =
-      [temporaryFile.path, "--bin"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
+      [temporaryFile.path, "--bin", "--overwrite"] + (emitBytecode ? ["--opcodes"] : []) + ["-o", outputDirectory.path]
     let processResult = Process.run(executableURL: Configuration.solcLocation,
                                     arguments: arguments,
                                     currentDirectoryURL: nil)

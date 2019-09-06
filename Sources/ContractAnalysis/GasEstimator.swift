@@ -4,7 +4,7 @@ import Utils
 
 public class GasEstimator {
 
-  private let test_run: Bool
+  private let isTestRun: Bool
 
   private let jsTemplate: String =
       """
@@ -56,19 +56,17 @@ public class GasEstimator {
 
       """
 
-  public init(test_run: Bool = false) {
-    self.test_run = test_run
+  public init(isTestRun: Bool = false) {
+    self.isTestRun = isTestRun
   }
 
-  public func estimateGas(ast: TopLevelModule, env: Environment) -> String {
+  public func estimateGas(ast: TopLevelModule, environment: Environment) -> String {
     var output: String = ""
-    for d in ast.declarations[2...] {
-      switch d {
-      case .contractDeclaration(let cdec):
-        output += getGasEstimate(ast: ast, env: env, contractName: cdec.identifier.name)
-          //output += "__CONTRACT__"
-      default:
-        break
+    ast.declarations[2...].forEach { (declaration: TopLevelDeclaration) in
+      if case .contractDeclaration(let contractDeclaration) = declaration {
+        output.append(getGasEstimate(ast: ast,
+                                     environment: environment,
+                                     contractName: contractDeclaration.identifier.name))
       }
     }
 
@@ -76,44 +74,47 @@ public class GasEstimator {
   }
 
   public func processAST(ast: TopLevelModule) -> TopLevelModule {
-    var new_decs: [TopLevelDeclaration] = []
-    let any_caller_protection: CallerProtection = CallerProtection(
+    var newDeclarations: [TopLevelDeclaration] = []
+    let anyCallerProtection: CallerProtection = CallerProtection(
         identifier: Identifier(name: "any", sourceLocation: .DUMMY))
 
-    var contract_names_to_states: [String: [TypeState]] = [:]
-    for dec in ast.declarations {
-      switch dec {
-      case .contractDeclaration(let cdec):
-        contract_names_to_states[cdec.identifier.name] = cdec.states
-        new_decs.append(.contractDeclaration(cdec))
+    var contractNamesToStates: [String: [TypeState]] = [:]
+    for declaration in ast.declarations {
+      switch declaration {
+      case .contractDeclaration(let contractDeclaration):
+        contractNamesToStates[contractDeclaration.identifier.name] = contractDeclaration.states
+        newDeclarations.append(.contractDeclaration(contractDeclaration))
       case .contractBehaviorDeclaration:
         continue
       default:
-        new_decs.append(dec)
+        newDeclarations.append(declaration)
       }
     }
 
-    for dec in ast.declarations {
-      switch dec {
-      case .contractBehaviorDeclaration(let cbdec):
-        let states = contract_names_to_states[cbdec.contractIdentifier.name]!
-        new_decs.append(.contractBehaviorDeclaration(
-            ContractBehaviorDeclaration(contractIdentifier: cbdec.contractIdentifier, states: states,
-                                        callerBinding: cbdec.callerBinding, callerProtections: [any_caller_protection],
-                                        closeBracketToken: cbdec.closeBracketToken, members: cbdec.members)))
+    for declaration in ast.declarations {
+      switch declaration {
+      case .contractBehaviorDeclaration(let contractBehaviorDeclaration):
+        let states = contractNamesToStates[contractBehaviorDeclaration.contractIdentifier.name]!
+        newDeclarations.append(.contractBehaviorDeclaration(
+            ContractBehaviorDeclaration(contractIdentifier: contractBehaviorDeclaration.contractIdentifier,
+                                        states: states,
+                                        callerBinding: contractBehaviorDeclaration.callerBinding,
+                                        callerProtections: [anyCallerProtection],
+                                        closeBracketToken: contractBehaviorDeclaration.closeBracketToken,
+                                        members: contractBehaviorDeclaration.members)))
       default:
         continue
       }
     }
 
-    return TopLevelModule(declarations: new_decs)
+    return TopLevelModule(declarations: newDeclarations)
   }
 
-  private func getGasEstimate(ast: TopLevelModule, env: Environment, contractName: String) -> String {
+  private func getGasEstimate(ast: TopLevelModule, environment: Environment, contractName: String) -> String {
     var jsTestFile: String = ""
     jsTestFile += jsTemplate
 
-    let header_estimate_gas =
+    let headerEstimateGas =
         """
         async function estimate_gas(pathToContract, nameOfContract) {
             let res_dict = {}
@@ -124,31 +125,31 @@ public class GasEstimator {
             let c = await deploy_contract(abi, bytecode);
         """
 
-    jsTestFile += header_estimate_gas
+    jsTestFile += headerEstimateGas
     jsTestFile += "\n"
 
     jsTestFile += "    res_dict['contract'] = web3.eth.estimateGas({data: bytecode}); \n"
 
-    let funcs = env.types[contractName]!.allFunctions
+    let functions = environment.types[contractName]!.allFunctions
 
-    for (fName, fData) in funcs {
-      let expParams = fData[0].declaration.explicitParameters
-      if fData[0].declaration.isPayable {
+    for (functionName, functionData) in functions {
+      let explicitParameters = functionData[0].declaration.explicitParameters
+      if functionData[0].declaration.isPayable {
         continue
       }
 
-      if expParams.count > 0 {
+      if explicitParameters.count > 0 {
         continue
       }
 
-      jsTestFile += "    res_dict[\"\(fName)\"] = c.\(fName).estimateGas(); \n"
+      jsTestFile += "    res_dict[\"\(functionName)\"] = c.\(functionName).estimateGas(); \n"
     }
 
     jsTestFile += "    console.log(JSON.stringify(res_dict)); \n} \n"
 
     jsTestFile += "estimate_gas('main.sol', '\(contractName)');"
 
-    if test_run {
+    if isTestRun {
       return jsTestFile
     }
 
@@ -164,21 +165,16 @@ public class GasEstimator {
   }
 
   func runNode(jsTestFile: String) throws -> String {
-    let fileManager = FileManager.init()
-    let path = Path.getFullUrl(path: "utils/gasEstimator/test.js")
-    let outputfile = path
-    if !(fileManager.fileExists(atPath: path.absoluteString)) {
-      fileManager.createFile(atPath: path.absoluteString, contents: nil)
+    let fileManager = FileManager()
+    let file = Path.getFullUrl(path: "utils/gasEstimator/test.js")
+    if !(fileManager.fileExists(atPath: file.path)) {
+      fileManager.createFile(atPath: file.path, contents: nil)
     }
 
-    try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
+    try jsTestFile.write(to: file, atomically: true, encoding: String.Encoding.utf8)
     let processResult: ProcessResult = Process.run(executableURL: Configuration.nodeLocation,
                                                    arguments: ["test.js"],
                                                    currentDirectoryURL: Path.getFullUrl(path: "utils/gasEstimator"))
-    if let out = processResult.standardOutputResult {
-      return out
-    } else {
-      return "ERROR: No gas estimates"
-    }
+    return processResult.standardOutputResult ?? "ERROR: No gas estimates"
   }
 }

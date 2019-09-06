@@ -9,14 +9,15 @@ MultiOwnable :: caller <- (any) {
     self.root = initial_owner
     self.owners[root] = root
   }
+}
 
-  mutating public func addOwner(new_owner: Address) {
+MultiOwnable :: caller <- (owners) {
+  public func addOwner(new_owner: Address) mutates (owners) {
        self.owners[new_owner] = caller 
 
   }
 
-  mutating public func deleteOwner(owner: Address) {
+  public func deleteOwner(owner: Address) mutates (owners) {
        self.owners[owner] = zero 
   }
-
 }

@@ -40,25 +40,32 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .userDefinedType(let identifier):
       if let environment = environment,
          CanonicalType.isResourceType(rawType, identifier: identifier, environment: environment) {
+        // If it's inferred to be a resource
         self = .resource(identifier)
       } else if let environment = environment,
                 rawType.isExternalContract(environment: environment) {
+        // If it's an external contract
         self = .address
-      } else if environment?.isExternalTraitDeclared(identifier) ?? false,
-                let type: TypeInformation = environment?.types[identifier] {
+      } else if let environment = environment,
+                rawType.isExternalModule(environment: environment),
+                let type: TypeInformation = environment.types[identifier] {
         if type.decorators?.contains(where: { $0.identifier.name == "resource" }) ?? false {
+          // If it's an external resource
           self = .external(identifier, .resource("T"))
         } else {
+          // If it's an external struct
           self = .external(identifier, .`struct`("T"))
         }
       } else if let environment = environment,
               environment.isEnumDeclared(identifier),
               let type: TypeInformation = environment.types[identifier],
               let value: AST.Expression = type.properties.values.first?.property.value {
+        // If it's an enum
         self = CanonicalType(from: environment.type(of: value,
                                                     enclosingType: identifier,
                                                     scopeContext: ScopeContext()))!
       } else {
+        // Otherwise
         self = .struct(identifier)
       }
     case .inoutType(let rawType):
@@ -99,6 +106,15 @@ indirect enum CanonicalType: CustomStringConvertible {
     }
   }
 
+  public var isResource: Bool {
+    switch self {
+    case .resource, .external(_, .resource):
+      return true
+    default:
+      return false
+    }
+  }
+
   public func render(functionContext: FunctionContext) -> MoveIR.`Type` {
     switch self {
     case .address: return .address
@@ -107,7 +123,9 @@ indirect enum CanonicalType: CustomStringConvertible {
     case .bytearray: return .bytearray
     case .`struct`(let name): return .`struct`(name: "Self.\(name)")
     case .resource(let name):
-      if functionContext.enclosingTypeName == name {
+      if let type = RawType.StdlibType(rawValue: name) {  // All stdlib types will be defined on Self
+        return .resource(name: "Self.\(type.rawValue)")
+      } else if functionContext.enclosingTypeName == name {
         return .resource(name: "Self.T")
       }
       return .resource(name: "\(name).T")

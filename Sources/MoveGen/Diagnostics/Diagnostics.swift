@@ -1,7 +1,7 @@
 import Diagnostic
 import Foundation
 
-class Diagnostics {
+public class Diagnostics {
   public static var diagnostics: [Diagnostic] = []
   public static var sourceContext: SourceContext?
 
@@ -9,7 +9,7 @@ class Diagnostics {
     self.diagnostics.append(contentsOf: diagnostics)
   }
 
-  static func display() {
+  public static func display() {
     try! print(DiagnosticsFormatter(diagnostics: diagnostics,
                                     sourceContext: sourceContext!).rendered())
   }

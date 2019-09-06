@@ -1,5 +1,5 @@
 contract TestMultiOwned {
-  let filePath : String = "[redacted]"
+  let filePath : String = "multiowned.flint"
   let contractName : String = "MultiOwnable"
   let TestSuiteName : String = "MultiOwnable Tests"
 }

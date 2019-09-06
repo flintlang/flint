@@ -52,7 +52,8 @@ extension AST.FunctionDeclaration {
                                             resultType: selfParameter.type.rawType))
     wrapperFunctionDeclaration.body.append(.expression(.binaryExpression(selfAssignment)))
 
-    if !contractBehaviourDeclaration.callerProtections.contains(where: { $0.isAny }) {
+    if !contractBehaviourDeclaration.callerProtections.isEmpty
+        && !contractBehaviourDeclaration.callerProtections.contains(where: { $0.isAny }) {
       let callerBinding = Identifier(name: "_caller",
                                      sourceLocation: sourceLocation)
       wrapperFunctionDeclaration.body.insert(.expression(.variableDeclaration(
@@ -93,7 +94,8 @@ extension AST.FunctionDeclaration {
       ))
     }
 
-    if !contractBehaviourDeclaration.states.contains(where: { $0.isAny }) {
+    if  !contractBehaviourDeclaration.states.isEmpty
+            && !contractBehaviourDeclaration.states.contains(where: { $0.isAny }) {
       let typeStatePredicates = contractBehaviourDeclaration.states
           .map { (state: TypeState) -> Expression in
         let index = passContext.environment!.getStateValue(

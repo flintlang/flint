@@ -23,8 +23,8 @@ func main() {
                        estimateGas: estimateGas,
                        typeStateDiagram: typeStateDiagram,
                        callerCapabilityAnalysis: callerAnalysis,
-                       test_run: test_run,
-                       function_analysis: fA)
+                       isTestRun: test_run,
+                       functionAnalysis: fA)
       try a.analyse()
 
     } catch let err {
@@ -44,8 +44,8 @@ func mainTest() throws {
                      estimateGas: true,
                      typeStateDiagram: false,
                      callerCapabilityAnalysis: false,
-                     test_run: false,
-                     function_analysis: false)
+                     isTestRun: false,
+                     functionAnalysis: false)
     try a.analyse()
 
   } catch let err {

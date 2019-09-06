@@ -20,12 +20,14 @@ struct TestRunner {
   let coverage: Bool
 
   func tokenizeTestFile() throws -> [Token] {
-    let testTokens = try Lexer(sourceFile: testFile, isFromStdlib: false, isForServer: true, sourceCode: sourceCode
-    ).lex()
+    let testTokens = try Lexer(sourceFile: testFile,
+                               isFromStdlib: false,
+                               isForServer: true,
+                               sourceCode: sourceCode).lex()
     return testTokens
   }
 
-  func run_tests() throws {
+  func runTests() throws {
     let tokens = try tokenizeTestFile()
 
     // compiling the test contract
@@ -40,7 +42,7 @@ struct TestRunner {
     }
 
     // create a JSTestSuite
-    let jsTestSuite = JSTranslator(ast: parserAST!, coverage: coverage)
+    let jsTestSuite = JSTranslator(ast: parserAST!, coverage: coverage, testFile: testFile)
 
     // extract the flint contract which is being tested
     let pathToFlintContract = jsTestSuite.getFilePathToFlintContract()
@@ -67,7 +69,7 @@ struct TestRunner {
         ast = cv.instrument(ast: ast)
       }
 
-      try Compiler.compile_for_test(config: config, in_ast: ast)
+      try Compiler.compileForTest(config: config, inAst: ast)
 
     } catch let err {
       print(err)
@@ -98,9 +100,10 @@ struct TestRunner {
   func runNode(jsTestFile: String) throws {
     let outputfile = Path.getFullUrl(path: "utils/testRunner/test.js")
     try jsTestFile.write(to: outputfile, atomically: true, encoding: String.Encoding.utf8)
-    Process.run(executableURL: Configuration.nodeLocation,
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
                 arguments: ["--no-warnings", "test.js"],
                 currentDirectoryURL: Path.getFullUrl(path: "utils/testRunner"))
+    processResult.standardOutputResult.map { print($0)}
   }
 
   func exitWithFailure() -> Never {

@@ -16,7 +16,6 @@ const flintConfig = JSON.parse(flintConfigFile)
 // add checks to see if test net is operating
 let defaultAcc;
 try {
-	//defaultAcc = web3.personal.newAccount("");//eth.accounts[3];
 	defaultAcc = flintConfig["ethereumAddress"];
 	web3.personal.unlockAccount(defaultAcc, "", 1000);
 	web3.eth.defaultAccount = defaultAcc;	

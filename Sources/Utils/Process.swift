@@ -25,6 +25,7 @@ extension Process {
     #if os(macOS)
     process.standardInput = FileHandle.nullDevice
     #else
+    // If standardInput is set to FileHandle.nullDevice on Linux, the prgoram crashes with an illegal instruction
     process.standardInput = FileHandle(forReadingAtPath: "/dev/null")!
     #endif
     process.standardOutput = standardOutputPipe
@@ -32,8 +33,8 @@ extension Process {
     try! process.run()
     let standardOutputData = standardOutputPipe.fileHandleForReading.readDataToEndOfFile()
     let standardErrorData = standardErrorPipe.fileHandleForReading.readDataToEndOfFile()
-    let standardOutputText = String(data: standardOutputData, encoding: String.Encoding.utf8)
-    let standardErrorText = String(data: standardErrorData, encoding: String.Encoding.utf8)
+    let standardOutputText = String(data: standardOutputData, encoding: .utf8)
+    let standardErrorText = String(data: standardErrorData, encoding: .utf8)
     process.waitUntilExit()
 
     if process.terminationStatus != EXIT_SUCCESS {

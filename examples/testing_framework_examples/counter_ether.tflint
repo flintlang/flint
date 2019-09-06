@@ -1,5 +1,5 @@
 contract TestCounter {
-  let filePath : String = "[redacted]"
+  let filePath : String = "counter_ether.flint"
   let contractName: String = "Bribe"   
   let TestSuiteName : String  = "BribeTests" 
 }

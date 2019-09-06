@@ -8,6 +8,7 @@ public class JSTranslator {
   private var contractName: String
   private var filePath: String
   private var testSuiteName: String
+  private let testFile: URL
   private let ast: TopLevelModule
   private var JSTestFuncs: [JSTestFunction]
 
@@ -30,7 +31,7 @@ public class JSTranslator {
   private let coverage: Bool
 
   // creates the JSTestSuite class
-  public init(ast: TopLevelModule, coverage: Bool = false) {
+  public init(ast: TopLevelModule, coverage: Bool = false, testFile: URL) {
     self.contractName = ""
     self.filePath = ""
     self.testSuiteName = ""
@@ -42,6 +43,7 @@ public class JSTranslator {
     self.firstHalf = try! String(contentsOf: Path.getFullUrl(path: "utils/testRunner/test_framework.js"))
     self.ast = ast
     self.coverage = coverage
+    self.testFile = testFile
     loadLibraryFuncs()
     loadTestContractVars()
   }
@@ -86,8 +88,8 @@ public class JSTranslator {
   public func loadTestContractVars() {
     let declarations: [TopLevelDeclaration] = self.ast.declarations
 
-    for d in declarations {
-      switch d {
+    for declaration in declarations {
+      switch declaration {
       case .contractDeclaration(let contractDec):
         processContract(contract: contractDec)
       default:
@@ -101,8 +103,8 @@ public class JSTranslator {
   public func convertAST() {
     let declarations: [TopLevelDeclaration] = self.ast.declarations
 
-    for d in declarations {
-      switch d {
+    for declaration in declarations {
+      switch declaration {
       case .contractDeclaration:
         loadContract()
       case .contractBehaviorDeclaration(let contractBehaviour):
@@ -117,43 +119,45 @@ public class JSTranslator {
     // process the contract that we actually care about
     do {
       let sourceCode = try String(contentsOf: URL(fileURLWithPath: self.filePath))
-      let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath), isFromStdlib: false, isForServer: true,
+      let tokens = try Lexer(sourceFile: URL(fileURLWithPath: self.filePath),
+                             isFromStdlib: false,
+                             isForServer: true,
                              sourceCode: sourceCode).lex()
       let (_, environment, _) = Parser(tokens: tokens).parse()
 
-      guard let envTypes = environment.types[self.contractName] else {
+      guard let environmentTypes = environment.types[self.contractName] else {
         print("Could not load information about contract \(self.contractName)".lightRed.bold)
         exit(0)
       }
 
-      let contractFunctions = envTypes.allFunctions
+      let contractFunctions = environmentTypes.allFunctions
 
-      let contractEvents = envTypes.allEvents
+      let contractEvents = environmentTypes.allEvents
 
       // process contract event information
       for (eventName, allEventsWithName) in contractEvents {
         // this will always exist if the parse tree has been constructed
         let e = allEventsWithName[0]
-        var event_args: [(String, String)] = []
+        var eventArgs: [(String, String)] = []
         var count = 0
-        let paramTypes = e.eventTypes
-        for i in e.parameterIdentifiers {
-          let paramInfo = (i.name, paramTypes[count].name)
-          event_args.append(paramInfo)
+        let parameterTypes = e.eventTypes
+        for identifier in e.parameterIdentifiers {
+          let paramInfo = (identifier.name, parameterTypes[count].name)
+          eventArgs.append(paramInfo)
           count += 1
         }
-        let contractInfo = ContractEventInfo(name: eventName, event_args: event_args)
+        let contractInfo = ContractEventInfo(name: eventName, event_args: eventArgs)
         contractEventInfo[eventName] = contractInfo
       }
 
-      for (fName, allFuncsWithName) in contractFunctions where allFuncsWithName.count > 0 {
-        isFuncTransaction[fName] =
+      for (functionName, allFuncsWithName) in contractFunctions where allFuncsWithName.count > 0 {
+        isFuncTransaction[functionName] =
         allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable || self.coverage
 
         for stm in allFuncsWithName[0].declaration.body {
           switch stm {
           case .emitStatement:
-            isFuncTransaction[fName] = true
+            isFuncTransaction[functionName] = true
           default:
             continue
           }
@@ -175,15 +179,15 @@ public class JSTranslator {
           }
         }
 
-        contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal,
-                                                       payable: allFuncsWithName[0].declaration.isPayable,
-                                                       argTypes: argTypes)
-        contractFunctionNames.append(fName)
+        contractFunctionInfo[functionName] = ContractFuncInfo(resultType: resultTypeVal,
+                                                              payable: allFuncsWithName[0].declaration.isPayable,
+                                                              argTypes: argTypes)
+        contractFunctionNames.append(functionName)
       }
 
     } catch {
       print("Fatal error: Loading of contract that is to be tested has failed".lightRed.bold)
-      exit(1)
+      exit(EXIT_FAILURE)
     }
   }
 
@@ -191,12 +195,12 @@ public class JSTranslator {
 
     let members: [ContractBehaviorMember] = contractBehaviour.members
 
-    for m in members {
-      switch m {
-      case .functionDeclaration(let fdec):
+    for member in members {
+      switch member {
+      case .functionDeclaration(let functionDeclaration):
         //
-        let fT = FunctionTranslator(jst: self)
-        let (jsFnc, errors) = fT.translate(funcDec: fdec)
+        let functionTranslator = FunctionTranslator(jst: self)
+        let (jsFunction, errors) = functionTranslator.translate(functionDeclaration: functionDeclaration)
 
         if errors.count > 0 {
           var error = ""
@@ -207,8 +211,8 @@ public class JSTranslator {
           exit(0)
         }
 
-        if let fnc = jsFnc {
-          JSTestFuncs.append(fnc)
+        if let function = jsFunction {
+          JSTestFuncs.append(function)
         }
 
       default:
@@ -220,19 +224,19 @@ public class JSTranslator {
   private func processContract(contract: ContractDeclaration) {
     let members: [ContractMember] = contract.members
 
-    for m in members {
-      switch m {
-      case .variableDeclaration(let vdec):
-        process_contract_vars(vdec: vdec)
+    for member in members {
+      switch member {
+      case .variableDeclaration(let variableDeclaration):
+        processContractVars(variableDeclaration: variableDeclaration)
       default:
         continue
       }
     }
   }
 
-  private func getStringFromExpr(expr: Expression) -> String {
+  private func getStringFromExpression(expression: Expression) -> String {
     var fileName: String = ""
-    switch expr {
+    switch expression {
     case .literal(let t):
       switch t.kind {
       case .literal(let lit):
@@ -252,47 +256,43 @@ public class JSTranslator {
     return fileName
   }
 
-  private func process_contract_vars(vdec: VariableDeclaration) {
-    let nameOfVar: String = vdec.identifier.name
+  private func processContractVars(variableDeclaration: VariableDeclaration) {
+    let nameOfVar: String = variableDeclaration.identifier.name
 
     if nameOfVar == "filePath" {
-      self.filePath = getStringFromExpr(expr: vdec.assignedExpression!)
+      let filePathVar: String = getStringFromExpression(expression: variableDeclaration.assignedExpression!)
+      // Allow for both absolute and relative (to the testFile) path
+      let fileToTest = URL(fileURLWithPath: filePathVar, relativeTo: testFile.deletingLastPathComponent())
+      self.filePath = fileToTest.path
     } else if nameOfVar == "contractName" {
-      self.contractName = getStringFromExpr(expr: vdec.assignedExpression!)
+      self.contractName = getStringFromExpression(expression: variableDeclaration.assignedExpression!)
 
     } else if nameOfVar == "TestSuiteName" {
-      self.testSuiteName = getStringFromExpr(expr: vdec.assignedExpression!)
+      self.testSuiteName = getStringFromExpression(expression: variableDeclaration.assignedExpression!)
     }
   }
 
   private func genRunTests() -> String {
-    var fnc = "async function run_tests(pathToContract, nameOfContract) {\n"
-
-    fnc += "    let source = fs.readFileSync(pathToContract, 'utf8'); \n"
-
-    fnc += "    let compiledContract = solc.compile(source, 1); \n"
-
-    fnc += "    fs.writeFileSync(\"../coverage/contract.json\", JSON.stringify(compiledContract)); \n"
-
-    fnc += "    fs.writeFileSync(\"../coverage/address.txt\", \"\"); \n"
-
-    fnc += "    let abi = compiledContract.contracts[':_Interface' + nameOfContract].interface; \n"
-
-    fnc += "    let bytecode = \"0x\" + compiledContract.contracts[':' + nameOfContract].bytecode; \n"
-
-    fnc += "     console.log(chalk.green(\"Running test suite: \(self.testSuiteName)\")); \n"
+    var function = "async function run_tests(pathToContract, nameOfContract) {\n"
+    function += "    let source = fs.readFileSync(pathToContract, 'utf8'); \n"
+    function += "    let compiledContract = solc.compile(source, 1); \n"
+    function += "    fs.writeFileSync(\"../coverage/contract.json\", JSON.stringify(compiledContract)); \n"
+    function += "    fs.writeFileSync(\"../coverage/address.txt\", \"\"); \n"
+    function += "    let abi = compiledContract.contracts[':_Interface' + nameOfContract].interface; \n"
+    function += "    let bytecode = \"0x\" + compiledContract.contracts[':' + nameOfContract].bytecode; \n"
+    function += "    console.log(chalk.green(\"Running test suite: \(self.testSuiteName)\")); \n"
 
     var counter: Int = 0
-    for tFnc in JSTestFuncs {
-      fnc += "    let depContract_\(counter) = await deploy_contract(abi, bytecode); \n"
-      fnc += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(tFnc.getFuncName()): \""
+    for testFunction in JSTestFuncs {
+      function += "    let depContract_\(counter) = await deploy_contract(abi, bytecode); \n"
+      function += "    fs.appendFileSync(\"../coverage/address.txt\", \"\(testFunction.getFuncName()): \""
       + " + depContract_\(counter).address + \"\\n\"); \n"
-      fnc += "    await " + tFnc.getFuncName() + "(depContract_\(counter)) \n"
+      function += "    await " + testFunction.getFuncName() + "(depContract_\(counter)) \n"
       counter += 1
     }
 
-    fnc += "}\n\n"
-    return fnc
+    function += "}\n\n"
+    return function
   }
 
   // this is the function that generates the string representation of the JS file -> ready for execution
