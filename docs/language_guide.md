@@ -1733,13 +1733,13 @@ External trait attributes are a way of providing compiler directives so Flint ca
 
 _Only for: Move_
 
-On Solidity, external traits describe standard Solidity contracts, however, on Move, the differences between Move and Flint at too wide for the concept of contract to apply to any Move module. Thus, depending on the kind of Move instance you're dealing with, you will need to declare your Flint-interfacing code (possibly through a wrapper) in a certain way.
+On Solidity, external traits describe standard Solidity contracts, however, on Move, the differences between Move and Flint are too wide for the concept of contract to apply to any arbitrary Move module. Thus, depending on the kind of Move instance you're dealing with, you will need to declare your Flint-interfacing code (possibly through a wrapper) in a certain way.
 
 ##### Contracts
 
 _External trait attributes: `@module(address:)`_
 
-Providing a contract-like interface for Flint in Move so it can act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+Providing a contract-like interface for Flint in Move for it to act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
 
 ```rust
 contract <name> {
@@ -1759,17 +1759,18 @@ contract <name> {
 
 _Example: External Traits Counter ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.flint))_
 
-##### Data Contracts
+##### Data Modules
 
 _External trait attributes: `@module(address:)` and either `@data` or `@resource`_
 
-Providing a contract-like interface for Flint in Move so it can act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+These allow you to interface with a Move module that doesn't publish resources but instead is based around a local instance.
 
 ```rust
 module <name> {  
   // Declare instance types and imports...
   
   // You must declare a type T for Flint to store
+  // Use resources with `@resource` and structs with `@data`
   resource T {  
     ... // Private fields, Flint can't access these
   }  
