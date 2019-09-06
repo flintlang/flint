@@ -7,8 +7,8 @@ const web3 = new Web3();
 const eth = web3.eth;
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
-var accountAdd = web3.personal.newAccount("1");
-web3.personal.unlockAccount(accountAdd, "1", 1000);
+var accountAdd = web3.personal.newAccount("");
+web3.personal.unlockAccount(accountAdd, "", 1000);
 web3.eth.defaultAccount = accountAdd;
 
 async function deploy_contract(abi, bytecode) {

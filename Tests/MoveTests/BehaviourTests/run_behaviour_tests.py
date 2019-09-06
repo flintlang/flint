@@ -1,9 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import re
 from pathlib import Path
 from typing import NamedTuple, Optional, List, Iterable
 import subprocess, os, sys, shutil
 from contextlib import contextmanager
+import json
 
 
 class CompilationError(Exception): ...
@@ -33,11 +34,26 @@ def run_at_path(path):
     os.chdir(original_dir)
 
 
+class Configuration(NamedTuple):
+    libra_path: Path
+    
+    @classmethod
+    def from_flint_config(cls):
+        with open(os.path.expanduser("~/.flint/flint_config.json")) as file:
+            path = json.load(file).get("libraPath")  # .get defaults to None
+            if path: # If libraPath is defined and not empty
+                return cls(path)
+            else:
+                return None
+
+
 class Programme:
     path: Path
+    config: Configuration
 
-    def __init__(self, path):
+    def __init__(self, path: Path, config: Configuration):
         self.path = path
+        self.config = config
 
     def contents(self):
         with open(self.path) as file:
@@ -49,11 +65,10 @@ class Programme:
 
 
 class MoveIRProgramme(Programme):
-    libra_path = Path("libra")
     temporary_test_path = Path("language/functional_tests/tests/testsuite/flinttemp")
 
     def run(self):
-        with run_at_path(self.libra_path):
+        with run_at_path(self.config.libra_path):
             process = subprocess.Popen(
                 ["cargo", "test", "-p", "functional_tests", "/".join(list(self.path.parts)[-2:])],
                 stdout=subprocess.PIPE,
@@ -87,9 +102,9 @@ class MoveIRProgramme(Programme):
         self.path = new
 
     def move_to_libra(self):
-        testpath = self.libra_path / self.temporary_test_path / self.path.parts[-1]
+        testpath = self.config.libra_path / self.temporary_test_path / self.path.parts[-1]
         try:
-            os.makedirs(self.libra_path / self.temporary_test_path)
+            os.makedirs(self.config.libra_path / self.temporary_test_path)
         except FileExistsError:
             pass
         else:
@@ -99,15 +114,19 @@ class MoveIRProgramme(Programme):
 
 
 class FlintProgramme(Programme):
+    @property
+    def using_stdlib(self):
+        return "//! disable stdlib" not in self.contents()
+
     def compile(self) -> MoveIRProgramme:
         process = subprocess.Popen([
             f"./.build/release/flintc",
             "--target", "move", "--emit-ir", "--skip-verifier", str(self.path)
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ] + (["--no-stdlib"] if not self.using_stdlib else []), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = process.stdout.read() + process.stderr.read()
         if b"Produced binary" not in output:
             raise FlintCompilationError(output.decode("utf8"))
-        return MoveIRProgramme(Path("./bin/main.mvir"))
+        return MoveIRProgramme(Path("./bin/main.mvir"), config=self.config)
 
 
 class BehaviourTest(NamedTuple):
@@ -116,7 +135,7 @@ class BehaviourTest(NamedTuple):
     expected_fail_line: Optional[int] = None
 
     @classmethod
-    def from_name(cls, name: str):
+    def from_name(cls, name: str, *, config: Configuration):
         """
         Creates a behaviour test from a test name, searching for .flint and .mvir files
         The .flint file must exist, however the .mvir file is optional (it will just
@@ -133,13 +152,13 @@ class BehaviourTest(NamedTuple):
         move_programme = None
         expected_fail_line = None
         if move_path.exists():
-            move_programme = MoveIRProgramme(move_path)
+            move_programme = MoveIRProgramme(move_path, config=config)
             expect_fail = re.search(r"//! expect fail (\d+)", move_programme.contents(), flags=re.IGNORECASE)
             if expect_fail:
                 expected_fail_line = int(expect_fail.group(1))
 
         return cls(
-            FlintProgramme(TestRunner.default_path / (name + ".flint")),
+            FlintProgramme(TestRunner.default_path / (name + ".flint"), config=config),
             move_programme,
             expected_fail_line
         )
@@ -202,7 +221,7 @@ class TestFormatter:
     def not_configured(cls):
         print("""\
 MoveIR tests not yet configured on this computer
-To run them please symlink `./libra' to your local copy of the libra repository\
+To run them please set "libraPath" in ~/.flint/flint_config.json to the root of the Libra directory\
 """)
 
 
@@ -211,8 +230,8 @@ class TestRunner(NamedTuple):
     default_path = Path("Tests/MoveTests/BehaviourTests/tests")
 
     @classmethod
-    def from_all(cls, names=[]):
-        return TestRunner([BehaviourTest.from_name(file.stem)
+    def from_all(cls, names=[], config=None):
+        return TestRunner([BehaviourTest.from_name(file.stem, config=config)
                            for file in cls.default_path.iterdir()
                            if file.suffix.endswith("flint")
                            if not names or file.stem in names])
@@ -241,8 +260,13 @@ class TestRunner(NamedTuple):
 
 
 if __name__ == '__main__':
-    os.chdir(os.environ['FLINTPATH'])
-    if not Path(MoveIRProgramme.libra_path).exists():
+    os.chdir(os.path.expanduser("~/.flint"))
+    
+    config = Configuration.from_flint_config()
+
+    if not config:
         TestFormatter.not_configured()
         sys.exit(0)
-    sys.exit(TestRunner.from_all(sys.argv[1:]).run())
+    
+    # Run all, or run the given arguments (empty list is falsey)
+    sys.exit(TestRunner.from_all(sys.argv[1:], config=config).run())

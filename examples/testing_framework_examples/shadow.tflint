@@ -1,5 +1,5 @@
 contract TestCounter {
-  let filePath : String = "[redacted]"
+  let filePath : String = "shadow.flint"
   let contractName: String = "Shadow"   
   let TestSuiteName : String  = "<Add a name for this test suite>"
 }
@@ -9,7 +9,7 @@ TestCounter :: (any) {
   public func test_test1() {
 	   let s : Shadow = Shadow()
 	   let x: Int = s.test1(1)
-           assertEqual(x, 2)
+           assertEqual(x, 1)
   }   
 
 }

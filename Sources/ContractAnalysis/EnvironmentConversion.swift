@@ -1,17 +1,17 @@
 import AST
 
-public func produce_graphs_from_ev(ev: Environment) -> [Graph] {
+public func produceGraphsFromEnvironment(environment: Environment) -> [Graph] {
   var graphs: [Graph] = []
-  for c in ev.declaredContracts {
-    let name = c.name
+  for contract in environment.declaredContracts {
+    let name = contract.name
 
     var startingState = ""
 
-    let initDecBody = ev.types[name]!.publicInitializer!.body
-    for s in initDecBody {
-      switch s {
-      case .becomeStatement(let bStat):
-        switch bStat.expression {
+    let initalizerBody = environment.types[name]!.publicInitializer!.body
+    for statement in initalizerBody {
+      switch statement {
+      case .becomeStatement(let becomeStatement):
+        switch becomeStatement.expression {
         case .identifier(let id):
           startingState = id.name
         default:
@@ -23,24 +23,22 @@ public func produce_graphs_from_ev(ev: Environment) -> [Graph] {
     }
 
     // process the functions to get the state transitions (edges)
-
-    let funcs = ev.types[name]!.functions
-
+    let functions = environment.types[name]!.functions
     var edges: [Edge] = []
 
-    for (funcName, symtab) in funcs {
-      let funcInfo = symtab[0]
-      let funcDec = funcInfo.declaration
-      let funcBody = funcDec.body
-      let typeStates = funcInfo.typeStates
+    for (functionName, symtab) in functions {
+      let functionInformation = symtab[0]
+      let functionDeclaration = functionInformation.declaration
+      let functionBody = functionDeclaration.body
+      let typeStates = functionInformation.typeStates
       var endState = ""
 
       // go through the function body
       // if there any become statements then process
-      for s in funcBody {
-        switch s {
-        case .becomeStatement(let bStat):
-          switch bStat.expression {
+      for statement in functionBody {
+        switch statement {
+        case .becomeStatement(let becomeStatement):
+          switch becomeStatement.expression {
           case .identifier(let id):
             endState = id.name
           default:
@@ -52,7 +50,7 @@ public func produce_graphs_from_ev(ev: Environment) -> [Graph] {
 
       if endState != "" {
         for startingState in typeStates {
-          let newEdge = Edge(startVertex: startingState.name, endVertex: endState, label: funcName)
+          let newEdge = Edge(startVertex: startingState.name, endVertex: endState, label: functionName)
           edges.append(newEdge)
         }
       }
@@ -66,7 +64,7 @@ public func produce_graphs_from_ev(ev: Environment) -> [Graph] {
   return graphs
 }
 
-public func produce_dot_graph(graph: Graph) -> String {
+public func produceDotGraph(graph: Graph) -> String {
   var dotGraph = "digraph { \n graph [pad=\"0.5\", nodesep=\"1\", ranksep=\"2\"]; \n"
   dotGraph += "\(graph.StartingState) [style=bold, color=purple] \n"
   for edge in graph.Edges {

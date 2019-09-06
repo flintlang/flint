@@ -52,7 +52,6 @@ public struct Compiler {
     }
 
     let userTokens = try inputFiles.flatMap { try Lexer(sourceFile: $0).lex() }
-
     return stdlibTokens + userTokens
   }
 
@@ -129,23 +128,15 @@ extension Compiler {
 
     // Run verifier
     if !config.skipVerifier {
-      #if os(macOS)
-        let monoLocation = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/mono"
-      #else
-        let monoLocation = "/usr/bin/mono"
-      #endif
       let (verified, errors) = BoogieVerifier(dumpVerifierIR: config.dumpVerifierIR,
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
-                                              boogieLocation: Path.getFullUrl(
-                                                  path: "boogie/Binaries/Boogie.exe").absoluteString,
-                                              symbooglixLocation: Path.getFullUrl(
-                                                  path: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe"
-                                              ).absoluteString,
+                                              boogieLocation: Configuration.boogieLocation.path,
+                                              symbooglixLocation: Configuration.symbooglixLocation.path,
                                               maxTransactionDepth: config.maxTransactionDepth,
                                               maxHolisticTimeout: config.maxHolisticTimeout,
-                                              monoLocation: monoLocation,
+                                              monoLocation: Configuration.monoLocation.path,
                                               topLevelModule: passRunnerOutcome.element,
                                               environment: passRunnerOutcome.environment,
                                               sourceContext: sourceContext,
@@ -252,7 +243,7 @@ extension Compiler {
 
   public static func getAST(config: CompilerTestFrameworkConfiguration) throws -> (TopLevelModule, Environment) {
 
-    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
+    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles, standardLibrary: StandardLibrary.from(target: .evm))
 
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
@@ -283,12 +274,12 @@ extension Compiler {
     return (ast, environment)
   }
 
-  public static func compile_for_test(config: CompilerTestFrameworkConfiguration, in_ast: TopLevelModule) throws {
+  public static func compileForTest(config: CompilerTestFrameworkConfiguration, inAst: TopLevelModule) throws {
 
-    var ast = in_ast
+    var ast = inAst
 
-    let p = Parser(ast: ast)
-    let environment = p.getEnv()
+    let parser = Parser(ast: ast)
+    let environment = parser.getEnv()
     let sourceContext = SourceContext(sourceFiles: config.sourceFiles,
                                       sourceCodeString: config.sourceCode,
                                       isForServer: true)
@@ -314,11 +305,12 @@ extension Compiler {
     let irCode = try evmTarget.generate(ast: ast)
 
     // Compile the YUL IR code using solc.
-    try SolcCompiler(inputSource: irCode, outputDirectory: config.outputDirectory, emitBytecode: false).compile()
+    try SolcCompiler(inputSource: irCode,
+                     outputDirectory: config.outputDirectory,
+                     emitBytecode: false).compile()
 
     // these are warnings from the solc compiler
     try config.diagnostics.display()
-
     let fileName = "main.sol"
     let irFileURL: URL = config.outputDirectory.appendingPathComponent(fileName)
     do {
@@ -368,8 +360,9 @@ extension Compiler {
 
   }
 
-  public static func genSolFile(config: CompilerContractAnalyserConfiguration, ast: TopLevelModule,
-                                env: Environment) throws {
+  public static func genSolFile(config: CompilerContractAnalyserConfiguration,
+                                ast: TopLevelModule,
+                                environment: Environment) throws {
 
     let sourceContext: SourceContext = .init(sourceFiles: config.sourceFiles,
                                              sourceCodeString: config.sourceCode,
@@ -377,7 +370,7 @@ extension Compiler {
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
-             in: env,
+             in: environment,
              sourceContext: sourceContext)
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
       if failed {
@@ -423,60 +416,65 @@ extension Compiler {
       return nil
     }
 
-    var sig = constructor.signature
-    sig.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation: sig.sourceLocation))
-    let tok: Token = Token(kind: Token.Kind.func, sourceLocation: sig.sourceLocation)
-    let newFunctionSig = FunctionSignatureDeclaration(funcToken: tok, attributes: sig.attributes,
-                                                      modifiers: sig.modifiers,
-                                                      mutates: contractProperties,
-                                                      identifier: Identifier(name: "replConstructor",
-                                                                             sourceLocation: sig.sourceLocation),
-                                                      parameters: sig.parameters, prePostConditions: [],
-                                                      closeBracketToken: sig.closeBracketToken, resultType: nil)
-    let newFunc = FunctionDeclaration(signature: newFunctionSig, body: constructor.body,
-                                      closeBraceToken: constructor.closeBraceToken)
+    var signature = constructor.signature
+    signature.modifiers.append(Token(kind: Token.Kind.mutating, sourceLocation: signature.sourceLocation))
+    let token: Token = Token(kind: Token.Kind.func, sourceLocation: signature.sourceLocation)
+    let newFunctionSignature
+      = FunctionSignatureDeclaration(funcToken: token,
+                                     attributes: signature.attributes,
+                                     modifiers: signature.modifiers,
+                                     mutates: contractProperties,
+                                     identifier: Identifier(name: "replConstructor",
+                                                            sourceLocation: signature.sourceLocation),
+                                     parameters: signature.parameters, prePostConditions: [],
+                                     closeBracketToken: signature.closeBracketToken, resultType: nil)
+    let newFunction = FunctionDeclaration(signature: newFunctionSignature,
+                                          body: constructor.body,
+                                          closeBraceToken: constructor.closeBraceToken)
 
-    return newFunc
+    return newFunction
   }
 
   private static func insertConstructorFuncRepl(ast: TopLevelModule, environment: Environment) -> TopLevelModule {
 
-    var newDecs: [TopLevelDeclaration] = []
+    var newDeclarations: [TopLevelDeclaration] = []
 
-    for m in ast.declarations {
-      switch m {
-      case .contractBehaviorDeclaration(var cbdec):
-        var mems: [ContractBehaviorMember] = []
-        for cm in cbdec.members {
-          switch cm {
-          case .specialDeclaration(let spdec):
+    for declaration in ast.declarations {
+      switch declaration {
+      case .contractBehaviorDeclaration(var contractBehaviorDeclaration):
+        var members: [ContractBehaviorMember] = []
+        for contractMember in contractBehaviorDeclaration.members {
+          switch contractMember {
+          case .specialDeclaration(let specialDeclaration):
             let contractProperties: [Identifier]
-              = environment.propertyDeclarations(in: cbdec.contractIdentifier.name).map { $0.identifier }
-            if let constructorFunc = createConstructorRepl(constructor: spdec, contractProperties: contractProperties) {
-              let cBeh: ContractBehaviorMember = .functionDeclaration(constructorFunc)
-              mems.append(cBeh)
-              mems.append(.specialDeclaration(spdec))
+              = environment
+                  .propertyDeclarations(in: contractBehaviorDeclaration.contractIdentifier.name)
+                  .map { $0.identifier }
+            if let constructorFunc = createConstructorRepl(constructor: specialDeclaration,
+                                                           contractProperties: contractProperties) {
+              let contractBehaviorMember: ContractBehaviorMember = .functionDeclaration(constructorFunc)
+              members.append(contractBehaviorMember)
+              members.append(.specialDeclaration(specialDeclaration))
             } else {
-              mems.append(cm)
+              members.append(contractMember)
             }
           default:
-            mems.append(cm)
+            members.append(contractMember)
           }
         }
-        cbdec.members = mems
-        newDecs.append(.contractBehaviorDeclaration(cbdec))
+        contractBehaviorDeclaration.members = members
+        newDeclarations.append(.contractBehaviorDeclaration(contractBehaviorDeclaration))
       default:
-        newDecs.append(m)
+        newDeclarations.append(declaration)
       }
     }
 
-    return TopLevelModule(declarations: newDecs)
+    return TopLevelModule(declarations: newDeclarations)
   }
 
   public static func getAST(config: CompilerReplConfiguration) throws -> (TopLevelModule, Environment) {
 
-    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles)
-
+    let tokens = try tokenizeFiles(inputFiles: config.sourceFiles, standardLibrary: StandardLibrary.from(target: .evm))
     let (parserAST, environment, parserDiagnostics) = Parser(tokens: tokens).parse()
 
     if let failed = try config.diagnostics.checkpoint(parserDiagnostics) {
@@ -490,7 +488,7 @@ extension Compiler {
       exitWithFailure()
     }
 
-    ast = insertConstructorFuncRepl(ast: parserAST!, environment: environment)
+   ast = insertConstructorFuncRepl(ast: parserAST!, environment: environment)
 
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
@@ -508,14 +506,15 @@ extension Compiler {
     return (ast, environment)
   }
 
-  public static func genSolFile(config: CompilerReplConfiguration, ast: TopLevelModule, env: Environment) throws {
-
+  public static func genSolFile(config: CompilerReplConfiguration,
+                                ast: TopLevelModule,
+                                environment: Environment) throws {
     let sourceContext = SourceContext(sourceFiles: config.sourceFiles)
 
     // Run all of the passes.
     let passRunnerOutcome = ASTPassRunner(ast: ast)
         .run(passes: config.astPasses,
-             in: env,
+             in: environment,
              sourceContext: sourceContext)
 
     if let failed = try config.diagnostics.checkpoint(passRunnerOutcome.diagnostics) {
@@ -552,7 +551,7 @@ extension Compiler {
 
 // MARK: Compile hook for language server
 extension Compiler {
-  public static func ide_compile(config: CompilerLSPConfiguration) throws -> [Diagnostic] {
+  public static func ideCompile(config: CompilerLSPConfiguration) throws -> [Diagnostic] {
     let tokens = try tokenizeSourceCode(sourceFile: config.sourceFiles[0],
                                         sourceCode: config.sourceCode,
                                         standardLibrary: StandardLibrary.from(target: .evm))
@@ -565,8 +564,7 @@ extension Compiler {
 
     // stop parsing if any syntax errors are detected
     if environment.syntaxErrors {
-      let diag = config.diagnostics
-      return diag.getDiagnostics()
+      return config.diagnostics.getDiagnostics()
     }
 
     guard let ast = parserAST else {

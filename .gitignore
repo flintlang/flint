@@ -12,9 +12,12 @@ venv
 /temp
 *.opcode
 *.bin
-file
+file*
 solc-static-linux
 libra
+/*.bpl
+flint_config.json
+z3
 
 /*.mvir
 /*.flint
@@ -45,7 +48,7 @@ utils/repl/event_result.txt
 utils/repl/gen_addr.txt
 
 utils/coverage/contract.json
-utils/coverage/// swift-tools-version:5.0address.txt
+utils/coverage/address.txt
 utils/coverage/counts.json
 utils/coverage/function.json
 utils/coverage/branch.json

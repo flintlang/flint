@@ -8,6 +8,7 @@
 import AST
 import Lexer
 import Foundation
+import Diagnostic
 
 /// A prepocessing step to update the program's AST before code generation.
 extension MovePreprocessor {
@@ -115,11 +116,17 @@ extension MovePreprocessor {
   }
 
   public func process(externalCall: ExternalCall, passContext: ASTPassContext) -> ASTPassResult<ExternalCall> {
+    guard let environment = passContext.environment,
+          let enclosingType = passContext.enclosingTypeIdentifier?.name,
+          let scopeContext = passContext.scopeContext else {
+      return ASTPassResult(element: externalCall, diagnostics: [
+            Diagnostic(severity: .error,
+                       sourceLocation: externalCall.sourceLocation,
+                       message: "Insufficient environment information to deduce external call trait name")
+      ], passContext: passContext)
+    }
     // Update trait name for external calls
     var externalCall = externalCall
-    let environment = passContext.environment!
-    let enclosingType = passContext.enclosingTypeIdentifier!.name
-    let scopeContext = passContext.scopeContext!
     let receiver = externalCall.functionCall.lhs
     let receiverType = environment.type(of: receiver, enclosingType: enclosingType, scopeContext: scopeContext)
     externalCall.externalTraitName = receiverType.name
@@ -305,7 +312,22 @@ extension MovePreprocessor {
     var borrowLocal = false
     if case .inoutExpression(let inOut) = functionArgument.expression {
       expression = inOut.expression
-      borrowLocal = true
+      if let environment = passContext.environment,
+         let scopeContext = passContext.scopeContext,
+         let enclosingType = passContext.enclosingTypeIdentifier?.name {
+        let type = environment.type(
+             of: expression,
+             enclosingType: enclosingType,
+             typeStates: passContext.contractBehaviorDeclarationContext?.typeStates ?? [],
+             callerProtections: passContext.contractBehaviorDeclarationContext?.callerProtections ?? [],
+             scopeContext: scopeContext
+        )
+        if !type.isCurrencyType && !type.isExternalResource(environment: environment) {
+          borrowLocal = true
+        }
+      } else { // If we can't deduce the type, expect it to be an external type
+        borrowLocal = true
+      }
     } else {
       expression = functionArgument.expression
     }

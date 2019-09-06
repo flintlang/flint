@@ -14,9 +14,8 @@
             "request": "launch",
             "name": "Run your Executable",
             "program": "${workspaceFolder}/.build/debug/flintc",
-            "args": [,
-                "--skip-verifier",
-                "${workspaceFolder}/Tests/Integration/BehaviorTests/tests/loop/loop.flint"],
+            "args": [
+                "${workspaceFolder}/Tests/VerifierTests/tests/verifyStructs.flint"],
             "env": {
                 "FLINTPATH": "${workspaceFolder}"
             },

@@ -12,14 +12,14 @@ Emergency @(Paused) :: (any) {
 
 Emergency @(Paused) :: (owner) {
 
-  mutating public func unpause() {
+  public func unpause() {
      become Running
   }
 }
 
 Emergency @(Running) :: (owner) {
 
-  mutating public func pause() {
+  public func pause() {
     become Paused
   }
 

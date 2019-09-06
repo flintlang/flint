@@ -1,4 +1,5 @@
 import Foundation
+import Utils
 
 struct Boogie {
   static func verifyBoogie(boogie: String, monoLocation: String, boogieLocation: String,
@@ -169,28 +170,11 @@ struct Boogie {
   }
 
   static func executeTask(executable: String, arguments: [String], captureOutput: Bool) -> (String?, Int32) {
-    // Create a Task instance
-    let task = Process()
-
-    // Set the task parameters
-    task.executableURL = URL(fileURLWithPath: executable)
-    task.arguments = arguments
-
-    // Create a Pipe and make the task
-    // put all the output there
-    let pipe = Pipe()
-    task.standardOutput = captureOutput ? pipe : FileHandle(forWritingAtPath: "/dev/null")!
-    task.standardError = captureOutput ? Pipe() : FileHandle(forWritingAtPath: "/dev/null")!
-    // Launch the task
-    try! task.run()
-    task.waitUntilExit()
-
-    var uncheckedOutput: String?
-    if captureOutput {
-      uncheckedOutput = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: String.Encoding.utf8)
-    }
-    // Get the data
-    return (uncheckedOutput, task.terminationStatus)
+    let processResult = Process.run(executableURL: URL(fileURLWithPath: executable),
+                                    arguments: arguments,
+                                    currentDirectoryURL: nil)
+    return (captureOutput ? processResult.standardOutputResult : nil,
+            processResult.terminationStatus)
   }
 
   static func writeToTempFile(data: String) -> URL {

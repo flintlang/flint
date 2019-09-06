@@ -24,7 +24,7 @@ func main() {
                                                                             sourceFiles: inputFiles,
                                                                             sourceCodeString: sourceCode,
                                                                             isForServer: true)))
-      let diags = try Compiler.ide_compile(config: config)
+      let diags = try Compiler.ideCompile(config: config)
       let lsp_json = try convertFlintDiagToLspDiagJson(diags)
       print(lsp_json)
 
@@ -41,8 +41,7 @@ func main() {
 }
 
 func main_d() throws {
-  let fileName = Path.getFullUrl(path: "ide_examples/curr_examples/test.flint"
-  ).absoluteString  /* %"/Users/Zubair/Documents/Imperial/Thesis/Code/flint/ide_examples/curr_examples/test.flint" */
+  let fileName = Path.getFullUrl(path: "ide_examples/curr_examples/test.flint").path
   let inputFiles = [URL(fileURLWithPath: fileName)]
   let sourceCode = try String(contentsOf: inputFiles[0])
   do {
@@ -56,7 +55,7 @@ func main_d() throws {
                                                                           sourceFiles: inputFiles,
                                                                           sourceCodeString: sourceCode,
                                                                           isForServer: true)))
-    let diags = try Compiler.ide_compile(config: config)
+    let diags = try Compiler.ideCompile(config: config)
     let lsp_json = try convertFlintDiagToLspDiagJson(diags)
     print(lsp_json)
 

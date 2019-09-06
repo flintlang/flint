@@ -10,6 +10,7 @@ import AST
 import Foundation
 import Source
 import Lexer
+import Diagnostic
 
 /// A preprocessing step to update the program's AST before code generation.
 public struct IRPreprocessor: ASTPass {
@@ -163,6 +164,18 @@ public struct IRPreprocessor: ASTPass {
   public func postProcess(statement: Statement, passContext: ASTPassContext) -> ASTPassResult<Statement> {
     let passContext = passContext.withUpdates { $0.functionCallReceiverTrail = [] }
     return ASTPassResult(element: statement, diagnostics: [], passContext: passContext)
+  }
+
+  public func process(traitDeclaration: TraitDeclaration,
+                      passContext: ASTPassContext) -> ASTPassResult<TraitDeclaration> {
+    if !traitDeclaration.decorators.isEmpty {
+      return ASTPassResult(element: traitDeclaration, diagnostics: [Diagnostic(
+          severity: .error,
+          sourceLocation: traitDeclaration.sourceLocation,
+          message: "There are no currently supported EVM trait attributes"
+      )], passContext: passContext)
+    }
+    return ASTPassResult(element: traitDeclaration, diagnostics: [], passContext: passContext)
   }
 }
 

@@ -42,9 +42,11 @@ struct MoveFunctionCall {
 
     if environment.isExternalTraitInitializer(functionCall: lookupCall),
        let trait: TypeInformation = environment.types[lookupCall.identifier.name] {
-      if trait.decorators?.contains(where: { $0.identifier.name == "data" }) ?? false {
-        moduleName = lookupCall.identifier.name
-        callName = "new"
+      if trait.isExternalStruct {
+        if trait.isExternalModule {
+          moduleName = lookupCall.identifier.name
+          callName = "new"
+        }
       } else {
         let externalContractAddress = lookupCall.arguments[0].expression
         return MoveExpression(expression: externalContractAddress, position: .normal)

@@ -8,7 +8,7 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
 
 fs.writeFileSync("gen_addr.txt", "");
 
-let addr = web3.personal.newAccount("1");
-web3.personal.unlockAccount(addr, "1", 1000);
+let addr = web3.personal.newAccount("");
+web3.personal.unlockAccount(addr, "", 1000);
 
 fs.writeFileSync("gen_addr.txt", addr);

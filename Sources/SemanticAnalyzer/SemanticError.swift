@@ -25,11 +25,6 @@ extension Diagnostic {
                       message: "Use of invalid character '\(character)' in '\(identifier.name)'")
   }
 
-  static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
-    return Diagnostic(severity: .warning, sourceLocation: literalToken.sourceLocation,
-                      message: "Address literal should be 40 digits long after the prefix")
-  }
-
   static func noTryForFunctionCall(_ functionCall: FunctionCall,
                                    contextCallerProtections: [CallerProtection],
                                    stateProtections: [TypeState],
@@ -566,6 +561,11 @@ extension Diagnostic {
 // MARK: Warnings
 
 extension Diagnostic {
+  static func invalidAddressLiteral(_ literalToken: Token) -> Diagnostic {
+    return Diagnostic(severity: .warning, sourceLocation: literalToken.sourceLocation,
+        message: "Address literal should be 40 digits long after the prefix")
+  }
+
   static func codeAfterReturn(_ statement: Statement) -> Diagnostic {
     return Diagnostic(severity: .warning, sourceLocation: statement.sourceLocation,
                       message: "Code after return/become will never be executed")

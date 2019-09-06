@@ -152,7 +152,7 @@ async function main() {
 	let transactionAddress = process.argv[8];
 	if (!(transactionAddress === "")) {
 		defaultAcc = transactionAddress
-		web3.personal.unlockAccount(defaultAcc, "1", 1000);
+		web3.personal.unlockAccount(defaultAcc, "", 1000);
 		web3.eth.defaultAccount = defaultAcc;
 	}
 	var json_args = []

@@ -23,8 +23,8 @@ func main() {
                        estimateGas: estimateGas,
                        typeStateDiagram: typeStateDiagram,
                        callerCapabilityAnalysis: callerAnalysis,
-                       test_run: test_run,
-                       function_analysis: fA)
+                       isTestRun: test_run,
+                       functionAnalysis: fA)
       try a.analyse()
 
     } catch let err {
@@ -34,7 +34,7 @@ func main() {
 }
 
 func mainTest() throws {
-  let fileName = Path.getFullUrl(path: "examples/valid/counter.flint").absoluteString
+  let fileName = Path.getFullUrl(path: "examples/valid/counter.flint").path
   let inputFiles = [Path.getFullUrl(path: "examples/valid/counter.flint")]
   let sourceCode = try String(contentsOf: inputFiles[0])
 
@@ -44,8 +44,8 @@ func mainTest() throws {
                      estimateGas: true,
                      typeStateDiagram: false,
                      callerCapabilityAnalysis: false,
-                     test_run: false,
-                     function_analysis: false)
+                     isTestRun: false,
+                     functionAnalysis: false)
     try a.analyse()
 
   } catch let err {

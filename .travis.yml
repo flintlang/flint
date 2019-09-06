@@ -5,7 +5,10 @@ matrix:
     sudo: required
     dist: bionic
     if: NOT tag IS present OR tag =~ ^*-linux$
-    before_install:
+    before_install: 
+    - mkdir $HOME/.flint
+    - cp -av . $HOME/.flint
+    - cd $HOME/.flint
     - sudo apt-get update
     - sudo apt-get install -y software-properties-common curl git zip sudo wget gnupg ca-certificates apt-transport-https sed python python3
     - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -24,7 +27,7 @@ matrix:
     - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
     script:
-    - export FLINTPATH=$(pwd)
+    - cd $HOME/.flint
     - make
     - make release
     - make test

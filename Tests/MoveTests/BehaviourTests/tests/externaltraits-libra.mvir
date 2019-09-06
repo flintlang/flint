@@ -1,5 +1,5 @@
 import Transaction.Account;
-import Transaction.Libra;
+import Transaction.Coin;
 
 main () {
   _ = get_txn_sender();
@@ -7,7 +7,7 @@ main () {
 }
 
 //! provide module
-module Libra {
+module Coin {
   import 0x0.LibraCoin;
 
   resource T {
@@ -37,14 +37,10 @@ module Libra {
     };
   }
 
-  public transfer(this: &mut Self.T, other: &mut Self.T) {
-    let coin_temp: &LibraCoin.T;
+  public transfer(this: &mut Self.T, other: &mut Self.T, amount: u64) {
     let coin: &mut LibraCoin.T;
     let other_coin: &mut LibraCoin.T;
     let temporary: LibraCoin.T;
-    let amount: u64;
-    coin_temp = &copy(this).coin;
-    amount = LibraCoin.value(move(coin_temp));
     coin = &mut move(this).coin;
     temporary = LibraCoin.withdraw(move(coin), move(amount));
     other_coin = &mut move(other).coin;

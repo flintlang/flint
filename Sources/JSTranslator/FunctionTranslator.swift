@@ -14,31 +14,31 @@ public class FunctionTranslator {
     self.jst = jst
   }
 
-  public func translate(funcDec: FunctionDeclaration) -> (JSTestFunction?, [String]) {
-    let jsTestFunc = processContractFunction(fdec: funcDec)
+  public func translate(functionDeclaration: FunctionDeclaration) -> (JSTestFunction?, [String]) {
+    let jsTestFunc = processContractFunction(functionDeclaration: functionDeclaration)
 
     return (jsTestFunc, error_array)
   }
 
-  private func processContractFunction(fdec: FunctionDeclaration) -> JSTestFunction? {
-    let fSignature: FunctionSignatureDeclaration = fdec.signature
+  private func processContractFunction(functionDeclaration: FunctionDeclaration) -> JSTestFunction? {
+    let functionSignature: FunctionSignatureDeclaration = functionDeclaration.signature
 
-    let fName: String = fSignature.identifier.name
+    let functionName: String = functionSignature.identifier.name
 
-    var jsStmts: [JSNode] = []
+    var jsStatements: [JSNode] = []
 
     // if this is not a test function then do not process
-    if !fName.lowercased().contains("test") {
+    if !functionName.lowercased().contains("test") {
       return nil
     }
 
-    let body: [Statement] = fdec.body
+    let body: [Statement] = functionDeclaration.body
 
-    for stmt in body {
-      switch stmt {
-      case .expression(let expr):
-        if let jsExpr = process_expr(expr: expr) {
-          jsStmts.append(jsExpr)
+    for statement in body {
+      switch statement {
+      case .expression(let expression):
+        if let jsExpression = processExpression(expression: expression) {
+          jsStatements.append(jsExpression)
         }
 
       default:
@@ -46,90 +46,92 @@ public class FunctionTranslator {
       }
     }
 
-    return JSTestFunction(name: fName, stmts: jsStmts)
+    return JSTestFunction(name: functionName, statements: jsStatements)
   }
 
-  private func process_expr(expr: Expression) -> JSNode? {
-    switch expr {
-    case .binaryExpression(let binExp):
-      return process_binary_expression(binExp: binExp)
-    case .functionCall(let fCall):
-      return process_func_call(fCall: fCall)
+  private func processExpression(expression: Expression) -> JSNode? {
+    switch expression {
+    case .binaryExpression(let binaryExpression):
+      return processBinaryExpression(binaryExpression: binaryExpression)
+    case .functionCall(let functionCall):
+      return processFunctionCall(functionCall: functionCall)
 
     default:
-      print("Expression \(expr.description) is not supported yet".lightRed.bold)
+      print("Expression \(expression.description) is not supported yet".lightRed.bold)
       exit(0)
     }
   }
 
-  private func process_binary_expression(binExp: BinaryExpression) -> JSNode? {
-    switch binExp.opToken {
+  private func processBinaryExpression(binaryExpression: BinaryExpression) -> JSNode? {
+    switch binaryExpression.opToken {
     case .equal:
-      return process_assignment_expr(binExp: binExp)
+      return processAssignmentExpr(binaryExpression: binaryExpression)
     case .dot:
-      return process_dot_expr(binExpr: binExp)
+      return processDotExpression(binaryExpression: binaryExpression)
     default:
       error_array.append(
-          "Test framework does not yet support expressions with operator \(binExp.description) "
-              + "at \(binExp.sourceLocation)".lightRed.bold
+          "Test framework does not yet support expressions with operator \(binaryExpression.description) "
+              + "at \(binaryExpression.sourceLocation)".lightRed.bold
       )
       return nil
     }
   }
 
-  private func process_dot_expr(binExpr: BinaryExpression) -> JSNode? {
+  private func processDotExpression(binaryExpression: BinaryExpression) -> JSNode? {
     var lhsName: String = ""
     var rhsNode: JSNode?
 
-    switch binExpr.lhs {
-    case .identifier(let i):
-      lhsName = i.name
+    switch binaryExpression.lhs {
+    case .identifier(let identifier):
+      lhsName = identifier.name
       guard nil != varMap[lhsName] else {
-        error_array.append("Variable \(lhsName) not in scope at \(i.sourceLocation)")
+        error_array.append("Variable \(lhsName) not in scope at \(identifier.sourceLocation)")
         return nil
       }
     default:
       break
     }
 
-    switch binExpr.rhs {
-    case .functionCall(let fCall):
-      guard nil != jst.contractFunctionInfo[fCall.identifier.name] else {
+    switch binaryExpression.rhs {
+    case .functionCall(let functionCall):
+      guard nil != jst.contractFunctionInfo[functionCall.identifier.name] else {
         // function does not exist in contract (currently support single contract deploment)
         error_array.append(
-            "Function \(fCall.identifier.name) not found in contract at \(fCall.sourceLocation)".lightRed.bold)
+            "Function \(functionCall.identifier.name) not found in contract at \(functionCall.sourceLocation)"
+              .lightRed.bold)
         return nil
       }
-      rhsNode = process_func_call(fCall: fCall, lhsName: lhsName)
+      rhsNode = processFunctionCall(functionCall: functionCall, lhsName: lhsName)
 
-    case .identifier(let i):
-      if nil == jst.contractEventInfo[i.name] {
+    case .identifier(let identifier):
+      if nil == jst.contractEventInfo[identifier.name] && !jst.contractFunctionNames.contains(identifier.name) {
         error_array.append(
-            "Only events and functions are supported on the rhs of dot expression at \(i.sourceLocation)".lightRed.bold)
+            "Only events and functions are supported on the rhs of dot expression at \(identifier.sourceLocation)"
+              .lightRed.bold)
         return nil
       }
 
-      rhsNode = .Variable(JSVariable(variable: "\"" + i.name + "\"", type: "event", isConstant: false))
+      rhsNode = .Variable(JSVariable(variable: "\"" + identifier.name + "\"", type: "event", isConstant: false))
     default:
-      error_array.append(("Unsupported expression found on the RHS of dot expr \(binExpr.rhs)"
-          + " at \(binExpr.sourceLocation)").lightRed.bold)
+      error_array.append(("Unsupported expression found on the RHS of dot expr \(binaryExpression.rhs)"
+          + " at \(binaryExpression.sourceLocation)").lightRed.bold)
       return nil
     }
 
     return rhsNode
   }
 
-  private func process_assignment_expr(binExp: BinaryExpression) -> JSNode? {
+  private func processAssignmentExpr(binaryExpression: BinaryExpression) -> JSNode? {
     var rhsNode: JSNode?
     var lhsNode: JSVariable?
     var isInstantiation: Bool = false
 
-    switch binExp.lhs {
-    case .variableDeclaration(let vdec):
-      let name = vdec.identifier.name
-      let isConst = vdec.isConstant
+    switch binaryExpression.lhs {
+    case .variableDeclaration(let variableDeclaration):
+      let name = variableDeclaration.identifier.name
+      let isConst = variableDeclaration.isConstant
       var varType = self.NIL_TYPE
-      switch vdec.type.rawType {
+      switch variableDeclaration.type.rawType {
       case .basicType(let rt):
         switch rt {
         case .string:
@@ -144,16 +146,17 @@ public class FunctionTranslator {
           varType = self.NIL_TYPE
         case .event:
           error_array.append(
-              "Error, event cannot be part of a variable declaration at \(binExp.lhs.sourceLocation)".lightRed.bold)
+              "Error, event cannot be part of a variable declaration at \(binaryExpression.lhs.sourceLocation)"
+                .lightRed.bold)
           return nil
         }
       default:
-        varType = vdec.type.rawType.name
+        varType = variableDeclaration.type.rawType.name
       }
 
       lhsNode = JSVariable(variable: name, type: varType, isConstant: isConst)
       if nil != varMap[name] {
-        error_array.append("Redeclaration of variable \(name) at \(binExp.lhs.sourceLocation)".lightRed.bold)
+        error_array.append("Redeclaration of variable \(name) at \(binaryExpression.lhs.sourceLocation)".lightRed.bold)
         return nil
       }
 
@@ -161,40 +164,40 @@ public class FunctionTranslator {
     case .identifier(let i):
 
       guard let lhsN = varMap[i.name] else {
-        error_array.append("Variable \(i.name) not in scope at \(binExp.sourceLocation)".lightRed.bold)
+        error_array.append("Variable \(i.name) not in scope at \(binaryExpression.sourceLocation)".lightRed.bold)
         return nil
       }
 
       if lhsN.isConstant() {
         error_array.append(
-            "Variable \(i.name) marked as const, cannot reassign at \(binExp.sourceLocation)".lightRed.bold)
+            "Variable \(i.name) marked as const, cannot reassign at \(binaryExpression.sourceLocation)".lightRed.bold)
         return nil
       }
 
       lhsNode = lhsN
 
     default:
-      error_array.append(("Found invalid LHS in assignment expression \(binExp.lhs.description) "
-          + " at \(binExp.sourceLocation)").lightRed.bold)
+      error_array.append(("Found invalid LHS in assignment expression \(binaryExpression.lhs.description) "
+          + " at \(binaryExpression.sourceLocation)").lightRed.bold)
       return nil
     }
 
-    switch binExp.rhs {
-    case .binaryExpression(let binExpr):
-      rhsNode = process_binary_expression(binExp: binExpr)
+    switch binaryExpression.rhs {
+    case .binaryExpression(let binaryExpression):
+      rhsNode = processBinaryExpression(binaryExpression: binaryExpression)
 
-    case .functionCall(let fCall):
-      isInstantiation = !fCall.identifier.name.lowercased().contains("assert")
-      && !jst.contractFunctionNames.contains(fCall.identifier.name)
-      && fCall.identifier.name.lowercased().contains(jst.getContractName().lowercased())
-      rhsNode = process_func_call(fCall: fCall)
+    case .functionCall(let functionCall):
+      isInstantiation = !functionCall.identifier.name.lowercased().contains("assert")
+      && !jst.contractFunctionNames.contains(functionCall.identifier.name)
+      && functionCall.identifier.name.lowercased().contains(jst.getContractName().lowercased())
+      rhsNode = processFunctionCall(functionCall: functionCall)
 
     case .literal(let li):
-      if let lit = extract_literal(literalToken: li) {
+      if let lit = extractLiteral(literalToken: li) {
         rhsNode = lit
       } else {
         error_array.append(("Could not find valid literal on the RHS of expression \(li.description)"
-            + " at \(binExp.rhs.sourceLocation)").lightRed.bold)
+            + " at \(binaryExpression.rhs.sourceLocation)").lightRed.bold)
         return nil
       }
     default:
@@ -210,14 +213,14 @@ public class FunctionTranslator {
     }
 
     if rhsNode!.getType() != lhsNode!.getType() {
-      error_array.append("Mismatch of types at \(binExp.sourceLocation)")
+      error_array.append("Mismatch of types at \(binaryExpression.sourceLocation)")
       return nil
     }
 
     return .VariableAssignment(JSVariableAssignment(lhs: lhsNode!, rhs: rhsNode!, isInstantiation: isInstantiation))
   }
 
-  private func extract_literal(literalToken: Token) -> JSNode? {
+  private func extractLiteral(literalToken: Token) -> JSNode? {
     switch literalToken.kind {
     case .literal(let lit):
       switch lit {
@@ -242,35 +245,35 @@ public class FunctionTranslator {
     return nil
   }
 
-  private func process_func_call_args(args: [FunctionArgument], fncName: String = "") -> [JSNode] {
+  private func processFuncCallArgs(args: [FunctionArgument], functionName: String = "") -> [JSNode] {
 
     var jsArgs: [JSNode] = []
 
-    for (i, a) in args.enumerated() {
-      switch a.expression {
+    for (i, arg) in args.enumerated() {
+      switch arg.expression {
       case .identifier(let i):
         if let jsVar = varMap[i.name] {
           jsArgs.append(.Variable(jsVar))
         } else {
           error_array.append(
-              "Variable \(i.name) not in scope at \(i.sourceLocation) in function call \(fncName)"
+              "Variable \(i.name) not in scope at \(i.sourceLocation) in function call \(functionName)"
                   + " at argument number \(i)"
           )
         }
 
       case .literal(let l):
-        if let lit = extract_literal(literalToken: l) {
+        if let lit = extractLiteral(literalToken: l) {
           jsArgs.append(lit)
         } else {
           error_array.append(
-              "Invalid literal found at \(l.sourceLocation) in function call \(fncName) at argument number \(i)")
+              "Invalid literal found at \(l.sourceLocation) in function call \(functionName) at argument number \(i)")
         }
       case .binaryExpression(let be):
-        if let func_expr = process_binary_expression(binExp: be) {
+        if let func_expr = processBinaryExpression(binaryExpression: be) {
           jsArgs.append(func_expr)
         } else {
           error_array.append(
-              "Invalid expression found in function call \(fncName) at argument number \(i)."
+              "Invalid expression found in function call \(functionName) at argument number \(i)."
                   + "Location: \(be.sourceLocation)"
           )
         }
@@ -282,20 +285,20 @@ public class FunctionTranslator {
     return jsArgs
   }
 
-  private func checkFuncArgs(fArgs: [FunctionArgument], argTypes: [String]) -> Bool {
+  private func checkFunctionArgs(functionArgs: [FunctionArgument], argTypes: [String]) -> Bool {
     if argTypes.count == 0 {
       return true
     }
 
-    if argTypes.count != fArgs.count {
+    if argTypes.count != functionArgs.count {
       return false
     }
 
     return true
   }
 
-  private func extract_int_lit_from_expr(expr: Expression) -> Int? {
-    switch expr {
+  private func extractIntLitFromExpression(expression: Expression) -> Int? {
+    switch expression {
     case .literal(let li):
       switch li.kind {
       case .literal(let lit):
@@ -318,11 +321,11 @@ public class FunctionTranslator {
     }
   }
 
-  private func get_wei_val(args: [FunctionArgument]) -> (Int, Int)? {
+  private func getWeiVal(args: [FunctionArgument]) -> (Int, Int)? {
     for (i, a) in args.enumerated() {
       if let label = a.identifier {
         if label.name == "_wei" {
-          guard let wei_val = extract_int_lit_from_expr(expr: a.expression) else {
+          guard let wei_val = extractIntLitFromExpression(expression: a.expression) else {
             error_array.append("Non numeric wei value found: \(a.expression.description) at \(a.sourceLocation)")
             return nil
           }
@@ -335,8 +338,8 @@ public class FunctionTranslator {
     return nil
   }
 
-  private func process_func_call(fCall: FunctionCall, lhsName: String = "") -> JSNode? {
-    let fName: String = fCall.identifier.name
+  private func processFunctionCall(functionCall: FunctionCall, lhsName: String = "") -> JSNode? {
+    let fName: String = functionCall.identifier.name
     var isTransaction = false
     var resultType: String = self.NIL_TYPE
 
@@ -348,7 +351,7 @@ public class FunctionTranslator {
       resultType = jst.getContractName()
 
     } else {
-      error_array.append("Function \(fCall.identifier.name) does not exist at \(fCall.sourceLocation)")
+      error_array.append("Function \(functionCall.identifier.name) does not exist at \(functionCall.sourceLocation)")
       return nil
     }
 
@@ -363,7 +366,7 @@ public class FunctionTranslator {
     }
 
     var weiVal: Int?
-    var funcCallArgs = fCall.arguments
+    var funcCallArgs = functionCall.arguments
 
     /*
     if !checkFuncArgs(fArgs: funcCallArgs, argTypes: argTypes) {
@@ -373,9 +376,9 @@ public class FunctionTranslator {
     */
 
     if isPayable {
-      guard let (idx, weiAmt) = get_wei_val(args: fCall.arguments) else {
+      guard let (idx, weiAmt) = getWeiVal(args: functionCall.arguments) else {
         error_array.append("Payable function found but wei has not been sent, add wei with argument label _wei."
-                               + "Function Name: \(fCall.identifier.name) at \(fCall.sourceLocation)"
+                               + "Function Name: \(functionCall.identifier.name) at \(functionCall.sourceLocation)"
         )
         return nil
       }
@@ -395,14 +398,14 @@ public class FunctionTranslator {
       funcCallArgs = completeArray
     }
 
-    let funcArgs = process_func_call_args(args: funcCallArgs, fncName: fName)
+    let funcArgs = processFuncCallArgs(args: funcCallArgs, functionName: fName)
 
     var contractEventInfo: ContractEventInfo?
     if fName.contains("assertEventFired") {
       if let eventInfo = jst.contractEventInfo[funcArgs[0].description.replacingOccurrences(of: "\"", with: "")] {
         contractEventInfo = eventInfo
       } else {
-        error_array.append("The event " + funcArgs[0].description + " does not exist at \(fCall.sourceLocation)")
+        error_array.append("The event " + funcArgs[0].description + " does not exist at \(functionCall.sourceLocation)")
         return nil
       }
     }

@@ -6,13 +6,17 @@ const chalk = require('chalk');
 const emoji = require('node-emoji');
 const web3 = new Web3();
 const eth = web3.eth;
+const os = require('os');
+
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:8545'));
+
+const flintConfigFile = fs.readFileSync(os.homedir() + "/.flint/flint_config.json")
+const flintConfig = JSON.parse(flintConfigFile)
 
 // add checks to see if test net is operating
 let defaultAcc;
 try {
-	//defaultAcc = web3.personal.newAccount("");//eth.accounts[3];
-	defaultAcc = "145b8389f8818e09fb63566e7096f01a7533ea4c";
+	defaultAcc = flintConfig["ethereumAddress"];
 	web3.personal.unlockAccount(defaultAcc, "", 1000);
 	web3.eth.defaultAccount = defaultAcc;	
 } catch(err) {
@@ -242,8 +246,8 @@ async function assertWillThrow(result_dict, fncName, args, t_contract) {
 }
 
 function newAddress() {
-    let newAcc = web3.personal.newAccount("1");
-    web3.personal.unlockAccount(newAcc, "1", 1000);
+    let newAcc = web3.personal.newAccount("");
+    web3.personal.unlockAccount(newAcc, "", 1000);
     return newAcc;
 }
 

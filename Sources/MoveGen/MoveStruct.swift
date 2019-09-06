@@ -5,11 +5,11 @@
 //  Created on <check date>.
 //
 
-import AST
-
 import Foundation
+import AST
 import Source
 import Lexer
+import Diagnostic
 
 /// Generates code for a struct. Structs functions and initializers are embedded in the contract.
 public struct MoveStruct {
@@ -30,9 +30,14 @@ public struct MoveStruct {
       }
     }.joined(separator: ",\n")
 
+    let kind = (CanonicalType(
+        from: .userDefinedType(structDeclaration.identifier.name),
+        environment: environment
+    )?.isResource ?? false) ? "resource" : "struct"
+
     return members.count > 0
         ? #"""
-          struct \#(structDeclaration.identifier.name) {
+          \#(kind) \#(structDeclaration.identifier.name) {
             \#(members.indented(by: 2))
           }
 

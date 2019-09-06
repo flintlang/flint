@@ -68,20 +68,9 @@ public class REPLContract {
     let json_event_arg_to_types: String = String(
         data: try! JSONSerialization.data(withJSONObject: eventArgToTypes, options: []), encoding: .utf8)!
 
-    let p = Process()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = FileHandle.nullDevice
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: ["event.js", abi, addr, eventName, json_event_arg_names, json_event_arg_to_types],
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
     if let res = try? String(contentsOf: Path.getFullUrl(path: "utils/repl/event_result.txt")) {
       return res
@@ -99,23 +88,23 @@ public class REPLContract {
     return contractFunctionInfo[fnc]!.getType()
   }
 
-  private func extract_wei_argument(args: [FunctionArgument]) -> (Int, [FunctionArgument])? {
+  private func extractWeiArgument(args: [FunctionArgument]) -> (Int, [FunctionArgument])? {
     if args.count > 0 {
-      let wei_arg = args[0]
+      let weiArg = args[0]
 
-      guard let param_name = wei_arg.identifier else {
+      guard let parameterName = weiArg.identifier else {
         print(("Function is payable but no wei was sent, please send wei using the _wei parameter,"
             + "_wei should be the first parameter").lightRed.bold)
         return nil
       }
 
-      if param_name.name != "_wei" {
+      if parameterName.name != "_wei" {
         print(("Function is payable but no wei was sent, please send wei using the _wei parameter,"
             + " _wei should be the first parameter").lightRed.bold)
         return nil
       }
 
-      switch wei_arg.expression {
+      switch weiArg.expression {
       case .literal(let li):
         switch li.kind {
         case .literal(let lit):
@@ -141,48 +130,48 @@ public class REPLContract {
     return nil
   }
 
-  public func run(fCall: FunctionCall, instance: String, expr: Expression? = nil) -> String? {
-    guard let addr = instanceToAddress[instance] else {
+  public func run(functionCall: FunctionCall, instance: String, expression: Expression? = nil) -> String? {
+    guard let address = instanceToAddress[instance] else {
       print("\(instance) is not in scope.".lightRed.bold)
       return nil
     }
 
-    guard let funcInfo = contractFunctionInfo[fCall.identifier.name] else {
-      print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
+    guard let functionInfo = contractFunctionInfo[functionCall.identifier.name] else {
+      print("Function : \(functionCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
       return nil
     }
 
-    var func_args: [FunctionArgument] = fCall.arguments
-    var wei_value: Int?
-    if contractFunctionInfo[fCall.identifier.name]!.isPayable() {
-      guard let (weiVal, remainingArgs) = extract_wei_argument(args: func_args) else {
+    var functionArgs: [FunctionArgument] = functionCall.arguments
+    var weiValue: Int?
+    if contractFunctionInfo[functionCall.identifier.name]!.isPayable() {
+      guard let (weiVal, remainingArgs) = extractWeiArgument(args: functionArgs) else {
         return nil
       }
-      func_args = remainingArgs
-      wei_value = weiVal
+      functionArgs = remainingArgs
+      weiValue = weiVal
     }
 
-    guard let fArgs = process_func_call_args(args: func_args) else {
-      print("Failed to run function \(fCall.identifier.name) as arguments were malformed".lightRed.bold)
+    guard let fArgs = processFuncCallArgs(args: functionArgs) else {
+      print("Failed to run function \(functionCall.identifier.name) as arguments were malformed".lightRed.bold)
       return nil
     }
 
-    guard let args_data = try? JSONSerialization.data(withJSONObject: fArgs, options: []) else {
-      print("Failed to process arguments for \(fCall.identifier.name)".lightRed.bold)
+    guard let argsData = try? JSONSerialization.data(withJSONObject: fArgs, options: []) else {
+      print("Failed to process arguments for \(functionCall.identifier.name)".lightRed.bold)
       return nil
     }
 
-    guard let args = String(data: args_data, encoding: .utf8) else {
-      print("Failed to process arguments for \(fCall.identifier.name)".lightRed.bold)
+    guard let args = String(data: argsData, encoding: .utf8) else {
+      print("Failed to process arguments for \(functionCall.identifier.name)".lightRed.bold)
       return nil
     }
 
-    guard let isTransaction = isFuncTransaction[fCall.identifier.name] else {
-      print("Function : \(fCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
+    guard let isTransaction = isFuncTransaction[functionCall.identifier.name] else {
+      print("Function : \(functionCall.identifier.name) was not found in contract \(self.contractName)".lightRed.bold)
       return nil
     }
 
-    let resType = funcInfo.getType()
+    let resType = functionInfo.getType()
 
     let transactionAddress = self.repl.transactionAddress
 
@@ -197,20 +186,20 @@ public class REPLContract {
     var node_args = [
       "run_function.js",
       self.abi,
-      addr,
-      fCall.identifier.name,
+      address,
+      functionCall.identifier.name,
       isTransaction.description,
       resType,
       args,
       transactionAddress,
       false.description]
 
-    if let weiVal = wei_value {
+    if let weiVal = weiValue {
       node_args = [
         "run_function.js",
         self.abi,
-        addr.trimmingCharacters(in: .whitespacesAndNewlines),
-        fCall.identifier.name,
+        address.trimmingCharacters(in: .whitespacesAndNewlines),
+        functionCall.identifier.name,
         isTransaction.description,
         resType,
         args,
@@ -220,55 +209,43 @@ public class REPLContract {
       ]
     }
 
-    let p = Process()
-    let pipe = Pipe()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = pipe
-    p.standardError = FileHandle.nullDevice
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = node_args
-    print("Running contract method...")
-    try! p.run()
-    p.waitUntilExit()
+    print("Running function call...")
+    Process.run(executableURL: Configuration.nodeLocation,
+                arguments: node_args,
+                currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
 
-    let result_file_path = Path.getFullUrl(path: "utils/repl/result.txt").path
-    guard let result = try? String(contentsOf: URL(fileURLWithPath: result_file_path)) else {
-      print("Could not extract result of function \(fCall.identifier.name)".lightRed.bold)
+    let resultFile = Path.getFullUrl(path: "utils/repl/result.txt")
+    guard let result = try? String(contentsOf: resultFile) else {
+      print("Could not extract result of function \(functionCall.identifier.name)".lightRed.bold)
       return nil
     }
 
     return result
   }
 
-  private func process_func_call_args(args: [FunctionArgument]) -> [String]? {
-    var result_args: [String] = []
+  private func processFuncCallArgs(args: [FunctionArgument]) -> [String]? {
+    var resultArgs: [String] = []
 
-    for a in args {
-      guard a.identifier != nil else {
-        print("Missing labels to argument for function call, missing for expr: \(a.expression)".lightRed.bold)
+    for arg in args {
+      guard arg.identifier != nil else {
+        print("Missing labels to argument for function call, missing for expr: \(arg.expression)".lightRed.bold)
         return nil
       }
-      switch a.expression {
-      case .binaryExpression(let binExp):
-        switch binExp.opToken {
+      switch arg.expression {
+      case .binaryExpression(let binaryExpression):
+        switch binaryExpression.opToken {
         case .dot:
-          switch binExp.lhs {
-          case .identifier(let i):
-            if let rVar = repl.queryVariableMap(variable: i.name) {
-              let contractType = rVar.variableType
-              if let rContract = repl.queryContractInfo(contractName: contractType) {
-                switch binExp.rhs {
-                case .functionCall(let fc):
-                  if let result = rContract.run(fCall: fc, instance: rVar.variableName) {
-                    result_args.append(result)
+          switch binaryExpression.lhs {
+          case .identifier(let identifier):
+            if let replVariable = repl.queryVariableMap(variable: identifier.name) {
+              let contractType = replVariable.variableType
+              if let replContract = repl.queryContractInfo(contractName: contractType) {
+                switch binaryExpression.rhs {
+                case .functionCall(let functionCall):
+                  if let result = replContract.run(functionCall: functionCall, instance: replVariable.variableName) {
+                    resultArgs.append(result)
                   } else {
-                    print("Was not able to run \(fc.description)".lightRed.bold)
+                    print("Was not able to run \(functionCall.description)".lightRed.bold)
                     return nil
                   }
                 default:
@@ -278,7 +255,7 @@ public class REPLContract {
               }
 
             } else {
-              print("Variable \(i.name) is not in scope.".lightRed.bold)
+              print("Variable \(identifier.name) is not in scope.".lightRed.bold)
               return nil
             }
           default:
@@ -286,16 +263,16 @@ public class REPLContract {
             return nil
           }
         default:
-          print("Only supported expression is dot expressions. \(binExp.description) is not yet supported".lightRed.bold
-          )
+          print("Only supported expression is dot expressions. \(binaryExpression.description) is not yet supported"
+            .lightRed.bold)
           return nil
         }
 
-      case .identifier(let i):
-        if let val = repl.queryVariableMap(variable: i.name) {
-          result_args.append(val.variableValue)
+      case .identifier(let identifier):
+        if let val = repl.queryVariableMap(variable: identifier.name) {
+          resultArgs.append(val.variableValue)
         } else {
-          print("Variable \(i.name) is not in scope.".lightRed.bold)
+          print("Variable \(identifier.name) is not in scope.".lightRed.bold)
           return nil
         }
       case .literal(let li):
@@ -303,17 +280,17 @@ public class REPLContract {
         case .literal(let lit):
           switch lit {
           case .address(let s):
-            result_args.append(s)
+            resultArgs.append(s)
           case .boolean(let bool):
-            result_args.append(bool.rawValue)
+            resultArgs.append(bool.rawValue)
           case .string(let s):
-            result_args.append(s)
+            resultArgs.append(s)
           case .decimal(let decLit):
             switch decLit {
             case .integer(let i):
-              result_args.append(i.description)
+              resultArgs.append(i.description)
             case .real(let i1, let i2):
-              result_args.append(i1.description + "." + i2.description)
+              resultArgs.append(i1.description + "." + i2.description)
             }
           }
         default:
@@ -322,44 +299,44 @@ public class REPLContract {
         }
 
       default:
-        print("This argument type (name: \(a.identifier!.name)  value : "
-                  + "\(a.expression.description)) is not supported".lightRed.bold)
+        print("This argument type (name: \(arg.identifier!.name)  value : "
+                  + "\(arg.expression.description)) is not supported".lightRed.bold)
 
         return nil
       }
     }
 
-    return result_args
+    return resultArgs
   }
 
-  public func deploy(expr: BinaryExpression, variable_name: String) throws -> String? {
-    let rhs = expr.rhs
+  public func deploy(expression: BinaryExpression, variableName: String) throws -> String? {
+    let rhs = expression.rhs
     var args: [String]
     switch rhs {
-    case .functionCall(let fc):
+    case .functionCall(let functionCall):
 
-      if fc.identifier.name != self.contractName {
-        print("Mismatch of contract types \(fc.identifier.name) != \(self.contractName)".lightRed.bold)
+      if functionCall.identifier.name != self.contractName {
+        print("Mismatch of contract types \(functionCall.identifier.name) != \(self.contractName)".lightRed.bold)
         return "ERROR"
       }
 
-      let fCallArgs = fc.arguments
-      if let function_args = process_func_call_args(args: fCallArgs) {
-        args = function_args
+      let functionCallArgs = functionCall.arguments
+      if let functionArgs = processFuncCallArgs(args: functionCallArgs) {
+        args = functionArgs
       } else {
         print(("Invalid argument found in constructor function. "
-            + "Failing deployment of  \(variable_name) : \(self.contractName).").lightRed.bold)
+            + "Failing deployment of  \(variableName) : \(self.contractName).").lightRed.bold)
         return nil
       }
     default:
       print(("Invalid expression on rhs of contract insantiation. "
-          + "Failing deployment of \(variable_name) : \(self.contractName).").lightRed.bold)
+          + "Failing deployment of \(variableName) : \(self.contractName).").lightRed.bold)
       return nil
     }
 
-    let json_args = JSON(args)
+    let jsonArgs = JSON(args)
 
-    guard let rawString = json_args.rawString() else {
+    guard let rawString = jsonArgs.rawString() else {
       print("Could not extract JSON constructor arguments".lightRed.bold)
       return nil
     }
@@ -372,27 +349,12 @@ public class REPLContract {
       exit(0)
     }
 
-    print("Deploying \(variable_name) : \(self.contractName)".lightGreen)
-
-    let p = Process()
-    let pipe = Pipe()
-    #if os(macOS)
-    let nodeLocation = "/usr/local/bin/node"
-    #else
-    let nodeLocation = "/usr/bin/node"
-    #endif
-    p.executableURL = URL(fileURLWithPath: nodeLocation)
-    p.currentDirectoryURL = Path.getFullUrl(path: "utils/repl")
-    p.arguments = ["deploy_contract.js", self.abi, self.bytecode, rawString]
-    p.standardInput = FileHandle.nullDevice
-    p.standardOutput = pipe
-    p.standardError = FileHandle.nullDevice
-    try! p.run()
-    p.waitUntilExit()
-
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    if let addr = String(data: data, encoding: .utf8) {
-      instanceToAddress[variable_name] = addr
+    print("Deploying \(variableName) : \(self.contractName)".lightGreen)
+    let processResult = Process.run(executableURL: Configuration.nodeLocation,
+                                    arguments: ["deploy_contract.js", self.abi, self.bytecode, rawString],
+                                    currentDirectoryURL: Path.getFullUrl(path: "utils/repl"))
+    if let addr = processResult.standardOutputResult {
+      instanceToAddress[variableName] = addr
       print(
           "Contract deployed at address: ".lightGreen + addr.trimmingCharacters(in: .whitespacesAndNewlines).lightWhite)
       return addr
@@ -415,43 +377,43 @@ public class REPLContract {
       // process contract event information
       for (eventName, allEventsWithName) in contractEvents {
         // this will always exist if the parse tree has been constructed
-        let e = allEventsWithName[0]
-        var event_args: [(String, String)] = []
+        let eventInformation = allEventsWithName[0]
+        var eventArgs: [(String, String)] = []
         var count = 0
-        let paramTypes = e.eventTypes
-        for i in e.parameterIdentifiers {
-          let paramInfo = (i.name, paramTypes[count].name)
-          event_args.append(paramInfo)
+        let paramTypes = eventInformation.eventTypes
+        for identifier in eventInformation.parameterIdentifiers {
+          let paramInfo = (identifier.name, paramTypes[count].name)
+          eventArgs.append(paramInfo)
           count += 1
         }
-        let contractInfo = ContractEventInfo(name: eventName, event_args: event_args)
+        let contractInfo = ContractEventInfo(name: eventName, event_args: eventArgs)
         contractEventInfo[eventName] = contractInfo
       }
 
-      for (fName, allFuncsWithName) in contractFunctions where allFuncsWithName.count > 0 {
-        isFuncTransaction[fName] = allFuncsWithName[0].isMutating || allFuncsWithName[0].declaration.isPayable
-
-        for stm in allFuncsWithName[0].declaration.body {
-          switch stm {
+      for (functionName, allFunctionsWithName) in contractFunctions where allFunctionsWithName.count > 0 {
+        isFuncTransaction[functionName]
+          = allFunctionsWithName[0].isMutating || allFunctionsWithName[0].declaration.isPayable
+        for statement in allFunctionsWithName[0].declaration.body {
+          switch statement {
           case .emitStatement:
-            isFuncTransaction[fName] = true
+            isFuncTransaction[functionName] = true
           default:
             continue
           }
         }
 
         var resultTypeVal = "nil"
-        if let resultType = allFuncsWithName[0].declaration.signature.resultType {
+        if let resultType = allFunctionsWithName[0].declaration.signature.resultType {
           resultTypeVal = resultType.name
         }
 
-        contractFunctionInfo[fName] = ContractFuncInfo(resultType: resultTypeVal,
-                                                       payable: allFuncsWithName[0].declaration.isPayable)
-        contractFunctionNames.append(fName)
+        contractFunctionInfo[functionName] = ContractFuncInfo(resultType: resultTypeVal,
+                                                       payable: allFunctionsWithName[0].declaration.isPayable)
+        contractFunctionNames.append(functionName)
       }
     } catch {
       print("Fatal error")
-      exit(1)
+      exit(EXIT_FAILURE)
     }
   }
 

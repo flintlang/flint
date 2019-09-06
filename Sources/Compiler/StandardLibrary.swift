@@ -22,7 +22,8 @@ public struct StandardLibrary {
   }
 
   public static var `default`: StandardLibrary {
-    return StandardLibrary.from(name: "common")
+    //return StandardLibrary.from(name: "common")
+    return StandardLibrary.from(name: "evm")
   }
 
   public static func from(name: String) -> StandardLibrary {
@@ -32,7 +33,7 @@ public struct StandardLibrary {
   public static func from(target: CompilerTarget) -> StandardLibrary {
     switch target {
     case .evm: return StandardLibrary.from(name: "evm")
-    case .move: return StandardLibrary.from(name: "common")
+    case .move: return StandardLibrary.from(name: "move")
     }
   }
 }

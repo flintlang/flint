@@ -1,7 +1,7 @@
 
 # Language Guide
 
-:+1::tada: First of all, thank you for the interest in Flint! :tada::+1:
+🎉 First of all, thank you for the interest in Flint! 🎉
 
 Even though the [Ethereum](https://www.ethereum.org/) platform requires smart contract programmers to ensure the correct behaviour of their program before deployment, it has not seen a language designed with safety in mind. Solidity and others do not tailor for Ethereum’s unique programming model and instead, mimic existing popular languages like JavaScript, Python, or C, without providing additional safety mechanisms.
 
@@ -15,10 +15,11 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
  - [**Getting started**](#getting-started)
    - [Installation](#installation)
-     - [Docker](#docker)
-     - [Installing `solc`, the Solidity compiler](#installing-solc-the-solidity-compiler)
-     - [Binary packages](#binary-packages)
      - [Building from source](#building-from-source)
+     - [Installing `solc`, the Solidity compiler](#installing-solc-the-solidity-compiler)
+     - [Docker](#docker)
+     - [Binary packages](#binary-packages)
+   - [Usage](#usage)
    - [Example](#example)
      - [Creating a simple contract](#creating-a-simple-contract)
      - [Compiling `Counter`](#compiling-counter)
@@ -112,35 +113,15 @@ For a quick start, please have a look at the [Installation](#installation) secti
 
 ## Installation
 
-The first step before using the Flint compiler is to install it. The simplest way is to [use Docker](#docker). Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
-
-### Docker
-
-The Flint compiler and its dependencies can be installed using [Docker](https://www.docker.com/). To run the environment without doing any package installations:
-
-```bash
-git clone --recurse-submodule https://github.com/flintlang/flint.git
-cd flint
-sudo docker build -t "flint_docker" .
-#### ---------------------------------------------- ###
-## Docker will build, this process may take some time #
-#### ---------------------------------------------- ###
-sudo docker run --privileged -i -t flint_docker
-## Then, inside the docker container, run
-source ~/.bash_profile
-```
+The first step before using the Flint compiler is to install it. The simplest way is to use [Docker](#docker), though this is currently not recommended, except for casual usage. Otherwise, the [binary packages](#binary-packages) and [building from source](#building-from-source) require [`solc` to be installed first](#installing-solc-the-solidity-compiler).
 
 ### Installing `solc`, the Solidity compiler
 
-A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html).
-
-### Binary packages
-
-Flint is compatible with macOS and Linux platforms, and can be installed by downloading a built binary directly. Installing `solc` is a pre-requisite for using the binary packages.
-
-The latest releases are available on the [GitHub releases page](https://github.com/flintlang/flint/releases).
+A non-Docker Flint install requires the [Solidity](https://github.com/ethereum/solidity) compiler `solc` (version 0.4.25) to be installed. For full installation instructions, see the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html). You can get the `solc` binary from https://github.com/ethereum/solidity/releases/tag/v0.4.25.
 
 ### Building from source
+_This is currently the advised way of installing Flint_
+
 #### Prerequisites
 The following must be installed to build Flint:
 * mono 5.20 or later (C# 7.0)
@@ -153,66 +134,76 @@ The following must be installed to build Flint:
 To run the testing libraries, install:
 * truffle 4
 
-##### On macOS
+##### macOS
 * xcode - preferences/Locations/Command Line tools must not be empty (the default)
 * homebrew - https://brew.sh, update brew if it isn't new with brew update
 * `brew install node` - get node and npm if you don't have them
 * `brew install wget` - get wget if you don't have it
 * `brew cask install mono-mdk`
+* swiftenv, which can be installed as follows
 
 ```bash
 git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
-echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bashrc
+echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
 ```
 
-##### On Ubuntu 18.04 LTS
-This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus amendments will need to be made to this process.
+#### Install
+Assuming you have all the prerequisites, you should be able to build flint by running
+
 ```bash
-sudo apt install nodejs npm clang
-
-## Mono - https://www.mono-project.com/download/stable/
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" \
-  | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-sudo apt update
-sudo apt install mono-devel
-
-## Swiftenv - https://swiftenv.fuller.li/en/latest/installation.html
-git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
-echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/.flint
+cd $HOME/.flint
+make release
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-#### Installation
+Note that Flint *must* be installed in `~/.flint` to allow the many different components to know where to find everything.
 
-In your terminal, run the following commands
+##### Ubuntu 18.04 LTS
+This assumes a standard Ubuntu build with `sudo`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
+
 ```bash
-## Use -jN for multi-core speedup (N >= 2)
+bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
+```
+
+Note that this script can be run from any directory, but will always install Flint in `~/.flint`.
+
+### Docker
+
+To use Flint in  a [Docker](https://www.docker.com/) container run the following: 
+
+```bash
 git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
-## No need iff swiftenv has already installed relevent swift version or not using swiftenv
-swiftenv install
-swift package update
-## Create a FLINTPATH for the compiler to run (this may be removed in a future version)
-echo "export FLINTPATH=\"$(pwd)\"" >> ~/.bash_profile
-source ~/.bash_profile
-
-make
+sudo docker build -t "flint_docker" .
+### ---------------------------------------------- ###
+# Docker will build, this process may take some time #
+### ---------------------------------------------- ###
+sudo docker run --privileged -i -t flint_docker
 ```
 
-#### Usage
+### Binary packages
+_Currently not maintained and out of date_
+
+Flint is compatible with macOS and Linux platforms, and can be installed by downloading a built binary directly. Installing `solc` is a pre-requisite for using the binary packages.
+
+The latest releases are available on the [GitHub releases page](https://github.com/flintlang/flint/releases).
+
+
+## Usage
+
 To use Flint to compile a Flint contract (in this example `counter.flint`) into Solidity code, run the following code from inside the Flint project folder:
+
 ```bash
-export PATH=$FLINTPATH/.build/debug:$PATH
 flintc --emit-ir --ir-output ./bin examples/valid/counter.flint
 ```
 
-This will generate a main.sol file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
+This will generate a `main.sol` file inside the bin sub-directory which can then be compiled to be deployed on the Etherum block-chain. If you wish to have the output file in the current directory remove bin from the previous command:
 
-```
+```bash
 flintc --emit-ir --ir-output ./<destination> examples/valid/counter.flint
 ```
 
@@ -285,7 +276,7 @@ Writing unit tests for Solidity (and hence Flint) contracts is possible with the
     var Contract = artifacts.require("./Counter.sol");
     module.exports = (deployer) => deployer.deploy(Contract);
     ```
-  3. Create a `truffle.js` file with the content:
+  1. Create a `truffle.js` file with the content:
     ```javascript
     module.exports = {};
     ```
@@ -1741,6 +1732,78 @@ External trait attributes are a way of providing compiler directives so Flint ca
 @data                  // The following trait is for a Move struct, not a contract
 @resource              // Used with @data, the following external struct is a resource
 ```
+
+#### Flint Compatible Interfaces
+
+_Only for: Move_
+
+On Solidity, external traits describe standard Solidity contracts, however, on Move, the differences between Move and Flint are too wide for the concept of contract to apply to any arbitrary Move module. Thus, depending on the kind of Move instance you're dealing with, you will need to declare your Flint-interfacing code (possibly through a wrapper) in a certain way.
+
+##### Contracts
+
+_External trait attributes: `@module(address:)`_
+
+Providing a contract-like interface for Flint in Move for it to act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+
+```rust
+contract <name> {
+   // Declare instance types and imports...
+
+   // All Flint-facing functions should be declared as
+   public f(this_addr: address, arg1: t1, ...): tr acquires T {  
+     let this: &mut Self.T;  
+     // Other local variables...
+     this = borrow_global<T>(move(this_addr));  
+     // Main function code...
+     _ = move(this);  
+     return x;  
+  }
+}
+```
+
+_Example: External Traits Counter ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.flint))_
+
+##### Data Modules
+
+_External trait attributes: `@module(address:)` and either `@data` or `@resource`_
+
+These allow you to interface with a Move module that doesn't publish resources but instead is based around a local instance.
+
+```rust
+module <name> {  
+  // Declare instance types and imports...
+  
+  // You must declare a type T for Flint to store
+  // Use resources with `@resource` and structs with `@data`
+  resource T {  
+    ... // Private fields, Flint can't access these
+  }  
+  
+  // The constructor, it must take in an address and return T
+  public new(anyName: address): Self.T {  
+    // Any constructor code here...
+    return T {  
+      ...
+    };  
+  }  
+  
+  // All methods must take in a mutable `this` argument
+  public getSomeField(this: &mut Self.T): u64 {  
+    // Any code to compute the value...
+  }  
+  
+  // Methods may return any type basic type or T
+  public duplicate(this: &mut Self.T, amount: u64): Self.T {  
+    // Any code here to compute the other T
+  }
+}
+```
+
+_Example: External Traits Libra ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.flint))_
+
+> **Note**
+>
+> There are also non-contract external data, using just `@data` or `@resource`, although this is mostly designed for the standard library. If you wish to find out more about it, read through the standard library's Libra implementation.
 
 ### Creating an instance
 

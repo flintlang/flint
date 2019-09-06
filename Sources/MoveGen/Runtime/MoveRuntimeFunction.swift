@@ -45,7 +45,7 @@ enum MoveRuntimeFunction {
     return .functionCall(FunctionCall(Identifiers.revertIfGreater.mangled, value, max))
   }
 
-  static let allDeclarations: [String] = [
+  static let declarations: [String] = [
     // Not currently available as no money yet: MoveRuntimeFunctionDeclaration.send,
     //MoveRuntimeFunctionDeclaration.send,
     //MoveRuntimeFunctionDeclaration.withdrawAll,
@@ -54,6 +54,14 @@ enum MoveRuntimeFunction {
     MoveRuntimeFunctionDeclaration.power,
     MoveRuntimeFunctionDeclaration.revertIfGreater
   ]
+  static let declarationsWithStdlib: [String] = [
+    MoveRuntimeFunctionDeclaration.libra
+  ]
+  static var allDeclarations: [String] = declarations
+
+  static func includeStdlib() {
+    allDeclarations += declarationsWithStdlib
+  }
 }
 
 struct MoveRuntimeFunctionDeclaration {
@@ -121,4 +129,43 @@ struct MoveRuntimeFunctionDeclaration {
     return move(a);
   }
   """
+
+  static let libra =
+      """
+      public FlintLibraInternalWrapper_$new$Address(zero: address): Self.FlintLibraInternalWrapper_ {
+        if (move(zero) != 0x0) {
+          assert(false, 9001);
+        }
+        return FlintLibraInternalWrapper_ {
+          coin: LibraCoin.zero()
+        };
+      }
+
+      public FlintLibraInternalWrapper_$getValue(this: &mut Self.FlintLibraInternalWrapper_): u64 {
+        let coin: &LibraCoin.T;
+        coin = &move(this).coin;
+        return LibraCoin.value(move(coin));
+      }
+
+      public FlintLibraInternalWrapper_$withdraw(this: &mut Self.FlintLibraInternalWrapper_, \
+      amount: u64): Self.FlintLibraInternalWrapper_ {
+        let coin: &mut LibraCoin.T;
+        coin = &mut move(this).coin;
+        return FlintLibraInternalWrapper_ {
+          coin: LibraCoin.withdraw(move(coin), move(amount))
+        };
+      }
+
+      public FlintLibraInternalWrapper_$transfer(this: &mut Self.FlintLibraInternalWrapper_, \
+      other: &mut Self.FlintLibraInternalWrapper_, amount: u64) {
+        let coin: &mut LibraCoin.T;
+        let other_coin: &mut LibraCoin.T;
+        let temporary: LibraCoin.T;
+        coin = &mut move(this).coin;
+        temporary = LibraCoin.withdraw(move(coin), move(amount));
+        other_coin = &mut move(other).coin;
+        LibraCoin.deposit(move(other_coin), move(temporary));
+        return;
+      }
+      """
 }
