@@ -1,4 +1,4 @@
-sudo apt -y install nodejs npm clang z3
+sudo apt -y install nodejs npm clang z3 lsb-release
 
 if ! hash mono; then
   ## Mono - https://www.mono-project.com/download/stable/
@@ -14,9 +14,9 @@ fi
 if ! hash swiftenv; then
   ## Swiftenv - https://swiftenv.fuller.li/en/latest/installation.html
   git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-  echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bashrc
-  echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bashrc
-  echo 'eval "$(swiftenv init -)"' >> ~/.bashrc
+  echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
+  echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+  echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
 else
   echo "Found: swiftenv"
 fi
@@ -28,11 +28,9 @@ git clone --recurse-submodule https://github.com/flintlang/flint.git "~/.flint"
 cd "~/.flint"
 npm install
 ## No need iff swiftenv has already installed relevent swift version or not using swiftenv
+source ~/.bash_profile
 swiftenv install
 swift package update
-
 make release
-
-mkdir bash
-echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
-source ~/.bashrc
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bash_profile
+source ~/.bash_profile
