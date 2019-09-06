@@ -33,8 +33,8 @@ extension Process {
     try! process.run()
     let standardOutputData = standardOutputPipe.fileHandleForReading.readDataToEndOfFile()
     let standardErrorData = standardErrorPipe.fileHandleForReading.readDataToEndOfFile()
-    let standardOutputText = String(data: standardOutputData, encoding: String.Encoding.utf8)
-    let standardErrorText = String(data: standardErrorData, encoding: String.Encoding.utf8)
+    let standardOutputText = String(data: standardOutputData, encoding: .utf8)
+    let standardErrorText = String(data: standardErrorData, encoding: .utf8)
     process.waitUntilExit()
 
     if process.terminationStatus != EXIT_SUCCESS {

@@ -45,6 +45,10 @@ public class Configuration {
     return configuration.configurationFile.ethereumAddress
   }
 
+  public static var flintLocation: URL {
+    return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".flint")
+  }
+
   private static func generateDefaultConfigurationFile(file: URL) {
     #if os(macOS)
     let nodePath = "/usr/local/bin/node"

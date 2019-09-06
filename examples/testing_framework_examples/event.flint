@@ -6,7 +6,7 @@ contract Counter {
 Counter :: (any) {
   public init() {} 
 
-  mutating public func increment() {
+  public func increment() mutates (value) {
       self.value += 1
       emit counterVal(val: self.value)
   }

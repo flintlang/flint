@@ -22,7 +22,7 @@ func main() {
                                                  quiet: false,
                                                  sourceContext: SourceContext(sourceFiles: inputFiles)),
                      test_run: test_run,
-                     coverage: coverage).run_tests()
+                     coverage: coverage).runTests()
     } catch let err {
       print(err)
       print("Failed to run tests")
@@ -42,7 +42,7 @@ func mainTest() throws {
                                                quiet: false,
                                                sourceContext: SourceContext(sourceFiles: inputFiles)),
                    test_run: true,
-                   coverage: true).run_tests()
+                   coverage: true).runTests()
 
   } catch let err {
     print(err)

@@ -6,7 +6,7 @@ for t in tests/*; do
 
   echo "Compile $t"
   ../../../.build/release/flintc  --skip-verifier $t/*.flint --emit-ir --ir-output $t/test/contracts/
-  cp $t/*.sol $t/test/contracts > /dev/null
+  cp $t/*.sol $t/test/contracts &> /dev/null
   rm -rf ./bin
 
   for f in $t/*.flint; do
