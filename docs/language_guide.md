@@ -160,12 +160,16 @@ echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+Note that Flint *must* be installed in `~/.flint` to allow the many different components to know where to find everything.
+
 ##### Ubuntu 18.04 LTS
 This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
 ```
+
+Note that this script can be run from any directory, but will always install Flint in `~/.flint`.
 
 ### Docker
 
