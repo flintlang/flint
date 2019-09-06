@@ -161,7 +161,7 @@ source ~/.bashrc
 ```
 
 ##### Ubuntu 18.04 LTS
-This assumes a standard Ubuntu build with `apt`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
+This assumes a standard Ubuntu build with `sudo`, `wget`, `curl`, `gnupg`, `ca-certificates` and `git` installed. If you don't have one of them installed, you should be notified during the process. If you have any kind of error, try installing them. Note Ubuntu 16.04 has different installation procedures when using apt and installing Mono, thus the process would need to be done manually. You may find the [18.04 install script](https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh) a good place to start on what you need to install it.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/install_ubuntu_18_04.sh)
