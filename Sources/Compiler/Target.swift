@@ -101,6 +101,11 @@ public class MoveTarget: Target {
                                   environment: environment,
                                   sourceContext: sourceContext,
                                   stdlibIncluded: config.stdLib != nil)
-    return generator.generateCode()
+    let irCode = generator.generateCode()
+
+    MoveGen.Diagnostics.display()
+    try config.diagnostics.display()
+
+    return irCode
   }
 }

@@ -17,14 +17,14 @@ This report covers the state of the Flint programming language─what has been i
   - History
     - Flintpath
     - Mutating _vs._ Mutates
-    - Verifier Type Properties 
+    - Verifier Type Properties
   - Move Translation
-    - Reference Handling 
+    - Reference Handling
     - Programme Layout
     - Constructors
     - External Traits
     - Money
-    - Resource and Struct Kinds 
+    - Resource and Struct Kinds
   - Verifier
     - Shadow Variables
     - Predicates
@@ -34,23 +34,24 @@ This report covers the state of the Flint programming language─what has been i
     - Gas Analyser
     - REPL
     - Testing Framework
-    - Contract Analyser 
+    - Contract Analyser
     - Syntax Highlighter
     - Flint Block
 - Known Issues
   - Verifier
-     - Types
-     - External Checks
-     - Invariants and Instantiation
-     - Move
-   - Move
+    - Types
+    - External Checks
+    - Invariants and Instantiation
+    - Move
+  - Move
      - Types Named T
-   - Extensions
+  - Extensions
 - Likely Problems
   - Method Resolution
   - Libra Updates
+  - External Traits in Solidity
 - Future
-  - Verifier Macros 
+  - Verifier Macros
   - Geth _vs._ Ganache
 
 ## Configuration
@@ -76,11 +77,11 @@ Make sure to install all the dependencies before installing Flint. The following
 To run tests you'll need truffle version 4. To install it, run `npm install truffle@4`. Currently, testing of the Move translation is not enabled by default because it would take too long to build Libra on Travis. However, we strongly encourage future developers of Flint to keep running the Move behaviour tests locally during development before pushing. Moreover, if libra binaries that would allow for testing without building from source were to be provided in the future, we would advise to enable move behaviour testing also on Travis, by downloading said binaries through the `.travis.yaml` config file.
 
 ### Development
-Setting up an environment to work on Flint effectively can be troublesome, so we advise that you take the following seriously to avoid future issues 
+Setting up an environment to work on Flint effectively can be troublesome, so we advise that you take the following seriously to avoid future issues
 
 #### Operating System
 
-Unfortunately, although Swift is officially compatible with both macOS and Linux, there are sometimes differences in what works, builds and runs, that means its necessary to be vigilant about keeping Flint working on both operating systems. To that end, we advise that if you're working in teams, that you have people working on ***both*** systems. Obtaining the sudo permissions and the macOS version (>= 10.14.4) to get a lab Mac working can be challenging─CSG isn't in control of them, ICT is so you'll find this time consuming at best─but if one of you does own a Macintosh, that'd make things easier. 
+Unfortunately, although Swift is officially compatible with both macOS and Linux, there are sometimes differences in what works, builds and runs, that means its necessary to be vigilant about keeping Flint working on both operating systems. To that end, we advise that if you're working in teams, that you have people working on ***both*** systems. Obtaining the sudo permissions and the macOS version (>= 10.14.4) to get a lab Mac working can be challenging─CSG isn't in control of them, ICT is so you'll find this time consuming at best─but if one of you does own a Macintosh, that'd make things easier.
 
 #### IDEs
 
@@ -103,7 +104,7 @@ Unfortunately, as Flint has been worked on for some years now, it comes with a b
 
 When we received the project, we were faced with something that couldn't run. This was down to absolute paths (_/Users/_ NAME _/Documents/Projects/..._) being used across the programme by some of the previous developers, meaning it would work on their and only their machine. To solve this without using the unpredictable `#dsohandle`, which would be highly dependent on where the binaries were built (and thus on the IDE), we instituted a `$FLINTPATH` environment variable, which stored the root of the Flint directory. This allowed any part of the programme to easily know where to look for other files. Also note that Swift doesn't really allow for relative paths (`./<path>`), thus necessitating these solutions.
 
-`$FLINTPATH` has since been removed by always placing Flint within `~/.flint` (which is similar to how cargo and cabal organise their system). We would advise looking at how other code handles filepaths before replacing anything you see that may still refer to a Flint path. In particular, you should look at `Sources/Utils/Path.swift` and `Sources/Utils/Configuration.swift`.
+`$FLINTPATH` has since been removed by always placing Flint within `~/.flint` (which is similar to how cargo and cabal organise their system). We would advise looking at how other code handles file paths before replacing anything you see that may still refer to a Flint path. In particular, you should look at `Sources/Utils/Path.swift` and `Sources/Utils/Configuration.swift`.
 
 #### Mutating _vs._ Mutates
 
@@ -111,7 +112,7 @@ Historically, Flint used the same `mutating` keyword that Swift uses, for basica
 
 #### Verifier Type Properties
 
-Today, the `mutates(...)` modifier on functions takes in the list of instance properties on that contract or struct that are to be mutated. However historically it took in the type properties that were being mutated, irrespective on the instance those type properties were defined on. For more information of this change, see [PR#467 Mutates on instance properties](https://github.com/flintlang/flint/pull/467) to find out: what was wrong, why it was a problem, and what was done to fix it. 
+Today, the `mutates(...)` modifier on functions takes in the list of instance properties on that contract or struct that are to be mutated. However historically it took in the type properties that were being mutated, irrespective on the instance those type properties were defined on. For more information of this change, see [PR#467 Mutates on instance properties](https://github.com/flintlang/flint/pull/467) to find out: what was wrong, why it was a problem, and what was done to fix it.
 
 It does mean that today there are few restrictions on what you can put in a `mutates(...)` clause─you can basically put any identifier you want in there for backwards compatibility─all the semantic analyser will do is check what you actually do mutate is in the list (not the other way round).
 
@@ -156,7 +157,7 @@ Right now LibraCoin isn't properly implemented in Flint. There is a test, "exter
 
 #### Resource and Struct Kinds
 
-You'll notice under the type system in the MoveIR syntax model there are two separate cases for resources and structs. This may seem a little overkill today, as in Move they currently appear to be the same. This is sort of a hangover of the days when in Move they were handled differently (you had to declare the kind each type using `R#` for resources and `V#` for structs) however, it's still important as underneath they are, and because we need slightly different translation strategies for each. 
+You'll notice under the type system in the MoveIR syntax model there are two separate cases for resources and structs. This may seem a little overkill today, as in Move they currently appear to be the same. This is sort of a hangover of the days when in Move they were handled differently (you had to declare the kind each type using `R#` for resources and `V#` for structs) however, it's still important as underneath they are, and because we need slightly different translation strategies for each.
 
 ### Verifier
 
@@ -168,7 +169,7 @@ To allow a whole host of information about collections, shadow variables contain
 
 #### Predicates
 
-The verifier allows `pre`  and `post`conditions, contract `invariant`s and `assert`ions, the last of which are also compiled into runtime checks in the output code. Predicates may only contain a subset of Flint syntax, only allowing functions and simple binary operations to be put in them. Note that some of the predicate syntax might seem a little strange, such as passing in types, and argument identifiers being variable declarations, but this is necessary without a major rewrite of the predicate syntax to allow a more natural declaration system. This was not a priority for us so we've left it as is (although we added `forall` and `exists` predicates).
+The verifier allows `pre` and `post`conditions, contract `invariant`s and `assert`ions, the last of which are also compiled into runtime checks in the output code. Predicates may only contain a subset of Flint syntax, only allowing functions and simple binary operations to be put in them. Note that some of the predicate syntax might seem a little strange, such as passing in types, and argument identifiers being variable declarations, but this is necessary without a major rewrite of the predicate syntax to allow a more natural declaration system. This was not a priority for us so we've left it as is (although we added `forall` and `exists` predicates).
 
 ### Targets and the Compiler
 
@@ -176,21 +177,22 @@ Historically Flint had only one target, the EVM, so a lot of the overarching Com
 
 ### Docker
 
-Currently there is a mantained Dockerfile within Flint's repo to reliably build Flint on other platforms through an ubuntu docker container. The instructions on how to use it are in the language guide. Note that there is a deprecated docker image of flint currently published on Docker Hub (https://hub.docker.com/r/franklinsch/flint). However, this version is not mantained and must not be used for development or usage of Flint. 
+Currently there is a mantained Dockerfile within Flint's repo to reliably build Flint on other platforms through an ubuntu docker container. The instructions on how to use it are in the language guide. Note that there is a deprecated docker image of flint currently published on Docker Hub (https://hub.docker.com/r/franklinsch/flint). However, this version is not maintained and must not be used for development or usage of Flint.
 
 ### Extensions
 
-Currently, there is a set of tools mantained within the main Flint's repository
+Currently, there is a set of tools maintained within the main Flint's repository
+
 - `flint-lsp`
 - `flint-ca`
 - `flint-repl`
 - `flint-test`
 
-and a set of Flint's language extensions mantained under different repositories (historically, these were called Flint-Language-Server, Flint-Colour and Flint-Block respectively, but their names have been lowercased to conform to the rest of the project):
+and a set of Flint's language extensions maintained under different repositories (historically, these were called Flint-Language-Server, Flint-Colour and Flint-Block respectively, but their names have been lowercased to conform to the rest of the project):
 
 - `flint-language-server`, a VSCode extension which provides a frontend to the language server (`flint-lsp`) and to the contract analysis tool (`flint-ca`).
 - `flint-colour`, a VSCode extension which provides syntax highlighting
-- `flint-block`, a set of scripts used to run a local ethereum blockchain through `geth` in a way that is compatible with the current state of the ecosystem.
+- `flint-block`, a set of scripts used to run a local Ethereum block-chain through `geth` in a way that is compatible with the current state of the ecosystem.
 
 Instructions on how to configure and use these tools are provided under `docs/ecosystem_and_extensions.md`.
 
@@ -212,7 +214,7 @@ The two solutions to this would either be not to allow preconditions on public c
 
 Move doesn't work right now with the verifier, thanks to some of the special cases the verifier tries to handle involving Wei and Ethereum. Work would need to be done to get the verifier to reliably work with Move, but for now, the verifier is skipped if the target is Move.
 
-#### Invariants and Instantiation 
+#### Invariants and Instantiation
 
 Currently, the Boogie translation of Flint code that gets verified is not able to correctly keep track of initilisation in a way that allows the Boogie verifier to deduce the state of contract/struct properties within the methods of that contract/struct. The properties are in fact taken to have an arbitrary value, even when their state could be unambiguously deduced by the programmer by looking at the code. It is possible, however, that this issue ([#457 Potential Boogie limitation for simple assertions on contract and struct properties](https://github.com/flintlang/flint/issues/457)) might not have an easy solution, or that implementing one would be out of the scope of what the verifier should be doing. Hence, we advise discussing the issue further before attempting to implement a solution.
 
@@ -226,7 +228,7 @@ As the Move translation uses a `resource T` to store contract state, as is conve
 
 ### Extensions
 
-Currently, there are significant usability issues with the extensions which rely on a local blockchain running in the background. This problems and possible solutions are discussed in the paragraph [Geth _vs_. Ganache]().
+Currently, there are significant usability issues with the extensions which rely on a local block-chain running in the background. This problems and possible solutions are discussed in the paragraph [Geth _vs_. Ganache]().
 
 Moreover, while the extension ecosystem has not undergone significant testing, these bugs have emerged so far
 
@@ -239,11 +241,15 @@ and we expect more bugs to be present due to the size of the extension ecosystem
 
 ### Method Resolution
 
-Method resolution appears to be on what function names are in the local static scope at times, rather than strictly going on static type analysis. This was most noticeable when implementing external traits which handle structs, as they only work if a method has the same signature in the environment (and it can only have one argument it would seem) 
+Method resolution appears to be on what function names are in the local static scope at times, rather than strictly going on static type analysis. This was most noticeable when implementing external traits which handle structs, as they only work if a method has the same signature in the environment (and it can only have one argument it would seem)
 
 ### Libra Updates
 
 Unfortunately, Libra is (or was at the time of writing) still in early development, so their constant changes have resulted in us having to keep pace. By the time you're working on this, it is easily possible that a breaking change has meant that the Flint Move tests no longer pass. Our best advice would be to look through the changes to Libra's functional tests for the language, as these will show what they've had to change to keep their own tests passing, which should be a rough guide for fixing the issue.
+
+### External Traits in Solidity
+
+For some reason, there were no external trait tests in the Ethereum behaviour test-suite, which means we haven't any idea if they actually do work as described (external traits do work fully right now in Move right now as described in the documentation). We also have reason do believe that they don't, as when we were working on external traits in Move, we noticed that the output became what was expected when we fixed something on the Move side, and after looking through the Solidity translation, we noticed it was still broken, but we were too afraid attempts to fix it would cause other issues due to the lack of testing provided. External trait constructors in Solidity don't seem to just be removed in favour of the underlying address, they seem to be treated as a normal struct call, which is not how we think the rest of the Solidity translation works. This leaves us wondering if we've slightly misunderstood how they work under the hood in Solidity, or if it is currently broken.
 
 ## Future Work
 
@@ -252,4 +258,5 @@ Unfortunately, Libra is (or was at the time of writing) still in early developme
 To allow Flint to express more expressions more easily in its verification predicates, we're suggesting a system of verifier "macros" which allow a whole host of built in functions to be declared, and for users to declare new ones, in a maintainable and generalised way.
 
 ### Geth _vs._ Ganache
-Currently, part of the ecosystem of extensions developed and currently mantained for Flint rely on a local `geth` blockchain running in the background. This is not ideal as it's extremely slow and has a convoluted setup process, requiring the user to manually create an account and to have multiple terminal windows open at once to use and monitor the blockchain. Mohammad Chowdhury, the original developer of the ecosystem, suggested looking into Ganache as an alternative local blockchain that would help alleviate the usability issues associated with running `geth` in the background. 
+
+Currently, part of the ecosystem of extensions developed and currently maintained for Flint rely on a local `geth` block-chain running in the background. This is not ideal as it's extremely slow and has a convoluted setup process, requiring the user to manually create an account and to have multiple terminal windows open at once to use and monitor the blockchain. Mohammad Chowdhury, the original developer of the ecosystem, suggested looking into Ganache as an alternative local blockchain that would help alleviate the usability issues associated with running `geth` in the background.

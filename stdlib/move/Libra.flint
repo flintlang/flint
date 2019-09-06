@@ -9,7 +9,7 @@ struct Libra {
   visible var libra: FlintLibraInternalWrapper_
 
   public init() {
-    libra = FlintLibraInternalWrapper_(0x0)
+    libra = FlintLibraInternalWrapper_(0x0000000000000000000000000000000000000000)
   }
 
   public func balance() -> Int {

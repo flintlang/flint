@@ -20,7 +20,7 @@ public struct ASTPassRunner {
     var diagnostics = [Diagnostic]()
 
     for pass in passes {
-      // Runs each pass, passing along the enviroment built at the previous pass.
+      // Runs each pass, passing along the environment built at the previous pass.
 
       let passContext = ASTPassContext().withUpdates { $0.environment = environment }
       let result = ASTVisitor(pass: pass).visit(ast, passContext: passContext)
