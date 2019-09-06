@@ -13,10 +13,10 @@ fi
 
 if ! hash swiftenv; then
   ## Swiftenv - https://swiftenv.fuller.li/en/latest/installation.html
-  git clone https://github.com/kylef/swiftenv.git ~/.swiftenv
-  echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> ~/.bash_profile
-  echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-  echo 'eval "$(swiftenv init -)"' >> ~/.bash_profile
+  git clone https://github.com/kylef/swiftenv.git $HOME/.swiftenv
+  echo 'export SWIFTENV_ROOT="$HOME/.swiftenv"' >> $HOME/.bash_profile
+  echo 'export PATH="$SWIFTENV_ROOT/bin:$PATH"' >> $HOME/.bash_profile
+  echo 'eval "$(swiftenv init -)"' >> $HOME/.bash_profile
 else
   echo "Found: swiftenv"
 fi
@@ -24,13 +24,13 @@ fi
 cd $HOME
 
 ## Use -jN for multi-core speedup (N >= 2)
-git clone --recurse-submodule https://github.com/flintlang/flint.git "~/.flint"
-cd "~/.flint"
+git clone --recurse-submodule https://github.com/flintlang/flint.git $HOME/.flint
+cd $HOME/.flint
 npm install
 ## No need iff swiftenv has already installed relevent swift version or not using swiftenv
-source ~/.bash_profile
+source $HOME/.bash_profile
 swiftenv install
 swift package update
 make release
-echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bash_profile
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> $HOME/.bash_profile
 source ~/.bash_profile
