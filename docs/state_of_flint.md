@@ -53,6 +53,7 @@ This report covers the state of the Flint programming language─what has been i
 - Future
   - Verifier Macros
   - Geth _vs._ Ganache
+  - Custom Installation Directory
 
 ## Configuration
 ### Installation
@@ -260,3 +261,7 @@ To allow Flint to express more expressions more easily in its verification predi
 ### Geth _vs._ Ganache
 
 Currently, part of the ecosystem of extensions developed and currently maintained for Flint rely on a local `geth` block-chain running in the background. This is not ideal as it's extremely slow and has a convoluted setup process, requiring the user to manually create an account and to have multiple terminal windows open at once to use and monitor the blockchain. Mohammad Chowdhury, the original developer of the ecosystem, suggested looking into Ganache as an alternative local blockchain that would help alleviate the usability issues associated with running `geth` in the background.
+
+### Custom Installation Directory 
+
+Currently, the installation directory of Flint is expected to always be `~/.flint`. This was decided in part to avoid the use of a $FLINTPATH enviroment variable and, most importantly, to simplify the sharing of information throughout the codebase, particularly in regards to the ecosystem scripts (Python, Makefiles, Javascript, Bash). However, we believe that it should be relatively simple (though it may require small changes to a lot of scripts) to allow for a custom installation path by having a `flintPath` configuration field pointing to it. Also, it would be more in line with standard practice to have the configuration file live at `~/.config/flint/config.json`.
