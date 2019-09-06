@@ -1729,6 +1729,77 @@ External trait attributes are a way of providing compiler directives so Flint ca
 @resource              // Used with @data, the following external struct is a resource
 ```
 
+#### Flint Compatible Interfaces
+
+_Only for: Move_
+
+On Solidity, external traits describe standard Solidity contracts, however, on Move, the differences between Move and Flint at too wide for the concept of contract to apply to any Move module. Thus, depending on the kind of Move instance you're dealing with, you will need to declare your Flint-interfacing code (possibly through a wrapper) in a certain way.
+
+##### Contracts
+
+_External trait attributes: `@module(address:)`_
+
+Providing a contract-like interface for Flint in Move so it can act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+
+```rust
+contract <name> {
+   // Declare instance types and imports...
+
+   // All Flint-facing functions should be declared as
+   public f(this_addr: address, arg1: t1, ...): tr acquires T {  
+     let this: &mut Self.T;  
+     // Other local variables...
+     this = borrow_global<T>(move(this_addr));  
+     // Main function code...
+     _ = move(this);  
+     return x;  
+  }
+}
+```
+
+_Example: External Traits Counter ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-counter.flint))_
+
+##### Data Contracts
+
+_External trait attributes: `@module(address:)` and either `@data` or `@resource`_
+
+Providing a contract-like interface for Flint in Move so it can act similarly to a Solidity external trait requires you to write your MoveIR interface similar to how flintc produces MoveIR.
+
+```rust
+module <name> {  
+  // Declare instance types and imports...
+  
+  // You must declare a type T for Flint to store
+  resource T {  
+    ... // Private fields, Flint can't access these
+  }  
+  
+  // The constructor, it must take in an address and return T
+  public new(anyName: address): Self.T {  
+    // Any constructor code here...
+    return T {  
+      ...
+    };  
+  }  
+  
+  // All methods must take in a mutable `this` argument
+  public getSomeField(this: &mut Self.T): u64 {  
+    // Any code to compute the value...
+  }  
+  
+  // Methods may return any type basic type or T
+  public duplicate(this: &mut Self.T, amount: u64): Self.T {  
+    // Any code here to compute the other T
+  }
+}
+```
+
+_Example: External Traits Libra ([Move](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.mvir), [Flint](https://github.com/flintlang/flint/blob/master/Tests/MoveTests/BehaviourTests/tests/externaltraits-libra.flint))_
+
+> **Note**
+>
+> There are also non-contract external data, using just `@data` or `@resource`, although this is mostly designed for the standard library. If you wish to find out more about it, read through the standard library's Libra implementation.
+
 ### Creating an instance
 
 To work with an external contract in a type-safe manner, every external trait automatically creates an implicit constructor, which takes a single `address` parameter.
