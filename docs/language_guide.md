@@ -157,7 +157,6 @@ git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/
 cd $HOME/.flint
 make release
 echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
-source ~/.bashrc
 echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
