@@ -158,6 +158,8 @@ cd $HOME/.flint
 make release
 echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc
+echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
+source ~/.bashrc
 ```
 
 Note that Flint *must* be installed in `~/.flint` to allow the many different components to know where to find everything.
