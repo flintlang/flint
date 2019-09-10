@@ -179,7 +179,7 @@ To use Flint in  a [Docker](https://www.docker.com/) container run the following
 ```bash
 git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
-sudo docker build -t "flint_docker" .
+sudo docker build --no-cache -t "flint_docker" .
 ### ---------------------------------------------- ###
 # Docker will build, this process may take some time #
 ### ---------------------------------------------- ###
