@@ -17,6 +17,7 @@ solc-static-linux
 libra
 /*.bpl
 flint_config.json
+z3
 
 /*.mvir
 /*.flint
