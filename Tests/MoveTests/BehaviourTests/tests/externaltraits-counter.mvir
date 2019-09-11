@@ -32,7 +32,7 @@ module BaseCounter {
   public add(this_address: address, n: u64) acquires T {
     let this: &mut Self.T;
     let newValue: u64;
-    this = borrow_global<T>(move(this_address));
+    this = borrow_global_mut<T>(move(this_address));
     newValue = *&copy(this).value + move(n);
     *&mut copy(this).value = move(newValue);
     _ = move(this);
@@ -41,7 +41,7 @@ module BaseCounter {
 
   public count(this_address: address): u64 acquires T {
     let this: &mut Self.T;
-    this = borrow_global<T>(move(this_address));
+    this = borrow_global_mut<T>(move(this_address));
     return *&move(this).value;
   }
 }

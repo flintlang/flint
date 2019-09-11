@@ -48,7 +48,7 @@ extension AST.FunctionDeclaration {
                                           op: Token(kind: .punctuation(.equal),
                                                     sourceLocation: self.sourceLocation),
                                           rhs: .rawAssembly(
-                                            "borrow_global<T>(move(\(firstParameter.identifier.name.mangled)))",
+                                            "borrow_global_mut<T>(move(\(firstParameter.identifier.name.mangled)))",
                                             resultType: selfParameter.type.rawType))
     wrapperFunctionDeclaration.body.append(.expression(.binaryExpression(selfAssignment)))
 

@@ -2,7 +2,6 @@
 //  MovePreprocessor.swift
 //  MoveGen
 //
-//  Created by Franklin Schrans on 2/1/18.
 //
 
 import AST

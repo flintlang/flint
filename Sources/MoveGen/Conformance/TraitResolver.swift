@@ -2,7 +2,6 @@
 //  TraitResolver.swift
 //  MoveGen
 //
-//  Created by Niklas Vangerow on 20/10/2018.
 //
 
 import AST

@@ -1,3 +1,5 @@
+//! disable stdlib
+
 contract Test {
   var a: Int
   var b: Int

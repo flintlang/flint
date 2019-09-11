@@ -2,7 +2,6 @@
 //  MoveAttemptExpression.swift
 //  MoveGen
 //
-//  Created by Hails, Daniel R on 29/08/2018.
 //
 import AST
 import MoveIR

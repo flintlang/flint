@@ -1,3 +1,5 @@
+//! disable stdlib
+
 struct Rectangle {
   public var width: Int
   public var height: Int

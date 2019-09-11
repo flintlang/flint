@@ -2,7 +2,6 @@
 //  MoveWrapperFunction.swift
 //  MoveGen
 //
-//  Created by Hails, Daniel R on 19/07/2018.
 //
 
 import AST

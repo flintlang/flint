@@ -19,6 +19,6 @@ main () {
   assert(Counter.getCount(copy(this)) == 1, 4);
   assert(Counter.getFriend(copy(this)) == copy(this), 4001);
   assert(Counter.getOwner(copy(this)) == 0x1000000000000000000000000000000000000000, 4002);
-  Counter.increment(copy(this));  //! expect fail 14
+  Counter.increment(copy(this));  //! expect fail 16
   return;
 }

@@ -2,7 +2,6 @@
 //  MoveStatement.swift
 //  MoveGen
 //
-//  Created by Franklin Schrans on 27/04/2018.
 //
 
 import AST

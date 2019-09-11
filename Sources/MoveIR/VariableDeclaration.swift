@@ -2,7 +2,6 @@
 //  VariableDeclaration.swift
 //  YUL
 //
-//  Created by Aurel Bílý on 12/26/18.
 //
 
 public struct VariableDeclaration: CustomStringConvertible, Throwing {

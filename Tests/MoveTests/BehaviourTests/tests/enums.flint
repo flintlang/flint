@@ -1,3 +1,5 @@
+//! disable stdlib
+
 enum A: Int {
   case a = 1
   case b

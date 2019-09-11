@@ -2,7 +2,6 @@
 //  FunctionCallCompleter.swift
 //  MoveGen
 //
-//  Created by Calin Farcas on 26/10/2018.
 //
 
 import AST
