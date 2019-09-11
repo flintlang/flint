@@ -1,3 +1,5 @@
+//! disable stdlib
+
 contract Inits {
   var a: Int
   var b: Address

@@ -18,7 +18,7 @@ class MoveRuntimeError(RuntimeError):
 
     @classmethod
     def from_output(cls, output):
-        line = re.search(r"Aborted\((\d+)\)", output)
+        line = re.search(r"sub_status: Some\((\d+)\)", output)
         if line:
             line = int(line.group(1))
         return cls(output, line)
