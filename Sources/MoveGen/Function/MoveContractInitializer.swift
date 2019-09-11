@@ -189,9 +189,9 @@ struct MoveInitializerBody {
 
     let constructor = Expression.structConstructor(MoveIR.StructConstructor(
         "T",
-        Dictionary(uniqueKeysWithValues: properties.map {
+        properties.map {
           ($0.identifier.name, .transfer(.move(.identifier(MoveSelf.prefix + $0.identifier.name))))
-        })
+        }
     ))
 
     guard !statements.isEmpty else {

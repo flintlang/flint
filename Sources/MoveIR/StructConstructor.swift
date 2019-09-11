@@ -6,9 +6,9 @@ import Foundation
 
 public struct StructConstructor: CustomStringConvertible, Throwing {
   public let name: Identifier
-  public let fields: [Identifier: Expression]
+  public let fields: [(Identifier, Expression)]
 
-  public init(_ name: Identifier, _ fields: [Identifier: Expression]) {
+  public init(_ name: Identifier, _ fields: [(Identifier, Expression)]) {
     self.name = name
     self.fields = fields
   }
