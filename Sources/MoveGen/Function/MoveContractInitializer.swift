@@ -2,7 +2,6 @@
 //  IULIAInitializer.swift
 //  MoveGen
 //
-//  Created by Franklin Schrans on 4/27/18.
 //
 
 import AST

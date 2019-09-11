@@ -2,7 +2,6 @@
 //  MoveFallback.swift
 //  AST
 //
-//  Created by Hails, Daniel J R on 10/08/2018.
 //
 
 import AST

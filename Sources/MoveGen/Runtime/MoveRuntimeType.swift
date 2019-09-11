@@ -7,7 +7,7 @@
 
 import MoveIR
 
-/// The runtime functions used by Flint.
+/// The runtime Move types used by Flint.
 enum MoveRuntimeType {
   static let imports: [Statement] = []
   static let importsWithStdlib: [Statement] = [.import(ModuleImport(name: "LibraCoin", address: "0x0"))]

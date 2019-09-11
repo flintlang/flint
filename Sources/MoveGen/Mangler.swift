@@ -2,7 +2,6 @@
 //  Mangler.swift
 //  AST
 //
-//  Created by Franklin Schrans on 09/02/2018.
 //
 
 import AST

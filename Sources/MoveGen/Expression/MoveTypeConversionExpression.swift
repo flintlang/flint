@@ -2,7 +2,6 @@
 //  MoveTypeConversionExpression.swift
 //  MoveGen
 //
-//  Created by Nik on 27/11/2018.
 //
 
 import AST

@@ -2,7 +2,6 @@
 //  MoveFunction.swift
 //  MoveGen
 //
-//  Created by Franklin Schrans on 12/28/17.
 //
 
 import AST

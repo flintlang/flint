@@ -2,7 +2,6 @@
 //  Statement.swift
 //  MoveIR
 //
-//  Created by Aurel Bílý on 12/26/18.
 //
 
 public enum Statement: CustomStringConvertible, Throwing {
