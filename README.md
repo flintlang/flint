@@ -9,7 +9,6 @@ Flint is still in **alpha development**, and is not ready to be used in producti
 
 Medium articles:
 [Write Safer Smart Contracts](https://medium.com/@susan.eisenbach/write-safer-smart-contracts-b0c8049f72c5) and
-
 [Flint: A New Language for Safe Smart Contracts on Ethereum](https://medium.com/@fschrans/flint-a-new-language-for-safe-smart-contracts-on-ethereum-a5672137a5c7)
 
 Programming 2018! paper: [Writing Safe Smart Contracts in Flint](https://dl.acm.org/citation.cfm?doid=3191697.3213790)
