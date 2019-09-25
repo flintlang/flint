@@ -28,7 +28,7 @@ Constantin Mueller,
 Yicheng Leo,
 Matthew Ross Rachar,
 Franklin Schrans,
-Nklas Vangerow, and
+Nillas Vangerow, and
 Manshu Wang.
 
 The documentation (reports and presentations) can be accessed [here](https://github.com/flintlang/flint/tree/master/docs/pdfs%20(student%20theses)) and the codebase is [here](https://github.com/flintlang/flint). We are very pleased to have support from the [Ethereum Foundation ](https://blog.ethereum.org/2018/10/15/ethereum-foundation-grants-update-wave-4/) for this work.
