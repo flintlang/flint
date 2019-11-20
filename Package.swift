@@ -4,9 +4,10 @@ import PackageDescription
 
 let package = Package(
   name: "flintc",
-  platforms: [
-    .macOS(.v10_14),
-  ],
+//  platforms: [
+//   .macOS(.v10_14),
+    ],
+  ),
   products: [
     .executable(
       name: "flintc",
@@ -34,8 +35,10 @@ let package = Package(
              .revision("9c52c1952e9b2305d4507cf473392ac2d7c9b155")),
     .package(url: "https://github.com/kylef/Commander.git", 
              .revision("dc97e80a1cf5df6c5768528f039c65ad8c564712")),
-    .package(url: "https://github.com/llvm-swift/Lite.git", 
-             .revision("769455af208c8a4e191f187be9d6400422d258a4")),
+//    .package(url: "https://github.com/llvm-swift/Lite.git", 
+//             .revision("769455af208c8a4e191f187be9d6400422d258a4")),
+      .package(url: "https://github.com/llvm-swift/Lite.git", 
+              .revision("769455af208c8a4e191f187be9d6400422d258a4")),
     .package(url: "https://github.com/llvm-swift/FileCheck.git",
              .revision("00945abac615e5203701be0f090ed0e2d2ff15bf")),
     .package(url: "https://github.com/llvm-swift/Symbolic.git", 
@@ -339,15 +342,24 @@ let package = Package(
       ]
     ),
     // MARK: lite -
-    .target(
-        name: "lite",
-        dependencies: [
-          "LiteSupport",
-          "Rainbow",
-          "Symbolic",
-          "Utils"
-      ]
-    ),
+    //    .target(
+    //        name: "lite",
+    //        dependencies: [
+    //          "LiteSupport",
+    //          "Rainbow",
+-   //          "Symbolic",
+-   //      "Utils"
+-   //  ]
+-   // ),
+     .target(
++         name: "lite",
++         dependencies: [
++          "LiteSupport",
++          "Rainbow",
++          "Symbolic",
++           "Utils"
++       ]
++     ),
     // MARK: file-check
     .target(
         name: "file-check",
