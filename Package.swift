@@ -28,6 +28,8 @@ let package = Package(
     ),
   ],
   dependencies: [
+    .package(url: "https://github.com/apple/swift-package-manager",
+             .exact(Version(0, 4, 0))),
     .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", 
              .revision("5d114736f5a98caa8a0ca1c254526f1ce5688f91")),
     .package(url: "https://github.com/onevcat/Rainbow.git", 
