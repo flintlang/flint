@@ -157,7 +157,6 @@ git clone --recurse-submodules https://www.github.com/flintlang/flint.git $HOME/
 cd $HOME/.flint
 make release
 echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
-echo "export PATH=$HOME/.flint/.build/release/:$PATH" >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -179,11 +178,17 @@ To use Flint in  a [Docker](https://www.docker.com/) container run the following
 ```bash
 git clone --recurse-submodule https://github.com/flintlang/flint.git
 cd flint
-sudo docker build --no-cache -t "flint_docker" .
+sudo docker build -t "flint_docker" 
 ### ---------------------------------------------- ###
 # Docker will build, this process may take some time #
 ### ---------------------------------------------- ###
 sudo docker run --privileged -i -t flint_docker
+```
+
+If it fails, try adding `--no-cache` to the command
+
+```
+sudo docker build --no-cache -t "flint_docker" 
 ```
 
 ### Binary packages
