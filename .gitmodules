@@ -1,6 +1,6 @@
 [submodule "boogie"]
 	path = boogie
-	url = https://github.com/boogie-org/boogie/
+	url = https://github.com/boogie-org/boogie
         ignore = untracked
 [submodule "symbooglix"]
 	path = symbooglix
