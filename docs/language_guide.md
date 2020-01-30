@@ -171,6 +171,28 @@ bash <(curl -s https://raw.githubusercontent.com/flintlang/flint/master/utils/in
 
 Note that this script can be run from any directory, but will always install Flint in `~/.flint`.
 
+#### Makefile options
+The Makefile provides some options for you to customize your builds.
+
+##### `BUILD_ARGS`
+This option allows you to specify extra arguments for the `swift build` step.
+
+For example, the following command builds only the `flintc` executable, but not the rest.
+
+```bash
+BUILD_ARGS="--product flintc" make release
+```
+
+##### `ZIP_EXECUTABLES`
+This option allows you to specify which executables to include in the resulting zip file.
+If not set, the `make zip` target will try to include all Flint executables in the zip file by default.
+
+For example, the following command includes only `flintc` and `flint-repl` in the final zip file.
+
+```bash
+ZIP_EXECUTABLES="flintc flint-repl" make zip
+```
+
 ### Docker
 
 To use Flint in  a [Docker](https://www.docker.com/) container run the following: 
