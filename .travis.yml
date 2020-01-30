@@ -24,7 +24,7 @@ matrix:
     - "swiftenv install 5.0.2 || true"
     - "swiftenv install 4.2 || true"
     - git clone --branch 0.38.1 https://github.com/realm/SwiftLint.git /tmp/swiftlint
-    - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
+    - (cd /tmp/swiftlint; swiftenv install; swift build -c release)
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
     script:
     - cd $HOME/.flint
