@@ -5,7 +5,6 @@ Boogie_Z3_slink=boogie/Binaries/z3.exe
 Symbooglix_Z3_slink=symbooglix/src/SymbooglixDriver/bin/Release/z3.exe
 Z3_SYSTEM_PATH = $(shell which z3)
 RELEASE_EXECUTABLES=flintc flint-test flint-repl flint-ca flint-lsp
-BUILD_ARGS=
 .PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
 
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
