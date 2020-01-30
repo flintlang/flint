@@ -4,6 +4,7 @@ Z3=z3/build/z3
 Boogie_Z3_slink=boogie/Binaries/z3.exe
 Symbooglix_Z3_slink=symbooglix/src/SymbooglixDriver/bin/Release/z3.exe
 Z3_SYSTEM_PATH = $(shell which z3)
+RELEASE_EXECUTABLES=flintc flint-test flint-repl flint-ca flint-lsp
 .PHONY: all debug release zip test lint generate-sources generate-mocks test-nogen clean
 
 all: generate-sources $(BOOGIE_EXE) $(SYMBOOGLIX_EXE) debug
@@ -24,9 +25,11 @@ run:
 	swift run dev_version
 
 zip: release
-	cp .build/release/flintc flintc
-	zip -r flintc.zip flintc stdlib
-	rm flintc
+	for EXECUTABLE in $(RELEASE_EXECUTABLES); do \
+		cp .build/release/$$EXECUTABLE $$EXECUTABLE; \
+	done
+	zip -r flintc.zip $(RELEASE_EXECUTABLES) stdlib
+	rm $(RELEASE_EXECUTABLES)
 
 test: lint generate-mocks release
 	sed -i -e "s/ as / as! /g" .build/checkouts/Cuckoo/Source/Initialization/ThreadLocal.swift
