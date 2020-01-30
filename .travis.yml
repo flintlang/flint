@@ -31,6 +31,10 @@ matrix:
     - make
     - make release
     - make test
+  - os: osx
+    language: objective-c
+    osx_image: xcode11.3
+    if: tag =~ ^*-macos$
 before_deploy:
 - swift package update
 - make release
