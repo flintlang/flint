@@ -1,0 +1,9 @@
+[package]
+name = "Quartz"
+version = "0.1.0"
+authors = ["kac216 <kac216@ic.ac.uk>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

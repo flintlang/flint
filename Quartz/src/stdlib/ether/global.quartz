@@ -1,0 +1,19 @@
+struct Quartz_Global {
+  // Send Wei to an Ethereum address
+  func send(address: Address, value: inout Wei) {
+    let w: Wei = Wei(&value)
+    Quartz$Send(w.getRawValue(), address)
+  }
+
+  // Aborts the Ethereum transaction with an error.
+  func fatalError() {
+    Quartz$FatalError()
+  }
+
+  // Ensure the given condition holds, otherwise crash.
+  func assert(condition: Bool) {
+    if condition == false {
+      Quartz$FatalError()
+    }
+  }
+}

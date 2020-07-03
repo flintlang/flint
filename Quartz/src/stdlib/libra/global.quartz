@@ -1,0 +1,5 @@
+struct Quartz_Global {
+    func send(address: Address, value: Int, coin: inout Libra) {
+        Quartz_Libra_send(coin, address, value)
+    }
+}

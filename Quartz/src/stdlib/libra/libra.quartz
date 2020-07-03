@@ -1,0 +1,26 @@
+@resource
+external trait Libra_Coin {
+  public func getValue() -> uint64
+  public func transfer(to: inout LibraCoin, value: uint64)
+  public func transfer_value(to: LibraCoin)
+}
+
+asset Libra {
+  visible var libra: Libra_Coin
+
+  public init() {
+    libra = Libra_Coin(0x0000000000000000000000000000000000000000)
+  }
+
+  public func balance() -> Int {
+    return cast (call libra.getValue()) to Int
+  }
+
+  func transfer(to: inout Libra, amount: Int) mutates (libra) {
+    call libra.transfer(to: &to.libra, value: (cast amount to uint64))
+  }
+
+  func transfer_value(to: Libra) mutates (libra) {
+    call libra.transfer_value(to: to)
+  }
+}

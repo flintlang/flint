@@ -1,0 +1,39 @@
+struct Wei {
+  var rawValue: Int = 0
+
+  init(unsafeRawValue: Int) {
+    if unsafeRawValue != 0 {
+      fatalError()
+    }
+    self.rawValue = unsafeRawValue
+  }
+
+  init(source: inout Wei) {
+      transfer(source: &source)
+  }
+
+  init(source: inout Wei, amount: Int) {
+    transfer(source: &source, amount: amount)
+  }
+
+  func transfer(source: inout Wei, amount: Int) {
+      if source.getRawValue() < amount {
+         fatalError()
+      }
+      let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
+      let unused2: Int = setRawValue(value: getRawValue() + amount)
+    }
+
+  func transfer(source: inout Wei) {
+      transfer(source: &source, amount: source.getRawValue())
+  }
+
+  func setRawValue(value: Int) -> Int mutates (rawValue) {
+    rawValue = value
+    return rawValue
+  }
+
+  func getRawValue() -> Int {
+    return rawValue
+  }
+}
