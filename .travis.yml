@@ -14,7 +14,7 @@ matrix:
     - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
     - echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
     - sudo add-apt-repository -y ppa:ethereum/ethereum
-    - curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash -
+    - curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
     - sudo apt-get update
     - sudo apt-get install -y solc nodejs mono-complete clang z3
     - test -f /usr/bin/msbuild && echo "msbuild exists"
@@ -23,14 +23,18 @@ matrix:
     - eval "$(curl -sLk https://swiftenv.fuller.li/install.sh)" 
     - "swiftenv install 5.0.2 || true"
     - "swiftenv install 4.2 || true"
-    - git clone https://github.com/realm/SwiftLint.git /tmp/swiftlint
-    - (cd /tmp/swiftlint; swiftenv install; swift build -c release --static-swift-stdlib)
+    - git clone --branch 0.38.1 https://github.com/realm/SwiftLint.git /tmp/swiftlint
+    - (cd /tmp/swiftlint; swiftenv install; swift build -c release)
     - export PATH="/tmp/swiftlint/.build/x86_64-unknown-linux/release:$PATH"
     script:
     - cd $HOME/.flint
     - make
     - make release
     - make test
+  - os: osx
+    language: objective-c
+    osx_image: xcode11.3
+    if: tag =~ ^*-macos$
 before_deploy:
 - swift package update
 - make release
